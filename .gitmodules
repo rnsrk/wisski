@@ -1,0 +1,72 @@
+[submodule "wisski/blendedmalts"]
+	path = wisski/blendedmalts
+	url = https://github.com/WissKI/blendedmalts.git
+[submodule "wisski/wisski_pathbuilder"]
+	path = wisski/wisski_pathbuilder
+	url = https://github.com/WissKI/wisski_pathbuilder.git
+[submodule "wisski/wisski_images"]
+	path = wisski/wisski_images
+	url = https://github.com/WissKI/wisski_images.git
+[submodule "wisski/wisski_navigator"]
+	path = wisski/wisski_navigator
+	url = https://github.com/WissKI/wisski_navigator.git
+[submodule "wisski/wisski_find"]
+	path = wisski/wisski_find
+	url = https://github.com/WissKI/wisski_find.git
+[submodule "wisski/wisski_book_import"]
+	path = wisski/wisski_book_import
+	url = https://github.com/WissKI/wisski_book_import.git
+[submodule "wisski/wisski"]
+	path = wisski/wisski
+	url = https://github.com/WissKI/wisski.git
+[submodule "wisski/wisski_getty_ap"]
+	path = wisski/wisski_getty_ap
+	url = https://github.com/WissKI/wisski_getty_ap.git
+[submodule "wisski/wisski_vocab_ctrl"]
+	path = wisski/wisski_vocab_ctrl
+	url = https://github.com/WissKI/wisski_vocab_ctrl.git
+[submodule "wisski/wisski_store"]
+	path = wisski/wisski_store
+	url = https://github.com/WissKI/wisski_store.git
+[submodule "wisski/wisski_batch"]
+	path = wisski/wisski_batch
+	url = https://github.com/WissKI/wisski_batch.git
+[submodule "wisski/wisski_iip"]
+	path = wisski/wisski_iip
+	url = https://github.com/WissKI/wisski_iip.git
+[submodule "wisski/wisski_editor"]
+	path = wisski/wisski_editor
+	url = https://github.com/WissKI/wisski_editor.git
+[submodule "wisski/wisski_pages"]
+	path = wisski/wisski_pages
+	url = https://github.com/WissKI/wisski_pages.git
+[submodule "wisski/wisski_zotero"]
+	path = wisski/wisski_zotero
+	url = https://github.com/WissKI/wisski_zotero.git
+[submodule "wisski/wisski_accesspoint"]
+	path = wisski/wisski_accesspoint
+	url = https://github.com/WissKI/wisski_accesspoint.git
+[submodule "wisski/wisski_search"]
+	path = wisski/wisski_search
+	url = https://github.com/WissKI/wisski_search.git
+[submodule "wisski/wisski_sql_import"]
+	path = wisski/wisski_sql_import
+	url = https://github.com/WissKI/wisski_sql_import.git
+[submodule "wisski/wisski_reasoner"]
+	path = wisski/wisski_reasoner
+	url = https://github.com/WissKI/wisski_reasoner.git
+[submodule "wisski/wisski_relfinder"]
+	path = wisski/wisski_relfinder
+	url = https://github.com/WissKI/wisski_relfinder.git
+[submodule "wisski/wisski_textproc"]
+	path = wisski/wisski_textproc
+	url = https://github.com/WissKI/wisski_textproc.git
+[submodule "wisski/wisski_endpoint"]
+	path = wisski/wisski_endpoint
+	url = https://github.com/WissKI/wisski_endpoint.git
+[submodule "wisski/wisski_jit"]
+	path = wisski/wisski_jit
+	url = https://github.com/WissKI/wisski_jit.git
+[submodule "wisski/wisski_discussion"]
+	path = wisski/wisski_discussion
+	url = https://github.com/WissKI/wisski_discussion.git
