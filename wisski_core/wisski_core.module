@@ -1,0 +1,808 @@
+<?php
+// $ID$
+
+/**
+* Basic module for the WissKI-Communication with Drupal 7
+* Provides the Pathbuilder Interface
+* Handles Basic mappings
+*
+*
+* @author: Mark Fichtner, Martin Scholz
+* 
+*/
+
+function wisski_core_permission() {
+  /*
+  return array(
+  
+    'administar wisski' => array(
+      'title' => t('Administer WissKI Core modules'),
+      'restrict access' => TRUE,
+    ),
+  );
+  */
+}
+
+
+/**
+* Create three node types: 
+* - OWL:Class
+* - Propertys
+* - Individuals
+* Individuals can be created and edited. OWL:Class- and Property-nodes
+* are just readable and only available for viewing.
+* @author: Mark Fichtner
+* @return: Returns an array of three node-types to be created.
+*/
+function wisski_core_node_info() {
+  return array(
+    'individual' => array(
+      'name' => t('Individual node'),
+      'base' => 'wisski_core',
+      'description' => t("This is the node for individuals of owl:classes."),
+      'locked' => FALSE,
+      'has_title' => FALSE,
+      'title_label' => t('Individual title'),
+    ),
+    'class' => array(
+      'name' => t('Class node'),
+      'base' => 'wisski_core',
+      'description' => t("This is the node for owl:classes."),
+      'has_title' => FALSE,
+      'title_label' => t('Class title'),
+    ),
+    'property' => array(
+      'name' => t('Property node'),
+      'base' => 'wisski_core',
+      'description' => t("This is the node for owl:Object/DatatypeProperty."),
+      'has_title' => FALSE,
+      'title_label' => t('Property title'),
+    )
+  );
+}
+
+function wisski_core_form($node, $form_state) {
+  return node_content_form($node, $form_state);
+}
+
+function wisski_core_entity_info() {
+  $return = array(
+    'wisski_individual' => array(
+      'label' => t('WissKI Individual'),
+      'module' => 'wisski_core',
+      'entity keys' => array(
+        'id' => 'wisski_individual_id',
+        'label' => 'wisski_individual_label',
+      ),
+      'fieldable' => TRUE,
+
+      'admin ui' => array(
+        'path' => 'admin/content/wisskientity',
+        'controller class' => 'wisskiRemoteEntityUIController',
+      ),
+
+      'base table' => NULL,
+
+      'bundles' => array(
+        'wisski_individual' => array(
+          'label' => t('Mein Label'),
+          'admin' => array(
+            'path' => 'admin/config/wisski_core_entity',
+          ),
+        ),
+      ),
+      'controller class' => 'wisskiRemoteEntityController',
+      'access callback' => 'wisski_core_access_callback',
+      'uri callback' => 'entity_uri', //'wisski_core_uri_callback',
+
+    ),
+  );
+  
+  return $return;
+}
+
+function wisski_core_access_callback() {
+  return TRUE;
+}
+
+
+
+function wisski_core_menu() {
+/*
+  $items['admin/config/wisski_core/core'] = array(
+    'title' => 'WissKI CORE',
+    'description' => 'Manage the core fuctionality',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_config_page'),
+    'access arguments' => array('administer wisski'),
+  );
+  */
+  $items['admin/config/wisski_core/pathbuilder'] = array(
+    'title' => t('Pathbuilder'),
+    'description' => t('Manage the core functionality'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_config_page'),
+    'access arguments' => array('administer wisski'),
+    //'page arguments' => array('wisski_pathbuilder_overview_form', 'Pathbuilder'),
+    //'access arguments' => array('wisski administrate page'),
+    'type' => MENU_NORMAL_ITEM,
+    //'file' => 'wisski_pathbuilder.inc',
+    'weight' => 2,
+  );
+  
+  $trees = wisski_core_get_pb_trees();
+    
+  foreach($trees as $key => $treeinfo) {
+    $items['admin/config/wisski_core/pathbuilder/'.$key] = array(
+      'title' => t($treeinfo['title']),
+      'page callback' => 'drupal_get_form',
+//      'page arguments' => array('wisski_core_config_page'),
+      'access arguments' => array('administer wisski'),
+      'page arguments' => array('wisski_core_pathbuilder_overview_form', $key),
+//      'access arguments' => array('wisski administrate page'),
+      'type' => MENU_LOCAL_TASK,
+//      'file' => 'wisski_pathbuilder.inc',
+      'weight' => 2,
+    );
+    
+    $items['admin/config/wisski_core/pathbuilder/'.$key.'/add_group'] = array(
+      'title' => t('Add group to ' . $treeinfo['title']),
+      'page callback' => 'drupal_get_form',
+//      'page arguments' => array('wisski_core_config_page'),
+      'access arguments' => array('administer wisski'),
+      'page arguments' => array('wisski_core_pathbuilder_add_group_form', $key),
+//      'access arguments' => array('wisski administrate page'),
+      'type' => MENU_LOCAL_TASK,
+//      'file' => 'wisski_pathbuilder.inc',
+      'weight' => 2,
+    );
+    
+    $items['admin/config/wisski_core/pathbuilder/'.$key.'/add_field'] = array(
+      'title' => t('Add field to ' . $treeinfo['title']),
+      'page callback' => 'drupal_get_form',
+//      'page arguments' => array('wisski_core_config_page'),
+      'access arguments' => array('administer wisski'),
+      'page arguments' => array('wisski_core_pathbuilder_add_field_form', $key),
+//      'access arguments' => array('wisski administrate page'),
+      'type' => MENU_LOCAL_TASK,
+//      'file' => 'wisski_pathbuilder.inc',
+      'weight' => 2,
+    );
+    
+    
+    
+    
+    //if($key == "internal")
+    //  $items['admin/config/wisski_core/pathbuilder/'.$key.'/']['type'] = MENU_DEFAULT_LOCAL_TASK;
+                                                                
+  }
+  
+  
+  $classes = db_query("SELECT * FROM {wisski_pb_treedata} WHERE `group_id` = -1 AND `is_group` = 1 ORDER BY weight ASC");
+
+  foreach($classes as $class) {
+    $items['node/add/' . $class->id] = array(
+      'title' => t('Add a ' . $class->name),
+      'page callback' => 'drupal_get_form',
+//      'page arguments' => array('wisski_core_config_page'),
+      'access arguments' => array('administer wisski'),
+      'page arguments' => array('wisski_core_pathbuilder_add_individual', $class),
+//      'access arguments' => array('wisski administrate page'),
+      'type' => MENU_LOCAL_TASK,
+//      'file' => 'wisski_pathbuilder.inc',
+      'weight' => 2,
+    );
+
+  }  
+  
+  
+  return $items;
+}
+
+function wisski_core_pathbuilder_add_individual($form, &$form_state, $classobj) {
+  $arr = _wisski_core_pathbuilder_recursive_add_group($form, $form_state, $classobj);
+  drupal_set_message("arr: " . serialize($arr));
+
+  return $arr;
+
+
+}
+
+function _wisski_core_pathbuilder_recursive_add_group($form, &$form_state, $groupobj) {
+
+  $outarr = array();
+
+//  $outarr[] = "ich bin eine gruppe";
+
+  $fields = db_query("SELECT * FROM {wisski_pb_treedata} WHERE `group_id` = '" . $groupobj->id . "' ORDER BY weight ASC");
+
+  foreach($fields as $fieldorgroup) {
+    if($fieldorgroup->is_group == 1) {
+      $outarr = array_merge($outarr, _wisski_core_pathbuilder_recursive_add_group($form, $form_state, $fieldorgroup));
+    } else {
+      $outarr = array_merge($outarr, _wisski_core_pathbuilder_recursive_add_field($form, $form_state, $fieldorgroup));
+    }
+  }
+
+  return $outarr;
+
+}
+
+function _wisski_core_pathbuilder_recursive_add_field($form, &$form_state, $fieldobj) {
+
+  $form = array();
+  $form[$fieldobj->id] =  array('#type' => 'image', '#title' => $fieldobj->name);
+
+  return $form;
+
+}
+
+function wisski_core_config_page() {
+  $form['test'] = array(
+    '#type' => 'textfield',
+    '#title' => 'test',
+  );
+  
+  $trees = wisski_core_get_pb_trees();
+
+  foreach($trees as $key => $treeinfo) {
+    $form['stores'] = array(
+      '#markup' => serialize($trees),
+    );
+
+  }
+  
+  return $form;
+  
+}
+
+function _wisski_core_pathbuilder_get_data($type = "internal") {
+
+  $itemtree = array();
+  
+  $depth = -1;
+  
+
+  $itemtree[0] = _wisski_core_pathbuilder_get_ungrouped();
+  
+  _wisski_core_pathbuilder_recursive_get_data($itemtree[0], $type, $itemtree, $depth);
+
+  $rootnodes = db_query("SELECT * FROM {wisski_pb_treedata} WHERE `group_id` = -1 AND `type` LIKE '%$type%' ORDER BY weight ASC");
+
+//  drupal_set_message(serialize($rootnodes));
+    
+  foreach($rootnodes as $parent) {
+  //  drupal_set_message(serialize($itemtree));
+    _wisski_core_pathbuilder_recursive_get_data($parent, $type, $itemtree, $depth);
+  }
+  
+  return $itemtree;
+
+}
+
+function _wisski_core_pathbuilder_recursive_get_data($parentitem, $type = 'internal', &$itemtree = array(), &$depth = 0) {
+  $depth++;
+  
+  $parentitem->depth = $depth;
+  
+  $itemtree[$parentitem->id] = $parentitem;
+  
+  $children = db_query("SELECT * FROM {wisski_pb_treedata} WHERE `group_id` = " . $parentitem->id . " AND `type` LIKE '%$type%' ORDER BY weight ASC");
+  
+  foreach ($children as $child) {
+    if (!in_array($child->id, array_keys($itemtree))) {
+     _wisski_core_pathbuilder_recursive_get_data($child, $type, $itemtree, $depth);
+    }
+  }
+  $depth--;
+  
+}
+
+function _wisski_core_pathbuilder_get_ungrouped() {
+  //$item = array();
+  
+  $item = new stdclass();
+  
+  $item->name = "Ungrouped";
+  $item->id = 0;
+  $item->pid = -1;
+  $item->is_group = 1;
+  $item->group_id = -1;
+  $item->enabled = 0;
+  $item->weight = -1000;
+
+  return $item;
+}
+
+
+function _wisski_core_pathbuilder_make_form($type = "internal") {
+  static $form = array('#tree' => TRUE);
+
+  $result = _wisski_core_pathbuilder_get_data($type);
+
+  foreach($result as $one_field) {
+
+    $item = array(
+      'name' => array(
+        '#markup' => check_plain(t($one_field->name)),
+      ),
+      'id' => array(
+        '#type' => 'hidden',
+        '#default_value' => $one_field->id,
+      ),
+      'pid' => array(
+        '#type' => 'hidden',
+        '#default_value' => $one_field->group_id,
+      ),
+      'weight' => array(
+        '#type' => 'weight',
+        '#title' => t('weight'),
+        '#delta' => 50,
+        '#default_value' => $one_field->weight,
+        '#title_display' => 'invisible',
+      ),
+      'enabled' => array(
+        '#type' => 'checkbox',
+        '#title' => 'enabled',
+        '#title_display' => 'invisible',
+        '#default_value' => $one_field->enabled,
+      ),
+      'depth' => array(
+        '#type' => 'hidden',
+        '#value' => $one_field->depth,
+      ),
+      'group' => array(
+        '#type' => 'hidden',
+        '#value' => $one_field->is_group,
+      ),
+      
+      'type' => array(
+        '#markup' => (empty($one_field->is_group) ? t('Field') : t('Group')),
+      ),
+    );
+    
+    $form['wisski_core_pathbuilder_show'][$one_field->id] = $item;
+  }
+ 
+ // _wisski_core_pathbuilder_make_recursive_form($form, $type);
+
+  return $form;
+}
+
+function wisski_core_theme() {
+  return array(
+    'wisski_core_pathbuilder_overview_form' => array(
+      'render element' => 'form',
+    ),
+  );
+
+}
+
+function wisski_core_pathbuilder_overview_form_submit($form, $form_state) {
+  $items = $form_state['values']['wisski_core_pathbuilder_show'];
+  
+  //drupal_set_message(serialize($form_state));
+  
+  foreach($items as $item) {
+    db_update('wisski_pb_treedata')
+    ->fields(array(
+      'enabled' => $item['enabled'],
+      'group_id' => $item['pid'],
+      'weight' => $item['weight'],
+    ))
+    ->condition('id', $item['id'], "=")
+    ->execute();
+  }
+}
+
+function theme_wisski_core_pathbuilder_overview_form($variables) {
+  $form = $variables['form'];
+  
+  // Initialize the variable which will store our table rows.
+  $rows = array();
+      
+  // Iterate over each element in our $form['example_items'] array.
+  foreach (element_children($form['wisski_core_pathbuilder_show']) as $id) {
+  
+    $form['wisski_core_pathbuilder_show'][$id]['weight']['#attributes']['class'] = array('wki-weight');
+    $form['wisski_core_pathbuilder_show'][$id]['id']['#attributes']['class'] = array('wki-id');
+    $form['wisski_core_pathbuilder_show'][$id]['pid']['#attributes']['class'] = array('wki-pid');                       
+
+    $class = array('draggable');
+
+    if($form['wisski_core_pathbuilder_show'][$id]['group']['#value'] == 0) {
+      $class[] = 'tabledrag-leaf';
+    } else if($form['wisski_core_pathbuilder_show'][$id]['id']['#value'] == 0) {
+      $class[] = 'tabledrag-root';
+    }
+    
+    $indent = theme('indentation', array('size' => $form['wisski_core_pathbuilder_show'][$id]['depth']['#value']));
+    unset($form['example_items'][$id]['depth']);
+
+    $rows[] = array(
+      'data' => array(
+
+        // Add our 'name' column.
+        $indent . drupal_render($form['wisski_core_pathbuilder_show'][$id]['name']),
+        
+        drupal_render($form['wisski_core_pathbuilder_show'][$id]['type']),
+         
+        // Add our 'description' column.
+        drupal_render($form['wisski_core_pathbuilder_show'][$id]['enabled']),
+                                          
+        // Add our 'weight' column.
+        drupal_render($form['wisski_core_pathbuilder_show'][$id]['weight']),
+      
+        // Add our hidden 'id' column.
+        drupal_render($form['wisski_core_pathbuilder_show'][$id]['id']),
+
+        // Add our hidden 'parent id' column.
+        drupal_render($form['wisski_core_pathbuilder_show'][$id]['pid']),
+      
+      ),
+      
+    // To support the tabledrag behaviour, we need to assign each row of the
+    // table a class attribute of 'draggable'. This will add the 'draggable'
+    // class to the <tr> element for that row when the final table is
+    // rendered.
+      'class' => $class,
+    );
+ //   drupal_set_message(serialize($form['wisski_core_pathbuilder_show'][$id]['weight']));
+  }
+  
+  $header = array(t('Name'), t('Type'), t('Enabled'), t('Weight'), t('ID'), t('PID'));
+  $table_id = 'wisski_core_pathbuilder_table';
+  $output = theme('table', array(
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => array('id' => $table_id),
+  ));
+  
+  $output .= drupal_render_children($form);
+  drupal_add_tabledrag($table_id, 'match', 'parent', 'wki-pid', 'wki-pid', 'wki-id', TRUE);
+
+  drupal_add_tabledrag($table_id, 'order', 'sibling', 'wki-weight', NULL, NULL);
+   
+  return $output;
+} 
+
+function wisski_core_pathbuilder_add_group_form($form_state, $type) {
+  $form['item'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Add group'),
+    '#collapsible' => FALSE,
+    '#tree' => TRUE,
+    '#weight' => -2,
+  );
+  
+  $form['item']['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Group name'),
+    '#default_value' => isset($form_state['storage']['name']) ? $form_state['storage']['name'] : '',
+    '#description' => t(''),
+  );
+  
+  $form['item']['description'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Description'),
+    '#default_value' => isset($form_state['storage']['name']) ? $form_state['storage']['name'] : '',
+    '#description' => t(''),
+  );
+  
+  $form['item']['enabled'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enabled'),
+    '#default_value' => isset($form_state['storage']['name']) ? $form_state['storage']['name'] : '',
+    '#description' => t(''),
+  );
+  
+  $form['submit'] = array('#type' => 'submit', '#value' => t('Save'));
+  
+  return $form;
+}
+
+function wisski_core_pathbuilder_add_group_form_submit($form, &$form_state) {
+  $type = "internal";
+  if(arg(4))
+    $type = arg(4);
+
+//  drupal_set_message(serialize($form_state['values']));
+    
+  db_insert('wisski_pb_treedata')
+    ->fields(array(
+      'name' => $form_state['values']['item']['name'],
+      'description' => $form_state['values']['item']['description'],
+      'enabled' => $form_state['values']['item']['enabled'],
+      'uuid' => uniqid(),
+      'is_group' => 1,
+      'group_id' => 0,
+      'weight' => 0,
+      'type' => $type,
+    ))
+    ->execute();
+
+  $form_state['redirect'] = 'admin/config/wisski_core/pathbuilder/' . $type;
+}
+
+function wisski_core_pathbuilder_add_group($form, &$form_state) {
+  $type = "internal";
+  
+  if(arg(4))
+    $type = arg(4);
+  
+  $form_state['redirect'] = 'admin/config/wisski_core/pathbuilder/' . $type . '/add_group';               
+  
+}
+
+function wisski_core_pathbuilder_add_field_form($form_state, $type) {
+  $form['item'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Add field'),
+    '#collapsible' => FALSE,
+    '#tree' => TRUE,
+    '#weight' => -2,
+  );
+  
+  $form['item']['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Field name'),
+    '#default_value' => isset($form_state['storage']['name']) ? $form_state['storage']['name'] : '',
+    '#description' => t(''),
+  );
+  
+  $form['item']['description'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Description'),
+    '#default_value' => isset($form_state['storage']['name']) ? $form_state['storage']['name'] : '',
+    '#description' => t(''),
+  );
+  
+  $form['item']['enabled'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enabled'),
+    '#default_value' => isset($form_state['storage']['name']) ? $form_state['storage']['name'] : '',
+    '#description' => t(''),
+  );
+  
+  $form['submit'] = array('#type' => 'submit', '#value' => t('Save'));
+  
+  return $form;
+}
+
+function wisski_core_pathbuilder_add_field_form_submit($form, &$form_state) {
+  $type = "internal";
+  if(arg(4))
+    $type = arg(4);
+
+//  drupal_set_message(serialize($form_state['values']));
+    
+  db_insert('wisski_pb_treedata')
+    ->fields(array(
+      'name' => $form_state['values']['item']['name'],
+      'description' => $form_state['values']['item']['description'],
+      'enabled' => $form_state['values']['item']['enabled'],
+      'uuid' => uniqid(),
+      'is_group' => 0,
+      'group_id' => 0,
+      'weight' => 0,
+      'type' => $type,
+    ))
+    ->execute();
+  $form_state['redirect'] = 'admin/config/wisski_core/pathbuilder/' . $type;
+    
+}
+
+function wisski_core_pathbuilder_add_field($form, &$form_state) {
+  $type = "internal";
+  
+  if(arg(4))
+    $type = arg(4);
+  
+  $form_state['redirect'] = 'admin/config/wisski_core/pathbuilder/' . $type . '/add_field';               
+  
+}
+
+  /**
+   * Form for editing an entire menu tree at once.
+   *
+   * Shows for one menu the menu items accessible to the current user and
+   * relevant operations.
+   */
+
+  function wisski_core_pathbuilder_overview_form($form_state, $menu, $type = "internal") {
+
+    global $menu_admin;
+
+    $form = _wisski_core_pathbuilder_make_form($type);
+
+
+    $form['#menu'] =  $menu;
+
+    if (element_children($form)) {
+      $form['markup'] = array(
+          '#prefix' => '<div class="wki-admin-buttons">',
+          '#suffix' => '</div>',
+          );
+
+      $form['markup']['submit'] = array(
+          '#type' => 'submit',
+          '#value' => t('Save configuration'),
+          );
+
+      $form['markup']['add_group'] = array(
+          '#type' => 'submit',
+          '#value' => t('Add Group'),
+          '#submit' => array('wisski_core_pathbuilder_add_group'),
+          );
+
+      $form['markup']['add_path'] = array(
+          '#type' => 'submit',
+          '#value' => t('Add Field'),
+          '#submit' => array('wisski_core_pathbuilder_add_field'),
+          );
+
+    }
+    else {
+      $form['empty_menu'] = array('#value' => t('There are no items yet. Please add some.'));
+    }
+    
+    $form['export'] = array(
+      '#collapsed' => TRUE,
+      '#type' => 'fieldset',
+      '#collapsible' => '1',
+      '#title' => t('Export Paths'),
+    );
+
+    $form['export']['exp_markup'] = array(
+      '#value' => '<strong>' . t('Currently available dumps:') . '</strong><br/>',
+      '#prefix' => '<div class="wki-inputbox">',
+      '#suffix' => '</div>',
+    );
+
+    $curExpos = variable_get("wisski_pb_export", array());
+    $newExpos = array();
+    $delbuttons = array();
+    $str = "";
+    if(!empty($curExpos)) {
+      
+      $form['export']['exp_markup']['table'] = array(
+        '#type' => 'form',
+        '#suffix' => '</table>',
+        '#prefix' => '<table><tr><th>' . t('filename') . '</th><th>' . t('filesize') . '</th><th>' . t('date') . '</th><th>' . t('operations') . '</th></tr>',
+      );
+      
+      foreach($curExpos as $curExpo) {
+        if(file_exists($curExpo['file'])) {
+          $form['export']['exp_markup']['table'][$curExpo['file']] = array(
+            '#type' => 'form',
+            '#prefix' => '<tr>',
+            '#suffix' => '</tr>',
+          );
+          
+          $newExpos[] = $curExpo; 
+      
+          $str = '<td><a href="' . file_create_url($curExpo['file']) . '">' . 
+            basename($curExpo['file']) . '</a></td><td>' . $curExpo['size'] . 
+            ' Bytes</td><td>' . $curExpo['date'] . '</td>';
+          
+          $form['export']['exp_markup']['table'][$curExpo['file']]['str'] = array(
+            '#value' => $str,
+          );
+          
+          $form['export']['exp_markup']['table'][$curExpo['file']]['wisski_core_pathbuilder_delExpo_' . basename($curExpo['file'])] = array(
+            '#type' => 'submit',
+            '#name' => basename($curExpo['file']),
+            '#prefix' => '<td>',
+            '#suffix' => '</td>',
+            '#value' => t('Delete Export ') . basename($curExpo['file']),
+            '#submit' => array('wisski_core_pathbuilder_delExpo'),
+            '#attributes' => array('class' => 'wki-delete'),
+        	);
+        	$str = "";
+        }
+      }
+    } else {
+      $str = "None";
+    }
+
+    variable_set("wisski_pb_export", $newExpos);
+
+    if(!empty($str));
+      $form['export']['exp_markup']['#value'] .= $str;
+    
+    $form['export']['exp_markup']['export'] = array(
+      '#type' => 'submit',
+      '#value' => t('Create new export file'),
+      '#submit' => array('wisski_core_pathbuilder_export_paths'),
+    );
+    
+    $form['import'] = array(
+      '#collapsed' => TRUE,
+      '#type' => 'fieldset',
+      '#collapsible' => '1',
+      '#title' => t('Import Paths'),
+    );
+    
+    $form['import']['imp_markup'] = array(
+      '#prefix' => '<div class="wki-inputbox">',
+      '#suffix' => '</div>',
+    );
+
+    $form['import']['imp_markup']['import_pb'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Load Pathbuilder-Definitions'),
+      '#default_value' => "", 
+      '#description' => t("The url of the file that should be loaded in WissKI."),
+    );
+    
+    $form['import']['imp_markup']['import'] = array(
+      '#type' => 'submit',
+      '#value' => t('Load import file'),
+      '#submit' => array('wisski_core_pathbuilder_import_paths'),
+    );
+
+    return $form;
+
+  }
+
+/*
+function wisski_core_pathbuilder_overview_form($form_state, $menu, $type = 2) {
+  
+  
+  $form['blubb'] = array(
+    '#type' => 'textfield',
+    '#title' => 'sdfsdf' . $type,
+  );
+  
+  return $form;
+        
+}
+*/
+
+/**
+ * hook_pb_treeinformation to create new pathbuilder trees
+ *
+ */
+
+function wisski_core_get_pb_trees() {
+  $trees = module_invoke_all("wisski_pb_treeinformation");
+  return $trees;
+}
+
+function wisski_core_wisski_pb_treeinformation() {
+  return array("internal" => array("title" => "Internal Display", ), "export" => array("title" => "Export", ), "import" => array("title" => "Import", ), "find" => array("title" => "Find", ), "navigate" => array("title" => "Navigate", ), );
+}
+
+function wisski_core_get_pb_stores() {
+  $stores = module_invoke_all("wisski_pb_storeinformation");
+  return $stores;
+}
+
+function wisski_core_wisski_pb_storeinformation() {
+  return array("local" => array("title" => "Local Store"), );
+}
+
+class wisskiRemoteEntityController extends EntityAPIController {
+  public function load($ids = array(), $conditions = array()) {
+    $entities = array();
+    foreach ($ids as $id) {
+      if ($entity = remote_web_service_load($id)) {
+        $entities[$entity->my_remote_entity_id] = $entity;
+      }
+    }
+    return $entities;
+  }
+  
+  public function save($entity) {
+    field_attach_presave('wisski_individual', $entity);
+    field_attach_update('wisski_individual', $entity);
+    remote_web_service_save($entity);
+  }
+
+}
+
+class wisskiRemoteEntityUIController extends EntityDefaultUIController {
+}
+
+
