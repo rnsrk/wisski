@@ -4,3 +4,4 @@ description = The Core of the WissKI module set
 core = 7.x
 package = "WissKI"
 dependencies[] = wisski_salz
+files[] = wisski_core.controller.inc

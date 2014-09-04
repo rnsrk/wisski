@@ -2,9 +2,35 @@
 // $Id$
 
 function wisski_core_install() {
+/*
+  if (in_array('wisski_core', $modules)) {
+    // Create a text field.
+    if (!field_read_field('wisski_core_field_1')) {
+      $field = array(
+        'field_name' => 'wisski_core_field_1',
+        'type' => 'text',
+      );
+      field_create_field($field);
+    }
+
+    // Attach created field to proper bundle.
+    if (!field_read_instance('wisski_entity_data', 'wisski_core_field_1', 'wisski_core_bundle_1')) {
+      field_attach_create_bundle('wisski_core_entity', 'wisski_core_bundle_1');
+      $instance = array(
+        'field_name' => 'wisski_core_field_1',
+        'label' => t('Field 1 of wisski_core_bundle_1 bundle'),
+        'entity_type' => 'wisski_core',
+        'bundle' => 'wisski_core_bundle_1',
+      );
+      field_create_instance($instance);
+    }
+  }
+*/
 }
 
 function wisski_core_uninstall() {
+	
+//	field_delete_field('wisski_core_field_1');
 }
 
 function wisski_core_schema() {
@@ -201,6 +227,75 @@ function wisski_core_schema() {
     'primary key' => array('id'),
     'unique keys' => array('uuid' => array('uuid')),
   );
+
+  // Table for storing data of entities.
+  $schema['wisski_entity_data'] = array(
+    'description' => 'The base table for wisski entity data.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'The primary identifier.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'description' => 'Entity bundle.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'title' => array(
+        'description' => 'Entity title.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'description' => array(
+        'description' => 'Entity description.',
+        'type' => 'text',
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+
+  // Table for storing data of entity exportable bundles.
+  $schema['wisski_entity_bundles'] = array(
+    'description' => 'The base table for bundles of wisski entities',
+    'fields' => array(
+      'id' => array(
+        'description' => 'The primary identifier.',
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'description' => 'Bundle machine name.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'label' => array(
+        'description' => 'Human-readable name of bundle.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'description' => array(
+        'description' => 'A brief description of bundle.',
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'medium',
+        'translatable' => TRUE,
+      ),
+    ) + entity_exportable_schema_fields(),
+    'primary key' => array('id'),
+    'unique keys' => array(
+      'type' => array('type'),
+    ),
+  );
+
 
   return $schema;
 }

@@ -8,7 +8,7 @@
 *
 *
 * @author: Mark Fichtner, Martin Scholz
-* 
+* @TODO: Fill in all permissions for this module!
 */
 
 function wisski_core_permission() {
@@ -23,101 +23,329 @@ function wisski_core_permission() {
   */
 }
 
+/************************ Entity Section ***********************/
 
 /**
-* Create three node types: 
-* - OWL:Class
-* - Propertys
-* - Individuals
-* Individuals can be created and edited. OWL:Class- and Property-nodes
-* are just readable and only available for viewing.
-* @author: Mark Fichtner
-* @return: Returns an array of three node-types to be created.
-*/
-function wisski_core_node_info() {
-  return array(
-    'individual' => array(
-      'name' => t('Individual node'),
-      'base' => 'wisski_core',
-      'description' => t("This is the node for individuals of owl:classes."),
-      'locked' => FALSE,
-      'has_title' => FALSE,
-      'title_label' => t('Individual title'),
-    ),
-    'class' => array(
-      'name' => t('Class node'),
-      'base' => 'wisski_core',
-      'description' => t("This is the node for owl:classes."),
-      'has_title' => FALSE,
-      'title_label' => t('Class title'),
-    ),
-    'property' => array(
-      'name' => t('Property node'),
-      'base' => 'wisski_core',
-      'description' => t("This is the node for owl:Object/DatatypeProperty."),
-      'has_title' => FALSE,
-      'title_label' => t('Property title'),
-    )
-  );
-}
-
-function wisski_core_form($node, $form_state) {
-  return node_content_form($node, $form_state);
-}
-
+ * Implements hook_entity_info().
+ */
 function wisski_core_entity_info() {
-  $return = array(
-    'wisski_individual' => array(
-      'label' => t('WissKI Individual'),
-      'module' => 'wisski_core',
+  
+  // defines a wisski_core_entity entity
+  $info = array(
+    'wisski_core_entity' => array(
+      // it is called WissKI Entity
+      'label' => t('WissKI Entity'),
+      
+      // it currently has a base table - future: triple store?
+      'base table' => 'wisski_entity_data',
+      
+      // the entity main keys in this base table
       'entity keys' => array(
-        'id' => 'wisski_individual_id',
-        'label' => 'wisski_individual_label',
+        'id' => 'id',
+        'bundle' => 'type',
       ),
+      
+      // the keys which refer to bundles
+      'bundle keys' => array(
+        'bundle' => 'type',
+      ),
+
+      // we don't provide bundles statically but dynamically
+      'bundles' => array(),
+      
+      // Definitions of entity and controller custom classes are placed in a
+      // special file.
+      // @see .controller.inc
+      'entity class' => 'WisskiCoreEntity',
+      'controller class' => 'WisskiCoreEntityController',
+      // I have no idea what this does
+      'metadata controller class' => '',
+      
+      // we want it fieldable
       'fieldable' => TRUE,
-
-      'admin ui' => array(
-        'path' => 'admin/content/wisskientity',
-        'controller class' => 'wisskiRemoteEntityUIController',
-      ),
-
-      'base table' => NULL,
-
-      'bundles' => array(
-        'wisski_individual' => array(
-          'label' => t('Mein Label'),
-          'admin' => array(
-            'path' => 'admin/config/wisski_core_entity',
-          ),
-        ),
-      ),
-      'controller class' => 'wisskiRemoteEntityController',
-      'access callback' => 'wisski_core_access_callback',
-      'uri callback' => 'entity_uri', //'wisski_core_uri_callback',
-
+      // This line must be specified for using entity_uri() function.
+      'uri callback' => 'entity_class_uri',
+      // This line must be specified for using entity_label() function.
+      'label callback' => 'entity_class_label',
+      // for obvious reasons
+      'module' => 'wisski_core'
     ),
   );
   
-  return $return;
-}
-
-function wisski_core_access_callback() {
-  return TRUE;
-}
-
-
-
-function wisski_core_menu() {
-/*
-  $items['admin/config/wisski_core/core'] = array(
-    'title' => 'WissKI CORE',
-    'description' => 'Manage the core fuctionality',
-    'type' => MENU_NORMAL_ITEM,
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('wisski_core_config_page'),
-    'access arguments' => array('administer wisski'),
+  // define a bundle - used as a template currently
+  $info['wisski_core_bundle'] = array(
+    'label' => t('wisski_core_bundle'),
+    'base table' => 'wisski_entity_bundles',
+    'entity keys' => array(
+      'id' => 'id',
+      'name' => 'type',
+      'label' => 'label',
+    ),
+    // what is in this bundle?
+    'bundle of' => 'wisski_core_entity',
+    'entity class' => 'WisskiCoreBundle',
+    'controller class' => 'WisskiCoreBundleController',
+    'metadata controller class' => '',
+    'fieldable' => FALSE,
+    'exportable' => TRUE,
+    'module' => 'wisski_core',
+    // Automatically create page for managing entity bundles.
+    'admin ui' => array(
+      'path' => 'admin/structure/wisski_core_bundle',
+      'file' => 'wisski_core.admin.inc',
+      'controller class' => 'WisskiCoreBundleUiController',
+    ),
+    // Access callback is necessary for admin UI.
+    // @see http://drupal.org/node/1021576
+    'access callback' => 'wisski_core_bundle_access',
   );
-  */
+  
+  return $info;
+}
+
+/**
+ * Implements hook_entity_property_info().
+ * These are from the typical examples currently - perhaps we don't need these.
+ * They are stored in the database - see .install
+ */
+function wisski_core_entity_property_info() {
+  $info = array();
+  $properties = &$info['wisski_core_entity']['properties'];
+  $properties['id'] = array(
+    'type' => 'integer',
+    'schema field' => 'id',
+    'label' => t('WissKI Entity ID'),
+    'setter callback' => 'entity_property_verbatim_set',
+  );
+  $properties['type'] = array(
+    'type' => 'text',
+    'schema field' => 'type',
+    'required' => TRUE,
+    'label' => t('WissKI Entity type (bundle)'),
+    'setter callback' => 'entity_property_verbatim_set',
+  );
+  $properties['title'] = array(
+    'type' => 'text',
+    'schema field' => 'title',
+    'required' => TRUE,
+    'label' => t('WissKI Entity title'),
+    'setter callback' => 'entity_property_verbatim_set',
+  );
+  $properties['description'] = array(
+    'type' => 'text',
+    'schema field' => 'description',
+    'label' => t('WissKI Entitiy description'),
+    'setter callback' => 'entity_property_verbatim_set',
+  );
+  
+  $type_properties = &$info['wisski_core_bundle']['properties'];
+  $type_properties['id'] = array(
+    'type' => 'integer',
+    'schema field' => 'id',
+    'label' => t('Type ID'),
+    'setter callback' => 'entity_property_verbatim_set',
+  );
+  $type_properties['type'] = array(
+    'type' => 'text',
+    'schema field' => 'type',
+    'required' => TRUE,
+    'label' => t('Type name'),
+    'setter callback' => 'entity_property_verbatim_set',
+  );
+  $type_properties['label'] = array(
+    'type' => 'text',
+    'schema field' => 'label',
+    'required' => TRUE,
+    'label' => t('Type label'),
+    'setter callback' => 'entity_property_verbatim_set',
+  );
+  $type_properties['description'] = array(
+    'type' => 'text',
+    'schema field' => 'description',
+    'required' => TRUE,
+    'label' => t('Type description'),
+    'setter callback' => 'entity_property_verbatim_set',
+  );
+  
+  return $info;
+}
+
+function wisski_core_entity_info_alter(&$entity_info) {
+  foreach (wisski_core_bundle_load_multiple() as $type => $info) {
+    $entity_info['wisski_core_entity']['bundles'][$type] = array(
+      'label' => $info->label,
+      'admin' => array(
+        'path' => 'admin/structure/wisski_core_bundle/manage/%wisski_core_bundle',
+        'real path' => 'admin/structure/wisski_core_bundle/manage/' . $type,
+        'bundle argument' => 4,
+      ),
+    );
+  }
+}
+
+/**
+ * Implements hook_menu().
+ * 
+ * Describe pages for viewing and managing entities.
+ */
+function wisski_core_menu() {
+  $items = array();
+
+  // Base URI for dealing with entity.
+  $base_uri = 'wisski_core/%wisski_core';
+  $base_uri_argument_position = 1;
+
+  // URI for viewing list of existing entities.
+
+  $items['wisski/navigate'] = array(
+    'title' => 'WissKI Navigate Entities',
+    'page callback' => 'wisski_core_list_bundles',
+    'access arguments' => array('view wisski content'),
+    'file' => 'wisski_core.pages.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  
+  $entity_info = entity_get_info('wisski_core_entity');
+  foreach ($entity_info['bundles'] as $bundle_name => $bundle_data) {
+  
+    $items['wisski/navigate/' . $bundle_name] = array(
+      'title' => 'View ' . $bundle_name,
+      'page callback' => 'wisski_core_list',
+      'page arguments' => array(2),
+      'access arguments' => array('view wisski content'),
+      'file' => 'wisski_core.pages.inc',
+      //'type' => MENU_NORMAL_ITEM,
+    );
+  }
+
+
+  // URI for choosing bundle of entity to add.
+  $items['wisski/create'] = array(
+    'title' => 'Add WissKI Entity',
+    'page callback' => 'wisski_core_choose_bundle',
+    'access arguments' => array('administer typical_entity_example content'),
+    'file' => 'wisski_core.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  // URI for adding entity of proper bundle.
+  $entity_info = entity_get_info('wisski_core_entity');
+  foreach ($entity_info['bundles'] as $bundle_name => $bundle_data) {
+    $items['wisski/create/' . $bundle_name] = array(
+      'title' => 'Add ' . $bundle_name,
+      'page callback' => 'wisski_core_entity_add',
+      'page arguments' => array(2),
+      'access arguments' => array('administer typical_entity_example content'),
+      'file' => 'wisski_core.admin.inc',
+    );
+  }
+
+  // URI for viewing entity instances.
+  $items[$base_uri] = array(
+    'title callback' => 'entity_label',
+    'title arguments' => array('wisski_core', $base_uri_argument_position),
+    'page callback' => 'wisski_core_entity_view',
+    'page arguments' => array($base_uri_argument_position),
+    'access arguments' => array('view typical_entity_example content'),
+    'file' => 'wisski_core.pages.inc',
+  );
+  $items[$base_uri . '/view'] = array(
+    'title' => 'View Entity',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+
+  // URI for editing entity instances.
+  $items[$base_uri . '/edit'] = array(
+    'title' => 'Edit Entity',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_entity_form', $base_uri_argument_position),
+    'access arguments' => array('administer typical_entity_example content'),
+    'file' => 'wisski_core.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+  );
+
+  // URI for deleting entity instances.
+  $items[$base_uri . '/delete'] = array(
+    'title' => 'Delete Entity',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_entity_form_delete', $base_uri_argument_position),
+    'access arguments' => array('administer typical_entity_example content'),
+    'file' => 'wisski_core.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+  );
+
+  $items['admin/structure/wisski_core_bundle/%wisski_core_bundle/delete'] = array(
+    'title' => 'Delete WissKI Core Bundle',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_bundle_form_delete_confirm', 4),
+    'access arguments' => array('administer typical_entity_example content'),
+    'weight' => 1,
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'wisski_core.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Load an instance of wisski_core.
+ * 
+ * @param int $teid
+ *   Entity identifier.
+ * @param bool $reset
+ *   Whether to reset the internal cache for wisski_core.
+ * 
+ * @return mixed
+ *   An actual entity, or false.
+ */
+function wisski_core_load($teid, $reset = FALSE) {
+  $entities = wisski_core_entity_load_multiple(array($teid), array(), $reset);
+  return reset($entities);
+}
+
+/**
+ * Load multiple instances of wisski_core.
+ * 
+ * @see entity_load()
+ * 
+ * @param array $teids
+ *   Entity identifiers.
+ * @param array $conditions
+ *   (deprecated) An associative array of conditions on the base entity table.
+ * @param bool $reset
+ *   Whether to reset the internal cache for wisski_core.
+ * 
+ * @return array
+ *   Founded entities.
+ */
+function wisski_core_entity_load_multiple($teids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('wisski_core_entity', $teids, $conditions, $reset);
+}
+
+
+function wisski_core_bundle_load($entity_type) {
+  return wisski_core_bundle_load_multiple($entity_type);
+}
+
+function wisski_core_bundle_load_multiple($type_name = NULL) {
+  $types = entity_load_multiple_by_name('wisski_core_bundle', isset($type_name) ? array($type_name) : FALSE);
+  return isset($type_name) ? reset($types) : $types;
+}
+
+function wisski_core_bundle_access($op, $entity = NULL) {
+  return user_access('administer typical_entity_example content');
+}
+  
+
+
+/***************** Pathbuilder Section **********************/
+
+/*
+function wisski_core_menu() {
+
   $items['admin/config/wisski_core/pathbuilder'] = array(
     'title' => t('Pathbuilder'),
     'description' => t('Manage the core functionality'),
@@ -199,7 +427,9 @@ function wisski_core_menu() {
   
   return $items;
 }
+*/
 
+/*
 function wisski_core_pathbuilder_add_individual($form, &$form_state, $classobj) {
   $arr = _wisski_core_pathbuilder_recursive_add_group($form, $form_state, $classobj);
   drupal_set_message("arr: " . serialize($arr));
@@ -237,6 +467,7 @@ function _wisski_core_pathbuilder_recursive_add_field($form, &$form_state, $fiel
   return $form;
 
 }
+*/
 
 function wisski_core_config_page() {
   $form['test'] = array(
