@@ -1,0 +1,19 @@
+<?php
+// $ID$
+
+/**
+* Basic module for the WissKI-Communication with Drupal 7
+* Provides the SPARQL11 Communication
+*
+*
+* @author: Mark Fichtner, Martin Scholz
+*
+*/
+
+module_load_include('php', 'wisski_salz', "adapters/sparql11/SPARQL11Adapter");
+module_load_include('php', 'wisski_salz', "interface/AdapterInterface");
+
+function sparql11_adapter_wisski_get_store_info() {
+  $adapter = new SPARQL11Adapter();
+  return $adapter->getSettings();
+}

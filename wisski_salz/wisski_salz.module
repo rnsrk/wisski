@@ -1,0 +1,73 @@
+<?php
+// $ID$
+
+/**
+* Basic module for the WissKI-Communication with Drupal 7
+* Provides the Pathbuilder Interface
+* Handles Basic mappings
+*
+*
+* @author: Mark Fichtner, Martin Scholz
+*
+*/
+
+function wisski_salz_permission() {
+  return array(
+    'administar wisski' => array(
+      'title' => t('Administer WissKI modules'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+
+function wisski_salz_menu() {
+  $items['admin/config/wisski_core'] = array(
+    'title' => 'WissKI Core',
+    'type' => MENU_NORMAL_ITEM,
+    'position' => 'left',
+    'weight' => -100,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer wisski'),
+        'file' => 'system.admin.inc',
+            'file path' => drupal_get_path('module', 'system'),
+  );
+  $items['admin/config/wisski_core/salz'] = array(
+    'title' => 'WissKI SALZ',
+    'description' => 'Manage the storage backends',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_salz_config_page'),
+    'access arguments' => array('administer wisski'),
+  );
+  
+  return $items;
+}
+
+function wisski_salz_config_page() {
+  $form['test'] = array(
+    '#type' => 'textfield',
+    '#title' => 'test',
+  );
+  
+  $stores = wisski_salz_get_stores();
+
+  $form['stores'] = array(
+    '#markup' => serialize($stores),
+  );
+  
+  return $form;
+  
+}
+
+/**
+ * Implementation of hook_wisski_get_store_info
+ *
+ */
+function wisski_salz_get_stores() {
+  $stores = array();
+  $stores = module_invoke_all('wisski_get_store_info');
+
+  return $stores;
+}
+

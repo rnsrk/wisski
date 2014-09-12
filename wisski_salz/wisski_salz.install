@@ -1,0 +1,12 @@
+<?php
+// $ID$
+
+/**
+* Basic module for the WissKI-Communication with Drupal 7
+* Provides the Pathbuilder Interface
+* Handles Basic mappings
+*
+*
+* @author: Mark Fichtner, Martin Scholz
+*
+*/

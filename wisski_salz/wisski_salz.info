@@ -1,0 +1,8 @@
+; $Id$
+name = WissKI Store Abstraction Layer Zero
+description = Manages the storage adapters and provides a common data interace for WissKI frontend
+core = 7.x
+package = "WissKI"
+version = 2.0-dev
+
+configure = admin/config/wisski_core/salz
