@@ -1,0 +1,7 @@
+; $Id$
+name = WissKI Access & Visualization Extensions
+description = Ships the common WissKI frontend 
+core = 7.x
+version = 1.0-dev
+package = "WissKI"
+dependencies[] = wisski_core

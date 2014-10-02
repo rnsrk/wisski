@@ -10,3 +10,132 @@
 * @author: Mark Fichtner, Martin Scholz
 *
 */
+
+function wisski_salz_schema() {
+$schema = array();
+	$schema['wisski_salz_store_instances'] = array(
+		'description' => 'Settings for WissKI store instances',
+		'fields' => array(
+			'sid' => array(
+				'description' => 'store ID',
+				'type' => 'serial',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+			),
+			'stid' => array(
+				'description' => 'ID of the store type of this instance',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+			),
+			'name' => array(
+				'description' => 'machine-readable name of the store',
+				'type' => 'varchar',
+				'length' => 255,
+				'not null' => TRUE,
+				'default' => '',
+			),
+			'label' => array(
+				'description' => 'human-readable name of the store',
+				'type' => 'varchar',
+				'length' => 255,
+			),
+			'query_endpoint' => array(
+				'description' => 'url of the query endpoint',
+				'type' => 'varchar',
+				'length' => 255,
+				'not null' => TRUE,
+				'default' => '',
+			),
+			'update_endpoint' => array(
+				'description' => 'url of the update endpoint',
+				'type' => 'varchar',
+				'length' => 255,
+				'not null' => TRUE,
+				'default' => '',
+			),
+			'local_data' => array(
+				'description' => 'store is used locally',
+				'type' => 'int',
+				'default' => 0,
+			),
+		),
+		'primary key' => array('sid'),
+		'foreign keys' => array(
+			'types' => array(
+				'table' => 'wisski_salz_store_types',
+				'columns' => array(
+					'stid' => 'stid',
+				),
+			),
+		),
+	);
+	$schema['wisski_salz_ontologies'] = array(
+		'description' => 'holding the names and uris of ontologies loaded in the various stores',
+		'fields' => array(
+			'oid' => array(
+				'description' => "the ontology's ID",
+				'type' => 'serial',
+				'unsigned' => TRUE,
+				'not null' => TRUE,	
+			),
+			'sid' => array(
+				'description' => 'ID of the store in which the ontology is loaded',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+			),
+			'uri' => array(
+				'description' => 'uri of the ontology',
+				'type' => 'varchar',
+				'length' => 255,
+				'not null' => TRUE,
+				'default' => '',
+			),
+			'pending' => array(
+				'description' => 'ontology is pending to be added to the store',
+				'type' => 'int',
+				'default' => 0,
+			),
+			'added' => array(
+				'description' => 'ontology has succesfully been added to the store',
+				'type' => 'int',
+				'default' => 0,
+			),
+		),
+		'primary key' => array('oid'),
+		'foreign keys' => array(
+			'stores' => array(
+				'table' => 'wisski_salz_store_instances',
+				'columns' => array(
+					'sid' => 'sid',
+				),
+			),
+		),
+	);
+	$schema['wisski_salz_store_types'] = array(
+		'description' => 'types of installed stores',
+		'fields' => array(
+			'stid' => array(
+				'description' => 'store type ID',
+				'type' => 'serial',
+				'not null' => TRUE,
+				'unsigned' => TRUE,
+			),
+			'name' => array(
+				'description' => 'machine-readable name of store type',
+				'type' => 'varchar',
+				'length' => 255,
+				'default' => '',
+				'not null' => TRUE,
+			),
+			'label' => array(
+				'description' => 'human-readable name of store type',
+				'type' => 'varchar',
+				'length' => 255,
+			),
+		),
+		'primary key' => array('stid'),
+	);
+	return $schema;
+}

@@ -3,7 +3,7 @@
 module_load_include('php', 'wisski_salz', "interface/AdapterInterface");
 
 
-class SPARQL11Adapter implements AdapterInterface {
+class SPARQL12Adapter implements AdapterInterface {
 
 
   /**
@@ -13,25 +13,13 @@ class SPARQL11Adapter implements AdapterInterface {
   * update_endpoint: The URL to connect to for write operations
   */
   private $settings = array();
-  
-  /*
-  public function __construct($settings_input) {
-    $this->settings = $settings_input;
-  }
-  
-  
-  public function __construct($query_endpoint,$update_endpoint) {
-    $this->settings['query_endpoint'] = $query_endpoint;
-    $this->settings['update_edpoint'] = $update_endpoint;
-  }
-*/
 
   public function getName() {
     return get_class($this);
   }
 
-  public function getType() {
-    return "SPARQL 1.1";
+public function getType() {
+    return "SPARQL 1.2";
   }
 
   public function setSettings($name, $value = NULL) {
@@ -61,7 +49,7 @@ class SPARQL11Adapter implements AdapterInterface {
     return $this->settings[$name];
   }
 
-/* verschoben nach sparql11_adapter.module
+/* verschoben nach sparql12_adapter.module
   public function settings_page($store) {
     $form['query_endpoint'] = array(
       '#type' => 'textfield',
@@ -101,13 +89,13 @@ class SPARQL11Adapter implements AdapterInterface {
   }
 
 
-public function sparql11_form_submit($form, &$form_state){
+public function sparql12_form_submit($form, &$form_state){
  //drupal_set_message("hallo welt " . serialize($form_state));
  drupal_set_message("\$this: " . serialize($this));
 
- sparql11_adapter_wisski_add_store_instances($this);
+ sparql12_adapter_wisski_add_store_instances($this);
 
- $store_instances = sparql11_adapter_wisski_get_store_instances();
+ $store_instances = sparql12_adapter_wisski_get_store_instances();
  drupal_set_message("\$store_instances: " . serialize($store_instances));
 
  menu_rebuild();
@@ -117,16 +105,16 @@ public function sparql11_form_submit($form, &$form_state){
   drupal_set_message("\$key: " . serialize($key));
  }
 
- $varname1 = "sparql11_query_endpoint_" . $key;
- $varname2 = "sparql11_update_endpoint_" . $key;
+ $varname1 = "sparql12_query_endpoint_" . $key;
+ $varname2 = "sparql12_update_endpoint_" . $key;
  variable_set($varname1, $form_state['values']['query_endpoint']);
  variable_set($varname2, $form_state['values']['update_endpoint']);
 }
 
 
-public function sparql11_edit_form($form, &$form_state){
-    $this->setSettings('query_endpoint', variable_get("sparql11_query_endpoint_" . arg(5)));
-    $this->setSettings('update_endpoint', variable_get("sparql11_update_endpoint_" . arg(5)));
+public function sparql12_edit_form($form, &$form_state){
+    $this->setSettings('query_endpoint', variable_get("sparql12_query_endpoint_" . arg(5)));
+    $this->setSettings('update_endpoint', variable_get("sparql12_update_endpoint_" . arg(5)));
 
     return $this->settings_page();
 }
@@ -141,64 +129,15 @@ public function sparql11_edit_form($form, &$form_state){
 
   }
 
-  
+
   public function querySPARQL($query) {
-    return request('query',$query);
   }
 
 
   public function updateSPARQL($update) {
-    return request('update',$update);
-  }
-  
-  /**
-  * Performs a SPARQL 1.1 query or update.
-  * The SPARQL query endpoint must be set in $this->settings['query_endpoint']
-  * @param $query The SPARQL 1.1 query or update as a string
-  * @return list($ok,$results)
-  * returns a list consisting of
-  * a boolean value $ok that is true iff the query was correctly performed
-  * and the result list $results as an assocative array containing result rows as arrays keyed by the variable from the query
-  * @author domerz
-  */
-  private function request($type,$query = NULL) {
-    $ok = FALSE;
-    $results = array();
-    try {
-      if (easyrdf()) {
-          if (isset($this->settings['query_endpoint'])) {
-            if (isset($this->settings['update_endpoint'])) {
-              $sparql = new EasyRdf_Sparql_Client($this->settings['query_endpoint'],$this->settings['update_endpoint']);
-            } else {
-              $sparql = new EasyRdf_Sparql_Client($this->settings['query_endpoint']);
-            }
-            if ($type == 'query' && !is_null($query)) {
-              $results = $sparql->query($query);
-              $ok = TRUE;
-            } else if ($type == 'update'  && !is_null($query)) {
-              $results = $sparql->update($query);
-              $ok = TRUE;
-            } else if ($type == 'test') {
-              $result = $sparql->listNamedGraphs();
-              $ok = TRUE;
-            }
-          }
-      }
-    } catch (Exception $e) {
-      drupal_set_message($e->getMessage());
-    }
-    return array($ok,$results);
   }
 
-  public function test() {
-    drupal_set_message("Running SPARQL test");
-    list($ok,$results) = request('test');
-    if ($ok) {
-      drupal_set_message("Named Graphs in Repository are ".$results->dump());
-    } else {
-      drupal_set_message("Test failed");
-    }
-  }
+
 
   private function addOntologies() {
 
@@ -283,8 +222,13 @@ public function sparql11_edit_form($form, &$form_state){
 
   }
 
-  public function getExternalLinkURL($uri) {
-    //TODO  
-  }
-  
+
+
+
+
+
+  public function getExternalLinkURL($uri){}
+
+
+
 }

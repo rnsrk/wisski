@@ -31,7 +31,7 @@ function wisski_salz_permission() {
  * Implements hook_menu().
  */
 function wisski_salz_menu() {
-
+  
   $items['admin/config/wisski'] = array(
     'title' => 'WissKI',
     'type' => MENU_NORMAL_ITEM,
@@ -157,6 +157,7 @@ function wisski_salz_edit_store($form, &$form_state) {
 //}
 
 function wisski_salz_view_installed_store_instances() {
+
   $store_types = wisski_salz_get_store_types();
   $store_instances = wisski_salz_get_installed_store_instances();
 
@@ -174,6 +175,7 @@ $link[$store_type] = array(
 #    'data' => l($store_instance->getType(), 'admin/config/wisski/salz/' . $key . '/' . $key2),
 #    );
 }
+
 $sorted_store_instances_by_type = array();
 
 foreach ($store_instances as $key2 => $store_instance){
@@ -254,10 +256,12 @@ foreach ($store_instances as $key2 => $store_instance){
 
 
 function wisski_salz_config_page() {
+  wisski_salz_set_store_types();
  $store_types = wisski_salz_get_store_types();
 //  $form['stores'] = array(
 //    '#markup' => serialize($stores),
 //  );
+  $items = array();
   foreach($store_types as $key => $store_type) {
      $items[] = array(
      'data' => l($store_type, 'admin/config/wisski/salz/add/' . $key),
@@ -294,30 +298,37 @@ function wisski_salz_get_stores() {
   return $stores;
 }
 
+function wisski_salz_set_store_types() {
+  $store_types = array();
+  // take all store_types found from hook
+  $store_types = module_invoke_all('wisski_get_store_type');
+  $database_store_types = db_select('wisski_salz_store_types','t')->fields('t')->execute()->fetchAllAssoc('label');
+  foreach($store_types as $store_type){
+    if (!array_key_exists($store_type,$database_store_types)) {
+      $settings = array(
+        'name' => preg_replace('/[^a-z0-9_]/u','',strtolower($store_type)),
+        'label' => $store_type,
+      );
+      db_insert('wisski_salz_store_types')->fields($settings)->execute();
+    }
+  }
+  drupal_set_message("Performed store type setting");
+}
+
 /**
  * Implements hook_wisski_salz_get_store_types().
  */
 function wisski_salz_get_store_types() {
-  $store_types = array();
-  // take all store_types found from hook
-  $store_types = module_invoke_all('wisski_get_store_type');
-
-  // create database entry "wisski_store_types" in table "variable"
-  $database_store_types = variable_get('wisski_store_types', array());
-  foreach($database_store_types as $key => $database_store_type){
-    if(!in_array($database_store_type, $store_types)){
-      unset($database_store_types[$key]);
-    }
+  
+  $database_store_types = db_select('wisski_salz_store_types','t')->fields('t')->execute()->fetchAllAssoc('name');
+  dpm($database_store_types);
+  $output_store_types = array();
+  foreach($database_store_types as $store_type) {
+    $output_store_types[$store_type->name] = $store_type->label;
   }
-
-  foreach($store_types as $key => $store_type){
-    if(!in_array($store_type, $database_store_types)){
-      $database_store_types[] = $store_type;
-    }
-  }
-  variable_set('wisski_store_types', $database_store_types);
-  return $database_store_types;
+  return $output_store_types;
 }
+
 
 function wisski_salz_get_installed_store_instances() {
   $installed_store_instances = array();

@@ -12,15 +12,15 @@
 */
 
 function wisski_core_permission() {
-  /*
+  
   return array(
   
-    'administar wisski' => array(
+    'administer wisski' => array(
       'title' => t('Administer WissKI Core modules'),
       'restrict access' => TRUE,
     ),
   );
-  */
+  
 }
 
 /************************ Entity Section ***********************/
@@ -191,6 +191,8 @@ function wisski_core_entity_info_alter(&$entity_info) {
 function wisski_core_menu() {
   $items = array();
 
+  /********** Entity Stuff ***************/
+
   // Base URI for dealing with entity.
   $base_uri = 'wisski_core/%wisski_core';
   $base_uri_argument_position = 1;
@@ -286,6 +288,97 @@ function wisski_core_menu() {
     'type' => MENU_NORMAL_ITEM,
     'file' => 'wisski_core.admin.inc',
   );
+
+  /********* PB Stuff *************/
+  $items['admin/config/wisski'] = array(
+    'title' => 'WissKI',
+    'type' => MENU_NORMAL_ITEM,
+    'position' => 'left',
+    'weight' => -100,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer wisski'),
+        'file' => 'system.admin.inc',
+            'file path' => drupal_get_path('module', 'system'),
+  );
+  
+  $items['admin/config/wisski_core/pathbuilder'] = array(
+    'title' => t('Pathbuilder'),
+    'description' => t('Manage the core functionality'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_config_page'),
+    'access arguments' => array('administer wisski'),
+    //'page arguments' => array('wisski_pathbuilder_overview_form', 'Pathbuilder'),
+    //'access arguments' => array('wisski administrate page'),
+    'type' => MENU_NORMAL_ITEM,
+    //'file' => 'wisski_pathbuilder.inc',
+    'weight' => 2,
+  );
+  
+  $trees = wisski_core_get_pb_trees();
+    
+  foreach($trees as $key => $treeinfo) {
+    $items['admin/config/wisski_core/pathbuilder/'.$key] = array(
+      'title' => t($treeinfo['title']),
+      'page callback' => 'drupal_get_form',
+//      'page arguments' => array('wisski_core_config_page'),
+      'access arguments' => array('administer wisski'),
+      'page arguments' => array('wisski_core_pathbuilder_overview_form', $key),
+//      'access arguments' => array('wisski administrate page'),
+      'type' => MENU_LOCAL_TASK,
+//      'file' => 'wisski_pathbuilder.inc',
+      'weight' => 2,
+    );
+    
+    $items['admin/config/wisski_core/pathbuilder/'.$key.'/add_group'] = array(
+      'title' => t('Add group to ' . $treeinfo['title']),
+      'page callback' => 'drupal_get_form',
+//      'page arguments' => array('wisski_core_config_page'),
+      'access arguments' => array('administer wisski'),
+      'page arguments' => array('wisski_core_pathbuilder_add_group_form', $key),
+//      'access arguments' => array('wisski administrate page'),
+      'type' => MENU_LOCAL_TASK,
+//      'file' => 'wisski_pathbuilder.inc',
+      'weight' => 2,
+    );
+    
+    $items['admin/config/wisski_core/pathbuilder/'.$key.'/add_field'] = array(
+      'title' => t('Add field to ' . $treeinfo['title']),
+      'page callback' => 'drupal_get_form',
+//      'page arguments' => array('wisski_core_config_page'),
+      'access arguments' => array('administer wisski'),
+      'page arguments' => array('wisski_core_pathbuilder_add_field_form', $key),
+//      'access arguments' => array('wisski administrate page'),
+      'type' => MENU_LOCAL_TASK,
+//      'file' => 'wisski_pathbuilder.inc',
+      'weight' => 2,
+    );
+    
+    
+    
+    
+    //if($key == "internal")
+    //  $items['admin/config/wisski_core/pathbuilder/'.$key.'/']['type'] = MENU_DEFAULT_LOCAL_TASK;
+                                                                
+  }
+  
+  
+  $classes = db_query("SELECT * FROM {wisski_pb_treedata} WHERE `group_id` = -1 AND `is_group` = 1 ORDER BY weight ASC");
+
+  foreach($classes as $class) {
+    $items['node/add/' . $class->id] = array(
+      'title' => t('Add a ' . $class->name),
+      'page callback' => 'drupal_get_form',
+//      'page arguments' => array('wisski_core_config_page'),
+      'access arguments' => array('administer wisski'),
+      'page arguments' => array('wisski_core_pathbuilder_add_individual', $class),
+//      'access arguments' => array('wisski administrate page'),
+      'type' => MENU_LOCAL_TASK,
+//      'file' => 'wisski_pathbuilder.inc',
+      'weight' => 2,
+    );
+
+  }  
+
 
   return $items;
 }
