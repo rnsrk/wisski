@@ -22,7 +22,7 @@ $schema = array();
 				'unsigned' => TRUE,
 				'not null' => TRUE,
 			),
-			'stid' => array(
+			'type' => array(
 				'description' => 'ID of the store type of this instance',
 				'type' => 'int',
 				'unsigned' => TRUE,
@@ -59,13 +59,18 @@ $schema = array();
 				'type' => 'int',
 				'default' => 0,
 			),
+			'deleted' => array(
+				'description' => 'instance has been deleted',
+				'type' => 'int',
+				'default' => 0,
+			),
 		),
 		'primary key' => array('sid'),
 		'foreign keys' => array(
 			'types' => array(
 				'table' => 'wisski_salz_store_types',
 				'columns' => array(
-					'stid' => 'stid',
+					'type' => 'stid',
 				),
 			),
 		),

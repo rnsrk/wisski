@@ -39,8 +39,8 @@ function wisski_salz_menu() {
     'weight' => -100,
     'page callback' => 'system_admin_menu_block_page',
     'access arguments' => array('administer wisski'),
-        'file' => 'system.admin.inc',
-            'file path' => drupal_get_path('module', 'system'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
   );
 
   $items['admin/config/wisski/salz'] = array(
@@ -51,9 +51,9 @@ function wisski_salz_menu() {
       'page callback' => 'drupal_get_form',
       'page arguments' => array('wisski_salz_view_installed_store_instances'),
       'access arguments' => array('administer wisski'),
-    );
+  );
 
-$items['admin/config/wisski/salz/navigate'] = array(
+  $items['admin/config/wisski/salz/navigate'] = array(
       'title' => 'View Store Instances',
       'description' => 'Manage the storage backends',
       'type' => MENU_DEFAULT_LOCAL_TASK,
@@ -61,7 +61,7 @@ $items['admin/config/wisski/salz/navigate'] = array(
       'page callback' => 'drupal_get_form',
       'page arguments' => array('wisski_salz_view_installed_store_instances'),
       'access arguments' => array('administer wisski'),
-    );
+  );
 
   $items['admin/config/wisski/salz/add'] = array(
     'title' => 'Add Store',
@@ -161,44 +161,66 @@ function wisski_salz_view_installed_store_instances() {
   $store_types = wisski_salz_get_store_types();
   $store_instances = wisski_salz_get_installed_store_instances();
 
-#  drupal_set_message(serialize(wisski_salz_get_store_instances_by_type()));
+#  	drupal_set_message(serialize(wisski_salz_get_store_instances_by_type()));
 
- $link = array();
- $link['any'] = array(
+  $link = array();
+  $link['any'] = array(
     'data' => l('Add new Store Instance', 'admin/config/wisski/salz/add'),
-     );
+  );
 
-foreach($store_types as $key => $store_type){
-$link[$store_type] = array(
-    'data' => l('Add new Store Instance of Type ' . $store_type, 'admin/config/wisski/salz/add/' . $key));
-#    $items[] = array(
-#    'data' => l($store_instance->getType(), 'admin/config/wisski/salz/' . $key . '/' . $key2),
-#    );
-}
-
-$sorted_store_instances_by_type = array();
-
-foreach ($store_instances as $key2 => $store_instance){
-
-    $sorted_store_instances_by_type[$store_instance->getType()][] = array(
-        'data' => l($store_instance->getType() . ' ' . (empty($sorted_store_instances_by_type[$store_instance->getType()]) ? 0 : count($sorted_store_instances_by_type[$store_instance->getType()])) , 'admin/config/wisski/salz/' . array_search($store_instance->getType(), $store_types) . '/' . (empty($sorted_store_instances_by_type[$store_instance->getType()]) ? 0 : count($sorted_store_instances_by_type[$store_instance->getType()]))) . "<div class='wki_grey'>" . t($store_instance->getSettings('query_endpoint') . ', ' . $store_instance->getSettings('update_endpoint')) . "</div>");
-#drupal_set_message(serialize($store_instance->getSettings()));
-
-
+  foreach($store_types as $key => $store_type){
+  $link[$store_type['name']] = array(
+    'data' => l('Add new Store Instance of Type ' . $store_type['label'], 'admin/config/wisski/salz/add/' . $store_type['name']));
+#   	$items[] = array(
+#    	'data' => l($store_instance->getType(), 'admin/config/wisski/salz/' . $key . '/' . $key2),
+#    	);
   }
 
+  $sorted_store_instances_by_type = array();
 
- $form = array();
-
-    $form['add_link'] = array(
-        'link' => array(
-            '#theme' => 'item_list',
-            '#items' => $link,
-            '#title' => t('Add new Store'),
-        ),
+  foreach ($store_instances as $key2 => $store_instance){
+    /* benutzt alte Version von wisski_salz_get_installed_store_instances
+    $text = $store_instance->getType() . ' ' . (
+      empty(
+        $sorted_store_instances_by_type[$store_instance->getType()]
+      ) ? 0 : count(
+        $sorted_store_instances_by_type[$store_instance->getType()]
+      )
     );
+    $path = 'admin/config/wisski/salz/' . array_search(
+      $store_instance->getType(), $store_types
+    ) . '/' . (
+      empty(
+        $sorted_store_instances_by_type[$store_instance->getType()]
+      ) ? 0 : count(
+        $sorted_store_instances_by_type[$store_instance->getType()]
+      )
+    );
+     
+    $sorted_store_instances_by_type[$store_instance->getType()][] = array( 
+      'data' => l($text, $path). "<div class='wki_grey'>" . t(
+        $store_instance->getSettings('query_endpoint') . ', ' . $store_instance->getSettings('update_endpoint')
+      ) . "</div>",
+    );
+    */
+    //neue Version
+    $text = $store_instance->label;
+    $path = 'admin/config/wisski/salz/edit/' . $store_instance->type . '/' . $store_instance->name;
+    $sorted_store_instances_by_type[$store_instance->type][] = array( 
+      'data' => l($text, $path). "<div class='wki_grey'>" . t($store_instance->query_endpoint . ', ' . $store_instance->update_endpoint) . "</div>",
+    );
+  }
 
-    foreach($sorted_store_instances_by_type as $key => $value) {
+  $form = array();
+  $form['add_link'] = array(
+    'link' => array(
+      '#theme' => 'item_list',
+      '#items' => $link,
+      '#title' => t('Add new Store'),
+    ),
+  );
+
+  foreach($sorted_store_instances_by_type as $key => $value) {
 
       #$form[$key . '_headline'] = array(
       #  '#markup' => t($key));
@@ -206,12 +228,12 @@ foreach ($store_instances as $key2 => $store_instance){
 #      foreach($value as $key2 => $value2) {
 #        $items[$key2] = array('data' => $value2);
 #      }
-
+      $store_type_string = $store_types[$key]['label'];
       $form[$key] = array(
             'list' => array(
                   '#theme' => 'item_list',
                   '#items' => $value,
-                  '#title' => t($key),
+                  '#title' => t($store_type_string),
              ),
          );
 
@@ -229,6 +251,12 @@ foreach ($store_instances as $key2 => $store_instance){
   }
   }
   */
+
+  $form['load'] = array(
+    '#type' => 'submit',
+    '#value' => t('Recover all deleted stores'),
+    '#submit' => array('wisski_salz_recover_deleted_stores'),
+  );
 
   return $form;
 
@@ -255,6 +283,7 @@ foreach ($store_instances as $key2 => $store_instance){
 }
 
 
+
 function wisski_salz_config_page() {
   wisski_salz_set_store_types();
  $store_types = wisski_salz_get_store_types();
@@ -264,7 +293,7 @@ function wisski_salz_config_page() {
   $items = array();
   foreach($store_types as $key => $store_type) {
      $items[] = array(
-     'data' => l($store_type, 'admin/config/wisski/salz/add/' . $key),
+     'data' => l($store_type['label'], 'admin/config/wisski/salz/add/' . $key),
     );
   }
   return array(
@@ -298,6 +327,11 @@ function wisski_salz_get_stores() {
   return $stores;
 }
 
+function wisski_salz_recover_deleted_stores() {
+  db_update('wisski_salz_store_instances')->fields(array('deleted' => 0))->condition('deleted',1,'=')->execute();
+  menu_rebuild();
+}
+
 function wisski_salz_set_store_types() {
   $store_types = array();
   // take all store_types found from hook
@@ -321,20 +355,29 @@ function wisski_salz_set_store_types() {
 function wisski_salz_get_store_types() {
   
   $database_store_types = db_select('wisski_salz_store_types','t')->fields('t')->execute()->fetchAllAssoc('name');
-  dpm($database_store_types);
+//  dpm($database_store_types);
   $output_store_types = array();
   foreach($database_store_types as $store_type) {
-    $output_store_types[$store_type->name] = $store_type->label;
+    $settings = array(
+      'name' => $store_type->name,
+      'label' => $store_type->label,
+    );
+    $output_store_types[$store_type->stid] = $settings;
   }
   return $output_store_types;
 }
 
-
+/* alte Version
 function wisski_salz_get_installed_store_instances() {
   $installed_store_instances = array();
   $installed_store_instances = module_invoke_all('wisski_get_store_instances');
 
   return $installed_store_instances;
+}
+*/
+
+function wisski_salz_get_installed_store_instances() {
+  return db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('deleted',0,'=')->execute()->fetchAllAssoc('name');
 }
 
 function wisski_salz_get_store_instances_by_type() {

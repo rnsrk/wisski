@@ -143,12 +143,12 @@ public function sparql11_edit_form($form, &$form_state){
 
   
   public function querySPARQL($query) {
-    return request('query',$query);
+    return $this->request('query',$query);
   }
 
 
   public function updateSPARQL($update) {
-    return request('update',$update);
+    return $this->request('update',$update);
   }
   
   /**
@@ -178,31 +178,45 @@ public function sparql11_edit_form($form, &$form_state){
             } else if ($type == 'update'  && !is_null($query)) {
               $results = $sparql->update($query);
               $ok = TRUE;
-            } else if ($type == 'test') {
-              $result = $sparql->listNamedGraphs();
-              $ok = TRUE;
             }
           }
       }
     } catch (Exception $e) {
-      drupal_set_message($e->getMessage());
+        drupal_set_message("SPARQL1.1 $type request failed.<br>Query was '$query'");
+        throw $e;
     }
     return array($ok,$results);
   }
 
   public function test() {
     drupal_set_message("Running SPARQL test");
-    list($ok,$results) = request('test');
+//    $this->settings['ontologies_pending'][] = $this->settings['query_endpoint'];
+//    $this->addOntologies();
+    list($ok,$results) = $this->updateSPARQL('INSERT {?ont ecrm:type_ins owl:Ontology} WHERE {?ont rdf:type owl:Ontology}');
+//    list($ok,$results) = $this->request('query','SELECT * WHERE {?s a ecrm:E21_Person}');
     if ($ok) {
-      drupal_set_message("Named Graphs in Repository are ".$results->dump());
+      drupal_set_message($results->dump());
     } else {
-      drupal_set_message("Test failed");
+      throw new Exception("Test failed");
+    }
+  }
+  
+  public function convertOntologiesToNamespaces() {
+    list($ok,$results) = $this->querySPARQL('SELECT * WHERE {'.
+        '?ont a owl:Ontology.'.
+      '}');
+    drupal_set_message($results->dump());
+    if ($ok) {
+      foreach ($results as $result) {
+        EasyRdf_Namespace::set(preg_replace('/[^a-zA-Z0-9]/','',$result->ont),$result->cleanuri);
+      }
     }
   }
 
   private function addOntologies() {
 
     global $base_url;
+    drupal_set_message("base URL is $base_url");
     $tmpgraph = "<$base_url/tmp/wisski/add_ontology>";
 
     while (isset($this->settings['ontologies_pending']) && !empty($this->settings['ontologies_pending'])) {
