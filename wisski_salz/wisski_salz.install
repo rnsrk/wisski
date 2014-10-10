@@ -90,12 +90,24 @@ $schema = array();
 				'unsigned' => TRUE,
 				'not null' => TRUE,
 			),
-			'uri' => array(
-				'description' => 'uri of the ontology',
+			'iri' => array(
+				'description' => 'iri of the ontology',
 				'type' => 'varchar',
 				'length' => 255,
 				'not null' => TRUE,
 				'default' => '',
+			),
+			'version' => array(
+				'description' => 'version of the ontology',
+				'type' => 'varchar',
+				'length' => 255,
+				'not null' => FALSE,
+				'default' => '',
+			),
+			'source' => array(
+				'description' => 'source oid for an imported ontology',
+				'type' => 'int',
+				'not null' => FALSE,
 			),
 			'pending' => array(
 				'description' => 'ontology is pending to be added to the store',

@@ -162,6 +162,7 @@ public function sparql11_edit_form($form, &$form_state){
   * @author domerz
   */
   private function request($type,$query = NULL) {
+    
     $ok = FALSE;
     $results = array();
     try {
@@ -175,64 +176,106 @@ public function sparql11_edit_form($form, &$form_state){
             if ($type == 'query' && !is_null($query)) {
               $results = $sparql->query($query);
               $ok = TRUE;
-            } else if ($type == 'update'  && !is_null($query)) {
+            } elseif ($type == 'update'  && !is_null($query)) {
               $results = $sparql->update($query);
               $ok = TRUE;
             }
           }
-      }
+      } else drupal_set_message("EasyRdf is not installed");
     } catch (Exception $e) {
-        drupal_set_message("SPARQL1.1 $type request failed.<br>Query was '$query'");
-        throw $e;
+        drupal_set_message("SPARQL1.1 $type request failed.<br>Query was '".htmlentities($query)."'<br>Error Message:<br>".get_class($e)."<br>".$e->getMessage());
+//        throw $e;
     }
+    drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
     return array($ok,$results);
   }
 
   public function test() {
+ 
     drupal_set_message("Running SPARQL test");
+/*
 //    $this->settings['ontologies_pending'][] = $this->settings['query_endpoint'];
 //    $this->addOntologies();
-    list($ok,$results) = $this->updateSPARQL('INSERT {?ont ecrm:type_ins owl:Ontology} WHERE {?ont rdf:type owl:Ontology}');
-//    list($ok,$results) = $this->request('query','SELECT * WHERE {?s a ecrm:E21_Person}');
+    list($ok,$results) = $this->updateSPARQL('INSERT {?ont rdf:type_ins owl:Ontology} WHERE {?ont rdf:type owl:Ontology}');
+//    list($ok,$results) = $this->querySPARQL('SELECT * WHERE {?s (rdfs:subClassOf)+ owl:Thing.} LIMIT 100');
     if ($ok) {
       drupal_set_message($results->dump());
     } else {
       throw new Exception("Test failed");
     }
-  }
-  
-  public function convertOntologiesToNamespaces() {
-    list($ok,$results) = $this->querySPARQL('SELECT * WHERE {'.
-        '?ont a owl:Ontology.'.
-      '}');
-    drupal_set_message($results->dump());
+*/  
+    do {
+      $num_rows = db_select('wisski_salz_ontologies','ont')->fields('ont')->countQuery()->execute()->fetchField();
+      db_delete('wisski_salz_ontologies')->execute();
+    } while ($num_rows > 0);
+    db_truncate('wisski_salz_ontologies');
+    
+    list($ok,$result) = $this->querySPARQL('SELECT * WHERE {?o a owl:Ontology.} GROUP BY ?o');
     if ($ok) {
-      foreach ($results as $result) {
-        EasyRdf_Namespace::set(preg_replace('/[^a-zA-Z0-9]/','',$result->ont),$result->cleanuri);
+      foreach ($result as $ont) {
+        db_insert('wisski_salz_ontologies')->fields(array('sid' => $this->settings['sid'],'iri' => $ont->o, 'pending' => 1))->execute();
       }
     }
+    $this->addOntologies();
   }
 
-  private function addOntologies() {
+  private function loadOntologyInfo() {
+    
+    $this->settings['ontologies_loaded'] = array();
+    $this->settings['ontologies_pending'] = array();
+    $result = db_select('wisski_salz_ontologies','ont')
+                ->fields('ont')
+                ->condition('sid',$this->settings['sid'],'=')
+                ->execute()->fetchAllAssoc('oid');
+    foreach ($result as $row) {
+      $ont = (array) $row;
+      if ($ont['added'] == 1) $this->settings['ontologies_loaded'][$ont['oid']] = $ont;
+      elseif ($ont['pending'] == 1) $this->settings['ontologies_pending'][$ont['oid']] = $ont;
+    }
+  }  
 
+  private function addOntologies($iri = NULL) {
+    
+    if ($iri != NULL) {
+      db_insert('wisski_salz_ontologies')->fields(array('sid' => $this->settings['sid'],'iri' => $iri,'pending' => 1,))->execute(); 
+    }
+    
     global $base_url;
-    drupal_set_message("base URL is $base_url");
-    $tmpgraph = "<$base_url/tmp/wisski/add_ontology>";
-
+    $tmpgraph = '<'.$base_url.'/tmp/wisski/add_ontology>';
+    $this->loadOntologyInfo();
+    list($ok,$result) = $this->querySPARQL('SELECT DISTINCT ?g WHERE {GRAPH ?g {?s ?p ?o}}');
+    $knowngraphs = array();
+    if (!$ok) {
+      foreach($result as $row) $knowngraphs[] = $row->g;
+    }
+    //if the dummy does not exist, we create it
+    if (!in_array($tmpgraph)) $this->updateSPARQL("CREATE GRAPH $tmpgraph");
     while (isset($this->settings['ontologies_pending']) && !empty($this->settings['ontologies_pending'])) {
-
+      
       $o = array_shift($this->settings['ontologies_pending']);
-
+      $load_iri = $o['iri'];
+      
+      list($ok,$result) = $this->querySPARQL("ASK {<$load_iri> a owl:Ontology}");
+      if (!$ok || $result->isFalse()) {
+        drupal_set_message("$load_iri is not an ontology");
+        continue;
+      }
+      drupal_set_message("Adding ontology $load_iri");      
+      db_update('wisski_salz_ontologies')
+        ->fields(array('pending' => 0))
+        ->condition('oid',$o['oid'],'=')
+        ->execute();
+        
       //quick and easy test if ontology is loaded already. this does not detect all loaded onts
-      if (isset($this->settings['ontologies_loaded'][$o])) continue;
+      if (isset($this->settings['ontologies_loaded'][$o['oid']])) continue;
 
       // OWL2 conformant import: support ontology versions and cyclic imports
       // implements CP 1,2 from http://www.w3.org/TR/owl2-syntax/#Ontology_IRI_and_Version_IRI
 
       // we first load the file into a dummy graph to inspect it...
-      list($ok, $errors) = $this->updateSPARQL("DROP $tmpgraph");
-
-      list($ok, $errors) = $this->updateSPARQL("LOAD $o INTO GRAPH $tmpgraph");
+      list($ok, $errors) = $this->updateSPARQL("DROP GRAPH $tmpgraph");
+      
+      list($ok, $errors) = $this->updateSPARQL("LOAD <$load_iri> INTO GRAPH $tmpgraph");
 
       // get ontology and version uri
       $query = "SELECT DISTINCT ?ont ?iri ?ver FROM $tmpgraph WHERE { ?ont a owl:Ontology . OPTIONAL { ?ont owl:ontologyIRI ?iri. ?ont owl:versionIRI ?ver . } }";
@@ -249,14 +292,15 @@ public function sparql11_edit_form($form, &$form_state){
         continue;
       }
 
-      $result = $results[0];
+      $result = current($results);
 
-      $iri = isset($result['iri']) ? $result['iri'] : $result['ont'];
-      $ver = isset($result['ver']) ? $result['ver'] : '';
+//      dpm($result->ont);
+
+      $iri = property_exists($result->iri) ? $result->iri : $result->ont;
+      $ver = property_exists($result->ver) ? $result->ver : '';
 
       // check if it was loaded already and if there are version clashes
       if (isset($this->settings['ontologies_loaded'][$iri])) {
-
         $loaded = $this->settings['ontologies_loaded'][$iri];
         if ($loaded['version'] == $ver) {
           continue;
@@ -264,12 +308,12 @@ public function sparql11_edit_form($form, &$form_state){
           drupal_set_message(t('Error importing ontology %iri from %ont: Import version %vernew differs from imported version %verold.', array('%iri' => $iri, '%ont' => $o, '%vernew' => $ver, '%verold' => $loaded['version'])), 'error');
           break;
         }
-
       }
 
-      //import it: move it from temporal grph to ontology iri
+      //import it: move it from temporal graph to ontology iri
       list($ok, $errors) = $this->updateSPARQL("MOVE GRAPH $tmpgraph TO GRAPH <$iri>");
 
+/*
       $this->settings['ontologies_loaded'][$iri] = array(
         'iri' => $iri,
         'version' => $ver,
@@ -277,7 +321,13 @@ public function sparql11_edit_form($form, &$form_state){
       );
 
       unset($this->settings['ontologies_pending'][$o]);
+*/
 
+      db_update('wisski_salz_ontologies')
+        ->fields(array('added' => 1, 'version' => $ver))
+        ->condition('oid',$o['oid'],'=')
+        ->execute();
+      
       // get imports
       // get ontology and version uri
       $query = "SELECT DISTINCT ?ont FROM <$iri> WHERE { ?s a owl:Ontology . ?s owl:imports ?ont . }";
@@ -290,9 +340,23 @@ public function sparql11_edit_form($form, &$form_state){
       }
 
       foreach ($results as $result) {
-        $this->settings['ontologies_pending'][] = $result['ont'];
+//        $this->settings['ontologies_pending'][] = $result['ont'];
+        $isin = db_select('wisski_salz_ontologies','onto')
+                  ->fields('onto')
+                  ->condition('iri',$o['iri'],'=')
+                  ->execute();
+        if (empty($isin)) {
+          db_insert('wisski_salz_ontologies')
+            ->fields(array('pending' => 1,'iri' => $result['ont'], 'source' => $o['oid'], 'sid' => $this->settings['sid']))
+            ->execute();
+        } else {
+          db_update('wisski_salz_ontologies')
+            ->fields(array('pending' => 1,'iri' => $result['ont'], 'source' => $o['oid'], 'sid' => $this->settings['sid']))
+            ->condition('oid',$o['oid'],'=')
+            ->execute();
+        }
       }
-
+      $this->loadOntologyInfo();
     }
 
   }

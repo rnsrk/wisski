@@ -91,7 +91,11 @@ function sparql11_adapter_wisski_get_store() {
   function _sparql11_adapter_get_db_key() {
     global $sparql11_adapter_db_key;
     if ($sparql11_adapter_db_key == -1 || $sparql11_adapter_db_key == NULL) {
-      $sparql11_adapter_db_key = db_select('wisski_salz_store_types','types')->fields('types',array('stid'))->condition('label',sparql11_adapter_wisski_get_store_type(),'LIKE')->execute()->fetchObject()->stid;
+      $sparql11_adapter_db_key = db_select('wisski_salz_store_types','types')
+                                  ->fields('types',array('stid'))
+                                  ->condition('label',sparql11_adapter_wisski_get_store_type(),'LIKE')
+                                  ->execute()->fetchObject()
+                                  ->stid;
     }
     return $sparql11_adapter_db_key;
   }
@@ -201,6 +205,7 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
     try {
       $instance = sparql11_adapter_wisski_db_get_instance_by_name($store_instance_name);
     } catch (Exception $ex) {
+      drupal_set_message("There was an error loading store instance $store_instance_name<br>Error Message: ".$ex->getMessage());
       $clean = TRUE;
     }
   }
@@ -229,23 +234,23 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
       '#default_value' => ($clean ? '' : $instance->local_data),
     );
 
-  $form['ontologies_loaded'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Loaded ontologies'),
-      '#collapsible' => TRUE,
-    );
+    
 
   $form['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Save'),
       '#submit' => array('sparql11_adapter_wisski_form_submit'),
+      '#weight' => 20,
     );
 
-  $form['load'] = array(
-    '#type' => 'submit',
-    '#value' => t('Load'),
-    '#submit' => array('sparql11_adapter_wisski_testload'),
-  );
+  if (!$clean) {//load button, delete link and loaded ontologies are only shown for existing stores
+    $form['load'] = array(
+      '#type' => 'submit',
+      '#value' => t('Load'),
+      '#submit' => array('sparql11_adapter_wisski_testload'),
+      '#weight' => 21,
+    );
+  
 
   $installed_store_instances = sparql11_adapter_wisski_get_store_instances();
 //  drupal_set_message("\$installed_store_instances in SETTINGS_PAGE: " . serialize($installed_store_instances));
@@ -260,31 +265,56 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
     'link' => array(
       '#theme' => 'item_list',
       '#items' => $link,
-      '#title' => t('Delete Store'),
     ),
+    '#weight' => 22,
   );
-  //}
-/* spaeter
-   $i = 0;
-    if(!empty($settings['ontologies_loaded'])) {
-      foreach ($settings['ontologies_loaded'] as $ont) {
-        $i++;
-        $form['ontologies_loaded']["ont$i"] = array(
-          '#type' => 'markup',
-          '#value' => ''
+
+  $ontologies_loaded = db_select('wisski_salz_ontologies','ont')
+                        ->fields('ont',array('oid','iri'))
+                        ->condition('sid',$instance->sid,'=')
+                        ->condition('added',1,'=')
+                        ->execute()->fetchAllAssoc('oid');
+    if(!empty($ontologies_loaded)) {
+    $form['ontologies_loaded'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Loaded ontologies').' ('.count($ontologies_loaded).')',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#weight' => 10,
+    );
+      foreach ($ontologies_loaded as $ont) {
+        $form['ontologies_loaded'][$ont->oid] = array(
+          '#type' => 'item',
+          '#markup' => $ont->iri,
         );
       }
     }
-    */
+  } //if not clean
   return $form;
 }
 
-function sparql11_adapter_wisski_testload(){
+/**
+* Fetches adapter info from database and invokes a SPARQL11Adapter instance with those settings
+* we assume the instance to be unique in the DB
+* @param $name the name of the instance to invoke
+* @return an instance of SPARQL11Adapter
+* @author domerz
+*/
+function sparql11_adapter_invoke_instance($name) {
   $store_instance = new SPARQL11Adapter();
-  $settings = db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('name',arg(5),'LIKE')->execute()->fetchAssoc();
+  $settings = db_select('wisski_salz_store_instances','ins')
+                ->fields('ins')
+                ->condition('name',$name,'LIKE')
+                ->execute()->fetchAssoc();
   $store_instance->setSettings($settings);
+  return $store_instance;
+}
 
+function sparql11_adapter_wisski_testload(){
+  
+  $store_instance = sparql11_adapter_invoke_instance(arg(6));
   $store_instance->test();
+  menu_rebuild();
 }
 
 function sparql11_adapter_wisski_form_submit($form, &$form_state, $store_instance = NULL){
@@ -362,6 +392,7 @@ else {
     $label = $form_state['values']['name'];
     $name = preg_replace('/[^a-z0-9_]/u','',strtolower($label));
     $settings = array(
+      'old_name' => arg(6),
       'name' => $name,
       'label' => $label,
       'query_endpoint' => $form_state['values']['query_endpoint'],
@@ -387,7 +418,9 @@ function sparql11_adapter_db_insert_settings($settings,$clean = TRUE) {
     $settings['type'] = _sparql11_adapter_get_db_key();
     db_insert('wisski_salz_store_instances')->fields($settings)->execute();
   } else {
-    db_update('wisski_salz_store_instances')->fields($settings)->condition('name',$settings['name'],'LIKE')->execute();
+    $old_name = $settings['old_name'];
+    unset($settings['old_name']);
+    db_update('wisski_salz_store_instances')->fields($settings)->condition('name',$old_name,'LIKE')->execute();
   }                                                         
 }
 
@@ -412,6 +445,7 @@ function sparql11_adapter_wisski_edit_form($form, &$form_state) {
 
 function sparql11_adapter_wisski_delete_form($form, &$form_state){
 
+  
   $result = sparql11_adapter_wisski_delete_store_instances();
 //  $installed_store_instances = sparql11_adapter_wisski_get_store_instances();
 //  drupal_set_message("\$installed_store_instances after deletion: " . serialize($installed_store_instances));
@@ -420,7 +454,7 @@ function sparql11_adapter_wisski_delete_form($form, &$form_state){
 //      $form_state['redirect'] = 'admin/config/wisski/salz/delete/' . arg(5) . '/' . $key;
 //      drupal_set_message("\$key in delete_form: " . serialize($key));
 //      }
-  menu_rebuild();
+//  menu_rebuild();
 //  $markup = t('Test');
 //  return array('#markup' => $markup);
   if ($result) {
