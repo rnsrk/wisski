@@ -71,6 +71,22 @@ function sparql11_adapter_menu() {
   return $items;
  }
 
+/**
+* implements hook_entity_info_alter()
+*/
+function sparql11_adapter_entity_info_alter(&$entity_info) {
+  
+/*
+  $results = db_select('wisski_salz_sparql11_bundles','bundles')
+              ->fields('bundles')
+              ->execute()
+              ->fetchAllAssoc('id');
+  foreach($results as $result) {
+    
+  }
+*/
+}
+
 function sparql11_adapter_wisski_get_store_settings() {
   $adapter = new SPARQL11Adapter();
   return $adapter->getSettings();
@@ -466,3 +482,4 @@ function sparql11_adapter_wisski_delete_form($form, &$form_state){
   return $form;
   //$form_state['redirect'] = 'admin/config/wisski/salz';
 }
+

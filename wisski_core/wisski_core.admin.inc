@@ -241,7 +241,7 @@ function wisski_core_entity_form_delete_submit($form, &$form_state) {
 
 
 function wisski_core_bundle_form($form, &$form_state, $entity_type, $op = 'edit') {
-  drupal_set_message(serialize($entity_type));
+//  dpm($entity_type);
   // Handle the case when cloning is performed.
   if ($op == 'clone') {
     $entity_type->label .= ' (cloned)';
@@ -252,7 +252,7 @@ function wisski_core_bundle_form($form, &$form_state, $entity_type, $op = 'edit'
   $form['label'] = array(
     '#title' => t('Label'),
     '#type' => 'textfield',
-    '#default_value' => '', $entity_type->label,
+    '#default_value' => $entity_type->label,
     '#description' => t('The human-readable name of this entity type.'),
     '#required' => TRUE,
     '#size' => 30,

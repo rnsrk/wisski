@@ -35,6 +35,7 @@ class WisskiCoreEntityController extends EntityAPIController {
    * Build a structured array representing the entity's content.
    */
   public function buildContent($entity, $view_mode = 'full', $langcode = NULL, $content = array()) {
+    
 /*
     $wrapper = entity_metadata_wrapper('wisski_core_entity', $entity);
 
@@ -77,7 +78,6 @@ class WisskiCoreEntityController extends EntityAPIController {
       0 => array('#markup' => check_plain($entity->description)),
       //0 => array('#markup' => check_plain($wrapper->description->value())),
     );
-
     return parent::buildContent($entity, $view_mode, $langcode, $content);
   }
 }

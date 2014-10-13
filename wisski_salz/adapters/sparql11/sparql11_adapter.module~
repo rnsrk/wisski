@@ -60,7 +60,7 @@ function sparql11_adapter_menu() {
         'type' => MENU_NORMAL_ITEM,
         //'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
         'page callback' => 'drupal_get_form',
-        'page arguments' => array('sparql11_adapter_predelete_form'),
+        'page arguments' => array('sparql11_adapter_wisski_delete_form'),
         'access arguments' => array('administer wisski'),
         );
       }
@@ -70,6 +70,30 @@ function sparql11_adapter_menu() {
 
   return $items;
  }
+
+/**
+* implements hook_entity_info_alter()
+*/
+function sparql11_adapter_entity_info_alter(&$entity_info) {
+  
+  $entity_info['wisski_core_entity']['bundles']['wisski_test_bundle_0815'] = array(
+    'label' => 'WissKI is not Whisky',
+    'admin' => array(
+      'path' => 'admin/structure/wisski_core_bundle/manage/%wisski_core_bundle',
+      'real path' => 'admin/structure/wisski_core_bundle/manage/wisski_test_bundle_0815',
+      'bundle argument' => 4,
+    ),
+  );
+/*
+  $results = db_select('wisski_salz_sparql11_bundles','bundles')
+              ->fields('bundles')
+              ->execute()
+              ->fetchAllAssoc('id');
+  foreach($results as $result) {
+    
+  }
+*/
+}
 
 function sparql11_adapter_wisski_get_store_settings() {
   $adapter = new SPARQL11Adapter();
@@ -262,10 +286,11 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
   );
 
   $form['delete'] = array(
-      '#type' => 'submit',
-      '#value' => t('Delete Store'),
-      '#submit' => array('sparql11_adapter_predelete_form'),
-      '#weight' => 22,
+    'link' => array(
+      '#theme' => 'item_list',
+      '#items' => $link,
+    ),
+    '#weight' => 22,
   );
 
   $ontologies_loaded = db_select('wisski_salz_ontologies','ont')
@@ -442,24 +467,6 @@ function sparql11_adapter_wisski_edit_form($form, &$form_state) {
   return sparql11_adapter_wisski_settings_page(arg(6),FALSE);
 }
 
-function sparql11_adapter_predelete_form($form, &$form_state) {
-  $form['ensure'] = array(
-    '#type' => 'item',
-    '#markup' => t('Do you really want to delete the SPARQL1.1 store').' '.arg(6),
-  );
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Yes, delete!'),
-    '#submit' => array('sparql11_adapter_wisski_delete_form'),
-  );
-  $form['decline'] = array(
-    '#type' => 'submit',
-    '#value' => t('No'),
-    '#submit' => array('sparql11_adapter_wisski_settings_page'),
-  );
-  return $form;
-}
-
 function sparql11_adapter_wisski_delete_form($form, &$form_state){
 
   
@@ -471,7 +478,7 @@ function sparql11_adapter_wisski_delete_form($form, &$form_state){
 //      $form_state['redirect'] = 'admin/config/wisski/salz/delete/' . arg(5) . '/' . $key;
 //      drupal_set_message("\$key in delete_form: " . serialize($key));
 //      }
-  menu_rebuild();
+//  menu_rebuild();
 //  $markup = t('Test');
 //  return array('#markup' => $markup);
   if ($result) {
@@ -483,3 +490,4 @@ function sparql11_adapter_wisski_delete_form($form, &$form_state){
   return $form;
   //$form_state['redirect'] = 'admin/config/wisski/salz';
 }
+

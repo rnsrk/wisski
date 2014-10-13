@@ -1,3 +1,45 @@
 <?php
 
-//this page intentionally left blank
+function sparql11_adapter_schema() {
+
+  $schema = array();
+  $schema['wisski_salz_sparql11_bundles'] = array(
+    'description' => 'The base table for bundles of wisski entities',
+    'fields' => array(
+      'id' => array(  
+        'description' => 'The primary identifier.',
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'description' => 'Bundle machine name.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'label' => array(
+        'description' => 'Human-readable name of bundle.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',   
+      ),
+      'description' => array(
+        'description' => 'A brief description of bundle.',
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'medium',
+        'translatable' => TRUE,
+      ),
+      'imported' => array(
+        'description' => 'bundle has been transferred to entity info',
+        'type' => 'int',
+        'not null' => FALSE,
+        'size' => 'tiny',
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('id'),
+  );                
+  return $schema;                                                                                               
+}
