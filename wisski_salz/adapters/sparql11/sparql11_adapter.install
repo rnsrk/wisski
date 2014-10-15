@@ -3,43 +3,47 @@
 function sparql11_adapter_schema() {
 
   $schema = array();
-  $schema['wisski_salz_sparql11_bundles'] = array(
-    'description' => 'The base table for bundles of wisski entities',
+  $schema['wisski_salz_sparql11_ontology_namespaces'] = array(
+    'description' => 'Store of custom namespaces',
     'fields' => array(
       'id' => array(  
         'description' => 'The primary identifier.',
         'type' => 'serial',
         'not null' => TRUE,
       ),
-      'type' => array(
-        'description' => 'Bundle machine name.',
+      'short_name' => array(
+        'description' => 'The short name e.g. "rdf"',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
       ),
-      'label' => array(
-        'description' => 'Human-readable name of bundle.',
+      'long_name' => array(
+        'description' => 'The long name e.g. "http://www.w3.org/1999/02/22-rdf-syntax-ns#"',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',   
       ),
-      'description' => array(
-        'description' => 'A brief description of bundle.',
-        'type' => 'text',
-        'not null' => TRUE,
-        'size' => 'medium',
-        'translatable' => TRUE,
-      ),
-      'imported' => array(
-        'description' => 'bundle has been transferred to entity info',
-        'type' => 'int',
-        'not null' => FALSE,
-        'size' => 'tiny',
-        'default' => 0,
-      ),
     ),
     'primary key' => array('id'),
   );                
   return $schema;                                                                                               
+}
+
+function sparql11_adapter_uninstall() {
+  $result = db_select('field_config_instance','ins')
+              ->fields('ins')
+              ->condition('deleted',0,'=')
+              ->condition('field_name','wsk_%','LIKE')
+              ->execute()
+              ->fetchAllAssoc('id');
+  foreach($result as $row) {
+    try {
+      $instance = field_info_instance($row->entity_type,$row->field_name,$row->bundle);
+      field_delete_instance($instance,TRUE);
+    } catch (Exception $e) {
+      trigger_error("Errors when deleting $row->field_name",E_USER_ERROR);
+    }
+  }
+  drupal_set_message("Sparql 1.1 Adapter successfully uninstalled");
 }

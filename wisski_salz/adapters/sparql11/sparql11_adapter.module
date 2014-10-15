@@ -107,11 +107,11 @@ function sparql11_adapter_wisski_get_store() {
   function _sparql11_adapter_get_db_key() {
     global $sparql11_adapter_db_key;
     if ($sparql11_adapter_db_key == -1 || $sparql11_adapter_db_key == NULL) {
-      $sparql11_adapter_db_key = db_select('wisski_salz_store_types','types')
+      $result = db_select('wisski_salz_store_types','types')
                                   ->fields('types',array('stid'))
                                   ->condition('label',sparql11_adapter_wisski_get_store_type(),'LIKE')
-                                  ->execute()->fetchObject()
-                                  ->stid;
+                                  ->execute()->fetchObject();
+      if(!empty($result)) $sparql11_adapter_db_key = $result->stid;
     }
     return $sparql11_adapter_db_key;
   }

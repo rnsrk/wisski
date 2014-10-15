@@ -57,6 +57,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       0 => array('#markup' => check_plain($wrapper->title->value())),
     );
     */
+    ddebug_backtrace();
     $content['description'] = array(
       '#theme' => 'field',
       '#weight' => 0,
@@ -79,6 +80,16 @@ class WisskiCoreEntityController extends EntityAPIController {
       //0 => array('#markup' => check_plain($wrapper->description->value())),
     );
     return parent::buildContent($entity, $view_mode, $langcode, $content);
+  }
+  
+  public function save($entity, DatabaseTransaction $transaction = NULL) {
+    $return = parent::save($entity,$transaction);
+    if ($return)
+      return $return;
+    else {
+      trigger_error("Error when trying to save $entity",E_USER_WARNING);
+      return FALSE;
+    }
   }
 }
 

@@ -76,14 +76,6 @@ function sparql11_adapter_menu() {
 */
 function sparql11_adapter_entity_info_alter(&$entity_info) {
   
-  $entity_info['wisski_core_entity']['bundles']['wisski_test_bundle_0815'] = array(
-    'label' => 'WissKI is not Whisky',
-    'admin' => array(
-      'path' => 'admin/structure/wisski_core_bundle/manage/%wisski_core_bundle',
-      'real path' => 'admin/structure/wisski_core_bundle/manage/wisski_test_bundle_0815',
-      'bundle argument' => 4,
-    ),
-  );
 /*
   $results = db_select('wisski_salz_sparql11_bundles','bundles')
               ->fields('bundles')
