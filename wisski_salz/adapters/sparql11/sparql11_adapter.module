@@ -71,6 +71,22 @@ function sparql11_adapter_menu() {
   return $items;
  }
 
+/**
+* implements hook_entity_info_alter()
+*/
+function sparql11_adapter_entity_info_alter(&$entity_info) {
+  
+/*
+  $results = db_select('wisski_salz_sparql11_bundles','bundles')
+              ->fields('bundles')
+              ->execute()
+              ->fetchAllAssoc('id');
+  foreach($results as $result) {
+    
+  }
+*/
+}
+
 function sparql11_adapter_wisski_get_store_settings() {
   $adapter = new SPARQL11Adapter();
   return $adapter->getSettings();
@@ -91,11 +107,11 @@ function sparql11_adapter_wisski_get_store() {
   function _sparql11_adapter_get_db_key() {
     global $sparql11_adapter_db_key;
     if ($sparql11_adapter_db_key == -1 || $sparql11_adapter_db_key == NULL) {
-      $sparql11_adapter_db_key = db_select('wisski_salz_store_types','types')
+      $result = db_select('wisski_salz_store_types','types')
                                   ->fields('types',array('stid'))
                                   ->condition('label',sparql11_adapter_wisski_get_store_type(),'LIKE')
-                                  ->execute()->fetchObject()
-                                  ->stid;
+                                  ->execute()->fetchObject();
+      if(!empty($result)) $sparql11_adapter_db_key = $result->stid;
     }
     return $sparql11_adapter_db_key;
   }
@@ -251,7 +267,12 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
       '#weight' => 21,
     );
   
-
+    $form['clear'] = array(
+      '#type' => 'submit',
+      '#value' => t('Remove all Fields'),
+      '#submit' => array('sparql11_adapter_remove_all_fields'),
+      '#weight' => 21,
+    );
   $installed_store_instances = sparql11_adapter_wisski_get_store_instances();
 //  drupal_set_message("\$installed_store_instances in SETTINGS_PAGE: " . serialize($installed_store_instances));
 //  drupal_set_message("ARG(4) in SETTINGS_PAGE: " . arg(4));
@@ -322,6 +343,23 @@ function sparql11_adapter_wisski_testload(){
   $store_instance = sparql11_adapter_invoke_instance(arg(6));
   $store_instance->test();
   menu_rebuild();
+}
+
+function sparql11_adapter_remove_all_fields() {
+  $result = db_select('field_config_instance','ins')
+              ->fields('ins')
+              ->condition('deleted',0,'=')
+              ->condition('field_name','wsk_%','LIKE')
+              ->execute()
+              ->fetchAllAssoc('id');
+  foreach($result as $row) {
+    try {
+      $instance = field_info_instance($row->entity_type,$row->field_name,$row->bundle);
+      field_delete_instance($instance,TRUE);
+    } catch (Exception $e) {
+      trigger_error("Errors when deleting $row->field_name",E_USER_ERROR);
+    }
+  }
 }
 
 function sparql11_adapter_wisski_form_submit($form, &$form_state, $store_instance = NULL){
@@ -507,3 +545,4 @@ function sparql11_adapter_wisski_delete_form_submit($form, &$form_state){
   //return $form;
   $form_state['redirect'] = 'admin/config/wisski/salz';
 }
+

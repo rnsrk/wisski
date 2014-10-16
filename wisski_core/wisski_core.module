@@ -19,6 +19,10 @@ function wisski_core_permission() {
       'title' => t('Administer WissKI Core modules'),
       'restrict access' => TRUE,
     ),
+    'view wisski content' => array(
+      'title' => t('View WissKI Entities'),
+      'restrict access' => FALSE,
+    ),
   );
   
 }
@@ -225,7 +229,7 @@ function wisski_core_menu() {
   $items['wisski/create'] = array(
     'title' => 'Add WissKI Entity',
     'page callback' => 'wisski_core_choose_bundle',
-    'access arguments' => array('administer typical_entity_example content'),
+    'access arguments' => array('administer wisski'),
     'file' => 'wisski_core.admin.inc',
     'type' => MENU_NORMAL_ITEM,
   );
@@ -237,7 +241,7 @@ function wisski_core_menu() {
       'title' => 'Add ' . $bundle_name,
       'page callback' => 'wisski_core_entity_add',
       'page arguments' => array(2),
-      'access arguments' => array('administer typical_entity_example content'),
+      'access arguments' => array('administer wisski'),
       'file' => 'wisski_core.admin.inc',
     );
   }
@@ -248,7 +252,7 @@ function wisski_core_menu() {
     'title arguments' => array('wisski_core', $base_uri_argument_position),
     'page callback' => 'wisski_core_entity_view',
     'page arguments' => array($base_uri_argument_position),
-    'access arguments' => array('view typical_entity_example content'),
+    'access arguments' => array('view wisski content'),
     'file' => 'wisski_core.pages.inc',
   );
   $items[$base_uri . '/view'] = array(
@@ -262,7 +266,7 @@ function wisski_core_menu() {
     'title' => 'Edit Entity',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('wisski_core_entity_form', $base_uri_argument_position),
-    'access arguments' => array('administer typical_entity_example content'),
+    'access arguments' => array('administer wisski'),
     'file' => 'wisski_core.admin.inc',
     'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
@@ -273,7 +277,7 @@ function wisski_core_menu() {
     'title' => 'Delete Entity',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('wisski_core_entity_form_delete', $base_uri_argument_position),
-    'access arguments' => array('administer typical_entity_example content'),
+    'access arguments' => array('administer wisski'),
     'file' => 'wisski_core.admin.inc',
     'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
@@ -283,7 +287,7 @@ function wisski_core_menu() {
     'title' => 'Delete WissKI Core Bundle',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('wisski_core_bundle_form_delete_confirm', 4),
-    'access arguments' => array('administer typical_entity_example content'),
+    'access arguments' => array('administer wisski'),
     'weight' => 1,
     'type' => MENU_NORMAL_ITEM,
     'file' => 'wisski_core.admin.inc',
@@ -297,8 +301,8 @@ function wisski_core_menu() {
     'weight' => -100,
     'page callback' => 'system_admin_menu_block_page',
     'access arguments' => array('administer wisski'),
-        'file' => 'system.admin.inc',
-            'file path' => drupal_get_path('module', 'system'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
   );
   
   $items['admin/config/wisski_core/pathbuilder'] = array(
@@ -429,7 +433,7 @@ function wisski_core_bundle_load_multiple($type_name = NULL) {
 }
 
 function wisski_core_bundle_access($op, $entity = NULL) {
-  return user_access('administer typical_entity_example content');
+  return user_access('view wisski content');
 }
   
 

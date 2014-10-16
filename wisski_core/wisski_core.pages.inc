@@ -91,12 +91,20 @@ function wisski_core_list($type) {
  *   Renderable array.
  */
 function wisski_core_entity_view($entity) {
+  //since this implements hook_entity_view which is invoked by entity_view() again
+  //we want to avoid cyclic calls
+  if (variable_get('wisski_core_semaphore')) {
+    trigger_error('Cyclic call to wisski_core_entity_view',E_USER_WARNING);
+    return;
+  }
+  variable_set('wisski_core_semaphore',TRUE);
   drupal_set_title(entity_label('wisski_core_entity', $entity));
-
   // Return automatically generated view page.
-  return entity_view(
+  $entity_view = entity_view(
     'wisski_core_entity',
     array(entity_id('wisski_core_entity', $entity) => $entity)
  //   'full'
   );
+  variable_set('wisski_core_semaphore',FALSE);
+  return $entity_view;
 }

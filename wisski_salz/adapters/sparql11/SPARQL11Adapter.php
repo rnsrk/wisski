@@ -162,11 +162,12 @@ public function sparql11_edit_form($form, &$form_state){
   * @author domerz
   */
   private function request($type,$query = NULL) {
-    
+        
     $ok = FALSE;
     $results = array();
     try {
       if (easyrdf()) {
+          $this->updateNamespaces();
           if (isset($this->settings['query_endpoint'])) {
             if (isset($this->settings['update_endpoint'])) {
               $sparql = new EasyRdf_Sparql_Client($this->settings['query_endpoint'],$this->settings['update_endpoint']);
@@ -190,6 +191,36 @@ public function sparql11_edit_form($form, &$form_state){
     return array($ok,$results);
   }
 
+  private function updateNamespaces() {
+    $spaces = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
+                ->fields('ns')
+                ->execute()
+                ->fetchAllAssoc('id');
+    foreach($spaces as $space) {
+      EasyRDF_Namespace::set($space->short_name,$space->long_name);
+    }
+  }
+  
+  private function putNamespace($short_name,$long_name) {
+    $result = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
+                ->fields('ns')
+                ->condition('short_name',$short_name,'=')
+                ->execute()
+                ->fetchAssoc();
+    if (empty($result)) {
+      db_insert('wisski_salz_sparql11_ontology_namespaces')
+        ->fields(array('short_name' => $short_name,'long_name' => $long_name))
+        ->execute();
+    } else {
+      drupal_set_message('Namespace '.$short_name.' already exists in DB');
+    }
+  }
+  
+  private function makeDrupalName($entity,$prefix) {
+    $pre_len = strlen($prefix);
+    return $prefix.preg_replace('/[^a-z0-9_]/u','_',substr(strtolower($entity),0,32-$pre_len));
+  }  
+
   public function test() {
  
     drupal_set_message("Running SPARQL test");
@@ -204,6 +235,132 @@ public function sparql11_edit_form($form, &$form_state){
       throw new Exception("Test failed");
     }
 */  
+    $this->putNamespace('ecrm',  'http://erlangen-crm.org/120111/');
+    $this->putNamespace('behaim_inst', 'http://faui8184.informatik.uni-erlangen.de/birkmaier/content/');
+    $this->putNamespace('behaim', 'http://wwwdh.cs.fau.de/behaim/voc/');
+    $this->putNamespace('behaim_image', 'http://faui8184.informatik.uni-erlangen.de/behaim/ontology/images/');
+//    $inferrer = "/(^rdfs:subClassOf)*"; //add to rdfs:domain
+    list($ok,$result) 
+      = $this->querySPARQL(
+        "SELECT DISTINCT ?class ?property ?target"
+          ." WHERE {"
+            ."?class (rdfs:subClassOf)+ owl:Thing."
+            ." OPTIONAL {"
+              ."{?property rdfs:domain ?class."
+              ."?property rdfs:range ?target.}"
+            ." UNION"
+              ."{?p owl:inverseOf ?property."
+              ."?p rdfs:range ?class."
+              ."?p rdfs:domain ?target.}"
+          ."}}"
+        ." GROUP BY ?class ?property ?target"
+//        ." LIMIT 40"
+      );
+    if ($ok) {
+      $errors = array();
+      $classes = array();
+      $fields = array();
+      $instances = array();
+      foreach($result as $obj) {
+        $class_label = $obj->class->dumpValue('text');
+        $class_name = $this->makeDrupalName($class_label,'');
+        $class_title = substr($class_label,strpos($class_label,':')+1);
+        if (!array_key_exists($class_name,$classes)) {
+          $classes[$class_name] = array(
+            'type' => $class_name,
+            'label' => $class_label,
+            'title' => $class_title,
+            'weight' => 0,
+            'description' => 'retrieved from ontology',
+            'rdf_mapping' => array(),
+          );
+        }
+        if (isset($obj->target) && isset($obj->property)) {
+          $target_label = $obj->target->dumpValue('text');
+          $target_name = $this->makeDrupalName($target_label,'');
+          $field_label = $obj->property->dumpvalue('text');
+          $field_name = $this->makeDrupalName($field_label,'wsk_');
+          if (!array_key_exists($field_name,$fields)) {
+            $fields[$field_name] = array(
+              'field_name' => $field_name,
+              'type' => 'entityreference',
+              'cardinality' => 1,
+              'entity_types' => array('wisski_core_entity'),
+              'settings' => array(
+                'target_type' => 'wisski_core_entity',
+                'handler_settings' => array(
+                  'target_bundles' => array($target_name => $target_name),
+                ),
+              ),
+            );
+          } else {
+            if (!array_key_exists($target_name,$fields[$field_name]['settings']['handler_settings']['target_bundles'])) {
+              $fields[$field_name]['settings']['handler_settings']['target_bundles'][$target_name] = $target_name;
+            }
+          }
+          if(!array_key_exists($class_name,$instances) || !array_key_exists($field_name,$instances[$class_name])) {
+            $instances[$class_name][$field_name] = array(
+              'field_name' => $field_name,
+              'label' => t($field_label),
+              'bundle' => $class_name,
+              'entity_type' => 'wisski_core_entity',
+              'widget' => array(
+                'type' => 'options_select',
+                'module' => 'options',
+              ),
+              'display' => array(
+                'default' => array(
+                  'label' => 'inline',
+                  'type' => 'entityreference_label',
+                  'module' => 'entityreference',
+                  'settings' => array(
+                    'link' => TRUE,
+                  ),
+                ),
+              ),
+            );
+          }
+        }
+      }//end foreach
+      foreach($classes as $class) {
+        try {
+          $class['bundle of'] = 'wisski_core_entity';
+          $entity = entity_get_controller('wisski_core_bundle')->create($class);
+          entity_get_controller('wisski_core_bundle')->save($entity);
+        } catch (PDOException $ex) {
+          $errors['PDOException'][] = $ex->getMessage();
+        }
+      }
+      foreach($fields as $field) {
+        if (field_info_field($field['field_name']) == NULL) {
+          field_create_field($field);
+        } else {
+          field_update_field($field);
+        }
+      }
+      foreach($instances as $bundle_name => $inst_class) {
+        foreach($inst_class as $instance) {
+          if (field_info_instance('wisski_core_entity',$instance['field_name'],$bundle_name) == NULL) {
+            field_create_instance($instance);
+          } else {
+            field_update_instance($instance);    
+          }
+        }
+      }
+      if (!empty($errors)) {
+        trigger_error("There have been errors during import",E_USER_WARNING);
+        $out_error = "<h3>ERRORS:</h3>";
+        foreach($errors as $key => $value) {
+          $out_error .= '<p style="text-indent:-1em;margin-left:1em"><h4>'.$key.'</h4>';
+          foreach($value as $err) {
+            $out_error .= $err.'<br>';
+          }
+          $out_error .= '</p>';
+        }
+        drupal_set_message($out_error);
+      }
+    }
+/*
     do {
       $num_rows = db_select('wisski_salz_ontologies','ont')->fields('ont')->countQuery()->execute()->fetchField();
       db_delete('wisski_salz_ontologies')->execute();
@@ -217,6 +374,7 @@ public function sparql11_edit_form($form, &$form_state){
       }
     }
     $this->addOntologies();
+*/
   }
 
   private function loadOntologyInfo() {

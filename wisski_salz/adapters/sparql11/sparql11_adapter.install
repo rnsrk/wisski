@@ -1,3 +1,36 @@
 <?php
 
-//this page intentionally left blank
+function sparql11_adapter_schema() {
+
+  $schema = array();
+  $schema['wisski_salz_sparql11_ontology_namespaces'] = array(
+    'description' => 'Store of custom namespaces',
+    'fields' => array(
+      'id' => array(  
+        'description' => 'The primary identifier.',
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'short_name' => array(
+        'description' => 'The short name e.g. "rdf"',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'long_name' => array(
+        'description' => 'The long name e.g. "http://www.w3.org/1999/02/22-rdf-syntax-ns#"',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',   
+      ),
+    ),
+    'primary key' => array('id'),
+  );                
+  return $schema;                                                                                               
+}
+
+function sparql11_adapter_uninstall() {
+  sparql11_adapter_remove_all_fields();
+  drupal_set_message("Sparql 1.1 Adapter successfully uninstalled");
+}
