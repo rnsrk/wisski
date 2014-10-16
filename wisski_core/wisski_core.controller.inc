@@ -57,7 +57,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       0 => array('#markup' => check_plain($wrapper->title->value())),
     );
     */
-    ddebug_backtrace();
+//    ddebug_backtrace();
     $content['description'] = array(
       '#theme' => 'field',
       '#weight' => 0,

@@ -239,11 +239,12 @@ public function sparql11_edit_form($form, &$form_state){
     $this->putNamespace('behaim_inst', 'http://faui8184.informatik.uni-erlangen.de/birkmaier/content/');
     $this->putNamespace('behaim', 'http://wwwdh.cs.fau.de/behaim/voc/');
     $this->putNamespace('behaim_image', 'http://faui8184.informatik.uni-erlangen.de/behaim/ontology/images/');
+//    $inferrer = "/(^rdfs:subClassOf)*"; //add to rdfs:domain
     list($ok,$result) 
       = $this->querySPARQL(
-        "SELECT ?class ?property ?target"
+        "SELECT DISTINCT ?class ?property ?target"
           ." WHERE {"
-            ."?class rdfs:subClassOf ecrm:E1_CRM_Entity."
+            ."?class (rdfs:subClassOf)+ owl:Thing."
             ." OPTIONAL {"
               ."{?property rdfs:domain ?class."
               ."?property rdfs:range ?target.}"
@@ -253,7 +254,7 @@ public function sparql11_edit_form($form, &$form_state){
               ."?p rdfs:domain ?target.}"
           ."}}"
         ." GROUP BY ?class ?property ?target"
-        ." LIMIT 40"
+//        ." LIMIT 40"
       );
     if ($ok) {
       $errors = array();
@@ -273,9 +274,6 @@ public function sparql11_edit_form($form, &$form_state){
             'description' => 'retrieved from ontology',
             'rdf_mapping' => array(),
           );
-        } else {
-          if(!array_key_exists('class_exists',$errors) || !in_array($class_name,$errors['class_exists']))
-            $errors['class_exists'][] = $class_name;
         }
         if (isset($obj->target) && isset($obj->property)) {
           $target_label = $obj->target->dumpValue('text');
@@ -287,21 +285,25 @@ public function sparql11_edit_form($form, &$form_state){
               'field_name' => $field_name,
               'type' => 'entityreference',
               'cardinality' => 1,
+              'entity_types' => array('wisski_core_entity'),
               'settings' => array(
+                'target_type' => 'wisski_core_entity',
                 'handler_settings' => array(
-                  'target_bundles' => array($target_name),
+                  'target_bundles' => array($target_name => $target_name),
                 ),
               ),
             );
           } else {
-            if(!array_key_exists('field_exists',$errors) || !in_array($field_name,$errors['field_exists']))
-              $errors['field_exists'][] = $field_name;
+            if (!array_key_exists($target_name,$fields[$field_name]['settings']['handler_settings']['target_bundles'])) {
+              $fields[$field_name]['settings']['handler_settings']['target_bundles'][$target_name] = $target_name;
+            }
           }
           if(!array_key_exists($class_name,$instances) || !array_key_exists($field_name,$instances[$class_name])) {
             $instances[$class_name][$field_name] = array(
               'field_name' => $field_name,
               'label' => t($field_label),
               'bundle' => $class_name,
+              'entity_type' => 'wisski_core_entity',
               'widget' => array(
                 'type' => 'options_select',
                 'module' => 'options',
@@ -317,24 +319,19 @@ public function sparql11_edit_form($form, &$form_state){
                 ),
               ),
             );
-          } else {
-            if(!array_key_exists('instance_exists',$errors) || !in_array($field_name." in ".$class_name,$errors['instance_exists']))
-            $errors['instance_exists'][] = $field_name." in ".$class_name;
           }
         }
       }//end foreach
-      $entity_type = 'wisski_core_bundle';
       foreach($classes as $class) {
         try {
-          $class['bundle of'] = $entity_type;
-          $entity = entity_get_controller($entity_type)->create($class);
-          entity_get_controller($entity_type)->save($entity);
+          $class['bundle of'] = 'wisski_core_entity';
+          $entity = entity_get_controller('wisski_core_bundle')->create($class);
+          entity_get_controller('wisski_core_bundle')->save($entity);
         } catch (PDOException $ex) {
           $errors['PDOException'][] = $ex->getMessage();
         }
       }
       foreach($fields as $field) {
-        $field['entity_types'][] = $entity_type;
         if (field_info_field($field['field_name']) == NULL) {
           field_create_field($field);
         } else {
@@ -343,8 +340,7 @@ public function sparql11_edit_form($form, &$form_state){
       }
       foreach($instances as $bundle_name => $inst_class) {
         foreach($inst_class as $instance) {
-          $instance['entity_type'] = $entity_type;
-          if (field_info_instance($entity_type,$instance['field_name'],$bundle_name) == NULL) {
+          if (field_info_instance('wisski_core_entity',$instance['field_name'],$bundle_name) == NULL) {
             field_create_instance($instance);
           } else {
             field_update_instance($instance);    
