@@ -257,6 +257,13 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
 //  drupal_set_message("ARG(4) in SETTINGS_PAGE: " . arg(4));
 //  drupal_set_message("ARG(5) in SETTINGS_PAGE: " . arg(5));
 
+	$form['actions']['delete'] = array(
+		'#type' => 'submit',
+		'#value' => t('Delete this store'),
+		'#submit' => array('sparql11_adapter_wisski_submit_delete_form'),
+	);
+
+
   $link = array(
     'data' => l('Delete store  SPARQL 1.1' . arg(6), 'admin/config/wisski/salz/delete/' . arg(5) . '/' . arg(6))
   );
@@ -443,9 +450,41 @@ function sparql11_adapter_wisski_edit_form($form, &$form_state) {
   return sparql11_adapter_wisski_settings_page(arg(6),FALSE);
 }
 
-function sparql11_adapter_wisski_delete_form($form, &$form_state){
+/**
+* Store form "Delete" submit handler.
+* @author Kerstin Reinfandt
+*/
+function sparql11_adapter_wisski_submit_delete_form($form, &$form_state){
+	// Redirect user to "delete" uri for this store.
+	$form_state['redirect'] = 'admin/config/wisski/salz/delete/' . arg(5) . '/' . arg(6);
+}
 
-  
+
+/**
+* Form constructor for the store delete confirmation form.
+* @return array
+*  Confirmation form.
+* @author Kerstin Reinfandt
+*/
+function sparql11_adapter_wisski_delete_form($form, &$form_state){  
+	// Show confirm dialog.
+	$message = t('Are you sure you want to delete store SPARQL 1.1 ' . arg(6) . '?');
+	$path = 'admin/config/wisski/salz/edit/' . arg(5) . '/' . arg(6);
+	return confirm_form(
+		$form,
+		$message,
+		$path,
+		t('Only do this if you are sure!'),
+		t('Delete'),
+		t('Cancel')
+	); 
+}
+
+/**
+* Store "Confirm delete" form submit handler.
+* @author Kerstin Reinfandt
+*/
+function sparql11_adapter_wisski_delete_form_submit($form, &$form_state){  
   $result = sparql11_adapter_wisski_delete_store_instances();
 //  $installed_store_instances = sparql11_adapter_wisski_get_store_instances();
 //  drupal_set_message("\$installed_store_instances after deletion: " . serialize($installed_store_instances));
@@ -457,12 +496,14 @@ function sparql11_adapter_wisski_delete_form($form, &$form_state){
 //  menu_rebuild();
 //  $markup = t('Test');
 //  return array('#markup' => $markup);
+	menu_rebuild();
   if ($result) {
-    $form['description'] = array(
-      '#type' => 'item',
-      '#title' => t('The store was successfully deleted.'),
-    );
+	drupal_set_message("The store SPARQL 1.1 " . arg(6) . " was successfully deleted.");
+   // $form['description'] = array(
+   //   '#type' => 'item',
+   //   '#title' => t('The store was successfully deleted.'),
+   // );
   }
-  return $form;
-  //$form_state['redirect'] = 'admin/config/wisski/salz';
+  //return $form;
+  $form_state['redirect'] = 'admin/config/wisski/salz';
 }
