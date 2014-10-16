@@ -116,6 +116,23 @@ function wisski_salz_menu() {
 return $items;
 }
 
+function wisski_salz_get_local_store() {
+  $result = db_select('wisski_salz_store_instances','ins')
+    ->fields('ins')
+    ->condition('local_data',1,'=')
+    ->condition('deleted',0,'=')
+    ->execute()
+    ->fetchAllAssoc('name');
+  $count = count($result);
+  drupal_set_message("\$count = $count");
+  switch ($count) {
+    case 0: return FALSE;
+    case 1: return current($result);
+    default; trigger_error("Multiple local stores exist",E_USER_WARNING);
+  }
+  return FALSE;
+}
+
 
 //function wisski_salz_add_store() {
 //  $stores = wisski_salz_get_stores();
@@ -252,10 +269,16 @@ function wisski_salz_view_installed_store_instances() {
   }
   */
 
-  $form['load'] = array(
+  $form['recover'] = array(
     '#type' => 'submit',
     '#value' => t('Recover all deleted stores'),
     '#submit' => array('wisski_salz_recover_deleted_stores'),
+  );
+  
+  $form['get_local'] = array(
+    '#type' => 'submit',
+    '#value' => t('Show local store'),
+    '#submit' => array('wisski_salz_get_local'),
   );
 
   return $form;
@@ -282,7 +305,11 @@ function wisski_salz_view_installed_store_instances() {
 */
 }
 
-
+function wisski_salz_get_local() {
+  $res = wisski_salz_get_local_store();
+  if ($res) dpm($res);
+  else drupal_set_message("No local store has been set");
+}
 
 function wisski_salz_config_page() {
   wisski_salz_set_store_types();
