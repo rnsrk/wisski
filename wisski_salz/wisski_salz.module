@@ -73,46 +73,6 @@ function wisski_salz_menu() {
     'access arguments' => array('administer wisski'),
   );
 
-// $items['admin/config/wisski/salz/delete'] = array(
-//    'title' => 'Delete Store',
-//    'description' => 'Manage the storage backends',
-//    'type' => MENU_LOCAL_TASK,
-//    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
-//    'page callback' => 'drupal_get_form',
-//    'page arguments' => array('wisski_salz_config_page'),
-//    'access arguments' => array('administer wisski'),
-//  );
-
-
-//  $stores = wisski_salz_get_store_types();
-//
-//  foreach($stores as $key => $store_type) {
-//    $items['admin/config/wisski/salz/add/' . $key] = array(
-//      'title' => 'Add new store of type ' . $store_type,
-//      'description' => 'Manage the storage backends',
-//      'type' => MENU_NORMAL_ITEM,
-//      'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
-//      'page callback' => 'drupal_get_form',
-//      'page arguments' => array('wisski_salz_add_store'),
-//      'access arguments' => array('administer wisski'),
-//    );
-
-//     $store_instances = sparql11_adapter_wisski_get_store_instances();
-// // $store_instances = module_invoke_all('wisski_get_store_instances');
-//
-//  foreach($store_instances as $key2 => $store_instance) {
-//
-//    $items['admin/config/wisski/salz/add/' . $key . '/' .  $key2] = array(
-//      'title' => 'Edit Store ' . $store_instance->getType() . '_' . $key2,
-//      'description' => 'Manage the storage backends',
-//      'type' => MENU_LOCAL_TASK,
-//      'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
-//      'page callback' => 'drupal_get_form',
-//      'page arguments' => array('wisski_salz_edit_store'),
-//      'access arguments' => array('administer wisski'),
-//    );
-//    }
-//}
 return $items;
 }
 
@@ -133,52 +93,9 @@ function wisski_salz_get_local_store() {
   return FALSE;
 }
 
-
-//function wisski_salz_add_store() {
-//  $stores = wisski_salz_get_stores();
-//
-//  $my_store = $stores[arg(5)];
-//  return sparql11_adapter_wisski_settings_page($my_store);
-//}
-
-//function wisski_salz_save_store($form, &$form_state) {
-//  drupal_set_message("hallo");
-//  $stores = wisski_salz_get_stores();
-//  $my_store = $stores[arg(5)];
-//  return sparql11_adapter_wisski_form_submit($form, $form_state, $my_store);
-//  foreach (module_implements('wisski_form_submit') as $module) {
-//  $function = $module . '_wisski_form_submit';
-//  $function($form, $form_state, $my_store);
-//}
-
-  //module_invoke_all('wisski_form_submit', $form, $form_state, $my_store);
-//}
-
-function wisski_salz_edit_store($form, &$form_state) {
-  $stores = wisski_salz_get_stores();
-  $my_store = $stores[arg(5)];
-  return sparql11_adapter_wisski_edit_form($form, $form_state, $my_store);
-//  foreach (module_implements('wisski_edit_form') as $module) {
-//  $function = $module . '_wisski_edit_form';
-//  $function($form, $form_state, $my_store);
-//  }
-}
-
-//function wisski_salz_description() {
-//  $page_array['description'] = array(
-//      //Title serves as page subtitle
-//      '#title' => t('Store Management'), // hashtags because it's a render array!
-//      '#markup' => t('Here you can view existing store instances and add new stores.'),
-//    );
-//    return $page_array;
-//}
-
 function wisski_salz_view_installed_store_instances() {
-
   $store_types = wisski_salz_get_store_types();
   $store_instances = wisski_salz_get_installed_store_instances();
-
-#  	drupal_set_message(serialize(wisski_salz_get_store_instances_by_type()));
 
   $link = array();
   $link['any'] = array(
@@ -188,39 +105,10 @@ function wisski_salz_view_installed_store_instances() {
   foreach($store_types as $key => $store_type){
   $link[$store_type['name']] = array(
     'data' => l('Add new Store Instance of Type ' . $store_type['label'], 'admin/config/wisski/salz/add/' . $store_type['name']));
-#   	$items[] = array(
-#    	'data' => l($store_instance->getType(), 'admin/config/wisski/salz/' . $key . '/' . $key2),
-#    	);
   }
 
   $sorted_store_instances_by_type = array();
-
   foreach ($store_instances as $key2 => $store_instance){
-    /* benutzt alte Version von wisski_salz_get_installed_store_instances
-    $text = $store_instance->getType() . ' ' . (
-      empty(
-        $sorted_store_instances_by_type[$store_instance->getType()]
-      ) ? 0 : count(
-        $sorted_store_instances_by_type[$store_instance->getType()]
-      )
-    );
-    $path = 'admin/config/wisski/salz/' . array_search(
-      $store_instance->getType(), $store_types
-    ) . '/' . (
-      empty(
-        $sorted_store_instances_by_type[$store_instance->getType()]
-      ) ? 0 : count(
-        $sorted_store_instances_by_type[$store_instance->getType()]
-      )
-    );
-     
-    $sorted_store_instances_by_type[$store_instance->getType()][] = array( 
-      'data' => l($text, $path). "<div class='wki_grey'>" . t(
-        $store_instance->getSettings('query_endpoint') . ', ' . $store_instance->getSettings('update_endpoint')
-      ) . "</div>",
-    );
-    */
-    //neue Version
     $text = $store_instance->label;
     $path = 'admin/config/wisski/salz/edit/' . $store_instance->type . '/' . $store_instance->name;
     $sorted_store_instances_by_type[$store_instance->type][] = array( 
@@ -238,13 +126,6 @@ function wisski_salz_view_installed_store_instances() {
   );
 
   foreach($sorted_store_instances_by_type as $key => $value) {
-
-      #$form[$key . '_headline'] = array(
-      #  '#markup' => t($key));
-
-#      foreach($value as $key2 => $value2) {
-#        $items[$key2] = array('data' => $value2);
-#      }
       $store_type_string = $store_types[$key]['label'];
       $form[$key] = array(
             'list' => array(
@@ -253,21 +134,7 @@ function wisski_salz_view_installed_store_instances() {
                   '#title' => t($store_type_string),
              ),
          );
-
     }
-
-
-
- /*
- foreach($store_types as $key => $store_type) {
-
- foreach ($store_instances as $key2 => $store_instance){
-    $items[] = array(
-    'data' => l($store_instance->getType(), 'admin/config/wisski/salz/' . $key . '/' . $key2),
-    );
-  }
-  }
-  */
 
   $form['recover'] = array(
     '#type' => 'submit',
@@ -282,27 +149,6 @@ function wisski_salz_view_installed_store_instances() {
   );
 
   return $form;
-
-  /*
-  return array(
-   'link' => array(
-     '#theme' => 'item_list',
-      '#items' => $link,
-      '#title' => t(''),
-    ),
-    'list' => array(
-      '#theme' => 'item_list',
-      '#items' => $items,
-      '#title' => t('List of installed store instances'),
-    ),
-
-//  'add' => array(
-//      '#type' => 'button',
-//      '#value' => t('Add'),
-//      //'#submit' => array('wisski_salz_save_store')
-//      ),
-    );
-*/
 }
 
 function wisski_salz_get_local() {
@@ -314,9 +160,6 @@ function wisski_salz_get_local() {
 function wisski_salz_config_page() {
   wisski_salz_set_store_types();
  $store_types = wisski_salz_get_store_types();
-//  $form['stores'] = array(
-//    '#markup' => serialize($stores),
-//  );
   $items = array();
   foreach($store_types as $key => $store_type) {
      $items[] = array(
@@ -330,7 +173,6 @@ function wisski_salz_config_page() {
       '#title' => t('Choose type of store to add.'),
     ),
   );
-//  return $form;
 }
 
 /**
@@ -340,7 +182,6 @@ function wisski_salz_config_page() {
 function wisski_salz_get_store_settings() {
   $stores = array();
   $stores = module_invoke_all('wisski_get_store_settings');
-
   return $stores;
 }
 
@@ -350,7 +191,6 @@ function wisski_salz_get_store_settings() {
 function wisski_salz_get_stores() {
   $stores = array();
   $stores = module_invoke_all('wisski_get_store');
-
   return $stores;
 }
 
@@ -380,7 +220,6 @@ function wisski_salz_set_store_types() {
  * Implements hook_wisski_salz_get_store_types().
  */
 function wisski_salz_get_store_types() {
-  
   $database_store_types = db_select('wisski_salz_store_types','t')->fields('t')->execute()->fetchAllAssoc('name');
 //  dpm($database_store_types);
   $output_store_types = array();
@@ -394,15 +233,6 @@ function wisski_salz_get_store_types() {
   return $output_store_types;
 }
 
-/* alte Version
-function wisski_salz_get_installed_store_instances() {
-  $installed_store_instances = array();
-  $installed_store_instances = module_invoke_all('wisski_get_store_instances');
-
-  return $installed_store_instances;
-}
-*/
-
 function wisski_salz_get_installed_store_instances() {
   return db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('deleted',0,'=')->execute()->fetchAllAssoc('name');
 }
@@ -410,9 +240,7 @@ function wisski_salz_get_installed_store_instances() {
 function wisski_salz_get_store_instances_by_type() {
   $installed_store_instances = array();
   $installed_store_instances = module_invoke_all('wisski_get_store_instances_by_type');
-
   return $installed_store_instances;
-
 }
 
 function wisski_salz_store_modes(){
