@@ -171,6 +171,7 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
     $form['load_classes'] = array(
       '#type' => 'submit',
       '#value' => t('Load Classes'),
+      '#limit_validation_errors' => array(), // No validation.
       '#submit' => array('sparql11_adapter_wisski_load_entities_and_fields'),
       '#weight' => 21,
     );
@@ -178,6 +179,7 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
     $form['load_ind'] = array(
       '#type' => 'submit',
       '#value' => t('Load Individuals'),
+      '#limit_validation_errors' => array(), // No validation.
       '#submit' => array('sparql11_adapter_wisski_load_individuals'),
       '#weight' => 22,
     );
@@ -185,6 +187,7 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
     $form['clear'] = array(
       '#type' => 'submit',
       '#value' => t('Remove all Fields'),
+      '#limit_validation_errors' => array(), // No validation.
       '#submit' => array('sparql11_adapter_remove_all_fields'),
       '#weight' => 23,
     );
@@ -193,22 +196,10 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
 	$form['actions']['delete'] = array(
 		'#type' => 'submit',
 		'#value' => t('Delete this store'),
+               '#limit_validation_errors' => array(), // No validation.
 		'#submit' => array('sparql11_adapter_wisski_submit_delete_form'),
 		'#weight' => 22,
 	);
-
-
-  $link = array(
-    'data' => l('Delete store  SPARQL 1.1' . arg(6), 'admin/config/wisski/salz/delete/' . arg(5) . '/' . arg(6))
-  );
-
-  $form['delete'] = array(
-    'link' => array(
-      '#theme' => 'item_list',
-      '#items' => $link,
-    ),
-    '#weight' => 24,
-  );
 
   $ontologies_loaded = db_select('wisski_salz_ontologies','ont')
                         ->fields('ont',array('oid','iri'))
