@@ -7,7 +7,6 @@
 *
 *
 * @author: Mark Fichtner, Martin Scholz
-*
 */
 
 module_load_include('php', 'wisski_salz', "adapters/sparql11/SPARQL11Adapter");
@@ -18,13 +17,6 @@ module_load_include('php', 'wisski_salz', "interface/AdapterInterface");
  */
 function sparql11_adapter_menu() {
   $items = array();
-  //drupal_set_message("Hallo! Ich bin SPARQL 1.1");
-
-//  $store_types = wisski_salz_get_store_types();
-//  foreach($store_types as $key => $store_type) {
-    //drupal_set_message("Es gibt \$store_type: " . serialize($store_type));
-
-//    if(sparql11_adapter_wisski_get_store_type()==$store_type){
       $store_type = sparql11_adapter_wisski_get_store_type();
       $key = _sparql11_adapter_get_db_key();
 
@@ -40,15 +32,11 @@ function sparql11_adapter_menu() {
 
       $store_instances = sparql11_adapter_wisski_get_store_instances();
       
-//      drupal_set_message("line 44: ".serialize($store_instances));
-//    dpm($store_instances);
     foreach($store_instances as $key2 => $store_instance) {
-        //drupal_set_message($key . " und " . $key2);
         $items['admin/config/wisski/salz/edit/'.$key.'/'.$key2] = array(
         'title' => 'Edit ' . $store_type . ' Store ' . $store_instance->label,
         'description' => 'Manage the storage backends',
         'type' => MENU_LOCAL_TASK,
-        //'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
         'page callback' => 'drupal_get_form',
         'page arguments' => array('sparql11_adapter_wisski_edit_form'),
         'access arguments' => array('administer wisski'),
@@ -58,16 +46,11 @@ function sparql11_adapter_menu() {
         'title' => 'Delete Store ' . $store_type . ' ' . $key2,
         'description' => 'Manage the storage backends',
         'type' => MENU_NORMAL_ITEM,
-        //'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
         'page callback' => 'drupal_get_form',
         'page arguments' => array('sparql11_adapter_wisski_delete_form'),
         'access arguments' => array('administer wisski'),
         );
       }
-//    }
-//  }
-
-
   return $items;
  }
 
@@ -98,7 +81,6 @@ function sparql11_adapter_wisski_get_store() {
 }
 
   function sparql11_adapter_wisski_get_store_type() {
-    
     return "SPARQL 1.1";
   }
   
@@ -120,88 +102,16 @@ function sparql11_adapter_wisski_get_store_instances() {
   return db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('deleted',0,'=')->condition('type',_sparql11_adapter_get_db_key(),'=')->execute()->fetchAllAssoc('name');
 }
 
-/* alte Version, laedt Instanzen, evt nicht notwendig
-
-function sparql11_adapter_wisski_get_store_instances() {
-  $sparql11_adapter_wisski_instances = variable_get('sparql11_adapter_wisski_instances', array());
-
-  $all_instances = array();
-
-  foreach($sparql11_adapter_wisski_instances as $key => $value) {
-    $new_instance = new SPARQL11Adapter();
-    sparql11_adapter_initialize_instance($new_instance, $key);
-#    $new_instance->setSettings($value);
-    $all_instances[$key] = $new_instance;
-  }
-  return $all_instances;
-}
-*/
-
 function sparql11_adapter_initialize_instance(&$instance, $id) {
     drupal_set_message(serialize($instance));
     $settingnames = array("query_endpoint" => "sparql11_query_endpoint_" . $id, "update_endpoint" => "sparql11_update_endpoint_" . $id, "local_data" => "sparql11_local_data_" . $id);
-
     foreach($settingnames as $key => $value) {
       $instance->setSettings($key, variable_get($value, ""));
     }
 }
 
-/* alt, wie _get_store_instances
-
-function sparql11_adapter_wisski_get_store_instances_by_type() {
-  $sparql11_adapter_wisski_instances = variable_get('sparql11_adapter_wisski_instances', array());
-
-  $all_instances = array();
-
-  foreach($sparql11_adapter_wisski_instances as $key => $value) {
-    $new_instance = new SPARQL11Adapter();
-    $new_instance->setSettings($value);
-    $all_instances[$key] = $new_instance;
-  }
-  return array(sparql11_adapter_wisski_get_store_type() => $all_instances);
-}
-*/
-
-/*
-function sparql11_adapter_wisski_add_store_instances($instance_to_add){
-  ddebug_backtrace();
-  $instances = variable_get('sparql11_adapter_wisski_instances', array());
-  drupal_set_message("\$instances IN ADD_STORE_INSTANCES: " . serialize($instances));
-  $instances[] = $instance_to_add->getSettings();
-  variable_set('sparql11_adapter_wisski_instances', $instances);
-}
-*/
-
 function sparql11_adapter_wisski_delete_store_instances($instance_to_delete = NULL){
   if ($instance_to_delete == NULL) $instance_to_delete = arg(6);
-  /*
-  $instances = variable_get('sparql11_adapter_wisski_instances', array());
-  drupal_set_message("IN DELETE_STORE_INSTANCES");
-  drupal_set_message("\$instances IN DELETE_STORE_INSTANCES: " . serialize($instances));
-  drupal_set_message("\$instance_to_delete IN DELETE_STORE_INSTANCES: " . serialize($instance_to_delete));
-  $all_sparql11_instances = sparql11_adapter_wisski_get_store_instances();
-  drupal_set_message("\$all_sparql11_instances IN DELETE_STORE_INSTANCES: " . serialize($all_sparql11_instances));
-  drupal_set_message("\$instance_to_delete SETTINGS: " . serialize($instance_to_delete->getSettings()));
-  if(in_array($instance_to_delete, $all_sparql11_instances)){
-    drupal_set_message("\$instance_to_delete IS IN \$all_sparql11_instances!");
-    unset($instances[array_search($instance_to_delete, $all_sparql11_instances)]);
-    drupal_set_message("\$all_sparql11_instances IN DELETE_STORE_INSTANCES NACH UNSET!: " . serialize($all_sparql11_instances));
-    sparql11_adapter_wisski_set_store_instances($instances);
-    //variable_set('sparql11_adapter_wisski_instances', $instances);
-    drupal_set_message("\$instances IN DELETE_STORE_INSTANCES NACH UNSET!: " . serialize($instances));
-    drupal_set_message("ARG(4) in SETTINGS_PAGE: " . arg(4));
-    drupal_set_message("ARG(5) in SETTINGS_PAGE: " . arg(5));
-    drupal_set_message("ARG(6) in SETTINGS_PAGE: " . arg(6));
-
-    $varname1 = "sparql11_query_endpoint_" . arg(5);
-    $varname2 = "sparql11_update_endpoint_" . arg(5);
-    $varname3 = "sparql11_local_data_" . arg(5);
-    variable_del($varname1);
-    variable_del($varname2);
-    variable_del($varname3);
-    
-  }*/
-  //return $instances;
   $result = db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('deleted',0,'=')->condition('name',$instance_to_delete,'LIKE')->execute();
   if (empty($result)) drupal_set_message("Instance $instance_to_delete does not exist or has already been deleted");
   else {
@@ -216,7 +126,6 @@ function sparql11_adapter_wisski_set_store_instances($instances){
 }
 
 function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean) {
-  
   if (!$clean) {
     try {
       $instance = sparql11_adapter_wisski_db_get_instance_by_name($store_instance_name);
@@ -248,9 +157,8 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
       '#type' => 'checkbox',
       '#title' => t('Use this store as local store'),
       '#default_value' => ($clean ? '' : $instance->local_data),
+      '#element_validate' => array('sparql11_adapter_wisski_settings_page_validate'),
     );
-
-    
 
   $form['submit'] = array(
       '#type' => 'submit',
@@ -281,14 +189,12 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
       '#weight' => 23,
     );
   $installed_store_instances = sparql11_adapter_wisski_get_store_instances();
-//  drupal_set_message("\$installed_store_instances in SETTINGS_PAGE: " . serialize($installed_store_instances));
-//  drupal_set_message("ARG(4) in SETTINGS_PAGE: " . arg(4));
-//  drupal_set_message("ARG(5) in SETTINGS_PAGE: " . arg(5));
 
 	$form['actions']['delete'] = array(
 		'#type' => 'submit',
 		'#value' => t('Delete this store'),
 		'#submit' => array('sparql11_adapter_wisski_submit_delete_form'),
+		'#weight' => 22,
 	);
 
 
@@ -328,6 +234,22 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
   return $form;
 }
 
+function sparql11_adapter_wisski_settings_page_validate($element, $form, &$form_state) {
+    $local_store = $element['#value'];
+    //drupal_set_message("local store = " . serialize($local_store));
+    $result = wisski_salz_get_local_store();
+    //drupal_set_message("\$result = " . serialize($result));
+    
+    // if $result contains one stdClass Object (which means that it is not numeric), i. e. one local store already exists in $result
+    if(!is_numeric($result)){
+	// and if one wants to set one more local store
+    	if(!empty($local_store)){
+	// then output the following error message
+	form_error($element, t('You have already chosen a local store. You cannot have multiple local stores!'));
+	}
+    }
+}
+
 /**
 * Fetches adapter info from database and invokes a SPARQL11Adapter instance with those settings
 * we assume the instance to be unique in the DB
@@ -358,53 +280,15 @@ function sparql11_adapter_wisski_load_entities_and_fields() {
 }
 
 function sparql11_adapter_wisski_form_submit($form, &$form_state, $store_instance = NULL){
-   /*if(empty($store_instance))
-    $store_instance = new SPARQL11Adapter();
- //drupal_set_message("hallo welt " . serialize($form_state));
- drupal_set_message("\$store_instance in submit: " . serialize($store_instance));
-
- menu_rebuild();
-
-//	if(arg(4)=="add"){
-      drupal_set_message("ARG(4) IST " . arg(4));
-      sparql11_adapter_wisski_add_store_instances($store_instance);
-
-      $installed_store_instances = sparql11_adapter_wisski_get_store_instances();
-      drupal_set_message("\$store_instances: " . serialize($installed_store_instances));
-
-
-
-      foreach($installed_store_instances as $key => $installed_store_instance) {
-        $form_state['redirect'] = 'admin/config/wisski/salz/' . arg(5) . '/' . $key;
-        drupal_set_message("\$key: " . serialize($key));
-      }
-
-      $varname1 = "sparql11_query_endpoint_" . $key;
-      $varname2 = "sparql11_update_endpoint_" . $key;
-      $varname3 = "sparql11_local_data_" . $key;
-      variable_set($varname1, $form_state['values']['query_endpoint']);
-      variable_set($varname2, $form_state['values']['update_endpoint']);
-      variable_set($varname3, $form_state['values']['local_data']);
-    }
-
-  if(empty($store_instance))
-    $store_instance = new SPARQL11Adapter();
-  //drupal_set_message("hallo welt " . serialize($form_state));
-  drupal_set_message("\$store_instance in submit: " . serialize($store_instance));
-*/
-
-  
   if(arg(4)=="add"){
-    drupal_set_message("ARG(4) IST " . arg(4));
-//    sparql11_adapter_wisski_add_store_instances($store_instance);
+    //drupal_set_message("ARG(4) IST " . arg(4));
     $installed_store_instances = sparql11_adapter_wisski_get_store_instances();
-    drupal_set_message("\$store_instances: " . serialize($installed_store_instances));
-
+    //drupal_set_message("\$store_instances: " . serialize($installed_store_instances));
     menu_rebuild();
 
     foreach($installed_store_instances as $key => $installed_store_instance) {
       $form_state['redirect'] = 'admin/config/wisski/salz/' . arg(5) . '/' . $key;
-      drupal_set_message("\$key: " . serialize($key));
+      //drupal_set_message("\$key: " . serialize($key));
     }
     $label = $form_state['values']['name'];
     $name = preg_replace('/[^a-z0-9_]/u','',strtolower($label));
@@ -416,18 +300,10 @@ function sparql11_adapter_wisski_form_submit($form, &$form_state, $store_instanc
       'local_data' => $form_state['values']['local_data'],
     );
     sparql11_adapter_db_insert_settings($settings);
-    /* alte Version
-    $varname1 = "sparql11_query_endpoint_" . $key;
-    $varname2 = "sparql11_update_endpoint_" . $key;
-    $varname3 = "sparql11_local_data_" . $key;
-    variable_set($varname1, $form_state['values']['query_endpoint']);
-    variable_set($varname2, $form_state['values']['update_endpoint']);
-    variable_set($varname3, $form_state['values']['local_data']);
-    */
   }
 else {
-    drupal_set_message("ARG(4) IST im else " . arg(4));
-    drupal_set_message("ARG(4) ist nicht add, sondern " . arg(4));
+    //drupal_set_message("ARG(4) IST im else " . arg(4));
+    //drupal_set_message("ARG(4) ist nicht add, sondern " . arg(4));
     $form_state['redirect'] = 'admin/config/wisski/salz/' . arg(4) . '/' . arg(5);
     $label = $form_state['values']['name'];
     $name = preg_replace('/[^a-z0-9_]/u','',strtolower($label));
@@ -440,20 +316,11 @@ else {
       'local_data' => $form_state['values']['local_data'],
     );
     sparql11_adapter_db_insert_settings($settings,FALSE);
-    /*
-    $varname1 = "sparql11_query_endpoint_" . arg(5);
-    $varname2 = "sparql11_update_endpoint_" . arg(5);
-    $varname3 = "sparql11_local_data_" . arg(5);
-    variable_set($varname1, $form_state['values']['query_endpoint']);
-    variable_set($varname2, $form_state['values']['update_endpoint']);
-    variable_set($varname3, $form_state['values']['local_data']);
-    */
   }
   menu_rebuild();
 }
 
 function sparql11_adapter_db_insert_settings($settings,$clean = TRUE) {
-
   if ($clean) {  
     $settings['type'] = _sparql11_adapter_get_db_key();
     db_insert('wisski_salz_store_instances')->fields($settings)->execute();
@@ -465,7 +332,6 @@ function sparql11_adapter_db_insert_settings($settings,$clean = TRUE) {
 }
 
 function sparql11_adapter_wisski_db_get_instance_by_name($name) {
-  
   return db_select('wisski_salz_store_instances','s')->fields('s')->condition('name',$name,'LIKE')->execute()->fetchObject();
 }
 
@@ -474,12 +340,6 @@ function sparql11_adapter_wisski_add_form($form, &$form_state) {
 }
 
 function sparql11_adapter_wisski_edit_form($form, &$form_state) {
-  // ddebug_backtrace();
-  // throw new Exception("STOP");
-//  drupal_set_message("sparql11_adapter_wisski_edit_form: \$store_instance = " . serialize($store_instance));
-//  $store_instance->setSettings('query_endpoint', variable_get("sparql11_query_endpoint_" . arg(5)));
-//  $store_instance->setSettings('update_endpoint', variable_get("sparql11_update_endpoint_" . arg(5)));
-//  $store_instance->setSettings('local_data', variable_get("sparql11_local_data_" . arg(5)));
   return sparql11_adapter_wisski_settings_page(arg(6),FALSE);
 }
 
@@ -491,7 +351,6 @@ function sparql11_adapter_wisski_submit_delete_form($form, &$form_state){
 	// Redirect user to "delete" uri for this store.
 	$form_state['redirect'] = 'admin/config/wisski/salz/delete/' . arg(5) . '/' . arg(6);
 }
-
 
 /**
 * Form constructor for the store delete confirmation form.
@@ -519,25 +378,9 @@ function sparql11_adapter_wisski_delete_form($form, &$form_state){
 */
 function sparql11_adapter_wisski_delete_form_submit($form, &$form_state){  
   $result = sparql11_adapter_wisski_delete_store_instances();
-//  $installed_store_instances = sparql11_adapter_wisski_get_store_instances();
-//  drupal_set_message("\$installed_store_instances after deletion: " . serialize($installed_store_instances));
-//  //menu_rebuild();
-//  foreach($installed_store_instances as $key => $installed_store_instance) {
-//      $form_state['redirect'] = 'admin/config/wisski/salz/delete/' . arg(5) . '/' . $key;
-//      drupal_set_message("\$key in delete_form: " . serialize($key));
-//      }
-//  menu_rebuild();
-//  $markup = t('Test');
-//  return array('#markup' => $markup);
-	menu_rebuild();
+  menu_rebuild();
   if ($result) {
 	drupal_set_message("The store SPARQL 1.1 " . arg(6) . " was successfully deleted.");
-   // $form['description'] = array(
-   //   '#type' => 'item',
-   //   '#title' => t('The store was successfully deleted.'),
-   // );
   }
-  //return $form;
   $form_state['redirect'] = 'admin/config/wisski/salz';
 }
-
