@@ -157,8 +157,8 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
       '#type' => 'checkbox',
       '#title' => t('Use this store as local store'),
       '#default_value' => ($clean ? '' : $instance->local_data),
+      '#element_validate' => array('sparql11_adapter_wisski_settings_page_validate'),
     );
-    
 
   $form['submit'] = array(
       '#type' => 'submit',
@@ -212,6 +212,22 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
     }
   } //if not clean
   return $form;
+}
+
+function sparql11_adapter_wisski_settings_page_validate($element, $form, &$form_state) {
+    $local_store = $element['#value'];
+    //drupal_set_message("local store = " . serialize($local_store));
+    $result = wisski_salz_get_local_store();
+    //drupal_set_message("\$result = " . serialize($result));
+    
+    // if $result contains one stdClass Object (which means that it is not numeric), i. e. one local store already exists in $result
+    if(!is_numeric($result)){
+	// and if one wants to set one more local store
+    	if(!empty($local_store)){
+	// then output the following error message
+	form_error($element, t('You have already chosen a local store. You cannot have multiple local stores!'));
+	}
+    }
 }
 
 /**

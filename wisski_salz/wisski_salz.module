@@ -84,16 +84,16 @@ function wisski_salz_get_local_store() {
     ->execute()
     ->fetchAllAssoc('name');
   $count = count($result);
-  drupal_set_message("\$count = $count");
-  switch ($count) {
-    case 0: return FALSE;
-    case 1: return current($result);
-    default; trigger_error("Multiple local stores exist",E_USER_WARNING);
-  }
-  return FALSE;
+  //drupal_set_message("\$count = $count");
+    switch($count){
+	case 0: return $count;
+	case 1: return current($result);
+	default: return $count;
+}
+  return $count;
 }
 
-function wisski_salz_view_installed_store_instances() {
+function wisski_salz_view_installed_store_instances($form, &$form_state) {
   $store_types = wisski_salz_get_store_types();
   $store_instances = wisski_salz_get_installed_store_instances();
 
@@ -109,11 +109,18 @@ function wisski_salz_view_installed_store_instances() {
 
   $sorted_store_instances_by_type = array();
   foreach ($store_instances as $key2 => $store_instance){
+    $local_store = wisski_salz_get_local_store();
+    if(!is_numeric($local_store) && $local_store->name == $store_instance->name){
+	$text = $local_store->label . " => Local store";
+	//$text = $store_instance->label . " => Local store";
+    } else {
     $text = $store_instance->label;
+    }
     $path = 'admin/config/wisski/salz/edit/' . $store_instance->type . '/' . $store_instance->name;
     $sorted_store_instances_by_type[$store_instance->type][] = array( 
       'data' => l($text, $path). "<div class='wki_grey'>" . t($store_instance->query_endpoint . ', ' . $store_instance->update_endpoint) . "</div>",
     );
+    
   }
 
   $form = array();
@@ -142,20 +149,25 @@ function wisski_salz_view_installed_store_instances() {
     '#submit' => array('wisski_salz_recover_deleted_stores'),
   );
   
-  $form['get_local'] = array(
+  /*$form['get_local'] = array(
     '#type' => 'submit',
     '#value' => t('Show local store'),
     '#submit' => array('wisski_salz_get_local'),
-  );
+  );*/
 
   return $form;
 }
 
-function wisski_salz_get_local() {
+/*function wisski_salz_get_local() {
   $res = wisski_salz_get_local_store();
-  if ($res) dpm($res);
-  else drupal_set_message("No local store has been set");
-}
+  if (!is_numeric($res)) {
+	dpm($res);
+	//return $res->label;
+  }
+  else if ($res == 0) {
+	drupal_set_message("No local store has been set");
+  }
+}*/
 
 function wisski_salz_config_page() {
   wisski_salz_set_store_types();
