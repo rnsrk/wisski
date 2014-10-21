@@ -245,6 +245,13 @@ function wisski_core_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
+      'name' => array(
+        'description' => 'Machine readable name for the entity',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'title' => array(
         'description' => 'Entity title.',
         'type' => 'varchar',

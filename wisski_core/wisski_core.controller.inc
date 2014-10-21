@@ -36,7 +36,7 @@ class WisskiCoreEntityController extends EntityAPIController {
    */
   public function buildContent($entity, $view_mode = 'full', $langcode = NULL, $content = array()) {
     
-/*
+
     $wrapper = entity_metadata_wrapper('wisski_core_entity', $entity);
 
     // Make "title" and "description" properties themed like default fields.
@@ -56,7 +56,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       '#formatter' => 'text_default',
       0 => array('#markup' => check_plain($wrapper->title->value())),
     );
-    */
+    
 //    ddebug_backtrace();
     $content['description'] = array(
       '#theme' => 'field',

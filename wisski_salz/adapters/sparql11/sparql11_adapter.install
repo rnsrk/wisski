@@ -34,3 +34,25 @@ function sparql11_adapter_uninstall() {
   sparql11_adapter_remove_all_fields();
   drupal_set_message("Sparql 1.1 Adapter successfully uninstalled");
 }
+
+function sparql11_adapter_remove_all_fields() {
+  drupal_set_message("Trying to delete all CRM fields");
+  $result = db_select('field_config_instance','ins')
+              ->fields('ins')
+              ->condition('deleted',0,'=')
+              ->condition('field_name','wsk_%','LIKE')
+              ->execute()
+              ->fetchAllAssoc('id');
+  foreach($result as $row) {
+    try {
+      $instance = field_info_instance($row->entity_type,$row->field_name,$row->bundle);
+      field_delete_instance($instance,TRUE);
+    } catch (Exception $e) {
+      trigger_error("Errors when deleting $row->field_name",E_USER_ERROR);
+    }
+  }
+  cache_clear_all();
+  drupal_cron_run();
+  menu_rebuild();
+  drupal_set_message("Deletion successfull");
+}

@@ -93,8 +93,10 @@ function wisski_core_list($type) {
 function wisski_core_entity_view($entity) {
   //since this implements hook_entity_view which is invoked by entity_view() again
   //we want to avoid cyclic calls
+  //WARNING: this cuts off every cyclic call to this function regardless of the entity in scope
   if (variable_get('wisski_core_semaphore')) {
     trigger_error('Cyclic call to wisski_core_entity_view',E_USER_WARNING);
+    variable_set('wisski_core_semaphore',FALSE);
     return;
   }
   variable_set('wisski_core_semaphore',TRUE);
