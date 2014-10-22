@@ -97,7 +97,8 @@ function sparql11_adapter_wisski_get_store() {
     }
     return $sparql11_adapter_db_key;
   }
-
+  
+  
 function sparql11_adapter_wisski_get_store_instances() {
   return db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('deleted',0,'=')->condition('type',_sparql11_adapter_get_db_key(),'=')->execute()->fetchAllAssoc('name');
 }
@@ -171,6 +172,7 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
     $form['load_classes'] = array(
       '#type' => 'submit',
       '#value' => t('Load Classes'),
+      '#limit_validation_errors' => array(), // No validation.
       '#submit' => array('sparql11_adapter_wisski_load_entities_and_fields'),
       '#weight' => 21,
     );
@@ -178,6 +180,7 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
     $form['load_ind'] = array(
       '#type' => 'submit',
       '#value' => t('Load Individuals'),
+      '#limit_validation_errors' => array(), // No validation.
       '#submit' => array('sparql11_adapter_wisski_load_individuals'),
       '#weight' => 22,
     );
@@ -185,6 +188,7 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
     $form['clear'] = array(
       '#type' => 'submit',
       '#value' => t('Remove all Fields'),
+      '#limit_validation_errors' => array(), // No validation.
       '#submit' => array('sparql11_adapter_remove_all_fields'),
       '#weight' => 23,
     );
@@ -193,26 +197,11 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
 	$form['actions']['delete'] = array(
 		'#type' => 'submit',
 		'#value' => t('Delete this store'),
+               '#limit_validation_errors' => array(), // No validation.
 		'#submit' => array('sparql11_adapter_wisski_submit_delete_form'),
 		'#weight' => 22,
 	);
 
-<<<<<<< HEAD
-
-  $link = array(
-    'data' => l('Delete store  SPARQL 1.1' . arg(6), 'admin/config/wisski/salz/delete/' . arg(5) . '/' . arg(6))
-  );
-
-  $form['delete'] = array(
-    'link' => array(
-      '#theme' => 'item_list',
-      '#items' => $link,
-    ),
-    '#weight' => 24,
-  );
-
-=======
->>>>>>> 1e12e06637350cd151e7fd9e772bf5715085d61e
   $ontologies_loaded = db_select('wisski_salz_ontologies','ont')
                         ->fields('ont',array('oid','iri'))
                         ->condition('sid',$instance->sid,'=')
@@ -270,15 +259,34 @@ function sparql11_adapter_invoke_instance($name) {
   return $store_instance;
 }
 
-<<<<<<< HEAD
+  function _sparql11_adapter_invoke_local_store() {
+    $result = db_select('wisski_salz_store_instances','ins')
+                ->fields('ins')
+                ->condition('type',_sparql11_adapter_get_db_key(),'=')
+                ->condition('local_data',1,'=')
+                ->condition('deleted',0,'=')
+                ->execute()->fetchAssoc();
+    if (!empty($result)) {
+      $store_instance = new SPARQL11Adapter();
+      $store_instance->setSettings($result);
+      return $store_instance;
+    }
+    else return NULL;
+  }
+
+
+/**
+*implements hook_wisski_update_entity
+*/
+function sparql11_adapter_wisski_update_entity($entity) {
+
+  $local_store = _sparql11_adapter_invoke_local_store();
+  if($local_store != NULL) $local_store->updateEntityInfo($entity);
+}
+
 function sparql11_adapter_wisski_load_individuals(){
   
-  sparql11_adapter_invoke_instance(arg(6))->loadIndividuals();
-=======
-function sparql11_adapter_wisski_testload(){
-  $store_instance = sparql11_adapter_invoke_instance(arg(6));
-  $store_instance->test();
->>>>>>> 1e12e06637350cd151e7fd9e772bf5715085d61e
+  sparql11_adapter_invoke_instance(arg(6))->createEntities();
   menu_rebuild();
 }
 
@@ -393,4 +401,3 @@ function sparql11_adapter_wisski_delete_form_submit($form, &$form_state){
   }
   $form_state['redirect'] = 'admin/config/wisski/salz';
 }
-

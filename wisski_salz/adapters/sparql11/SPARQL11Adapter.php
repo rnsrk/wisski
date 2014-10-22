@@ -34,7 +34,9 @@ class SPARQL11Adapter implements AdapterInterface {
     return "SPARQL 1.1";
   }
 
+
   public function setSettings($name, $value = NULL) {
+    
     if (is_array($name)) {
       $this->settings = $name;
     } elseif (is_string($name) || is_integer($name)) {
@@ -51,7 +53,11 @@ class SPARQL11Adapter implements AdapterInterface {
 
       $this->addOntologies();
     }
-
+    $this->putNamespace('ecrm',  'http://erlangen-crm.org/120111/');
+    $this->putNamespace('behaim_inst', 'http://faui8184.informatik.uni-erlangen.de/birkmaier/content/');
+    $this->putNamespace('behaim', 'http://wwwdh.cs.fau.de/behaim/voc/');
+    $this->putNamespace('behaim_image', 'http://faui8184.informatik.uni-erlangen.de/behaim/ontology/images/');
+    
   }
 
 
@@ -184,10 +190,11 @@ public function sparql11_edit_form($form, &$form_state){
           }
       } else drupal_set_message("EasyRdf is not installed");
     } catch (Exception $e) {
-        drupal_set_message("SPARQL1.1 $type request failed.<br>Query was '".htmlentities($query)."'<br>Error Message:<br>".get_class($e)."<br>".$e->getMessage());
+//        drupal_set_message("SPARQL1.1 $type request failed.<br>Query was '".htmlentities($query)."'<br>Error Message:<br>".get_class($e)."<br>".$e->getMessage());
+        
 //        throw $e;
     }
-    drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
+//    drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
     return array($ok,$results);
   }
   
@@ -250,14 +257,8 @@ public function sparql11_edit_form($form, &$form_state){
     $pre_len = strlen($prefix);
     return $prefix.preg_replace('/[^a-z0-9_]/u','_',substr(strtolower($entity),0,32-$pre_len));
   }  
-
-  public function loadIndividuals() {
-    $this->putNamespace('ecrm',  'http://erlangen-crm.org/120111/');
-    $this->putNamespace('behaim_inst', 'http://faui8184.informatik.uni-erlangen.de/birkmaier/content/');
-    $this->putNamespace('behaim', 'http://wwwdh.cs.fau.de/behaim/voc/');
-    $this->putNamespace('behaim_image', 'http://faui8184.informatik.uni-erlangen.de/behaim/ontology/images/');
-    $gather = array();
-    $now = time();
+  
+  public function createEntities() {
     $result = array();
     list($ok,$result) 
       = $this->querySPARQL(
@@ -276,70 +277,76 @@ public function sparql11_edit_form($form, &$form_state){
     if ($ok) {
       foreach($result as $obj) {
         if(isset($obj->ind) && isset($obj->class)) {
-          $gather[$obj->ind->dumpValue('text')]['class'][] = $obj->class->dumpValue('text');
+          $class_label = $obj->class->dumpValue('text');
+          $class_name = $this->makeDrupalName($class_label,'');
+          $ind_pref = substr(strstr($class_label,':'),1,4);
+          $ind_label = $obj->ind->dumpValue('text');
+          $ind_name = $this->makeDrupalName($ind_pref.$ind_label,'ind_');
+          $info = array(
+            'type' => $class_name,
+            'name' => $ind_name,  
+            'title' => $ind_label,
+          );
+          $entity = entity_create('wisski_core_entity',$info);
+          entity_save('wisski_core_entity',$entity);
         }
       }
     }
+  }
+  
+
+  public function updateEntityInfo($entity) {
+  
+    $ind_name = $entity->name;
+    $gather = array();
+    $now = time();
     $result = array();
     list($ok,$result)
       = $this->querySPARQL(
-        "SELECT DISTINCT ?ind ?property ?target "
+        "SELECT DISTINCT $ind_name ?property ?target "
         ."WHERE "
         ."{ "
           ."?class a owl:Class. "
-          ."?ind a ?class. "
+          ."$ind_name a ?class. "
           ."?property a owl:ObjectProperty. "
-          ."?ind ?property ?target. "
+          ."$ind_name ?property ?target. "
         ."} "
       );
     if ($ok) {
       foreach($result as $obj) {
-        if(isset($obj->ind) && isset($obj->property) && isset($obj->target))
-          $gather[$obj->ind->dumpValue('text')]['object'][$obj->property->dumpValue('text')][] = $obj->target->dumpValue('text');
+        if(isset($obj->property) && isset($obj->target))
+          $gather['object'][$obj->property->dumpValue('text')][] = $obj->target->dumpValue('text');
       }
     }
     $result = array();
     list($ok,$result)
       = $this->querySPARQL(
-        "SELECT DISTINCT ?ind ?property ?data "
+        "SELECT DISTINCT $ind_name ?property ?data "
         ."WHERE "
         ."{ "
           ."?class a owl:Class. "
-          ."?ind a ?class. "
+          ."$ind_name a ?class. "
           ."?property a owl:DatatypeProperty. "
-          ."?ind ?property ?data. "
+          ."$ind_name ?property ?data. "
         ."} "
       );
     if ($ok) {
       foreach($result as $obj) {
-        if(isset($obj->ind) && isset($obj->property) && isset($obj->data)) {
+        if(isset($obj->property) && isset($obj->data)) {
           $data = $obj->data->dumpValue('text');
           $data = preg_replace('/["\']/','',substr($data,0,strpos($data,'^^')));
           if (strlen($data) > 255) $data = substr($data,0,251)."...";
-          $gather[$obj->ind->dumpValue('text')]['data'][$obj->property->dumpValue('text')][] = $data;
+          $gather['data'][$obj->property->dumpValue('text')][] = $data;
         }
       }
     }
     $then = time();
     trigger_error("Query took ".($then-$now)." seconds",E_USER_NOTICE);
     $now = time();
-    foreach ($gather as $ind => $settings) {
-      foreach($settings['class'] as $class) {
-        $class_label = $class;
-        $class_name = $this->makeDrupalName($class_label,'');
-        $ind_pref = substr(strstr($class_label,':'),1,4);
-        $ind_label = $ind;
-        $ind_name = $this->makeDrupalName($ind_pref.$ind_label,'ind_');
-        $info = array(
-          'type' => $class_name,
-          'name' => $ind_name,  
-          'title' => $ind_label,
-        );
-        $entity = entity_create('wisski_core_entity',$info);
-        $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
+    $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
 /*
-        if (isset($settings['object'])) {
-          foreach($settings['object'] as $prop => $values) {
+        if (isset($gather['object'])) {
+          foreach($gather['object'] as $prop => $values) {
             $object_property_name = $this->makeDrupalName($prop,'wsk_');
             foreach($values as $target) {
               $target_name = $this->makeDrupalName($ind_pref.$target,'ind_');
@@ -348,84 +355,58 @@ public function sparql11_edit_form($form, &$form_state){
           }
         }
 */        
-        if (isset($settings['data'])) {
-          foreach($settings['data'] as $prop => $values) {
-            $data_property_name = $this->makeDrupalName($prop,'wsk_');
-            $type = $wrapper->$data_property_name->type();
-            if($type == 'list<text>') {
-              $wrapper->$data_property_name->set($values);  
-            } else trigger_error("Wrong metadata type $type for $data_property_name in $entity",E_USER_WARNING);
-          }
-        }
-        $wrapper->save();
-        entity_save('wisski_core_entity',$entity);
-      }  
+    if (isset($gather['data'])) {
+      foreach($gather['data'] as $prop => $values) {
+        $data_property_name = $this->makeDrupalName($prop,'wsk_');
+        $type = $wrapper->$data_property_name->type();
+        if($type == 'list<text>') {
+          $wrapper->$data_property_name->set($values);  
+        } else trigger_error("Wrong metadata type $type for $data_property_name in $entity",E_USER_WARNING);
+      }
     }
+    $wrapper->save();
     $then = time();
     trigger_error("Rest of Setup took ".($then-$now)." seconds",E_USER_NOTICE);
-    drupal_set_message("Gathered info about $individual");
+    drupal_set_message("Gathered info about $ind_name");
   }
 
-  public function loadClasses() {
- 
-    
-    $this->putNamespace('ecrm',  'http://erlangen-crm.org/120111/');
-    $this->putNamespace('behaim_inst', 'http://faui8184.informatik.uni-erlangen.de/birkmaier/content/');
-    $this->putNamespace('behaim', 'http://wwwdh.cs.fau.de/behaim/voc/');
-    $this->putNamespace('behaim_image', 'http://faui8184.informatik.uni-erlangen.de/behaim/ontology/images/');
-//    $inferrer = "/(^rdfs:subClassOf)*"; //add to rdfs:domain
-    list($ok,$result) 
-      = $this->querySPARQL(
-        "SELECT DISTINCT ?class ?property ?target ?data"
-          ." WHERE {"
-            ."?class (rdfs:subClassOf)+ owl:Thing."
-            ." OPTIONAL {"
-              ."?property a owl:ObjectProperty."
-              ."{"																	//Object Properties with our class as a domain
-                ."?property rdfs:domain ?class."		//may also be specified via their inverse having
-                ."?property rdfs:range ?target."		//it as range
-              ."}"
-              ." UNION"
-              ."{"
-                ."?p owl:inverseOf ?property."
-                ."?p rdfs:range ?class."
-                ."?p rdfs:domain ?target."
-              ."}"
-              ." OPTIONAL {"												//here we ensure that forgotten range specifications
-                ."?ind a ?class. "									//are taken into account, too
-                ."?ind ?property ?p. "
-              ."}"
-            ."}"
-            ." OPTIONAL {"
-              ."?data a owl:DatatypeProperty."
-              ."?data rdfs:domain/(^rdfs:subClassOf)* ?class."
-              ." OPTIONAL {"
-                ."?ind a ?class. "
-                ."?ind ?property ?p. "
-              ."}"
-            ."}"
+  public function updateClassInfo($class) {
+  
+    drupal_set_message("The endpoint is ".$this->settings['query_endpoint']);
+    $fields = array();
+    $instances = array();
+    $result = db_select('wisski_entity_bundles','bund')
+              ->fields('bund')
+              ->condition('type',$class,'LIKE')
+              ->execute()
+              ->fetchObject();
+    $class_name = $result->type;
+    $class_label = $result->label;
+    list($ok,$result) = $this->querySPARQL(
+      "SELECT ?property ?target "
+      ."WHERE {"
+        ."?property a owl:ObjectProperty. "
+        ."{"
+          ."{"																		//Object Properties with our class as a domain
+            ."?property rdfs:domain $class_label. "	//may also be specified via their inverse having
+            ."?property rdfs:range ?target. "			//it as range
           ."}"
-//        ." LIMIT 20"
-      );
+          ." UNION "
+          ."{"
+            ."?p owl:inverseOf ?property. "
+            ."?p rdfs:range $class_label. "
+            ."?p rdfs:domain ?target. "
+          ."}"
+        ."}"
+        ." UNION "
+        ."{"												//here we ensure that forgotten range specifications
+          ."?ind a $class_label. "		//are taken into account, too
+          ."?ind ?property ?p2. "
+        ."}"
+      ."}"
+    );
     if ($ok) {
-      $errors = array();
-      $classes = array();
-      $fields = array();
-      $instances = array();
       foreach($result as $obj) {
-        $class_label = $obj->class->dumpValue('text');
-        $class_name = $this->makeDrupalName($class_label,'');
-        $class_title = substr($class_label,strpos($class_label,':')+1);
-        if (!array_key_exists($class_name,$classes)) {
-          $classes[$class_name] = array(
-            'type' => $class_name,
-            'label' => $class_label,
-            'title' => $class_title,
-            'weight' => 0,
-            'description' => 'retrieved from ontology',
-            'rdf_mapping' => array(),
-          );
-        }
         if (isset($obj->target) && isset($obj->property)) {
           $target_label = $obj->target->dumpValue('text');
           $target_name = $this->makeDrupalName($target_label,'');
@@ -471,9 +452,27 @@ public function sparql11_edit_form($form, &$form_state){
               ),
             );
           }
-        }
-        if (isset($obj->data)) {
-          $field_label = $obj->data->dumpValue('text');
+        }//if(isset...
+      }//foreach...
+    }//if($ok)
+    list($ok,$result) = $this->querySPARQL(
+      "SELECT ?property "
+      ."WHERE {"
+        ."?data a owl:DatatypeProperty."
+        ."{"
+        ."?data rdfs:domain/(^rdfs:subClassOf)* $class_label."
+        ."}"
+        ." UNION "
+        ."{"
+          ."?ind a $class_label. "
+          ."?ind ?property ?p. "
+        ."}"
+      ."}"
+    );
+    if ($ok) {
+      foreach($result as $obj) {
+        if (isset($obj->property)) {
+          $field_label = $obj->property->dumpValue('text');
           $field_name = $this->makeDrupalName($field_label,'wsk_');
           if (!array_key_exists($field_name,$fields)) {
             $fields[$field_name] = array(
@@ -506,8 +505,57 @@ public function sparql11_edit_form($form, &$form_state){
               ),
             );
           }
+        }//if(isset...
+      }//foreach...
+    }//if($ok)
+    drupal_set_message("Fields: ".count($fields)."<br>Instances: ".count($instances));
+    foreach($fields as $field) {
+      if (field_info_field($field['field_name']) == NULL) {
+          field_create_field($field);
+      } else {
+          field_update_field($field);
+      }
+    }
+    foreach($instances as $bundle_name => $inst_class) {
+      foreach($inst_class as $instance) {
+        if (field_info_instance('wisski_core_entity',$instance['field_name'],$bundle_name) == NULL) {
+          field_create_instance($instance);
+        } else {
+          field_update_instance($instance);    
         }
-      }//end foreach
+      }
+    }
+  }
+
+  public function loadClasses() {
+   
+    //    $inferrer = "/(^rdfs:subClassOf)*"; //add to rdfs:domain
+    list($ok,$result) 
+      = $this->querySPARQL(
+        "SELECT DISTINCT ?class ?property ?target ?data"
+          ." WHERE {"
+            ."?class (rdfs:subClassOf)+ owl:Thing."
+          ."}"
+//        ." LIMIT 20"
+      );
+    if ($ok) {
+      $errors = array();
+      $classes = array();
+      foreach($result as $obj) {
+        $class_label = $obj->class->dumpValue('text');
+        $class_name = $this->makeDrupalName($class_label,'');
+        $class_title = substr($class_label,strpos($class_label,':')+1);
+        if (!array_key_exists($class_name,$classes)) {
+          $classes[$class_name] = array(
+            'type' => $class_name,
+            'label' => $class_label,
+            'title' => $class_title,
+            'weight' => 0,
+            'description' => 'retrieved from ontology',
+            'rdf_mapping' => array(),
+          );
+        }
+      }
       foreach($classes as $class) {
         try {
           $class['bundle of'] = 'wisski_core_entity';
@@ -516,34 +564,6 @@ public function sparql11_edit_form($form, &$form_state){
         } catch (PDOException $ex) {
           $errors['PDOException'][] = $ex->getMessage();
         }
-      }
-      foreach($fields as $field) {
-        if (field_info_field($field['field_name']) == NULL) {
-          field_create_field($field);
-        } else {
-          field_update_field($field);
-        }
-      }
-      foreach($instances as $bundle_name => $inst_class) {
-        foreach($inst_class as $instance) {
-          if (field_info_instance('wisski_core_entity',$instance['field_name'],$bundle_name) == NULL) {
-            field_create_instance($instance);
-          } else {
-            field_update_instance($instance);    
-          }
-        }
-      }
-      if (!empty($errors)) {
-        trigger_error("There have been errors during import",E_USER_WARNING);
-        $out_error = "<h3>ERRORS:</h3>";
-        foreach($errors as $key => $value) {
-          $out_error .= '<p style="text-indent:-1em;margin-left:1em"><h4>'.$key.'</h4>';
-          foreach($value as $err) {
-            $out_error .= $err.'<br>';
-          }
-          $out_error .= '</p>';
-        }
-        drupal_set_message($out_error);
       }
     }
   }

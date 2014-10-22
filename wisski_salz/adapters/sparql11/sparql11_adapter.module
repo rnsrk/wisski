@@ -97,7 +97,8 @@ function sparql11_adapter_wisski_get_store() {
     }
     return $sparql11_adapter_db_key;
   }
-
+  
+  
 function sparql11_adapter_wisski_get_store_instances() {
   return db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('deleted',0,'=')->condition('type',_sparql11_adapter_get_db_key(),'=')->execute()->fetchAllAssoc('name');
 }
@@ -258,9 +259,45 @@ function sparql11_adapter_invoke_instance($name) {
   return $store_instance;
 }
 
+  function _sparql11_adapter_invoke_local_store() {
+    $result = db_select('wisski_salz_store_instances','ins')
+                ->fields('ins')
+                ->condition('type',_sparql11_adapter_get_db_key(),'=')
+                ->condition('local_data',1,'=')
+                ->condition('deleted',0,'=')
+                ->execute()->fetchAssoc();
+    if (!empty($result)) {
+      $store_instance = new SPARQL11Adapter();
+      $store_instance->setSettings($result);
+      return $store_instance;
+    }
+    else return NULL;
+  }
+
+
+/**
+*implements hook_wisski_update_entity
+*/
+function sparql11_adapter_wisski_update_entity($entity) {
+/*
+  $local_store = _sparql11_adapter_invoke_local_store();
+  if($local_store != NULL) $local_store->updateEntityInfo($entity);
+*/
+  dpm((array)$entity);
+}
+
+/**
+* implements hook_wisski_update_class
+*/
+function sparql11_adapter_wisski_update_class($type) {
+  
+  $local_store = _sparql11_adapter_invoke_local_store();
+  if($local_store != NULL) $local_store->updateClassInfo($type);
+}
+
 function sparql11_adapter_wisski_load_individuals(){
   
-  sparql11_adapter_invoke_instance(arg(6))->loadIndividuals();
+  sparql11_adapter_invoke_instance(arg(6))->createEntities();
   menu_rebuild();
 }
 
