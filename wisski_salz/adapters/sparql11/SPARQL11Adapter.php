@@ -552,7 +552,7 @@ public function sparql11_edit_form($form, &$form_state){
     $now = time();
     list($ok,$result) 
       = $this->querySPARQL(
-        "SELECT DISTINCT ?class ?property ?target ?data"
+        "SELECT DISTINCT ?class"
           ." WHERE {"
             ."?class (rdfs:subClassOf)+ owl:Thing."
           ."}"
