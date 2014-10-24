@@ -282,6 +282,17 @@ function sparql11_adapter_wisski_update_entity($entity) {
 
   $local_store = _sparql11_adapter_invoke_local_store();
   if($local_store != NULL) $local_store->updateEntityInfo($entity);
+  menu_rebuild();
+}
+
+/**
+* implements hook_wisski_update_class
+*/
+function sparql11_adapter_wisski_update_class($type) {
+  
+  $local_store = _sparql11_adapter_invoke_local_store();
+  if($local_store != NULL) $local_store->updateClassInfo($type);
+  menu_rebuild();
 }
 
 function sparql11_adapter_wisski_load_individuals(){

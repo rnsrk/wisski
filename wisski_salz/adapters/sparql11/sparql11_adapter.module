@@ -153,6 +153,12 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
       '#title' => t('Update Endpoint'),
       '#default_value' => ($clean ? '' : $instance->update_endpoint),
     );
+    
+  $form['update_interval'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Update Interval (seconds)'),
+      '#default_value' => ($clean ? 3600 : $instance->update_interval),
+    );
 
   $form['local_data'] = array(
       '#type' => 'checkbox',
@@ -259,13 +265,17 @@ function sparql11_adapter_invoke_instance($name) {
   return $store_instance;
 }
 
-  function _sparql11_adapter_invoke_local_store() {
+  function _sparql11_adapter_invoke_local_store($timestamp = NULL) {
     $result = db_select('wisski_salz_store_instances','ins')
                 ->fields('ins')
                 ->condition('type',_sparql11_adapter_get_db_key(),'=')
                 ->condition('local_data',1,'=')
-                ->condition('deleted',0,'=')
-                ->execute()->fetchAssoc();
+                ->condition('deleted',0,'=');
+    if ($timestamp != NULL) {
+      $delta = time() - $timestamp;
+      $result = $result->condition('update_interval',$delta,'<');
+    }
+    $result = $result->execute()->fetchAssoc();
     if (!empty($result)) {
       $store_instance = new SPARQL11Adapter();
       $store_instance->setSettings($result);
@@ -279,11 +289,12 @@ function sparql11_adapter_invoke_instance($name) {
 *implements hook_wisski_update_entity
 */
 function sparql11_adapter_wisski_update_entity($entity) {
-/*
-  $local_store = _sparql11_adapter_invoke_local_store();
-  if($local_store != NULL) $local_store->updateEntityInfo($entity);
-*/
-  dpm((array)$entity);
+                
+  $local_store = _sparql11_adapter_invoke_local_store($entity->timestamp);
+  if($local_store != NULL) {
+    $local_store->updateEntityInfo($entity);
+    menu_rebuild();
+  }
 }
 
 /**
@@ -291,8 +302,18 @@ function sparql11_adapter_wisski_update_entity($entity) {
 */
 function sparql11_adapter_wisski_update_class($type) {
   
-  $local_store = _sparql11_adapter_invoke_local_store();
-  if($local_store != NULL) $local_store->updateClassInfo($type);
+  $result = db_select('wisski_entity_bundles','bund')
+              ->fields('bund')
+              ->condition('type',$type,'LIKE')
+              ->execute()
+              ->fetchObject();
+  if (empty($result)) return;
+  $local_store = _sparql11_adapter_invoke_local_store($result->timestamp);
+  if($local_store != NULL) {
+    $entity = current(entity_load('wisski_core_bundle',array($result->id)));
+    $local_store->updateClassInfo($entity);
+    menu_rebuild();
+  }
 }
 
 function sparql11_adapter_wisski_load_individuals(){
@@ -325,6 +346,7 @@ function sparql11_adapter_wisski_form_submit($form, &$form_state, $store_instanc
       'label' => $label,
       'query_endpoint' => $form_state['values']['query_endpoint'],
       'update_endpoint' => $form_state['values']['update_endpoint'],
+      'update_interval' => $form_state['values']['update_interval'],
       'local_data' => $form_state['values']['local_data'],
     );
     sparql11_adapter_db_insert_settings($settings);
@@ -341,6 +363,7 @@ else {
       'label' => $label,
       'query_endpoint' => $form_state['values']['query_endpoint'],
       'update_endpoint' => $form_state['values']['update_endpoint'],
+      'update_interval' => $form_state['values']['update_interval'],
       'local_data' => $form_state['values']['local_data'],
     );
     sparql11_adapter_db_insert_settings($settings,FALSE);

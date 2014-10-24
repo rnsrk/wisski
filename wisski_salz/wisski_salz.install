@@ -54,6 +54,11 @@ $schema = array();
 				'not null' => TRUE,
 				'default' => '',
 			),
+			'update_interval' => array(
+				'description' => 'update interval for classes and entities',
+				'type' => 'int',
+				'default' => 3600,
+			),
 			'local_data' => array(
 				'description' => 'store is used locally',
 				'type' => 'int',

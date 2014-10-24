@@ -126,7 +126,24 @@ function wisski_core_entity_form($form, &$form_state, $entity) {
     '#default_value' => $wrapper->description->value(),
     '#weight' => -10,
   );
-
+  
+  try {
+    $same_inds = $wrapper->same_individuals->value();
+    $same_string = "";
+    foreach($same_inds as $ind) {
+      $same_string .= $ind."\n";
+    }
+  
+    $form['same_individuals'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Same Individuals'),
+      '#default_value' => $same_string,
+      '#weight' => -5,
+    );
+  } catch (EntityMetadataWrapperException $ex) {
+    dpm((array)$wrapper);
+  }
+  
   // Add fields of the entity to the form.
   field_attach_form('wisski_core_entity', $entity, $form, $form_state);
 

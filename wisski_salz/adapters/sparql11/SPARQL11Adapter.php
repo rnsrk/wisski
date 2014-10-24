@@ -190,11 +190,11 @@ public function sparql11_edit_form($form, &$form_state){
           }
       } else drupal_set_message("EasyRdf is not installed");
     } catch (Exception $e) {
-//        drupal_set_message("SPARQL1.1 $type request failed.<br>Query was '".htmlentities($query)."'<br>Error Message:<br>".get_class($e)."<br>".$e->getMessage());
+        drupal_set_message("SPARQL1.1 $type request failed.<br>Query was '".htmlentities($query)."'<br>Error Message:<br>".get_class($e)."<br>".$e->getMessage());
         
 //        throw $e;
     }
-//    drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
+    drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
     return array($ok,$results);
   }
   
@@ -259,6 +259,8 @@ public function sparql11_edit_form($form, &$form_state){
   }  
   
   public function createEntities() {
+    
+    $now = time();
     $result = array();
     list($ok,$result) 
       = $this->querySPARQL(
@@ -274,42 +276,66 @@ public function sparql11_edit_form($form, &$form_state){
         ."} "
 //        ."LIMIT 1 "
       );
+    $then = time();
+    trigger_error("Query took ".($then-$now)." seconds",E_USER_NOTICE);
+    $now = time();
     if ($ok) {
+      $individuals = array();
       foreach($result as $obj) {
         if(isset($obj->ind) && isset($obj->class)) {
-          $class_label = $obj->class->dumpValue('text');
+          $individuals[$obj->ind->dumpValue('text')][] = $obj->class->dumpValue('text');
+        }
+      }
+      foreach ($individuals as $ind => $classes) {
+        $same_inds = array();
+        foreach ($classes as $class) {
+          $class_label = $class;
+          $ind_pref = substr(strstr($class_label,':'),1,4);
+          $ind_label = $ind;
+          $ind_name = $this->makeDrupalName($ind_pref.$ind_label,'ind_');
+          $same_inds[] = $ind_name;
+        }
+        foreach ($classes as $class) {
+          $class_label = $class;
           $class_name = $this->makeDrupalName($class_label,'');
           $ind_pref = substr(strstr($class_label,':'),1,4);
-          $ind_label = $obj->ind->dumpValue('text');
+          $ind_label = $ind;
           $ind_name = $this->makeDrupalName($ind_pref.$ind_label,'ind_');
           $info = array(
             'type' => $class_name,
             'name' => $ind_name,  
             'title' => $ind_label,
+            'timestamp' => 0, //ensures update on first view
+            'same_individuals' => $same_inds,
           );
           $entity = entity_create('wisski_core_entity',$info);
           entity_save('wisski_core_entity',$entity);
-        }
-      }
+        if(count($same_inds) > 1) dpm($entity);
+        }//foreach ... $class
+      }//foreach ... $ind
     }
+    $then = time();
+    $secs = ($then - $now) % 60;
+    $mins = ($then - $now - $secs) / 60;
+    trigger_error("Rest of Setup took $mins:$secs min",E_USER_NOTICE);
   }
   
 
-  public function updateEntityInfo($entity) {
+  public function updateEntityInfo(&$entity) {
   
-    $ind_name = $entity->name;
+    $ind_label = $entity->title;
+    $entity_name = $entity->name;
     $gather = array();
-    $now = time();
     $result = array();
     list($ok,$result)
       = $this->querySPARQL(
-        "SELECT DISTINCT $ind_name ?property ?target "
+        "SELECT DISTINCT ?property ?target "
         ."WHERE "
         ."{ "
           ."?class a owl:Class. "
-          ."$ind_name a ?class. "
+          ."$ind_label a ?class. "
           ."?property a owl:ObjectProperty. "
-          ."$ind_name ?property ?target. "
+          ."$ind_label ?property ?target. "
         ."} "
       );
     if ($ok) {
@@ -321,13 +347,13 @@ public function sparql11_edit_form($form, &$form_state){
     $result = array();
     list($ok,$result)
       = $this->querySPARQL(
-        "SELECT DISTINCT $ind_name ?property ?data "
+        "SELECT DISTINCT ?property ?data "
         ."WHERE "
         ."{ "
           ."?class a owl:Class. "
-          ."$ind_name a ?class. "
+          ."$ind_label a ?class. "
           ."?property a owl:DatatypeProperty. "
-          ."$ind_name ?property ?data. "
+          ."$ind_label ?property ?data. "
         ."} "
       );
     if ($ok) {
@@ -335,14 +361,11 @@ public function sparql11_edit_form($form, &$form_state){
         if(isset($obj->property) && isset($obj->data)) {
           $data = $obj->data->dumpValue('text');
           $data = preg_replace('/["\']/','',substr($data,0,strpos($data,'^^')));
-          if (strlen($data) > 255) $data = substr($data,0,251)."...";
+          if (strlen($data) > 255) $data = substr($data,0,251)." ...";
           $gather['data'][$obj->property->dumpValue('text')][] = $data;
         }
       }
     }
-    $then = time();
-    trigger_error("Query took ".($then-$now)." seconds",E_USER_NOTICE);
-    $now = time();
     $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
 /*
         if (isset($gather['object'])) {
@@ -361,27 +384,22 @@ public function sparql11_edit_form($form, &$form_state){
         $type = $wrapper->$data_property_name->type();
         if($type == 'list<text>') {
           $wrapper->$data_property_name->set($values);  
-        } else trigger_error("Wrong metadata type $type for $data_property_name in $entity",E_USER_WARNING);
+        } elseif ($type == 'text') {
+          $wrapper->$data_property_name->set(current($values));
+        } else  trigger_error("Wrong metadata type $type for $data_property_name in $entity_name",E_USER_WARNING);
       }
     }
     $wrapper->save();
-    $then = time();
-    trigger_error("Rest of Setup took ".($then-$now)." seconds",E_USER_NOTICE);
-    drupal_set_message("Gathered info about $ind_name");
+    $entity->timestamp = time();
+    $entity->save();
   }
 
-  public function updateClassInfo($class) {
+  public function updateClassInfo(&$class) {
   
-    drupal_set_message("The endpoint is ".$this->settings['query_endpoint']);
     $fields = array();
     $instances = array();
-    $result = db_select('wisski_entity_bundles','bund')
-              ->fields('bund')
-              ->condition('type',$class,'LIKE')
-              ->execute()
-              ->fetchObject();
-    $class_name = $result->type;
-    $class_label = $result->label;
+    $class_name = $class->type;
+    $class_label = $class->label;
     list($ok,$result) = $this->querySPARQL(
       "SELECT ?property ?target "
       ."WHERE {"
@@ -416,7 +434,7 @@ public function sparql11_edit_form($form, &$form_state){
             $fields[$field_name] = array(
               'field_name' => $field_name,
               'type' => 'entityreference',
-              'cardinality' => 1,
+              'cardinality' => -1,
               'entity_types' => array('wisski_core_entity'),
               'settings' => array(
                 'target_type' => 'wisski_core_entity',
@@ -478,10 +496,9 @@ public function sparql11_edit_form($form, &$form_state){
             $fields[$field_name] = array(
               'field_name' => $field_name,
               'type' => 'text',
-              'cardinality' => 1,
+              'cardinality' => -1,
               'entity_types' => array('wisski_core_entity'),
-              'settings' => array(
-              ),
+              'settings' => array(),
             );
           }
           if(!array_key_exists($class_name,$instances) || !array_key_exists($field_name,$instances[$class_name])) {
@@ -525,11 +542,14 @@ public function sparql11_edit_form($form, &$form_state){
         }
       }
     }
+    $class->timestamp = time();
+    $class->save();
   }
 
   public function loadClasses() {
    
     //    $inferrer = "/(^rdfs:subClassOf)*"; //add to rdfs:domain
+    $now = time();
     list($ok,$result) 
       = $this->querySPARQL(
         "SELECT DISTINCT ?class ?property ?target ?data"
@@ -538,6 +558,9 @@ public function sparql11_edit_form($form, &$form_state){
           ."}"
 //        ." LIMIT 20"
       );
+    $then = time();
+    trigger_error("Query took ".($then-$now)." seconds",E_USER_NOTICE);
+    $now = time();
     if ($ok) {
       $errors = array();
       $classes = array();
@@ -552,6 +575,7 @@ public function sparql11_edit_form($form, &$form_state){
             'title' => $class_title,
             'weight' => 0,
             'description' => 'retrieved from ontology',
+            'timestamp' => 0, //ensures update on first view
             'rdf_mapping' => array(),
           );
         }
@@ -566,6 +590,10 @@ public function sparql11_edit_form($form, &$form_state){
         }
       }
     }
+    $then = time();
+    $secs = ($then - $now) % 60;
+    $mins = ($then - $now - $secs) / 60;
+    trigger_error("Rest of Setup took $mins:$secs min",E_USER_NOTICE);
   }
 
   private function loadOntologyInfo() {

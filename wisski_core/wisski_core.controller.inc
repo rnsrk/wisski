@@ -79,6 +79,22 @@ class WisskiCoreEntityController extends EntityAPIController {
       0 => array('#markup' => check_plain($entity->description)),
       //0 => array('#markup' => check_plain($wrapper->description->value())),
     );
+    
+    $content['same_individuals'] = array(
+      '#theme' => 'field',
+      '#weight' => 0,
+      '#title' => t('Same Individuals'),
+      '#access' => TRUE,
+      '#label_display' => 'above',
+      '#view_mode' => 'full',
+      '#language' => LANGUAGE_NONE,
+      '#field_name' => 'field_fake_same_individuals',
+      '#field_type' => 'text',
+      '#entity_type' => 'wisski_core_entity',
+      '#bundle' => $wrapper->type->value(),
+      '#items' => array(array('value' => $wrapper->same_individuals->value())),
+      '#formatter' => 'text_default',
+    );
     return parent::buildContent($entity, $view_mode, $langcode, $content);
   }
   

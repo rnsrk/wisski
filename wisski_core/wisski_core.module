@@ -141,6 +141,12 @@ function wisski_core_entity_property_info() {
     'label' => t('WissKI Entitiy description'),
     'setter callback' => 'entity_property_verbatim_set',
   );
+  $properties['same_individuals'] = array(
+    'type' => 'list<text>',
+    'schema field' => 'same_individuals',
+    'label' => t('WissKI Entity same individuals'),
+    'setter callback' => 'entity_property_verbatim_set',
+  );
   
   $type_properties = &$info['wisski_core_bundle']['properties'];
   $type_properties['id'] = array(

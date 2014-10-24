@@ -263,6 +263,18 @@ function wisski_core_schema() {
         'description' => 'Entity description.',
         'type' => 'text',
       ),
+      'same_individuals' => array(
+        'description' => 'Entities representing the same owl:Individual',
+        'type' => 'blob',
+        'size' => 'big',
+        'not null' => TRUE,
+        'serialize' => TRUE,
+      ),
+      'timestamp' => array(
+        'description' => 'Unix zime stamp of last update',
+        'type' => 'int',
+        'default' => '0',
+      ),
     ),
     'primary key' => array('id'),
   );
@@ -295,6 +307,11 @@ function wisski_core_schema() {
         'not null' => TRUE,
         'size' => 'medium',
         'translatable' => TRUE,
+      ),
+      'timestamp' => array(
+        'description' => 'Unix zime stamp of last update',
+        'type' => 'int',
+        'default' => '0',
       ),
     ) + entity_exportable_schema_fields(),
     'primary key' => array('id'),

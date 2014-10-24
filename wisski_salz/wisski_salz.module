@@ -95,6 +95,7 @@ function wisski_salz_get_local_store() {
 
 function wisski_salz_view_installed_store_instances($form, &$form_state) {
   $store_types = wisski_salz_get_store_types();
+  menu_rebuild();
   $store_instances = wisski_salz_get_installed_store_instances();
 
   $link = array();
