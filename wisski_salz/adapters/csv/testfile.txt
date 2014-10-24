@@ -1,0 +1,4 @@
+pid, name, label, description
+0, albrecht_durer, "Albrecht Dürer", 'ein Maler'
+1, albert_einstein, Albert Einstein, ein Stein
+2, albrecht_einstein; Albert Dürer, Stein-Maler

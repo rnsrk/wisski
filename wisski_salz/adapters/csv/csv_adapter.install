@@ -1,0 +1,9 @@
+<?php
+
+/**
+* implements hook_install()
+*/
+function csv_adapter_install() {
+
+  csv_adapter_test();
+}
