@@ -13,16 +13,7 @@ function csv_adapter_menu() {
 }
 
 function csv_adapter_test() {
+    
+  $adapter = new CSVAdapter('file','sites/all/modules/wisski/wisski_salz/adapters/csv/testfile.txt');
   
-  
-  $adapter = new CSVAdapter();
-  $adapter->setSettings('file','sites/all/modules/wisski/wisski_salz/adapters/csv/testfile.txt');
-  $adapter->setSettings('headline',TRUE);
-  $adapter->setSettings('key',1);
-  $adapter->addSeparators('\;');
-  $adapter->addAllowedChars('-äöüÄÖÜß');
-  $fields = array('name','label');
-  $conditions = array('pid' => 1);
-  $out = $adapter->queryCSV($fields,$conditions);
-  dpm($out);
 }
