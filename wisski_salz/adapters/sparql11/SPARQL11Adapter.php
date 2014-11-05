@@ -53,10 +53,24 @@ class SPARQL11Adapter implements AdapterInterface {
 
       $this->addOntologies();
     }
-    $this->putNamespace('ecrm',  'http://erlangen-crm.org/120111/');
+   // $this->putNamespace('ecrm',  'http://erlangen-crm.org/120111/');
     $this->putNamespace('behaim_inst', 'http://faui8184.informatik.uni-erlangen.de/birkmaier/content/');
     $this->putNamespace('behaim', 'http://wwwdh.cs.fau.de/behaim/voc/');
     $this->putNamespace('behaim_image', 'http://faui8184.informatik.uni-erlangen.de/behaim/ontology/images/');
+   
+    $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');
+    $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
+    $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
+    $this->putNamespace('protege', 'http://protege.stanford.edu/plugins/owl/protege#');
+    $this->putNamespace('xsp', 'http://www.owl-ontologies.com/2005/08/07/xsp.owl#');
+    $this->putNamespace('owl', 'http://www.w3.org/2002/07/owl#');
+    $this->putNamespace('xsd', 'http://www.w3.org/2001/XMLSchema#');
+    $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
+    $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+    //$this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
+    
+    
+    
     
   }
 
@@ -732,7 +746,7 @@ public function sparql11_edit_form($form, &$form_state){
             ->condition('oid',$o['oid'],'=')
             ->execute();
         }
-      }
+       }
       $this->loadOntologyInfo();
     }
 

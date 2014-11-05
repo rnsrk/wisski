@@ -307,6 +307,13 @@ function wisski_core_bundle_form($form, &$form_state, $entity_type, $op = 'edit'
       '#submit' => array('wisski_core_bundle_form_submit_delete'),
     );
   }
+ $form['actions']['pathbuilder'] = array(
+    '#type' => 'submit',
+    '#value' => t('Go to Pathbuilder Fields'),
+    '#weight' => 50,
+    '#submit' => array('wisski_core_pathbuilder_form'),
+  );
+
 
   return $form;
 }
@@ -368,4 +375,43 @@ function wisski_core_bundle_form_delete_confirm_submit($form, &$form_state) {
   // Redirect user.
   drupal_set_message(t('@type %title has been deleted.', array('@type' => $entity_type->type, '%title' => $entity_type->label)));
   $form_state['redirect'] = 'admin/structure/wisski_core_bundle';
+}
+
+function wisski_core_pathbuilder_form($form, &$form_state) {
+  $form['label'] = array(
+    '#title' => t('Label'),
+    '#type' => 'textfield',
+    //'#default_value' => $entity_type->label,
+    '#description' => t('The human-readable name of this entity type.'),
+    '#required' => TRUE,
+    '#size' => 30,
+  );
+  $form['type'] = array(
+    '#type' => 'machine_name',
+    //'#default_value' => isset($entity_type->type) ? $entity_type->type : '',
+    '#maxlength' => 32,
+    //'#disabled' => $entity_type->isLocked() && $op != 'clone',
+    '#machine_name' => array(
+      'exists' => 'wisski_core_bundle_load_multiple',
+      'source' => array('label'),
+    ),
+    '#description' => t('A unique machine-readable name for this entity type. It must only contain lowercase letters, numbers, and underscores.'),
+  );
+  $form['pb_path'] = array(
+    '#title' => t('Pathbuilder Path'),
+    '#type' => 'textfield',
+    //'#default_value' => $entity_type->label,
+    '#description' => t('The pathbuilder path of this wisski core bundle.'),
+    '#required' => TRUE,
+    '#size' => 30,
+);
+  $form['pb_external_path'] = array(
+    '#title' => t('External Path'),
+    '#type' => 'textfield',
+    //'#default_value' => $entity_type->label,
+    '#description' => t('An external path of this wisski core bundle.'),
+    '#required' => FALSE,
+    '#size' => 30,
+);
+    return $form;
 }

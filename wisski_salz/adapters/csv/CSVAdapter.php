@@ -1,7 +1,7 @@
 <?php
 
 module_load_include('php', 'wisski_salz', "interface/AdapterInterface");
-require '/local/srv/www/htdocs/dm_drupal7/sites/all/modules/wisski/WisskiErrorHandler.php';
+//require '/local/srv/www/htdocs/dm_drupal7/sites/all/modules/wisski/WisskiErrorHandler.php';
 
 class CSVAdapter implements AdapterInterface {
 
