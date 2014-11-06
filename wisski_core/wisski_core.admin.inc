@@ -311,7 +311,7 @@ function wisski_core_bundle_form($form, &$form_state, $entity_type, $op = 'edit'
     '#type' => 'submit',
     '#value' => t('Go to Pathbuilder Fields'),
     '#weight' => 50,
-    '#submit' => array('wisski_core_pathbuilder_form'),
+    '#submit' => array('wisski_core_pathbuilder_form_submit'),
   );
 
 
@@ -414,4 +414,8 @@ function wisski_core_pathbuilder_form($form, &$form_state) {
     '#size' => 30,
 );
     return $form;
+}
+
+function wisski_core_pathbuilder_form_submit(&$form, &$form_state) {
+    $form_state['redirect'] = 'admin/structure/wisski_core_bundle/' . $form_state['wisski_core_bundle']->type . '/paths';
 }
