@@ -377,18 +377,18 @@ function wisski_core_bundle_form_delete_confirm_submit($form, &$form_state) {
   $form_state['redirect'] = 'admin/structure/wisski_core_bundle';
 }
 
-function wisski_core_pathbuilder_form($form, &$form_state) {
+function wisski_core_pathbuilder_form($form, &$form_state, $entity_type) {
   $form['label'] = array(
     '#title' => t('Label'),
     '#type' => 'textfield',
-    //'#default_value' => $entity_type->label,
+    '#default_value' => $entity_type->label,
     '#description' => t('The human-readable name of this entity type.'),
     '#required' => TRUE,
     '#size' => 30,
   );
   $form['type'] = array(
     '#type' => 'machine_name',
-    //'#default_value' => isset($entity_type->type) ? $entity_type->type : '',
+    '#default_value' => isset($entity_type->type) ? $entity_type->type : '',
     '#maxlength' => 32,
     //'#disabled' => $entity_type->isLocked() && $op != 'clone',
     '#machine_name' => array(

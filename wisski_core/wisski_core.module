@@ -302,13 +302,12 @@ function wisski_core_menu() {
   $items['admin/structure/wisski_core_bundle/%wisski_core_bundle/paths'] = array(
     'title' => 'WissKI Core Bundle Paths',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('wisski_core_pathbuilder_form'),
+    'page arguments' => array('wisski_core_pathbuilder_form', 3),
     'access arguments' => array('administer wisski'),
     //'weight' => 1,
     'type' => MENU_NORMAL_ITEM,
     'file' => 'wisski_core.admin.inc',
   );
-
 
   /********* PB Stuff *************/
   $items['admin/config/wisski'] = array(
@@ -322,7 +321,7 @@ function wisski_core_menu() {
     'file path' => drupal_get_path('module', 'system'),
   );
   
-  $items['admin/config/wisski_core/pathbuilder'] = array(
+  $items['admin/config/wisski/pathbuilder'] = array(
     'title' => t('Pathbuilder'),
     'description' => t('Manage the core functionality'),
     'page callback' => 'drupal_get_form',
