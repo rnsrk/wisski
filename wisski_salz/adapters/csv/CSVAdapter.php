@@ -1,6 +1,7 @@
 <?php
 
 module_load_include('php', 'wisski_salz', "interface/AdapterInterface");
+//require '/local/srv/www/htdocs/dm_drupal7/sites/all/modules/wisski/WisskiErrorHandler.php';
 
 class CSVAdapter implements AdapterInterface {
 
@@ -411,4 +412,23 @@ class CSVAdapter implements AdapterInterface {
   public function getExternalLinkURL($uri){
   }
   
+  const SEVERE = 0;
+  const NOTICE = 1;
+  const IGNORE = 2;
+  
+  private function fail($message,$line = FALSE,$code = self::SEVERE) {
+    
+    if ($line) $line = ' (line '.$line.')';
+    else $line ='';
+    switch($code) {
+      case self::SEVERE: drupal_set_message('Severe error in '.__FILE__.$line.': <br>'.$message);
+      throw new CSVAdapterException("There were severe errors");
+      case self::NOTICE: drupal_set_message('Error in '.__FILE__.$line.': <br>'.$message);
+      break;
+      default: break;
+    }
+  }
+  
 }
+
+class CSVAdapterException extends Exception {}
