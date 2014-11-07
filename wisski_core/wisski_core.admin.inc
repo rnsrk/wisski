@@ -384,7 +384,7 @@ function wisski_core_pathbuilder_form($form, &$form_state, $entity_type) {
     '#default_value' => $entity_type->label,
     '#description' => t('The human-readable name of this entity type.'),
     '#required' => TRUE,
-    '#size' => 30,
+    '#size' => 35,
   );
   $form['type'] = array(
     '#type' => 'machine_name',
@@ -397,25 +397,33 @@ function wisski_core_pathbuilder_form($form, &$form_state, $entity_type) {
     ),
     '#description' => t('A unique machine-readable name for this entity type. It must only contain lowercase letters, numbers, and underscores.'),
   );
-  $form['pb_path'] = array(
+  
+  $paths = array();
+  $paths = sparql11_adapter_next_steps($entity_type->label);
+  foreach($paths as $path){
+  
+
+  $form['pb_path' . $path] = array(
     '#title' => t('Pathbuilder Path'),
     '#type' => 'textfield',
-    //'#default_value' => $entity_type->label,
-    '#description' => t('The pathbuilder path of this wisski core bundle.'),
+    '#default_value' => $path,
+ //   '#description' => t('The pathbuilder path of this wisski core bundle.'),
     '#required' => TRUE,
-    '#size' => 30,
-);
+    '#size' => 35,
+  );
+  }
   $form['pb_external_path'] = array(
     '#title' => t('External Path'),
     '#type' => 'textfield',
     //'#default_value' => $entity_type->label,
-    '#description' => t('An external path of this wisski core bundle.'),
+   // '#description' => t('An external path of this wisski core bundle.'),
     '#required' => FALSE,
-    '#size' => 30,
+    '#size' => 35,
 );
     return $form;
 }
 
 function wisski_core_pathbuilder_form_submit(&$form, &$form_state) {
+    //$form_state['values']['pb_path'] = 'ecrm_e18_physical_thing';	
     $form_state['redirect'] = 'admin/structure/wisski_core_bundle/' . $form_state['wisski_core_bundle']->type . '/paths';
 }
