@@ -317,7 +317,7 @@ function sparql11_adapter_wisski_update_class($type) {
   if (empty($result)) return;
   $local_store = _sparql11_adapter_invoke_local_store($result->timestamp);
   if($local_store != NULL) {
-    $entity = entity_load_single('wisski_core_bundle',array($result->id));
+    $entity = entity_load_single('wisski_core_bundle',$result->id);
     $local_store->updateClassInfo($entity);
     menu_rebuild();
   }
