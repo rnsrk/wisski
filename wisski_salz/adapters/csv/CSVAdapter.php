@@ -11,15 +11,16 @@ class CSVAdapter implements AdapterInterface {
   * 'separators' .. regex representing a group of chars, that are separating entries in the file
   * 'allowed chars' ..  regex representing a group of allowed characters
   * 'delimiters' .. array of arrays containing pairs of surrounding delimiters of strings
+  * 'comment signs' .. string containing characters denoting a comment line
   *			for the ease of use we do not use the '/[ ]/' delimiters in the saved regexes
   * 'headline' .. boolean denoting whether the file contains a headline
-  * 'auto inc key' .. column number of the key value used for auto-incrementation
-  * 'name key' .. name or column number of the (human-readable) unique key that identifies the row
+  * 'unique key' .. name or column number of the (human-readable) unique key that identifies the row
   */
   private $settings = array();
   
   function __construct($file_name) {
     
+//    ExceptionThrower::Start();
     $this->setSettings('file',$file_name);
     $this->setStandardSettings();
   }
@@ -38,7 +39,6 @@ class CSVAdapter implements AdapterInterface {
   public function query ($path_definition, $subject = NULL, $disamb = array(), $value = NULL) {
   
   }
-
   
   /** Return the settings page(s)
   */
@@ -55,16 +55,14 @@ class CSVAdapter implements AdapterInterface {
   
     if (!array_key_exists('headline',$this->settings)) 
       $this->settings['headline'] = FALSE;
-    if (!array_key_exists('auto inc key',$this->settings))
-      $this->settings['auto inc key'] = 0;
-    if (!array_key_exists('name key',$this->settings))
-      $this->settings['name key'] = $this->settings['auto inc key'];
     if (!array_key_exists('separators',$this->settings))
       $this->settings['separators'] = ',';
     if (!array_key_exists('allowed chars',$this->settings))
       $this->settings['allowed chars'] = '\w\d\s\t';
     if (!array_key_exists('delimiters',$this->settings))
       $this->settings['delimiters'] = array();
+    if (!array_key_exists('imported',$this->settings))
+      $this->settings['imported'] = FALSE;
   }
 
   /** If $name is an array, then $value will be ignored and $name will be interpreted as array of all settings.
@@ -72,8 +70,14 @@ class CSVAdapter implements AdapterInterface {
   public function setSettings($name, $value = NULL) {
     
     if (is_array($name)) {
-      $this->settings = array_merge($this->settings,$name);
+      foreach($name as $key => $val) {
+        $this->setSettings($key,$val);
+      }
     } elseif (is_string($name) || is_integer($name)) {
+      if ($name == 'file' && isset($this->settings['file'])) {
+        trigger_error("The associated file should not be changed",E_USER_WARNING);
+        return;
+      }
       $this->settings[$name] = $value;
     }
   }
@@ -104,6 +108,22 @@ class CSVAdapter implements AdapterInterface {
     }
   }
   
+  public function addCommentSigns($char) {
+  
+    $allowed = $this->settings['allowed chars'];
+    if (preg_match('/['.$allowed.']/',$char)) {
+      trigger_error("Allowed chars and comment signs must be different",E_USER_WARNING);
+      return;
+    }
+    if (isset($this->settings['comment signs'])) {
+      $comments = &$this->settings['comment signs'];
+      if (!preg_match('/['.$comments.']/',$char)) {
+        $comments .= $char;
+      }
+    } else
+      $this->settings['comment signs'] = $char;
+  }
+  
   public function addDelimiters($input) {
   
     $delimiters = array();
@@ -130,6 +150,49 @@ class CSVAdapter implements AdapterInterface {
     dpm($delimiters);
     $del[] = $delimiters;
   }
+  
+  public function importToDB() {
+  
+    list($keys,$results) = $this->loadFile();
+    $file_name = $this->settings['file'];
+    dpm($file_name);
+    $short_name = strrchr($file_name,'/');
+    dpm($short_name);
+    $table_name = 'wisski_'.preg_replace('/[^a-zA-Z0-9_]/','_',$short_name);
+    dpm($table_name);
+    if(!db_table_exists($table_name)) {
+      $schema = array(
+        'description' => 'import table for file: "'.$file_name,
+      );
+      $fields = array();
+      foreach ($keys as $key) {
+        $fields[$key] = array(
+          'description' => $key,
+          'type' => 'varchar',
+          'length' => 255,
+          'default' => '',
+        );
+      }
+      $id_name = 'import_id';
+      while (in_array($id_name,$keys)) $id_name .= '_';
+      $schema['primary key'] = array($id_name);
+      $fields[$id_name] = array(
+        'not null' => TRUE,
+        'type' => 'serial',
+      );
+      $schema['fields'] = $fields;
+      db_create_table($table_name,$schema);
+      drupal_set_message('Table '.$table_name.' has successfully been created');
+    }
+    $this->settings['db_table'] = $table_name;
+    foreach($results as $row) {
+      unset($row['row_number']);
+      $unique = $this->settings['unique key'];
+      $result = db_select($table_name,'tab')->fields('tab')->condition($unique,$row[$unique],'LIKE')->execute()->fetchObject();
+      if (empty($result)) db_insert($table_name)->fields($row)->execute();
+    }
+    $this->settings['imported'] = TRUE;
+  }
 
   /**
   * insert a new entry line at the end of the file, Entries are given either by key-value-pairs
@@ -138,32 +201,25 @@ class CSVAdapter implements AdapterInterface {
   * @params auto_increment boolean denoting whether to autoincrement
   * @params increment_key if set, the key on which we will increment is (re)set to this
   */
-  public function insertCSV($fields,$auto_increment = FALSE, $increment_key = '') {
+  public function insertCSV($fields) {
     
     if (empty($fields)) return;
-    if (!array_key_exists('file',$this->settings) || !isset($this->settings['file'])) $this->fail('No CSV file specified for the adapter',__LINE__);
-    list($keys,$file) = $this->loadFile();
-    if (!$this->validateKeys(array_keys($fields),$keys)) $this->fail('Wrong keys specified in fields',__LINE__);
-    if ($auto_increment) {
-      if ($increment_key != '') $this->settings['auto inc key'] = $increment_key;
-      $inc_key = $this->settings['auto inc key'];
-      if (!in_array($inc_key,$keys)) $this->fail('Auto-Incrementation key '.$inc_key.' is oot specified in file',__LINE__);
-      if (isset($fields[$inc_key])) $this->fail('You must not set a value for the auto-incrementation field',__LINE__);
-      $current_key = -1;
-      if(!empty($file)) {
-        $last = array_pop($file);
-        $current_key = trim($last[$inc_key]);
-        if (!is_numeric($current_key)) $this->fail('The last key '.$current_key.' in your file is a non-integer and thus cannot be auto-incremented',__LINE__);
-      }
-      $fields[$inc_key] = $current_key+1;
+    if (!array_key_exists('file',$this->settings) || !isset($this->settings['file'])) {
+      trigger_error('No CSV file specified for the adapter',E_USER_ERROR);
+      return;
     }
+    list($keys,$file) = $this->loadFile();
+    if (!$this->validateKeys(array_keys($fields),$keys)) {
+      trigger_error('Wrong keys specified in fields',E_USER_ERROR);
+      return;
+    }    
     $outstring = "\n".$fields[array_shift($keys)];;
     foreach($keys as $key) {
       if (isset($fields[$key])) {
         $string = $fields[$key];
         if (preg_match('/[^'.$this->settings['allowed chars'].']/',$string)) {
           $naked_errors = preg_replace('/['.$this->settings['allowed chars'].']/','',$string);
-          new WisskiError('Value '.$string.' contains invalid characters '.$naked_errors,WisskiError::NOTICE);
+          trigger_error('Value '.$string.' contains invalid characters '.$naked_errors,E_USER_NOTICE);
         }
         else {
           $outstring .= ','.$string;
@@ -174,21 +230,10 @@ class CSVAdapter implements AdapterInterface {
   }
 
   /**
-  *
+  * we do not update CSVs
   */
   public function updateCSV($fields,$conditions = array()) {
-    
-    if (!array_key_exists('file',$this->settings) || !isset($this->settings['file'])) $this->fail('No CSV file specified for the adapter',__LINE__);
-    $handle = fopen($this->settings['file'],"c+");
-    $keys = array();
-    if ($this->settings['headline']) {
-      if(feof($handle)) $this->fail('No keys are defined in the file',__LINE__);
-      else $keys = $this->tokenizeRow($line);
-    }
-    while (!feof($handle)) {
-      $line = fgets($handle);
-      $toks = $this->tokenizeRow($line);
-    }
+  
   }
   
   /**
@@ -199,31 +244,46 @@ class CSVAdapter implements AdapterInterface {
   */
   public function queryCSV($fields,$conditions = array()) {
     
-    list($keys,$file) = $this->loadFile();
-    if (is_null($file)) return NULL;
-    if (empty($file)) return array();
-    if (!$this->validateKeys($fields,$keys)) $this->fail('Wrong keys specified in fields',__LINE__);
-    else if (!empty($conditions) && !$this->validateKeys(array_keys($conditions),$keys)) $this->fail('Wrong keys specified in conditions',__LINE__);
-    //add the following line to show the row number in the query result
-    //$fields[] = 'row_number';
-    $output = array();
-    foreach($file as $row => $properties) {
-      $go = TRUE;
-      foreach($conditions as $key => $value) {
-        if ($properties[$key] != $value) {
-          $go = FALSE;
-          continue;
+    if ($this->settings['imported']) {
+      $query = db_select($this->settings['db_table'],'tab')
+              ->fields('tab',$fields);
+      foreach ($conditions as $field => $condition) {
+        $query = $query->condition($field,$condition,'LIKE');
+      }
+      return $query->execute()->fetchAllAssoc($this->settings['unique key']);
+    } else {
+      list($keys,$file) = $this->loadFile();
+      if (is_null($file)) return NULL;
+      if (empty($file)) return array();
+      if (!$this->validateKeys($fields,$keys)) {
+        trigger_error('Wrong keys specified in fields',E_USER_ERROR);
+        return;
+      }
+      else if (!empty($conditions) && !$this->validateKeys(array_keys($conditions),$keys)) {
+        trigger_error('Wrong keys specified in conditions',E_USER_ERROR);
+        return;
+      }
+      //add the following line to show the row number in the query result
+      //$fields[] = 'row_number';
+      $output = array();
+      foreach($file as $row => $properties) {
+        $go = TRUE;
+        foreach($conditions as $key => $value) {
+          if ($properties[$key] != $value) {
+            $go = FALSE;
+            continue;
+          }
+        }
+        if ($go) {
+          $result = new stdClass();
+          foreach($fields as $field) {
+            $result->$field = $properties[$field];
+          }
+          $output[$row] = $result;
         }
       }
-      if ($go) {
-        $result = array();
-        foreach($fields as $field) {
-          $result[$field] = $properties[$field];
-        }
-        $output[$row] = $result;
-      }
+      return $output;
     }
-    return $output;
   }
 
   private function validateKeys($fields,$keys) {
@@ -245,17 +305,26 @@ class CSVAdapter implements AdapterInterface {
   
   public function loadFile() {
       
-    if (!array_key_exists('file',$this->settings) || !isset($this->settings['file'])) $this->fail('No CSV file specified for the adapter',__LINE__);
+    if (!array_key_exists('file',$this->settings) || !isset($this->settings['file'])) {
+      trigger_error('No CSV file specified for the adapter',E_USER_ERROR);
+      return;
+    }
     $tokens = array();
     $count = -1;
     $head = FALSE;
     $keys = array();
     $handle = fopen($this->settings['file'],"r+");
-    if (!$handle) $this->fail('file '.$this->settings['file'].' could not be opened correctly',__LINE__);
+    if (!$handle) {
+      trigger_error('file '.$this->settings['file'].' could not be opened correctly',E_USER_ERROR);
+      return;
+    }
     while (!feof($handle)) {
       $row = fgets($handle);
       if ($this->settings['headline'] && !$head) {
-        if (trim($row) == '') $this->fail('No Keys specified in file',__LINE__);
+        if (trim($row) == '') {
+          trigger_error('No Keys specified in file',E_USER_ERROR);
+          return;
+        }
         $keys = $this->tokenizeRow($row);
         if ($keys !== NULL) {
           $count++;
@@ -264,15 +333,15 @@ class CSVAdapter implements AdapterInterface {
           foreach($keys as $num => $key) $trimmed_keys[$num] = trim($key);
           $keys = $trimmed_keys;
           $key_count = count($keys);
-        } else return NULL;
+        } else continue;
       } else {
         if (trim($row) == '') continue;
         $count++;
         $row_toks = $this->tokenizeRow($row,$count);
         if ($row_toks === NULL) continue;
-        $row_key = $row_toks[array_search($this->settings['name key'],$keys)];
+        $row_key = $row_toks[array_search($this->settings['unique key'],$keys)];
         if (array_key_exists($row_key,$tokens)) {
-          trigger_error('The value "'.$row_key.'" used as "'.$this->settings['name key'].'" is not unique (in row '.$count.')',E_USER_WARNING);
+          trigger_error('The value "'.$row_key.'" used as "'.$this->settings['unique key'].'" is not unique (in row '.$count.')',E_USER_WARNING);
           continue;
         }
         if ($head) {
@@ -293,6 +362,7 @@ class CSVAdapter implements AdapterInterface {
   
   private function tokenizeRow($row,$line_number = "") {
     
+    if (isset($this->settings['comment signs']) && preg_match('/^['.$this->settings['comment signs'].'].*/',$row)) return NULL;
     $allowed = $this->settings['allowed chars'];
     $dirty = preg_split('/['.$this->settings['separators'].']/',$row);
     $clean = array();
@@ -305,18 +375,19 @@ class CSVAdapter implements AdapterInterface {
       //checks if all left chars are allowed
       if (preg_match('/[^'.$allowed.']/',$value)) {
         $naked_errors = preg_replace('/['.$allowed.']/',' ',$value);
-        new WisskiError('Entry '.$value.' in row '.$line_number.' contains invalid characters: "'.$naked_errors.' "',WisskiError::NOTICE);
+        trigger_error('Entry '.$value.' in row '.$line_number.' contains invalid characters: "'.$naked_errors.' "',E_USER_NOTICE);
       } else $clean[$key] = $value;
     }
+//    dpm("Tokenized $row \n".serialize($clean));
     return $clean;
   }
   
   public function initializeTest() {
   
-    $this->cleanFile();
+//    $this->cleanFile();
     $this->setSettings('headline',TRUE);
-    $this->setSettings('name key','name');
-//    $this->addDelimiters(array('»','«'));
+    $this->setSettings('unique key','name');
+    $this->addDelimiters(array('»','«'));
     $this->addDelimiters("\"");
     $this->addDelimiters('\'');
     $this->addSeparators('\;');

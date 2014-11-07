@@ -257,9 +257,11 @@ function sparql11_adapter_wisski_settings_page_validate($element, $form, &$form_
 */
 function sparql11_adapter_invoke_instance($name) {
   $store_instance = new SPARQL11Adapter();
+  $key = _sparql11_adapter_get_db_key();
   $settings = db_select('wisski_salz_store_instances','ins')
                 ->fields('ins')
                 ->condition('name',$name,'LIKE')
+                ->condition('type',$key,'=')
                 ->execute()->fetchAssoc();
   $store_instance->setSettings($settings);
   return $store_instance;
@@ -284,6 +286,11 @@ function sparql11_adapter_invoke_instance($name) {
     else return NULL;
   }
 
+function sparql11_adapter_next_steps($node) {
+
+  $local_store = _sparql11_adapter_invoke_local_store();
+  return $local_store->nextSteps($node);
+}
 
 /**
 *implements hook_wisski_update_entity
@@ -310,7 +317,7 @@ function sparql11_adapter_wisski_update_class($type) {
   if (empty($result)) return;
   $local_store = _sparql11_adapter_invoke_local_store($result->timestamp);
   if($local_store != NULL) {
-    $entity = current(entity_load('wisski_core_bundle',array($result->id)));
+    $entity = entity_load_single('wisski_core_bundle',$result->id);
     $local_store->updateClassInfo($entity);
     menu_rebuild();
   }

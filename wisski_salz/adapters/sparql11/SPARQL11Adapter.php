@@ -161,6 +161,62 @@ public function sparql11_edit_form($form, &$form_state){
 
   }
 
+  public function nextClasses($property) {
+  
+    list($ok,$result) = $this->querySPARQL(
+      "SELECT DISTINCT *"
+      ."WHERE {"
+        ."$property a owl:ObjectProperty. "
+        ."$property rdfs:range/rdfs:subClassOf* ?class. "
+        ."?class a owl:Class. "
+      ."}"
+    );
+    if ($ok) {
+      $output = array();
+      foreach ($result as $obj) {
+        $output[] = $obj->class->dumpValue('text');
+      }
+      return $output;
+    }
+    return array();
+  }
+  
+  public function nextProperties($class) {
+    
+    list($ok,$result) = $this->querySPARQL(
+      "SELECT DISTINCT *"
+      ."WHERE {"
+        ."$class a owl:Class. "
+        ."?property a owl:ObjectProperty. "
+        ."?property rdfs:domain/(^rdfs:subClassOf)* $class. "
+      ."}"
+    );
+    if ($ok) {
+      $output = array();
+      foreach ($result as $obj) {
+        $output[] = $obj->property->dumpValue('text');
+      }
+      return $output;
+    }
+    return array();
+  }
+  
+  public function nextSteps($node) {
+    
+    list($ok,$result) = $this->querySPARQL(
+      "SELECT DISTINCT * "
+      ."WHERE {"
+        ."$node a ?type"
+      ."}"
+    );
+    if ($ok) {
+      foreach($result as $obj) {
+        if ($obj->type->dumpValue('text') == 'owl:Class') return $this->nextProperties($node);
+        if ($obj->type->dumpValue('text') == 'owl:ObjectProperty') return $this->nextClasses($node);
+      }
+    }
+    return array();
+  }
   
   public function querySPARQL($query) {
     return $this->request('query',$query);
@@ -272,6 +328,60 @@ public function sparql11_edit_form($form, &$form_state){
     return $prefix.preg_replace('/[^a-z0-9_]/u','_',substr(strtolower($entity),0,32-$pre_len));
   }  
   
+  public function createEntitiesForBundle($bundle) {
+    
+    drupal_set_message("Creating entities for bundle");
+    $bundle_label = $bundle->label;
+    $now = time();
+    $result = array();
+    list($ok,$result) 
+      = $this->querySPARQL(
+        "SELECT DISTINCT ?ind "
+        ."WHERE "
+        ."{ "
+          ."$bundle_label a owl:Class. "
+          ."?ind a $bundle_label. "
+          ."FILTER NOT EXISTS { "
+            ."?n (rdfs:subClassOf)+ $bundle_label. "
+            ."?ind a ?n. "
+         ."} "
+      ."} "
+//  	."LIMIT 1 "
+    );
+    $then = time();
+    trigger_error("Query took ".($then-$now)." seconds",E_USER_NOTICE);
+    $now = time();
+    if ($ok) {
+      foreach($result as $obj) {
+        if(isset($obj->ind)) {
+          $ind = $obj->ind->dumpValue('text');
+          $ind_pref = substr(strstr($bundle_label,':'),1,4);
+          $ind_label = $ind;
+          $ind_name = $this->makeDrupalName($ind_pref.$ind_label,'ind_');
+          $query = new EntityFieldQuery();
+          $query->entityCondition('entity_type', 'wisski_core_entity');
+          $query->propertyCondition('name',$ind_name,'=');
+          $results = $query->execute();            
+          if (!empty($results)) continue;
+          if (in_array($ind_name,$results)) continue;
+          $info = array(
+            'type' => $bundle->type,
+            'name' => $ind_name,  
+            'title' => $ind_label,
+            'same_individuals' => array($ind_name),
+            'timestamp' => 0, //ensures update on first view
+          );
+          $entity = entity_create('wisski_core_entity',$info);
+          entity_save('wisski_core_entity',$entity);
+        }
+      }
+    }
+    $then = time();
+    $secs = ($then - $now) % 60;
+    $mins = ($then - $now - $secs) / 60;
+    trigger_error("Rest of Setup took $mins:$secs min",E_USER_NOTICE);
+  }
+  
   public function createEntities() {
     
     $now = time();
@@ -286,10 +396,10 @@ public function sparql11_edit_form($form, &$form_state){
           ."FILTER NOT EXISTS { "
             ."?n (rdfs:subClassOf)+ ?class. "
             ."?ind a ?n. "
-          ."} "
-        ."} "
-//        ."LIMIT 1 "
-      );
+         ."} "
+      ."} "
+//  	."LIMIT 1 "
+    );
     $then = time();
     trigger_error("Query took ".($then-$now)." seconds",E_USER_NOTICE);
     $now = time();
@@ -414,6 +524,7 @@ public function sparql11_edit_form($form, &$form_state){
     $instances = array();
     $class_name = $class->type;
     $class_label = $class->label;
+    
     list($ok,$result) = $this->querySPARQL(
       "SELECT ?property ?target "
       ."WHERE {"
@@ -558,6 +669,7 @@ public function sparql11_edit_form($form, &$form_state){
     }
     $class->timestamp = time();
     $class->save();
+    $this->createEntitiesForBundle($class);
   }
 
   public function loadClasses() {
