@@ -24,7 +24,7 @@ function wisski_core_list_bundles() {
  */
 
 function wisski_core_list($type) {
-  
+
   module_invoke_all('wisski_update_class',$type);
 //  drupal_set_title(t('WissKI Entities'));
 
@@ -108,4 +108,98 @@ function wisski_core_entity_view($entity) {
   $entity_view = entity_view('wisski_core_entity',array($id => $entity)/*,'full'*/);
   variable_del('wisski_core_semaphore_'.$id);
   return $entity_view;
+}
+
+
+function wisski_core_edit_bundle_paths($form,&$form_state) {
+
+  $form = array();
+  $form['item'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Add Path'),
+    '#collapsible' => FALSE,
+    '#tree' => TRUE,
+    '#weight' => -2,
+  );
+  
+  $form['item']['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Path name'),
+    '#default_value' => '',
+    '#description' => t(''),
+  );
+  
+  $form['item']['description'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Description'),
+    '#default_value' => '',
+    '#description' => t(''),
+  );
+  
+  if (empty($form_state['steps']['count'])) {
+    $form_state['steps']['count'] = 0;
+  } else if (isset($form_state['triggering_element']) && $form_state['triggering_element']['#name'] == 'step') {
+    $form_state['steps']['count']++;
+  }
+  $entity = entity_load_single('wisski_core_bundle',arg(2));
+  $entries = sparql11_adapter_next_steps($entity->label);
+  
+  $form['item']['path'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Path'),
+    '#collapsible' => FALSE,
+    '#tree' => TRUE,
+    '#prefix' => '<div id="full_path">',
+    '#suffix' => '</div>',
+  );
+  
+  $form['item']['path']['step'] = array(
+    '#type' => 'select',
+    '#title' => '',
+     '#options' => $entries,
+    '#default_value' => 0,
+    '#ajax' => array(
+      'callback' => 'wisski_pb_path_step',
+      'wrapper' => 'full_path',
+    ),
+  );
+    
+  $form['item']['enabled'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enabled'),
+    '#default_value' => '',
+    '#description' => t(''),
+  );
+  
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+    '#submit' => array('wisski_pb_path_submit'),
+  );
+  
+  return $form;
+}
+
+
+
+function wisski_pb_path_step($form,&$form_state) {
+  
+  $name = $form_state['values']['item']['name'];
+  $path = array($form_state['values']['item']['path']);
+  $fields = array(
+    'uuid' => $name,
+    'path_array' => $path,
+    'weight' => 0,
+  );
+  db_insert('wisski_pb_pathdata')
+    ->fields($fields)
+    ->execute();
+  return $form['item']['path'];
+}
+
+function wisski_pb_path_submit($form, $form_state) {
+
+  dpm($form);
+  dpm($form_state);
+  return $form;
 }
