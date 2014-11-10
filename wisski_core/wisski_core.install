@@ -49,20 +49,32 @@ function wisski_core_schema() {
         'length' => 36,
         'description' => 'The uuid of the template.',
       ),
+      
+      'starting_concept' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'description' => 'the first concept in the path i.e. the class this path is attached to'
+      ),
 
       'path_array' => array(
         'type' => 'text',
         'size' => 'big',
-
-        'not null' => TRUE,
+        'not null' => FALSE,
         'description' => 'The array for the path.',
       ),
     
+      'external_path' => array(
+        'type' => 'char',
+        'length' => 36,
+        'not null' => FALSE,
+        'description' => 'uuid of external path starting with the last concept in the local path',
+      ),
       
       'datatype_property' => array(
         'type' => 'varchar',
         'length' => 255,
-        'not null' => TRUE,
+        'not null' => FALSE,
         'default' => '',
         'description' => 'The uri of the selected datatype property.',
       ),
@@ -100,6 +112,13 @@ function wisski_core_schema() {
         'not null' => TRUE,
         'default' => 0,
         'description' => 'If it is a group = 1, if it is a path = 0',
+      ),
+      
+      'pending' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => '1 only if this path is edited at the moment',
       ),
     ),
     'primary key' => array('id'),

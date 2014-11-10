@@ -53,11 +53,11 @@ class SPARQL11Adapter implements AdapterInterface {
 
       $this->addOntologies();
     }
-   // $this->putNamespace('ecrm',  'http://erlangen-crm.org/120111/');
+    $this->putNamespace('ecrm',  'http://erlangen-crm.org/120111/');
     $this->putNamespace('behaim_inst', 'http://faui8184.informatik.uni-erlangen.de/birkmaier/content/');
     $this->putNamespace('behaim', 'http://wwwdh.cs.fau.de/behaim/voc/');
     $this->putNamespace('behaim_image', 'http://faui8184.informatik.uni-erlangen.de/behaim/ontology/images/');
-   
+/*   
     $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');
     $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
     $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
@@ -68,10 +68,7 @@ class SPARQL11Adapter implements AdapterInterface {
     $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
     $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
     //$this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
-    
-    
-    
-    
+  */  
   }
 
 
@@ -167,7 +164,7 @@ public function sparql11_edit_form($form, &$form_state){
       "SELECT DISTINCT *"
       ."WHERE {"
         ."$property a owl:ObjectProperty. "
-        ."$property rdfs:range/rdfs:subClassOf* ?class. "
+        ."$property (^rdfs:subPropertyOf)*/rdfs:range/rdfs:subClassOf* ?class. "
         ."?class a owl:Class. "
       ."}"
     );
@@ -176,6 +173,7 @@ public function sparql11_edit_form($form, &$form_state){
       foreach ($result as $obj) {
         $output[] = $obj->class->dumpValue('text');
       }
+      natsort($output);
       return $output;
     }
     return array();
@@ -188,7 +186,14 @@ public function sparql11_edit_form($form, &$form_state){
       ."WHERE {"
         ."$class a owl:Class. "
         ."?property a owl:ObjectProperty. "
-        ."?property rdfs:domain/(^rdfs:subClassOf)* $class. "
+        ."{"
+          ."?property rdfs:subPropertyOf*/rdfs:domain/(^rdfs:subClassOf)* $class. "
+        ."}"
+/*        ."UNION"
+        ."{"
+          ."?property owl:inverseOf ?inverse. "
+          ."?inverse rdfs:range/(^rdfs:subClassOf)*  $class. "
+        ."}"*/
       ."}"
     );
     if ($ok) {
@@ -196,6 +201,28 @@ public function sparql11_edit_form($form, &$form_state){
       foreach ($result as $obj) {
         $output[] = $obj->property->dumpValue('text');
       }
+      natsort($output);
+      return $output;
+    }
+    return array();
+  }
+  
+  public function nextDatatypeProperties($class) {
+    
+    list($ok,$result) = $this->querySPARQL(
+      "SELECT DISTINCT *"
+      ."WHERE {"
+        ."$class a owl:Class. "
+        ."?property a owl:DatatypeProperty. "
+        ."?property rdfs:subPropertyOf*/rdfs:domain/(^rdfs:subClassOf)* $class. "
+      ."}"
+    );
+    if ($ok) {
+      $output = array();
+      foreach ($result as $obj) {
+        $output[] = $obj->property->dumpValue('text');
+      }
+      natsort($output);
       return $output;
     }
     return array();
@@ -260,11 +287,11 @@ public function sparql11_edit_form($form, &$form_state){
           }
       } else drupal_set_message("EasyRdf is not installed");
     } catch (Exception $e) {
-        drupal_set_message("SPARQL1.1 $type request failed.<br>Query was '".htmlentities($query)."'<br>Error Message:<br>".get_class($e)."<br>".$e->getMessage());
+//        drupal_set_message("SPARQL1.1 $type request failed.<br>Query was '".htmlentities($query)."'<br>Error Message:<br>".get_class($e)."<br>".$e->getMessage());
         
 //        throw $e;
     }
-    drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
+//    drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
     return array($ok,$results);
   }
   
@@ -319,7 +346,7 @@ public function sparql11_edit_form($form, &$form_state){
         ->fields(array('short_name' => $short_name,'long_name' => $long_name))
         ->execute();
     } else {
-      drupal_set_message('Namespace '.$short_name.' already exists in DB');
+//      drupal_set_message('Namespace '.$short_name.' already exists in DB');
     }
   }
   

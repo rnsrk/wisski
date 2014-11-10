@@ -292,6 +292,12 @@ function sparql11_adapter_next_steps($node) {
   return $local_store->nextSteps($node);
 }
 
+function sparql11_adapter_next_datatype_properties($class) {
+
+  $local_store = _sparql11_adapter_invoke_local_store();
+  return $local_store->nextDatatypeProperties($class);
+}
+
 /**
 *implements hook_wisski_update_entity
 */
