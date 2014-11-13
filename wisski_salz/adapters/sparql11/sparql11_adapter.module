@@ -16,11 +16,17 @@ module_load_include('php', 'wisski_salz', "interface/AdapterInterface");
  * Implements hook_menu().
  */
 function sparql11_adapter_menu() {
-  $items = array();
-      $store_type = sparql11_adapter_wisski_get_store_type();
-      $key = _sparql11_adapter_get_db_key();
+    $items = array();
+    $store_type = sparql11_adapter_wisski_get_store_type();
+    $key = _sparql11_adapter_get_db_key();
+    $result = db_select('wisski_salz_store_types', 'types')
+	    ->fields('types', array('name'))
+	    ->condition('label', sparql11_adapter_wisski_get_store_type(), 'LIKE')
+	    ->execute()->fetchObject();
+    if(!empty($result)) $store_type_name = $result->name;
 
-    $items['admin/config/wisski/salz/add/' . $key] = array(
+    //$items['admin/config/wisski/salz/add/' . $key] = array(
+    $items['admin/config/wisski/salz/add/' . $store_type_name] = array(
       'title' => 'Add new store of type ' . $store_type,
       'description' => 'Manage the storage backends',
       'type' => MENU_NORMAL_ITEM,
@@ -33,7 +39,8 @@ function sparql11_adapter_menu() {
       $store_instances = sparql11_adapter_wisski_get_store_instances();
       
     foreach($store_instances as $key2 => $store_instance) {
-        $items['admin/config/wisski/salz/edit/'.$key.'/'.$key2] = array(
+       //$items['admin/config/wisski/salz/edit/' . $key . '/' . $key2] = array(
+       $items['admin/config/wisski/salz/edit/' . $store_type_name . '/' . $key2] = array(
         'title' => 'Edit ' . $store_type . ' Store ' . $store_instance->label,
         'description' => 'Manage the storage backends',
         'type' => MENU_LOCAL_TASK,
@@ -42,7 +49,8 @@ function sparql11_adapter_menu() {
         'access arguments' => array('administer wisski'),
         );
 
-        $items['admin/config/wisski/salz/delete/' . $key . '/' .  $key2] = array(
+        //$items['admin/config/wisski/salz/delete/' . $key . '/' .  $key2] = array(
+        $items['admin/config/wisski/salz/delete/' . $store_type_name . '/' .  $key2] = array(
         'title' => 'Delete Store ' . $store_type . ' ' . $key2,
         'description' => 'Manage the storage backends',
         'type' => MENU_NORMAL_ITEM,

@@ -7,3 +7,4 @@ function csv_adapter_install() {
 
   csv_adapter_test();
 }
+

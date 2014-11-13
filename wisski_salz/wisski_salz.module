@@ -63,7 +63,7 @@ function wisski_salz_menu() {
       'access arguments' => array('administer wisski'),
   );
 
-  $items['admin/config/wisski/salz/add'] = array(
+/*  $items['admin/config/wisski/salz/add'] = array(
     'title' => 'Add Store',
     'description' => 'Manage the storage backends',
     'type' => MENU_LOCAL_TASK,
@@ -72,7 +72,7 @@ function wisski_salz_menu() {
     'page arguments' => array('wisski_salz_config_page'),
     'access arguments' => array('administer wisski'),
   );
-
+ */
 return $items;
 }
 
@@ -95,17 +95,17 @@ function wisski_salz_get_local_store() {
 
 function wisski_salz_view_installed_store_instances($form, &$form_state) {
   $store_types = wisski_salz_get_store_types();
-  menu_rebuild();
   $store_instances = wisski_salz_get_installed_store_instances();
-
+//  $key = _sparql11_adapter_get_db_key();
   $link = array();
-  $link['any'] = array(
+ /* $link['any'] = array(
     'data' => l('Add new Store Instance', 'admin/config/wisski/salz/add'),
   );
-
+  */
   foreach($store_types as $key => $store_type){
   $link[$store_type['name']] = array(
     'data' => l('Add new Store Instance of Type ' . $store_type['label'], 'admin/config/wisski/salz/add/' . $store_type['name']));
+//    'data' => l('Add new Store Instance of Type ' . $store_type['label'], 'admin/config/wisski/salz/add/' . $key));
   }
 
   $sorted_store_instances_by_type = array();
@@ -117,7 +117,14 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
     } else {
     $text = $store_instance->label;
     }
-    $path = 'admin/config/wisski/salz/edit/' . $store_instance->type . '/' . $store_instance->name;
+    $result = db_select('wisski_salz_store_types', 'types')
+	  ->fields('types', array('name'))
+	  ->condition('stid', $store_instance->type, 'LIKE')
+	  ->execute()->fetchObject();
+    if(!empty($result)) $store_type_name = $result->name;
+
+    //$path = 'admin/config/wisski/salz/edit/' . $store_instance->type . '/' . $store_instance->name;
+    $path = 'admin/config/wisski/salz/edit/' . $store_type_name . '/' . $store_instance->name;
     $sorted_store_instances_by_type[$store_instance->type][] = array( 
       'data' => l($text, $path). "<div class='wki_grey'>" . t($store_instance->query_endpoint . ', ' . $store_instance->update_endpoint) . "</div>",
     );
@@ -144,6 +151,7 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
          );
     }
 
+  menu_rebuild();
   $form['recover'] = array(
     '#type' => 'submit',
     '#value' => t('Recover all deleted stores'),
