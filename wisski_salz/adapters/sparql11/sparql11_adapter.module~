@@ -256,40 +256,14 @@ function sparql11_adapter_wisski_settings_page_validate($element, $form, &$form_
 * @author domerz
 */
 function sparql11_adapter_invoke_instance($name) {
+
   $store_instance = new SPARQL11Adapter();
-  $key = _sparql11_adapter_get_db_key();
   $settings = db_select('wisski_salz_store_instances','ins')
                 ->fields('ins')
                 ->condition('name',$name,'LIKE')
-                ->condition('type',$key,'=')
                 ->execute()->fetchAssoc();
   $store_instance->setSettings($settings);
   return $store_instance;
-}
-
-  function _sparql11_adapter_invoke_local_store($timestamp = NULL) {
-    $result = db_select('wisski_salz_store_instances','ins')
-                ->fields('ins')
-                ->condition('type',_sparql11_adapter_get_db_key(),'=')
-                ->condition('local_data',1,'=')
-                ->condition('deleted',0,'=');
-    if ($timestamp != NULL) {
-      $delta = time() - $timestamp;
-      $result = $result->condition('update_interval',$delta,'<');
-    }
-    $result = $result->execute()->fetchAssoc();
-    if (!empty($result)) {
-      $store_instance = new SPARQL11Adapter();
-      $store_instance->setSettings($result);
-      return $store_instance;
-    }
-    else return NULL;
-  }
-
-function sparql11_adapter_next_steps($node) {
-
-  $local_store = _sparql11_adapter_invoke_local_store();
-  return $local_store->nextSteps($node);
 }
 
 /**
@@ -297,7 +271,7 @@ function sparql11_adapter_next_steps($node) {
 */
 function sparql11_adapter_wisski_update_entity($entity) {
                 
-  $local_store = _sparql11_adapter_invoke_local_store($entity->timestamp);
+  $local_store = wisski_salz_invoke_local_store($entity->timestamp);
   if($local_store != NULL) {
     $local_store->updateEntityInfo($entity);
     menu_rebuild();

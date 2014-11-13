@@ -192,6 +192,7 @@ function wisski_core_entity_info_alter(&$entity_info) {
         'path' => 'admin/structure/wisski_core_bundle/manage/%wisski_core_bundle',
         'real path' => 'admin/structure/wisski_core_bundle/manage/' . $type,
         'bundle argument' => 4,
+        'access arguments' => array('administer wisski'),
       ),
     );
   }
@@ -229,11 +230,30 @@ function wisski_core_menu() {
     $items['wisski/navigate/'.$bundle_name.'/edit_bundle'] = array(
       'title' => 'Edit Paths',
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('wisski_core_edit_bundle_paths'),
-//      'page arguments' => array(2),
+      'page arguments' => array('wisski_core_edit_bundle_paths',2),
       'access arguments' => array('administer wisski paths'),
       'access callback' => TRUE,
-      'file' => 'wisski_core.pages.inc',
+      'file' => 'wisski_core.pathbuilder.inc',
+      'type' => MENU_LOCAL_TASK,
+    );
+    
+    $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/edit_paths'] = array(
+      'title' => 'Edit Paths',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('wisski_core_edit_bundle_paths',4),
+      'access arguments' => array('administer wisski paths'),
+      'access callback' => TRUE,
+      'file' => 'wisski_core.pathbuilder.inc',
+      'type' => MENU_LOCAL_TASK,
+    );
+    
+    $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/field_paths'] = array(
+      'title' => 'Manage Paths',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('wisski_core_field_paths',4),
+      'access arguments' => array('administer wisski paths'),
+      'access callback' => TRUE,
+      'file' => 'wisski_core.pathbuilder.inc',
       'type' => MENU_LOCAL_TASK,
     );
   
@@ -344,10 +364,11 @@ function wisski_core_menu() {
       'type' => MENU_NORMAL_ITEM,
       'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('wisski_core_list_bundles'),
-      'file' => 'wisski_core.pages.inc',
+      'page arguments' => array('wisski_core_pb_all_paths'),
+      'file' => 'wisski_core.pathbuilder.inc',
       'access arguments' => array('administer wisski'),
   );
+
 
   $items['admin/config/wisski'] = array(
     'title' => 'WissKI',
@@ -359,7 +380,7 @@ function wisski_core_menu() {
     'file' => 'system.admin.inc',
     'file path' => drupal_get_path('module', 'system'),
   );
-  
+/*  
   $items['admin/config/wisski/pathbuilder'] = array(
     'title' => t('Pathbuilder'),
     'description' => t('Manage the core functionality'),
@@ -372,7 +393,7 @@ function wisski_core_menu() {
     //'file' => 'wisski_pathbuilder.inc',
     'weight' => 2,
   );
-  
+  */
   $trees = wisski_core_get_pb_trees();
     
   foreach($trees as $key => $treeinfo) {
@@ -493,7 +514,7 @@ function wisski_core_bundle_access($op, $entity = NULL) {
   
 
 
-/***************** Pathbuilder Section **********************/
+/***************** Pathbuilder Section *********************
 
 /*
 function wisski_core_menu() {
@@ -761,6 +782,7 @@ function wisski_core_theme() {
   );
 
 }
+
 
 function wisski_core_pathbuilder_overview_form_submit($form, $form_state) {
   $items = $form_state['values']['wisski_core_pathbuilder_show'];

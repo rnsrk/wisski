@@ -399,7 +399,7 @@ function wisski_core_pathbuilder_form($form, &$form_state, $entity_type) {
   );
   
   $paths = array();
-  $paths = sparql11_adapter_next_steps($entity_type->label);
+  $paths = wisski_salz_next_steps($entity_type->label);
   foreach($paths as $path){
   
 
