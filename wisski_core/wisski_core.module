@@ -224,6 +224,28 @@ function wisski_core_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
   
+  $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/edit_paths'] = array(
+    'title' => 'Edit Paths',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_edit_bundle_paths',4),
+    'access arguments' => array('administer wisski paths'),
+    'access callback' => TRUE,
+    'file' => 'wisski_core.pathbuilder.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 3,
+  );
+    
+  $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/field_paths'] = array(
+    'title' => 'Manage Paths',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_field_paths',4),
+    'access arguments' => array('administer wisski paths'),
+    'access callback' => TRUE,
+    'file' => 'wisski_core.pathbuilder.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 4,
+  );
+  
   $entity_info = entity_get_info('wisski_core_entity');
   foreach ($entity_info['bundles'] as $bundle_name => $bundle_data) {
 
@@ -237,25 +259,7 @@ function wisski_core_menu() {
       'type' => MENU_LOCAL_TASK,
     );
     
-    $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/edit_paths'] = array(
-      'title' => 'Edit Paths',
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('wisski_core_edit_bundle_paths',4),
-      'access arguments' => array('administer wisski paths'),
-      'access callback' => TRUE,
-      'file' => 'wisski_core.pathbuilder.inc',
-      'type' => MENU_LOCAL_TASK,
-    );
     
-    $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/field_paths'] = array(
-      'title' => 'Manage Paths',
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('wisski_core_field_paths',4),
-      'access arguments' => array('administer wisski paths'),
-      'access callback' => TRUE,
-      'file' => 'wisski_core.pathbuilder.inc',
-      'type' => MENU_LOCAL_TASK,
-    );
   
     $items['wisski/navigate/'.$bundle_name."/list"] = array(
       'title' => 'List',
@@ -462,6 +466,7 @@ function wisski_core_menu() {
 
   return $items;
 }
+
 
 /**
  * Load an instance of wisski_core.
