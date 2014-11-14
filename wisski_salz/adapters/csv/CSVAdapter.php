@@ -39,7 +39,11 @@ class CSVAdapter implements AdapterInterface {
   public function query ($path_definition, $subject = NULL, $disamb = array(), $value = NULL) {
   
   }
-  
+
+  public function getType(){
+      return "CSV";
+  }
+
   /** Return the settings page(s)
   */
 //  public function settings_page ();

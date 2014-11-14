@@ -7,13 +7,150 @@ module_load_include('php', 'wisski_salz', "interface/AdapterInterface");
 /**
 * implements hook_menu()
 */
-function csv_adapter_menu() {
+function csv_adapter_menu(){
+    $items = array();
+    $store_type = csv_adapter_wisski_get_store_type();
+//    $key = _csv_adapter_get_db_key();
 
-  
+    $result = db_select('wisski_salz_store_types', 'types')
+    ->fields('types', array('name'))
+    ->condition('label', csv_adapter_wisski_get_store_type(), 'LIKE')
+    ->execute()->fetchObject();
+    if(!empty($result)) $store_type_name = $result->name;
+
+    //$items['admin/config/wisski/salz/add/' . $key] = array(
+    $items['admin/config/wisski/salz/add/' . $store_type_name] = array(
+      'title' => 'Add new store of type ' . $store_type,
+      'description' => 'Manage the storage backends',
+      'type' => MENU_NORMAL_ITEM,
+//      'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('csv_adapter_wisski_add_form'),
+      'access arguments' => array('administer wisski'),
+    );    
+    return $items; 
 }
 
-function csv_adapter_test() {
+/*
+function csv_adapter_wisski_get_store_settings(){
+    $adapter = new CSVAdapter();
+    return $adapter->getSettings();
+}
+
+function csv_adapter_wisski_get_store(){
+    $adapter = new CSVAdapter();
+    return $adapter;
+}
+ */
+function csv_adapter_wisski_get_store_type(){
+    return "CSV";
+}
+/*
+    $csv_adapter_db_key = -1;
+
+function _csv_adapter_get_db_key(){
+	global $csv_adapter_db_key;
+	if ($csv_adapter_db_key == -1 || $csv_adapter_db_key == NULL){
+		$result = db_select('wisski_salz_store_types', 'types')
+			->fields('types', array('stid'))
+			->condition('label', csv_adapter_wisski_get_store_type(), 'LIKE')
+			->execute()->fetchObject();
+		if(!empty($result)) $csv_adapter_db_key = $result->stid;
+	}
+	return $csv_adapter_db_key;
+}
+ */
+function csv_adapter_wisski_settings_page($store_instance_name, $clean){
+    //if (!$clean){
+//	    try{
+//		    $instance = csv_adapter_wisski_db_get_instance_by_name($store_instance_name);
+//	    } catch(Exception $ex){
+//		    drupal_set_message("There was an error loading store_instance $store_instance_name<br>Error Message: " . $ex->getMessage());
+//	    }
+//}
+    $form['name'] = array(
+        '#type' => 'textfield',
+	'#title' => t('Name'),
+//	'#default_value' => ($clean ? '' : $instance->label),
+        '#description' => t('The human-readable name of the store.'),	
+    );
+    
+     $form['file_path'] = array(
+        '#type' => 'textfield',
+	'#title' => t('File Path'),
+//	'#default_value' => ($clean ? '' : $instance->label),
+        '#description' => t('The path to the CSV File.'),	
+    );    
+
+    
+     $form['separators'] = array(
+        '#type' => 'textfield',
+	'#title' => t('Separators'),
+//	'#default_value' => ($clean ? '' : $instance->label),
+        '#description' => t('A group of characters that are separating the entries of the file.'),	
+    );
+    
+    
+     $form['allowed_chars'] = array(
+        '#type' => 'textfield',
+	'#title' => t('Allowed Chars'),
+//	'#default_value' => ($clean ? '' : $instance->label),
+        '#description' => t('A group of allowed characters.'),	
+    );
+
+    
+    $form['delimiters'] = array(
+        '#type' => 'textfield',
+	'#title' => t('Delimiters'),
+//	'#default_value' => ($clean ? '' : $instance->label),
+        '#description' => t('Pairs of surrounding delimiters of strings.'),	
+    );
+    
+    $form['headline'] = array(
+        '#type' => 'checkbox',
+	'#title' => t('The file contains a headline'),
+//	'#default_value' => ($clean ? '' : $instance->label),
+        '#description' => t('Checked if the file contains a headline.'),	
+    );
+    
+    $form['auto_inc_key'] = array(
+        '#type' => 'textfield',
+	'#title' => t('Auto incrementation key'),
+//	'#default_value' => ($clean ? '' : $instance->label),
+        '#description' => t('The column number of the key value used for auto-incrementation.'),	
+    );
+    
+    $form['name_key'] = array(
+        '#type' => 'textfield',
+	'#title' => t('Name Key'),
+//	'#default_value' => ($clean ? '' : $instance->label),
+        '#description' => t('The name or column number of the (human-readable) unique key that identifies the row.'),	
+    );
+
+return $form;
+}
+
+
+/*function csv_adapter_wisski_db_get_instance_by_name($name){
+	return db_select('wisski_salz_store_instances', 'ins')
+		->fields('ins')
+		->condition('name', $name, 'LIKE')
+		->execute()->fetchObject();
+}
+ */
+function csv_adapter_wisski_add_form($form, &$form_state){
+    drupal_set_message("arg6 = " . arg(6));    
+    return csv_adapter_wisski_settings_page(arg(6), TRUE);
+}
+
+
+/*function csv_adapter_edit_form($form, &$form_state){
+    return csv_adapter_settings_page(arg(6), FALSE);
+}
+ */
+/*function csv_adapter_test() {
     
   $adapter = new CSVAdapter('file','sites/all/modules/wisski/wisski_salz/adapters/csv/testfile.txt');
   
-}
+}*/
+
