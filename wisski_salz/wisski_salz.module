@@ -249,6 +249,40 @@ function wisski_salz_get_stores() {
   return $stores;
 }
 
+function wisski_salz_invoke_local_store($timestamp = NULL) {
+    $result = db_select('wisski_salz_store_instances','ins')
+                ->fields('ins')
+                ->condition('local_data',1,'=')
+                ->condition('deleted',0,'=');
+    if ($timestamp != NULL) {
+      $delta = time() - $timestamp;
+      $result = $result->condition('update_interval',$delta,'<');
+    }
+    $result = $result->execute()->fetchAssoc();
+    if (!empty($result)) {
+      $type = $result['type'];
+      $module = db_select('wisski_salz_store_types','types')
+                  ->fields('types')
+                  ->condition('stid',$type,'=')
+                  ->execute()
+                  ->fetchAssoc();
+      return call_user_func($module['module'].'_invoke_instance',$result['name']);
+    }
+    else return NULL;
+  }
+
+function wisski_salz_next_steps($node) {
+
+  $local_store = wisski_salz_invoke_local_store();
+  return $local_store->nextSteps($node);
+}
+
+function wisski_salz_next_datatype_properties($class) {
+
+  $local_store = wisski_salz_invoke_local_store();
+  return $local_store->nextDatatypeProperties($class);
+}
+
 function wisski_salz_recover_deleted_stores() {
   db_update('wisski_salz_store_instances')->fields(array('deleted' => 0))->condition('deleted',1,'=')->execute();
   db_update('wisski_salz_csv_store_instances')->fields(array('deleted' => 0))->condition('deleted',1,'=')->execute();
@@ -258,13 +292,15 @@ function wisski_salz_recover_deleted_stores() {
 function wisski_salz_set_store_types() {
   $store_types = array();
   // take all store_types found from hook
-  $store_types = module_invoke_all('wisski_get_store_type');
+  $modules = module_implements('wisski_get_store_type');
   $database_store_types = db_select('wisski_salz_store_types','t')->fields('t')->execute()->fetchAllAssoc('label');
-  foreach($store_types as $store_type){
+  foreach($modules as $module){
+    $store_type = call_user_func($module.'_wisski_get_store_type');
     if (!array_key_exists($store_type,$database_store_types)) {
       $settings = array(
         'name' => preg_replace('/[^a-z0-9_]/u','',strtolower($store_type)),
         'label' => $store_type,
+        'module' => $module,
       );
       db_insert('wisski_salz_store_types')->fields($settings)->execute();
     }

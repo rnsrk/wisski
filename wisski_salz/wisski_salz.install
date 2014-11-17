@@ -164,6 +164,11 @@ $schema = array();
 				'type' => 'varchar',
 				'length' => 255,
 			),
+			'module' => array(
+				'description' => 'machine name of the module that implements this store',
+				'type' => 'varchar',
+				'length' => 255,
+			),
 		),
 		'primary key' => array('stid'),
 	);

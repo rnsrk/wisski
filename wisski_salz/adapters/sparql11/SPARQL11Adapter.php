@@ -53,12 +53,15 @@ class SPARQL11Adapter implements AdapterInterface {
 
       $this->addOntologies();
     }
+
    /* $this->putNamespace('ecrm',  'http://erlangen-crm.org/120111/');
     $this->putNamespace('behaim_inst', 'http://faui8184.informatik.uni-erlangen.de/birkmaier/content/');
     $this->putNamespace('behaim', 'http://wwwdh.cs.fau.de/behaim/voc/');
     $this->putNamespace('behaim_image', 'http://faui8184.informatik.uni-erlangen.de/behaim/ontology/images/');
     */
+
     $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');
+/*
     $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
     $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
     $this->putNamespace('protege', 'http://protege.stanford.edu/plugins/owl/protege#');
@@ -207,6 +210,36 @@ public function sparql11_edit_form($form, &$form_state){
     return array();
   }
   
+  public function nextPropertiesHierarchy($class) {
+    
+    list($ok,$result) = $this->querySPARQL(
+      "SELECT DISTINCT *"
+      ."WHERE {"
+        ."$class a owl:Class. "
+        ."?property a owl:ObjectProperty. "
+        ."?property rdfs:domain ?superclass. "
+//        ."?property rdfs:subPropertyOf*/rdfs:domain ?superclass. "
+        ."$class rdfs:subClassOf* ?superclass. "
+      ."}"
+    );
+    if ($ok) {
+      if (empty($result)) return array();
+      $output = array();
+      foreach ($result as $obj) {
+        $output[$obj->superclass->dumpValue('text')][] = $obj->property->dumpValue('text');
+      }
+      $keys = array_keys($output);
+      natsort($keys);
+      $real_output = array_combine($keys,$keys);
+      foreach($output as $key => $props) {
+        natsort($props);
+        $real_output[$key] = $props;
+      }
+      return $real_output;
+    }
+    return array();
+  }
+  
   public function nextDatatypeProperties($class) {
     
     list($ok,$result) = $this->querySPARQL(
@@ -238,7 +271,7 @@ public function sparql11_edit_form($form, &$form_state){
     );
     if ($ok) {
       foreach($result as $obj) {
-        if ($obj->type->dumpValue('text') == 'owl:Class') return $this->nextProperties($node);
+        if ($obj->type->dumpValue('text') == 'owl:Class') return $this->nextPropertiesHierarchy($node);
         if ($obj->type->dumpValue('text') == 'owl:ObjectProperty') return $this->nextClasses($node);
       }
     }
@@ -376,7 +409,7 @@ public function sparql11_edit_form($form, &$form_state){
 //  	."LIMIT 1 "
     );
     $then = time();
-    trigger_error("Query took ".($then-$now)." seconds",E_USER_NOTICE);
+    trigger_error("Query took ".$this->makeTimeString($then-$now)." seconds",E_USER_NOTICE);
     $now = time();
     if ($ok) {
       foreach($result as $obj) {
@@ -404,9 +437,7 @@ public function sparql11_edit_form($form, &$form_state){
       }
     }
     $then = time();
-    $secs = ($then - $now) % 60;
-    $mins = ($then - $now - $secs) / 60;
-    trigger_error("Rest of Setup took $mins:$secs min",E_USER_NOTICE);
+    trigger_error("Rest of Setup took ".$this->makeTimeString($then-$now),E_USER_NOTICE);
   }
   
   public function createEntities() {
@@ -428,7 +459,7 @@ public function sparql11_edit_form($form, &$form_state){
 //  	."LIMIT 1 "
     );
     $then = time();
-    trigger_error("Query took ".($then-$now)." seconds",E_USER_NOTICE);
+    trigger_error("Query took ".$this->makeTimeString($then-$now)." seconds",E_USER_NOTICE);
     $now = time();
     if ($ok) {
       $individuals = array();
@@ -466,9 +497,7 @@ public function sparql11_edit_form($form, &$form_state){
       }//foreach ... $ind
     }
     $then = time();
-    $secs = ($then - $now) % 60;
-    $mins = ($then - $now - $secs) / 60;
-    trigger_error("Rest of Setup took $mins:$secs min",E_USER_NOTICE);
+    trigger_error("Rest of Setup took ".$this->makeTimeString($then-$now),E_USER_NOTICE);
   }
   
 
@@ -546,12 +575,13 @@ public function sparql11_edit_form($form, &$form_state){
   }
 
   public function updateClassInfo(&$class) {
-  
+/*  
     $fields = array();
     $instances = array();
     $class_name = $class->type;
     $class_label = $class->label;
     
+    $now = time();
     list($ok,$result) = $this->querySPARQL(
       "SELECT ?property ?target "
       ."WHERE {"
@@ -575,6 +605,8 @@ public function sparql11_edit_form($form, &$form_state){
         ."}"
       ."}"
     );
+    $then = time();
+    $query_time = $then - $now;
     if ($ok) {
       foreach($result as $obj) {
         if (isset($obj->target) && isset($obj->property)) {
@@ -625,6 +657,8 @@ public function sparql11_edit_form($form, &$form_state){
         }//if(isset...
       }//foreach...
     }//if($ok)
+    $now = time();
+    $setup_time = $now - $then;
     list($ok,$result) = $this->querySPARQL(
       "SELECT ?property "
       ."WHERE {"
@@ -639,6 +673,8 @@ public function sparql11_edit_form($form, &$form_state){
         ."}"
       ."}"
     );
+    $then = time();
+    $query_time += $then - $now;
     if ($ok) {
       foreach($result as $obj) {
         if (isset($obj->property)) {
@@ -696,12 +732,16 @@ public function sparql11_edit_form($form, &$form_state){
     }
     $class->timestamp = time();
     $class->save();
+*/
     $this->createEntitiesForBundle($class);
+/*    $now = time();
+    $setup_time += $now - $then;
+    drupal_set_message("Class Update including Entity Creation took ".$this->makeTimeString($query_time)." of query time and ".$this->makeTimeString($setup_time)." for the rest of the setup");
+*/
   }
 
   public function loadClasses() {
    
-    //    $inferrer = "/(^rdfs:subClassOf)*"; //add to rdfs:domain
     $now = time();
     list($ok,$result) 
       = $this->querySPARQL(
@@ -712,7 +752,7 @@ public function sparql11_edit_form($form, &$form_state){
 //        ." LIMIT 20"
       );
     $then = time();
-    trigger_error("Query took ".($then-$now)." seconds",E_USER_NOTICE);
+    trigger_error("Query took ".$this->makeTimeString($then-$now)." seconds",E_USER_NOTICE);
     $now = time();
     if ($ok) {
       $errors = array();
@@ -744,9 +784,7 @@ public function sparql11_edit_form($form, &$form_state){
       }
     }
     $then = time();
-    $secs = ($then - $now) % 60;
-    $mins = ($then - $now - $secs) / 60;
-    trigger_error("Rest of Setup took $mins:$secs min",E_USER_NOTICE);
+    trigger_error("Rest of Setup took ".$this->makeTimeString($then-$now),E_USER_NOTICE);
   }
 
   private function loadOntologyInfo() {
@@ -895,4 +933,16 @@ public function sparql11_edit_form($form, &$form_state){
     //TODO  
   }
   
+  private function makeTimeString($time_in_secs) {
+    
+    if ($time_in_secs < 60) return $time_in_secs.' second(s)';
+    $secs = $time_in_secs % 60;
+    $sec_string = $secs < 10 ? '0'.$secs : $secs;
+    $mins = ($time_in_secs - $secs) / 60;
+    if ($mins < 60) return $mins.':'.$sec_string.' minutes';
+    $sub_mins = $mins % 60;
+    $min_string = $sub_mins < 10 ? '0'.$sub_mins : $sub_mins;
+    $hours = ($mins - $sub_mins) / 60;
+    return $hours.':'.$min_string.':'.$sec_string.' hours';
+  }
 }
