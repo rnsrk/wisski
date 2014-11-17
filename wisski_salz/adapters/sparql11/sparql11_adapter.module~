@@ -16,41 +16,50 @@ module_load_include('php', 'wisski_salz', "interface/AdapterInterface");
  * Implements hook_menu().
  */
 function sparql11_adapter_menu() {
-  $items = array();
-      $store_type = sparql11_adapter_wisski_get_store_type();
-      $key = _sparql11_adapter_get_db_key();
+    $items = array();
+    $store_type = sparql11_adapter_wisski_get_store_type();
+    $key = _sparql11_adapter_get_db_key();
+    $result = db_select('wisski_salz_store_types', 'types')
+	    ->fields('types', array('name'))
+	    ->condition('label', sparql11_adapter_wisski_get_store_type(), 'LIKE')
+	    ->execute()->fetchObject();
+    if(!empty($result)) {
+      $store_type_name = $result->name;
 
-    $items['admin/config/wisski/salz/add/' . $key] = array(
-      'title' => 'Add new store of type ' . $store_type,
-      'description' => 'Manage the storage backends',
-      'type' => MENU_NORMAL_ITEM,
-      'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('sparql11_adapter_wisski_add_form'),
-      'access arguments' => array('administer wisski'),
-    );
+      //$items['admin/config/wisski/salz/add/' . $key] = array(
+      $items['admin/config/wisski/salz/add/' . $store_type_name] = array(
+        'title' => 'Add new store of type ' . $store_type,
+        'description' => 'Manage the storage backends',
+        'type' => MENU_NORMAL_ITEM,
+        'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('sparql11_adapter_wisski_add_form'),
+        'access arguments' => array('administer wisski'),
+      );
 
       $store_instances = sparql11_adapter_wisski_get_store_instances();
       
-    foreach($store_instances as $key2 => $store_instance) {
-        $items['admin/config/wisski/salz/edit/'.$key.'/'.$key2] = array(
-        'title' => 'Edit ' . $store_type . ' Store ' . $store_instance->label,
-        'description' => 'Manage the storage backends',
-        'type' => MENU_LOCAL_TASK,
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array('sparql11_adapter_wisski_edit_form'),
-        'access arguments' => array('administer wisski'),
+      foreach($store_instances as $key2 => $store_instance) {
+       //$items['admin/config/wisski/salz/edit/' . $key . '/' . $key2] = array(
+       $items['admin/config/wisski/salz/edit/' . $store_type_name . '/' . $key2] = array(
+          'title' => 'Edit ' . $store_type . ' Store ' . $store_instance->label,
+          'description' => 'Manage the storage backends',
+          'type' => MENU_LOCAL_TASK,
+          'page callback' => 'drupal_get_form',
+          'page arguments' => array('sparql11_adapter_wisski_edit_form'),
+          'access arguments' => array('administer wisski'),
         );
-
-        $items['admin/config/wisski/salz/delete/' . $key . '/' .  $key2] = array(
-        'title' => 'Delete Store ' . $store_type . ' ' . $key2,
-        'description' => 'Manage the storage backends',
-        'type' => MENU_NORMAL_ITEM,
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array('sparql11_adapter_wisski_delete_form'),
-        'access arguments' => array('administer wisski'),
+        //$items['admin/config/wisski/salz/delete/' . $key . '/' .  $key2] = array(
+        $items['admin/config/wisski/salz/delete/' . $store_type_name . '/' .  $key2] = array(
+          'title' => 'Delete Store ' . $store_type . ' ' . $key2,
+          'description' => 'Manage the storage backends',
+          'type' => MENU_NORMAL_ITEM,
+          'page callback' => 'drupal_get_form',
+          'page arguments' => array('sparql11_adapter_wisski_delete_form'),
+          'access arguments' => array('administer wisski'),
         );
       }
+    }
   return $items;
  }
 
@@ -289,7 +298,7 @@ function sparql11_adapter_wisski_update_class($type) {
               ->execute()
               ->fetchObject();
   if (empty($result)) return;
-  $local_store = _sparql11_adapter_invoke_local_store($result->timestamp);
+  $local_store = wisski_salz_invoke_local_store($result->timestamp);
   if($local_store != NULL) {
     $entity = entity_load_single('wisski_core_bundle',$result->id);
     $local_store->updateClassInfo($entity);
