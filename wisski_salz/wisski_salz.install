@@ -68,7 +68,15 @@ $schema = array();
 				'description' => 'instance has been deleted',
 				'type' => 'int',
 				'default' => 0,
-			),
+			),	
+                        /*'settings' => array(
+				'description' => 'A serialized array of name value pairs that store the settings for the store instances',
+				'type' => 'text',
+				//'default' => '',
+                                'size' => 'big',
+                                'serialize' => TRUE,
+			),*/
+
 		),
 		'primary key' => array('sid'),
 		'foreign keys' => array(
