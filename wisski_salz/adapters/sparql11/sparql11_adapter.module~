@@ -41,15 +41,7 @@ function sparql11_adapter_menu() {
       
       foreach($store_instances as $key2 => $store_instance) {
        //$items['admin/config/wisski/salz/edit/' . $key . '/' . $key2] = array(
-<<<<<<< HEAD
-       $items['admin/config/wisski/salz/edit/' . $store_type_name . '/' . $key2] = array(
-          'title' => 'Edit ' . $store_type . ' Store ' . $store_instance->label,
-          'description' => 'Manage the storage backends',
-          'type' => MENU_LOCAL_TASK,
-          'page callback' => 'drupal_get_form',
-          'page arguments' => array('sparql11_adapter_wisski_edit_form'),
-          'access arguments' => array('administer wisski'),
-=======
+
        $items['admin/config/wisski/salz/edit/' . $store_type_name . '/' . $store_instance->name] = array(
         'title' => 'Edit ' . $store_type . ' Store ' . $store_instance->label,
         'description' => 'Manage the storage backends',
@@ -57,7 +49,7 @@ function sparql11_adapter_menu() {
         'page callback' => 'drupal_get_form',
         'page arguments' => array('sparql11_adapter_wisski_edit_form'),
         'access arguments' => array('administer wisski'),
->>>>>>> 0cefb6caa1b90f43316d8032d9a006252d1cac7e
+
         );
         //$items['admin/config/wisski/salz/delete/' . $key . '/' .  $key2] = array(
         $items['admin/config/wisski/salz/delete/' . $store_type_name . '/' .  $key2] = array(

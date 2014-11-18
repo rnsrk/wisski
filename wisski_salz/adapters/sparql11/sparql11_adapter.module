@@ -364,6 +364,13 @@ else {
 }
 
 function sparql11_adapter_db_insert_settings($settings,$clean = TRUE) {
+  $new_settings = array();
+  foreach(array('name','label','old_name') as $key) {
+    $new_settings[$key] = $settings[$key];
+    unset($new_settings[$key]);
+  }
+  $new_settings['settings'] = $settings;
+  $settings = $new_settings;
   if ($clean) {  
     //$data = serialize($settings);	  
     //$data['type'] = _sparql11_adapter_get_db_key();
