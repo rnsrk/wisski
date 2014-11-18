@@ -60,8 +60,8 @@ class SPARQL11Adapter implements AdapterInterface {
     $this->putNamespace('behaim_image', 'http://faui8184.informatik.uni-erlangen.de/behaim/ontology/images/');
     */
 
-    $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');
-/*
+/*    $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');
+
     $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
     $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
     $this->putNamespace('protege', 'http://protege.stanford.edu/plugins/owl/protege#');
@@ -71,9 +71,20 @@ class SPARQL11Adapter implements AdapterInterface {
     $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
     $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
     $this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
-*/  
-  }
 
+ */
+    $this->putNamespace('', 'http://www.w3.org/TR/skos-reference/');
+    $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
+    $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
+    $this->putNamespace('ns3', 'http://wisski.gnm.de/');
+    $this->putNamespace('protege', 'http://protege.stanford.edu/plugins/owl/protege#');
+    $this->putNamespace('xsp', 'http://www.owl-ontologies.com/2005/08/07/xsp.owl#');
+    $this->putNamespace('ns0',  'http://erlangen-crm.org/120111/');
+    $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
+    $this->putNamespace('xsd', 'http://www.w3.org/2001/XMLSchema#');
+    $this->putNamespace('owl', 'http://www.w3.org/2002/07/owl#');
+    $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+  }
 
   public function getSettings($name = NULL) {
     drupal_set_message("\$this in getSettings: " . serialize($this));
@@ -150,7 +161,7 @@ public function sparql11_edit_form($form, &$form_state){
 
     return $this->settings_page();
 }
-*/
+ */
 
   public function pb_definition_settings_page($path_steps = array()) {
 
@@ -225,6 +236,7 @@ public function sparql11_edit_form($form, &$form_state){
       ."WHERE {"
         ."$property a owl:ObjectProperty. "
         ."$property (^rdfs:subPropertyOf)*/rdfs:range/rdfs:subClassOf* ?class. "
+        //."$property (^rdfs:subPropertyOf)rdfs:range/rdfs:subClassOf* ?class. "
         ."?class a owl:Class. "
       ."}"
     );

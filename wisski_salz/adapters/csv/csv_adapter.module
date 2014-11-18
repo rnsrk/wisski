@@ -69,6 +69,16 @@ function csv_adapter_wisski_get_store_type(){
     return "CSV";
 }
 
+function csv_adapter_invoke_instance($name){
+	$store_instance = new CSVAdapter();
+	$settings = db_select('wisski_salz_csv_store_instances', 'ins')
+		->fields('ins')
+		->condition('name', $name, 'LIKE')
+		->execute()->fetchAssoc();
+	$store_instance->setSettings($settings);
+	return $store_instance;
+}
+
 function csv_adapter_wisski_get_store_instances(){
 	return db_select('wisski_salz_csv_store_instances', 'ins')
 		->fields('ins')
