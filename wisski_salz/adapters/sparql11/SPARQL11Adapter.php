@@ -71,6 +71,7 @@ class SPARQL11Adapter implements AdapterInterface {
     $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
     $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
     $this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
+
  */
     $this->putNamespace('', 'http://www.w3.org/TR/skos-reference/');
     $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
@@ -84,7 +85,6 @@ class SPARQL11Adapter implements AdapterInterface {
     $this->putNamespace('owl', 'http://www.w3.org/2002/07/owl#');
     $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
   }
-
 
   public function getSettings($name = NULL) {
     drupal_set_message("\$this in getSettings: " . serialize($this));
@@ -170,6 +170,63 @@ public function sparql11_edit_form($form, &$form_state){
 
   public function query($path_definition, $subject = NULL, $disamb = array(), $value = NULL) {
 
+  }
+  
+  public function pbQuery($individual_uri,$starting_concept,$path_array,$datatype_property) {
+    
+    $query = "SELECT DISTINCT ?data WHERE{ $individual_uri rdf:type/rdfs:subClassOf* $starting_concept .";
+    $count = 0;
+    while(!empty($path_array)) {
+      $query .= ($count == 0) ? "$individual_uri " : "?individual$count ";
+      $query .= array_shift($path_array);
+      $count++;
+      $query .= "?individual$count. ";
+      $query .= "?individual$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
+    }
+    $query .= "?individual$count $datatype_property ?data. }";
+    list($ok,$result) = $this->querySPARQL($query);
+    if ($ok) {
+      $out = array();
+      foreach ($result as $obj) {
+        $out[] = $obj->data->dumpValue('text');
+      }
+      return $out;
+    }
+    return FALSE;
+  }
+
+  public function pbUpdate($individual_uri,$starting_concept,$path_array,$datatype_property,$new_data,$delete_old) {
+    
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ $individual_uri rdf:type/rdfs:subClassOf* $starting_concept. }");
+    if ($ok && empty($result)) {
+      list($ok,$result) = $this->updateSPARQL("INSERT{ $individual_uri rdf:type $starting_concept. }");
+      if (!$ok) return FALSE;
+    }
+    $count = 0;
+    $query = "WHERE {";
+    while(!empty($path_array)) {
+//      $query = '';
+      if ($count == 0) {
+        $query .= "$individual_uri ";
+      } else $query .= "?individual$count ";
+      $query .= array_shift($path_array);
+      $count++;
+      $query .= "?individual$count. ";
+      $query .= "?other rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
+    }
+    $query .= "}";
+    $query .= "INSERT { ?individual$count $datatype_property $new_data. }".$query;
+    list($ok,$result) = $this->updateSPARQL($query);
+    if ($ok) {
+      return TRUE;
+    } else {
+      $errors = '';
+      foreach ($result as $error) {
+        $errors .= "\n".$error;
+      }
+      trigger_error("Errors while inserting data: ".$errors,E_USER_WARNING);
+    }
+    return FALSE;
   }
 
   public function nextClasses($property) {
@@ -404,6 +461,7 @@ public function sparql11_edit_form($form, &$form_state){
     
     drupal_set_message("Creating entities for bundle");
     $bundle_label = $bundle->label;
+    $bundle_uri = $bundle->uri;
     $now = time();
     $result = array();
     list($ok,$result) 
@@ -411,10 +469,10 @@ public function sparql11_edit_form($form, &$form_state){
         "SELECT DISTINCT ?ind "
         ."WHERE "
         ."{ "
-          ."$bundle_label a owl:Class. "
-          ."?ind a $bundle_label. "
+          ."$bundle_uri a owl:Class. "
+          ."?ind a $bundle_uri. "
           ."FILTER NOT EXISTS { "
-            ."?n (rdfs:subClassOf)+ $bundle_label. "
+            ."?n (rdfs:subClassOf)+ $bundle_uri. "
             ."?ind a ?n. "
          ."} "
       ."} "
@@ -499,6 +557,7 @@ public function sparql11_edit_form($form, &$form_state){
             'type' => $class_name,
             'name' => $ind_name,  
             'title' => $ind_label,
+            'uri' => $ind_label,
             'timestamp' => 0, //ensures update on first view
             'same_individuals' => $same_inds,
           );
@@ -515,7 +574,7 @@ public function sparql11_edit_form($form, &$form_state){
 
   public function updateEntityInfo(&$entity) {
   
-    $ind_label = $entity->title;
+    $ind_uri = $entity->uri;
     $entity_name = $entity->name;
     $gather = array();
     $result = array();
@@ -525,9 +584,9 @@ public function sparql11_edit_form($form, &$form_state){
         ."WHERE "
         ."{ "
           ."?class a owl:Class. "
-          ."$ind_label a ?class. "
+          ."$ind_uri a ?class. "
           ."?property a owl:ObjectProperty. "
-          ."$ind_label ?property ?target. "
+          ."$ind_uri ?property ?target. "
         ."} "
       );
     if ($ok) {
@@ -543,9 +602,9 @@ public function sparql11_edit_form($form, &$form_state){
         ."WHERE "
         ."{ "
           ."?class a owl:Class. "
-          ."$ind_label a ?class. "
+          ."$ind_uri a ?class. "
           ."?property a owl:DatatypeProperty. "
-          ."$ind_label ?property ?data. "
+          ."$ind_uri ?property ?data. "
         ."} "
       );
     if ($ok) {
@@ -777,6 +836,7 @@ public function sparql11_edit_form($form, &$form_state){
           $classes[$class_name] = array(
             'type' => $class_name,
             'label' => $class_label,
+            'uri' => $class_label,
             'title' => $class_title,
             'weight' => 0,
             'description' => 'retrieved from ontology',
@@ -797,6 +857,11 @@ public function sparql11_edit_form($form, &$form_state){
     }
     $then = time();
     trigger_error("Rest of Setup took ".$this->makeTimeString($then-$now),E_USER_NOTICE);
+    if (!empty($errors)) {
+      $out = '';
+      foreach($errors as $err) $out .= $err."<br>";
+      trigger_error('There were exceptions during the setup: '.$out,E_USER_ERROR);
+    }
   }
 
   private function loadOntologyInfo() {

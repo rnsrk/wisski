@@ -130,10 +130,11 @@ function wisski_core_entity_form($form, &$form_state, $entity) {
   try {
     $same_inds = $wrapper->same_individuals->value();
     $same_string = "";
-    foreach($same_inds as $ind) {
-      $same_string .= $ind."\n";
+    if ($same_inds != NULL) {
+      foreach($same_inds as $ind) {
+        $same_string .= $ind."\n";
+      }
     }
-  
     $form['same_individuals'] = array(
       '#type' => 'textarea',
       '#title' => t('Same Individuals'),

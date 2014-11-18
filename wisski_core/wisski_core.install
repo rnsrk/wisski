@@ -320,6 +320,19 @@ function wisski_core_schema() {
         'description' => 'Entity description.',
         'type' => 'text',
       ),
+      'uri' => array(
+        'description' => 'URI of the corresponding owl:Individual',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+      'dirty' => array(
+        'description' => 'true if the triple store is probably not up-to-date',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => '0',
+      ),
       'same_individuals' => array(
         'description' => 'Entities representing the same owl:Individual',
         'type' => 'blob',
@@ -328,7 +341,7 @@ function wisski_core_schema() {
         'serialize' => TRUE,
       ),
       'timestamp' => array(
-        'description' => 'Unix zime stamp of last update',
+        'description' => 'Unix time stamp of last update',
         'type' => 'int',
         'default' => '0',
       ),
@@ -336,6 +349,7 @@ function wisski_core_schema() {
     'primary key' => array('id'),
     'unique keys' => array(
       'name' => array('name'),
+      'uri' => array('uri'),
     ),
     'indexes' => array(
       'timestamp' => array('timestamp'),
@@ -371,8 +385,21 @@ function wisski_core_schema() {
         'size' => 'medium',
         'translatable' => TRUE,
       ),
+      'uri' => array(
+        'description' => 'URI of the corresponding owl:Class',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+      'dirty' => array(
+        'description' => 'true if the triple store is probably not up-to-date',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => '0',
+      ),
       'timestamp' => array(
-        'description' => 'Unix zime stamp of last update',
+        'description' => 'Unix time stamp of last update',
         'type' => 'int',
         'default' => '0',
       ),
@@ -380,6 +407,7 @@ function wisski_core_schema() {
     'primary key' => array('id'),
     'unique keys' => array(
       'type' => array('type'),
+      'uri' => array('uri'),
     ),
     'indexes' => array(
       'timestamp' => array('timestamp'),
