@@ -41,6 +41,7 @@ function sparql11_adapter_menu() {
       
       foreach($store_instances as $key2 => $store_instance) {
        //$items['admin/config/wisski/salz/edit/' . $key . '/' . $key2] = array(
+<<<<<<< HEAD
        $items['admin/config/wisski/salz/edit/' . $store_type_name . '/' . $key2] = array(
           'title' => 'Edit ' . $store_type . ' Store ' . $store_instance->label,
           'description' => 'Manage the storage backends',
@@ -48,6 +49,15 @@ function sparql11_adapter_menu() {
           'page callback' => 'drupal_get_form',
           'page arguments' => array('sparql11_adapter_wisski_edit_form'),
           'access arguments' => array('administer wisski'),
+=======
+       $items['admin/config/wisski/salz/edit/' . $store_type_name . '/' . $store_instance->name] = array(
+        'title' => 'Edit ' . $store_type . ' Store ' . $store_instance->label,
+        'description' => 'Manage the storage backends',
+        'type' => MENU_LOCAL_TASK,
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('sparql11_adapter_wisski_edit_form'),
+        'access arguments' => array('administer wisski'),
+>>>>>>> 0cefb6caa1b90f43316d8032d9a006252d1cac7e
         );
         //$items['admin/config/wisski/salz/delete/' . $key . '/' .  $key2] = array(
         $items['admin/config/wisski/salz/delete/' . $store_type_name . '/' .  $key2] = array(
@@ -275,6 +285,8 @@ function sparql11_adapter_invoke_instance($name) {
   return $store_instance;
 }
 
+
+
 /**
 *implements hook_wisski_update_entity
 */
@@ -320,15 +332,6 @@ function sparql11_adapter_wisski_load_entities_and_fields() {
 
 function sparql11_adapter_wisski_form_submit($form, &$form_state, $store_instance = NULL){
   if(arg(4)=="add"){
-    //drupal_set_message("ARG(4) IST " . arg(4));
-    $installed_store_instances = sparql11_adapter_wisski_get_store_instances();
-    //drupal_set_message("\$store_instances: " . serialize($installed_store_instances));
-    menu_rebuild();
-
-    foreach($installed_store_instances as $key => $installed_store_instance) {
-      $form_state['redirect'] = 'admin/config/wisski/salz/' . arg(5) . '/' . $key;
-      //drupal_set_message("\$key: " . serialize($key));
-    }
     $label = $form_state['values']['name'];
     $name = preg_replace('/[^a-z0-9_]/u','',strtolower($label));
     $settings = array(
@@ -340,11 +343,18 @@ function sparql11_adapter_wisski_form_submit($form, &$form_state, $store_instanc
       'local_data' => $form_state['values']['local_data'],
     );
     sparql11_adapter_db_insert_settings($settings);
+    drupal_set_message("Saved settings.");
+    $installed_store_instances = sparql11_adapter_wisski_get_store_instances();
+    foreach($installed_store_instances as $key => $installed_store_instance) {
+      $form_state['redirect'] = 'admin/config/wisski/salz/edit/' . arg(5) . '/' . $installed_store_instance->name;
+    }
+    menu_rebuild();
   }
 else {
     //drupal_set_message("ARG(4) IST im else " . arg(4));
     //drupal_set_message("ARG(4) ist nicht add, sondern " . arg(4));
-    $form_state['redirect'] = 'admin/config/wisski/salz/' . arg(4) . '/' . arg(5);
+    drupal_set_message("Changed settings.");	
+    $form_state['redirect'] = 'admin/config/wisski/salz/';
     $label = $form_state['values']['name'];
     $name = preg_replace('/[^a-z0-9_]/u','',strtolower($label));
     $settings = array(
@@ -363,6 +373,8 @@ else {
 
 function sparql11_adapter_db_insert_settings($settings,$clean = TRUE) {
   if ($clean) {  
+    //$data = serialize($settings);	  
+    //$data['type'] = _sparql11_adapter_get_db_key();
     $settings['type'] = _sparql11_adapter_get_db_key();
     db_insert('wisski_salz_store_instances')->fields($settings)->execute();
   } else {

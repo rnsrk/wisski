@@ -94,10 +94,13 @@ function wisski_salz_get_local_store() {
 }
 
 function wisski_salz_view_installed_store_instances($form, &$form_state) {
-  $store_types = wisski_salz_get_store_types();
-  $store_instances = wisski_salz_get_installed_store_instances();
-//  $key = _sparql11_adapter_get_db_key();
-  $link = array();
+    wisski_salz_set_store_types();	
+    $store_types = wisski_salz_get_store_types();
+    $store_instances = wisski_salz_get_installed_store_instances();
+    //  $key = _sparql11_adapter_get_db_key();
+    $csv_store_instances = wisski_salz_get_installed_csv_store_instances();
+    
+    $link = array();
  /* $link['any'] = array(
     'data' => l('Add new Store Instance', 'admin/config/wisski/salz/add'),
   );
@@ -131,6 +134,24 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
     
   }
 
+ $csv_store_instances_by_type = array();
+  foreach ($csv_store_instances as $csv_key => $csv_store_instance){
+    $text = $csv_store_instance->label;
+    $result = db_select('wisski_salz_store_types', 'types')
+	  ->fields('types', array('name'))
+	  ->condition('stid', $csv_store_instance->type, 'LIKE')
+	  ->execute()->fetchObject();
+    if(!empty($result)) $store_type_name = $result->name;
+
+    //$path = 'admin/config/wisski/salz/edit/' . $store_instance->type . '/' . $store_instance->name;
+    $path = 'admin/config/wisski/salz/edit/' . $store_type_name . '/' . $csv_store_instance->name;
+    $csv_store_instances_by_type[$csv_store_instance->type][] = array( 
+      'data' => l($text, $path). "<div class='wki_grey'>" . t($csv_store_instance->file_path) . "</div>",
+    );
+    
+  }
+
+
   $form = array();
   $form['add_link'] = array(
     'link' => array(
@@ -147,6 +168,18 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
                   '#theme' => 'item_list',
                   '#items' => $value,
                   '#title' => t($store_type_string),
+             ),
+         );
+  }
+
+
+  foreach($csv_store_instances_by_type as $key => $value) {
+      $csv_store_type_string = $store_types[$key]['label'];
+      $form[$key] = array(
+            'list' => array(
+                  '#theme' => 'item_list',
+                  '#items' => $value,
+                  '#title' => t($csv_store_type_string),
              ),
          );
     }
@@ -184,7 +217,8 @@ function wisski_salz_config_page() {
   $items = array();
   foreach($store_types as $key => $store_type) {
      $items[] = array(
-     'data' => l($store_type['label'], 'admin/config/wisski/salz/add/' . $key),
+     //'data' => l($store_type['label'], 'admin/config/wisski/salz/add/' . $key),
+     'data' => l($store_type['label'], 'admin/config/wisski/salz/add/' . $store_type['name']),
     );
   }
   return array(
@@ -265,6 +299,7 @@ function wisski_salz_next_datatype_properties($class) {
 
 function wisski_salz_recover_deleted_stores() {
   db_update('wisski_salz_store_instances')->fields(array('deleted' => 0))->condition('deleted',1,'=')->execute();
+  db_update('wisski_salz_csv_store_instances')->fields(array('deleted' => 0))->condition('deleted',1,'=')->execute();
   menu_rebuild();
 }
 
@@ -306,6 +341,10 @@ function wisski_salz_get_store_types() {
 
 function wisski_salz_get_installed_store_instances() {
   return db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('deleted',0,'=')->execute()->fetchAllAssoc('name');
+}
+
+function wisski_salz_get_installed_csv_store_instances() {
+  return db_select('wisski_salz_csv_store_instances','ins')->fields('ins')->condition('deleted',0,'=')->execute()->fetchAllAssoc('name');
 }
 
 function wisski_salz_get_store_instances_by_type() {
