@@ -89,6 +89,7 @@ function wisski_core_entity_info() {
       'id' => 'id',
       'name' => 'type',
       'uri' => 'uri',
+      'label' => 'label',
     ),
     // what is in this bundle?
     'bundle of' => 'wisski_core_entity',
@@ -309,7 +310,7 @@ function wisski_core_menu() {
   $items[$base_uri] = array(
     'title callback' => 'entity_label',
     'title arguments' => array('wisski_core', $base_uri_argument_position),
-    'page callback' => 'wisski_core_wisski_entity_view',
+    'page callback' => 'wisski_core_entity_view',
     'page arguments' => array($base_uri_argument_position),
     'access arguments' => array('view wisski content'),
     'file' => 'wisski_core.pages.inc',
@@ -477,6 +478,7 @@ function wisski_core_entity_load($entity,$type) {
 /**
 * implements hook_entity_view
 */ 
+/*
 function wisski_core_entity_view($entity, $type, $view_mode, $langcode) {
   
   if($type == 'wisski_core_entity') {
@@ -521,6 +523,7 @@ function wisski_core_entity_view($entity, $type, $view_mode, $langcode) {
     } 
   }
 }
+*/
 
 /**
 * implements hook_entity_presave()

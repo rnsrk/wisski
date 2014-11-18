@@ -5,7 +5,7 @@
 */
 function csv_adapter_install() {
 
-  csv_adapter_test();
+//  csv_adapter_test();
 }
 
 function csv_adapter_schema(){
