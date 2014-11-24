@@ -54,14 +54,13 @@ class SPARQL11Adapter implements AdapterInterface {
       $this->addOntologies();
     }
 
-   /* $this->putNamespace('ecrm',  'http://erlangen-crm.org/120111/');
-    $this->putNamespace('behaim_inst', 'http://faui8184.informatik.uni-erlangen.de/birkmaier/content/');
+  //  $this->putNamespace('ecrm',  'http://erlangen-crm.org/120111/');
+   /* $this->putNamespace('behaim_inst', 'http://faui8184.informatik.uni-erlangen.de/birkmaier/content/');
     $this->putNamespace('behaim', 'http://wwwdh.cs.fau.de/behaim/voc/');
     $this->putNamespace('behaim_image', 'http://faui8184.informatik.uni-erlangen.de/behaim/ontology/images/');
     */
 
-/*    $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');
-
+  /*  $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');
     $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
     $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
     $this->putNamespace('protege', 'http://protege.stanford.edu/plugins/owl/protege#');
@@ -71,12 +70,11 @@ class SPARQL11Adapter implements AdapterInterface {
     $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
     $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
     $this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
+   */
 
- */
-    $this->putNamespace('', 'http://www.w3.org/TR/skos-reference/');
     $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
     $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
-    $this->putNamespace('ns3', 'http://wisski.gnm.de/');
+    $this->putNamespace('ns3', 'http://projektdb.gnm.de/');
     $this->putNamespace('protege', 'http://protege.stanford.edu/plugins/owl/protege#');
     $this->putNamespace('xsp', 'http://www.owl-ontologies.com/2005/08/07/xsp.owl#');
     $this->putNamespace('ns0',  'http://erlangen-crm.org/120111/');
@@ -84,6 +82,7 @@ class SPARQL11Adapter implements AdapterInterface {
     $this->putNamespace('xsd', 'http://www.w3.org/2001/XMLSchema#');
     $this->putNamespace('owl', 'http://www.w3.org/2002/07/owl#');
     $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+  
   }
 
   public function getSettings($name = NULL) {
@@ -372,13 +371,25 @@ public function sparql11_edit_form($form, &$form_state){
     $results = array();
     try {
       if (easyrdf()) {
-          $this->updateNamespaces();
-          if (isset($this->settings['query_endpoint'])) {
+	  $this->updateNamespaces();
+	  $settings = $this->settings['settings'];
+	  $sparql11_settings = unserialize($settings);
+	 // drupal_set_message("settings -> " . serialize($settings));
+	 // drupal_set_message("sparql11_settings -> " . serialize($sparql11_settings));
+        /*  if (isset($this->settings['query_endpoint'])) {
             if (isset($this->settings['update_endpoint'])) {
               $sparql = new EasyRdf_Sparql_Client($this->settings['query_endpoint'],$this->settings['update_endpoint']);
             } else {
               $sparql = new EasyRdf_Sparql_Client($this->settings['query_endpoint']);
+	    }
+	 */
+           if (isset($sparql11_settings['query_endpoint'])) {
+            if (isset($sparql11_settings['update_endpoint'])) {
+              $sparql = new EasyRdf_Sparql_Client($sparql11_settings['query_endpoint'],$sparql11_settings['update_endpoint']);
+            } else {
+              $sparql = new EasyRdf_Sparql_Client($sparql11_settings['query_endpoint']);
             }
+      
             if ($type == 'query' && !is_null($query)) {
               $results = $sparql->query($query);
               $ok = TRUE;
@@ -389,11 +400,12 @@ public function sparql11_edit_form($form, &$form_state){
           }
       } else drupal_set_message("EasyRdf is not installed");
     } catch (Exception $e) {
-//        drupal_set_message("SPARQL1.1 $type request failed.<br>Query was '".htmlentities($query)."'<br>Error Message:<br>".get_class($e)."<br>".$e->getMessage());
+        drupal_set_message("SPARQL1.1 $type request failed.<br>Query was '".htmlentities($query)."'<br>Error Message:<br>".get_class($e)."<br>".$e->getMessage());
         
 //        throw $e;
     }
-//    drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
+    drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
+    dpm($results);
     return array($ok,$results);
   }
   

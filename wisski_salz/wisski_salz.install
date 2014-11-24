@@ -40,7 +40,7 @@ $schema = array();
 				'type' => 'varchar',
 				'length' => 255,
 			),
-			'query_endpoint' => array(
+		/*	'query_endpoint' => array(
 				'description' => 'url of the query endpoint',
 				'type' => 'varchar',
 				'length' => 255,
@@ -58,7 +58,7 @@ $schema = array();
 				'description' => 'update interval for classes and entities',
 				'type' => 'int',
 				'default' => 3600,
-			),
+			),*/
 			'local_data' => array(
 				'description' => 'store is used locally',
 				'type' => 'int',
@@ -69,13 +69,13 @@ $schema = array();
 				'type' => 'int',
 				'default' => 0,
 			),	
-                        /*'settings' => array(
+                        'settings' => array(
 				'description' => 'A serialized array of name value pairs that store the settings for the store instances',
 				'type' => 'text',
 				//'default' => '',
                                 'size' => 'big',
                                 'serialize' => TRUE,
-			),*/
+			),
 
 		),
 		'primary key' => array('sid'),
