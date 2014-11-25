@@ -1,7 +1,7 @@
 <?php
 // $ID$
 
-include "wisski_core.filler.inc";
+//include "wisski_core.filler.inc";
 
 /**
 * Basic module for the WissKI-Communication with Drupal 7
