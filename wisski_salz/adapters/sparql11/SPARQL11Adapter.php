@@ -433,10 +433,6 @@ public function sparql11_edit_form($form, &$form_state){
 //        throw $e;
     }
     drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
-<<<<<<< HEAD
-=======
-    dpm($results);
->>>>>>> 229ddf6a4a4d7242cb522cf228326d8d6b4e84a1
     return array($ok,$results);
   }
   
