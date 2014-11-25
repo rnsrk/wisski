@@ -1,6 +1,8 @@
 <?php
 // $ID$
 
+include "wisski_core.filler.inc";
+
 /**
 * Basic module for the WissKI-Communication with Drupal 7
 * Provides the Pathbuilder Interface
@@ -469,114 +471,6 @@ function wisski_core_menu() {
   return $items;
 }
 
-function wisski_core_entity_load($entity,$type) {
-  
-  dpm("hook_entity_load fired with...");
-  dpm(func_get_args());
-}
-
-/**
-* implements hook_entity_view
-*/ 
-/*
-function wisski_core_entity_view($entity, $type, $view_mode, $langcode) {
-  
-  if($type == 'wisski_core_entity') {
-//    dpm($entity);
-    if ($entity->dirty) {
-      $entity->dirty = 0;
-      $individual = $entity->uri;
-      $instances = field_info_instances($type,$entity->type);
-      $path_info = db_select('wisski_pb_pathdata','path')
-                    ->fields('path')
-                    ->condition('pending',0,'=')
-                    ->execute()
-                    ->fetchAllAssoc('id');
-      $individual = $entity->uri;
-      $info = array();
-      $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
-      foreach($instances as $instance) {
-        $result = db_select('wisski_pb_fielddata','con')
-                    ->fields('con')
-                    ->condition('instance_id',$instance['id'],'=')
-                    ->execute()
-                    ->fetchAssoc();
-        $path = $path_info[$result['path_id']];
-        $starting_concept = $path->starting_concept;
-        $full_path = array();
-        do {
-          $full_path = array_merge($full_path,unserialize($path->path_array));
-          $data = $path->datatype_property;
-        } while($path = $path->external_path);
-        $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
-        if (!empty($info)) {
-          foreach($info as $entry) {
-            $wrapper->$instance['field_name']->set($entry);
-          }
-        } else {
-          $wrapper->$instance['field_name']->set('');
-          dpm("No results for this individual");
-        }
-      }
-      $entity->dirty = 2;
-      $wrapper->save();
-    } 
-  }
-}
-*/
-
-/**
-* implements hook_entity_presave()
-*/
-function wisski_core_entity_presave($entity,$type) {
-
-  if ($type == 'wisski_core_entity') {
-    dpm($entity);
-    if($entity->dirty == 2) {
-      $entity->dirty = 0;
-      return;
-    }
-    $entity->dirty = 1;
-    if ($entity->is_new) {
-      
-    }
-    if (property_exists($entity,'uri') && $entity->uri != NULL) {
-    
-    } else $entity->uri = wisski_core_make_uri($entity);
-//    if 
-    //remember here, that $entity->type is a bundle of wisski_core_entity
-    $instances = field_info_instances($type,$entity->type);
-    $path_info = db_select('wisski_pb_pathdata','path')
-                ->fields('path')
-                ->condition('pending',0,'=')
-                ->execute()
-                ->fetchAllAssoc('id');
-    $individual = $entity->uri;
-    $info = array();
-    $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
-    foreach($instances as $instance) {
-      $new_field = $entity->$instance['field_name'];
-      if (property_exists($entity,'original')) {
-        $old = $entity->original;
-      }
-      $result = db_select('wisski_pb_fielddata','con')
-                ->fields('con')
-                ->condition('instance_id',$instance['id'],'=')
-                ->execute()
-                ->fetchAssoc();
-      $path = $path_info[$result['path_id']];
-      $starting_concept = $path->starting_concept;
-      $full_path = array();
-      do {
-        $full_path = array_merge($full_path,unserialize($path->path_array));
-        $data = $path->datatype_property;
-      } while($path = $path->external_path);  
-      if (wisski_salz_pb_update($individual,$starting_concept,$full_path,$data,$wrapper->$instance['field_name']->value())) {
-        drupal_set_message("Update successfull");
-      }
-    }
-  }
-}
 
 function wisski_core_make_uri($entity) {
   

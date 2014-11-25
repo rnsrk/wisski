@@ -25,7 +25,7 @@ function wisski_core_list_bundles() {
 
 function wisski_core_list($type) {
 
-  module_invoke_all('wisski_update_class',$type);
+//  module_invoke_all('wisski_update_class',$type);
 //  drupal_set_title(t('WissKI Entities'));
 
   //drupal_set_message(serialize($type));
@@ -104,7 +104,7 @@ function wisski_core_entity_view($entity) {
   */
   drupal_set_message("muhaha!");
   /*variable_set('wisski_core_semaphore_'.$id,TRUE);*/
-  module_invoke_all('wisski_update_entity',$entity);
+//  module_invoke_all('wisski_update_entity',$entity);
 //  drupal_set_message("miau!");
   drupal_set_title(entity_label('wisski_core_entity', $entity));
   // Return automatically generated view page.
