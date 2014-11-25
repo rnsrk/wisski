@@ -9,7 +9,7 @@ function csv_adapter_install() {
 }
 
 function csv_adapter_schema(){
-    $schema = array();
+/*    $schema = array();
     $schema['wisski_salz_csv_store_instances'] = array(
         'description' => 'Settings for the WissKI CSV store instances',
         'fields' => array(
@@ -89,5 +89,6 @@ function csv_adapter_schema(){
     ),
     ); 
     return $schema;
+*/
 }
 

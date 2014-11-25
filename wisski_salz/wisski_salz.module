@@ -77,28 +77,27 @@ return $items;
 }
 
 function wisski_salz_get_local_store() {
-  $result = db_select('wisski_salz_store_instances','ins')
+    $result = db_select('wisski_salz_store_instances','ins')
     ->fields('ins')
     ->condition('local_data',1,'=')
     ->condition('deleted',0,'=')
     ->execute()
     ->fetchAllAssoc('name');
-  $count = count($result);
-  //drupal_set_message("\$count = $count");
+    $count = count($result);
+//    drupal_set_message("\$count = $count");
     switch($count){
 	case 0: return $count;
 	case 1: return current($result);
 	default: return $count;
-}
-  return $count;
-}
+    }
+    return $count;	 
+  }
 
 function wisski_salz_view_installed_store_instances($form, &$form_state) {
     wisski_salz_set_store_types();	
     $store_types = wisski_salz_get_store_types();
     $store_instances = wisski_salz_get_installed_store_instances();
     //  $key = _sparql11_adapter_get_db_key();
-    $csv_store_instances = wisski_salz_get_installed_csv_store_instances();
     
     $link = array();
  /* $link['any'] = array(
@@ -113,6 +112,7 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
 
   $sorted_store_instances_by_type = array();
   foreach ($store_instances as $key2 => $store_instance){
+    $store_instance_settings = unserialize($store_instance->settings);
     $local_store = wisski_salz_get_local_store();
     if(!is_numeric($local_store) && $local_store->name == $store_instance->name){
 	$text = $local_store->label . " => Local store";
@@ -121,37 +121,26 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
     $text = $store_instance->label;
     }
     $result = db_select('wisski_salz_store_types', 'types')
-	  ->fields('types', array('name'))
+	  ->fields('types', array('name', 'label'))
 	  ->condition('stid', $store_instance->type, 'LIKE')
 	  ->execute()->fetchObject();
     if(!empty($result)) $store_type_name = $result->name;
+    if(!empty($result)) $store_type_label = $result->label;
 
     //$path = 'admin/config/wisski/salz/edit/' . $store_instance->type . '/' . $store_instance->name;
     $path = 'admin/config/wisski/salz/edit/' . $store_type_name . '/' . $store_instance->name;
-    $sorted_store_instances_by_type[$store_instance->type][] = array( 
-      'data' => l($text, $path). "<div class='wki_grey'>" . t($store_instance->query_endpoint . ', ' . $store_instance->update_endpoint) . "</div>",
-    );
-    
+    if ($store_type_label == sparql11_adapter_wisski_get_store_type()){
+       $sorted_store_instances_by_type[$store_instance->type][] = array( 
+       'data' => l($text, $path). "<div class='wki_grey'>" . t($store_instance_settings['query_endpoint'] . ', ' . $store_instance_settings['update_endpoint']) . "</div>",
+       );
+    }
+    if ($store_type_label == csv_adapter_wisski_get_store_type()){   
+       $sorted_store_instances_by_type[$store_instance->type][] = array( 
+       'data' => l($text, $path). "<div class='wki_grey'>" . t($store_instance_settings['file_path']) . "</div>",
+       );
+    }
   }
-
- $csv_store_instances_by_type = array();
-  foreach ($csv_store_instances as $csv_key => $csv_store_instance){
-    $text = $csv_store_instance->label;
-    $result = db_select('wisski_salz_store_types', 'types')
-	  ->fields('types', array('name'))
-	  ->condition('stid', $csv_store_instance->type, 'LIKE')
-	  ->execute()->fetchObject();
-    if(!empty($result)) $store_type_name = $result->name;
-
-    //$path = 'admin/config/wisski/salz/edit/' . $store_instance->type . '/' . $store_instance->name;
-    $path = 'admin/config/wisski/salz/edit/' . $store_type_name . '/' . $csv_store_instance->name;
-    $csv_store_instances_by_type[$csv_store_instance->type][] = array( 
-      'data' => l($text, $path). "<div class='wki_grey'>" . t($csv_store_instance->file_path) . "</div>",
-    );
-    
-  }
-
-
+  
   $form = array();
   $form['add_link'] = array(
     'link' => array(
@@ -172,44 +161,15 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
          );
   }
 
-
-  foreach($csv_store_instances_by_type as $key => $value) {
-      $csv_store_type_string = $store_types[$key]['label'];
-      $form[$key] = array(
-            'list' => array(
-                  '#theme' => 'item_list',
-                  '#items' => $value,
-                  '#title' => t($csv_store_type_string),
-             ),
-         );
-    }
-
-  menu_rebuild();
+ menu_rebuild();
   $form['recover'] = array(
     '#type' => 'submit',
     '#value' => t('Recover all deleted stores'),
     '#submit' => array('wisski_salz_recover_deleted_stores'),
   );
   
-  /*$form['get_local'] = array(
-    '#type' => 'submit',
-    '#value' => t('Show local store'),
-    '#submit' => array('wisski_salz_get_local'),
-  );*/
-
   return $form;
 }
-
-/*function wisski_salz_get_local() {
-  $res = wisski_salz_get_local_store();
-  if (!is_numeric($res)) {
-	dpm($res);
-	//return $res->label;
-  }
-  else if ($res == 0) {
-	drupal_set_message("No local store has been set");
-  }
-}*/
 
 function wisski_salz_config_page() {
   wisski_salz_set_store_types();
@@ -299,7 +259,6 @@ function wisski_salz_next_datatype_properties($class) {
 
 function wisski_salz_recover_deleted_stores() {
   db_update('wisski_salz_store_instances')->fields(array('deleted' => 0))->condition('deleted',1,'=')->execute();
-  db_update('wisski_salz_csv_store_instances')->fields(array('deleted' => 0))->condition('deleted',1,'=')->execute();
   menu_rebuild();
 }
 
@@ -343,16 +302,76 @@ function wisski_salz_get_installed_store_instances() {
   return db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('deleted',0,'=')->execute()->fetchAllAssoc('name');
 }
 
-function wisski_salz_get_installed_csv_store_instances() {
-  return db_select('wisski_salz_csv_store_instances','ins')->fields('ins')->condition('deleted',0,'=')->execute()->fetchAllAssoc('name');
+function wisski_salz_delete_store_instances($instance_to_delete = NULL){
+    if ($instance_to_delete == NULL) $instance_to_delete = arg(6);
+    $result = db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('deleted',0,'=')->condition('name',$instance_to_delete,'LIKE')->execute();
+    if (empty($result)) drupal_set_message("Instance $instance_to_delete does not exist or has already been deleted");
+        else {
+            db_update('wisski_salz_store_instances')->fields(array('deleted' => 1))->condition('name',$instance_to_delete,'LIKE')->execute();
+                return TRUE;
+                  }
+                    return FALSE;
+                    }
+
+function wisski_salz_db_get_instance_by_name($name) {
+    return db_select('wisski_salz_store_instances','s')->fields('s')->condition('name',$name,'LIKE')->execute()->fetchObject();
 }
 
-function wisski_salz_get_store_instances_by_type() {
-  $installed_store_instances = array();
-  $installed_store_instances = module_invoke_all('wisski_get_store_instances_by_type');
-  return $installed_store_instances;
+function wisski_salz_settings_page_validate($element, $form, &$form_state) {
+    $local_store = $element['#value'];
+    $result = wisski_salz_get_local_store();
+                
+    // if $result contains one stdClass Object (which means that it is not numeric), i. e. one local store already exists in $result
+    if(!is_numeric($result)){
+        // and if one wants to set one more local store
+        if(!empty($local_store)){
+        // then output the following error message
+            form_error($element, t('You have already chosen a local store. You cannot have multiple local stores!'));
+        }
+    }
 }
 
+/**
+* Store form "Delete" submit handler.
+* @author Kerstin Reinfandt
+*/
+function wisski_salz_submit_delete_form($form, &$form_state){
+    // Redirect user to "delete" uri for this store.
+    $form_state['redirect'] = 'admin/config/wisski/salz/delete/' . arg(5) . '/' . arg(6);
+}
+
+/**
+* Form constructor for the store delete confirmation form.
+* @return array
+*  Confirmation form.
+* @author Kerstin Reinfandt
+*/
+function wisski_salz_delete_form($form, &$form_state){
+    $message = t('Are you sure you want to delete store ' . arg(6) . '?');
+    $path = 'admin/config/wisski/salz/edit/' . arg(5) . '/' . arg(6);
+    return confirm_form(
+        $form,
+        $message,
+        $path,
+        t('Only do this if you are sure!'),
+        t('Delete'),
+        t('Cancel')
+    );
+}
+
+/**
+* Store "Confirm delete" form submit handler.
+* @author Kerstin Reinfandt
+*/
+function wisski_salz_delete_form_submit($form, &$form_state){
+    $result = wisski_salz_delete_store_instances();
+    menu_rebuild();
+    if ($result) {
+        drupal_set_message("The store " . arg(6) . " was successfully deleted.");
+    }
+    $form_state['redirect'] = 'admin/config/wisski/salz';
+}
+            
 function wisski_salz_store_modes(){
   $store_modes = array();
   $store_modes = module_invoke_all('wisski_get_store_mode');
