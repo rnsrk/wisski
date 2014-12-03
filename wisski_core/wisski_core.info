@@ -5,3 +5,4 @@ core = 7.x
 package = "WissKI"
 dependencies[] = wisski_salz
 files[] = wisski_core.controller.inc
+files[] = wisski_core.swips.inc

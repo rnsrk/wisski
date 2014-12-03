@@ -1,7 +1,8 @@
 <?php
 // $ID$
 
-//include "wisski_core.filler.inc";
+include "wisski_core.filler.inc";
+include "wisski_core.swips.inc";
 
 /**
 * Basic module for the WissKI-Communication with Drupal 7
@@ -466,18 +467,9 @@ function wisski_core_menu() {
     );
 
   }  
-
-
   return $items;
 }
 
-
-function wisski_core_make_uri($entity) {
-  
-  $tag = md5($entity->title.time());
-  $short = preg_replace('/[^a-zA-Z0-9_]/','_',substr($entity->title,0,8));
-  return "ecrm:ind_".$short.$tag;
-}
 
 /**
  * Load an instance of wisski_core.

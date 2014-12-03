@@ -93,23 +93,9 @@ function wisski_core_list($type) {
  *   Renderable array.
  */
 function wisski_core_entity_view($entity) {
-  //since this implements hook_entity_view which is invoked by entity_view() again
-  //we want to avoid cyclic calls
+  
   $id = entity_id('wisski_core_entity', $entity);
-/*  if (variable_get('wisski_core_semaphore_'.$id,FALSE)) {
-    trigger_error('Cyclic call to wisski_core_entity_view for entity '.$id,E_USER_WARNING);
-    variable_set('wisski_core_semaphore_'.$id,FALSE);
-    return;
-  }
-  */
-  drupal_set_message("muhaha!");
-  /*variable_set('wisski_core_semaphore_'.$id,TRUE);*/
-//  module_invoke_all('wisski_update_entity',$entity);
-//  drupal_set_message("miau!");
   drupal_set_title(entity_label('wisski_core_entity', $entity));
-  // Return automatically generated view page.
-  //$entity_view = entity_view('wisski_core_entity',array($id => $entity)/*,'full'*/);
   $entity_view = entity_view('wisski_core_entity', array(entity_id('wisski_core_entity', $entity) => $entity));
-//  variable_del('wisski_core_semaphore_'.$id);
   return $entity_view;
 }

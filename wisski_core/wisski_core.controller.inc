@@ -79,7 +79,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       0 => array('#markup' => check_plain($entity->description)),
       //0 => array('#markup' => check_plain($wrapper->description->value())),
     );
-    
+/*    
     $content['same_individuals'] = array(
       '#theme' => 'field',
       '#weight' => 0,
@@ -94,11 +94,12 @@ class WisskiCoreEntityController extends EntityAPIController {
       '#bundle' => $wrapper->type->value(),
       '#items' => array(array('value' => $wrapper->same_individuals->value())),
       '#formatter' => 'text_default',
-    );
+    );*/
     return parent::buildContent($entity, $view_mode, $langcode, $content);
   }
   
   public function save($entity, DatabaseTransaction $transaction = NULL) {
+    if (!property_exists($entity,'name') || $entity->name == '') $entity->name = preg_replace('/[^a-zA-Z0-9_]/','_',substr($entity->title,0,32));
     $return = parent::save($entity,$transaction);
     if ($return)
       return $return;

@@ -26,7 +26,7 @@ function wisski_core_install() {
     }
   }
 */
-//  variable_set('field_storage_default','wisski_core_swips');
+  variable_set('field_storage_default','wisski_core_swips');
 }
 
 function wisski_core_uninstall() {
