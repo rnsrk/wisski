@@ -193,7 +193,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
     if (property_exists($entity,'uri') && $entity->uri != NULL) {
       $individual = $entity->uri;
     } else {
-      $individual =  _wisski_core_make_uri($entity_type,$entity);
+      $individual =  wisski_core_make_uri($entity->name,$entity->type);
       $entity->uri = $individual;
       db_update('wisski_entity_data')
         ->fields(array('uri' => $individual))
@@ -278,16 +278,19 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
   }
 }
 
-function _wisski_core_make_uri($entity_type,$entity) {
+function wisski_core_make_uri($entity_name,$bundle_name,$ind_only = TRUE) {
   
   $bundle_uri = db_select('wisski_entity_bundles','b')
                   ->fields('b',array('type','uri'))
-                  ->condition('type',$entity->type)
+                  ->condition('type',$bundle_name)
                   ->execute()
                   ->fetchObject()
                   ->uri;
-  dpm($bundle_uri);
-  return wisski_salz_pb_make_uri($bundle_uri,substr($entity->name,0,8));
+//  dpm($bundle_uri);
+  $ind_uri = wisski_salz_pb_make_uri($bundle_uri,substr($entity_name,0,8));
+  if ($ind_only)
+    return $ind_uri;
+  else return array($ind_uri,$bundle_uri);
 }
 
 

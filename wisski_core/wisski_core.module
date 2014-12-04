@@ -1,7 +1,7 @@
 <?php
 // $ID$
 
-include "wisski_core.filler.inc";
+#include "wisski_core.filler.inc";
 include "wisski_core.swips.inc";
 
 /**
@@ -48,7 +48,7 @@ function wisski_core_entity_info() {
       'label' => t('WissKI Entity'),
       
       // it currently has a base table - future: triple store?
-      'base table' => 'wisski_entity_data',
+      'base table' => NULL,
       
       // the entity main keys in this base table
       'entity keys' => array(

@@ -255,6 +255,21 @@ public function sparql11_edit_form($form, &$form_state){
     //returns set of newly introduced uris
     return $new_individuals;
   }
+  
+  public function insertIndividual($entity_uri,$bundle_uri) {
+    
+    global $base_url;
+    $graph_name = variable_get('wisski_graph_name','<'.$base_url.'/wisski_graph>');
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ GRAPH $graph_name {?s ?p ?o}} LIMIT 1");
+    if ($ok) {
+      if (empty($result)) {
+        $this->updateSPARQL("CREATE GRAPH $graph_name");
+        variable_set('wisski_graph_name',$graph_name);
+      }
+    }
+    list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $entity_uri a $bundle_uri }} WHERE {?s ?p ?o.}");
+    return $ok;
+  }
 
   public function createNewIndividual($property,$name_part = '',$checked = FALSE) {
     

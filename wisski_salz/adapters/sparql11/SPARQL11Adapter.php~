@@ -189,8 +189,10 @@ public function sparql11_edit_form($form, &$form_state){
     }
     list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ $individual_uri rdf:type/rdfs:subClassOf* $starting_concept. }");
     if ($ok && !current($result)) {
+
       $insertion = "\"".preg_replace('/[\"\']/','',utf8_decode($individual_name))."\"";
       list($ok,$result) = $this->updateSPARQL("INSERT{GRAPH $graph_name { $individual_uri rdf:type $starting_concept . $individual_uri rdf:type owl:Individual . $individual_uri rdf:note $insertion .}} WHERE {?s ?p ?o .}");
+
       if (!$ok) return FALSE;
     }
     $new_individuals = array();
@@ -222,7 +224,9 @@ public function sparql11_edit_form($form, &$form_state){
       } else {
         //odd steps are classes
         $class = array_shift($path_array);
+
         list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { $individual rdf:type/rdfs:subClassOf* $class . }");
+
         if(!$ok) {
           trigger_error("Errors while inserting data",E_USER_ERROR);
           return FALSE;
@@ -253,6 +257,22 @@ public function sparql11_edit_form($form, &$form_state){
     //returns set of newly introduced uris
     return $new_individuals;
   }
+  
+  public function insertIndividual($entity_uri,$bundle_uri) {
+    
+    global $base_url;
+    $graph_name = variable_get('wisski_graph_name','<'.$base_url.'/wisski_graph>');
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ GRAPH $graph_name {?s ?p ?o}} LIMIT 1");
+    if ($ok) {
+      if (empty($result)) {
+        $this->updateSPARQL("CREATE GRAPH $graph_name");
+        variable_set('wisski_graph_name',$graph_name);
+      }
+    }
+    list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name {$entity_uri a $bundle_uri }} WHERE {?s ?p ?o.}");
+    return $ok;
+  }
+
 
   public function createNewIndividual($property,$name_part = '',$checked = FALSE) {
     
