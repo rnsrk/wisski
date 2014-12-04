@@ -264,7 +264,7 @@ public function sparql11_edit_form($form, &$form_state){
         variable_set('wisski_graph_name',$graph_name);
       }
     }
-    list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $entity_uri a $bundle_uri }} WHERE {?s ?p ?o.}");
+    list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name {$entity_uri a $bundle_uri }} WHERE {?s ?p ?o.}");
     return $ok;
   }
 
