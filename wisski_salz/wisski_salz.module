@@ -286,6 +286,13 @@ function wisski_salz_pb_make_uri($class,$name_part = '',$checked = TRUE) {
   return '';
 }
 
+function wisski_salz_pb_insert_individual($entity_uri,$bundle_uri) {
+  
+  $store = wisski_salz_invoke_local_store();
+  if ($store->getType() == "SPARQL 1.1") return $store->insertIndividual($entity_uri,$bundle_uri);
+  return FALSE;
+}
+
 function wisski_salz_pb_delete_entity_data($entity_uri) {
 
   $store = wisski_salz_invoke_local_store();
