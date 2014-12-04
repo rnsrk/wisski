@@ -26,11 +26,12 @@ function wisski_core_install() {
     }
   }
 */
+  variable_set('field_storage_default','wisski_core_swips');
 }
 
 function wisski_core_uninstall() {
-	
-//	field_delete_field('wisski_core_field_1');
+  
+  if (variable_get('field_storage_dafault') == 'wisski_core_swips') variable_del('field_storage_default');
 }
 
 function wisski_core_schema() {

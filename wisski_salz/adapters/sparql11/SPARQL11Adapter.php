@@ -54,13 +54,7 @@ class SPARQL11Adapter implements AdapterInterface {
       $this->addOntologies();
     }
 
-  //  $this->putNamespace('ecrm',  'http://erlangen-crm.org/120111/');
-   /* $this->putNamespace('behaim_inst', 'http://faui8184.informatik.uni-erlangen.de/birkmaier/content/');
-    $this->putNamespace('behaim', 'http://wwwdh.cs.fau.de/behaim/voc/');
-    $this->putNamespace('behaim_image', 'http://faui8184.informatik.uni-erlangen.de/behaim/ontology/images/');
-    */
-
-  /*  $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');
+    $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');  
     $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
     $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
     $this->putNamespace('protege', 'http://protege.stanford.edu/plugins/owl/protege#');
@@ -70,18 +64,6 @@ class SPARQL11Adapter implements AdapterInterface {
     $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
     $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
     $this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
-   */
-
-    $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
-    $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
-    $this->putNamespace('ns3', 'http://projektdb.gnm.de/');
-    $this->putNamespace('protege', 'http://protege.stanford.edu/plugins/owl/protege#');
-    $this->putNamespace('xsp', 'http://www.owl-ontologies.com/2005/08/07/xsp.owl#');
-    $this->putNamespace('ns0',  'http://erlangen-crm.org/120111/');
-    $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
-    $this->putNamespace('xsd', 'http://www.w3.org/2001/XMLSchema#');
-    $this->putNamespace('owl', 'http://www.w3.org/2002/07/owl#');
-    $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
   
   }
 
@@ -172,7 +154,7 @@ public function sparql11_edit_form($form, &$form_state){
   }
   
   public function pbQuery($individual_uri,$starting_concept,$path_array,$datatype_property) {
-    
+
     $query = "SELECT DISTINCT ?data WHERE{ $individual_uri rdf:type/rdfs:subClassOf* $starting_concept .";
     $count = 0;
     while(!empty($path_array)) {
@@ -189,43 +171,112 @@ public function sparql11_edit_form($form, &$form_state){
       foreach ($result as $obj) {
         $out[] = $obj->data->dumpValue('text');
       }
-      return $out;
+      return preg_replace('/[\"\']/','',$out);
     }
     return FALSE;
   }
 
   public function pbUpdate($individual_uri,$starting_concept,$path_array,$datatype_property,$new_data,$delete_old) {
     
+    global $base_url;
+    $graph_name = variable_get('wisski_graph_name','<'.$base_url.'/wisski_graph>');
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ GRAPH $graph_name {?s ?p ?o}} LIMIT 1");
+    if ($ok) {
+      if (empty($result)) {
+        $this->updateSPARQL("CREATE GRAPH $graph_name");
+        variable_set('wisski_graph_name',$graph_name);
+      }
+    }
     list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ $individual_uri rdf:type/rdfs:subClassOf* $starting_concept. }");
-    if ($ok && empty($result)) {
-      list($ok,$result) = $this->updateSPARQL("INSERT{ $individual_uri rdf:type $starting_concept. }");
+    if ($ok && !current($result)) {
+      list($ok,$result) = $this->updateSPARQL("INSERT{GRAPH $graph_name { $individual_uri rdf:type $starting_concept . $individual_uri rdf:type owl:Individual .}} WHERE {?s ?p ?o .}");
       if (!$ok) return FALSE;
     }
-    $count = 0;
-    $query = "WHERE {";
+    $new_individuals = array();
+    $switch = FALSE;
+    $individual = $individual_uri;
+    $class = $starting_concept;
+    // we check for the existence of all individuals on the path
+    // and if it does not exist we introduce a new owl:Individual and a new wisski_core_entity
     while(!empty($path_array)) {
-//      $query = '';
-      if ($count == 0) {
-        $query .= "$individual_uri ";
-      } else $query .= "?individual$count ";
-      $query .= array_shift($path_array);
-      $count++;
-      $query .= "?individual$count. ";
-      $query .= "?other rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
-    }
-    $query .= "}";
-    $query .= "INSERT { ?individual$count $datatype_property $new_data. }".$query;
-    list($ok,$result) = $this->updateSPARQL($query);
-    if ($ok) {
-      return TRUE;
-    } else {
-      $errors = '';
-      foreach ($result as $error) {
-        $errors .= "\n".$error;
+      if ($switch = !$switch) {
+        //even steps are properties
+        $property = array_shift($path_array);
+        list($ok,$result) = $this->querySPARQL("SELECT * WHERE { $individual $property ?other. }");
+        if(!$ok) {
+          trigger_error("Errors while inserting data",E_USER_ERROR);
+          return FALSE;
+        } else {
+          if (!current($result)) {
+            $new_individual = $this->createNewIndividual($property,'',TRUE);
+            list($ok_ok,$ok_result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $individual $property $new_individual .}} WHERE { ?s ?p ?o .}");
+            if(!$ok_ok) {
+              trigger_error("Errors while inserting data: ",E_USER_ERROR);
+              return FALSE;
+            } else $individual = $new_individual;
+          } else {
+            $individual = current($result)->other->dumpValue('text');
+          }
+        }
+      } else {
+        //odd steps are classes
+        $class = array_shift($path_array);
+        list($ok,$result) = $this->querySPARQL("SELECT * WHERE { $individual rdf:type/rdfs:subClassOf* $class . }");
+        if(!$ok) {
+          trigger_error("Errors while inserting data",E_USER_ERROR);
+          return FALSE;
+        } else {
+          if (!current($result)) {
+            list($ok_ok,$ok_result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $individual rdf:type $class . $individual rdf:type owl:Individual .}} WHERE {?s ?p ?o .}");
+            if(!$ok_ok) {
+              trigger_error("Errors while inserting data: ",E_USER_ERROR);
+              return FALSE;
+            } else $new_individuals[$class][] = $individual;
+          }
+        }
       }
-      trigger_error("Errors while inserting data: ".$errors,E_USER_WARNING);
     }
-    return FALSE;
+    if ($delete_old) {
+      list($ok,$result) = $this->updateSPARQL("DELETE WHERE {GRAPH $graph_name { $individual $datatype_property ?data.}}");
+      if (!$ok) {
+        trigger_error("Errors while inserting data: ",E_USER_ERROR);
+        return FALSE;
+      }
+    }
+    $insertion = "\"".preg_replace('/[\"\']/','',utf8_decode($new_data))."\"";
+    list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $individual $datatype_property $insertion .}} WHERE {?s ?p ?o .}");
+    if (!$ok) {
+      trigger_error("Errors while inserting data: ",E_USER_ERROR);
+      return FALSE;
+    }
+    //returns set of newly introduced uris
+    return $new_individuals;
+  }
+
+  public function createNewIndividual($property,$name_part = '',$checked = FALSE) {
+    
+    //just to have some info we take the namespace prefix form the property
+    $prefix = strstr($property,':',TRUE);
+    //aim at uniqueness
+    $suffix = md5(time().$property.rand());
+    //ensure uniqueness
+    $name = substr($prefix.":".$name_part.$suffix,0,32);
+    if ($checked) {
+      list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE {{ $name ?p ?o .} UNION {?s ?p $name .}} LIMIT 1");
+      if (!$ok) return FALSE;
+      return empty($result) ? $name : $this->createNewIndividual($property);
+    } else return $name;
+  }
+  
+  public function deleteAllTriples($uri) {
+  
+    $graph_name = variable_get('wisski_graph_name');
+    list($ok,$result) = $this->updateSPARQL("DELETE WHERE {GRAPH $graph_name {{ $uri ?p1 ?o1. } UNION {?s1 ?p2 $uri . } UNION {?s2 $uri ?o2}}");
+    if (!$ok) {
+      trigger_error("Errors while inserting data: ",E_USER_ERROR);
+      return FALSE;
+    }
+    return $ok;
   }
 
   public function nextClasses($property) {
@@ -401,11 +452,10 @@ public function sparql11_edit_form($form, &$form_state){
       } else drupal_set_message("EasyRdf is not installed");
     } catch (Exception $e) {
         drupal_set_message("SPARQL1.1 $type request failed.<br>Query was '".htmlentities($query)."'<br>Error Message:<br>".get_class($e)."<br>".$e->getMessage());
-        
+        return array(FALSE,array());
 //        throw $e;
     }
-    drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
-    dpm($results);
+//    drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
     return array($ok,$results);
   }
   
