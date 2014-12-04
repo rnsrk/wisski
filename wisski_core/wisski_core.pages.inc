@@ -47,7 +47,7 @@ function wisski_core_list($type) {
 
   // Show list of existing entities.
 //  $entities = entity_load('wisski_core_entity');
-
+/*
   $query = new EntityFieldQuery();
   
   $query->entityCondition('entity_type', 'wisski_core_entity');
@@ -62,6 +62,27 @@ function wisski_core_list($type) {
     $entities = entity_load('wisski_core_entity', array_keys($results['wisski_core_entity']));
   else
     $entities = array();
+  
+  $items = array();
+  foreach ($entities as $entity) {
+    
+    //drupal_set_message(serialize($entity));
+    $entity_uri = entity_uri('wisski_core_entity', $entity);
+    
+    $items[] = l(entity_label('wisski_core_entity', $entity), $entity_uri['path']);
+  }
+  $output .= theme_item_list(
+    array(
+      'items' => $items,
+      'title' => t('List of existing entities.'),
+      'type' => 'ul',
+      'attributes' => array(),
+    )
+  );
+  
+  */
+  
+    $entities = entity_load('wisski_core_entity', array(), array("type" => $type));
   
   $items = array();
   foreach ($entities as $entity) {
