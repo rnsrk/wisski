@@ -202,10 +202,10 @@ function wisski_salz_pb_query($individual_uri,$starting_concept,$path_array,$dat
   return array();
 }
 
-function wisski_salz_pb_update($individual_uri,$starting_concept,$path_array,$datatype_property,$new_data,$delete_old = FALSE) {
+function wisski_salz_pb_update($individual_uri,$individual_name,$starting_concept,$path_array,$datatype_property,$new_data,$delete_old = FALSE) {
   
   $store = wisski_salz_invoke_local_store();
-  if ($store->getType() == "SPARQL 1.1") return $store->pbUpdate($individual_uri,$starting_concept,$path_array,$datatype_property,$new_data,$delete_old);
+  if ($store->getType() == "SPARQL 1.1") return $store->pbUpdate($individual_uri,$individual_name,$starting_concept,$path_array,$datatype_property,$new_data,$delete_old);
   return array();
 }
 

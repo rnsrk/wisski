@@ -64,12 +64,13 @@ function wisski_core_field_storage_delete_field($field) {
 function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $age, $skip_fields, $options) {
   
   
-//  dpm("call to hook_field_storage_pre_load");
+  dpm("call to hook_field_storage_pre_load for ".$entity_type);
 //  dpm(func_get_args());
   if($entity_type == 'wisski_core_entity') {
     if (variable_get('wisski_semaphore_pre_load',FALSE)) return;
     variable_set('wisski_semaphore_pre_load',TRUE);
     if ($age == FIELD_LOAD_REVISION) {
+      dpm("load revision");
       //load from default storage
       module_invoke('field_sql_storage','field_storage_load',$entity_type, $queried_entities, $age, $skip_fields, $options);
     } else {
@@ -80,7 +81,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                       ->fields('path')
                       ->condition('pending',0,'=')
                       ->execute()
-                      ->fetchAllAssoc('id');
+                      ->fetchAllAssoc('uuid');
         $individual = $entity->uri;
         $info = array();
         $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
@@ -90,7 +91,6 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                       ->condition('instance_id',$instance['id'],'=')
                       ->execute()
                       ->fetchAssoc();
-          
           $path = $path_info[$result['path_id']];
           $starting_concept = $path->starting_concept;
           $full_path = array();
@@ -98,6 +98,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
             $full_path = array_merge($full_path,unserialize($path->path_array));
             $data = $path->datatype_property;
           } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
+          dpm($full_path);
           $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
           if (!empty($info)) {
             $is_list = 'list' == substr($wrapper->$instance['field_name']->type(),0,4);
@@ -137,7 +138,7 @@ function wisski_field_storage_load($entity_type, $entities, $age, $fields, $opti
                       ->fields('path')
                       ->condition('pending',0,'=')
                       ->execute()
-                      ->fetchAllAssoc('id');
+                      ->fetchAllAssoc('uuid');
         $individual = $entity->uri;
         $info = array();
         $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
@@ -205,7 +206,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
                 ->fields('path')
                 ->condition('pending',0,'=')
                 ->execute()
-                ->fetchAllAssoc('id');
+                ->fetchAllAssoc('uuid');
 //    dpm("Tick 1");
     $new_individuals = array();
     foreach($fields as $field_id) {
@@ -233,7 +234,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
       $new_values = field_get_items($entity_type,$entity,$instance['field_name']);
       $delete = $op == FIELD_STORAGE_UPDATE;
       foreach($new_values as $delta) {
-        if ($news = wisski_salz_pb_update($individual,$starting_concept,$full_path,$data,$delta['value'],$delete)) {
+        if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$full_path,$data,$delta['value'],$delete)) {
           dpm($news);
           foreach($news as $class => $inds) {
             if (!isset($new_individuals[$class])) $new_individuals[$class] = array();
@@ -427,4 +428,14 @@ function wisski_core_field_storage_details($field) {
       FIELD_LOAD_REVISION => $info['sql'][FIELD_LOAD_REVISION],
     ),
   );
+}
+
+function _wisski_core_rekey_array($array,$key) {
+
+  $out = array();
+  foreach ($array as $entry) {
+    if (is_array($entry) && isset($entry[$key]))
+      $out[$entry[$key]] = $entry;
+  }
+  return $out;
 }

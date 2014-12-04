@@ -176,7 +176,9 @@ public function sparql11_edit_form($form, &$form_state){
     return FALSE;
   }
 
-  public function pbUpdate($individual_uri,$starting_concept,$path_array,$datatype_property,$new_data,$delete_old) {
+
+
+  public function pbUpdate($individual_uri,$individual_name,$starting_concept,$path_array,$datatype_property,$new_data,$delete_old) {
     
     global $base_url;
     $graph_name = variable_get('wisski_graph_name','<'.$base_url.'/wisski_graph>');
@@ -189,7 +191,8 @@ public function sparql11_edit_form($form, &$form_state){
     }
     list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ $individual_uri rdf:type/rdfs:subClassOf* $starting_concept. }");
     if ($ok && !current($result)) {
-      list($ok,$result) = $this->updateSPARQL("INSERT{GRAPH $graph_name { $individual_uri rdf:type $starting_concept . $individual_uri rdf:type owl:Individual .}} WHERE {?s ?p ?o .}");
+      $insertion = "\"".preg_replace('/[\"\']/','',utf8_decode($individual_name))."\"";
+      list($ok,$result) = $this->updateSPARQL("INSERT{GRAPH $graph_name { $individual_uri rdf:type $starting_concept . $individual_uri rdf:type owl:Individual . $individual_uri rdf:note $insertion .}} WHERE {?s ?p ?o .}");
       if (!$ok) return FALSE;
     }
     $new_individuals = array();
@@ -202,7 +205,7 @@ public function sparql11_edit_form($form, &$form_state){
       if ($switch = !$switch) {
         //even steps are properties
         $property = array_shift($path_array);
-        list($ok,$result) = $this->querySPARQL("SELECT * WHERE { $individual $property ?other. }");
+        list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { $individual $property ?other. }");
         if(!$ok) {
           trigger_error("Errors while inserting data",E_USER_ERROR);
           return FALSE;
@@ -221,7 +224,7 @@ public function sparql11_edit_form($form, &$form_state){
       } else {
         //odd steps are classes
         $class = array_shift($path_array);
-        list($ok,$result) = $this->querySPARQL("SELECT * WHERE { $individual rdf:type/rdfs:subClassOf* $class . }");
+        list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { $individual rdf:type/rdfs:subClassOf* $class . }");
         if(!$ok) {
           trigger_error("Errors while inserting data",E_USER_ERROR);
           return FALSE;
