@@ -1,7 +1,8 @@
 <?php
 
 module_load_include('php', 'wisski_salz', "interface/AdapterInterface");
-
+module_load_include('php', 'wisski_salz', "adapters/sparql11/wisski_easyrdf.php");
+include "sites/all/libraries/easyrdf/lib/EasyRdf/Sparql/Client.php";
 
 class SPARQL11Adapter implements AdapterInterface {
 
@@ -176,6 +177,8 @@ public function sparql11_edit_form($form, &$form_state){
     return FALSE;
   }
 
+
+
   public function pbUpdate($individual_uri,$individual_name,$starting_concept,$path_array,$datatype_property,$new_data,$delete_old) {
     
     global $base_url;
@@ -189,10 +192,8 @@ public function sparql11_edit_form($form, &$form_state){
     }
     list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ $individual_uri rdf:type/rdfs:subClassOf* $starting_concept. }");
     if ($ok && !current($result)) {
-
       $insertion = "\"".preg_replace('/[\"\']/','',utf8_decode($individual_name))."\"";
       list($ok,$result) = $this->updateSPARQL("INSERT{GRAPH $graph_name { $individual_uri rdf:type $starting_concept . $individual_uri rdf:type owl:Individual . $individual_uri rdf:note $insertion .}} WHERE {?s ?p ?o .}");
-
       if (!$ok) return FALSE;
     }
     $new_individuals = array();
@@ -224,9 +225,7 @@ public function sparql11_edit_form($form, &$form_state){
       } else {
         //odd steps are classes
         $class = array_shift($path_array);
-
         list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { $individual rdf:type/rdfs:subClassOf* $class . }");
-
         if(!$ok) {
           trigger_error("Errors while inserting data",E_USER_ERROR);
           return FALSE;
@@ -269,10 +268,9 @@ public function sparql11_edit_form($form, &$form_state){
         variable_set('wisski_graph_name',$graph_name);
       }
     }
-    list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name {$entity_uri a $bundle_uri }} WHERE {?s ?p ?o.}");
+    list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $entity_uri a $bundle_uri }} WHERE {?s ?p ?o.}");
     return $ok;
   }
-
 
   public function createNewIndividual($property,$name_part = '',$checked = FALSE) {
     
@@ -457,9 +455,9 @@ public function sparql11_edit_form($form, &$form_state){
 	 */
            if (isset($sparql11_settings['query_endpoint'])) {
             if (isset($sparql11_settings['update_endpoint'])) {
-              $sparql = new EasyRdf_Sparql_Client($sparql11_settings['query_endpoint'],$sparql11_settings['update_endpoint']);
+              $sparql = new Wisski_EasyRdf_Sparql_Client($sparql11_settings['query_endpoint'],$sparql11_settings['update_endpoint']);
             } else {
-              $sparql = new EasyRdf_Sparql_Client($sparql11_settings['query_endpoint']);
+              $sparql = new Wisski_EasyRdf_Sparql_Client($sparql11_settings['query_endpoint']);
             }
       
             if ($type == 'query' && !is_null($query)) {
@@ -1105,4 +1103,103 @@ public function sparql11_edit_form($form, &$form_state){
     $hours = ($mins - $sub_mins) / 60;
     return $hours.':'.$min_string.':'.$sec_string.' hours';
   }
+}
+
+class Wisski_EasyRdf_Sparql_Client extends EasyRdf_Sparql_Client {
+
+    /** The query/read address of the SPARQL Endpoint */
+    private $queryUri = null;
+
+    /** The update/write address of the SPARQL Endpoint */
+    private $updateUri = null;
+
+    /** Configuration settings */
+    private $config = array();
+
+    public function __construct($queryUri, $updateUri = null)
+    {
+        $this->queryUri = $queryUri;
+        if ($updateUri) {
+            $this->updateUri = $updateUri;
+        } else {
+            $this->updateUri = $queryUri;
+        }
+    }
+
+
+  /*
+     * Internal function to make an HTTP request to SPARQL endpoint
+     *
+     * @ignore
+     */
+    protected function request($type, $query)
+    {
+        // Check for undefined prefixes
+        $prefixes = '';
+        foreach (EasyRdf_Namespace::namespaces() as $prefix => $uri) {
+            if (strpos($query, "$prefix:") !== false and
+                strpos($query, "PREFIX $prefix:") === false) {
+                $prefixes .=  "PREFIX $prefix: <$uri>\n";
+            }
+        }
+
+        $client = EasyRdf_Http::getDefaultHttpClient();
+        $client->resetParameters();
+
+        // Tell the server which response formats we can parse
+        $accept = EasyRdf_Format::getHttpAcceptHeader(
+            array(
+              'application/sparql-results+json' => 1.0,
+              'application/sparql-results+xml' => 0.8
+            )
+        );
+        $client->setHeaders('Accept', $accept);
+
+        if ($type == 'update') {
+            $client->setMethod('POST');
+            $client->setUri($this->updateUri);
+//Begin Dorian
+            $encodedQuery = 'update='.urlencode($prefixes . $query);
+            $client->setRawData($encodedQuery);
+            $client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
+//End Dorian
+
+//Begin Old            $client->setRawData($prefixes . $query);
+//End Old            $client->setHeaders('Content-Type', /*'application/sparql-update'*/'application/x-www-form-urlencoded');
+            
+        } elseif ($type == 'query') {
+            // Use GET if the query is less than 2kB
+            // 2046 = 2kB minus 1 for '?' and 1 for NULL-terminated string on server
+            $encodedQuery = 'query='.urlencode($prefixes . $query);
+            if (strlen($encodedQuery) + strlen($this->queryUri) <= 2046) {
+                $client->setMethod('GET');
+                $client->setUri($this->queryUri.'?'.$encodedQuery);
+            } else {
+                // Fall back to POST instead (which is un-cacheable)
+                $client->setMethod('POST');
+                $client->setUri($this->queryUri);
+                $client->setRawData($encodedQuery);
+                $client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
+            }
+        }
+        dpm((array)$client);
+        $response = $client->request();
+        if ($response->getStatus() == 204) {
+            // No content
+            return $response;
+        } elseif ($response->isSuccessful()) {
+            list($type, $params) = EasyRdf_Utils::parseMimeType(
+                $response->getHeader('Content-Type')
+            );
+            if (strpos($type, 'application/sparql-results') === 0) {
+                return new EasyRdf_Sparql_Result($response->getBody(), $type);
+            } else {
+                return new EasyRdf_Graph($this->queryUri, $response->getBody(), $type);
+            }
+        } else {
+            throw new EasyRdf_Exception(
+                "HTTP request for SPARQL query failed: ".$response->getBody()
+            );
+        }
+    }
 }

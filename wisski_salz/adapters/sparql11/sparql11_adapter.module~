@@ -11,6 +11,7 @@
 
 module_load_include('php', 'wisski_salz', "adapters/sparql11/SPARQL11Adapter");
 module_load_include('php', 'wisski_salz', "interface/AdapterInterface");
+module_load_include('php', 'wisski_salz', "adapters/sparql11/wisski_easyrdf.php");
 
 /**
  * Implements hook_menu().
@@ -118,7 +119,7 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
     $settings = array();	
     if (!$clean) {
     try {
-	$instance = sparql11_adapter_wisski_db_get_instance_by_name($store_instance_name);
+	$instance = wisski_salz_db_get_instance_by_name($store_instance_name);
         $settings = unserialize($instance->settings);
     } catch (Exception $ex) {
       drupal_set_message("There was an error loading store instance $store_instance_name<br>Error Message: ".$ex->getMessage());
@@ -237,7 +238,7 @@ function sparql11_adapter_invoke_instance($name) {
                 ->fields('ins')
                 ->condition('name',$name,'LIKE')
                 ->execute()->fetchAssoc();
-  $store_instance->setSettings($settings);
+  $store_instance->setSettings($settings['settings']);
   return $store_instance;
 }
 
@@ -351,10 +352,6 @@ function sparql11_adapter_db_insert_settings($settings,$clean = TRUE) {
     unset($settings['old_name']);
     db_update('wisski_salz_store_instances')->fields($settings)->condition('name',$old_name,'LIKE')->execute();
   }                                                         
-}
-
-function sparql11_adapter_wisski_db_get_instance_by_name($name) {
-  return db_select('wisski_salz_store_instances','s')->fields('s')->condition('name',$name,'LIKE')->execute()->fetchObject();
 }
 
 function sparql11_adapter_wisski_add_form($form, &$form_state) {

@@ -1,9 +1,10 @@
 <?php
 
 module_load_include('php', 'wisski_salz', "interface/AdapterInterface");
+module_load_include('php', 'wisski_salz', "adapters/sparql11/wisski_easyrdf.php");
+include "sites/all/libraries/easyrdf/lib/EasyRdf/Sparql/Client.php";
 
-
-class SPARQL11Adapter implements AdapterInterface {
+class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface {
 
 
   /**
@@ -13,6 +14,93 @@ class SPARQL11Adapter implements AdapterInterface {
   * update_endpoint: The URL to connect to for write operations
   */
   private $settings = array();
+  
+  public function __construct($queryUri = null, $updateUri = null) {
+    
+    $this->settings['query_endpoint'] = $queryUri;
+    if ($updateUri) {
+      $this->settings['update_endpoint'] = $updateUri;
+    } else {
+      $this->settings['update_endpoint'] = $queryUri;
+    }
+  }
+
+
+  /**
+  * Internal function to make an HTTP request to SPARQL endpoint
+  * copy from original EasyRdf_Client with Sesame-specific overrides
+  * this is NOT the function to be called from outside @see requestSPARQL
+  *
+  * @ignore
+  */
+  protected function request($type, $query) {
+    // Check for undefined prefixes
+    $prefixes = '';
+    foreach (EasyRdf_Namespace::namespaces() as $prefix => $uri) {
+      if (strpos($query, "$prefix:") !== false and strpos($query, "PREFIX $prefix:") === false) {
+        $prefixes .=  "PREFIX $prefix: <$uri>\n";
+      }
+    }
+
+    $client = EasyRdf_Http::getDefaultHttpClient();
+    $client->resetParameters();
+
+    // Tell the server which response formats we can parse
+    $accept = EasyRdf_Format::getHttpAcceptHeader(
+      array(
+          'application/sparql-results+json' => 1.0,
+              'application/sparql-results+xml' => 0.8
+            )
+        );
+        $client->setHeaders('Accept', $accept);
+
+        if ($type == 'update') {
+            $client->setMethod('POST');
+            $client->setUri($this->settings['update_endpoint']);
+//Begin Dorian
+            $encodedQuery = 'update='.urlencode($prefixes . $query);
+            $client->setRawData($encodedQuery);
+            $client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
+//End Dorian
+
+//Begin Old            $client->setRawData($prefixes . $query);
+//End Old            $client->setHeaders('Content-Type', /*'application/sparql-update'*/'application/x-www-form-urlencoded');
+            
+        } elseif ($type == 'query') {
+            // Use GET if the query is less than 2kB
+            // 2046 = 2kB minus 1 for '?' and 1 for NULL-terminated string on server
+            $encodedQuery = 'query='.urlencode($prefixes . $query);
+            if (strlen($encodedQuery) + strlen($this->settings['query_endpoint']) <= 2046) {
+                $client->setMethod('GET');
+                $client->setUri($this->settings['query_endpoint'].'?'.$encodedQuery);
+            } else {
+                // Fall back to POST instead (which is un-cacheable)
+                $client->setMethod('POST');
+                $client->setUri($this->settings['query_endpoint']);
+                $client->setRawData($encodedQuery);
+                $client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
+            }
+        }
+//        dpm((array)$client);
+        $response = $client->request();
+        if ($response->getStatus() == 204) {
+            // No content
+            return $response;
+        } elseif ($response->isSuccessful()) {
+            list($type, $params) = EasyRdf_Utils::parseMimeType(
+                $response->getHeader('Content-Type')
+            );
+            if (strpos($type, 'application/sparql-results') === 0) {
+                return new EasyRdf_Sparql_Result($response->getBody(), $type);
+            } else {
+                return new EasyRdf_Graph($this->settings['query_endpoint'], $response->getBody(), $type);
+            }
+        } else {
+            throw new EasyRdf_Exception(
+                "HTTP request for SPARQL query failed: ".$response->getBody()
+            );
+        }
+    }
   
   /*
   public function __construct($settings_input) {
@@ -41,6 +129,9 @@ class SPARQL11Adapter implements AdapterInterface {
       $this->settings = $name;
     } elseif (is_string($name) || is_integer($name)) {
       $this->settings[$name] = $value;
+    }
+    if (isset($this->settings['query_endpoint']) && !isset($this->settings['update_endpoint'])) {
+        $this->settings['update_endpoint'] = $this->settings['query_endpoint'];
     }
 //    drupal_set_message(serialize($this));
     if (!empty($this->settings['do_ontologies_add'])) {
@@ -73,85 +164,131 @@ class SPARQL11Adapter implements AdapterInterface {
     return $this->settings[$name];
   }
 
-/* verschoben nach sparql11_adapter.module
-  public function settings_page($store) {
-    $form['query_endpoint'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Query Endpoint'),
-      '#default_value' => isset($store->settings['query_endpoint']) ? $store->settings['query_endpoint'] : '',
-    );
-    $form['update_endpoint'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Update Endpoint'),
-      '#default_value' => isset($store->settings['update_endpoint']) ? $store->settings['update_endpoint'] : '',
-    );
-    $form['ontologies_loaded'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Loaded ontologies'),
-      '#collapsible' => TRUE,
-    );
-
-     $form['submit'] = array(
-      '#type' => 'submit',
-      '#value' => t('Save'),
-      '#submit' => array('wisski_salz_save_store')
-    );
-
-    $i = 0;
-    if(!empty($store->settings['ontologies_loaded'])) {
-        foreach ($store->settings['ontologies_loaded'] as $ont) {
-          $i++;
-        $form['ontologies_loaded']["ont$i"] = array(
-          '#type' => 'markup',
-          '#value' => ''
-        );
-      }
-    }
-
-    return $form;
-
+  public function querySPARQL($query) {
+    return $this->requestSPARQL('query',$query);
   }
 
 
-public function sparql11_form_submit($form, &$form_state){
- //drupal_set_message("hallo welt " . serialize($form_state));
- drupal_set_message("\$this: " . serialize($this));
+  public function updateSPARQL($update) {
+    return $this->requestSPARQL('update',$update);
+  }
+  
+  /**
+  * Performs a SPARQL 1.1 query or update.
+  * The SPARQL query endpoint must be set in $this->settings['query_endpoint']
+  * @param $query The SPARQL 1.1 query or update as a string
+  * @return list($ok,$results)
+  * returns a list consisting of
+  * a boolean value $ok that is true iff the query was correctly performed
+  * and the result list $results as an assocative array containing result rows as arrays keyed by the variable from the query
+  * @author domerz
+  */
+  private function requestSPARQL($type,$query = NULL) {
+        
+    $ok = FALSE;
+    $results = array();
+    try {
+      if (easyrdf()) {
+    	  $this->updateNamespaces();
+/*
+        if (isset($this->settings['query_endpoint'])) {
+            if (isset($this->settings['update_endpoint'])) {
+                $sparql = new Wisski_EasyRdf_Sparql_Client($this->settings['query_endpoint'],$this->settings['update_endpoint']);
+            } else {
+                $sparql = new Wisski_EasyRdf_Sparql_Client($this->settings['query_endpoint']);
+            }
+      
+            if ($type == 'query' && !is_null($query)) {
+              $results = $sparql->query($query);
+              $ok = TRUE;
+            } elseif ($type == 'update'  && !is_null($query)) {
+              $results = $sparql->update($query);
+              $ok = TRUE;
+            }
+          }
+*/			
+        $results = $this->request($type,$query);
+        $ok = TRUE;
+      } else drupal_set_message("EasyRdf is not installed");
+    } catch (Exception $e) {
+        drupal_set_message("SPARQL1.1 $type request failed.<br>Query was '".htmlentities($query)."'<br>Error Message:<br>".get_class($e)."<br>".$e->getMessage());
+        return array(FALSE,array());
+//        throw $e;
+    }
+//    drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
+    return array($ok,$results);
+  }
+  
+  public function testSPARQL() {
+    drupal_set_message("Running SPARQL test");
 
- sparql11_adapter_wisski_add_store_instances($this);
+//    $this->settings['ontologies_pending'][] = $this->settings['query_endpoint'];
+//    $this->addOntologies();
+    list($ok,$results) = $this->updateSPARQL('INSERT {?ont rdf:type_ins owl:Ontology} WHERE {?ont rdf:type owl:Ontology}');
+//    list($ok,$results) = $this->querySPARQL('SELECT * WHERE {?s (rdfs:subClassOf)+ owl:Thing.} LIMIT 100');
+    if ($ok) {
+      drupal_set_message($results->dump());
+    } else {
+      throw new Exception("Test failed");
+    }
+/*
+    do {
+      $num_rows = db_select('wisski_salz_ontologies','ont')->fields('ont')->countQuery()->execute()->fetchField();
+      db_delete('wisski_salz_ontologies')->execute();
+    } while ($num_rows > 0);
+    db_truncate('wisski_salz_ontologies');
+    
+    list($ok,$result) = $this->querySPARQL('SELECT * WHERE {?o a owl:Ontology.} GROUP BY ?o');
+    if ($ok) {
+      foreach ($result as $ont) {
+        db_insert('wisski_salz_ontologies')->fields(array('sid' => $this->settings['sid'],'iri' => $ont->o, 'pending' => 1))->execute();
+      }
+    }
+    $this->addOntologies();
+*/
 
- $store_instances = sparql11_adapter_wisski_get_store_instances();
- drupal_set_message("\$store_instances: " . serialize($store_instances));
+  }
 
- menu_rebuild();
+  private function updateNamespaces() {
+    $spaces = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
+                ->fields('ns')
+                ->execute()
+                ->fetchAllAssoc('id');
+    foreach($spaces as $space) {
+      EasyRDF_Namespace::set($space->short_name,$space->long_name);
+    }
+  }
+  
+  private function putNamespace($short_name,$long_name) {
+    $result = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
+                ->fields('ns')
+                ->condition('short_name',$short_name,'=')
+                ->execute()
+                ->fetchAssoc();
+    if (empty($result)) {
+      db_insert('wisski_salz_sparql11_ontology_namespaces')
+        ->fields(array('short_name' => $short_name,'long_name' => $long_name))
+        ->execute();
+    } else {
+//      drupal_set_message('Namespace '.$short_name.' already exists in DB');
+    }
+  }
+  
+  private function makeDrupalName($entity,$prefix) {
+    $pre_len = strlen($prefix);
+    return $prefix.preg_replace('/[^a-z0-9_]/u','_',substr(strtolower($entity),0,32-$pre_len));
+  }  
 
- foreach($store_instances as $key => $store_instance) {
-  $form_state['redirect'] = 'admin/config/wisski/salz/' . arg(4) . '/' . $key;
-  drupal_set_message("\$key: " . serialize($key));
- }
-
- $varname1 = "sparql11_query_endpoint_" . $key;
- $varname2 = "sparql11_update_endpoint_" . $key;
- variable_set($varname1, $form_state['values']['query_endpoint']);
- variable_set($varname2, $form_state['values']['update_endpoint']);
-}
-
-
-public function sparql11_edit_form($form, &$form_state){
-    $this->setSettings('query_endpoint', variable_get("sparql11_query_endpoint_" . arg(5)));
-    $this->setSettings('update_endpoint', variable_get("sparql11_update_endpoint_" . arg(5)));
-
-    return $this->settings_page();
-}
- */
 
   public function pb_definition_settings_page($path_steps = array()) {
 
   }
 
-
+/*
   public function query($path_definition, $subject = NULL, $disamb = array(), $value = NULL) {
 
   }
+*/
   
   public function pbQuery($individual_uri,$starting_concept,$path_array,$datatype_property) {
 
@@ -415,127 +552,6 @@ public function sparql11_edit_form($form, &$form_state){
     return array();
   }
   
-  public function querySPARQL($query) {
-    return $this->request('query',$query);
-  }
-
-
-  public function updateSPARQL($update) {
-    return $this->request('update',$update);
-  }
-  
-  /**
-  * Performs a SPARQL 1.1 query or update.
-  * The SPARQL query endpoint must be set in $this->settings['query_endpoint']
-  * @param $query The SPARQL 1.1 query or update as a string
-  * @return list($ok,$results)
-  * returns a list consisting of
-  * a boolean value $ok that is true iff the query was correctly performed
-  * and the result list $results as an assocative array containing result rows as arrays keyed by the variable from the query
-  * @author domerz
-  */
-  private function request($type,$query = NULL) {
-        
-    $ok = FALSE;
-    $results = array();
-    try {
-      if (easyrdf()) {
-	  $this->updateNamespaces();
-	  $settings = $this->settings['settings'];
-	  $sparql11_settings = unserialize($settings);
-	 // drupal_set_message("settings -> " . serialize($settings));
-	 // drupal_set_message("sparql11_settings -> " . serialize($sparql11_settings));
-        /*  if (isset($this->settings['query_endpoint'])) {
-            if (isset($this->settings['update_endpoint'])) {
-              $sparql = new EasyRdf_Sparql_Client($this->settings['query_endpoint'],$this->settings['update_endpoint']);
-            } else {
-              $sparql = new EasyRdf_Sparql_Client($this->settings['query_endpoint']);
-	    }
-	 */
-           if (isset($sparql11_settings['query_endpoint'])) {
-            if (isset($sparql11_settings['update_endpoint'])) {
-              $sparql = new EasyRdf_Sparql_Client($sparql11_settings['query_endpoint'],$sparql11_settings['update_endpoint']);
-            } else {
-              $sparql = new EasyRdf_Sparql_Client($sparql11_settings['query_endpoint']);
-            }
-      
-            if ($type == 'query' && !is_null($query)) {
-              $results = $sparql->query($query);
-              $ok = TRUE;
-            } elseif ($type == 'update'  && !is_null($query)) {
-              $results = $sparql->update($query);
-              $ok = TRUE;
-            }
-          }
-      } else drupal_set_message("EasyRdf is not installed");
-    } catch (Exception $e) {
-        drupal_set_message("SPARQL1.1 $type request failed.<br>Query was '".htmlentities($query)."'<br>Error Message:<br>".get_class($e)."<br>".$e->getMessage());
-        return array(FALSE,array());
-//        throw $e;
-    }
-//    drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
-    return array($ok,$results);
-  }
-  
-  public function testSPARQL() {
-    drupal_set_message("Running SPARQL test");
-
-//    $this->settings['ontologies_pending'][] = $this->settings['query_endpoint'];
-//    $this->addOntologies();
-    list($ok,$results) = $this->updateSPARQL('INSERT {?ont rdf:type_ins owl:Ontology} WHERE {?ont rdf:type owl:Ontology}');
-//    list($ok,$results) = $this->querySPARQL('SELECT * WHERE {?s (rdfs:subClassOf)+ owl:Thing.} LIMIT 100');
-    if ($ok) {
-      drupal_set_message($results->dump());
-    } else {
-      throw new Exception("Test failed");
-    }
-/*
-    do {
-      $num_rows = db_select('wisski_salz_ontologies','ont')->fields('ont')->countQuery()->execute()->fetchField();
-      db_delete('wisski_salz_ontologies')->execute();
-    } while ($num_rows > 0);
-    db_truncate('wisski_salz_ontologies');
-    
-    list($ok,$result) = $this->querySPARQL('SELECT * WHERE {?o a owl:Ontology.} GROUP BY ?o');
-    if ($ok) {
-      foreach ($result as $ont) {
-        db_insert('wisski_salz_ontologies')->fields(array('sid' => $this->settings['sid'],'iri' => $ont->o, 'pending' => 1))->execute();
-      }
-    }
-    $this->addOntologies();
-*/
-
-  }
-
-  private function updateNamespaces() {
-    $spaces = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
-                ->fields('ns')
-                ->execute()
-                ->fetchAllAssoc('id');
-    foreach($spaces as $space) {
-      EasyRDF_Namespace::set($space->short_name,$space->long_name);
-    }
-  }
-  
-  private function putNamespace($short_name,$long_name) {
-    $result = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
-                ->fields('ns')
-                ->condition('short_name',$short_name,'=')
-                ->execute()
-                ->fetchAssoc();
-    if (empty($result)) {
-      db_insert('wisski_salz_sparql11_ontology_namespaces')
-        ->fields(array('short_name' => $short_name,'long_name' => $long_name))
-        ->execute();
-    } else {
-//      drupal_set_message('Namespace '.$short_name.' already exists in DB');
-    }
-  }
-  
-  private function makeDrupalName($entity,$prefix) {
-    $pre_len = strlen($prefix);
-    return $prefix.preg_replace('/[^a-z0-9_]/u','_',substr(strtolower($entity),0,32-$pre_len));
-  }  
   
   public function createEntitiesForBundle($bundle) {
     
