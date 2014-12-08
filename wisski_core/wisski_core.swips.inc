@@ -236,7 +236,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
         $data = $path->datatype_property;
       } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
       $new_values = field_get_items($entity_type,$entity,$instance['field_name']);
-      $delete = $op == FIELD_STORAGE_UPDATE;
+      $delete = !property_exists($entity,'is_new') || !$entity->is_new;
       foreach($new_values as $delta) {
         if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$full_path,$data,$delta['value'],$delete)) {
           dpm($news);

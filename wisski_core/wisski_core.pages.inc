@@ -119,19 +119,20 @@ function wisski_core_entity_view($entity) {
     dpm(__FILE__.": tick");
     return;
   }
-  variable_set('wisski_semaphore_entity_view',TRUE);
+  variable_set('wisski_semaphore_entity_view',TRUE);*/
   $wisski_semaphore = &drupal_static(__FUNCTION__);
   if (isset($wisski_semaphore) && $wisski_semaphore) {
     dpm("tick");
     return;
   }
-  $wisski_semaphore = TRUE;*/
+  $wisski_semaphore = TRUE;
+  ddebug_backtrace();
   dpm($entity);
   $id = entity_id('wisski_core_entity', $entity);
   drupal_set_title(entity_label('wisski_core_entity', $entity));
   $entity_view = entity_view('wisski_core_entity', array(entity_id('wisski_core_entity', $entity) => $entity));
   dpm($entity_view);
-/*  variable_del('wisski_core_semaphore');
-  $wisski_semaphore = FALSE;*/
+/*  variable_del('wisski_core_semaphore');*/
+  $wisski_semaphore = FALSE;
   return $entity_view;
 }

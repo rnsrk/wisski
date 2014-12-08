@@ -178,7 +178,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       '#bundle' => $entity->type,
       '#items' => array(array('value' => $entity->title)),
       '#formatter' => 'text_default',
-//      0 => array('#markup' => check_plain($wrapper->title->value())),
+      0 => array('#markup' => check_plain($entity->title)),
     );
     
     $content['uri'] = array(
@@ -195,7 +195,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       '#bundle' => $entity->type,
       '#items' => array(array('value' => $entity->uri)),
       '#formatter' => 'text_default',
-//      0 => array('#markup' => check_plain($wrapper->title->value())),
+      0 => array('#markup' => check_plain($entity->uri)),
     );
 /*    
 //    ddebug_backtrace();
