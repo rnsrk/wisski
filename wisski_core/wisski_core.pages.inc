@@ -89,7 +89,6 @@ function wisski_core_list($type) {
     
     //drupal_set_message(serialize($entity));
     $entity_uri = entity_uri('wisski_core_entity', $entity);
-    
     $items[] = l(entity_label('wisski_core_entity', $entity), $entity_uri['path']);
   }
   $output .= theme_item_list(
@@ -104,6 +103,7 @@ function wisski_core_list($type) {
   return $output;
 }
 
+
 /**
  * Entity view callback.
  * 
@@ -114,9 +114,24 @@ function wisski_core_list($type) {
  *   Renderable array.
  */
 function wisski_core_entity_view($entity) {
-  
+
+/*  if (variable_get('wisski_semaphore_entity_view',FALSE)) {
+    dpm(__FILE__.": tick");
+    return;
+  }
+  variable_set('wisski_semaphore_entity_view',TRUE);
+  $wisski_semaphore = &drupal_static(__FUNCTION__);
+  if (isset($wisski_semaphore) && $wisski_semaphore) {
+    dpm("tick");
+    return;
+  }
+  $wisski_semaphore = TRUE;*/
+  dpm($entity);
   $id = entity_id('wisski_core_entity', $entity);
   drupal_set_title(entity_label('wisski_core_entity', $entity));
   $entity_view = entity_view('wisski_core_entity', array(entity_id('wisski_core_entity', $entity) => $entity));
+  dpm($entity_view);
+/*  variable_del('wisski_core_semaphore');
+  $wisski_semaphore = FALSE;*/
   return $entity_view;
 }

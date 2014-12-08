@@ -231,22 +231,6 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     } else {
       throw new Exception("Test failed");
     }
-/*
-    do {
-      $num_rows = db_select('wisski_salz_ontologies','ont')->fields('ont')->countQuery()->execute()->fetchField();
-      db_delete('wisski_salz_ontologies')->execute();
-    } while ($num_rows > 0);
-    db_truncate('wisski_salz_ontologies');
-    
-    list($ok,$result) = $this->querySPARQL('SELECT * WHERE {?o a owl:Ontology.} GROUP BY ?o');
-    if ($ok) {
-      foreach ($result as $ont) {
-        db_insert('wisski_salz_ontologies')->fields(array('sid' => $this->settings['sid'],'iri' => $ont->o, 'pending' => 1))->execute();
-      }
-    }
-    $this->addOntologies();
-*/
-
   }
 
   private function updateNamespaces() {
@@ -393,7 +377,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     return $new_individuals;
   }
   
-  public function insertIndividual($entity_uri,$bundle_uri) {
+  public function insertIndividual($entity_uri,$bundle_uri,$comment = FALSE) {
     
     global $base_url;
     $graph_name = variable_get('wisski_graph_name','<'.$base_url.'/wisski_graph>');
@@ -404,7 +388,9 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         variable_set('wisski_graph_name',$graph_name);
       }
     }
-    list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $entity_uri a $bundle_uri }} WHERE {?s ?p ?o.}");
+    $insert_string = " $entity_uri a $bundle_uri .";
+    $insert_string .= $comment ? " $entity_uri rdfs:comment $comment ." : '';
+    list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $insert_string }} WHERE {?s ?p ?o.}");
     return $ok;
   }
 
@@ -415,7 +401,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     //aim at uniqueness
     $suffix = md5(time().$property.rand());
     //ensure uniqueness
-    $name = substr($prefix.":".$name_part.$suffix,0,32);
+    $name = substr($prefix.":".preg_replace('/[^a-zA-Z0-9_]/u','_',$name_part).$suffix,0,32);
     if ($checked) {
       list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE {{ $name ?p ?o .} UNION {?s ?p $name .}} LIMIT 1");
       if (!$ok) return FALSE;
@@ -551,7 +537,67 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }
     return array();
   }
+
+  public function getClassesAndComments($entity_uri) {
   
+    return array($this->getClasses($entity_uri),$this->getComments($entity_uri));
+  }
+
+  public function getComments($entity_uri) {
+    
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE {GRAPH ?g { $entity_uri rdfs:comment ?comment .}}");
+    if ($ok) {
+      if (count($result) > 0) {
+        $out = array();
+        foreach ($result as $obj) {
+          $out[] = $obj->comment->dumpValue('text');
+        }
+        return $out;
+      }
+    }
+    return FALSE;
+  }
+  
+  public function getClasses($entity_uri) {
+    
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE {GRAPH ?g { $entity_uri rdf:type ?class .}}");
+    if ($ok) {
+      if (count($result) > 0) {
+        $out = array();
+        foreach ($result as $obj) {
+          $out[] = $obj->class->dumpValue('text');
+        }
+        return $out;
+      }
+    }
+    return FALSE;
+  }
+  
+  public function getIndsWithComments($class_uri) {
+    
+    if($inds = $this->getIndividuals($class_uri)) {
+      $out = array();
+      foreach ($inds as $ind_uri) {
+        $out[$ind_uri] = $this->getComments($ind_uri);
+      }
+      return $out;
+    }
+  }
+  
+  public function getIndividuals($class_uri) {
+    
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE {GRAPH ?g { ?ind rdf:type $class_uri .}}");
+    if ($ok) {
+      if (count($result) > 0) {
+        $out = array();
+        foreach ($result as $obj) {
+          $out[] = $obj->ind->dumpValue('text');
+        }
+        return $out;
+      }
+    }
+    return FALSE;
+  }
   
   public function createEntitiesForBundle($bundle) {
     

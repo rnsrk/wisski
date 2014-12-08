@@ -217,10 +217,10 @@ function wisski_salz_pb_make_uri($class,$name_part = '',$checked = TRUE) {
   return '';
 }
 
-function wisski_salz_pb_insert_individual($entity_uri,$bundle_uri) {
+function wisski_salz_pb_insert_individual($entity_uri,$bundle_uri,$comment = FALSE) {
   
   $store = wisski_salz_invoke_local_store();
-  if ($store->getType() == "SPARQL 1.1") return $store->insertIndividual($entity_uri,$bundle_uri);
+  if ($store->getType() == "SPARQL 1.1") return $store->insertIndividual($entity_uri,$bundle_uri,$comment);
   return FALSE;
 }
 
@@ -228,7 +228,21 @@ function wisski_salz_pb_delete_entity_data($entity_uri) {
 
   $store = wisski_salz_invoke_local_store();
   if ($store->getType() == "SPARQL 1.1") return $store->createDeleteAllTriples($entity_uri);
-  return FALSE;;
+  return FALSE;
+}
+
+function wisski_salz_pb_get_entity_info($entity_uri) {
+
+  $store = wisski_salz_invoke_local_store();
+  if ($store->getType() == "SPARQL 1.1") return $store->getClassesAndComments($entity_uri);
+  return FALSE;
+}
+
+function wisski_salz_pb_get_bundle_info($bundle_uri) {
+
+  $store = wisski_salz_invoke_local_store();
+  if ($store->getType() == "SPARQL 1.1") return $store->getIndsWithComments($bundle_uri);
+  return FALSE;
 }
 
 function wisski_salz_get_local_store() {

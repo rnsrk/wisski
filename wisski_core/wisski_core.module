@@ -54,7 +54,8 @@ function wisski_core_entity_info() {
       'entity keys' => array(
         'id' => 'id',
         'bundle' => 'type',
-        'uri' => 'uri',
+//        'uri' => 'uri',
+        'label' => 'title',
       ),
       
       // the keys which refer to bundles
@@ -76,9 +77,10 @@ function wisski_core_entity_info() {
       // we want it fieldable
       'fieldable' => TRUE,
       // This line must be specified for using entity_uri() function.
-      'uri callback' => 'entity_class_uri',
+  //    'uri callback' => 'entity_class_uri',
+      'uri callback' => 'wisski_core_uri_callback',
       // This line must be specified for using entity_label() function.
-      'label callback' => 'entity_class_label',
+//      'label callback' => 'entity_class_label',
       // for obvious reasons
       'module' => 'wisski_core'
     ),
@@ -116,6 +118,14 @@ function wisski_core_entity_info() {
   return $info;
 }
 
+function wisski_core_uri_callback($entity) {
+
+//  dpm("Call to wisski_core_entity uri callback");
+//  dpm(func_get_args());
+  $uri = array('path' => 'wisski_core/'.$entity->uri);
+  return $uri;
+}
+
 /**
  * Implements hook_entity_property_info().
  * These are from the typical examples currently - perhaps we don't need these.
@@ -144,7 +154,7 @@ function wisski_core_entity_property_info() {
     'label' => t('WissKI Entity title'),
     'setter callback' => 'entity_property_verbatim_set',
   );
-  $properties['description'] = array(
+/*  $properties['description'] = array(
     'type' => 'text',
     'schema field' => 'description',
     'label' => t('WissKI Entitiy description'),
@@ -156,7 +166,7 @@ function wisski_core_entity_property_info() {
     'label' => t('WissKI Entity same individuals'),
     'setter callback' => 'entity_property_verbatim_set',
   );
-  
+  */
   $type_properties = &$info['wisski_core_bundle']['properties'];
   $type_properties['id'] = array(
     'type' => 'integer',

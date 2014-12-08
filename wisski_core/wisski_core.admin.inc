@@ -120,13 +120,13 @@ function wisski_core_entity_form($form, &$form_state, $entity) {
     '#default_value' => $wrapper->title->value(),
     '#weight' => -20,
   );
-  $form['description'] = array(
+/*  $form['description'] = array(
     '#type' => 'textfield',
     '#title' => t('Description'),
     '#default_value' => $wrapper->description->value(),
     '#weight' => -10,
-  );
-  
+  );*/
+/*  
   try {
     $same_inds = $wrapper->same_individuals->value();
     $same_string = "";
@@ -144,7 +144,7 @@ function wisski_core_entity_form($form, &$form_state, $entity) {
   } catch (EntityMetadataWrapperException $ex) {
     dpm((array)$wrapper);
   }
-  
+  */
   // Add fields of the entity to the form.
   field_attach_form('wisski_core_entity', $entity, $form, $form_state);
 
