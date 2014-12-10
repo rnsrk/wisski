@@ -106,13 +106,13 @@ function _csv_adapter_get_db_key(){
 function csv_adapter_db_insert_settings($settings, $clean = TRUE){
 	$new_settings = array();
 	if ($clean){
-		foreach(array('name', 'label', 'local_data') as $key){
+		foreach(array('name', 'label') as $key){
 			$new_settings[$key] = $settings[$key];
 			unset($settings[$key]);
 		
 		}
 	} else {
-	       foreach(array('name', 'label', 'local_data', 'old_name') as $key){
+	       foreach(array('name', 'label', 'old_name') as $key){
 			$new_settings[$key] = $settings[$key];
 			unset($settings[$key]);
 		}
@@ -198,14 +198,14 @@ function csv_adapter_settings_page($store_instance_name = "", $clean){
        // '#description' => t('Checked if the file contains a headline.'),	
     );
 
-    $form['local_data'] = array(
+  /*  $form['local_data'] = array(
         '#type' => 'checkbox',
 	'#title' => t('Use this store as local store'),
 	'#default_value' => ($clean ? '' : $instance->local_data),
        // '#description' => t('Checked if the file contains a headline.'),	
         '#element_validate' => array('wisski_salz_settings_page_validate'),
     );
-   
+   */
     $form['submit'] = array(
 	    '#type' => 'submit',
 	    '#value' => t('Save'),
@@ -238,7 +238,7 @@ function csv_adapter_form_submit($form, &$form_state, $store_instance = NULL){
 	    'delimiters' => $form_state['values']['delimiters'],
 	    'headline' => $form_state['values']['headline'],
 	    'name_key' => $form_state['values']['name_key'],
-	    'local_data' => $form_state['values']['local_data'],
+//	    'local_data' => $form_state['values']['local_data'],
         );
         csv_adapter_db_insert_settings($settings);
         drupal_set_message("Saved settings.");
@@ -262,7 +262,7 @@ function csv_adapter_form_submit($form, &$form_state, $store_instance = NULL){
 		    'delimiters' => $form_state['values']['delimiters'],
 		    'headline' => $form_state['values']['headline'],
 		    'name_key' => $form_state['values']['name_key'],
-		    'local_data' => $form_state['values']['local_data'],
+//		    'local_data' => $form_state['values']['local_data'],
 	    );
 	    csv_adapter_db_insert_settings($settings, FALSE);
     }

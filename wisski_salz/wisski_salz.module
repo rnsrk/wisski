@@ -82,153 +82,148 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
     wisski_salz_set_store_types();	
     $store_types = wisski_salz_get_store_types();
     $store_instances = wisski_salz_get_installed_store_instances();
+    // drupal_set_message("Store Instances = " . serialize($store_instances));
     //  $key = _sparql11_adapter_get_db_key();
     
     $link = array();
- /* $link['any'] = array(
-    'data' => l('Add new Store Instance', 'admin/config/wisski/salz/add'),
-  );
-  */
-  foreach($store_types as $key => $store_type){
-  $link[$store_type['name']] = array(
-    'data' => l('Add new Store Instance of Type ' . $store_type['label'], 'admin/config/wisski/salz/add/' . $store_type['name']));
-//    'data' => l('Add new Store Instance of Type ' . $store_type['label'], 'admin/config/wisski/salz/add/' . $key));
-  }
-
-
-    $form = array();
+    foreach($store_types as $key => $store_type){
+	    $link[$store_type['name']] = array(
+		    'data' => l('Add new Store Instance of Type ' . $store_type['label'], 'admin/config/wisski/salz/add/' . $store_type['name']));
+    }
+    //  $form = array();
     $sorted_store_instances_by_type = array();
+    
+    // header for table structure
+    $header = array(
+	    'store_instance_name' => t('Store Instance Name'),
+	    'store_type' => t('Store Type'),
+	    'settings' => t('Settings'),
+    );
+    // content of table
+    $options = array();
 
     foreach ($store_instances as $key2 => $store_instance){
-    $store_instance_settings = unserialize($store_instance->settings);
-    $local_store = wisski_salz_get_local_store();
-    if(!is_numeric($local_store) && $local_store->name == $store_instance->name){
-	$text = $local_store->label . " => Local store";
-	//$text = $store_instance->label . " => Local store";
-    } else {
-	    $text = $store_instance->label;	    
-    }
-    $result = db_select('wisski_salz_store_types', 'types')
-	  ->fields('types', array('name', 'label'))
-	  ->condition('stid', $store_instance->type, 'LIKE')
-	  ->execute()->fetchObject();
-    if(!empty($result)) $store_type_name = $result->name;
-    if(!empty($result)) $store_type_label = $result->label;
-
-    //$path = 'admin/config/wisski/salz/edit/' . $store_instance->type . '/' . $store_instance->name;
-    $path = 'admin/config/wisski/salz/edit/' . $store_type_name . '/' . $store_instance->name;
-    if ($store_type_label == sparql11_adapter_wisski_get_store_type()){
-       $sorted_store_instances_by_type[$store_instance->type][] = array( 
-       'data' => l($text, $path). "<div class='wki_grey'>" . t($store_instance_settings['query_endpoint'] . ', ' . $store_instance_settings['update_endpoint']) . "</div>",
-       );
-       $new_store_instances[$key2] = array( 
-       'data' => l($text, $path). "<div class='wki_grey'>" . t($store_instance_settings['query_endpoint'] . ', ' . $store_instance_settings['update_endpoint']) . "</div>",
-       );
-      // drupal_set_message("Hallo " . serialize($new_store_instances[$key2]));
-    }
-
-
-    if ($store_type_label == csv_adapter_wisski_get_store_type()){   
-       $sorted_store_instances_by_type[$store_instance->type][] = array( 
-       'data' => l($text, $path). "<div class='wki_grey'>" . t($store_instance_settings['file_path']) . "</div>" ,
-       );    
-     //  $form = array();
-      /* $form[$key2] = array(      
-        '#type' => 'checkbox',         
-          '#title' => t('this store as local store.'),                    
-  );*/
-    }
-  }
-  
- // $form = array();
-  $form['add_link'] = array(
-    'link' => array(
-      '#theme' => 'item_list',
-      '#items' => $link,
-      '#title' => t('Add new Store'),
-    ),
-  );
- 
- /* foreach($new_store_instances as $key => $value) {
-      drupal_set_message("store instances = " . serialize($store_instances));
-      drupal_set_message("key = " . serialize($key));
-      drupal_set_message("value = " . serialize($value));
-     
-      $form[$key] = array(
-            'list' => array(
-                  '#theme' => 'item_list',
-                  '#items' => $value,
-                  '#title' => t('SPARQL'),
-	  ),
-	  'test' => array(
-		  '#type' => 'checkbox',
-		  '#title' => t('local store'),
-	  ),
-     );
- }
-  */
-
- 
-  foreach($sorted_store_instances_by_type as $key => $value) {
-    //  drupal_set_message("sorted store instances = " . serialize($sorted_store_instances_by_type));
-    //  drupal_set_message("key = " . serialize($key));
-    //  drupal_set_message("value = " . serialize($value));
-      $store_type_string = $store_types[$key]['label'];
-      /*$form['local'] = array(      
-        '#type' => 'checkbox',         
-          '#title' => t('Use this store as local store.'),                    
-  );
-       */
-   /*   $form[$key] = array(
-            'list' => array(
-                  '#theme' => 'item_list',
-                  '#items' => $value,
-                  '#title' => t($store_type_string),
-	  ),
-  );*/
-
-     foreach($value as $key2 => $instance){
-         // drupal_set_message("key2 = " . serialize($key2));
-         // drupal_set_message("instance = " . serialize($instance));
-	/*  $form[$key2] = array(
-		  'list' => array(
-                      '#theme' => 'item_list',
-                      '#items' => $instance,
-                      '#title' => t($store_type_string),
-	          ),
-                  'test' => array(
-                  '#type' => 'checkbox',
-		  '#title' => t('Test'),
-	         ),
-	 );*/ 
-	  $form[$key] = array( 
-            'list' => array(
-                  '#theme' => 'item_list',
-                  '#items' => $value,
-                  '#title' => t($store_type_string),
-	  ),
-     );
-
-            $form[$key2] = array(
-		    '#type' => 'checkbox',
+	    $store_instance_settings = unserialize($store_instance->settings);
+	    $local_store = wisski_salz_get_local_store();
+	    if(!is_numeric($local_store) && $local_store->name == $store_instance->name){
+		    $text = $local_store->label . " => LOCAL STORE";
+	    } else {
+		    $text = $store_instance->label;	    
+	    }
+	    $result = db_select('wisski_salz_store_types', 'types')
+	        ->fields('types', array('name', 'label'))
+	        ->condition('stid', $store_instance->type, 'LIKE')
+	        ->execute()->fetchObject();
+	    if(!empty($result)) $store_type_name = $result->name;
+	    if(!empty($result)) $store_type_label = $result->label;
+	    //$text = $store_instance->label;
+	    $path = 'admin/config/wisski/salz/edit/' . $store_type_name . '/' . $store_instance->name;
+	    if ($store_type_label == sparql11_adapter_wisski_get_store_type()){
+		   /* $bla1 = array(
+		       '#type' => 'checkbox',
 		       '#title' => t('Test'),
-	              );    
-    }    
-     }
+	            );    
+		    $bla = array(
+			   'data' => l($text, $path). "<div class='wki_grey'>" . t($store_instance_settings['query_endpoint'] . ', ' . $store_instance_settings['update_endpoint']) . "</div>" . drupal_render($bla1),
+                    );      
+                    $sorted_store_instances_by_type[$store_instance->type][] = $bla;
+	    }      */
+		    
+		    $options[$key2] = array(
+			    'store_instance_name' => array(
+				    'data' => array(
+					    '#type' => 'link',
+					    '#title' => $text,
+					    '#href' => $path,
+					   // '#options' => $l_options,
+				    ),
+			    ),
+			    'store_type' => $store_type_label,
+			    'settings' => "<div class='wki_grey'>" . t($store_instance_settings['query_endpoint'] . ', ' . $store_instance_settings['update_endpoint']) . "</div>",
+		    );  
+            }
 
- menu_rebuild();
-  $form['recover'] = array(
-    '#type' => 'submit',
-    '#value' => t('Recover all deleted stores'),
-    '#submit' => array('wisski_salz_recover_deleted_stores'),
-  );
+
+
+            if ($store_type_label == csv_adapter_wisski_get_store_type()){   
+                   /* $sorted_store_instances_by_type[$store_instance->type][] = array( 
+                           'data' => l($text, $path). "<div class='wki_grey'>" . t($store_instance_settings['file_path']) . "</div>" ,
+		   );*/  
+		    $options[$key2] = array(
+			    'store_instance_name' => array(
+				    'data' => array(
+					    '#type' => 'link',
+					    '#title' => $text,
+					    '#href' => $path,
+				    ),
+			    ),
+			    'store_type' => $store_type_label,
+			    'settings' => "<div class='wki_grey'>" . t($store_instance_settings['file_path']) . "</div>" ,
+		    );
+            }
+  }
+
+    $form = array();
+    $form['add_link'] = array(
+      'link' => array(
+          '#theme' => 'item_list',
+          '#items' => $link,
+          '#title' => t('Add new Store'),
+      ),
+    );
+    
+    $form['set_local_store'] = array(
+            '#type' => 'submit',
+            '#value' => t('Set selected local store'),
+            '#submit' => array('wisski_salz_set_local_store'),
+	    '#prefix' => '<br> <br>',
+	   // '#suffix' => '<br>',
+    );
+    $form['unset_local_store'] = array(
+            '#type' => 'submit',
+            '#value' => t('Unset selected local store'),
+            '#submit' => array('wisski_salz_unset_local_store'),
+	   // '#prefix' => '<br> <br>',
+	   // '#suffix' => '<br>',
+    );
   
-  return $form;
+    $form['table'] = array(
+      '#type' => 'tableselect',
+      '#header' => $header,
+      '#options' => $options,
+      '#empty' => t('No stores found'),
+      '#multiple' => FALSE,
+      '#prefix' => '<br>',
+      '#suffix' => '<br>',
+    );   
+/*
+    foreach($sorted_store_instances_by_type as $key => $value) {
+     drupal_set_message("sorted store instances = " . serialize($sorted_store_instances_by_type));
+     drupal_set_message("key = " . serialize($key));
+     drupal_set_message("value = " . serialize($value));
+        $store_type_string = $store_types[$key]['label'];
+          $form[$key] = array(
+            'list' => array(
+                  '#theme' => 'item_list',
+                  '#items' => $value,
+                  '#title' => t($store_type_string),
+	  ),
+  );
+ */
+  
+     menu_rebuild();
+     $form['recover'] = array(
+            '#type' => 'submit',
+            '#value' => t('Recover all deleted stores'),
+            '#submit' => array('wisski_salz_recover_deleted_stores'),
+     );
+  
+    return $form;
 }
 
 function wisski_salz_config_page() {
   wisski_salz_set_store_types();
- $store_types = wisski_salz_get_store_types();
+  $store_types = wisski_salz_get_store_types();
   $items = array();
   foreach($store_types as $key => $store_type) {
      $items[] = array(
@@ -243,6 +238,33 @@ function wisski_salz_config_page() {
       '#title' => t('Choose type of store to add.'),
     ),
   );
+}
+
+function wisski_salz_set_local_store($form, &$form_state){
+    $local_store = $form_state['values']['table'];
+    $result_local = db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('local_data',0,'=')->condition('name',$local_store,'LIKE')->execute();
+    $result_others = db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('local_data',1,'=')->condition('name',$local_store,'NOT LIKE')->execute();
+    if (empty($result_local)) drupal_set_message("Instance $local_store does not exist"); 
+        else {
+                // if another local store is already set 
+		if (!empty($result_others)){
+			// unset the old local store in database
+			db_update('wisski_salz_store_instances')->fields(array('local_data' => 0))->condition('name',$local_store,'NOT LIKE')->execute();
+		}  
+		// set the selected (new) local store
+		db_update('wisski_salz_store_instances')->fields(array('local_data' => 1))->condition('name',$local_store,'LIKE')->execute();
+		return TRUE;	
+	    }  
+}
+    
+function wisski_salz_unset_local_store($form, &$form_state){
+    $local_store_to_unset = $form_state['values']['table'];
+    $result = db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('local_data',1,'=')->condition('name',$local_store_to_unset,'LIKE')->execute();
+    if (empty($result)) drupal_set_message("Instance $local_store_to_unset does not exist"); 
+    else {
+		db_update('wisski_salz_store_instances')->fields(array('local_data' => 0))->condition('name',$local_store_to_unset,'LIKE')->execute();
+    }
+	
 }
 
 /**
@@ -415,7 +437,7 @@ function wisski_salz_db_get_instance_by_name($name) {
     return db_select('wisski_salz_store_instances','s')->fields('s')->condition('name',$name,'LIKE')->execute()->fetchObject();
 }
 
-function wisski_salz_settings_page_validate($element, $form, &$form_state) {
+/*function wisski_salz_settings_page_validate($element, $form, &$form_state) {
     $local_store = $element['#value'];
     $result = wisski_salz_get_local_store();
                 
@@ -428,6 +450,8 @@ function wisski_salz_settings_page_validate($element, $form, &$form_state) {
         }
     }
 }
+ */
+
 
 /**
 * Store form "Delete" submit handler.
