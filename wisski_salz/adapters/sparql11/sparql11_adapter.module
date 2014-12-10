@@ -11,6 +11,7 @@
 
 module_load_include('php', 'wisski_salz', "adapters/sparql11/SPARQL11Adapter");
 module_load_include('php', 'wisski_salz', "interface/AdapterInterface");
+module_load_include('php', 'wisski_salz', "adapters/sparql11/wisski_easyrdf.php");
 
 /**
  * Implements hook_menu().
@@ -229,7 +230,7 @@ function sparql11_adapter_invoke_instance($name) {
                 ->fields('ins')
                 ->condition('name',$name,'LIKE')
                 ->execute()->fetchAssoc();
-  $store_instance->setSettings($settings);
+  $store_instance->setSettings(unserialize($settings['settings']));
   return $store_instance;
 }
 

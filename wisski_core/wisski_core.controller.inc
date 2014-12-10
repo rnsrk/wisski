@@ -33,6 +33,7 @@ class WisskiCoreEntity extends Entity {
 class WisskiCoreEntityController extends EntityAPIController {
 
   public function load($ids = array(), $conditions = array()) {
+    
     $entities = array();
     // This method takes an array of IDs, but our webservice only supports loading one entity at a time.
     
@@ -43,23 +44,34 @@ class WisskiCoreEntityController extends EntityAPIController {
         
 #        drupal_set_message(serialize($ids));
 #        drupal_set_message(serialize($conditions));
-      $query = "SELECT DISTINCT ?o WHERE { GRAPH ?g { $id rdf:type ?o } }";
+
       
 #      drupal_set_message(htmlentities($query));
       
-      $store = wisski_salz_invoke_local_store();
-      
-      list($ok,$result) =  $store->querySPARQL($query);
-      
+      if($answer = wisski_salz_pb_get_entity_info($id)) {
+        list($types,$comments) = $answer;
+        $entity_title = $id;
+        if ($comments) {
+          foreach ($comments as $comment) {
+            $split = explode(':',preg_replace('/(^\")|(\"$)/','',$comment));
+            if ($split[0] == 'wisski_title' && isset($split[1])) $entity_title = $split[1];
+          }
+        }
+        $bundles = db_select('wisski_entity_bundles','b')
+                    ->fields('b',array('type','uri'))
+                    ->execute()
+                    ->fetchAllAssoc('uri');
 #      drupal_set_message(serialize($result));        
-      foreach($result as $key => $value) {
-      
+        foreach($types as $bundle_uri) {
+          if (isset($bundles[$bundle_uri])) {
         #$entity_ids[] = $value->s->dumpValue('text');
-        $entity = entity_create("wisski_core_entity", array('type' => $value->o->dumpValue('text'), 'title' => $id, 'uri' => $id, 'id' => $id));
+            $entity = entity_create("wisski_core_entity", array('type' => $bundles[$bundle_uri]->type, 'title' => $entity_title, 'uri' => $id, 'id' => $id));
+            $entity->is_new = FALSE;
 #        drupal_set_message(serialize($entity));
-        $entities[] = $entity;
-      }  
-   
+            $entities[$id] = $entity;
+          }
+        }  
+      }
   //  drupal_set_message("remote controller: " . serialize($id));
     // This function should contain all the code to make a request to the web service and handle any errors.
     #if ($entity = remote_web_service_load($id)) {
@@ -73,58 +85,73 @@ class WisskiCoreEntityController extends EntityAPIController {
       // load all
  #     drupal_set_message(serialize($conditions));
       
-      list($ind_uri,$bundle_uri) = wisski_core_make_uri("",$conditions["type"],FALSE);
-      
-       
-      $query = "SELECT DISTINCT ?s WHERE { ?s a " . $bundle_uri . " }";
+      list(,$bundle_uri) = wisski_core_make_uri("",$conditions["type"],FALSE);
             
-#      drupal_set_message(htmlentities($query));
-            
-       $store = wisski_salz_invoke_local_store();
-      
-      list($ok,$result) =  $store->querySPARQL($query);
-#      $ind = $ind["EasyRdf_Sparql_Result"];
-
-
-#      drupal_set_message(serialize($result));
-      
-      foreach($result as $key => $value) {
-        #$entity_ids[] = $value->s->dumpValue('text');
-        $entity = entity_create("wisski_core_entity", array('type' => $conditions["type"], 'title' => $value->s->dumpValue('text'), 'uri' => $value->s->dumpValue('text'), 'id' => $value->s->dumpValue('text')));
-#        drupal_set_message(serialize($entity));
-        $entities[] = $entity;
+      if ($inds = wisski_salz_pb_get_bundle_info($bundle_uri)) {
+        foreach($inds as $ind_uri => $comments) {
+          
+          $entity_title = $ind_uri;
+          if ($comments) {
+            foreach ($comments as $comment) {
+              $split = explode(':',preg_replace('/(^\")|(\"$)/','',$comment));
+              if ($split[0] == 'wisski_title' && isset($split[1])) $entity_title = $split[1];
+            }
+          }
+          $entity = entity_create("wisski_core_entity", array('type' => $conditions["type"], 'title' => $entity_title, 'uri' => $ind_uri, 'id' => $ind_uri));
+          $entity->is_new = FALSE;
+#     	   drupal_set_message(serialize($entity));
+          $entities[$ind_uri] = $entity;
+        }
       }
       
 #      drupal_set_message(serialize($entities));
       
     }
-                                                   
+    field_attach_load('wisski_core_entity',$entities);
     return $entities;
   }
   
+  public function create(array $values = array()) {
+
+    if (!isset($values['uri']) && isset($values['type'])) {
+      $values['uri'] = wisski_core_make_uri('',$values['type']);
+    }
+    return (object) $values;
+  }
+  
   public function save($entity) {
-    field_attach_presave('wisski_core_entity', $entity);
-    field_attach_update('wisski_core_entity', $entity);
+  
+//    field_attach_presave('wisski_core_entity', $entity);
+//    field_attach_update('wisski_core_entity', $entity);
+  
+    dpm("Save ".$entity->title);
+    dpm($entity);
+    if (!property_exists($entity,'title')) {
+      dpm("\"title\" does not exist");
+      if (!property_exists($entity,'uri')) {
+        dpm("\"uri\" does not exist");
+        list($entity_uri,$bundle_uri) = wisski_core_make_uri('',$entity->type,FALSE);
+        if (property_exists($entity,'id')) $entity_uri = $entity->id;
+      } else {
+        $entity_uri = $entity->uri;
+        list(,$bundle_uri) = wisski_core_make_uri('',$entity->type,FALSE);
+      }
+      $entity_title = $entity_uri;
+    } else {
+      $entity_title = $entity->title;
+      if (!property_exists($entity,'uri')) {
+        dpm("\"uri\" does not exist");
+        list($entity_uri,$bundle_uri) = wisski_core_make_uri($entity_title,$entity->type,FALSE);
+        if (property_exists($entity,'id')) $entity_uri = $entity->id;
+      } else {
+        $entity_uri = $entity->uri;
+        list(,$bundle_uri) = wisski_core_make_uri($entity_title,$entity->type,FALSE);
+      }
+    }
     
-//    drupal_set_message(serialize($entity));
-#    module_load_include('php', 'wisski_salz', "adapters/sparql11/SPARQL11Adapter");
-#    $out = wisski_salz_pb_update("sdfsd","sdsdfsdf",array(),array(),array(),FALSE)
-
-#    drupal_set_message(serialize($entity));
-
-    $store = wisski_salz_invoke_local_store();
-
-#    drupal_set_message(serialize($store));
-
-    list($ind_uri,$bundle_uri) = wisski_core_make_uri($entity->title,$entity->type,FALSE);
-//    $query = "INSERT DATA { <http://www.bla.de/" . $entity->type . "_" . rand(0,9999999999999999) . "> a <http://www.bla.de/" . $entity->type . "> }";
-
-//    $ind = $store->updateSPARQL($query);  
-    if (wisski_salz_pb_insert_individual($ind_uri,$bundle_uri)) dpm("Success");
-     #   $ind = $store->createNewIndividual($entity->type);
-    
-#    drupal_set_message(serialize($ind));
-    
+    $inserted_title = "\"wisski_title:".preg_replace('/[:]/u','_',$entity_title)."\"";
+    if (wisski_salz_pb_insert_individual($entity_uri,$bundle_uri,$inserted_title)) dpm("Success");
+    field_attach_insert('wisski_core_entity', $entity);
   }
 
 
@@ -134,7 +161,7 @@ class WisskiCoreEntityController extends EntityAPIController {
   public function buildContent($entity, $view_mode = 'full', $langcode = NULL, $content = array()) {
     
 
-    $wrapper = entity_metadata_wrapper('wisski_core_entity', $entity);
+//    $wrapper = entity_metadata_wrapper('wisski_core_entity', $entity);
 
     // Make "title" and "description" properties themed like default fields.
     $content['title'] = array(
@@ -148,12 +175,29 @@ class WisskiCoreEntityController extends EntityAPIController {
       '#field_name' => 'field_fake_title',
       '#field_type' => 'text',
       '#entity_type' => 'wisski_core_entity',
-      '#bundle' => $wrapper->type->value(),
-      '#items' => array(array('value' => $wrapper->title->value())),
+      '#bundle' => $entity->type,
+      '#items' => array(array('value' => $entity->title)),
       '#formatter' => 'text_default',
-      0 => array('#markup' => check_plain($wrapper->title->value())),
+      0 => array('#markup' => check_plain($entity->title)),
     );
     
+    $content['uri'] = array(
+      '#theme' => 'field',
+      '#weight' => 0,
+      '#title' => t('URI'),
+      '#access' => TRUE,
+      '#label_display' => 'above',
+      '#view_mode' => 'full',
+      '#language' => LANGUAGE_NONE,
+      '#field_name' => 'field_fake_title',
+      '#field_type' => 'text',
+      '#entity_type' => 'wisski_core_entity',
+      '#bundle' => $entity->type,
+      '#items' => array(array('value' => $entity->uri)),
+      '#formatter' => 'text_default',
+      0 => array('#markup' => check_plain($entity->uri)),
+    );
+/*    
 //    ddebug_backtrace();
     $content['description'] = array(
       '#theme' => 'field',
@@ -176,7 +220,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       0 => array('#markup' => check_plain($entity->description)),
       //0 => array('#markup' => check_plain($wrapper->description->value())),
     );
-/*    
+
     $content['same_individuals'] = array(
       '#theme' => 'field',
       '#weight' => 0,
@@ -205,9 +249,19 @@ class WisskiCoreEntityController extends EntityAPIController {
       return FALSE;
     }
   }
-  
   */
 }
+/*
+function wisski_core_entity_uri($entity) {
+  
+  return property_exists($entity,'uri') ? $entity->uri : '-undefined-';
+}
+
+function wisski_core_entity_label($entity) {
+  
+  return property_exists($entity,'title') ? $entity->title : (property_exists($entity,'type') ? t('undefined').' '.$entity->type : '-undefined-');
+}
+*/
 
 class WisskiCoreBundle extends Entity {
   public $type;

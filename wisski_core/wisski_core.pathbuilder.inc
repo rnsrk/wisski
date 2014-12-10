@@ -408,7 +408,7 @@ function wisski_core_field_paths($form,&$form_state,$in_bundle = NULL) {
                 ->condition('pending','0','=')
                 ->condition('starting_concept',$in_bundle->type,'LIKE')
                 ->execute()
-                ->fetchAllAssoc('id');
+                ->fetchAllAssoc('uuid');
   $options = array();
   $path_strings = array('default' => '-'.t('none').'-') + _wisski_core_extract_paths($path_info);
   if (isset($form_state['triggering_element']) && $form_state['triggering_element']['#name'] == 'wisski_core_field_paths_single_button') {
@@ -529,9 +529,11 @@ function _wisski_core_extract_paths($array) {
   }
   foreach($array as $key => $path) {
     $out = $path->short_name.': ';
-    foreach(unserialize($path->path_array) as $step) {
-      $out .= $step.' => ';
-    }
+    do {
+      foreach(unserialize($path->path_array) as $step) {
+        $out .= $step.' => ';
+      }
+    } while (isset($path->external_path) && isset($array[$path->external_path]) && $path = $array[$path->external_path]);
     $out .= $path->datatype_property;
     $output[$key] = $out;
   }

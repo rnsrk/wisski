@@ -141,9 +141,10 @@ function wisski_core_schema() {
         'not null' => TRUE,
       ),
       'path_id' => array(
-        'description' => 'id of the connected path, may be empty',
-        'type' => 'int',
+        'type' => 'char',
         'not null' => FALSE,
+        'length' => 36,
+        'description' => 'The uuid of the path.',
       ),
     ),
     'primary key' => array('id'),
@@ -158,7 +159,7 @@ function wisski_core_schema() {
       'path' => array(
         'table' => 'wisski_pb_pathdata',
         'columns' => array(
-          'id' => 'path_id',
+          'uuid' => 'path_id',
         ),
       ),
     ),

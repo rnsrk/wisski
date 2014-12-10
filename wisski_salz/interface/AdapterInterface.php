@@ -16,7 +16,7 @@ interface AdapterInterface {
   * The return value depends on the arguements:
   * ...
   */
-  public function query ($path_definition, $subject = NULL, $disamb = array(), $value = NULL);
+//  public function query ($path_definition, $subject = NULL, $disamb = array(), $value = NULL);
 
   
   /** Return the settings page(s)

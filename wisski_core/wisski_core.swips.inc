@@ -64,14 +64,16 @@ function wisski_core_field_storage_delete_field($field) {
 function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $age, $skip_fields, $options) {
   
   
-//  dpm("call to hook_field_storage_pre_load");
+  dpm("call to hook_field_storage_pre_load for ".$entity_type);
 //  dpm(func_get_args());
   if($entity_type == 'wisski_core_entity') {
+//    dpm($queried_entities);
     if (variable_get('wisski_semaphore_pre_load',FALSE)) return;
     variable_set('wisski_semaphore_pre_load',TRUE);
     if ($age == FIELD_LOAD_REVISION) {
+      dpm(__FILE__.": load revision");
       //load from default storage
-      module_invoke('field_sql_storage','field_storage_load',$entity_type, $queried_entities, $age, $skip_fields, $options);
+//      module_invoke('field_sql_storage','field_storage_load',$entity_type, $queried_entities, $age, $skip_fields, $options);
     } else {
       foreach($queried_entities as $entity) {
         //remember that $entity->type is the bundle, not 'wisski_core_entity'
@@ -80,7 +82,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                       ->fields('path')
                       ->condition('pending',0,'=')
                       ->execute()
-                      ->fetchAllAssoc('id');
+                      ->fetchAllAssoc('uuid');
         $individual = $entity->uri;
         $info = array();
         $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
@@ -90,7 +92,6 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                       ->condition('instance_id',$instance['id'],'=')
                       ->execute()
                       ->fetchAssoc();
-          
           $path = $path_info[$result['path_id']];
           $starting_concept = $path->starting_concept;
           $full_path = array();
@@ -98,6 +99,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
             $full_path = array_merge($full_path,unserialize($path->path_array));
             $data = $path->datatype_property;
           } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
+          dpm($full_path);
           $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
           if (!empty($info)) {
             $is_list = 'list' == substr($wrapper->$instance['field_name']->type(),0,4);
@@ -128,7 +130,7 @@ function wisski_field_storage_load($entity_type, $entities, $age, $fields, $opti
   if($entity_type == 'wisski_core_entity') {
     if ($age == FIELD_LOAD_REVISION) {
       //load from default storage
-      module_invoke('field_sql_storage','field_storage_load',$entity_type, $entities, $age, $fields, $options);
+//      module_invoke('field_sql_storage','field_storage_load',$entity_type, $entities, $age, $fields, $options);
     } else {
       foreach($entities as $entity) {
         //remember that $entity->type is the bundle, not 'wisski_core_entity'
@@ -137,7 +139,7 @@ function wisski_field_storage_load($entity_type, $entities, $age, $fields, $opti
                       ->fields('path')
                       ->condition('pending',0,'=')
                       ->execute()
-                      ->fetchAllAssoc('id');
+                      ->fetchAllAssoc('uuid');
         $individual = $entity->uri;
         $info = array();
         $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
@@ -168,7 +170,7 @@ function wisski_field_storage_load($entity_type, $entities, $age, $fields, $opti
               $wrapper->$instance['field_name']->set(current($info));
           } else {
             $wrapper->$instance['field_name']->set('');
-            dpm("No results for this individual");
+            dpm(__FILE__.": No results for this individual");
           }
         }//END foreach $instances
         $wrapper->save();
@@ -186,18 +188,21 @@ function wisski_field_storage_load($entity_type, $entities, $age, $fields, $opti
 */
 function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
 
+  dpm("call to hook_field_storage_write for $entity_type");
   if ($entity_type == 'wisski_core_entity') {
     $bundle_info = NULL;
-//    dpm(func_get_args());
+    dpm(func_get_args());
     if (property_exists($entity,'uri') && $entity->uri != NULL) {
       $individual = $entity->uri;
     } else {
-      $individual =  wisski_core_make_uri($entity->name,$entity->type);
+      trigger_error("The entity ".$entity->title." does not have a uri",E_USER_ERROR);
+      return;
+/*      $individual =  wisski_core_make_uri($entity->title,$entity->type);
       $entity->uri = $individual;
       db_update('wisski_entity_data')
         ->fields(array('uri' => $individual))
         ->condition('id',$entity->id)
-        ->execute();
+        ->execute();*/
     }
 //    dpm(entity_uri($entity_type,$entity));
 //    dpm("computed uri: ".$individual);
@@ -205,7 +210,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
                 ->fields('path')
                 ->condition('pending',0,'=')
                 ->execute()
-                ->fetchAllAssoc('id');
+                ->fetchAllAssoc('uuid');
 //    dpm("Tick 1");
     $new_individuals = array();
     foreach($fields as $field_id) {
@@ -231,9 +236,9 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
         $data = $path->datatype_property;
       } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
       $new_values = field_get_items($entity_type,$entity,$instance['field_name']);
-      $delete = $op == FIELD_STORAGE_UPDATE;
+      $delete = !property_exists($entity,'is_new') || !$entity->is_new;
       foreach($new_values as $delta) {
-        if ($news = wisski_salz_pb_update($individual,$starting_concept,$full_path,$data,$delta['value'],$delete)) {
+        if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$full_path,$data,$delta['value'],$delete)) {
           dpm($news);
           foreach($news as $class => $inds) {
             if (!isset($new_individuals[$class])) $new_individuals[$class] = array();
@@ -244,7 +249,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
     }
     if ($op == FIELD_STORAGE_UPDATE) { 
       //write a revision to the sql table
-      module_invoke('field_sql_storage','field_storage_write',$entity_type, $entity, $op, $fields);
+//      module_invoke('field_sql_storage','field_storage_write',$entity_type, $entity, $op, $fields);
     }
     if (!empty($new_individuals)) {
       if (is_null($bundle_info)) {
@@ -261,8 +266,8 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
         foreach($inds as $ind_uri) {
           $info = array(
             'type' => $type,
-            'name' => substr($ind_uri,0,32),
-            'description' => t('created depending on ').$entity->title,
+//            'name' => substr($ind_uri,0,32),
+            'id' => $ind_uri,
             'uri' => $ind_uri,
             'title' => $title,
             'same_individuals' => array(),
@@ -277,7 +282,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
   }
 }
 
-function wisski_core_make_uri($entity_name,$bundle_name,$ind_only = TRUE) {
+function wisski_core_make_uri($entity_title,$bundle_name,$ind_only = TRUE) {
   
   $bundle_uri = db_select('wisski_entity_bundles','b')
                   ->fields('b',array('type','uri'))
@@ -286,7 +291,9 @@ function wisski_core_make_uri($entity_name,$bundle_name,$ind_only = TRUE) {
                   ->fetchObject()
                   ->uri;
 //  dpm($bundle_uri);
-  $ind_uri = wisski_salz_pb_make_uri($bundle_uri,substr($entity_name,0,8));
+  $ind_uri = wisski_salz_pb_make_uri($bundle_uri,substr($entity_title,0,8));
+  $trace = debug_backtrace();
+  watchdog('wisski_make_uri',$entity_title.' '.$bundle_name.' '.$ind_uri.' from '.serialize($trace));
   if ($ind_only)
     return $ind_uri;
   else return array($ind_uri,$bundle_uri);
@@ -430,4 +437,14 @@ function wisski_core_field_storage_details($field) {
       FIELD_LOAD_REVISION => $info['sql'][FIELD_LOAD_REVISION],
     ),
   );
+}
+
+function _wisski_core_rekey_array($array,$key) {
+
+  $out = array();
+  foreach ($array as $entry) {
+    if (is_array($entry) && isset($entry[$key]))
+      $out[$entry[$key]] = $entry;
+  }
+  return $out;
 }
