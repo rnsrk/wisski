@@ -24,85 +24,53 @@ function wisski_core_list_bundles() {
  */
 
 function wisski_core_list($type) {
-
-//  module_invoke_all('wisski_update_class',$type);
-//  drupal_set_title(t('WissKI Entities'));
-
-  //drupal_set_message(serialize($type));
-
-  // Show link to the entity "Add" page.
+  $now = time();
   $output = '<br/>';
-  /*
-  $output .= theme_link(
-    array(
-      'text' => t('Add new entity'),
-      'path' => 'wisski_core/add',
-      'options' => array(
-        'attributes' => array(),
-        'html' => TRUE,
-      ),
-    )
-  );
-  */
-
-  // Show list of existing entities.
-//  $entities = entity_load('wisski_core_entity');
-/*
-  $query = new EntityFieldQuery();
-  
-  $query->entityCondition('entity_type', 'wisski_core_entity');
-  
-  $query->propertyCondition('type', $type);
-  
-  $results = $query->execute();
-
-  //drupal_set_message(serialize($results));
-  
-  if(!empty($results['wisski_core_entity']))
-    $entities = entity_load('wisski_core_entity', array_keys($results['wisski_core_entity']));
-  else
-    $entities = array();
-  
-  $items = array();
-  foreach ($entities as $entity) {
-    
-    //drupal_set_message(serialize($entity));
-    $entity_uri = entity_uri('wisski_core_entity', $entity);
-    
-    $items[] = l(entity_label('wisski_core_entity', $entity), $entity_uri['path']);
-  }
   $output .= theme_item_list(
     array(
-      'items' => $items,
+      'items' => _wisski_core_get_items($type),
       'title' => t('List of existing entities.'),
       'type' => 'ul',
       'attributes' => array(),
     )
   );
-  
-  */
-  
-    $entities = entity_load('wisski_core_entity', array(), array("type" => $type));
-  
-  $items = array();
-  foreach ($entities as $entity) {
-    
-    //drupal_set_message(serialize($entity));
-    $entity_uri = entity_uri('wisski_core_entity', $entity);
-    $items[] = l(entity_label('wisski_core_entity', $entity), $entity_uri['path']);
-  }
-  $output .= theme_item_list(
-    array(
-      'items' => $items,
-      'title' => t('List of existing entities.'),
-      'type' => 'ul',
-      'attributes' => array(),
-    )
-  );
-
+  $time = time() - $now;
+  dpm("Loading took $time seconds");
   return $output;
 }
 
+function _wisski_core_get_items($type) {
+  
+  $cache_name = 'wisski_cache_'.$type;
+  if ($cache = cache_get($cache_name)) {
+    $items = $cache->data;
+  } else {
+    $items = array();
+    $bundle = current(entity_load('wisski_core_bundle',array($type)));
+    $now = time();
+    $inds = wisski_salz_pb_get_bundle_info($bundle->uri);
+    dpm("Query took ".(time() - $now)." seconds");
+    if ($inds !== FALSE && empty($errors)) {
+      foreach($inds as $ind_uri => $comments) {
+        $entity_title = $ind_uri;
+        if ($comments) {
+          foreach ($comments as $comment) {
+            $split = explode(':',preg_replace('/(^\")|(\"$)/','',$comment));
+            if ($split[0] == 'wisski_title' && isset($split[1])) $entity_title = $split[1];
+          }
+        }
+        $items[$entity_title] = 'wisski_core/'.$ind_uri;
+      }
+    }
+    cache_set($cache_name,$items);
+    dpm("There are ".count($inds)." entities in bundle $bundle->label");
+  }
+  $links = array();
+  foreach ($items as $label => $uri) {
+    $links[] = l($label,$uri);
+  }
+  return $links;
+}
 
 /**
  * Entity view callback.
@@ -115,24 +83,15 @@ function wisski_core_list($type) {
  */
 function wisski_core_entity_view($entity) {
 
-/*  if (variable_get('wisski_semaphore_entity_view',FALSE)) {
-    dpm(__FILE__.": tick");
-    return;
-  }
-  variable_set('wisski_semaphore_entity_view',TRUE);*/
   $wisski_semaphore = &drupal_static(__FUNCTION__);
   if (isset($wisski_semaphore) && $wisski_semaphore) {
-    dpm("tick");
+    dpm(__FILE__.'('.__LINE__.')'."tick");
     return;
   }
   $wisski_semaphore = TRUE;
-  ddebug_backtrace();
-  dpm($entity);
   $id = entity_id('wisski_core_entity', $entity);
   drupal_set_title(entity_label('wisski_core_entity', $entity));
   $entity_view = entity_view('wisski_core_entity', array(entity_id('wisski_core_entity', $entity) => $entity));
-  dpm($entity_view);
-/*  variable_del('wisski_core_semaphore');*/
   $wisski_semaphore = FALSE;
   return $entity_view;
 }

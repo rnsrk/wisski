@@ -33,7 +33,11 @@ class WisskiCoreEntity extends Entity {
 class WisskiCoreEntityController extends EntityAPIController {
 
   public function load($ids = array(), $conditions = array()) {
-    
+  
+//    $query_time = 0.0;
+//    $query_count = &drupal_static('wisski_request_count');
+//    $query_count = 0;
+//    $now = microtime();    
     $entities = array();
     // This method takes an array of IDs, but our webservice only supports loading one entity at a time.
     
@@ -41,55 +45,42 @@ class WisskiCoreEntityController extends EntityAPIController {
 #    drupal_set_message(serialize($conditions));
     if(!empty($ids)) {
       foreach ($ids as $id) {
-        
-#        drupal_set_message(serialize($ids));
-#        drupal_set_message(serialize($conditions));
-
-      
-#      drupal_set_message(htmlentities($query));
-      
-      if($answer = wisski_salz_pb_get_entity_info($id)) {
+//        $my_now = microtime();
+        $answer = wisski_salz_pb_get_entity_info($id);
+//        $query_time += $this->getMicroseconds($my_now,microtime());
         list($types,$comments) = $answer;
-        $entity_title = $id;
-        if ($comments) {
-          foreach ($comments as $comment) {
-            $split = explode(':',preg_replace('/(^\")|(\"$)/','',$comment));
-            if ($split[0] == 'wisski_title' && isset($split[1])) $entity_title = $split[1];
+        if ($answer !== FALSE) {
+          $entity_title = $id;
+          if ($comments) {
+            foreach ($comments as $comment) {
+              $split = explode(':',preg_replace('/(^\")|(\"$)/','',$comment));
+              if ($split[0] == 'wisski_title' && isset($split[1])) $entity_title = $split[1];
+            }
           }
-        }
-        $bundles = db_select('wisski_entity_bundles','b')
+          $bundles = db_select('wisski_entity_bundles','b')
                     ->fields('b',array('type','uri'))
                     ->execute()
                     ->fetchAllAssoc('uri');
-#      drupal_set_message(serialize($result));        
-        foreach($types as $bundle_uri) {
-          if (isset($bundles[$bundle_uri])) {
-        #$entity_ids[] = $value->s->dumpValue('text');
-            $entity = entity_create("wisski_core_entity", array('type' => $bundles[$bundle_uri]->type, 'title' => $entity_title, 'uri' => $id, 'id' => $id));
-            $entity->is_new = FALSE;
-#        drupal_set_message(serialize($entity));
-            $entities[$id] = $entity;
-          }
-        }  
-      }
-  //  drupal_set_message("remote controller: " . serialize($id));
-    // This function should contain all the code to make a request to the web service and handle any errors.
-    #if ($entity = remote_web_service_load($id)) {
-      // Entities must be keyed by entity ID in order for field values to be correctly attached
-    #  $entities[$entity->my_remote_entity_id] = $entity;
-    #}
-      }
+          foreach($types as $bundle_uri) {
+            if (isset($bundles[$bundle_uri])) {
+              $entity = entity_create("wisski_core_entity", array('type' => $bundles[$bundle_uri]->type, 'title' => $entity_title, 'uri' => $id, 'id' => $id));
+              $entity->is_new = FALSE;
+              $entities[$id] = $entity;
+            }
+          }  
+        } else {
+          trigger_error("Problems when loading entity $id",E_USER_ERROR);
+        }
+      } 
     } else {
-    
       $entity_ids = array();
       // load all
- #     drupal_set_message(serialize($conditions));
-      
-      list(,$bundle_uri) = wisski_core_make_uri("",$conditions["type"],FALSE);
-            
-      if ($inds = wisski_salz_pb_get_bundle_info($bundle_uri)) {
+      list(,$bundle_uri) = wisski_core_make_uri("",$conditions["type"],FALSE); 
+//      $my_now = microtime();
+      $inds = wisski_salz_pb_get_bundle_info($bundle_uri);
+//      $query_time += $this->getMicroseconds($my_now,microtime());
+      if ($inds !== FALSE) {
         foreach($inds as $ind_uri => $comments) {
-          
           $entity_title = $ind_uri;
           if ($comments) {
             foreach ($comments as $comment) {
@@ -99,23 +90,39 @@ class WisskiCoreEntityController extends EntityAPIController {
           }
           $entity = entity_create("wisski_core_entity", array('type' => $conditions["type"], 'title' => $entity_title, 'uri' => $ind_uri, 'id' => $ind_uri));
           $entity->is_new = FALSE;
-#     	   drupal_set_message(serialize($entity));
           $entities[$ind_uri] = $entity;
         }
+      } else {
+        trigger_error("Problems when loading bundle $bundle_uri",E_USER_ERROR);
       }
-      
-#      drupal_set_message(serialize($entities));
-      
     }
     field_attach_load('wisski_core_entity',$entities);
+//    $time = $this->getMicroseconds($now,microtime());
+//    dpm("overall loading time: ".$time);
+//    dpm("Number of queries: ".$query_count);
+//    dpm("query time: ".$query_time);
+//    dpm("Overhead = ".((100 * $time) / $query_time)."%");
     return $entities;
   }
   
+  public function getMicroseconds($start,$end) {
+  
+    $st = explode(' ',$start);
+    $nd = explode(' ',$end);
+    $secs = (float) ($nd[1] - $st[1]);
+    $st_mysecs = (float) $st[0];
+    $nd_mysecs = (float) $nd[0];
+    if ($secs) $nd_mysecs += $secs;
+    return $nd_mysecs - $st_mysecs;
+  }
+
+    
   public function create(array $values = array()) {
 
     if (!isset($values['uri']) && isset($values['type'])) {
       $values['uri'] = wisski_core_make_uri('',$values['type']);
     }
+    $values += array('is_new' => TRUE);
     return (object) $values;
   }
   
@@ -148,7 +155,6 @@ class WisskiCoreEntityController extends EntityAPIController {
         list(,$bundle_uri) = wisski_core_make_uri($entity_title,$entity->type,FALSE);
       }
     }
-    
     $inserted_title = "\"wisski_title:".preg_replace('/[:]/u','_',$entity_title)."\"";
     if (wisski_salz_pb_insert_individual($entity_uri,$bundle_uri,$inserted_title)) dpm("Success");
     field_attach_insert('wisski_core_entity', $entity);
@@ -294,7 +300,10 @@ class WisskiCoreBundleController extends EntityAPIControllerExportable {
     parent::save($entity, $transaction);
     // Rebuild menu registry.
     variable_set('menu_rebuild_needed', TRUE);
+    field_attach_create_bundle('wisski_core_entity',$this);
   }
+  
+  
 }
 
 /**

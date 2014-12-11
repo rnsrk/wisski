@@ -34,8 +34,10 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   * @ignore
   */
   protected function request($type, $query) {
+    
     // Check for undefined prefixes
     $prefixes = '';
+    $this->updateNamespaces();
     foreach (EasyRdf_Namespace::namespaces() as $prefix => $uri) {
       if (strpos($query, "$prefix:") !== false and strpos($query, "PREFIX $prefix:") === false) {
         $prefixes .=  "PREFIX $prefix: <$uri>\n";
@@ -82,6 +84,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
             }
         }
 //        dpm((array)$client);
+//        watchdog('wisski_SPARQL_request_uri',$client->getUri());
         $response = $client->request();
         if ($response->getStatus() == 204) {
             // No content
@@ -144,7 +147,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
       $this->addOntologies();
     }
-
+/*
     $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');  
     $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
     $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
@@ -155,13 +158,23 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
     $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
     $this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
-  
+  */
   }
 
   public function getSettings($name = NULL) {
     drupal_set_message("\$this in getSettings: " . serialize($this));
     if ($name === NULL) return $this->settings;
     return $this->settings[$name];
+  }
+
+  public function __get($name) {
+    
+    return isset($this->settings[$name]) ? $this->settings[$name] : FALSE;
+  }
+  
+  public function __set($name,$value) {
+    
+    $this->settings[$name] = $value;
   }
 
   public function querySPARQL($query) {
@@ -185,11 +198,14 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   */
   private function requestSPARQL($type,$query = NULL) {
         
+    $requestcount = &drupal_static('wisski_request_count');
+    if (!isset($requestcount)) $requestcount = 0;
+    $requestcount++;
     $ok = FALSE;
     $results = array();
     try {
       if (easyrdf()) {
-    	  $this->updateNamespaces();
+//    	  $this->updateNamespaces();
 /*
         if (isset($this->settings['query_endpoint'])) {
             if (isset($this->settings['update_endpoint'])) {
@@ -206,13 +222,12 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
               $ok = TRUE;
             }
           }
-*/			
+*/
         $results = $this->request($type,$query);
         $ok = TRUE;
-      } else drupal_set_message("EasyRdf is not installed");
+      } else trigger_error("EasyRdf is not installed",E_USER_ERROR);
     } catch (Exception $e) {
-        drupal_set_message("SPARQL1.1 $type request failed.<br>Query was '".htmlentities($query)."'<br>Error Message:<br>".get_class($e)."<br>".$e->getMessage());
-        return array(FALSE,array());
+      watchdog('wisski_SPARQL_'.$type.'_fail',"Request: ".$query."\nError Message: ".get_class($e)."\n".$e->getMessage());
 //        throw $e;
     }
 //    drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
@@ -234,12 +249,18 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   }
 
   private function updateNamespaces() {
-    $spaces = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
+    $spaces_set = &drupal_static(__FUNCTION__);
+    if (!isset($spaces_set) || !$spaces_set) {
+//      trigger_error("updating Namespaces",E_USER_NOTICE);
+      $spaces_set = FALSE;
+      $db_spaces = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
                 ->fields('ns')
                 ->execute()
                 ->fetchAllAssoc('id');
-    foreach($spaces as $space) {
-      EasyRDF_Namespace::set($space->short_name,$space->long_name);
+      foreach ($db_spaces as $space) {
+        EasyRdf_Namespace::set($space->short_name,$space->long_name);
+      }
+      $spaces_set = TRUE;
     }
   }
   
@@ -286,6 +307,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $query .= "?individual$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
     }
     $query .= "?individual$count $datatype_property ?data. }";
+    dpm($query);
     list($ok,$result) = $this->querySPARQL($query);
     if ($ok) {
       $out = array();
@@ -401,7 +423,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     //aim at uniqueness
     $suffix = md5(time().$property.rand());
     //ensure uniqueness
-    $name = substr($prefix.":".$name_part.$suffix,0,32);
+    $name = substr($prefix.":".preg_replace('/[^a-zA-Z0-9_]/u','_',$name_part).$suffix,0,32);
     if ($checked) {
       list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE {{ $name ?p ?o .} UNION {?s ?p $name .}} LIMIT 1");
       if (!$ok) return FALSE;
@@ -537,10 +559,28 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }
     return array();
   }
+
+  public function getClassesAndComments($entity_uri) {
   
-  public function getClass($entity_uri) {
+    return array($this->getClasses($entity_uri),$this->getComments($entity_uri));
+  }
+
+  public function getComments($entity_uri) {
     
-    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE {GRAPH ?g { $entity_uri rdf:type ?class .}}");
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { $entity_uri rdfs:comment ?comment .}");
+    if ($ok) {
+      $out = array();
+      foreach ($result as $obj) {
+        $out[] = $obj->comment->dumpValue('text');
+      }
+      return $out;
+    }
+    return FALSE;
+  }
+  
+  public function getClasses($entity_uri) {
+    
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { $entity_uri rdf:type ?class .}");
     if ($ok) {
       if (count($result) > 0) {
         $out = array();
@@ -553,17 +593,30 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     return FALSE;
   }
   
+  public function getIndsWithComments($class_uri) {
+  
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE {?ind rdf:type $class_uri . OPTIONAL {?ind rdfs:comment ?comment. }}");
+    if ($ok) {
+      $out = array();
+      foreach ($result as $obj) {
+        $ind_uri = $obj->ind->dumpValue('text');
+        if (!isset($out[$ind_uri])) $out[$ind_uri] = array();
+        if (property_exists($obj,'comment')) $out[$ind_uri][] = $obj->comment->dumpValue('text');
+      }
+      return $out;
+    }
+    return FALSE;
+  }
+  
   public function getIndividuals($class_uri) {
     
-    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE {GRAPH ?g { ?ind rdf:type $class_uri .}}");
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { ?ind rdf:type $class_uri .}");
     if ($ok) {
-      if (count($result) > 0) {
-        $out = array();
-        foreach ($result as $obj) {
-          $out[] = $obj->ind->dumpValue('text');
-        }
-        return $out;
+      $out = array();
+      foreach ($result as $obj) {
+        $out[] = $obj->ind->dumpValue('text');
       }
+      return $out;
     }
     return FALSE;
   }

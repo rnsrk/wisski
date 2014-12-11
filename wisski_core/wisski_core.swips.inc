@@ -62,9 +62,8 @@ function wisski_core_field_storage_delete_field($field) {
 * implements hook_field_storage_pre_load
 */
 function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $age, $skip_fields, $options) {
-  
-  
-  dpm("call to hook_field_storage_pre_load for ".$entity_type);
+    
+//  dpm("call to hook_field_storage_pre_load for ".$entity_type);
 //  dpm(func_get_args());
   if($entity_type == 'wisski_core_entity') {
 //    dpm($queried_entities);
@@ -99,7 +98,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
             $full_path = array_merge($full_path,unserialize($path->path_array));
             $data = $path->datatype_property;
           } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
-          dpm($full_path);
+//          dpm($full_path);
           $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
           if (!empty($info)) {
             $is_list = 'list' == substr($wrapper->$instance['field_name']->type(),0,4);
