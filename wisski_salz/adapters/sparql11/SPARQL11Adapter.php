@@ -299,21 +299,28 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
     $query = "SELECT DISTINCT ?data WHERE{ $individual_uri rdf:type/rdfs:subClassOf* $starting_concept .";
     $count = 0;
-    while(!empty($path_array)) {
-      $query .= ($count == 0) ? "$individual_uri " : "?individual$count ";
-      $query .= array_shift($path_array);
-      $count++;
-      $query .= "?individual$count. ";
-      $query .= "?individual$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
+    if (empty($path_array)) {
+      $query .= " $individual_uri $datatype_property ?data. }";
+    } else {
+      while(!empty($path_array)) {
+        $query .= ($count == 0) ? "$individual_uri " : "?individual$count ";
+        $query .= array_shift($path_array);
+        $count++;
+        $query .= " ?individual$count. ";
+        $query .= " ?individual$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
+      }
+      $query .= " ?individual$count $datatype_property ?data. }";
     }
-    $query .= "?individual$count $datatype_property ?data. }";
+//    dpm($query);
     list($ok,$result) = $this->querySPARQL($query);
     if ($ok) {
       $out = array();
       foreach ($result as $obj) {
-        $out[] = $obj->data->dumpValue('text');
+        $data = $obj->data->dumpValue('text');
+        $data = explode('^^',preg_replace('/[\"\']/','',$data));
+        $out[] = $data[0];
       }
-      return preg_replace('/[\"\']/','',$out);
+      return $out;
     }
     return FALSE;
   }

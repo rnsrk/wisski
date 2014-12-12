@@ -409,11 +409,12 @@ function wisski_core_schema() {
     'primary key' => array('id'),
     'unique keys' => array(
       'type' => array('type'),
-      'uri' => array('uri'),
+//      'uri' => array('uri'),
     ),
     'indexes' => array(
       'timestamp' => array('timestamp'),
       'status' => array('status'),
+      'uri' => array('uri'),
     ),
   );
 

@@ -112,13 +112,20 @@ function wisski_core_entity_form($form, &$form_state, $entity) {
   $form_state['wisski_core'] = $entity;
 
   // Describe all properties of the entity which shall be shown on the form.
-  $wrapper = entity_metadata_wrapper('wisski_core_entity', $entity);
+//  $wrapper = entity_metadata_wrapper('wisski_core_entity', $entity);
   $form['title'] = array(
     '#type' => 'textfield',
     '#required' => TRUE,
     '#title' => t('Title'),
-    '#default_value' => $wrapper->title->value(),
+    '#default_value' => property_exists($entity,'title') ? $entity->title : '',
     '#weight' => -20,
+  );
+  $form['uri'] = array(
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#title' => 'URI',
+    '#default_value' => $entity->uri,
+    '#weight' => -10,
   );
 /*  $form['description'] = array(
     '#type' => 'textfield',
@@ -274,6 +281,13 @@ function wisski_core_bundle_form($form, &$form_state, $entity_type, $op = 'edit'
     '#description' => t('The human-readable name of this entity type.'),
     '#required' => TRUE,
     '#size' => 30,
+  );
+  $form['uri'] = array(
+    '#title' => 'URI',
+    '#type' => 'textfield',
+    '#default_value' => property_exists($entity_type,'uri') ? $entity_type->uri : '',
+    '#required' => TRUE,
+    '#description' => t('The URI of the corresponding owl:Class in the local ontology'),
   );
   $form['type'] = array(
     '#type' => 'machine_name',

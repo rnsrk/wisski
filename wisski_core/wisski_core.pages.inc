@@ -22,7 +22,6 @@ function wisski_core_list_bundles() {
 /**
  * Show list of existing entities.
  */
-
 function wisski_core_list($type) {
   $now = time();
   $output = '<br/>';
@@ -46,7 +45,7 @@ function _wisski_core_get_items($type) {
     $items = $cache->data;
   } else {
     $items = array();
-    $bundle = current(entity_load('wisski_core_bundle',array($type)));
+    $bundle = entity_load_single('wisski_core_bundle',$type);
     $now = time();
     $inds = wisski_salz_pb_get_bundle_info($bundle->uri);
     dpm("Query took ".(time() - $now)." seconds");
@@ -59,7 +58,7 @@ function _wisski_core_get_items($type) {
             if ($split[0] == 'wisski_title' && isset($split[1])) $entity_title = $split[1];
           }
         }
-        $items[$entity_title] = 'wisski_core/'.$ind_uri;
+        $items[$entity_title] = 'wisski_core/'.$type.'/'.$ind_uri;
       }
     }
     cache_set($cache_name,$items);

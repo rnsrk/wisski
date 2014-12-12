@@ -66,9 +66,14 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
 //  dpm("call to hook_field_storage_pre_load for ".$entity_type);
 //  dpm(func_get_args());
   if($entity_type == 'wisski_core_entity') {
+    dpm($queried_entities);
 //    dpm($queried_entities);
-    if (variable_get('wisski_semaphore_pre_load',FALSE)) return;
-    variable_set('wisski_semaphore_pre_load',TRUE);
+    $wisski_semaphore = &drupal_static(__FUNCTION__);
+    if (isset($wisski_semaphore) && $wisski_semaphore) {
+      dpm(__FILE__.'('.__LINE__.'): tick');
+      return;
+    }
+    $wisski_semaphore = TRUE;
     if ($age == FIELD_LOAD_REVISION) {
       dpm(__FILE__.": load revision");
       //load from default storage
@@ -112,7 +117,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
         $wrapper->save();
       }//END foreach $entities
     }
-    variable_del('wisski_semaphore_pre_load');
+    $wisski_semaphore = FALSE;
   } else {
     module_invoke('field_sql_storage','field_storage_pre_load',$entity_type, $queried_entities, $age, $skip_fields, $options);
   }
@@ -187,10 +192,10 @@ function wisski_field_storage_load($entity_type, $entities, $age, $fields, $opti
 */
 function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
 
-  dpm("call to hook_field_storage_write for $entity_type");
+//  dpm("call to hook_field_storage_write for $entity_type");
   if ($entity_type == 'wisski_core_entity') {
     $bundle_info = NULL;
-    dpm(func_get_args());
+//    dpm(func_get_args());
     if (property_exists($entity,'uri') && $entity->uri != NULL) {
       $individual = $entity->uri;
     } else {

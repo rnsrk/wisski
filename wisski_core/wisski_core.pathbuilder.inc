@@ -5,7 +5,11 @@ function wisski_core_edit_bundle_paths($form,&$form_state,$in_bundle = NULL) {
   if ($in_bundle == NULL && isset($form['bundle'])) $bundle = $form_state['values']['bundle'];
   else {
     if ($in_bundle == NULL) throw new InvalidArgumentException("You must specify a bundle to be displayed");
-    $bundle = is_string($in_bundle) ? $in_bundle : $in_bundle->type;
+    if (($in_bundle instanceof WisskiCoreBundle)) {
+      $bundle = $in_bundle; 
+    } elseif (!is_string($in_bundle) || !($bundle = entity_load_single('wisski_core_bundle',$in_bundle))) {
+      throw new InvalidArgumentException("Given parameter $in_bundle is not a bundle or uri");
+    }
     $form['bundle'] = array(
       '#type' => 'hidden',
       '#value' => $bundle,
@@ -13,7 +17,7 @@ function wisski_core_edit_bundle_paths($form,&$form_state,$in_bundle = NULL) {
   }
   $old_paths = db_select('wisski_pb_pathdata','paths')
                 ->fields('paths')
-                ->condition('starting_concept',$bundle,'LIKE')
+                ->condition('starting_concept',$bundle->uri,'LIKE')
                 ->condition('pending',0,'=')
                 ->execute()
                 ->fetchAllAssoc('uuid');
@@ -166,8 +170,7 @@ function wisski_core_edit_bundle_paths($form,&$form_state,$in_bundle = NULL) {
     }
     $last = array_pop($path);
   } else {
-    $entity = entity_load_single('wisski_core_bundle',$bundle);
-    $last = $entity->uri;
+    $last = $bundle->uri;
     $form['item']['starting_concept'] = array(
       '#type' => 'hidden',
       '#value' => $last,
@@ -406,7 +409,7 @@ function wisski_core_field_paths($form,&$form_state,$in_bundle = NULL) {
   $path_info = db_select('wisski_pb_pathdata','paths')
                 ->fields('paths')
                 ->condition('pending','0','=')
-                ->condition('starting_concept',$in_bundle->type,'LIKE')
+                ->condition('starting_concept',$in_bundle->uri,'LIKE')
                 ->execute()
                 ->fetchAllAssoc('uuid');
   $options = array();

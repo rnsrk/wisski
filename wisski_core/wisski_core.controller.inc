@@ -37,8 +37,13 @@ class WisskiCoreEntityController extends EntityAPIController {
 //    $query_time = 0.0;
 //    $query_count = &drupal_static('wisski_request_count');
 //    $query_count = 0;
-//    $now = microtime();    
+//    $now = microtime();
+    $wisski_load_count = &drupal_static('wisski-load_count');
+    if (!isset($wisski_load_count)) $wisski_load_count = 0;
+    $wisski_load_count++;
+    dpm("loaded $wisski_load_count times");
     $entities = array();
+    $bundle_type = arg(1);
     // This method takes an array of IDs, but our webservice only supports loading one entity at a time.
     
 #    drupal_set_message(serialize($ids));
@@ -48,8 +53,9 @@ class WisskiCoreEntityController extends EntityAPIController {
 //        $my_now = microtime();
         $answer = wisski_salz_pb_get_entity_info($id);
 //        $query_time += $this->getMicroseconds($my_now,microtime());
-        list($types,$comments) = $answer;
         if ($answer !== FALSE) {
+//          dpm($answer);
+          list($types,$comments) = $answer;
           $entity_title = $id;
           if ($comments) {
             foreach ($comments as $comment) {
@@ -59,8 +65,10 @@ class WisskiCoreEntityController extends EntityAPIController {
           }
           $bundles = db_select('wisski_entity_bundles','b')
                     ->fields('b',array('type','uri'))
+                    ->condition('type',$bundle_type)
                     ->execute()
                     ->fetchAllAssoc('uri');
+//          dpm($bundles);
           foreach($types as $bundle_uri) {
             if (isset($bundles[$bundle_uri])) {
               $entity = entity_create("wisski_core_entity", array('type' => $bundles[$bundle_uri]->type, 'title' => $entity_title, 'uri' => $id, 'id' => $id));
@@ -131,8 +139,6 @@ class WisskiCoreEntityController extends EntityAPIController {
 //    field_attach_presave('wisski_core_entity', $entity);
 //    field_attach_update('wisski_core_entity', $entity);
   
-    dpm("Save ".$entity->title);
-    dpm($entity);
     if (!property_exists($entity,'title')) {
       dpm("\"title\" does not exist");
       if (!property_exists($entity,'uri')) {
@@ -156,7 +162,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       }
     }
     $inserted_title = "\"wisski_title:".preg_replace('/[:]/u','_',$entity_title)."\"";
-    if (wisski_salz_pb_insert_individual($entity_uri,$bundle_uri,$inserted_title)) dpm("Success");
+    if (!wisski_salz_pb_insert_individual($entity_uri,$bundle_uri,$inserted_title)) trigger_error("Could not save ".$entity->title,E_USER_WARNING);
     field_attach_insert('wisski_core_entity', $entity);
   }
 

@@ -120,9 +120,8 @@ function wisski_core_entity_info() {
 
 function wisski_core_uri_callback($entity) {
 
-//  dpm("Call to wisski_core_entity uri callback");
-//  dpm(func_get_args());
-  $uri = array('path' => 'wisski_core/'.$entity->uri);
+//  dpm("Call to wisski_core_entity uri callback");;
+  $uri = array('path' => 'wisski_core/'.$entity->type.'/'.$entity->uri);
   return $uri;
 }
 
@@ -225,8 +224,8 @@ function wisski_core_menu() {
   /********** Entity Stuff ***************/
 
   // Base URI for dealing with entity.
-  $base_uri = 'wisski_core/%wisski_core';
-  $base_uri_argument_position = 1;
+  $base_uri = 'wisski_core/%wisski_core_bundle/%wisski_core';
+  $base_uri_argument_position = 2;
 
   // URI for viewing list of existing entities.
 
