@@ -18,8 +18,8 @@ class CSVAdapter implements AdapterInterface {
   */
   private $settings = array();
   
-  function __construct($file_name) {
-    
+  function __construct($file_name = "") {
+
 //    ExceptionThrower::Start();
     $this->setSettings('file',$file_name);
     $this->setStandardSettings();
@@ -87,28 +87,50 @@ class CSVAdapter implements AdapterInterface {
   }
   
   public function addSeparators($char) {
-
-    $seps = &$this->settings['separators'];
-    $allowed = $this->settings['allowed chars'];
+    $store_instance_settings = unserialize($this->settings['settings']);   
+   // $seps = &$this->settings['separators'];
+    $seps = &$store_instance_settings['separators'];
+    drupal_set_message("char = " . serialize($char));
+    //drupal_set_message("seps = " . serialize($seps));
+    drupal_set_message("separators = " . serialize($seps));
+    //$allowed = $this->settings['allowed chars'];
+    $allowed = $store_instance_settings['allowed_chars'];
+    drupal_set_message("allowed chars = " . serialize($allowed));
     if (preg_match('/['.$allowed.']/',$char)) {
       trigger_error("Allowed chars and separators must be different",E_USER_WARNING);
-      return;
+      drupal_set_message("A!");
+      return FALSE;
     }
     if (!preg_match('/['.$seps.']/',$char)) {
-      $seps .= $char;
+        $seps .= $char;
+	drupal_set_message("B!");
+	drupal_set_message("seps = " . serialize($seps));
+        return TRUE;
+    } else {
+      drupal_set_message("C!");
+	    return TRUE;
     }
   }
+
   
   public function addAllowedChars($char) {
-  
-    $seps = $this->settings['separators'];
-    $allowed = &$this->settings['allowed chars'];
+    $store_instance_settings = unserialize($this->settings['settings']);   
+    //$seps = $this->settings['separators'];
+    $seps = $store_instance_settings['separators'];
+    $allowed = &$store_instance_settings['allowed_chars'];
     if (preg_match('/['.$seps.']/',$char)) {
       trigger_error("Allowed chars and separators must be different",E_USER_WARNING);
-      return;
+      drupal_set_message("X!");
+      return FALSE;
     }
     if (!preg_match('/['.$allowed.']/',$char)) {
-      $allowed .= $char;
+        $allowed .= $char;
+	drupal_set_message("Y!");
+	drupal_set_message("allowed = " . serialize($allowed));
+	return TRUE;
+    } else {
+        drupal_set_message("Z!");
+	return TRUE;
     }
   }
   
@@ -129,30 +151,55 @@ class CSVAdapter implements AdapterInterface {
   }
   
   public function addDelimiters($input) {
-  
+  /*  $store_instance_settings = unserialize($this->settings['settings']);  
     $delimiters = array();
     if (is_array($input)) {
-      if (empty($input)) return;
+      if (empty($input)) trigger_error("Empty input of delimiters!");
+      
       if (count($input) == 1) {
         $delimiters[] = current($input);
         $delimiters[] = $delimiters[0];
       } else $delimiters = array_combine(array(0,1),$input);
     } else {
-      if ($input == '') return;
+      if ($input == '') trigger_error("Empty input of delimiters!");
       $delimiters[] = $input;
       $delimiters[] = $delimiters[0];
+      drupal_set_message("delimiters = " . serialize($delimiters));
     }
-    $del = &$this->settings['delimiters'];
+     //$del = &$this->settings['delimiters'];
+    $del = array();   
+    $del = &$store_instance_settings['delimiters'];
     if (in_array($delimiters,$del)) return;
-    $seps = $this->settings['separators'];
+    //$seps = $this->settings['separators'];
+    $seps = $store_instance_settings['separators'];
     foreach($delimiters as $char) {
       if (preg_match('/['.$seps.']/',$char)) {
         trigger_error("String delimiters and separators must be different",E_USER_WARNING);
-        return;
+        return FALSE;
       }
     }
     dpm($delimiters);
-    $del[] = $delimiters;
+   // $del[] = $delimiters;
+    return TRUE;
+    */
+    $store_instance_settings = unserialize($this->settings['settings']);
+    $seps = $store_instance_settings['separators'];
+    $delimiters = &$store_instance_settings['delimiters'];
+    if (preg_match('/['.$seps.']/',$input)) {
+        trigger_error("String delimiters and separators must be different",E_USER_WARNING);
+        drupal_set_message("X!");
+        return FALSE;
+    }
+    if (!preg_match('/['.$delimiters.']/',$input)) {
+        $delimiters .= $input;
+        drupal_set_message("Y!");
+        drupal_set_message("delimiters = " . serialize($delimiters));
+        return TRUE;
+    } else {
+        drupal_set_message("Z!");
+        return TRUE;
+    }
+                                                                                                      
   }
   
   public function importToDB() {

@@ -151,15 +151,7 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
       '#default_value' => ($clean ? 3600 : $settings['update_interval']),
     );
 
-  $form['local_data'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Use this store as local store'),
-      '#default_value' => ($clean ? '' : $instance->local_data),
-      //'#element_validate' => array('sparql11_adapter_wisski_settings_page_validate'),
-      '#element_validate' => array('wisski_salz_settings_page_validate'),
-    );
-
-  $form['submit'] = array(
+   $form['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Save'),
       '#submit' => array('sparql11_adapter_wisski_form_submit'),
@@ -295,7 +287,7 @@ function sparql11_adapter_wisski_form_submit($form, &$form_state, $store_instanc
       'query_endpoint' => $form_state['values']['query_endpoint'],
       'update_endpoint' => $form_state['values']['update_endpoint'],
       'update_interval' => $form_state['values']['update_interval'],
-      'local_data' => $form_state['values']['local_data'],
+     // 'local_data' => $form_state['values']['local_data'],
     );
     sparql11_adapter_db_insert_settings($settings);
     drupal_set_message("Saved settings.");
@@ -318,7 +310,7 @@ else {
       'query_endpoint' => $form_state['values']['query_endpoint'],
       'update_endpoint' => $form_state['values']['update_endpoint'],
       'update_interval' => $form_state['values']['update_interval'],
-      'local_data' => $form_state['values']['local_data'],
+      //'local_data' => $form_state['values']['local_data'],
     );
     sparql11_adapter_db_insert_settings($settings,FALSE);
   }
@@ -329,13 +321,13 @@ function sparql11_adapter_db_insert_settings($settings,$clean = TRUE) {
     $new_settings = array();
 
     if ($clean) {
-        foreach(array('name', 'label', 'local_data') as $key) {	  
+        foreach(array('name', 'label') as $key) {	  
 	    $new_settings[$key] = $settings[$key];
 	    //unset($new_settings[$key]);
 	    unset($settings[$key]);
         }
     } else {
-        foreach(array('name', 'label', 'local_data', 'old_name') as $key) {	  
+        foreach(array('name', 'label', 'old_name') as $key) {	  
 	    $new_settings[$key] = $settings[$key];
 	    unset($settings[$key]);
          }

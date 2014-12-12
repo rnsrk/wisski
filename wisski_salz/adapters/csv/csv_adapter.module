@@ -71,7 +71,8 @@ function csv_adapter_wisski_get_store_type(){
 
 function csv_adapter_invoke_instance($name){
 	$store_instance = new CSVAdapter();
-	$settings = db_select('wisski_salz_instances', 'ins')
+//	$store_instance = new CSVAdapter('file', $file);
+	$settings = db_select('wisski_salz_store_instances', 'ins')
 		->fields('ins')
 		->condition('name', $name, 'LIKE')
 		->execute()->fetchAssoc();
@@ -105,13 +106,13 @@ function _csv_adapter_get_db_key(){
 function csv_adapter_db_insert_settings($settings, $clean = TRUE){
 	$new_settings = array();
 	if ($clean){
-		foreach(array('name', 'label', 'local_data') as $key){
+		foreach(array('name', 'label') as $key){
 			$new_settings[$key] = $settings[$key];
 			unset($settings[$key]);
 		
 		}
 	} else {
-	       foreach(array('name', 'label', 'local_data', 'old_name') as $key){
+	       foreach(array('name', 'label', 'old_name') as $key){
 			$new_settings[$key] = $settings[$key];
 			unset($settings[$key]);
 		}
@@ -163,7 +164,8 @@ function csv_adapter_settings_page($store_instance_name = "", $clean){
         '#type' => 'textfield',
 	'#title' => t('Separators'),
 	'#default_value' => ($clean ? '' : $settings['separators']),
-        '#description' => t('A group of characters that are separating the entries of the file.'),	
+	'#description' => t('A group of characters that are separating the entries of the file.'),
+        '#element_validate' => array('csv_adapter_separators_form_validate'),
     );
     
      $form['allowed_chars'] = array(
@@ -171,6 +173,7 @@ function csv_adapter_settings_page($store_instance_name = "", $clean){
 	'#title' => t('Allowed Chars'),
 	'#default_value' => ($clean ? '' : $settings['allowed_chars']),
         '#description' => t('A group of allowed characters.'),	
+        '#element_validate' => array('csv_adapter_allowed_chars_form_validate'),
     );
     
     $form['delimiters'] = array(
@@ -178,6 +181,7 @@ function csv_adapter_settings_page($store_instance_name = "", $clean){
 	'#title' => t('Delimiters'),
 	'#default_value' => ($clean ? '' : $settings['delimiters']),
         '#description' => t('Pairs of surrounding delimiters of strings.'),	
+        '#element_validate' => array('csv_adapter_delimiters_form_validate'),
     );
     
     $form['name_key'] = array(
@@ -194,14 +198,14 @@ function csv_adapter_settings_page($store_instance_name = "", $clean){
        // '#description' => t('Checked if the file contains a headline.'),	
     );
 
-    $form['local_data'] = array(
+  /*  $form['local_data'] = array(
         '#type' => 'checkbox',
 	'#title' => t('Use this store as local store'),
 	'#default_value' => ($clean ? '' : $instance->local_data),
        // '#description' => t('Checked if the file contains a headline.'),	
         '#element_validate' => array('wisski_salz_settings_page_validate'),
     );
-   
+   */
     $form['submit'] = array(
 	    '#type' => 'submit',
 	    '#value' => t('Save'),
@@ -234,7 +238,7 @@ function csv_adapter_form_submit($form, &$form_state, $store_instance = NULL){
 	    'delimiters' => $form_state['values']['delimiters'],
 	    'headline' => $form_state['values']['headline'],
 	    'name_key' => $form_state['values']['name_key'],
-	    'local_data' => $form_state['values']['local_data'],
+//	    'local_data' => $form_state['values']['local_data'],
         );
         csv_adapter_db_insert_settings($settings);
         drupal_set_message("Saved settings.");
@@ -258,7 +262,7 @@ function csv_adapter_form_submit($form, &$form_state, $store_instance = NULL){
 		    'delimiters' => $form_state['values']['delimiters'],
 		    'headline' => $form_state['values']['headline'],
 		    'name_key' => $form_state['values']['name_key'],
-		    'local_data' => $form_state['values']['local_data'],
+//		    'local_data' => $form_state['values']['local_data'],
 	    );
 	    csv_adapter_db_insert_settings($settings, FALSE);
     }
@@ -273,9 +277,40 @@ function csv_adapter_edit_form($form, &$form_state){
     return csv_adapter_settings_page(arg(6), FALSE);
 }
 
-/*function csv_adapter_test() {
+function csv_adapter_separators_form_validate($element, $form, &$form_state){
+    $char = $element['#value'];
+   // $file_name = $form_state['values']['file_path'];
+    $store_instance = csv_adapter_invoke_instance(arg(6));
+    drupal_set_message("store_instance = " . serialize($store_instance));
+    if($store_instance->addSeparators($char)==FALSE){
+        form_set_error('separators', t('Allowed chars and separators must be different!'));
+    }
+}
+
+function csv_adapter_allowed_chars_form_validate($element, $form, &$form_state){
+    $char = $element['#value'];
+    $store_instance = csv_adapter_invoke_instance(arg(6));
+    drupal_set_message("store_instance = " . serialize($store_instance));
+    if($store_instance->addAllowedChars($char)==FALSE){
+        form_set_error('allowed_chars', t('Allowed chars and separators must be different!'));
+    }
+}
+
+function csv_adapter_delimiters_form_validate($element, $form, &$form_state){
+    $input = $element['#value'];
+    $store_instance = csv_adapter_invoke_instance(arg(6));
+    drupal_set_message("store_instance in delimiters = " . serialize($store_instance));
+    if($store_instance->addDelimiters($input)==FALSE){
+        form_set_error('delimiters', t('String delimiters and separators must be different!'));
+    }
+    
+}
+
+
+function csv_adapter_test() {
     
   $adapter = new CSVAdapter('file','sites/all/modules/wisski/wisski_salz/adapters/csv/testfile.txt');
-  
-}*/
+  dpm($adapter); 
+}
+
 
