@@ -108,6 +108,13 @@ function wisski_core_entity_edit_wisski_core_bundle_2_form($form, &$form_state, 
  *   Entity edit form.
  */
 function wisski_core_entity_form($form, &$form_state, $entity) {
+  
+  //ensure that $entity is actually an entity
+  if (is_array($entity)) {
+    if (count($entity) == 1) $entity = current($entity);
+    else throw new InvalidArgumentException("\$entity must be a drupal entity");
+  }
+  
   // Store the entity in the form.
   $form_state['wisski_core'] = $entity;
 

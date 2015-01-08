@@ -90,31 +90,37 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
         $individual = $entity->uri;
         $info = array();
         $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
+        dpm((array)$wrapper);
         foreach($instances as $instance) {
           $result = db_select('wisski_pb_fielddata','con')
                       ->fields('con')
                       ->condition('instance_id',$instance['id'],'=')
                       ->execute()
                       ->fetchAssoc();
-          $path = $path_info[$result['path_id']];
-          $starting_concept = $path->starting_concept;
-          $full_path = array();
-          do {
-            $full_path = array_merge($full_path,unserialize($path->path_array));
-            $data = $path->datatype_property;
-          } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
+          if ($path = $path_info[$result['path_id']]) {
+            $starting_concept = $path->starting_concept;
+            $full_path = array();
+            do {
+              $full_path = array_merge($full_path,unserialize($path->path_array));
+              $data = $path->datatype_property;
+            } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
 //          dpm($full_path);
-          $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
-          if (!empty($info)) {
-            $is_list = 'list' == substr($wrapper->$instance['field_name']->type(),0,4);
-            if ($is_list)
-              $wrapper->$instance['field_name']->set($info);
-            else
-              $wrapper->$instance['field_name']->set(current($info));
+            $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
+            if (!empty($info)) {
+              $is_list = 'list' == substr($wrapper->$instance['field_name']->type(),0,4);
+              if ($is_list)
+                $wrapper->$instance['field_name']->set($info);
+              else
+                $wrapper->$instance['field_name']->set(current($info));
+            }
+            $skip_fields[$instance['field_id']] = $entity->id;
           }
-          $skip_fields[$instance['field_id']] = $entity->id;
         }//END foreach $instances
-        $wrapper->save();
+// --!-- $wrapper->save() takes very long, try to avoid that!
+//edit: seemingly we don't need this for loading purposes
+//        wisski_core_tick('wrapper_save_begin');
+//        $wrapper->save();
+//        wisski_core_tick('wrapper_save_end');
       }//END foreach $entities
     }
     $wisski_semaphore = FALSE;
