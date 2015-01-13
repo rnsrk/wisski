@@ -449,3 +449,26 @@ function wisski_core_pathbuilder_form_submit(&$form, &$form_state) {
     //$form_state['values']['pb_path'] = 'ecrm_e18_physical_thing';	
     $form_state['redirect'] = 'admin/structure/wisski_core_bundle/' . $form_state['wisski_core_bundle']->type . '/paths';
 }
+
+function wisski_core_entity_display($form,&$form_state) {
+  
+  $form['max_entites_per_page'] = array(
+    '#type' => 'textfield',
+    '#default_value' => variable_get('wisski_max_entities_per_page',20),
+    '#description' => t('Maximum number of entities that are shown per listing page'),
+  );
+
+  // Add some buttons.
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Set'),
+    '#weight' => 40,
+  );
+  return $form;
+}
+
+function wisski_core_entity_display_submit($form,&$form_state) {
+
+  variable_set('wisski_max_entities_per_page',(int)$form_state['values']['max_entites_per_page']);
+}

@@ -66,7 +66,6 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
 //  dpm("call to hook_field_storage_pre_load for ".$entity_type);
 //  dpm(func_get_args());
   if($entity_type == 'wisski_core_entity') {
-    dpm($queried_entities);
 //    dpm($queried_entities);
     $wisski_semaphore = &drupal_static(__FUNCTION__);
     if (isset($wisski_semaphore) && $wisski_semaphore) {
@@ -90,14 +89,14 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
         $individual = $entity->uri;
         $info = array();
         $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
-        dpm((array)$wrapper);
+//        dpm((array)$wrapper);
         foreach($instances as $instance) {
           $result = db_select('wisski_pb_fielddata','con')
                       ->fields('con')
                       ->condition('instance_id',$instance['id'],'=')
                       ->execute()
                       ->fetchAssoc();
-          if ($path = $path_info[$result['path_id']]) {
+          if (isset($result['path_id']) && $path = $path_info[$result['path_id']]) {
             $starting_concept = $path->starting_concept;
             $full_path = array();
             do {

@@ -273,8 +273,6 @@ function wisski_core_menu() {
       'type' => MENU_LOCAL_TASK,
     );
     
-    
-  
     $items['wisski/navigate/'.$bundle_name."/list"] = array(
       'title' => 'List',
       'page callback' => 'wisski_core_list',
@@ -389,6 +387,17 @@ function wisski_core_menu() {
   );
 
 
+  $items['admin/config/wisski/wisski_core_entities'] = array(
+    'title' => 'WissKI entities',
+    'description' => 'Specify entity display configurations',
+    'type' => MENU_NORMAL_ITEM,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_entity_display'),
+    'file' => 'wisski_core.admin.inc',
+    'access arguments' => array('administer wisski'),
+  );
+  
   $items['admin/config/wisski'] = array(
     'title' => 'WissKI',
     'type' => MENU_NORMAL_ITEM,

@@ -320,6 +320,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         $data = explode('^^',preg_replace('/[\"\']/','',$data));
         $out[] = $data[0];
       }
+      dpm($out);
       return $out;
     }
     return FALSE;

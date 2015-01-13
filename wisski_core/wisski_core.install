@@ -27,11 +27,13 @@ function wisski_core_install() {
   }
 */
   variable_set('field_storage_default','wisski_core_swips');
+  variable_set('wisski_max_entities_per_page',42);
 }
 
 function wisski_core_uninstall() {
   
   if (variable_get('field_storage_dafault') == 'wisski_core_swips') variable_del('field_storage_default');
+  variable_del('wisski_max_entities_per_page');
 }
 
 function wisski_core_schema() {
