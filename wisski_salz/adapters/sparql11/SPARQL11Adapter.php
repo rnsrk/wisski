@@ -60,13 +60,16 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
             $client->setMethod('POST');
             $client->setUri($this->settings['update_endpoint']);
 //Begin Dorian
-            $encodedQuery = 'update='.urlencode($prefixes . $query);
+/*            $encodedQuery = 'update='.urlencode($prefixes . $query);
             $client->setRawData($encodedQuery);
             $client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
+ */	    
 //End Dorian
 
-//Begin Old            $client->setRawData($prefixes . $query);
-//End Old            $client->setHeaders('Content-Type', /*'application/sparql-update'*/'application/x-www-form-urlencoded');
+	    //Begin Old            
+	    $client->setRawData($prefixes . $query);
+	    //End Old            
+	    $client->setHeaders('Content-Type', /*'application/sparql-update'*/'application/x-www-form-urlencoded');
             
         } elseif ($type == 'query') {
             // Use GET if the query is less than 2kB
@@ -105,6 +108,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         }
     }
   
+
   /*
   public function __construct($settings_input) {
     $this->settings = $settings_input;
@@ -147,7 +151,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
       $this->addOntologies();
     }
-/*
+
     $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');  
     $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
     $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
@@ -158,7 +162,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
     $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
     $this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
-  */
+ 
   }
 
   public function getSettings($name = NULL) {
@@ -1029,8 +1033,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     trigger_error("Rest of Setup took ".$this->makeTimeString($then-$now),E_USER_NOTICE);
     if (!empty($errors)) {
       $out = '';
-      foreach($errors as $err) $out .= $err."<br>";
-      trigger_error('There were exceptions during the setup: '.$out,E_USER_ERROR);
+      foreach($errors as $err) $out .= serialize($err)."<br>";
+        trigger_error('There were exceptions during the setup: '.$out,E_USER_ERROR);
     }
   }
 
