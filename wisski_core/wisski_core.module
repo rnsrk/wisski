@@ -273,8 +273,6 @@ function wisski_core_menu() {
       'type' => MENU_LOCAL_TASK,
     );
     
-    
-  
     $items['wisski/navigate/'.$bundle_name."/list"] = array(
       'title' => 'List',
       'page callback' => 'wisski_core_list',
@@ -291,7 +289,7 @@ function wisski_core_menu() {
       'page arguments' => array(2),
       'access arguments' => array('view wisski content'),
       'file' => 'wisski_core.pages.inc',
-      //'type' => MENU_NORMAL_ITEM,
+      'type' => MENU_SUGGESTED_ITEM,
     );
 
   }
@@ -315,6 +313,7 @@ function wisski_core_menu() {
       'page arguments' => array(2),
       'access arguments' => array('administer wisski'),
       'file' => 'wisski_core.admin.inc',
+      'type' => MENU_SUGGESTED_ITEM,
     );
   }
 
@@ -388,6 +387,17 @@ function wisski_core_menu() {
   );
 
 
+  $items['admin/config/wisski/wisski_core_entities'] = array(
+    'title' => 'WissKI entities',
+    'description' => 'Specify entity display configurations',
+    'type' => MENU_NORMAL_ITEM,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_entity_display'),
+    'file' => 'wisski_core.admin.inc',
+    'access arguments' => array('administer wisski'),
+  );
+  
   $items['admin/config/wisski'] = array(
     'title' => 'WissKI',
     'type' => MENU_NORMAL_ITEM,
@@ -492,8 +502,11 @@ function wisski_core_menu() {
  *   An actual entity, or false.
  */
 function wisski_core_load($teid, $reset = FALSE) {
+  $entities = &drupal_static(__FUNCTION__);
+  if (isset($entities)) return $entities;
   $entities = wisski_core_entity_load_multiple(array($teid), array(), $reset);
-  return reset($entities);
+  if ($entities && $reset) return reset($entities);
+  return $entities?:array();
 }
 
 /**
@@ -1037,7 +1050,6 @@ function wisski_core_pathbuilder_add_field($form, &$form_state) {
     global $menu_admin;
 
     $form = _wisski_core_pathbuilder_make_form($type);
-
 
     $form['#menu'] =  $menu;
 

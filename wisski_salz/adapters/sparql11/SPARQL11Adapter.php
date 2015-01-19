@@ -324,6 +324,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         $data = explode('^^',preg_replace('/[\"\']/','',$data));
         $out[] = $data[0];
       }
+      dpm($out);
       return $out;
     }
     return FALSE;
@@ -1033,8 +1034,10 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     trigger_error("Rest of Setup took ".$this->makeTimeString($then-$now),E_USER_NOTICE);
     if (!empty($errors)) {
       $out = '';
-      foreach($errors as $err) $out .= serialize($err)."<br>";
-        trigger_error('There were exceptions during the setup: '.$out,E_USER_ERROR);
+      // $err is still an array.
+      foreach($errors as $err) $out .= $err[0] ."<br>";
+      trigger_error('There were exceptions during the setup: '.$out,E_USER_ERROR);
+
     }
   }
 

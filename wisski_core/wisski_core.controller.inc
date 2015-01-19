@@ -37,45 +37,50 @@ class WisskiCoreEntityController extends EntityAPIController {
 //    $query_time = 0.0;
 //    $query_count = &drupal_static('wisski_request_count');
 //    $query_count = 0;
+//    $test_time = 0.0;
 //    $now = microtime();
-    $wisski_load_count = &drupal_static('wisski-load_count');
-    if (!isset($wisski_load_count)) $wisski_load_count = 0;
-    $wisski_load_count++;
-    dpm("loaded $wisski_load_count times");
     $entities = array();
-    $bundle_type = arg(1);
+    $bundle_type = isset($conditions['type']) ? $conditions['type'] : arg(1);
+//    watchdog('wisski_entity_controller_load',serialize($ids));
     // This method takes an array of IDs, but our webservice only supports loading one entity at a time.
     
 #    drupal_set_message(serialize($ids));
 #    drupal_set_message(serialize($conditions));
+    wisski_core_tick('start');
     if(!empty($ids)) {
       foreach ($ids as $id) {
+        wisski_core_tick('ids');
 //        $my_now = microtime();
         $answer = wisski_salz_pb_get_entity_info($id);
-//        $query_time += $this->getMicroseconds($my_now,microtime());
+//        $query_time += wisski_core_getMicroseconds($my_now,microtime());
         if ($answer !== FALSE) {
 //          dpm($answer);
+          wisski_core_tick('entities');
           list($types,$comments) = $answer;
           $entity_title = $id;
+//          $test_now = microtime();
           if ($comments) {
             foreach ($comments as $comment) {
               $split = explode(':',preg_replace('/(^\")|(\"$)/','',$comment));
               if ($split[0] == 'wisski_title' && isset($split[1])) $entity_title = $split[1];
             }
           }
+//          $test_time += wisski_core_getMicroseconds($test_now,microtime());
+          wisski_core_tick('comments');
           $bundles = db_select('wisski_entity_bundles','b')
                     ->fields('b',array('type','uri'))
                     ->condition('type',$bundle_type)
                     ->execute()
                     ->fetchAllAssoc('uri');
 //          dpm($bundles);
+          wisski_core_tick('bundles');
           foreach($types as $bundle_uri) {
             if (isset($bundles[$bundle_uri])) {
               $entity = entity_create("wisski_core_entity", array('type' => $bundles[$bundle_uri]->type, 'title' => $entity_title, 'uri' => $id, 'id' => $id));
               $entity->is_new = FALSE;
               $entities[$id] = $entity;
             }
-          }  
+          }
         } else {
           trigger_error("Problems when loading entity $id",E_USER_ERROR);
         }
@@ -83,10 +88,10 @@ class WisskiCoreEntityController extends EntityAPIController {
     } else {
       $entity_ids = array();
       // load all
-      list(,$bundle_uri) = wisski_core_make_uri("",$conditions["type"],FALSE); 
+      list(,$bundle_uri) = wisski_core_make_uri("",$bundle_type,FALSE); 
 //      $my_now = microtime();
       $inds = wisski_salz_pb_get_bundle_info($bundle_uri);
-//      $query_time += $this->getMicroseconds($my_now,microtime());
+//      $query_time += wisski_core_getMicroseconds($my_now,microtime());
       if ($inds !== FALSE) {
         foreach($inds as $ind_uri => $comments) {
           $entity_title = $ind_uri;
@@ -101,29 +106,24 @@ class WisskiCoreEntityController extends EntityAPIController {
           $entities[$ind_uri] = $entity;
         }
       } else {
+        dpm($bundle_type);
         trigger_error("Problems when loading bundle $bundle_uri",E_USER_ERROR);
       }
     }
+    wisski_core_tick('full run');
     field_attach_load('wisski_core_entity',$entities);
-//    $time = $this->getMicroseconds($now,microtime());
+    wisski_core_tick('field load');
+//    $time = wisski_core_getMicroseconds($now,microtime());
 //    dpm("overall loading time: ".$time);
 //    dpm("Number of queries: ".$query_count);
-//    dpm("query time: ".$query_time);
-//    dpm("Overhead = ".((100 * $time) / $query_time)."%");
+//    dpm("SPARQL query time: ".$query_time);
+//    dpm("test time: ".$test_time);
+//    dpm("Overhead ~ ".(floor((100 * $time - $query_time) / $query_time))." %");
+    dpm(wisski_core_tick(NULL));
     return $entities;
   }
   
-  public function getMicroseconds($start,$end) {
   
-    $st = explode(' ',$start);
-    $nd = explode(' ',$end);
-    $secs = (float) ($nd[1] - $st[1]);
-    $st_mysecs = (float) $st[0];
-    $nd_mysecs = (float) $nd[0];
-    if ($secs) $nd_mysecs += $secs;
-    return $nd_mysecs - $st_mysecs;
-  }
-
     
   public function create(array $values = array()) {
 
@@ -131,6 +131,8 @@ class WisskiCoreEntityController extends EntityAPIController {
       $values['uri'] = wisski_core_make_uri('',$values['type']);
     }
     $values += array('is_new' => TRUE);
+    dpm($values);
+    $cache = cache_clear_all('wisski_cache_'.$values['type'],'cache');
     return (object) $values;
   }
   
@@ -138,7 +140,6 @@ class WisskiCoreEntityController extends EntityAPIController {
   
 //    field_attach_presave('wisski_core_entity', $entity);
 //    field_attach_update('wisski_core_entity', $entity);
-  
     if (!property_exists($entity,'title')) {
       dpm("\"title\" does not exist");
       if (!property_exists($entity,'uri')) {
@@ -263,6 +264,41 @@ class WisskiCoreEntityController extends EntityAPIController {
   }
   */
 }
+
+function wisski_core_tick($key) {
+    
+    static $ticks;
+    static $last_tick;
+    if (!isset($ticks)) {
+      $ticks = &drupal_static('wisski_controller_tick');
+      if (!isset($ticks)) $ticks = array();
+      if ($key && !isset($ticks[$key])) $ticks[$key] = 0.0;
+    }
+    if ($key === NULL) {
+      foreach ($ticks as &$tick) {
+        $tick = round($tick,4,PHP_ROUND_HALF_UP);
+      }
+      return $ticks;
+    }
+    if (!isset($last_tick)) $last_tick = microtime();
+    else {
+      $new_tick = microtime();
+      $ticks[$key] += wisski_core_getMicroseconds($last_tick,$new_tick);
+      $last_tick = $new_tick;
+    }
+  }
+  
+function wisski_core_getMicroseconds($start,$end) {
+  
+    $st = explode(' ',$start);
+    $nd = explode(' ',$end);
+    $secs = (float) ($nd[1] - $st[1]);
+    $st_mysecs = (float) $st[0];
+    $nd_mysecs = (float) $nd[0];
+    if ($secs) $nd_mysecs += $secs;
+    return $nd_mysecs - $st_mysecs;
+  }
+
 /*
 function wisski_core_entity_uri($entity) {
   
@@ -308,8 +344,6 @@ class WisskiCoreBundleController extends EntityAPIControllerExportable {
     variable_set('menu_rebuild_needed', TRUE);
     field_attach_create_bundle('wisski_core_entity',$this);
   }
-  
-  
 }
 
 /**
