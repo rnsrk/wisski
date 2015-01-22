@@ -320,7 +320,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         $data = explode('^^',preg_replace('/[\"\']/','',$data));
         $out[] = $data[0];
       }
-      dpm($out);
+//      dpm($out);
       return $out;
     }
     return FALSE;
@@ -627,6 +627,24 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }
     return FALSE;
   }
+  
+  public function getClassesWithIndCount() {
+        
+    list($ok,$result) = $this->querySPARQL(
+      "SELECT DISTINCT ?class (COUNT(?ind) as ?count)"
+      ." WHERE {?class a owl:Class. ?ind a ?class.}"  
+      ." GROUP BY ?class"
+    ); 
+    if ($ok) {
+      $out = array();
+      foreach ($result as $obj) {
+        $out[$obj->class->dumpValue('text')] = $obj->count->getValue();
+      }
+      return $out;
+    }  
+    return FALSE;
+  }
+                                                                                
   
   public function createEntitiesForBundle($bundle) {
     

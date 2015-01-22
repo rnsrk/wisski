@@ -323,6 +323,11 @@ class WisskiCoreBundle extends Entity {
     parent::__construct($values, 'wisski_core_bundle');
   }
 
+  public function __toString() {
+  
+    return $this->type.": ".$this->label;
+  }
+
   /**
    * Determine if the entity is locked.
    */

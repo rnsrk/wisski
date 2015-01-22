@@ -106,11 +106,17 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
 //          dpm($full_path);
             $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
             if (!empty($info)) {
-              $is_list = 'list' == substr($wrapper->$instance['field_name']->type(),0,4);
-              if ($is_list)
-                $wrapper->$instance['field_name']->set($info);
-              else
-                $wrapper->$instance['field_name']->set(current($info));
+              try {
+                $type = $wrapper->$instance['field_name']->type();
+                if ('list' == substr($type,0,4))
+                  $wrapper->$instance['field_name']->set($info);
+                else
+                  $wrapper->$instance['field_name']->set(current($info));
+              } catch (EntityMetadataWrapperException $e) {
+                trigger_error("EntityMetadataWrapperException ".$e->getMessage(),E_USER_ERROR);
+                dpm($type);
+                dpm($info);
+              }
             }
             $skip_fields[$instance['field_id']] = $entity->id;
           }

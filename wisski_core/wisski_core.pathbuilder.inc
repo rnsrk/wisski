@@ -1,19 +1,13 @@
 <?php
 
+
 function wisski_core_edit_bundle_paths($form,&$form_state,$in_bundle = NULL) {
 
-  if ($in_bundle == NULL && isset($form['bundle'])) $bundle = $form_state['values']['bundle'];
-  else {
-    if ($in_bundle == NULL) throw new InvalidArgumentException("You must specify a bundle to be displayed");
-    if (($in_bundle instanceof WisskiCoreBundle)) {
-      $bundle = $in_bundle; 
-    } elseif (!is_string($in_bundle) || !($bundle = entity_load_single('wisski_core_bundle',$in_bundle))) {
-      throw new InvalidArgumentException("Given parameter $in_bundle is not a bundle or uri");
-    }
-    $form['bundle'] = array(
-      '#type' => 'hidden',
-      '#value' => $bundle,
-    );
+  if (isset($form_state['storage']['bundle'])) {
+    $bundle = $form_state['storage']['bundle'];
+  } else {
+    if ((($in_bundle instanceof WisskiCoreBundle) && $bundle = $in_bundle) || $bundle = entity_load_single('wisski_core_bundle',$in_bundle)) $form_state['storage']['bundle'] = $bundle;
+    else throw new InvalidArgumentException('Given Argument is not a bundle name');
   }
   $old_paths = db_select('wisski_pb_pathdata','paths')
                 ->fields('paths')
@@ -542,4 +536,341 @@ function _wisski_core_extract_paths($array) {
   }
   if ($single) return current($output);
   return $output;
+}
+
+function array_extract_key(array $array, $key) {
+
+  $out = array();
+  foreach ($array as $pos => $subarray) {
+    if (isset($subarray[$key])) $out[$pos] = $subarray[$key];
+  }
+  return $out;
+}
+
+function array_compress($array) {
+
+  if (!is_array(current($array))) return;
+  $keys = array_keys(current($array));
+  $out = array();
+  $out['keys'] = $keys;
+  $out['data'] = array();
+  foreach ($array as $pos => $info) {
+    $out['data'][$pos] = array();
+    foreach ($keys as $index => $key) {
+      $out['data'][$pos][$index] = $info[$key];
+    }
+  }
+  return $out;
+}
+
+function array_expand($array) {
+  
+  $keys = $array['keys'];
+  $out = array();
+  foreach ($array['data'] as $pos => $data) {
+    foreach ($keys as $index => $key) {
+      $out[$pos][$key] = $array['data'][$pos][$index];
+    }
+  }
+  return $out;
+}
+
+function wisski_core_short_titles_form($form,&$form_state,$in_bundle = NULL) {
+
+  if (isset($form_state['storage']['bundle'])) {
+    $bundle = $form_state['storage']['bundle'];
+  } else {
+    if ((($in_bundle instanceof WisskiCoreBundle) && $bundle = $in_bundle) || 
+      ($bundle = entity_load_single('wisski_core_bundle',$in_bundle))) $form_state['storage']['bundle'] = $bundle;
+    else {
+      throw new InvalidArgumentException('Given Argument is not a bundle name');
+    }
+  }
+    
+  $result = db_select('wisski_entity_bundles','bund')
+              ->fields('bund',array('type','uri','short_title_pattern'))
+              ->condition('uri',$bundle->uri)
+              ->execute()
+              ->fetchAssoc();
+
+  if (isset($result['short_title_pattern'])) {
+    $title_order = unserialize($result['short_title_pattern']);
+  } 
+  if (isset($title_order)) {
+    $title_order = array_expand($title_order);
+    $i = 0;
+    foreach (field_info_instances('wisski_core_entity',$bundle->type) as $field_info) {
+      $in = FALSE;
+      foreach ($title_order as &$info) {
+        if ($info['id'] === $field_info['id']) {
+          $info['name'] = $field_info['label'];
+          $info['use'] = TRUE;
+          $in = TRUE;
+          $i++;
+        }
+        if (!isset($info['single'])) {
+          $field = field_info_field($field_info['field_name']);
+          $info['single'] = $field['cardinality'] === '1';
+        }
+        if (!isset($info['number'])) {
+          $info['number'] = $info['single'] ? 1 : -1;
+          $info['delimiter'] = $info['single'] ? '' : ', ';
+        }
+      }
+      if (!$in) {
+        $title_order[$i] = array(
+          'id' => $field_info['id'],
+          'name' => $field_info['label'],
+          'weight' => $i,
+          'prefix' => '',
+          'suffix' => '',
+          'use' => FALSE,
+          'fallback' => '-',
+          'number' => 1,
+          'delimiter' => '',
+        );
+        $i++;
+      }
+    }
+  } else {
+    $title_order = array();
+    $i = 0;
+    foreach (field_info_instances('wisski_core_entity',$bundle->type) as $field_info) {
+      $title_order[$i] = array(
+        'id' => $field_info['id'],
+        'name' => $field_info['label'],
+        'weight' => $i,
+        'prefix' => '',
+        'suffix' => '',
+        'use' => TRUE,
+        'fallback' => '-',
+        'number' => 1,
+        'delimiter' => '',
+      );
+      $i++;
+    }
+  }
+  
+  $form_state['storage']['title_order'] = $title_order;
+  
+  $form['example'] = array(
+    '#type' => 'fieldset',
+    '#tree' => TRUE,
+    '#weight' => -1,
+  );
+  
+  $form['example']['entity'] = array(
+    '#type' => 'fieldset',
+    '#tree' => TRUE,
+    '#title' => t('Fields'),
+  );
+  
+  
+  $example_entity = array();
+  foreach ($title_order as $key => $elem) {
+    if (isset($form_state['input']['example']['entity'][$key])) {
+      $example_entity[$key] = $form_state['input']['example']['entity'][$key];
+    } else {
+      if($elem['single']) {
+        $example_entity[$key] = t(preg_replace('/[^a-zA-Z0-9]/','',substr($elem['name'],0,5)));
+      } else {
+        $example_entity[$key][] = t(preg_replace('/[^a-zA-Z0-9]/','',substr($elem['name'],0,5))).rand(100,999);
+        $example_entity[$key][] = t(preg_replace('/[^a-zA-Z0-9]/','',substr($elem['name'],0,5))).rand(100,999);
+      }
+    }
+    if ($elem['single']) {
+      $form['example']['entity'][$key] = array(
+        '#type' => 'textfield',
+        '#title' => $elem['name'],
+        '#value' => $example_entity[$key],
+      );
+    } else {
+      foreach($example_entity[$key] as $pos => $entry) {
+        $form['example']['entity'][$key][$pos] = array(
+          '#type' => 'textfield',
+          '#title' => $elem['name'],
+          '#value' => $entry,
+        );
+      }
+    }
+  }
+  
+  $example_title = '';
+  foreach ($title_order as $key => $elem) {
+    if ($elem['use']) {
+      $entry = $example_entity[$key];
+      if ($entry) {
+        if (is_array($entry)) {
+          $example_title .= $elem['prefix'].array_shift($entry);
+          $i = 1;
+          while(!empty($entry) && $i < $elem['number']) {
+            $example_title .= $elem['delimiter'].array_shift($entry);
+            $i++;
+          }
+          $example_title .= $elem['suffix'];
+        } else {
+          $example_title .= $elem['prefix'].$entry.$elem['suffix'];
+        }
+      } else {
+        $example_title .= $elem['fallback'];
+      }
+    }
+  }
+
+  $form['example']['#title'] = t('Example Entity: ')."'".$example_title."'";
+  
+  $form['titles'] = array(
+    '#tree' => TRUE,
+  );
+  
+  foreach ($title_order as $item) {
+    
+    if ($item['single']) {
+      $options = array(1 => 1);
+    } else {
+      $options = array(
+        -1 => 'all',
+        1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5,
+      );
+    }
+      
+    $disable = !$item['use'];
+    
+    $form['titles'][$item['id']] = array(
+    
+      
+      'use' => array(
+        '#type' => 'checkbox',
+        '#default_value' => $item['use'],
+      ),
+
+      'prefix' => array(
+        '#type' => 'textfield',
+        '#size' => 10,
+        '#maxlenght' => 8,
+        '#default_value' => $item['prefix'],
+        '#disabled' => $disable,
+      ),
+      
+      'name' => array(
+        '#markup' => check_plain($item['name']),
+      ),
+      
+      'suffix' => array(
+        '#type' => 'textfield',
+        '#size' => 10,
+        '#maxlenght' => 8,
+        '#default_value' => $item['suffix'],
+        '#disabled' => $disable,
+      ),
+
+      'fallback' => array(
+        '#type' => 'textfield',
+        '#size' => 10,
+        '#maxlenght' => 8,
+        '#default_value' => $item['fallback'],
+        '#disabled' => $disable,
+      ),
+      
+      'number' => array(
+        '#type' => 'select',
+        '#options' => $options,
+        '#default_value' => $item['number'],
+        '#disabled' => $disable,
+      ),
+
+      'delimiter' => array(
+        '#type' => 'textfield',
+        '#size' => 10,
+        '#maxlength' => 8,
+        '#default_value' => $item['delimiter'],
+        '#disabled' => $disable,
+      ),
+  
+      'weight' => array(
+        '#type' => 'weight',
+        '#title' => t('Weight'),
+        '#default_value' => $item['weight'],
+        '#delta' => 10,
+        '#title_display' => 'invisible',
+      ),
+    );
+  }
+
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Save Changes'));
+//  dpm($form);
+  return $form;
+}
+
+function wisski_core_short_titles_ajax_callback($form,$form_state) {
+  return $form['example'];
+}
+
+function wisski_core_short_titles_row_callback($form,&$form_state) {
+  $str = preg_replace('/[^\d]/','',$form_state['triggering_element']['#name']);
+  dpm($str);
+  wisski_core_short_titles_form_submit($form,$form_state);
+  return $form['titles'][$str];
+}
+
+function theme_wisski_core_short_titles_form($variables) {
+  $form = $variables['form'];
+
+  $rows = array();
+
+  foreach (element_children($form['titles']) as $id) {
+
+    $form['titles'][$id]['weight']['#attributes']['class'] = array('title-weight');
+
+    $rows[] = array(
+      'data' => array(
+        drupal_render($form['titles'][$id]['use']),
+        drupal_render($form['titles'][$id]['prefix']),
+        drupal_render($form['titles'][$id]['name']),
+        drupal_render($form['titles'][$id]['suffix']),
+        drupal_render($form['titles'][$id]['fallback']),
+        drupal_render($form['titles'][$id]['number']),
+        drupal_render($form['titles'][$id]['delimiter']),
+        drupal_render($form['titles'][$id]['weight']),
+      ),
+      'class' => array('draggable'),
+    );
+  }
+
+  $header = array(t('Use'),t('Prefix'),t('Field'),t('Suffix'),t('Fallback'),t('Maximum Number'),t('Delimiter'), t('Weight'));
+
+  $table_id = 'wisski_core_short_titles_table';
+
+  $output = theme('table', array(
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => array('id' => $table_id),
+  ));
+
+  $output .= drupal_render_children($form);
+
+  drupal_add_tabledrag($table_id, 'order', 'sibling', 'title-weight');
+
+  return $output;
+}
+
+function wisski_core_short_titles_form_submit($form, &$form_state) {
+
+  $new_title_order = array();
+  foreach($form_state['storage']['title_order'] as $values) {
+    if ($form_state['values']['titles'][$values['id']]['use']) {
+      $new_values = $values;
+      foreach($form_state['values']['titles'][$values['id']] as $key => $value) {
+        if ($key !== 'name' && $key !== 'use') $new_values[$key] = $value;
+      }
+      $new_title_order[$new_values['weight']] = $new_values;
+    }
+  }
+  ksort($new_title_order);
+  $bundle = $form_state['storage']['bundle'];
+  db_update('wisski_entity_bundles')
+    ->fields(array('short_title_pattern' => serialize(array_compress($new_title_order))))
+    ->condition('uri',$bundle->uri)
+    ->execute();
 }
