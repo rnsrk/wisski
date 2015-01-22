@@ -1048,7 +1048,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     trigger_error("Rest of Setup took ".$this->makeTimeString($then-$now),E_USER_NOTICE);
     if (!empty($errors)) {
       $out = '';
-      foreach($errors as $err) $out .= $err."<br>";
+      // $err is still an array.
+      foreach($errors as $err) $out .= $err[0] ."<br>";
       trigger_error('There were exceptions during the setup: '.$out,E_USER_ERROR);
     }
   }
