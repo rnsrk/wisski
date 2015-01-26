@@ -30,8 +30,7 @@ function wisski_core_permission() {
       'title' => t('Administer paths and fields for WissKI entities'),
       'restricted access' => TRUE,
     ),
-  );
-  
+  );  
 }
 
 /************************ Entity Section ***********************/
@@ -238,6 +237,17 @@ function wisski_core_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
   
+  $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/short_title'] = array(
+    'title' => 'Edit Short Titles',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_short_titles_form',4),
+    'access arguments' => array('administer wisski paths','administer wisski'),
+    'access callback' => TRUE,
+    'file' => 'wisski_core.pathbuilder.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 3,
+  );
+  
   $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/edit_paths'] = array(
     'title' => 'Edit Paths',
     'page callback' => 'drupal_get_form',
@@ -246,7 +256,7 @@ function wisski_core_menu() {
     'access callback' => TRUE,
     'file' => 'wisski_core.pathbuilder.inc',
     'type' => MENU_LOCAL_TASK,
-    'weight' => 3,
+    'weight' => 4,
   );
     
   $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/field_paths'] = array(
@@ -257,7 +267,7 @@ function wisski_core_menu() {
     'access callback' => TRUE,
     'file' => 'wisski_core.pathbuilder.inc',
     'type' => MENU_LOCAL_TASK,
-    'weight' => 4,
+    'weight' => 5,
   );
   
   $entity_info = entity_get_info('wisski_core_entity');
@@ -808,6 +818,10 @@ function wisski_core_theme() {
   return array(
     'wisski_core_pathbuilder_overview_form' => array(
       'render element' => 'form',
+    ),
+    'wisski_core_short_titles_form' => array(
+      'render element' => 'form',
+      'file' => 'wisski_core.pathbuilder.inc',
     ),
   );
 

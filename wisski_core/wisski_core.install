@@ -382,6 +382,13 @@ function wisski_core_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
+      'short_title_pattern' => array(
+        'description' => 'pattern to build short titles for entities from',
+        'type' => 'blob',
+        'size' => 'big',
+        'not null' => FALSE,
+        'serialize' => TRUE,
+      ),
       'description' => array(
         'description' => 'A brief description of bundle.',
         'type' => 'text',
