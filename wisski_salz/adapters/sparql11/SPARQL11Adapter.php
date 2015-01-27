@@ -152,6 +152,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $this->addOntologies();
     }
 
+    $this->putNamespace('nso',  'http://erlangen-crm.org/120111/');
     $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');  
     $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
     $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
