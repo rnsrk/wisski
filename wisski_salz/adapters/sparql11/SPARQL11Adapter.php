@@ -1075,7 +1075,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }
   }  
 
-  private function addOntologies($iri = NULL) {
+  public function addOntologies($iri = NULL) {
     
     if ($iri != NULL) {
       db_insert('wisski_salz_ontologies')->fields(array('sid' => $this->settings['sid'],'iri' => $iri,'pending' => 1,))->execute(); 
@@ -1119,15 +1119,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       list($ok, $errors) = $this->updateSPARQL("LOAD <$load_iri> INTO GRAPH $tmpgraph");
 
       // get ontology and version uri
-      $query = "SELECT DISTINCT ?ont ?iri ?ver FROM $tmpgraph WHERE { ?ont a owl:Ontology . OPTIONAL { ?ont owl:ontologyIRI ?iri. ?ont owl:versionIRI ?ver . } }";
-      list($ok, $results) = $this->querySPARQL($query);
-
-      if (!$ok) {
-        foreach ($results as $err) {
-          drupal_set_message(t('Error importing ontology %iri from %ont: @e', array('%ont' => $o, '@e' => $err)), 'error');
-        }
-        continue;
-      }
+      $results = $this->getOntologies($tmpgraph);
 
       if (empty($results)) {
         continue;
@@ -1200,6 +1192,24 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $this->loadOntologyInfo();
     }
 
+  }
+  
+  public function getOntologies($graph = NULL) {
+    // get ontology and version uri
+    if(!empty($graph)) {
+      $query = "SELECT DISTINCT ?ont ?iri ?ver FROM $graph WHERE { ?ont a owl:Ontology . OPTIONAL { ?ont owl:ontologyIRI ?iri. ?ont owl:versionIRI ?ver . } }";
+    } else
+      $query = "SELECT DISTINCT ?ont ?iri ?ver ?graph WHERE { GRAPH ?graph { ?ont a owl:Ontology . OPTIONAL { ?ont owl:ontologyIRI ?iri. ?ont owl:versionIRI ?ver . } }}";
+
+    list($ok, $results) = $this->querySPARQL($query);
+    
+    if (!$ok) {
+      foreach ($results as $err) {
+        drupal_set_message(t('Error getting imports of ontology %iri: @e', array('%ont' => $o, '@e' => $err)), 'error');
+      }
+    }
+    
+    return $results;   
   }
 
   public function getExternalLinkURL($uri) {
