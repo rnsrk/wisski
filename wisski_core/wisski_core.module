@@ -79,7 +79,7 @@ function wisski_core_entity_info() {
   //    'uri callback' => 'entity_class_uri',
       'uri callback' => 'wisski_core_uri_callback',
       // This line must be specified for using entity_label() function.
-//      'label callback' => 'entity_class_label',
+      'label callback' => 'wisski_core_label_callback',
       // for obvious reasons
       'module' => 'wisski_core'
     ),
@@ -122,6 +122,20 @@ function wisski_core_uri_callback($entity) {
 //  dpm("Call to wisski_core_entity uri callback");;
   $uri = array('path' => 'wisski_core/'.$entity->type.'/'.$entity->uri);
   return $uri;
+}
+
+function wisski_core_label_callback($entity,$entity_type) {
+
+  wisski_core_set_short_title($entity);
+  return $entity->title;
+}
+
+/**
+ * implements hook_flush_caches to ensure the title cache is flushed correctly
+ */
+function wisski_core_flush_caches() {
+  db_truncate('wisski_entity_title_cache');
+  return array();
 }
 
 /**

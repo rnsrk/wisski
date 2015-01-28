@@ -1,5 +1,9 @@
 <?php
 
+//////////////////////////////////////////////
+// SWIPS - (Field) {S}torage {w}ith {P}ath{s}
+//////////////////////////////////////////////
+
 /**
 * implements @see hook_field_storage_info
 */
@@ -62,7 +66,8 @@ function wisski_core_field_storage_delete_field($field) {
 * implements hook_field_storage_pre_load
 */
 function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $age, $skip_fields, $options) {
-    
+
+  module_load_include('inc','wisski_core','wisski_core.pathbuilder');    
 //  dpm("call to hook_field_storage_pre_load for ".$entity_type);
 //  dpm(func_get_args());
   if($entity_type == 'wisski_core_entity') {
@@ -88,6 +93,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                       ->fetchAllAssoc('uuid');
         $individual = $entity->uri;
         $info = array();
+        $field_info = array();
         $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
 //        dpm((array)$wrapper);
         foreach($instances as $instance) {
@@ -117,16 +123,13 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                 dpm($type);
                 dpm($info);
               }
+              $field_info[$instance['id']] = $info;
             }
             $skip_fields[$instance['field_id']] = $entity->id;
           }
         }//END foreach $instances
-// --!-- $wrapper->save() takes very long, try to avoid that!
-//edit: seemingly we don't need this for loading purposes
-//        wisski_core_tick('wrapper_save_begin');
-//        $wrapper->save();
-//        wisski_core_tick('wrapper_save_end');
-      }//END foreach $entities
+        wisski_core_set_short_title($entity);
+      }//END foreach $queried_entities
     }
     $wisski_semaphore = FALSE;
   } else {
@@ -134,6 +137,36 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
   }
 }
 
+function wisski_core_set_short_title(&$entity) {
+
+  module_load_include('inc','wisski_core','wisski_core.pathbuilder');
+  //check, whether we have the title cached
+  $result = db_select('wisski_entity_title_cache','tit')
+                ->fields('tit')
+                ->condition('uri',$entity->uri)
+                ->execute()
+                ->fetchAssoc();
+  if (!empty($result)) {
+    $entity->title = $result['short_title'];
+    return;
+  }
+//  dpm($entity);
+  //else create the title from the pattern
+  $result = db_select('wisski_entity_bundles','bund')
+              ->fields('bund',array('type','short_title_pattern'))
+              ->condition('type',$entity->type)
+              ->execute()
+              ->fetchAssoc();
+  if (!empty($result)) {
+    //since the entity stores the field info keyed by field id,
+    //we can directly use the entity as field info
+    $pattern = unserialize($result['short_title_pattern']);
+    if ($pattern) $entity->title = wisski_core_make_short_title($entity,array_expand($pattern));  }
+//  dpm($entity);
+  db_insert('wisski_entity_title_cache')
+    ->fields(array('uri' => $entity->uri, 'short_title' => $entity->title))
+    ->execute();
+}
 
 /**
 * implements hook_field_storage_load

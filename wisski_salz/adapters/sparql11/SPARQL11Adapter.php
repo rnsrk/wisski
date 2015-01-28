@@ -455,8 +455,13 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       "SELECT DISTINCT *"
       ."WHERE {"
         ."$property a owl:ObjectProperty. "
-        ."$property (^rdfs:subPropertyOf)*/rdfs:range/rdfs:subClassOf* ?class. "
-        //."$property (^rdfs:subPropertyOf)rdfs:range/rdfs:subClassOf* ?class. "
+        ."$property rdfs:subPropertyOf* ?other. "
+        ."?other rdfs:range/(^rdfs:subClassOf)* ?class. "
+        ."FILTER NOT EXISTS { "
+          ."?other_sub rdfs:subPropertyOf* ?other. "
+          ."$property rdfs:subPropertyOf+ ?other_sub. "
+          ."?other_sub rdfs:range/(^rdfs:subClassOf)* ?class. "
+        ."} "
         ."?class a owl:Class. "
       ."}"
     );
@@ -625,6 +630,13 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       }
       return $out;
     }
+    return FALSE;
+  }
+  
+  public function getIndCount($class_uri) {
+    
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT (COUNT(?ind) AS ?count) WHERE {?ind a $class_uri .}");
+    if ($ok) return current($result)->count->getValue();
     return FALSE;
   }
   
