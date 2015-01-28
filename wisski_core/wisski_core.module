@@ -397,6 +397,18 @@ function wisski_core_menu() {
     'type' => MENU_NORMAL_ITEM,
     'file' => 'wisski_core.admin.inc',
   );
+  
+  /******** Onto Stuff ************/
+  $items['admin/config/wisski/wisski_core_ontology'] = array(
+    'title' => 'WissKI Ontology',
+    'description' => 'Specify/detect the ontology for this system',
+    'type' => MENU_NORMAL_ITEM,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_ontology_overview'),
+    'file' => 'wisski_core.admin.inc',
+    'access arguments' => array('administer wisski'),
+  );
 
   /********* PB Stuff *************/
   $items['admin/config/wisski/pathbuilder'] = array(

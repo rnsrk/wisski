@@ -60,13 +60,16 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
             $client->setMethod('POST');
             $client->setUri($this->settings['update_endpoint']);
 //Begin Dorian
-            $encodedQuery = 'update='.urlencode($prefixes . $query);
+/*            $encodedQuery = 'update='.urlencode($prefixes . $query);
             $client->setRawData($encodedQuery);
             $client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
+ */	    
 //End Dorian
 
-//Begin Old            $client->setRawData($prefixes . $query);
-//End Old            $client->setHeaders('Content-Type', /*'application/sparql-update'*/'application/x-www-form-urlencoded');
+	    //Begin Old            
+	    $client->setRawData($prefixes . $query);
+	    //End Old            
+	    $client->setHeaders('Content-Type', /*'application/sparql-update'*/'application/x-www-form-urlencoded');
             
         } elseif ($type == 'query') {
             // Use GET if the query is less than 2kB
@@ -105,6 +108,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         }
     }
   
+
   /*
   public function __construct($settings_input) {
     $this->settings = $settings_input;
@@ -147,7 +151,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
       $this->addOntologies();
     }
-/*
+
+    $this->putNamespace('nso',  'http://erlangen-crm.org/120111/');
     $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');  
     $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
     $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
@@ -158,7 +163,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
     $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
     $this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
-  */
+ 
   }
 
   public function getSettings($name = NULL) {
@@ -1063,6 +1068,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       // $err is still an array.
       foreach($errors as $err) $out .= $err[0] ."<br>";
       trigger_error('There were exceptions during the setup: '.$out,E_USER_ERROR);
+
     }
   }
 
@@ -1081,7 +1087,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }
   }  
 
-  private function addOntologies($iri = NULL) {
+  public function addOntologies($iri = NULL) {
     
     if ($iri != NULL) {
       db_insert('wisski_salz_ontologies')->fields(array('sid' => $this->settings['sid'],'iri' => $iri,'pending' => 1,))->execute(); 
@@ -1125,15 +1131,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       list($ok, $errors) = $this->updateSPARQL("LOAD <$load_iri> INTO GRAPH $tmpgraph");
 
       // get ontology and version uri
-      $query = "SELECT DISTINCT ?ont ?iri ?ver FROM $tmpgraph WHERE { ?ont a owl:Ontology . OPTIONAL { ?ont owl:ontologyIRI ?iri. ?ont owl:versionIRI ?ver . } }";
-      list($ok, $results) = $this->querySPARQL($query);
-
-      if (!$ok) {
-        foreach ($results as $err) {
-          drupal_set_message(t('Error importing ontology %iri from %ont: @e', array('%ont' => $o, '@e' => $err)), 'error');
-        }
-        continue;
-      }
+      $results = $this->getOntologies($tmpgraph);
 
       if (empty($results)) {
         continue;
@@ -1206,6 +1204,24 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $this->loadOntologyInfo();
     }
 
+  }
+  
+  public function getOntologies($graph = NULL) {
+    // get ontology and version uri
+    if(!empty($graph)) {
+      $query = "SELECT DISTINCT ?ont ?iri ?ver FROM $graph WHERE { ?ont a owl:Ontology . OPTIONAL { ?ont owl:ontologyIRI ?iri. ?ont owl:versionIRI ?ver . } }";
+    } else
+      $query = "SELECT DISTINCT ?ont ?iri ?ver ?graph WHERE { GRAPH ?graph { ?ont a owl:Ontology . OPTIONAL { ?ont owl:ontologyIRI ?iri. ?ont owl:versionIRI ?ver . } }}";
+
+    list($ok, $results) = $this->querySPARQL($query);
+    
+    if (!$ok) {
+      foreach ($results as $err) {
+        drupal_set_message(t('Error getting imports of ontology %iri: @e', array('%ont' => $o, '@e' => $err)), 'error');
+      }
+    }
+    
+    return $results;   
   }
 
   public function getExternalLinkURL($uri) {

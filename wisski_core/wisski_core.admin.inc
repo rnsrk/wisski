@@ -6,6 +6,70 @@
  */
 
 /**
+ * Overview form for ontology handling
+ * 
+ * @return form
+ *   Form for the ontology handling menu
+ * @author Mark Fichtner
+ */
+function wisski_core_ontology_overview() {
+  $form = array();
+
+  $local_store = wisski_salz_invoke_local_store();
+
+  // check if there is a local store    
+  if(empty($local_store)) {
+    // give out a message that there is no local store currently - the user should select one
+    $form['nothing_here'] = array(
+      '#type' => 'item',
+      '#markup' => '<b>No local store is specified currently.</b><br/> Please select a local store <a href="salz">here</a>',
+    );
+
+    // stop here
+    return $form;
+  }
+  
+  // if there is a local store - check if there is an ontology in the store
+  
+  drupal_set_message(serialize($local_store->getType()));
+  
+  if(stristr($local_store->getType(), 'SPARQL') !== FALSE) {
+    $infos = $local_store->getOntologies();
+    
+    // there already is an ontology
+    if(!empty($infos)) {
+      $form['header'] = array(
+        '#type' => 'item',
+        '#markup' => '<b>Currently loaded Ontology:</b><br/>',
+      );
+      
+      drupal_set_message(serialize($infos));
+      
+      $table = "<table><tr><th>Name</th><th>Iri</th><th>Version</th><th>Graph</th></tr>";
+      foreach($infos as $ont) {
+        $table .= "<tr><td>" . $ont->ont . "</td><td>" . $ont->iri . "</td><td>" . $ont->ver . "</td><td>" . $ont->graph . "</td></tr>";
+      }
+      $table .= "</table>";
+      
+      
+      $form['table'] = array(
+        '#type' => 'item',
+        '#markup' => $table,
+      );
+      
+      $form['delete_ont'] = array(
+        '#type' => 'button',
+        '#name' => 'Delete Ontology',
+        '#value' => 'Delete Ontology',
+      );
+    }
+    
+  }
+  
+  return $form; 
+}
+
+/**
  * Choose bundle of entity to add.
  * 
  * @return array
