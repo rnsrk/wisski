@@ -31,19 +31,15 @@ function wisski_core_ontology_overview() {
   
   // if there is a local store - check if there is an ontology in the store
   
-  drupal_set_message(serialize($local_store->getType()));
-  
   if(stristr($local_store->getType(), 'SPARQL') !== FALSE) {
     $infos = $local_store->getOntologies();
     
     // there already is an ontology
-    if(!empty($infos)) {
+    if(!empty($infos) && count($infos) > 0 ) {
       $form['header'] = array(
         '#type' => 'item',
         '#markup' => '<b>Currently loaded Ontology:</b><br/>',
       );
-      
-      drupal_set_message(serialize($infos));
       
       $table = "<table><tr><th>Name</th><th>Iri</th><th>Version</th><th>Graph</th></tr>";
       foreach($infos as $ont) {
@@ -58,16 +54,82 @@ function wisski_core_ontology_overview() {
       );
       
       $form['delete_ont'] = array(
-        '#type' => 'button',
+        '#type' => 'submit',
         '#name' => 'Delete Ontology',
         '#value' => 'Delete Ontology',
+        '#submit' => array('wisski_core_delete_ontology'),
       );
-    }
+    } else {
+    // No ontology was found
     
+      $form['load_onto'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Load Ontology:',
+        '#description' => 'Please give the URL to a loadable ontology.',
+      );
+    
+      $form['delete_ont'] = array(
+        '#type' => 'submit',
+        '#name' => 'Load Ontology',
+        '#value' => 'Load Ontology',
+        '#submit' => array('wisski_core_load_ontology'),
+      );
+    
+    }
   }
   
   return $form; 
 }
+
+function wisski_core_load_ontology($form, $form_state) {
+  $local_store = wisski_salz_invoke_local_store();
+
+  // check if there is a local store    
+  if(empty($local_store)) {
+    return;
+  }
+  
+  // if there is a local store - check if there is an ontology in the store
+  if(stristr($local_store->getType(), 'SPARQL') !== FALSE) {
+    $local_store->addOntologies($form_state['values']['load_onto']);
+  }
+  
+  return; 
+  
+
+}
+
+function wisski_core_delete_ontology() {
+
+  $local_store = wisski_salz_invoke_local_store();
+
+  // check if there is a local store    
+  if(empty($local_store)) {
+    return;
+  }
+  
+  // if there is a local store - check if there is an ontology in the store
+  
+  if(stristr($local_store->getType(), 'SPARQL') !== FALSE) {
+    $infos = $local_store->getOntologies();
+    
+    // there already is an ontology
+    if(!empty($infos)) {
+      foreach($infos as $ont) {
+        if(strval($ont->graph) != "default") 
+          $local_store->deleteOntology(strval($ont->graph));
+        else
+          $local_store->deleteOntology(strval($ont->ont), 'no-graph');
+      }
+    }
+    
+  }
+  
+  return; 
+}
+
+
+
 
 /**
  * Choose bundle of entity to add.
