@@ -360,6 +360,27 @@ function wisski_core_schema() {
     ),
   );
 
+  $schema['wisski_entity_title_cache'] = array(
+    'description' => 'Stores short tiltes for entities',
+    'fields' => array(
+      'uri' => array(
+        'description' => 'entity URI',
+        'type' => 'varchar',
+        'length' => 255,
+//        'not null' => TRUE,
+      ),
+      'short_title' => array(
+        'description' => 'the entity\'s short title',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+    ),
+    'unique keys' => array(
+      'uri' => array('uri'),
+    ),
+  );
+
   // Table for storing data of entity exportable bundles.
   $schema['wisski_entity_bundles'] = array(
     'description' => 'The base table for bundles of wisski entities',

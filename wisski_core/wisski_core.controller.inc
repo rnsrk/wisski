@@ -23,6 +23,7 @@ class WisskiCoreEntity extends Entity {
    * Specify the default uri, which is picked up by uri() by default.
    */
   protected function defaultUri() {
+    dpm($this);
     return array('path' => 'wisski_core/' . $this->identifier());
   }
 }
@@ -47,28 +48,16 @@ class WisskiCoreEntityController extends EntityAPIController {
 #    drupal_set_message(serialize($ids));
 #    drupal_set_message(serialize($conditions));
     wisski_core_tick('start');
+    $error = FALSE;
     if(!empty($ids)) {
       foreach ($ids as $id) {
         wisski_core_tick('ids');
-//        $my_now = microtime();
-        $answer = wisski_salz_pb_get_entity_info($id);
-//        $query_time += wisski_core_getMicroseconds($my_now,microtime());
-        if ($answer !== FALSE) {
-//          dpm($answer);
+        $types = wisski_salz_pb_get_entity_info($id);
+        if ($types !== FALSE) {
           wisski_core_tick('entities');
-          list($types,$comments) = $answer;
           $entity_title = $id;
-//          $test_now = microtime();
-          if ($comments) {
-            foreach ($comments as $comment) {
-              $split = explode(':',preg_replace('/(^\")|(\"$)/','',$comment));
-              if ($split[0] == 'wisski_title' && isset($split[1])) $entity_title = $split[1];
-            }
-          }
-//          $test_time += wisski_core_getMicroseconds($test_now,microtime());
-          wisski_core_tick('comments');
           $bundles = db_select('wisski_entity_bundles','b')
-                    ->fields('b',array('type','uri'))
+                    ->fields('b',array('type','uri','short_title_pattern'))
                     ->condition('type',$bundle_type)
                     ->execute()
                     ->fetchAllAssoc('uri');
@@ -76,31 +65,28 @@ class WisskiCoreEntityController extends EntityAPIController {
           wisski_core_tick('bundles');
           foreach($types as $bundle_uri) {
             if (isset($bundles[$bundle_uri])) {
-              $entity = entity_create("wisski_core_entity", array('type' => $bundles[$bundle_uri]->type, 'title' => $entity_title, 'uri' => $id, 'id' => $id));
+              $bundle = $bundles[$bundle_uri];
+              //TODO make short title
+              $entity = entity_create("wisski_core_entity", array('type' => $bundle->type, 'title' => $entity_title, 'uri' => $id, 'id' => $id));
               $entity->is_new = FALSE;
               $entities[$id] = $entity;
             }
           }
         } else {
-          trigger_error("Problems when loading entity $id",E_USER_ERROR);
+//          ddebug_backtrace();
+//          trigger_error("Problems when loading entity $id",E_USER_ERROR);
+          $error = TRUE;
         }
       } 
     } else {
       $entity_ids = array();
       // load all
       list(,$bundle_uri) = wisski_core_make_uri("",$bundle_type,FALSE); 
-//      $my_now = microtime();
       $inds = wisski_salz_pb_get_bundle_info($bundle_uri);
-//      $query_time += wisski_core_getMicroseconds($my_now,microtime());
       if ($inds !== FALSE) {
-        foreach($inds as $ind_uri => $comments) {
+        foreach($inds as $ind_uri) {
           $entity_title = $ind_uri;
-          if ($comments) {
-            foreach ($comments as $comment) {
-              $split = explode(':',preg_replace('/(^\")|(\"$)/','',$comment));
-              if ($split[0] == 'wisski_title' && isset($split[1])) $entity_title = $split[1];
-            }
-          }
+          //TODO make short titles
           $entity = entity_create("wisski_core_entity", array('type' => $conditions["type"], 'title' => $entity_title, 'uri' => $ind_uri, 'id' => $ind_uri));
           $entity->is_new = FALSE;
           $entities[$ind_uri] = $entity;
@@ -113,13 +99,8 @@ class WisskiCoreEntityController extends EntityAPIController {
     wisski_core_tick('full run');
     field_attach_load('wisski_core_entity',$entities);
     wisski_core_tick('field load');
-//    $time = wisski_core_getMicroseconds($now,microtime());
-//    dpm("overall loading time: ".$time);
-//    dpm("Number of queries: ".$query_count);
-//    dpm("SPARQL query time: ".$query_time);
-//    dpm("test time: ".$test_time);
-//    dpm("Overhead ~ ".(floor((100 * $time - $query_time) / $query_time))." %");
     dpm(wisski_core_tick(NULL));
+    if ($error) dpm($ids);
     return $entities;
   }
   
@@ -131,7 +112,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       $values['uri'] = wisski_core_make_uri('',$values['type']);
     }
     $values += array('is_new' => TRUE);
-    dpm($values);
+//    dpm($values);
     $cache = cache_clear_all('wisski_cache_'.$values['type'],'cache');
     return (object) $values;
   }

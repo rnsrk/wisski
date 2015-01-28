@@ -535,4 +535,5 @@ function wisski_core_entity_display($form,&$form_state) {
 function wisski_core_entity_display_submit($form,&$form_state) {
 
   variable_set('wisski_max_entities_per_page',(int)$form_state['values']['max_entites_per_page']);
+  drupal_flush_all_caches();
 }

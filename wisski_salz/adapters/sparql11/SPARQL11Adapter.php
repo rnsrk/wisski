@@ -60,13 +60,16 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
             $client->setMethod('POST');
             $client->setUri($this->settings['update_endpoint']);
 //Begin Dorian
-            $encodedQuery = 'update='.urlencode($prefixes . $query);
+/*            $encodedQuery = 'update='.urlencode($prefixes . $query);
             $client->setRawData($encodedQuery);
             $client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
+ */	    
 //End Dorian
 
-//Begin Old            $client->setRawData($prefixes . $query);
-//End Old            $client->setHeaders('Content-Type', /*'application/sparql-update'*/'application/x-www-form-urlencoded');
+	    //Begin Old            
+	    $client->setRawData($prefixes . $query);
+	    //End Old            
+	    $client->setHeaders('Content-Type', /*'application/sparql-update'*/'application/x-www-form-urlencoded');
             
         } elseif ($type == 'query') {
             // Use GET if the query is less than 2kB
@@ -105,6 +108,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         }
     }
   
+
   /*
   public function __construct($settings_input) {
     $this->settings = $settings_input;
@@ -147,7 +151,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
       $this->addOntologies();
     }
-/*
+
+    $this->putNamespace('nso',  'http://erlangen-crm.org/120111/');
     $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');  
     $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
     $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
@@ -158,7 +163,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
     $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
     $this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
-  */
+ 
   }
 
   public function getSettings($name = NULL) {
@@ -455,8 +460,13 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       "SELECT DISTINCT *"
       ."WHERE {"
         ."$property a owl:ObjectProperty. "
-        ."$property (^rdfs:subPropertyOf)*/rdfs:range/rdfs:subClassOf* ?class. "
-        //."$property (^rdfs:subPropertyOf)rdfs:range/rdfs:subClassOf* ?class. "
+        ."$property rdfs:subPropertyOf* ?other. "
+        ."?other rdfs:range/(^rdfs:subClassOf)* ?class. "
+        ."FILTER NOT EXISTS { "
+          ."?other_sub rdfs:subPropertyOf* ?other. "
+          ."$property rdfs:subPropertyOf+ ?other_sub. "
+          ."?other_sub rdfs:range/(^rdfs:subClassOf)* ?class. "
+        ."} "
         ."?class a owl:Class. "
       ."}"
     );
@@ -625,6 +635,13 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       }
       return $out;
     }
+    return FALSE;
+  }
+  
+  public function getIndCount($class_uri) {
+    
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT (COUNT(?ind) AS ?count) WHERE {?ind a $class_uri .}");
+    if ($ok) return current($result)->count->getValue();
     return FALSE;
   }
   
@@ -1051,6 +1068,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       // $err is still an array.
       foreach($errors as $err) $out .= $err[0] ."<br>";
       trigger_error('There were exceptions during the setup: '.$out,E_USER_ERROR);
+
     }
   }
 
