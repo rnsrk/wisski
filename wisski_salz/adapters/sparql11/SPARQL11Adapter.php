@@ -60,17 +60,17 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
             $client->setMethod('POST');
             $client->setUri($this->settings['update_endpoint']);
 //Begin Dorian
-/*            $encodedQuery = 'update='.urlencode($prefixes . $query);
+            $encodedQuery = 'update='.urlencode($prefixes . $query);
             $client->setRawData($encodedQuery);
             $client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
- */	    
+	    
 //End Dorian
-
+/*
 	    //Begin Old            
 	    $client->setRawData($prefixes . $query);
 	    //End Old            
-	    $client->setHeaders('Content-Type', /*'application/sparql-update'*/'application/x-www-form-urlencoded');
-            
+	    $client->setHeaders('Content-Type', 'application/rdf+xml;charset=UTF-8'/*'text/plain' /*'application/sparql-update','application/x-www-form-urlencoded');
+	    */           
         } elseif ($type == 'query') {
             // Use GET if the query is less than 2kB
             // 2046 = 2kB minus 1 for '?' and 1 for NULL-terminated string on server
@@ -86,7 +86,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
                 $client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
             }
         }
-//        dpm((array)$client);
+#        dpm((array)$client);
 //        watchdog('wisski_SPARQL_request_uri',$client->getUri());
         $response = $client->request();
         if ($response->getStatus() == 204) {
@@ -1088,7 +1088,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   }  
 
   public function addOntologies($iri = NULL) {
-    
+/*
     if ($iri != NULL) {
       db_insert('wisski_salz_ontologies')->fields(array('sid' => $this->settings['sid'],'iri' => $iri,'pending' => 1,))->execute(); 
     }
@@ -1102,7 +1102,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       foreach($result as $row) $knowngraphs[] = $row->g;
     }
     //if the dummy does not exist, we create it
-    if (!in_array($tmpgraph)) $this->updateSPARQL("CREATE GRAPH $tmpgraph");
+   # if (!in_array($tmpgraph)) $this->updateSPARQL("CREATE GRAPH $tmpgraph");
     while (isset($this->settings['ontologies_pending']) && !empty($this->settings['ontologies_pending'])) {
       
       $o = array_shift($this->settings['ontologies_pending']);
@@ -1157,7 +1157,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
       //import it: move it from temporal graph to ontology iri
       list($ok, $errors) = $this->updateSPARQL("MOVE GRAPH $tmpgraph TO GRAPH <$iri>");
-
+*/
 /*
       $this->settings['ontologies_loaded'][$iri] = array(
         'iri' => $iri,
@@ -1167,7 +1167,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
       unset($this->settings['ontologies_pending'][$o]);
 */
-
+/*
       db_update('wisski_salz_ontologies')
         ->fields(array('added' => 1, 'version' => $ver))
         ->condition('oid',$o['oid'],'=')
@@ -1203,6 +1203,20 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
        }
       $this->loadOntologyInfo();
     }
+*/
+
+  $query = "LOAD <$iri> INTO GRAPH <$iri>";
+  
+  list($ok, $result) = $this->updateSPARQL($query);
+  
+  if (!$ok) {
+    drupal_set_message(serialize($result));
+    foreach ($result as $err) {
+      drupal_set_message(t(serialize($err)),'error');
+    }
+  }
+    
+  return $result;   
 
   }
   
@@ -1219,6 +1233,24 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       foreach ($results as $err) {
         drupal_set_message(t('Error getting imports of ontology %iri: @e', array('%ont' => $o, '@e' => $err)), 'error');
       }
+    }
+    
+    return $results;   
+  }
+  
+  public function deleteOntology($graph, $type = "graph") {
+
+    // get ontology and version uri
+    if($type == "graph") {
+      $query = "WITH <$graph> DELETE { ?s ?p ?o } WHERE { ?s ?p ?o }";
+    } else
+      $query = "DELETE { ?s ?p ?o } WHERE { ?s ?p ?o . FILTER ( STRSTARTS(STR(?s), '$graph')) }";
+
+    list($ok, $results) = $this->updateSPARQL($query);
+    
+    if (!$ok) {
+      // some useful error message :P~
+      drupal_set_message('some error encountered:' . serialize($results), 'error');
     }
     
     return $results;   
