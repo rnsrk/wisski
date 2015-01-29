@@ -1200,7 +1200,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         ->fields(array('added' => 1, 'version' => $ver))
         ->condition('oid',$o['oid'],'=')
         ->execute();
-      
+ 
       // get imports
       // get ontology and version uri
       $query = "SELECT DISTINCT ?ont FROM <$iri> WHERE { ?s a owl:Ontology . ?s owl:imports ?ont . }";
@@ -1233,18 +1233,46 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }
 */
 
-  $query = "LOAD <$iri> INTO GRAPH <$iri>";
-  
-  list($ok, $result) = $this->updateSPARQL($query);
-  
-  if (!$ok) {
-    drupal_set_message(serialize($result));
-    foreach ($result as $err) {
-      drupal_set_message(t(serialize($err)),'error');
+    // check if the Ontology is already there
+    list($ok,$result) = $this->querySPARQL("ASK {<$iri> a owl:Ontology}");
+    if (!$ok) { // we've got something weired.
+      drupal_set_message("Store is not requestable.", 'error');
+      return;
+    } else if(!$result->isFalse()){ // if it is not false it is already there
+      drupal_set_message("$iri is already loaded.", 'error');
+      return;
     }
-  }
+
+    // if we get here we may load the ontology
+    $query = "LOAD <$iri> INTO GRAPH <$iri>";
+   list($ok, $result) = $this->updateSPARQL($query);
+
+    // everything worked?  
+    if (!$ok) {
+      foreach ($result as $err) {
+        drupal_set_message(t('An error occured while loading the Ontology: ' . serialize($err)),'error');
+      }
+    } else { // or it worked
+      drupal_set_message("Successfully loaded $iri into the Triplestore.");
+    }
+  
+    // look for imported ontologies
+    $query = "SELECT DISTINCT ?ont FROM <$iri> WHERE { ?s a owl:Ontology . ?s owl:imports ?ont . }";
+    list($ok, $results) = $this->querySPARQL($query);
+
+    // if there was nothing something is weired again.
+    if (!$ok) {
+      foreach ($results as $err) {
+        drupal_set_message(t('Error getting imports of ontology %iri: @e', array('%ont' => $o, '@e' => $err)), 'error');
+      }
+    } else { // if there are some we have to load them
+      foreach ($results as $to_load) {
+        $this->addOntologies(strval($to_load->ont));
+      }
+    }
     
-  return $result;   
+    // return the result
+    return $result;   
 
   }
   
