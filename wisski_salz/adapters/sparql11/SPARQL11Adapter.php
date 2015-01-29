@@ -484,8 +484,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   public function nextClasses($property) {
   
     list($ok,$result) = $this->querySPARQL(
-      "SELECT DISTINCT *"
-      ."WHERE {"
+      "SELECT DISTINCT * "
+      ."WHERE { "
         ."$property a owl:ObjectProperty. "
         ."$property rdfs:subPropertyOf* ?other. "
         ."?other rdfs:range/(^rdfs:subClassOf)* ?class. "
@@ -511,8 +511,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   public function nextProperties($class) {
     
     list($ok,$result) = $this->querySPARQL(
-      "SELECT DISTINCT *"
-      ."WHERE {"
+      "SELECT DISTINCT * "
+      ."WHERE { "
         ."$class a owl:Class. "
         ."?property a owl:ObjectProperty. "
         ."{"
@@ -539,8 +539,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   public function nextPropertiesHierarchy($class) {
     
     list($ok,$result) = $this->querySPARQL(
-      "SELECT DISTINCT *"
-      ."WHERE {"
+      "SELECT DISTINCT * "
+      ."WHERE { "
         ."$class a owl:Class. "
         ."?property a owl:ObjectProperty. "
         ."?property rdfs:domain ?superclass. "
@@ -569,8 +569,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   public function nextDatatypeProperties($class) {
     
     list($ok,$result) = $this->querySPARQL(
-      "SELECT DISTINCT *"
-      ."WHERE {"
+      "SELECT DISTINCT * "
+      ."WHERE { "
         ."$class a owl:Class. "
         ."?property a owl:DatatypeProperty. "
         ."?property rdfs:subPropertyOf*/rdfs:domain/(^rdfs:subClassOf)* $class. "
@@ -591,7 +591,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     
     list($ok,$result) = $this->querySPARQL(
       "SELECT DISTINCT * "
-      ."WHERE {"
+      ."WHERE { "
         ."$node a ?type"
       ."}"
     );
