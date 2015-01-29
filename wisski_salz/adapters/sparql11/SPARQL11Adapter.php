@@ -682,7 +682,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     if ($ok) {
       $out = array();
       foreach ($result as $obj) {
-        $out[$obj->class->dumpValue('text')] = $obj->count->getValue();
+        if ($obj) $out[$obj->class->dumpValue('text')] = $obj->count->getValue();
       }
       return $out;
     }  
