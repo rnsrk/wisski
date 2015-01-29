@@ -675,8 +675,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   public function getClassesWithIndCount() {
         
     list($ok,$result) = $this->querySPARQL(
-      "SELECT DISTINCT ?class (COUNT(?ind) as ?count)"
-      ." WHERE {?class a owl:Class. ?ind a ?class.}"  
+      "SELECT ?class (COUNT(?ind) as ?count)"
+      ." WHERE {SELECT DISTINCT ?class ?ind WHERE {?class a owl:Class. ?ind a ?class.}}"  
       ." GROUP BY ?class"
     ); 
     if ($ok) {
