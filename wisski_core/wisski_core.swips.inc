@@ -92,7 +92,6 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                       ->execute()
                       ->fetchAllAssoc('uuid');
         $individual = $entity->uri;
-        $info = array();
         $field_info = array();
         $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
 //        dpm((array)$wrapper);
@@ -103,6 +102,15 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                       ->execute()
                       ->fetchAssoc();
           if (isset($result['path_id']) && $path = $path_info[$result['path_id']]) {
+            $path = $path_info[$result['path_id']];
+            $starting_concept = $path->starting_concept;
+            $full_path = array();
+            do {
+              $full_path = array_merge($full_path,unserialize($path->path_array));
+              $data = $path->datatype_property;
+            } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
+            $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
+            dpm($info);
             if (!empty($info)) {
               try {
                 $type = $wrapper->$instance['field_name']->type();
@@ -165,60 +173,6 @@ function wisski_core_set_short_title(&$entity) {
 */ 
 function wisski_field_storage_load($entity_type, $entities, $age, $fields, $options) {
   
-  dpm("call to hook_field_storage_load");
-  dpm(func_get_args());
-  if($entity_type == 'wisski_core_entity') {
-    if ($age == FIELD_LOAD_REVISION) {
-      //load from default storage
-//      module_invoke('field_sql_storage','field_storage_load',$entity_type, $entities, $age, $fields, $options);
-    } else {
-      foreach($entities as $entity) {
-        //remember that $entity->type is the bundle, not 'wisski_core_entity'
-        $instances = field_info_instances('wisski_core_entity',$entity->type);
-        $path_info = db_select('wisski_pb_pathdata','path')
-                      ->fields('path')
-                      ->condition('pending',0,'=')
-                      ->execute()
-                      ->fetchAllAssoc('uuid');
-        $individual = $entity->uri;
-        $info = array();
-        $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
-        foreach($instances as $instance) {
-          if (!array_key_exists($instance['field_id'],$fields)) continue;
-          $result = db_select('wisski_pb_fielddata','con')
-                      ->fields('con')
-                      ->condition('instance_id',$instance['id'],'=')
-                      ->execute()
-                      ->fetchAssoc();
-          if (empty($result)) {
-            trigger_error("there is no path defined for the field ".$instance['field_name']." on this bundle",E_USER_ERROR);
-            return;
-          }
-          $path = $path_info[$result['path_id']];
-          $starting_concept = $path->starting_concept;
-          $full_path = array();
-          do {
-            $full_path = array_merge($full_path,unserialize($path->path_array));
-            $data = $path->datatype_property;
-          } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
-          $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
-          if (!empty($info)) {
-            $is_list = 'list' == substr($wrapper->$instance['field_name']->type(),0,4);
-            if ($is_list)
-              $wrapper->$instance['field_name']->set($info);
-            else
-              $wrapper->$instance['field_name']->set(current($info));
-          } else {
-            $wrapper->$instance['field_name']->set('');
-            dpm(__FILE__.": No results for this individual");
-          }
-        }//END foreach $instances
-        $wrapper->save();
-      }//END foreach $entities
-    }
-  } else {
-    module_invoke('field_sql_storage','field_storage_load',$entity_type, $entities, $age, $fields, $options);
-  }
 }
 
 

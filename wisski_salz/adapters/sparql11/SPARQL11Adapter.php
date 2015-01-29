@@ -1,8 +1,8 @@
 <?php
 
 module_load_include('php', 'wisski_salz', "interface/AdapterInterface");
-module_load_include('php', 'wisski_salz', "adapters/sparql11/wisski_easyrdf.php");
-include "sites/all/libraries/easyrdf/lib/EasyRdf/Sparql/Client.php";
+module_load_include('php', 'wisski_salz', "adapters/sparql11/wisski_easyrdf");
+include_once "sites/all/libraries/easyrdf/lib/EasyRdf/Sparql/Client.php";
 
 class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface {
 
