@@ -321,9 +321,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     if ($ok) {
       $out = array();
       foreach ($result as $obj) {
-        $data = $obj->data->dumpValue('text');
-        $data = explode('^^',preg_replace('/[\"\']/','',$data));
-        $out[] = $data[0];
+        $out[] = $obj->data->getValue();
       }
 //      dpm($out);
       return $out;
@@ -331,7 +329,36 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     return FALSE;
   }
 
-
+  public function pbMultiQuery(array $individual_uris,$starting_concept,$path_array,$datatype_property) {
+    
+    $query = "SELECT DISTINCT ?ind ?data WHERE{ VALUES ?ind { ";
+    $query .= implode(' ',$individual_uris);
+    $query .= " } ?ind rdf:type/rdfs:subClassOf* $starting_concept .";
+    $count = 0;
+    if (empty($path_array)) {
+      $query .= " ?ind $datatype_property ?data. }";
+    } else {
+      while(!empty($path_array)) {
+        $query .= ($count == 0) ? "?ind " : "?individual$count ";
+        $query .= array_shift($path_array);
+        $count++;
+        $query .= " ?individual$count. ";
+        $query .= " ?individual$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
+      }
+      $query .= " ?individual$count $datatype_property ?data. }";
+    }
+//    dpm($query);
+    list($ok,$result) = $this->querySPARQL($query);
+    if ($ok) {
+      $out = array();
+      foreach ($result as $obj) {
+        $out[$obj->ind->dumpValue('text')][] = $obj->data->getValue();
+      }
+//      dpm($out);
+      return $out;
+    }
+    return FALSE;
+  }
 
   public function pbUpdate($individual_uri,$individual_name,$starting_concept,$path_array,$datatype_property,$new_data,$delete_old) {
     

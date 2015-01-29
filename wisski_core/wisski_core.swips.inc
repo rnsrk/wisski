@@ -103,14 +103,6 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                       ->execute()
                       ->fetchAssoc();
           if (isset($result['path_id']) && $path = $path_info[$result['path_id']]) {
-            $starting_concept = $path->starting_concept;
-            $full_path = array();
-            do {
-              $full_path = array_merge($full_path,unserialize($path->path_array));
-              $data = $path->datatype_property;
-            } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
-//          dpm($full_path);
-            $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
             if (!empty($info)) {
               try {
                 $type = $wrapper->$instance['field_name']->type();

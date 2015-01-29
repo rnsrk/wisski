@@ -614,7 +614,7 @@ function wisski_core_make_short_title($field_data,$short_title_pattern) {
   $title = '';
   foreach ($short_title_pattern as $elem) {
     if ($elem['use']) {
-      if (isset($field_data[$elem['name']]) && $entry = $field_data[$elem['name']]) {
+      if ((isset($field_data[$elem['name']]) && $entry = $field_data[$elem['name']]) || (isset($field_data[$elem['id']]) && $entry = $field_data[$elem['id']])) {
         if (is_array($entry)) {
           $title .= $elem['prefix'].array_shift($entry);
           $i = 1;
@@ -682,8 +682,8 @@ function wisski_core_short_titles_form($form,&$form_state,$in_bundle = NULL) {
           'title' => $field_info['label'],
           'name' => $name,
           'weight' => $i,
-          'prefix' => '',
-          'suffix' => ' ',
+          'prefix' => ' ',
+          'suffix' => '',
           'use' => FALSE,
           'fallback' => '-',
           'single' => $single,
