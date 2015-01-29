@@ -139,9 +139,10 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $this->settings[$name] = $value;
     }
     if (isset($this->settings['query_endpoint']) && !isset($this->settings['update_endpoint'])) {
-        $this->settings['update_endpoint'] = $this->settings['query_endpoint'];
+      $this->settings['update_endpoint'] = $this->settings['query_endpoint'];
     }
 //    drupal_set_message(serialize($this));
+    /*
     if (!empty($this->settings['do_ontologies_add'])) {
       if (empty($this->settings['ontologies_pending'])) {
         $this->settings['ontologies_pending'] = $this->settings['do_ontologies_add'];
@@ -152,6 +153,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
       $this->addOntologies();
     }
+    
 
     $this->putNamespace('nso',  'http://erlangen-crm.org/120111/');
     $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');  
@@ -164,7 +166,9 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
     $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
     $this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
- 
+    */
+    
+    
   }
 
   public function getSettings($name = NULL) {
@@ -262,7 +266,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $db_spaces = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
                 ->fields('ns')
                 ->execute()
-                ->fetchAllAssoc('id');
+                ->fetchAllAssoc('short_name');
       foreach ($db_spaces as $space) {
         EasyRdf_Namespace::set($space->short_name,$space->long_name);
       }
@@ -1270,6 +1274,67 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         $this->addOntologies(strval($to_load->ont));
       }
     }
+
+    // load the ontology info in internal parameters    
+    // $this->loadOntologyInfo();
+    
+    // add namespaces to table
+    $file = file_get_contents($iri);
+    $format = EasyRdf_Format::guessFormat($file, $iri);
+
+    if(empty($format)) {
+      drupal_set_message("Could not initialize namespaces.", 'error');
+    } else {
+      if(stripos($format->getName(), 'xml') !== FALSE) {
+        preg_match('/RDF[^>]*>/i', $file, $nse);
+        
+        preg_match_all('/xmlns:[^=]*="[^"]*"/i', $nse[0], $nsarray);
+        
+        $ns = array();
+        $toStore = array();
+        foreach($nsarray[0] as $newns) {
+          preg_match('/xmlns:[^=]*=/', $newns, $front);
+          $front = substr($front[0], 6, strlen($front[0])-7);
+          preg_match('/"[^"]*"/', $newns, $end);
+          $end = substr($end[0], 1, strlen($end[0])-2);
+          $ns[$front] = $end;
+        }
+                
+	preg_match_all('/xmlns="[^"]*"/i', $nse[0], $toStore);
+	
+	foreach($toStore[0] as $itemGot) {
+          $i=0;
+	  $key = 'base';
+	
+	  preg_match('/"[^"]*"/', $itemGot, $item);
+	  $item	= substr($item[0], 1, strlen($item[0])-2);
+	  
+	  if(!array_key_exists($key, $ns)) {
+	    if(substr($item, strlen($item)-1, 1) != '#')
+	      $ns[$key] = $item . '#';
+	    else
+	      $ns[$key] = $item;
+          } else {
+	      $newkey = $key . $i;
+	      while(array_key_exists($newkey, $ns)) {
+		$i++;
+		$newkey = $key . $i;
+	      }
+	      if(substr($item, strlen($item)-1, 1) != '#')
+	 	$ns[$newkey] = $item . '#';
+	      else
+		$ns[$newkey] = $item;
+          }
+	}
+	
+	foreach($ns as $key => $value) {
+  	  $this->putNamespace($key, $value);
+  	} 
+
+      }
+      
+      
+    }    
     
     // return the result
     return $result;   

@@ -6,11 +6,6 @@ function sparql11_adapter_schema() {
   $schema['wisski_salz_sparql11_ontology_namespaces'] = array(
     'description' => 'Store of custom namespaces',
     'fields' => array(
-      'id' => array(  
-        'description' => 'The primary identifier.',
-        'type' => 'serial',
-        'not null' => TRUE,
-      ),
       'short_name' => array(
         'description' => 'The short name e.g. "rdf"',
         'type' => 'varchar',
@@ -25,7 +20,7 @@ function sparql11_adapter_schema() {
         'default' => '',   
       ),
     ),
-    'primary key' => array('id'),
+    'primary key' => array('short_name'),
   );                
   return $schema;                                                                                               
 }
