@@ -554,8 +554,9 @@ function array_extract_key(array $array, $key) {
   return $out;
 }
 
-function array_change_key(array $array, $key) {
-
+function array_change_key($array, $key) {
+  
+  if (empty($array)) return array();
   $out = array();
   foreach($array as $subarray) {
     if (isset($subarray[$key])) $out[$subarray[$key]] = $subarray;

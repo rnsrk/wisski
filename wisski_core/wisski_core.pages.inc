@@ -140,25 +140,28 @@ function _wisski_core_get_chunk($type,&$page_count) {
     $count = $cache->data;
     $page_count = floor($count/$limit);
     $offset = pager_default_initialize($count, $limit);
-    if ($cache = cache_get('wisski_entity_list_'.$type.'_'.$offset)) {
-      return $cache->data;
+  } else {
+    dpm(__FILE__.' ('.__LINE__.'):\nmake new');
+    $bundle = entity_load_single('wisski_core_bundle',$type);
+    $inds = wisski_salz_pb_get_bundle_info($bundle->uri);
+    $count = count($inds);
+    $page_count = floor($count/$limit);
+    cache_set('wisski_entity_list_'.$type.'_count',$count);
+    $offset = pager_default_initialize($count, $limit);
+    $chunks = array_chunk($inds,$limit);
+    foreach ($chunks as $pos => $chunk) {
+      cache_set('wisski_entity_list_'.$type.'_'.$pos,$chunk);
     }
-  } 
-  dpm(__FILE__.' ('.__LINE__.'):\nmake new');
-  $bundle = entity_load_single('wisski_core_bundle',$type);
-  $inds = wisski_salz_pb_get_bundle_info($bundle->uri);
-  $count = count($inds);
-  $page_count = floor($count/$limit);
-  cache_set('wisski_entity_list_'.$type.'_count',$count);
-  $offset = pager_default_initialize($count, $limit);
-  $chunks = array_chunk($inds,$limit);
-  foreach ($chunks as $pos => $chunk) {
-    cache_set('wisski_entity_list_'.$type.'_'.$pos,$chunk);
   }
-  return $chunks[$offset];
+  $checked = _wisski_core_check_title_stubs($count,$type,$offset,$limit);
+  if ($checked !== 'fail') return $checked;
+  elseif (isset($chunks)) return $chunks[$offset];
+  else {
+    return cache_get('wisski_entity_list_'.$type.'_'.$offset)->data;
+  }
 }
 
-function _wisski_core_check_title_stubs($uris,$type) {
+function _wisski_core_check_title_stubs($count,$type,$offset,$limit) {
 
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');
   $result = db_select('wisski_entity_bundles','bund')
@@ -169,58 +172,94 @@ function _wisski_core_check_title_stubs($uris,$type) {
   if (!empty($result) && $result['short_title_pattern']) {
     $pattern = unserialize($result['short_title_pattern']);
     if ($pattern) {
-      $field_info = array_fill_keys($uris,'n/a');
       if ($cache = cache_get('wisski_entity_list_index')) {
-        list($position,) = $cache->data;
-      }
-      $pattern = array_expand($pattern);
-      if (isset($position)) {
-        while ($elem = current($pattern)) {
-          if (key($pattern) == $position) break;
-          next($pattern);
-        }
-        if (!($elem = next($pattern))) return 'fail';
+        $index = $cache->data;
       } else {
-        $elem = current($pattern);
+        $index = array(0 => 1);
       }
-        $position = key($pattern);
-        $instance_id = $elem['id'];
-        $field_path = db_select('wisski_pb_fielddata','con')
+      $nums = array_keys($index);
+      $right = current($nums);
+      while ($right !== FALSE && $right < $offset*$limit+$limit-1) {
+        $right = next($nums);
+      }
+      if ($right) $last_chunk = ceil($right / $limit);
+      else $last_chunk = floor($count / $limit);
+      $left = $right;
+      while ($left !== FALSE && $left > $offset*$limit) {
+        $left = prev($nums);
+      }
+      if ($left) $first_chunk = floor($left / $limit);
+      else $first_chunk = 0;
+      $position = $left && $right ? min($index[$left],$index[$right]) : 1;
+      dpm(array(
+        'offset' => $offset,
+        'index' => $index,
+        'left' => $left,
+        'right' => $right,
+        'first_chunk' => $first_chunk,
+        'last_chunk' => $last_chunk,
+      ));
+      $old_index = $index;
+      if ($left) $index[$left]  = $position + 1;
+      if($right) $index[$right] = $position + 1;
+      $pattern = array_expand($pattern);
+      $pos = 0;
+      while ($pos < $position) {
+        $elem = array_shift($pattern);
+        $pos++;
+      }
+      $instance_id = $elem['id'];
+      $field_path = db_select('wisski_pb_fielddata','con')
                       ->fields('con')
                       ->condition('instance_id',$instance_id)
                       ->execute()
                       ->fetchAssoc('instance_id');
-        if (!empty($field_path)) {
-          $path_id = $field_path['path_id'];
-          $path = db_select('wisski_pb_pathdata','path')
+      if (!empty($field_path)) {
+        $path_id = $field_path['path_id'];
+        $path = db_select('wisski_pb_pathdata','path')
                   ->fields('path')
                   ->condition('pending',0)
                   ->condition('uuid',$path_id)
                   ->execute()
                   ->fetchObject();
-          if (!empty($path)) {
-            $starting_concept = $path->starting_concept;
-            $full_path = array();
-            do {
-              $full_path = array_merge($full_path,unserialize($path->path_array));
-              $data_prop = $path->datatype_property;
-            } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
-            $info = wisski_salz_pb_query($uris,$starting_concept,$full_path,$data_prop);
-            $indexes = array();
-            $ind = 0;
-            $current_data = NULL;
-            foreach ($info as $uri => $data) {
-              if (!isset($current_data)) $current_data = $data;
-              elseif ($current_data != $data) $indexes[] = $i;
-              $field_info[$uri] = current($data);
-              $i++;
+        if (!empty($path)) {
+          $starting_concept = $path->starting_concept;
+          $full_path = array();
+          do {
+            $full_path = array_merge($full_path,unserialize($path->path_array));
+            $data_prop = $path->datatype_property;
+          } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
+          $uris = array();
+          $act_chunk = $first_chunk;
+          while ($act_chunk <= $last_chunk) {
+            if ($cache = cache_get('wisski_entity_list_'.$type.'_'.$act_chunk)) {
+              $uris = array_merge($uris,$cache->data);
             }
-            cache_set('wisski_entity_list_index',array($position,$index));
-            $uris = array_diff($uris,array_keys($info));
+            $act_chunk++;
           }
+          $info = wisski_salz_pb_query($uris,$starting_concept,$full_path,$data_prop);
+          $ind = 0;
+          $current_data = NULL;
+          $field_info = array_fill_keys($uris,'n/a');
+          foreach ($info as $uri => $data) {
+            if (isset($current_data)) $current_data = $data;
+            if ($current_data !== $data) {
+              $index[$ind] = $position+1;
+              $current_data = $data;
+            }
+            $field_info[$uri] = current($data);
+            $ind++;
+          }
+          dpm(array('new index' => array_diff_key($index,$old_index)));
+          cache_set('wisski_entity_list_index',$index);
+          asort($field_info);
+          $chunks = array_chunk(array_keys($field_info),$limit);
+          foreach ($chunks as $pos => $chunk) {
+            cache_set('wisski_entity_list_'.$type.'_'.($first_chunk + $pos),$chunk);
+          }
+          return $chunks[$offset - $first_chunk];
         }
-      
-      return $field_info;
+      }
     }
   }
   return 'fail';

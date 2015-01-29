@@ -134,8 +134,8 @@ function wisski_core_label_callback($entity,$entity_type) {
  * implements hook_flush_caches to ensure the title cache is flushed correctly
  */
 function wisski_core_flush_caches() {
-  db_truncate('wisski_entity_title_cache');
-  return array();
+  
+//  return array('cache_wisski_entity_title_cache');
 }
 
 /**

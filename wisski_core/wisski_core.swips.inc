@@ -92,7 +92,6 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                       ->execute()
                       ->fetchAllAssoc('uuid');
         $individual = $entity->uri;
-        wisski_core_set_short_title($entity);
         $field_info = array();
         $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
 //        dpm((array)$wrapper);
@@ -162,8 +161,9 @@ function wisski_core_set_short_title(&$entity) {
     //since the entity stores the field info keyed by field id,
     //we can directly use the entity as field info
     $pattern = unserialize($result['short_title_pattern']);
-    if ($pattern) $entity->title = wisski_core_make_short_title($entity,array_expand($pattern));  }
-//  dpm($entity);
+    if ($pattern) $entity->title = wisski_core_make_short_title($entity,array_expand($pattern)); 
+  }
+  dpm($entity);
   db_insert('wisski_entity_title_cache')
     ->fields(array('uri' => $entity->uri, 'short_title' => $entity->title))
     ->execute();

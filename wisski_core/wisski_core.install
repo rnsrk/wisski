@@ -360,7 +360,7 @@ function wisski_core_schema() {
     ),
   );
 
-  $schema['wisski_entity_title_cache'] = array(
+  $schema['cache_wisski_entity_title_cache'] = array(
     'description' => 'Stores short tiltes for entities',
     'fields' => array(
       'uri' => array(
