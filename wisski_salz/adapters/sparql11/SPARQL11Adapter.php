@@ -60,14 +60,14 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
             $client->setMethod('POST');
             $client->setUri($this->settings['update_endpoint']);
 //Begin Dorian
-/*            $encodedQuery = 'update='.urlencode($prefixes . $query);
+            $encodedQuery = 'update='.urlencode($prefixes . $query);
             $client->setRawData($encodedQuery);
             $client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
- */	    
+	    
 //End Dorian
 
 	    //Begin Old            
-	    $client->setRawData($prefixes . $query);
+//	    $client->setRawData($prefixes . $query);
 	    //End Old            
 	    $client->setHeaders('Content-Type', /*'application/sparql-update'*/'application/x-www-form-urlencoded');
             
