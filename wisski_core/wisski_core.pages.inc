@@ -116,7 +116,9 @@ function wisski_core_list($type) {
       $links[] = l($title,'wisski_core/'.$type.'/'.$uri);
     }
   } else {
-    $links[] = l($uri,'wisski_core/'.$type.'/'.$uri);
+    foreach ($chunk as $uri) {
+      $links[] = l($uri,'wisski_core/'.$type.'/'.$uri);
+    }
   }
   $output = theme_item_list(
     array(
