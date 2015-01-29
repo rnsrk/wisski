@@ -92,6 +92,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                       ->execute()
                       ->fetchAllAssoc('uuid');
         $individual = $entity->uri;
+        wisski_core_set_short_title($entity);
         $field_info = array();
         $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
 //        dpm((array)$wrapper);
