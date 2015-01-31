@@ -289,6 +289,18 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }
   }
   
+  public function getNamespaces() {
+    $ns = array();
+    $db_spaces = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
+                ->fields('ns')
+                ->execute()
+                ->fetchAllAssoc('short_name');
+    foreach ($db_spaces as $space) {
+      $ns[$space->short_name] = $space->long_name;
+    }
+    return $ns;
+  }
+  
   private function makeDrupalName($entity,$prefix) {
     $pre_len = strlen($prefix);
     return $prefix.preg_replace('/[^a-z0-9_]/u','_',substr(strtolower($entity),0,32-$pre_len));

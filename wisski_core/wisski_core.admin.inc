@@ -78,6 +78,19 @@ function wisski_core_ontology_overview() {
     }
   }
   
+  $ns = $local_store->getNamespaces();  
+
+  $table = "<table><tr><th>Short Name</th><th>URI</th></tr>";
+  foreach($ns as $key => $value) {
+    $table .= "<tr><td>" . $key . "</td><td>" . $value . "</td></tr>";
+  }
+  $table .= "</table>";
+   
+  $form['ns_table'] = array(
+    '#type' => 'item',
+    '#markup' => $table,
+  );
+
   return $form; 
 }
 
