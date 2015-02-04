@@ -150,6 +150,7 @@ function _wisski_core_get_chunk($type,&$page_count) {
     dpm(__FILE__.' ('.__LINE__.'): make new');
     $bundle = entity_load_single('wisski_core_bundle',$type);
     $inds = wisski_salz_pb_get_bundle_info($bundle->uri);
+//    $inds = _wisski_core_sort_titles_stupid($type,$inds);
     $count = count($inds);
     $page_count = floor($count/$limit);
     cache_set('wisski_entity_list_'.$type.'_count',$count);
@@ -213,9 +214,10 @@ function _wisski_core_sort_titles_stupid($type,$uris,$position = 0) {
             $data_prop = $path->datatype_property;
           } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
           $info = wisski_salz_pb_query($uris,$starting_concept,$full_path,$data_prop,TRUE);
-          $old_info = array_fill_keys($uris,'}');
+          $old_info = array_fill_keys($uris,$elem['obligatory']? '}':$elem['fallback']);
           $info = array_merge($old_info,$info);
           uasort($info,'strnatcasecmp');
+          /*if ($elem['obligatory'])*/ return array_keys($info);
           $rest = $info;
           $new_info = array();
           dpm($info);
@@ -229,7 +231,7 @@ function _wisski_core_sort_titles_stupid($type,$uris,$position = 0) {
             $new_info = array_merge($new_info,$part);
             $rest = array_slice($rest,$cut);
           }
-          return $new_info;
+          return array_keys($new_info);
         }
       }
     }
@@ -477,8 +479,9 @@ function _wisski_core_check_titles($uris,$type) {
         }
       }
       $insert_query = db_insert('wisski_entity_data')->fields(array('uri','type','title'));
+      $invalid_title = variable_get('wisski_titles_master_fallback','-!-');
       foreach ($field_info as $uri => $info) {
-        $title = wisski_core_make_short_title($info,$pattern);
+        $title = wisski_core_make_short_title($info,$pattern)?:$invalid_title.' ('.$uri.')';
         $titles[$uri] = $title;
         if (isset($cache[$uri])) {
           db_update('wisski_entity_data')

@@ -142,6 +142,8 @@ function wisski_core_set_short_title(&$entity) {
   $result = db_select('wisski_entity_data','tit')
                 ->fields('tit')
                 ->condition('uri',$entity->uri)
+                ->condition('dirty',0)
+                ->condition('type',$entity->type)
                 ->execute()
                 ->fetchAssoc();
   if (isset($result['title'])) {
@@ -155,16 +157,19 @@ function wisski_core_set_short_title(&$entity) {
               ->condition('type',$entity->type)
               ->execute()
               ->fetchAssoc();
+  $title = FALSE;
   if (!empty($result)) {
     //since the entity stores the field info keyed by field id,
     //we can directly use the entity as field info
     $pattern = unserialize($result['short_title_pattern']);
-    if ($pattern) $entity->title = wisski_core_make_short_title($entity,array_expand($pattern)); 
+    if ($pattern) $title = wisski_core_make_short_title($entity,array_expand($pattern)); 
   }
+  $entity->title = $title?:variable_get('wisski_titles_master_fallback','').$entity->uri;
   dpm($entity);
   db_update('wisski_entity_data')
     ->fields(array('title' => $entity->title))
     ->condition('uri',$entity->uri)
+    ->condition('type',$entity->type)
     ->execute();
 }
 

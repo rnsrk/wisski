@@ -613,12 +613,14 @@ function wisski_core_make_short_title($field_data,$short_title_pattern) {
     }
   }
   $title = '';
+  $empty = TRUE;
   foreach ($short_title_pattern as $elem) {
     if ($elem['use']) {
       if ((isset($field_data[$elem['name']]) && $entry = $field_data[$elem['name']]) || (isset($field_data[$elem['id']]) && $entry = $field_data[$elem['id']])) {
         if (is_array($entry)) {
           if (trim(implode('',$entry)) === '') $title .= $elem['fallback'];
           else {
+            $empty = FALSE;
             $title .= $elem['prefix'].array_shift($entry);
             $i = 1;
             while(!empty($entry) && ($elem['number'] == -1 || $i < $elem['number'])) {
@@ -629,13 +631,18 @@ function wisski_core_make_short_title($field_data,$short_title_pattern) {
           }
         } else {
           if (trim($entry) === '') $title .= $elem['fallback'];
-          else $title .= $elem['prefix'].$entry.$elem['suffix'];
+          else {
+            $empty = FALSE;
+            $title .= $elem['prefix'].$entry.$elem['suffix'];
+          }
         }
       } else {
+        if ($elem['obligatory']) return FALSE;
         $title .= $elem['fallback'];
       }
     }
   }
+  if ($empty) return FALSE;
   return $title;
 }
 
@@ -676,6 +683,7 @@ function wisski_core_short_titles_form($form,&$form_state,$in_bundle = NULL) {
           $field = field_info_field($name);
           $info['single'] = $field['cardinality'] === '1';
         }
+        if (!isset($info['obligatory'])) $info['obligatory'] = FALSE;
         if (!isset($info['number'])) {
           $info['number'] = $info['single'] ? 1 : -1;
           $info['delimiter'] = $info['single'] ? '' : ', ';
@@ -692,6 +700,7 @@ function wisski_core_short_titles_form($form,&$form_state,$in_bundle = NULL) {
           'suffix' => '',
           'use' => FALSE,
           'fallback' => '-',
+          'obligatory' => FALSE,
           'single' => $single,
           'number' => $single ? 1 : -1,
           'delimiter' => $single ? '' : ', ',
@@ -717,6 +726,7 @@ function wisski_core_short_titles_form($form,&$form_state,$in_bundle = NULL) {
         'suffix' => ' ',
         'use' => TRUE,
         'fallback' => '-',
+        'obligatory' => FALSE,
         'single' => $single,
         'number' => $single ? 1 : -1,
         'delimiter' => $single ? '' : ', ',
@@ -772,8 +782,9 @@ function wisski_core_short_titles_form($form,&$form_state,$in_bundle = NULL) {
 //  dpm($example_entity);
 //  dpm($form_state['input']);
 //  dpm($form);
-    
-  $form['example']['#title'] = t('Example Entity: ')."'".wisski_core_make_short_title($example_entity,$title_order)."'";
+  
+  $example_title = wisski_core_make_short_title($example_entity,$title_order)?:variable_get('wisski_titles_master_fallback','-!- '.t('invalid title').' -!-');
+  $form['example']['#title'] = t('Example Entity: ')."'$example_title'";
   
   $form['titles'] = array(
     '#tree' => TRUE,
@@ -828,6 +839,12 @@ function wisski_core_short_titles_form($form,&$form_state,$in_bundle = NULL) {
         '#disabled' => $disable,
       ),
       
+      'obligatory' => array(
+        '#type' => 'checkbox',
+        '#default_value' => $item['obligatory'],
+        '#disabled' => $disable,
+      ),
+      
       'number' => array(
         '#type' => 'select',
         '#options' => $options,
@@ -877,6 +894,7 @@ function theme_wisski_core_short_titles_form($variables) {
         drupal_render($form['titles'][$id]['name']),
         drupal_render($form['titles'][$id]['suffix']),
         drupal_render($form['titles'][$id]['fallback']),
+        drupal_render($form['titles'][$id]['obligatory']),
         drupal_render($form['titles'][$id]['number']),
         drupal_render($form['titles'][$id]['delimiter']),
         drupal_render($form['titles'][$id]['weight']),
@@ -885,7 +903,7 @@ function theme_wisski_core_short_titles_form($variables) {
     );
   }
 
-  $header = array(t('Use'),t('Prefix'),t('Field'),t('Suffix'),t('Fallback'),t('Maximum Number'),t('Delimiter'), t('Weight'));
+  $header = array(t('Use'),t('Prefix'),t('Field'),t('Suffix'),t('Fallback'),t('Required'),t('Maximum Number'),t('Delimiter'), t('Weight'));
 
   $table_id = 'wisski_core_short_titles_table';
 

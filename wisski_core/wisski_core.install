@@ -28,6 +28,7 @@ function wisski_core_install() {
 */
   variable_set('field_storage_default','wisski_core_swips');
   variable_set('wisski_max_entities_per_page',42);
+  variable_set('wisski_titles_master_fallback','-!- '.t('invalid title').' -!-');
 }
 
 function wisski_core_uninstall() {
