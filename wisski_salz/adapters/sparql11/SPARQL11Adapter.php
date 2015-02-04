@@ -170,6 +170,26 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     $this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
     */
     
+    $namespaces = $this->getNamespaces();
+
+    if(!empty($namespaces)) { 	   
+      foreach($this->getNamespaces() as $key => $value) {
+        $this->putNamespace($key, $value);
+      }
+    } else { // @TODO: this is not good
+      $this->putNamespace('nso',  'http://erlangen-crm.org/120111/');
+      $this->putNamespace('ns1',  'http://erlangen-crm.org/140220/');
+      $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');  
+      $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
+      $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
+      $this->putNamespace('protege', 'http://protege.stanford.edu/plugins/owl/protege#');
+      $this->putNamespace('xsp', 'http://www.owl-ontologies.com/2005/08/07/xsp.owl#');
+      $this->putNamespace('owl', 'http://www.w3.org/2002/07/owl#');
+      $this->putNamespace('xsd', 'http://www.w3.org/2001/XMLSchema#');
+      $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
+      $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+      $this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
+    }
     
   }
 
