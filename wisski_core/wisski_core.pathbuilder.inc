@@ -617,15 +617,19 @@ function wisski_core_make_short_title($field_data,$short_title_pattern) {
     if ($elem['use']) {
       if ((isset($field_data[$elem['name']]) && $entry = $field_data[$elem['name']]) || (isset($field_data[$elem['id']]) && $entry = $field_data[$elem['id']])) {
         if (is_array($entry)) {
-          $title .= $elem['prefix'].array_shift($entry);
-          $i = 1;
-          while(!empty($entry) && ($elem['number'] == -1 || $i < $elem['number'])) {
-            $title .= $elem['delimiter'].array_shift($entry);
-            $i++;
+          if (trim(implode('',$entry)) === '') $title .= $elem['fallback'];
+          else {
+            $title .= $elem['prefix'].array_shift($entry);
+            $i = 1;
+            while(!empty($entry) && ($elem['number'] == -1 || $i < $elem['number'])) {
+              $title .= $elem['delimiter'].array_shift($entry);
+              $i++;
+            }
+            $title .= $elem['suffix'];
           }
-          $title .= $elem['suffix'];
         } else {
-          $title .= $elem['prefix'].$entry.$elem['suffix'];
+          if (trim($entry) === '') $title .= $elem['fallback'];
+          else $title .= $elem['prefix'].$entry.$elem['suffix'];
         }
       } else {
         $title .= $elem['fallback'];
@@ -657,8 +661,9 @@ function wisski_core_short_titles_form($form,&$form_state,$in_bundle = NULL) {
     if (isset($result['short_title_pattern'])) {
       $title_order = unserialize($result['short_title_pattern']);
       $title_order = array_expand($title_order);
-    } 
-    $i = count($title_order);
+    }
+    $last = end($title_order);
+    $i = $last['weight'] + 1;
     //re-key the title order to field instance ids
     $title_order = array_change_key($title_order,'name');
     $instance_info = field_info_instances('wisski_core_entity',$bundle->type);

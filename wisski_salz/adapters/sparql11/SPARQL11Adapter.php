@@ -80,6 +80,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
                 $client->setMethod('GET');
                 $client->setUri($this->settings['query_endpoint'].'?'.$encodedQuery);
             } else {
+//                dpm(array('query' => $query, 'encoded' => $this->settings['query_endpoint'].'?'.$encodedQuery));
+//                trigger_error('Query size > 2048. Switch to POST mode',E_USER_NOTICE);
                 // Fall back to POST instead (which is un-cacheable)
                 $client->setMethod('POST');
                 $client->setUri($this->settings['query_endpoint']);
@@ -213,6 +215,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     $requestcount++;
     $ok = FALSE;
     $results = array();
+//    dpm(array($query));
     try {
       if (easyrdf()) {
 //    	  $this->updateNamespaces();
@@ -233,7 +236,9 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
             }
           }
 */
+//        wisski_core_tick('SPARQLAdapter: begin query '.$requestcount);
         $results = $this->request($type,$query);
+//        wisski_core_tick('SPARQLAdapter: end query '.$requestcount);
         $ok = TRUE;
       } else trigger_error("EasyRdf is not installed",E_USER_ERROR);
     } catch (Exception $e) {
@@ -325,13 +330,13 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $query .= " $individual_uri $datatype_property ?data. }";
     } else {
       while(!empty($path_array)) {
-        $query .= ($count == 0) ? "$individual_uri " : "?individual$count ";
+        $query .= ($count == 0) ? "$individual_uri " : "?$count ";
         $query .= array_shift($path_array);
         $count++;
-        $query .= " ?individual$count. ";
-        $query .= " ?individual$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
+        $query .= " ?$count. ";
+        $query .= " ?$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
       }
-      $query .= " ?individual$count $datatype_property ?data. }";
+      $query .= " ?$count $datatype_property ?data. }";
     }
 //    dpm($query);
     list($ok,$result) = $this->querySPARQL($query);
@@ -346,30 +351,35 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     return FALSE;
   }
 
-  public function pbMultiQuery(array $individual_uris,$starting_concept,$path_array,$datatype_property) {
+  public function pbMultiQuery(array $individual_uris,$starting_concept,$path_array,$datatype_property,$single_result = FALSE) {
     
-    $query = "SELECT DISTINCT ?ind ?data WHERE{ VALUES ?ind { ";
-    $query .= implode(' ',$individual_uris);
-    $query .= " } ?ind rdf:type/rdfs:subClassOf* $starting_concept .";
+    $query = "SELECT DISTINCT ?ind ?data WHERE{";
+    $query .= " VALUES ?ind { ".implode(' ',$individual_uris)." }";
+    $query .= " ?ind rdf:type/rdfs:subClassOf* $starting_concept .";
     $count = 0;
     if (empty($path_array)) {
       $query .= " ?ind $datatype_property ?data. }";
     } else {
       while(!empty($path_array)) {
-        $query .= ($count == 0) ? "?ind " : "?individual$count ";
+        $query .= ($count == 0) ? "?ind " : "?$count ";
         $query .= array_shift($path_array);
         $count++;
-        $query .= " ?individual$count. ";
-        $query .= " ?individual$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
+        $query .= " ?$count. ";
+        $query .= " ?$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
       }
-      $query .= " ?individual$count $datatype_property ?data. }";
+      $query .= " ?$count $datatype_property ?data. }";
     }
 //    dpm($query);
     list($ok,$result) = $this->querySPARQL($query);
     if ($ok) {
       $out = array();
       foreach ($result as $obj) {
-        $out[$obj->ind->dumpValue('text')][] = $obj->data->getValue();
+        $ind_uri = $obj->ind->dumpValue('text');
+//        if (in_array($ind_uri,$individual_uris)) {
+          if ($single_result) {
+            if (!isset($out[$ind_uri])) $out[$ind_uri] = $obj->data->getValue();
+          } else $out[$ind_uri][] = $obj->data->getValue();
+//        }
       }
 //      dpm($out);
       return $out;

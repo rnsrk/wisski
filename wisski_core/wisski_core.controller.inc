@@ -46,16 +46,28 @@ class WisskiCoreEntityController extends EntityAPIController {
     // This method takes an array of IDs, but our webservice only supports loading one entity at a time.
     
 #    drupal_set_message(serialize($ids));
+    dpm($ids);
 #    drupal_set_message(serialize($conditions));
     wisski_core_tick('start');
     $error = FALSE;
     if(!empty($ids)) {
+      $db_entities = db_select('wisski_entity_data','ent')
+                      ->fields('ent')
+                      ->condition('uri',$ids,'IN')
+                      ->execute()
+                      ->fetchAllAssoc('uri');
+      foreach ($db_entities as $uri => $obj) {
+        $entity = entity_create("wisski_core_entity", array('type' => $obj->type, 'uri' => $uri, 'is_new' => FALSE, 'id' => $obj->id));
+        $entities[$entity->id] = $entity;
+      }
+      $ids = array_diff($ids,array_keys($db_entities));
+      dpm($ids);
       foreach ($ids as $id) {
+        //here we assume that $id is a URI
         wisski_core_tick('ids');
         $types = wisski_salz_pb_get_entity_info($id);
         if ($types !== FALSE) {
           wisski_core_tick('entities');
-          $entity_title = $id;
           $bundles = db_select('wisski_entity_bundles','b')
                     ->fields('b',array('type','uri','short_title_pattern'))
                     ->condition('type',$bundle_type)
@@ -67,9 +79,9 @@ class WisskiCoreEntityController extends EntityAPIController {
             if (isset($bundles[$bundle_uri])) {
               $bundle = $bundles[$bundle_uri];
               //TODO make short title
-              $entity = entity_create("wisski_core_entity", array('type' => $bundle->type, 'title' => $entity_title, 'uri' => $id, 'id' => $id));
+              $entity = entity_create("wisski_core_entity", array('type' => $bundle->type, 'uri' => $id));
               $entity->is_new = FALSE;
-              $entities[$id] = $entity;
+              $entities[$entity->id] = $entity;
             }
           }
         } else {
@@ -87,9 +99,9 @@ class WisskiCoreEntityController extends EntityAPIController {
         foreach($inds as $ind_uri) {
           $entity_title = $ind_uri;
           //TODO make short titles
-          $entity = entity_create("wisski_core_entity", array('type' => $conditions["type"], 'title' => $entity_title, 'uri' => $ind_uri, 'id' => $ind_uri));
+          $entity = entity_create("wisski_core_entity", array('type' => $conditions["type"], 'title' => $entity_title, 'uri' => $ind_uri));
           $entity->is_new = FALSE;
-          $entities[$ind_uri] = $entity;
+          $entities[$entity->id] = $entity;
         }
       } else {
         dpm($bundle_type);
@@ -111,8 +123,18 @@ class WisskiCoreEntityController extends EntityAPIController {
     if (!isset($values['uri']) && isset($values['type'])) {
       $values['uri'] = wisski_core_make_uri('',$values['type']);
     }
-    $values += array('is_new' => TRUE);
-//    dpm($values);
+    dpm($values);
+    if (isset($values['is_new']) && !$values['is_new']) {
+      db_update('wisski_entity_data')
+        ->fields(array('uri' => $values['uri'],'type' => $values['type']))
+        ->condition('id',$values['id'])
+        ->execute();
+    } else {
+      $id = db_insert('wisski_entity_data')
+        ->fields(array('uri' => $values['uri'],'type' => $values['type']))
+        ->execute();
+      $values['id'] = $id;
+    }
     $cache = cache_clear_all('wisski_cache_'.$values['type'],'cache');
     return (object) $values;
   }
@@ -143,8 +165,7 @@ class WisskiCoreEntityController extends EntityAPIController {
         list(,$bundle_uri) = wisski_core_make_uri($entity_title,$entity->type,FALSE);
       }
     }
-    $inserted_title = "\"wisski_title:".preg_replace('/[:]/u','_',$entity_title)."\"";
-    if (!wisski_salz_pb_insert_individual($entity_uri,$bundle_uri,$inserted_title)) trigger_error("Could not save ".$entity->title,E_USER_WARNING);
+    if (!wisski_salz_pb_insert_individual($entity_uri,$bundle_uri)) trigger_error("Could not save ".$entity->title,E_USER_WARNING);
     field_attach_insert('wisski_core_entity', $entity);
   }
 
@@ -174,7 +195,8 @@ class WisskiCoreEntityController extends EntityAPIController {
       '#formatter' => 'text_default',
       0 => array('#markup' => check_plain($entity->title)),
     );
-    
+
+        
     $content['uri'] = array(
       '#theme' => 'field',
       '#weight' => 0,

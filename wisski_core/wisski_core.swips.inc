@@ -94,7 +94,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
         $individual = $entity->uri;
         $field_info = array();
         $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
-//        dpm((array)$wrapper);
+//        dpm((array)($wrapper));
         foreach($instances as $instance) {
           $result = db_select('wisski_pb_fielddata','con')
                       ->fields('con')
@@ -110,7 +110,6 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
               $data = $path->datatype_property;
             } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
             $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
-            dpm($info);
             if (!empty($info)) {
               try {
                 $type = $wrapper->$instance['field_name']->type();
@@ -120,8 +119,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                   $wrapper->$instance['field_name']->set(current($info));
               } catch (EntityMetadataWrapperException $e) {
                 trigger_error("EntityMetadataWrapperException ".$e->getMessage(),E_USER_ERROR);
-                dpm($type);
-                dpm($info);
+                dpm(array('type'=>$type,'info'=>$info));
               }
               $field_info[$instance['id']] = $info;
             }
@@ -141,13 +139,13 @@ function wisski_core_set_short_title(&$entity) {
 
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');
   //check, whether we have the title cached
-  $result = db_select('wisski_entity_title_cache','tit')
+  $result = db_select('wisski_entity_data','tit')
                 ->fields('tit')
                 ->condition('uri',$entity->uri)
                 ->execute()
                 ->fetchAssoc();
-  if (!empty($result)) {
-    $entity->title = $result['short_title'];
+  if (isset($result['title'])) {
+    $entity->title = $result['title'];
     return;
   }
 //  dpm($entity);
@@ -164,8 +162,9 @@ function wisski_core_set_short_title(&$entity) {
     if ($pattern) $entity->title = wisski_core_make_short_title($entity,array_expand($pattern)); 
   }
   dpm($entity);
-  db_insert('wisski_entity_title_cache')
-    ->fields(array('uri' => $entity->uri, 'short_title' => $entity->title))
+  db_update('wisski_entity_data')
+    ->fields(array('title' => $entity->title))
+    ->condition('uri',$entity->uri)
     ->execute();
 }
 
@@ -233,6 +232,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
       $new_values = field_get_items($entity_type,$entity,$instance['field_name']);
       $delete = !property_exists($entity,'is_new') || !$entity->is_new;
       foreach($new_values as $delta) {
+        dpm($delta);
         if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$full_path,$data,$delta['value'],$delete)) {
           dpm($news);
           foreach($news as $class => $inds) {

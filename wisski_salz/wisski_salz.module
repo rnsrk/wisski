@@ -286,12 +286,12 @@ function wisski_salz_get_stores() {
   return $stores;
 }
 
-function wisski_salz_pb_query($individual_uri,$starting_concept,$path_array,$datatype_property) {
+function wisski_salz_pb_query($individual_uri,$starting_concept,$path_array,$datatype_property,$single_result = FALSE) {
   
   $store = wisski_salz_invoke_local_store();
   if ($store->getType() == "SPARQL 1.1") {
     if (is_array($individual_uri)) {
-      return $store->pbMultiQuery($individual_uri,$starting_concept,$path_array,$datatype_property);
+      return $store->pbMultiQuery($individual_uri,$starting_concept,$path_array,$datatype_property,$single_result);
     } else {
       return $store->pbQuery($individual_uri,$starting_concept,$path_array,$datatype_property);
     }

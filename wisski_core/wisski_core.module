@@ -53,7 +53,7 @@ function wisski_core_entity_info() {
       'entity keys' => array(
         'id' => 'id',
         'bundle' => 'type',
-//        'uri' => 'uri',
+        'uri' => 'uri',
         'label' => 'title',
       ),
       
@@ -135,7 +135,10 @@ function wisski_core_label_callback($entity,$entity_type) {
  */
 function wisski_core_flush_caches() {
   
-//  return array('cache_wisski_entity_title_cache');
+  $num = db_update('wisski_entity_data')
+    ->fields(array('dirty' => 1))
+    ->execute();
+  drupal_set_message('A number of '.$num.' Short Titles were removed from cache');
 }
 
 /**
@@ -162,7 +165,6 @@ function wisski_core_entity_property_info() {
   $properties['title'] = array(
     'type' => 'text',
     'schema field' => 'title',
-    'required' => TRUE,
     'label' => t('WissKI Entity title'),
     'setter callback' => 'entity_property_verbatim_set',
   );

@@ -306,13 +306,14 @@ function wisski_core_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'name' => array(
+/*      'name' => array(
         'description' => 'Machine readable name for the entity',
         'type' => 'varchar',
         'length' => 32,
         'not null' => TRUE,
         'default' => '',
       ),
+*/
       'title' => array(
         'description' => 'Entity title.',
         'type' => 'varchar',
@@ -320,10 +321,11 @@ function wisski_core_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'description' => array(
+/*      'description' => array(
         'description' => 'Entity description.',
         'type' => 'text',
       ),
+*/
       'uri' => array(
         'description' => 'URI of the corresponding owl:Individual',
         'type' => 'varchar',
@@ -337,7 +339,7 @@ function wisski_core_schema() {
         'not null' => TRUE,
         'default' => '0',
       ),
-      'same_individuals' => array(
+/*      'same_individuals' => array(
         'description' => 'Entities representing the same owl:Individual',
         'type' => 'blob',
         'size' => 'big',
@@ -349,18 +351,21 @@ function wisski_core_schema() {
         'type' => 'int',
         'default' => '0',
       ),
+*/
     ),
+
     'primary key' => array('id'),
     'unique keys' => array(
-      'name' => array('name'),
-      'uri' => array('uri'),
+//      'name' => array('name'),
+      'uri_in_type' => array('uri','type'),
     ),
-    'indexes' => array(
+/*    'indexes' => array(
       'timestamp' => array('timestamp'),
     ),
+*/
   );
 
-  $schema['cache_wisski_entity_title_cache'] = array(
+/*  $schema['cache_wisski_entity_title_cache'] = array(
     'description' => 'Stores short tiltes for entities',
     'fields' => array(
       'uri' => array(
@@ -380,7 +385,7 @@ function wisski_core_schema() {
       'uri' => array('uri'),
     ),
   );
-
+*/
   // Table for storing data of entity exportable bundles.
   $schema['wisski_entity_bundles'] = array(
     'description' => 'The base table for bundles of wisski entities',

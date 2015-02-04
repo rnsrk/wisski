@@ -94,10 +94,12 @@ function wisski_core_list_submit($form,&$form_state) {
 */
 function wisski_core_list($type) {
 
-  
+  module_load_include('inc','wisski_core','wisski_core.controller');
   $links = array();
   $page_count = 0;
+  wisski_core_tick('start');
   $chunk = _wisski_core_get_chunk($type,$page_count);
+  wisski_core_tick('sorting');
 /*  $short_titles = db_select('wisski_entity_title_cache','tit')
                     ->fields('tit')
                     ->execute()
@@ -111,6 +113,7 @@ function wisski_core_list($type) {
     $links[] = l($title,'wisski_core/'.$type.'/'.$uri);
   }*/
   $short_titles = _wisski_core_check_titles($chunk,$type);
+  wisski_core_tick('titles');
   if ($short_titles !== 'fail') {
     foreach ($short_titles as $uri => $title) {
       $links[] = l($title,'wisski_core/'.$type.'/'.$uri);
@@ -120,7 +123,9 @@ function wisski_core_list($type) {
       $links[] = l($uri,'wisski_core/'.$type.'/'.$uri);
     }
   }
-  $output = theme_item_list(
+  wisski_core_tick('links');
+  $output = theme('pager',array('quantity' => min(51,max(floor($page_count/17),9))));
+  $output .= theme_item_list(
     array(
       'items' => $links,
       'title' => t('List of existing entities.'),
@@ -128,20 +133,21 @@ function wisski_core_list($type) {
       'attributes' => array(),
     )
   );
-  $output .= theme('pager',array('quantity' => min(51,max(floor($page_count/17),9))));
+  
+  wisski_core_tick('theme');
+  dpm(wisski_core_tick(NULL));
   return $output;
 }
 
 function _wisski_core_get_chunk($type,&$page_count) {
 
-  $count_cache_name = 'wisski_entity_list_'.$type.'_count';
   $limit = variable_get('wisski_max_entities_per_page',20);
-  if ($cache = cache_get($count_cache_name)) {
+  if ($cache = cache_get('wisski_entity_list_'.$type.'_count')) {
     $count = $cache->data;
     $page_count = floor($count/$limit);
     $offset = pager_default_initialize($count, $limit);
   } else {
-    dpm(__FILE__.' ('.__LINE__.'):\nmake new');
+    dpm(__FILE__.' ('.__LINE__.'): make new');
     $bundle = entity_load_single('wisski_core_bundle',$type);
     $inds = wisski_salz_pb_get_bundle_info($bundle->uri);
     $count = count($inds);
@@ -153,16 +159,22 @@ function _wisski_core_get_chunk($type,&$page_count) {
       cache_set('wisski_entity_list_'.$type.'_'.$pos,$chunk);
     }
   }
-  $checked = _wisski_core_check_title_stubs($count,$type,$offset,$limit);
+/*  $checked = _wisski_core_check_title_stubs($count,$type,$offset,$limit);
   if ($checked !== 'fail') return $checked;
-  elseif (isset($chunks)) return $chunks[$offset];
+  else*/if (isset($chunks)) return $chunks[$offset];
   else {
     return cache_get('wisski_entity_list_'.$type.'_'.$offset)->data;
   }
 }
 
-function _wisski_core_check_title_stubs($count,$type,$offset,$limit) {
+function _wisski_core_sort_titles_stupid($type,$uris,$position = 0) {
 
+/*  if ($position !== 0) {
+    dpm(func_get_args());
+    throw new Exception('MUHAHAHAHAHAHA');
+    return $uris;
+  }*/
+  if (count($uris) < 2) return $uris;
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');
   $result = db_select('wisski_entity_bundles','bund')
             ->fields('bund',array('type','short_title_pattern'))
@@ -172,42 +184,13 @@ function _wisski_core_check_title_stubs($count,$type,$offset,$limit) {
   if (!empty($result) && $result['short_title_pattern']) {
     $pattern = unserialize($result['short_title_pattern']);
     if ($pattern) {
-      if ($cache = cache_get('wisski_entity_list_index')) {
-        $index = $cache->data;
-      } else {
-        $index = array(0 => 1);
-      }
-      $nums = array_keys($index);
-      $right = current($nums);
-      while ($right !== FALSE && $right < $offset*$limit+$limit-1) {
-        $right = next($nums);
-      }
-      if ($right) $last_chunk = ceil($right / $limit);
-      else $last_chunk = floor($count / $limit);
-      $left = $right;
-      while ($left !== FALSE && $left > $offset*$limit) {
-        $left = prev($nums);
-      }
-      if ($left) $first_chunk = floor($left / $limit);
-      else $first_chunk = 0;
-      $position = $left && $right ? min($index[$left],$index[$right]) : 1;
-      dpm(array(
-        'offset' => $offset,
-        'index' => $index,
-        'left' => $left,
-        'right' => $right,
-        'first_chunk' => $first_chunk,
-        'last_chunk' => $last_chunk,
-      ));
-      $old_index = $index;
-      if ($left) $index[$left]  = $position + 1;
-      if($right) $index[$right] = $position + 1;
       $pattern = array_expand($pattern);
       $pos = 0;
-      while ($pos < $position) {
-        $elem = array_shift($pattern);
+      while ($pos <= $position) {
+        $elem = next($pattern);
         $pos++;
       }
+      if (empty($elem)) return $uris;
       $instance_id = $elem['id'];
       $field_path = db_select('wisski_pb_fielddata','con')
                       ->fields('con')
@@ -229,35 +212,24 @@ function _wisski_core_check_title_stubs($count,$type,$offset,$limit) {
             $full_path = array_merge($full_path,unserialize($path->path_array));
             $data_prop = $path->datatype_property;
           } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
-          $uris = array();
-          $act_chunk = $first_chunk;
-          while ($act_chunk <= $last_chunk) {
-            if ($cache = cache_get('wisski_entity_list_'.$type.'_'.$act_chunk)) {
-              $uris = array_merge($uris,$cache->data);
-            }
-            $act_chunk++;
+          $info = wisski_salz_pb_query($uris,$starting_concept,$full_path,$data_prop,TRUE);
+          $old_info = array_fill_keys($uris,'}');
+          $info = array_merge($old_info,$info);
+          uasort($info,'strnatcasecmp');
+          $rest = $info;
+          $new_info = array();
+          dpm($info);
+          while (!empty($rest)) {
+            reset($rest);
+            $current = current($rest);
+            $cut = 1;
+            while(($next = next($rest)) && $current === $next) $cut++;
+            $part = _wisski_core_sort_titles_stupid($type,array_keys(array_slice($rest,0,$cut)),$position+1);
+            //dpm($part);
+            $new_info = array_merge($new_info,$part);
+            $rest = array_slice($rest,$cut);
           }
-          $info = wisski_salz_pb_query($uris,$starting_concept,$full_path,$data_prop);
-          $ind = 0;
-          $current_data = NULL;
-          $field_info = array_fill_keys($uris,'n/a');
-          foreach ($info as $uri => $data) {
-            if (isset($current_data)) $current_data = $data;
-            if ($current_data !== $data) {
-              $index[$ind] = $position+1;
-              $current_data = $data;
-            }
-            $field_info[$uri] = current($data);
-            $ind++;
-          }
-          dpm(array('new index' => array_diff_key($index,$old_index)));
-          cache_set('wisski_entity_list_index',$index);
-          asort($field_info);
-          $chunks = array_chunk(array_keys($field_info),$limit);
-          foreach ($chunks as $pos => $chunk) {
-            cache_set('wisski_entity_list_'.$type.'_'.($first_chunk + $pos),$chunk);
-          }
-          return $chunks[$offset - $first_chunk];
+          return $new_info;
         }
       }
     }
@@ -265,8 +237,205 @@ function _wisski_core_check_title_stubs($count,$type,$offset,$limit) {
   return 'fail';
 }
 
+function _wisski_core_check_title_stubs($count,$type,$offset,$limit) {
+
+  module_load_include('inc','wisski_core','wisski_core.pathbuilder');
+  $result = db_select('wisski_entity_bundles','bund')
+            ->fields('bund',array('type','short_title_pattern'))
+            ->condition('type',$type)
+            ->execute()
+            ->fetchAssoc();
+  if (!empty($result) && $result['short_title_pattern']) {
+    $pattern = unserialize($result['short_title_pattern']);
+    if ($pattern) {
+      if ($cache = cache_get('wisski_entity_list_'.$type.'_index')) {
+        list($index,$positions) = $cache->data;
+      } else {
+        $index = array();
+        $positions = array();
+      }
+      $right = current($index);
+      while ($right !== FALSE && $right < $offset*$limit+$limit-1) {
+        $right = next($index);
+      }
+      if ($right === FALSE) $right = $count;
+      if (!isset($positions[$right])) $positions[$right] = 1;
+      $last_chunk = floor($right / $limit);
+      $left = end($index);
+      while ($left !== FALSE && $left > $offset*$limit) {
+        $left = prev($index);
+      }
+      if ($left === FALSE) $left = 0;
+      if (!isset($positions[$left])) $positions[$left] = 1;
+      $first_chunk = floor($left / $limit);
+      if ($positions[$left] === -1) $position = $positions[$right];
+      elseif ($positions[$right] === -1) $position = $positions[$left];
+      else $position = min($positions[$left],$positions[$right]);
+      if (!in_array($left,$index)) $index[] = $left;
+      if (!in_array($right,$index)) $index[] = $right;
+      dpm(array(
+        'offset' => $offset,
+        'index' => $index,
+        'positions' => $positions,
+        'left' => $left,
+        'right' => $right,
+        'first_chunk' => $first_chunk,
+        'last_chunk' => $last_chunk,
+        'position' => $position,
+      ));
+      if ($position === -1) {
+        //the area is fully sorted
+        if ($cache = cache_get('wisski_entity_list_'.$type.'_'.$offset)) return $cache->data;
+        else return 'fail';
+      }
+      trigger_error('position != -1',E_USER_NOTICE);
+      $pattern = array_expand($pattern);
+      //dpm(array('pattern' => $pattern));
+      $pos = 0;
+      while ($pos < $position) {
+        $elem = array_shift($pattern);
+        $pos++;
+      }
+      //dpm(array('elem' => $elem));
+      if (empty($elem)) {
+        $position = -1;
+      } else {
+        $position++;
+      }
+      $positions[$left] = $position;
+      $positions[$right] = $position;
+      if ($position === -1) {
+        //the area is fully sorted, but this is not known in the index
+        for($i = $left; $i <= $right; $i++) {
+          if (isset($positions[$i])) $positions[$i] = -1;
+        }
+        cache_set('wisski_entity_list_'.$type.'_index',array($index,$positions));
+        if ($cache = cache_get('wisski_entity_list_'.$type.'_'.$offset)) return $cache->data;
+        else return 'fail';
+      }
+      trigger_error('still position != -1',E_USER_NOTICE);
+      $instance_id = $elem['id'];
+      $field_path = db_select('wisski_pb_fielddata','con')
+                      ->fields('con')
+                      ->condition('instance_id',$instance_id)
+                      ->execute()
+                      ->fetchAssoc('instance_id');
+      if (!empty($field_path)) {
+        trigger_error('path not empty',E_USER_NOTICE);
+        $path_id = $field_path['path_id'];
+        $path_info = db_select('wisski_pb_pathdata','path')
+                      ->fields('path')
+                      ->condition('pending',0)
+                      ->execute()
+                      ->fetchAllAssoc('uuid');
+        if (!empty($path_info[$path_id])) {
+          trigger_error('path still not empty',E_USER_NOTICE);
+          $path = $path_info[$path_id];
+          $starting_concept = $path->starting_concept;
+          $full_path = array();
+          do {
+            $full_path = array_merge($full_path,unserialize($path->path_array));
+            $data_prop = $path->datatype_property;
+          } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
+//          $uris = array();
+//          $head = array();
+//          $tail = array();
+          list($uris,$head,$tail) = _wisski_core_load_all_chunks($type,$limit,$left,$right,$first_chunk,$last_chunk);
+          $info = wisski_salz_pb_query($uris,$starting_concept,$full_path,$data_prop,TRUE);
+          /*dpm(array(
+            'info' => $info,
+            'head' => $head,
+            'tail' => $tail,
+          ));*/
+          if ($info === FALSE) {
+            dpm(array($uris,$starting_concept,$full_path,$data_prop,TRUE));
+            throw new Exception();
+          }
+          uasort($info,'strnatcasecmp');
+          $ind = $left;
+          $current_data = NULL;
+          foreach ($info as $uri => $data) {
+            if (empty($current_data)) $current_data = $data;
+            if ($current_data !== $data) {
+              $index[] = $ind;
+              $positions[$ind] = $position;
+              $current_data = $data;
+            }
+            $ind++;
+          }
+          $index = array_unique($index);
+          sort($index);
+          dpm(array(
+            'head' => $head,
+            'info' => $info,
+            'tail' => $tail,
+            'index' => $index,
+          ));
+          cache_set('wisski_entity_list_'.$type.'_index',array($index,$positions));
+          $field_info = array_merge($head,array_keys($info),$tail);
+          $chunks = array_chunk($field_info,$limit);
+          foreach ($chunks as $pos => $chunk) {
+            cache_set('wisski_entity_list_'.$type.'_'.($first_chunk + $pos),$chunk);
+          }
+          return _wisski_core_check_title_stubs($count,$type,$offset,$limit);
+        }
+      }
+    }
+  }
+  return 'fail';
+}
+
+function array_append($array1, $array2) {
+
+  return array_combine(array_merge(array_keys($array1),array_keys($array2)),array_merge(array_values($array1),array_values($array2)));
+}
+
+function _wisski_core_load_all_chunks($type,$limit,$left,$right,$first_chunk,$last_chunk) {
+
+  $uris = array();
+  $act_chunk = $first_chunk;
+  while ($act_chunk <= $last_chunk) {
+    if ($cache = cache_get('wisski_entity_list_'.$type.'_'.$act_chunk)) {
+      $added_uris = $cache->data;
+      if ($act_chunk == $first_chunk) {
+        $head = array_slice($added_uris,0,($left % $limit));
+        $added_uris = array_slice($added_uris,($left % $limit));
+      } 
+      if ($act_chunk == $last_chunk) {
+        $added_uris = array_slice($added_uris,0,($right % $limit));
+        $tail = array_slice($added_uris,($right % $limit));
+      }
+    }
+    $uris = array_merge($uris,$added_uris);
+    $act_chunk++;
+  }
+  if (!isset($tail)) {
+    dpm($act_chunk);
+    dpm(func_get_args());
+    return array($uris,$head,array());
+  }
+  return array($uris,$head,$tail);
+}  
+
 function _wisski_core_check_titles($uris,$type) {
 
+  $titles = array();
+  $cache = db_select('wisski_entity_data','ent')
+            ->fields('ent')
+            ->condition('type',$type)
+            ->condition('uri',$uris,'IN')
+            ->execute()
+            ->fetchAllAssoc('uri');
+  $rem = array();
+  foreach($cache as $uri => $obj) {
+    if (!$obj->dirty) {
+      $titles[$uri] = $obj->title;
+      $rem[] = $uri;
+      unset($cache[$uri]);
+    }
+  }
+  $uris = array_diff($uris,$rem);
+  if (empty($uris)) return $titles;
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');
   $result = db_select('wisski_entity_bundles','bund')
             ->fields('bund',array('type','short_title_pattern'))
@@ -287,13 +456,13 @@ function _wisski_core_check_titles($uris,$type) {
                       ->fetchAssoc('instance_id');
         if (!empty($field_path)) {
           $path_id = $field_path['path_id'];
-          $path = db_select('wisski_pb_pathdata','path')
-                  ->fields('path')
-                  ->condition('pending',0)
-                  ->condition('uuid',$path_id)
-                  ->execute()
-                  ->fetchObject();
-          if (!empty($path)) {
+          $path_info = db_select('wisski_pb_pathdata','path')
+                      ->fields('path')
+                      ->condition('pending',0)
+                      ->execute()
+                      ->fetchAllAssoc('uuid');
+          if (isset($path_info[$path_id])) {
+            $path = $path_info[$path_id];
             $starting_concept = $path->starting_concept;
             $full_path = array();
             do {
@@ -307,9 +476,28 @@ function _wisski_core_check_titles($uris,$type) {
           }
         }
       }
-      $titles = array();
+      $insert_query = db_insert('wisski_entity_data')->fields(array('uri','type','title'));
       foreach ($field_info as $uri => $info) {
-        $titles[$uri] = wisski_core_make_short_title($info,$pattern);
+        $title = wisski_core_make_short_title($info,$pattern);
+        $titles[$uri] = $title;
+        if (isset($cache[$uri])) {
+          db_update('wisski_entity_data')
+            ->fields(array('title' => $title, 'dirty' => 0))
+            ->condition('uri',$uri)
+            ->condition('type',$type)
+            ->execute();
+        } else {
+          $insert_query->values(array(
+            'uri' => $uri,
+            'type' => $type,
+            'title' => $title,
+          ));
+        }
+      }
+      try {
+        $num = $insert_query->execute();
+      } catch (Exception $e) {
+        trigger_error('Problems when inserting entities '.$e->getType().' '.$e->getMessage(),E_USER_WARNING);
       }
       return $titles;
     }
