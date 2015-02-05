@@ -342,7 +342,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   }
 */
   
-  public function pbQuery($individual_uri,$starting_concept,$path_array,$datatype_property) {
+  public function pbQuery($individual_uri,$starting_concept,$path_array,$datatype_property,$limit = NULL,$offset = 0,$order = FALSE,$asc = TRUE,$qualifier = 'STR') {
 
     $query = "SELECT DISTINCT ?data WHERE{ $individual_uri rdf:type/rdfs:subClassOf* $starting_concept .";
     $count = 0;
@@ -358,6 +358,15 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       }
       $query .= " ?$count $datatype_property ?data. }";
     }
+    if ($limit !== NULL) {
+      $query .= " LIMIT $limit";
+    }    
+    if ($offset > 0) {
+      $query .= " OFFSET $offset";
+    }
+    if ($order) {
+      $query .= " ORDER BY ".($asc ? 'ASC':'DESC')."(".$qualifier."(?data))";
+    }
 //    dpm($query);
     list($ok,$result) = $this->querySPARQL($query);
     if ($ok) {
@@ -370,6 +379,53 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }
     return FALSE;
   }
+
+  public function pbQueryAll($starting_concept,$path_array,$datatype_property,$limit = NULL,$offset = 0,$order = FALSE,$asc = TRUE,$qualifier = 'STR') {
+
+//    $query = "SELECT DISTINCT ?ind ?data WHERE{ ?ind rdf:type/rdfs:subClassOf* $starting_concept .";
+    $query = "SELECT DISTINCT ?ind ?data WHERE{ ?ind rdf:type $starting_concept .";
+    $count = 0;
+    if (empty($path_array)) {
+      if (!empty($datatype_property)) {
+        $query .= " ?ind $datatype_property ?data.";
+      }
+    } else {
+      while(!empty($path_array)) {
+        $query .= ($count == 0) ? "?ind " : "?$count ";
+        $query .= array_shift($path_array);
+        $count++;
+        $query .= " ?$count. ";
+//        $query .= " ?$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
+        $query .= " ?$count rdf:type ".array_shift($path_array).". ";
+      }
+      $query .= " ?$count $datatype_property ?data.";
+    }
+    $query .= " }";
+    if ($order) {
+      $query .= " ORDER BY ".($asc ? 'ASC':'DESC')."(".$qualifier."(?data))";
+    }
+    if ($limit !== NULL) {
+      $query .= " LIMIT $limit";
+    }    
+    if ($offset >= 0) {
+      $query .= " OFFSET $offset";
+    }
+    dpm($query);
+    wisski_core_tick('start query');
+    list($ok,$result) = $this->querySPARQL($query);
+    wisski_core_tick('end_query');
+    if ($ok) {
+      $out = array();
+      foreach ($result as $obj) {
+        if (empty($datatype_property)) $out[] = $obj->ind->dumpValue('text');
+        else $out[$obj->ind->dumpValue('text')] = $obj->data->getValue();
+      }
+      dpm($out);
+      return $out;
+    }
+    return FALSE;
+  }
+
 
   public function pbMultiQuery(array $individual_uris,$starting_concept,$path_array,$datatype_property,$single_result = FALSE) {
     

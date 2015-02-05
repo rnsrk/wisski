@@ -97,21 +97,14 @@ function wisski_core_list($type) {
   module_load_include('inc','wisski_core','wisski_core.controller');
   $links = array();
   $page_count = 0;
+  $limit = variable_get('wisski_max_entities_per_page',20);
+  $bundle = entity_load_single('wisski_core_bundle',$type);
+  $count = wisski_salz_pb_get_bundle_info($bundle->uri,TRUE);
+  $offset = pager_default_initialize($count, $limit);
   wisski_core_tick('start');
-  $chunk = _wisski_core_get_chunk($type,$page_count);
+  //$chunk = _wisski_core_get_chunk($type,$page_count);
+  $chunk = _wisski_core_get_sorted_chunk($type,$limit,$offset);
   wisski_core_tick('sorting');
-/*  $short_titles = db_select('wisski_entity_title_cache','tit')
-                    ->fields('tit')
-                    ->execute()
-                    ->fetchAllAssoc('uri');
-  foreach ($chunk as $uri) {
-    if (isset($short_titles[$uri])) {
-      $title = $short_titles[$uri]->short_title ?:$uri;
-    } else {
-      $title = $uri;
-    }
-    $links[] = l($title,'wisski_core/'.$type.'/'.$uri);
-  }*/
   $short_titles = _wisski_core_check_titles($chunk,$type);
   wisski_core_tick('titles');
   if ($short_titles !== 'fail') {
@@ -168,17 +161,16 @@ function _wisski_core_get_chunk($type,&$page_count) {
   }
 }
 
-function _wisski_core_sort_titles_stupid($type,$uris,$position = 0) {
+function _wisski_core_get_sorted_chunk($type,$limit,$offset,$position = 0) {
 
 /*  if ($position !== 0) {
     dpm(func_get_args());
     throw new Exception('MUHAHAHAHAHAHA');
     return $uris;
   }*/
-  if (count($uris) < 2) return $uris;
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');
   $result = db_select('wisski_entity_bundles','bund')
-            ->fields('bund',array('type','short_title_pattern'))
+            ->fields('bund',array('type','uri','short_title_pattern'))
             ->condition('type',$type)
             ->execute()
             ->fetchAssoc();
@@ -187,56 +179,23 @@ function _wisski_core_sort_titles_stupid($type,$uris,$position = 0) {
     if ($pattern) {
       $pattern = array_expand($pattern);
       $pos = 0;
-      while ($pos <= $position) {
+      $elem = current($pattern);
+      while ($pos < $position) {
         $elem = next($pattern);
         $pos++;
       }
       if (empty($elem)) return $uris;
       $instance_id = $elem['id'];
-      $field_path = db_select('wisski_pb_fielddata','con')
-                      ->fields('con')
-                      ->condition('instance_id',$instance_id)
-                      ->execute()
-                      ->fetchAssoc('instance_id');
-      if (!empty($field_path)) {
-        $path_id = $field_path['path_id'];
-        $path = db_select('wisski_pb_pathdata','path')
-                  ->fields('path')
-                  ->condition('pending',0)
-                  ->condition('uuid',$path_id)
-                  ->execute()
-                  ->fetchObject();
-        if (!empty($path)) {
-          $starting_concept = $path->starting_concept;
-          $full_path = array();
-          do {
-            $full_path = array_merge($full_path,unserialize($path->path_array));
-            $data_prop = $path->datatype_property;
-          } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
-          $info = wisski_salz_pb_query($uris,$starting_concept,$full_path,$data_prop,TRUE);
-          $old_info = array_fill_keys($uris,$elem['obligatory']? '}':$elem['fallback']);
-          $info = array_merge($old_info,$info);
-          uasort($info,'strnatcasecmp');
-          /*if ($elem['obligatory'])*/ return array_keys($info);
-          $rest = $info;
-          $new_info = array();
-          dpm($info);
-          while (!empty($rest)) {
-            reset($rest);
-            $current = current($rest);
-            $cut = 1;
-            while(($next = next($rest)) && $current === $next) $cut++;
-            $part = _wisski_core_sort_titles_stupid($type,array_keys(array_slice($rest,0,$cut)),$position+1);
-            //dpm($part);
-            $new_info = array_merge($new_info,$part);
-            $rest = array_slice($rest,$cut);
-          }
-          return array_keys($new_info);
-        }
-      }
+      list($starting_concept,$path_array,$datatype_property) = wisski_core_make_path_array($instance_id);
+      wisski_core_tick('start sorting');
+      $inds = wisski_salz_pb_query_all($starting_concept,$path_array,$datatype_property,$limit,$offset,TRUE,TRUE,'STR');
+      wisski_core_tick('end sorting');
+      if (empty($inds)) throw new Exception('');
+      return array_keys($inds);
     }
   }
-  return 'fail';
+  $inds = wisski_salz_pb_query_all($result['uri'],NULL,NULL,$limit,$offset,TRUE,TRUE,'STR');
+  return $inds;
 }
 
 function _wisski_core_check_title_stubs($count,$type,$offset,$limit) {
@@ -420,7 +379,8 @@ function _wisski_core_load_all_chunks($type,$limit,$left,$right,$first_chunk,$la
 }  
 
 function _wisski_core_check_titles($uris,$type) {
-
+  
+  if (empty($uris)) return array();
   $titles = array();
   $cache = db_select('wisski_entity_data','ent')
             ->fields('ent')
@@ -451,37 +411,17 @@ function _wisski_core_check_titles($uris,$type) {
       $pattern = array_expand($pattern);
       foreach ($pattern as $elem) {
         $instance_id = $elem['id'];
-        $field_path = db_select('wisski_pb_fielddata','con')
-                      ->fields('con')
-                      ->condition('instance_id',$instance_id)
-                      ->execute()
-                      ->fetchAssoc('instance_id');
-        if (!empty($field_path)) {
-          $path_id = $field_path['path_id'];
-          $path_info = db_select('wisski_pb_pathdata','path')
-                      ->fields('path')
-                      ->condition('pending',0)
-                      ->execute()
-                      ->fetchAllAssoc('uuid');
-          if (isset($path_info[$path_id])) {
-            $path = $path_info[$path_id];
-            $starting_concept = $path->starting_concept;
-            $full_path = array();
-            do {
-              $full_path = array_merge($full_path,unserialize($path->path_array));
-              $data_prop = $path->datatype_property;
-            } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
-            $info = wisski_salz_pb_query($uris,$starting_concept,$full_path,$data_prop);
-            foreach ($info as $uri => $data) {
-              $field_info[$uri][$instance_id] = $data;
-            }
-          }
+        list($starting_concept,$full_path,$data_prop) = wisski_core_make_path_array($instance_id);
+        $info = wisski_salz_pb_query($uris,$starting_concept,$full_path,$data_prop);
+        foreach ($info as $uri => $data) {
+          $field_info[$uri][$instance_id] = $data;
         }
       }
       $insert_query = db_insert('wisski_entity_data')->fields(array('uri','type','title'));
       $invalid_title = variable_get('wisski_titles_master_fallback','-!-');
       foreach ($field_info as $uri => $info) {
-        $title = wisski_core_make_short_title($info,$pattern)?:$invalid_title.' ('.$uri.')';
+        $title = wisski_core_make_short_title($info,$pattern);
+        $title = $title?:$invalid_title.' ('.$uri.')';
         $titles[$uri] = $title;
         if (isset($cache[$uri])) {
           db_update('wisski_entity_data')

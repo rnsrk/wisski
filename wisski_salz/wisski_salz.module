@@ -299,6 +299,15 @@ function wisski_salz_pb_query($individual_uri,$starting_concept,$path_array,$dat
   return array();
 }
 
+function wisski_salz_pb_query_all($starting_concept,$path_array,$datatype_property,$limit = NULL,$offset = 0,$order = FALSE,$asc = TRUE,$qualifier = 'STR') {
+  
+  $store = wisski_salz_invoke_local_store();
+  if ($store->getType() == "SPARQL 1.1") {
+    return $store->pbQueryAll($starting_concept,$path_array,$datatype_property,$limit,$offset,$order,$asc,$qualifier);
+  }
+  return array();
+}
+
 function wisski_salz_pb_update($individual_uri,$individual_name,$starting_concept,$path_array,$datatype_property,$new_data,$delete_old = FALSE) {
   
   $store = wisski_salz_invoke_local_store();

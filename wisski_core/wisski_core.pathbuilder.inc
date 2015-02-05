@@ -1,5 +1,31 @@
 <?php
 
+function wisski_core_make_path_array($instance_id) {
+  
+  $field_path = db_select('wisski_pb_fielddata','con')
+                      ->fields('con')
+                      ->condition('instance_id',$instance_id)
+                      ->execute()
+                      ->fetchAssoc('instance_id');
+  if (!empty($field_path)) {
+    $path_id = $field_path['path_id'];
+    $path = db_select('wisski_pb_pathdata','path')
+                  ->fields('path')
+                  ->condition('pending',0)
+                  ->condition('uuid',$path_id)
+                  ->execute()
+                  ->fetchObject();
+    if (!empty($path)) {
+      $starting_concept = $path->starting_concept;
+      $full_path = array();
+      do {
+        $full_path = array_merge($full_path,unserialize($path->path_array));
+        $data_prop = $path->datatype_property;
+      } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
+      return array($starting_concept,$full_path,$data_prop);
+    }
+  }
+}
 
 function wisski_core_edit_bundle_paths($form,&$form_state,$in_bundle = NULL) {
 
@@ -618,7 +644,10 @@ function wisski_core_make_short_title($field_data,$short_title_pattern) {
     if ($elem['use']) {
       if ((isset($field_data[$elem['name']]) && $entry = $field_data[$elem['name']]) || (isset($field_data[$elem['id']]) && $entry = $field_data[$elem['id']])) {
         if (is_array($entry)) {
-          if (trim(implode('',$entry)) === '') $title .= $elem['fallback'];
+          if (empty($entry)) {
+            if ($elem['obligatory']) return FALSE;
+            $title .= $elem['fallback'];
+          } elseif (trim(implode('',$entry)) === '') $title .= $elem['fallback'];
           else {
             $empty = FALSE;
             $title .= $elem['prefix'].array_shift($entry);
