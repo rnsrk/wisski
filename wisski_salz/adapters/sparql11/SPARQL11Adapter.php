@@ -383,7 +383,9 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   public function pbQueryAll($starting_concept,$path_array,$datatype_property,$limit = NULL,$offset = 0,$order = FALSE,$asc = TRUE,$qualifier = 'STR') {
 
 //    $query = "SELECT DISTINCT ?ind ?data WHERE{ ?ind rdf:type/rdfs:subClassOf* $starting_concept .";
-    $query = "SELECT DISTINCT ?ind ?data WHERE{ ?ind rdf:type $starting_concept .";
+    $query = "SELECT DISTINCT ?ind ?data WHERE{";
+    $query .= " ?ind rdf:type $starting_concept .";
+    $query .= " OPTIONAL {";
     $count = 0;
     if (empty($path_array)) {
       if (!empty($datatype_property)) {
@@ -400,9 +402,11 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       }
       $query .= " ?$count $datatype_property ?data.";
     }
-    $query .= " }";
+    $query .= " }"; // close OPTIONAL
+    $query .= " }"; // close WHERE
     if ($order) {
-      $query .= " ORDER BY ".($asc ? 'ASC':'DESC')."(".$qualifier."(?data))";
+      $range = $asc ? 'ASC':'DESC';
+      $query .= " ORDER BY DESC(BOUND(?data)) ".$range."(".$qualifier."(?data))";
     }
     if ($limit !== NULL) {
       $query .= " LIMIT $limit";
@@ -417,11 +421,13 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     if ($ok) {
       $out = array();
       foreach ($result as $obj) {
-        if (empty($datatype_property)) $out[] = $obj->ind->dumpValue('text');
-        else $out[$obj->ind->dumpValue('text')] = $obj->data->getValue();
+        if (!isset($out[$obj->ind->dumpValue('text')])) {
+          if (property_exists($obj,'data')) $out[$obj->ind->dumpValue('text')] = $obj->data->getValue();
+          else $out[$obj->ind->dumpValue('text')] = '-';
+        }
       }
       dpm($out);
-      return $out;
+      return array_keys($out);
     }
     return FALSE;
   }

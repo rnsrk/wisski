@@ -128,7 +128,8 @@ function wisski_core_list($type) {
   );
   
   wisski_core_tick('theme');
-  dpm(wisski_core_tick(NULL));
+  $times = wisski_core_tick(NULL);
+  dpm('query time: '.$times['end_query'].' secs');
   return $output;
 }
 
@@ -169,32 +170,30 @@ function _wisski_core_get_sorted_chunk($type,$limit,$offset,$position = 0) {
     return $uris;
   }*/
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');
-  $result = db_select('wisski_entity_bundles','bund')
-            ->fields('bund',array('type','uri','short_title_pattern'))
-            ->condition('type',$type)
-            ->execute()
-            ->fetchAssoc();
-  if (!empty($result) && $result['short_title_pattern']) {
-    $pattern = unserialize($result['short_title_pattern']);
-    if ($pattern) {
-      $pattern = array_expand($pattern);
+  $bundle = entity_load_single('wisski_core_bundle',$type);
+  if (!empty($bundle) && !empty($bundle->short_title_pattern)) {
+    $pattern = $bundle->short_title_pattern;
+    $pattern = array_expand($pattern);
+    if (!empty($pattern)) {  
       $pos = 0;
       $elem = current($pattern);
       while ($pos < $position) {
         $elem = next($pattern);
         $pos++;
       }
-      if (empty($elem)) return $uris;
-      $instance_id = $elem['id'];
-      list($starting_concept,$path_array,$datatype_property) = wisski_core_make_path_array($instance_id);
-      wisski_core_tick('start sorting');
-      $inds = wisski_salz_pb_query_all($starting_concept,$path_array,$datatype_property,$limit,$offset,TRUE,TRUE,'STR');
-      wisski_core_tick('end sorting');
-      if (empty($inds)) throw new Exception('');
-      return array_keys($inds);
+      if (!empty($elem)) {
+        $instance_id = $elem['id'];
+        list($starting_concept,$path_array,$datatype_property) = wisski_core_make_path_array($instance_id);
+        wisski_core_tick('start sorting');
+        //pager offset is page number while SPARQL offset is first element to show
+        $inds = wisski_salz_pb_query_all($starting_concept,$path_array,$datatype_property,$limit,$limit*$offset,TRUE,TRUE,'STR');
+        wisski_core_tick('end sorting');
+        if (empty($inds)) throw new Exception('');
+        return $inds;
+      }
     }
   }
-  $inds = wisski_salz_pb_query_all($result['uri'],NULL,NULL,$limit,$offset,TRUE,TRUE,'STR');
+  $inds = wisski_salz_pb_query_all($result['uri'],NULL,NULL,$limit,$limit*$offset,TRUE,TRUE,'STR');
   return $inds;
 }
 
@@ -399,16 +398,11 @@ function _wisski_core_check_titles($uris,$type) {
   $uris = array_diff($uris,$rem);
   if (empty($uris)) return $titles;
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');
-  $result = db_select('wisski_entity_bundles','bund')
-            ->fields('bund',array('type','short_title_pattern'))
-            ->condition('type',$type)
-            ->execute()
-            ->fetchAssoc();
-  if (!empty($result) && $result['short_title_pattern']) {
-    $pattern = unserialize($result['short_title_pattern']);
-    if ($pattern) {
+  $bundle = entity_load_single('wisski_core_bundle',$type);
+  if (!empty($bundle) && !empty($bundle->short_title_pattern)) {
+    $pattern = array_expand($bundle->short_title_pattern);  
+    if (!empty($pattern)) {
       $field_info = array_fill_keys($uris,array());
-      $pattern = array_expand($pattern);
       foreach ($pattern as $elem) {
         $instance_id = $elem['id'];
         list($starting_concept,$full_path,$data_prop) = wisski_core_make_path_array($instance_id);

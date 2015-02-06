@@ -1,28 +1,37 @@
 <?php
 
 function wisski_core_make_path_array($instance_id) {
-  
-  $field_path = db_select('wisski_pb_fielddata','con')
+
+  $result = &drupal_static(__FUNCTION__.'result'.$instance_id);
+  if (isset($result)) return $result;
+  $path_id = &drupal_static(__FUNCTION__.'inst'.$instance_id);
+  if (!isset($path_id)) {  
+    $field_path = db_select('wisski_pb_fielddata','con')
                       ->fields('con')
                       ->condition('instance_id',$instance_id)
                       ->execute()
                       ->fetchAssoc('instance_id');
-  if (!empty($field_path)) {
-    $path_id = $field_path['path_id'];
-    $path = db_select('wisski_pb_pathdata','path')
+    if (!empty($field_path)) $path_id = $field_path['path_id'];
+  }
+  if (!empty($path_id)) {
+    $path_info = &drupal_static(__FUNCTION__.'path_info');
+    if (!isset($path_info)) {
+      $path_info = db_select('wisski_pb_pathdata','path')
                   ->fields('path')
                   ->condition('pending',0)
-                  ->condition('uuid',$path_id)
                   ->execute()
-                  ->fetchObject();
-    if (!empty($path)) {
+                  ->fetchAllAssoc('uuid');
+    }
+    if (!empty($path_info[$path_id])) {
+      $path = $path_info[$path_id];
       $starting_concept = $path->starting_concept;
       $full_path = array();
       do {
         $full_path = array_merge($full_path,unserialize($path->path_array));
         $data_prop = $path->datatype_property;
       } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
-      return array($starting_concept,$full_path,$data_prop);
+      $result = array($starting_concept,$full_path,$data_prop);
+      return $result;
     }
   }
 }

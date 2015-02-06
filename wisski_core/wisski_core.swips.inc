@@ -86,45 +86,27 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
       foreach($queried_entities as $entity) {
         //remember that $entity->type is the bundle, not 'wisski_core_entity'
         $instances = field_info_instances('wisski_core_entity',$entity->type);
-        $path_info = db_select('wisski_pb_pathdata','path')
-                      ->fields('path')
-                      ->condition('pending',0,'=')
-                      ->execute()
-                      ->fetchAllAssoc('uuid');
         $individual = $entity->uri;
         $field_info = array();
         $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
 //        dpm((array)($wrapper));
         foreach($instances as $instance) {
-          $result = db_select('wisski_pb_fielddata','con')
-                      ->fields('con')
-                      ->condition('instance_id',$instance['id'],'=')
-                      ->execute()
-                      ->fetchAssoc();
-          if (isset($result['path_id']) && $path = $path_info[$result['path_id']]) {
-            $path = $path_info[$result['path_id']];
-            $starting_concept = $path->starting_concept;
-            $full_path = array();
-            do {
-              $full_path = array_merge($full_path,unserialize($path->path_array));
-              $data = $path->datatype_property;
-            } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
-            $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
-            if (!empty($info)) {
-              try {
-                $type = $wrapper->$instance['field_name']->type();
-                if ('list' == substr($type,0,4))
-                  $wrapper->$instance['field_name']->set($info);
-                else
-                  $wrapper->$instance['field_name']->set(current($info));
-              } catch (EntityMetadataWrapperException $e) {
-                trigger_error("EntityMetadataWrapperException ".$e->getMessage(),E_USER_ERROR);
-                dpm(array('type'=>$type,'info'=>$info));
-              }
-              $field_info[$instance['id']] = $info;
+          list($starting_concept,$full_path,$data) = wisski_core_make_path_array($instance['id']);
+          $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
+          if (!empty($info)) {
+            try {
+              $type = $wrapper->$instance['field_name']->type();
+              if ('list' == substr($type,0,4))
+                $wrapper->$instance['field_name']->set($info);
+              else
+                $wrapper->$instance['field_name']->set(current($info));
+            } catch (EntityMetadataWrapperException $e) {
+              trigger_error("EntityMetadataWrapperException ".$e->getMessage(),E_USER_ERROR);
+              dpm(array('type'=>$type,'info'=>$info));
             }
-            $skip_fields[$instance['field_id']] = $entity->id;
+            $field_info[$instance['id']] = $info;
           }
+          $skip_fields[$instance['field_id']] = $entity->id;
         }//END foreach $instances
         wisski_core_set_short_title($entity);
       }//END foreach $queried_entities
@@ -205,35 +187,14 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
     }
 //    dpm(entity_uri($entity_type,$entity));
 //    dpm("computed uri: ".$individual);
-    $path_info = db_select('wisski_pb_pathdata','path')
-                ->fields('path')
-                ->condition('pending',0,'=')
-                ->execute()
-                ->fetchAllAssoc('uuid');
-//    dpm("Tick 1");
     $new_individuals = array();
     foreach($fields as $field_id) {
 //      dpm("Tick 2");
       $field = field_info_field_by_id($field_id);
       $instance = field_info_instance($entity_type,$field['field_name'],$entity->type);
-      if (!$instance) continue;
+      if (empty($instance)) continue;
 //      dpm("Tick 3");
-      $result = db_select('wisski_pb_fielddata','con')
-                ->fields('con')
-                ->condition('instance_id',$instance['id'],'=')
-                ->execute()
-                ->fetchAssoc();
-      if (empty($result)) {
-        trigger_error("there is no path defined for the field ".$instance['field_name']." on this bundle",E_USER_ERROR);
-        return;
-      }
-      $path = $path_info[$result['path_id']];
-      $starting_concept = $path->starting_concept;
-      $full_path = array();
-      do {
-        $full_path = array_merge($full_path,unserialize($path->path_array));
-        $data = $path->datatype_property;
-      } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
+      list($starting_concept,$full_path,$data) = wisski_core_make_path_array($instance['id']);
       $new_values = field_get_items($entity_type,$entity,$instance['field_name']);
       $delete = !property_exists($entity,'is_new') || !$entity->is_new;
       foreach($new_values as $delta) {
