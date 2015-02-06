@@ -84,7 +84,6 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
     $store_instances = wisski_salz_get_installed_store_instances();
     // drupal_set_message("Store Instances = " . serialize($store_instances));
     //  $key = _sparql11_adapter_get_db_key();
-    
     $link = array();
     foreach($store_types as $key => $store_type){
 	    $link[$store_type['name']] = array(
@@ -99,36 +98,27 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
 	    'store_type' => t('Store Type'),
 	    'settings' => t('Settings'),
     );
-    // content of table
+    $local_store = wisski_salz_get_local_store();
+	  // content of table
     $options = array();
-
     foreach ($store_instances as $key2 => $store_instance){
 	    $store_instance_settings = unserialize($store_instance->settings);
-	    $local_store = wisski_salz_get_local_store();
 	    if(!is_numeric($local_store) && $local_store->name == $store_instance->name){
 		    $text = $local_store->label . " => LOCAL STORE";
 	    } else {
 		    $text = $store_instance->label;	    
 	    }
-	    $result = db_select('wisski_salz_store_types', 'types')
-	        ->fields('types', array('name', 'label'))
-	        ->condition('stid', $store_instance->type, 'LIKE')
-	        ->execute()->fetchObject();
-	    if(!empty($result)) $store_type_name = $result->name;
-	    if(!empty($result)) $store_type_label = $result->label;
+	    if(!empty($store_types[$store_instance->type])) {
+	      $type = $store_types[$store_instance->type];
+	      $store_type_name = $type['name'];
+	      $store_type_label = $type['label'];
+	      $store_type_module = $type['module'];
+      }
 	    //$text = $store_instance->label;
 	    $path = 'admin/config/wisski/salz/edit/' . $store_type_name . '/' . $store_instance->name;
-	    if ($store_type_label == sparql11_adapter_wisski_get_store_type()){
-		   /* $bla1 = array(
-		       '#type' => 'checkbox',
-		       '#title' => t('Test'),
-	            );    
-		    $bla = array(
-			   'data' => l($text, $path). "<div class='wki_grey'>" . t($store_instance_settings['query_endpoint'] . ', ' . $store_instance_settings['update_endpoint']) . "</div>" . drupal_render($bla1),
-                    );      
-                    $sorted_store_instances_by_type[$store_instance->type][] = $bla;
-	    }      */
-		    
+	    $primary_settings = module_invoke($store_type_module,'wisski_primary_store_settings');
+	    if (!empty($primary_settings)) $store_instance_settings = array_intersect_key($store_instance_settings,array_flip($primary_settings));
+	    if ($store_type_label == sparql11_adapter_wisski_get_store_type()){ 
 		    $options[$key2] = array(
 			    'store_instance_name' => array(
 				    'data' => array(
@@ -139,29 +129,10 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
 				    ),
 			    ),
 			    'store_type' => $store_type_label,
-			    'settings' => "<div class='wki_grey'>" . t($store_instance_settings['query_endpoint'] . ', ' . $store_instance_settings['update_endpoint']) . "</div>",
+			    'settings' => "<div class='wki_grey'>" . implode(', ',$store_instance_settings) . "</div>",
 		    );  
-            }
-
-
-
-            if ($store_type_label == csv_adapter_wisski_get_store_type()){   
-                   /* $sorted_store_instances_by_type[$store_instance->type][] = array( 
-                           'data' => l($text, $path). "<div class='wki_grey'>" . t($store_instance_settings['file_path']) . "</div>" ,
-		   );*/  
-		    $options[$key2] = array(
-			    'store_instance_name' => array(
-				    'data' => array(
-					    '#type' => 'link',
-					    '#title' => $text,
-					    '#href' => $path,
-				    ),
-			    ),
-			    'store_type' => $store_type_label,
-			    'settings' => "<div class='wki_grey'>" . t($store_instance_settings['file_path']) . "</div>" ,
-		    );
-            }
-  }
+      }
+    }
 
     $form = array();
     $form['add_link'] = array(
@@ -450,6 +421,7 @@ function wisski_salz_get_store_types() {
     $settings = array(
       'name' => $store_type->name,
       'label' => $store_type->label,
+      'module' => $store_type->module,
     );
     $output_store_types[$store_type->stid] = $settings;
   }
