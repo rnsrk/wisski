@@ -288,6 +288,7 @@ function wisski_core_field_storage_purge($entity_type, $entity, $field, $instanc
  */
 function wisski_core_field_storage_query(EntityFieldQuery $query) {
   dpm((array) $query);
+  watchdog(__FUNCTION__,serialize($query));
   if ($query->age == FIELD_LOAD_CURRENT) {
     
   }

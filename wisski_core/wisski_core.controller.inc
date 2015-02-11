@@ -42,11 +42,12 @@ class WisskiCoreEntityController extends EntityAPIController {
 //    $now = microtime();
     $entities = array();
     $bundle_type = isset($conditions['type']) ? $conditions['type'] : arg(1);
+    
 //    watchdog('wisski_entity_controller_load',serialize($ids));
     // This method takes an array of IDs, but our webservice only supports loading one entity at a time.
     
 #    drupal_set_message(serialize($ids));
-    dpm($ids);
+//    dpm($ids);
 #    drupal_set_message(serialize($conditions));
     wisski_core_tick('start');
     $error = FALSE;
@@ -104,8 +105,8 @@ class WisskiCoreEntityController extends EntityAPIController {
           $entities[$entity->id] = $entity;
         }
       } else {
-        dpm($bundle_type);
-        trigger_error("Problems when loading bundle $bundle_uri",E_USER_ERROR);
+        ddebug_backtrace();
+        trigger_error("Problems when loading bundle $bundle_type",E_USER_ERROR);
       }
     }
     wisski_core_tick('full run');

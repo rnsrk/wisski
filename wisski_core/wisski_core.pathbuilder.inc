@@ -640,9 +640,9 @@ function array_flatten(array $array) {
 
 function wisski_core_make_short_title($field_data,$short_title_pattern) {
   
-//  dpm($short_title_pattern);
+  dpm(func_get_args());
   if (!is_array($field_data)) {
-    $field_data = (array) $field_data;
+    $field_data = (array) $field_data;  
     foreach ($field_data as $key => $value) {
       if (is_array($value)) $field_data[$key] = array_flatten($value);
     }
@@ -652,6 +652,7 @@ function wisski_core_make_short_title($field_data,$short_title_pattern) {
   foreach ($short_title_pattern as $elem) {
     if ($elem['use']) {
       if ((isset($field_data[$elem['name']]) && $entry = $field_data[$elem['name']]) || (isset($field_data[$elem['id']]) && $entry = $field_data[$elem['id']])) {
+        dpm(array('elem' => $elem, 'entry' => $entry));
         if (is_array($entry)) {
           if (empty($entry)) {
             if ($elem['obligatory']) return FALSE;

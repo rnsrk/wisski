@@ -129,7 +129,8 @@ function wisski_core_list($type) {
   
   wisski_core_tick('theme');
   $times = wisski_core_tick(NULL);
-  dpm('query time: '.$times['end_query'].' secs');
+  dpm($times);
+//  dpm('query time: '.$times['end_query'].' secs');
   return $output;
 }
 
@@ -162,7 +163,7 @@ function _wisski_core_get_chunk($type,&$page_count) {
   }
 }
 
-function _wisski_core_get_sorted_chunk($type,$limit,$offset,$position = 0) {
+function _wisski_core_get_sorted_chunk($type,$limit,$offset) {
 
 /*  if ($position !== 0) {
     dpm(func_get_args());
@@ -174,21 +175,25 @@ function _wisski_core_get_sorted_chunk($type,$limit,$offset,$position = 0) {
   if (!empty($bundle) && !empty($bundle->short_title_pattern)) {
     $pattern = $bundle->short_title_pattern;
     $pattern = array_expand($pattern);
-    if (!empty($pattern)) {  
-      $pos = 0;
+    if (!empty($pattern)) {
       $elem = current($pattern);
-      while ($pos < $position) {
-        $elem = next($pattern);
-        $pos++;
-      }
-      if (!empty($elem)) {
+      $paths = array();
+      while (!empty($elem)) {
         $instance_id = $elem['id'];
         list($starting_concept,$path_array,$datatype_property) = wisski_core_make_path_array($instance_id);
+        $paths[] = array('path_array' => $path_array,'datatype_property' => $datatype_property,'optional' => !$elem['obligatory']);
+        if ($elem['obligatory']) break;
+        else $elem = next($pattern);
+      }
+      if (!empty($paths)) {
+        dpm($paths);
         wisski_core_tick('start sorting');
         //pager offset is page number while SPARQL offset is first element to show
-        $inds = wisski_salz_pb_query_all($starting_concept,$path_array,$datatype_property,$limit,$limit*$offset,TRUE,TRUE,'STR');
+        $inds = array_keys(wisski_salz_pb_query_multi_path($starting_concept,$paths,$limit,$limit*$offset,TRUE,TRUE,'STR'));
         wisski_core_tick('end sorting');
-        if (empty($inds)) throw new Exception('');
+        if (empty($inds)) {
+          throw new Exception('');
+        }
         return $inds;
       }
     }
@@ -402,15 +407,14 @@ function _wisski_core_check_titles($uris,$type) {
   if (!empty($bundle) && !empty($bundle->short_title_pattern)) {
     $pattern = array_expand($bundle->short_title_pattern);  
     if (!empty($pattern)) {
+      $paths = array();
       $field_info = array_fill_keys($uris,array());
       foreach ($pattern as $elem) {
         $instance_id = $elem['id'];
         list($starting_concept,$full_path,$data_prop) = wisski_core_make_path_array($instance_id);
-        $info = wisski_salz_pb_query($uris,$starting_concept,$full_path,$data_prop);
-        foreach ($info as $uri => $data) {
-          $field_info[$uri][$instance_id] = $data;
-        }
+        $paths[] = array('instance_id' => $instance_id, 'path_array' => $full_path, 'datatype_property' => $data_prop, 'optional' => !$elem['obligatory']);
       }
+      $field_info = wisski_salz_pb_title_query($uris,$starting_concept,$paths);
       $insert_query = db_insert('wisski_entity_data')->fields(array('uri','type','title'));
       $invalid_title = variable_get('wisski_titles_master_fallback','-!-');
       foreach ($field_info as $uri => $info) {
@@ -434,7 +438,7 @@ function _wisski_core_check_titles($uris,$type) {
       try {
         $num = $insert_query->execute();
       } catch (Exception $e) {
-        trigger_error('Problems when inserting entities '.$e->getType().' '.$e->getMessage(),E_USER_WARNING);
+        trigger_error('Problems when inserting entities '.$e->getClass().' '.$e->getMessage(),E_USER_WARNING);
       }
       return $titles;
     }

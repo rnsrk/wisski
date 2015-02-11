@@ -9,3 +9,4 @@ files[] = wisski_core.swips.inc
 files[] = wisski_core.admin.inc
 files[] = wisski_core.pages.inc
 files[] = wisski_core.pathbuilder.inc
+files[] = wisski_core.EntityReference_Selection.php
