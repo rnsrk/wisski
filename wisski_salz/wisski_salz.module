@@ -357,7 +357,7 @@ function wisski_salz_pb_get_bundle_info($bundle_uri,$count = FALSE) {
 
   $store = wisski_salz_invoke_local_store();
   if ($store->getType() == "SPARQL 1.1") {
-n    return $count ? $store->getIndCount($bundle_uri) : $store->getIndividuals($bundle_uri);
+    return $count ? $store->getIndCount($bundle_uri) : $store->getIndividuals($bundle_uri);
   }
   return FALSE;
 }
