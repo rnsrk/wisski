@@ -640,7 +640,7 @@ function array_flatten(array $array) {
 
 function wisski_core_make_short_title($field_data,$short_title_pattern) {
   
-  dpm(func_get_args());
+//  dpm(func_get_args());
   if (!is_array($field_data)) {
     $field_data = (array) $field_data;  
     foreach ($field_data as $key => $value) {
@@ -652,7 +652,7 @@ function wisski_core_make_short_title($field_data,$short_title_pattern) {
   foreach ($short_title_pattern as $elem) {
     if ($elem['use']) {
       if ((isset($field_data[$elem['name']]) && $entry = $field_data[$elem['name']]) || (isset($field_data[$elem['id']]) && $entry = $field_data[$elem['id']])) {
-        dpm(array('elem' => $elem, 'entry' => $entry));
+//        dpm(array('elem' => $elem, 'entry' => $entry));
         if (is_array($entry)) {
           if (empty($entry)) {
             if ($elem['obligatory']) return FALSE;
@@ -966,7 +966,7 @@ function wisski_core_short_titles_form_exit($form, &$form_state) {
     if ($form_state['values']['titles'][$values['name']]['use']) {
       $new_values = $values;
       foreach($form_state['values']['titles'][$values['name']] as $key => $value) {
-        if ($key !== 'use') $new_values[$key] = $value;
+        if ($key !== 'use' && $key !== 'single') $new_values[$key] = $value;
       }
       $new_title_order[$new_values['weight']] = $new_values;
     }

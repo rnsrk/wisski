@@ -257,13 +257,13 @@ function wisski_salz_get_stores() {
   return $stores;
 }
 
-function wisski_salz_sparql_query($query_string) {
+function wisski_salz_sparql_query($query_string,$dump = TRUE) {
   
   $store = wisski_salz_invoke_local_store();
   if ($store->getType() == "SPARQL 1.1") {
     list($ok,$result) = $store->querySPARQL($query_string);
     if ($ok) {
-      
+      if ($dump) drupal_set_message($result->dump());
       return $result;
     }
   }

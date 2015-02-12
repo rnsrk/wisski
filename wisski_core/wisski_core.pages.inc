@@ -180,13 +180,15 @@ function _wisski_core_get_sorted_chunk($type,$limit,$offset) {
       $paths = array();
       while (!empty($elem)) {
         $instance_id = $elem['id'];
-        list($starting_concept,$path_array,$datatype_property) = wisski_core_make_path_array($instance_id);
+        list($start,$path_array,$datatype_property) = wisski_core_make_path_array($instance_id);
+        if (!isset($starting_concept)) $starting_concept = $start;
         $paths[] = array('path_array' => $path_array,'datatype_property' => $datatype_property,'optional' => !$elem['obligatory']);
         if ($elem['obligatory']) break;
         else $elem = next($pattern);
       }
       if (!empty($paths)) {
         dpm($paths);
+        if (!isset($starting_concept)) $starting_concept = $bundle->uri;
         wisski_core_tick('start sorting');
         //pager offset is page number while SPARQL offset is first element to show
         $inds = array_keys(wisski_salz_pb_query_multi_path($starting_concept,$paths,$limit,$limit*$offset,TRUE,TRUE,'STR'));

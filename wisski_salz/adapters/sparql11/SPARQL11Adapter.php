@@ -426,7 +426,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
           else $out[$obj->ind->dumpValue('text')] = '-';
         }
       }
-      dpm($out);
+//      dpm($out);
       return array_keys($out);
     }
     return FALSE;
@@ -450,7 +450,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $datatype_property = $path['datatype_property'];
       $count = 0;
       $optional = isset($path['optional']) && $path['optional'];
-      if ($optional) $query .= " OPTIONAL";
+      $query .= " OPTIONAL";
       $query .= " {SELECT ?ind ?data$i WHERE {";
       if (empty($path_array)) {
         if (!empty($datatype_property)) {
@@ -496,9 +496,9 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $query .= " OFFSET $offset";
     }
     dpm($query);
-    wisski_core_tick('start query');
+    wisski_core_tick('start multi query');
     list($ok,$result) = $this->querySPARQL($query);
-    wisski_core_tick('end_query');
+    wisski_core_tick('end multi query');
     if ($ok) {
       $out = array();
       foreach ($result as $obj) {
@@ -532,7 +532,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $datatype_property = $path['datatype_property'];
       $count = 0;
       $optional = isset($path['optional']) && $path['optional'];
-      if ($optional) $query .= " OPTIONAL";
+      $query .= " OPTIONAL";
       $query .= " {SELECT ?ind ?data$i WHERE {";
       if (empty($path_array)) {
         if (!empty($datatype_property)) {
@@ -550,13 +550,14 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         $query .= " ?p".$i."c$count $datatype_property ?data$i .";    
       }
       $query .= " } LIMIT 1}"; // close sub-SELECT
+      if (!$optional) $query .= " FILTER(BOUND(?data$i))";
       $i++;
     }
     $query .= " }"; // close WHERE
     dpm($query);
-//    wisski_core_tick('start query');
+    wisski_core_tick('start title query');
     list($ok,$result) = $this->querySPARQL($query);
-//    wisski_core_tick('end_query');
+    wisski_core_tick('end title query');
     if ($ok) {
       $out = array();
       foreach ($result as $obj) {
