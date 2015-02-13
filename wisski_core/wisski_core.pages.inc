@@ -182,7 +182,7 @@ function _wisski_core_get_sorted_chunk($type,$limit,$offset) {
         $instance_id = $elem['id'];
         list($start,$path_array,$datatype_property) = wisski_core_make_path_array($instance_id);
         if (!isset($starting_concept)) $starting_concept = $start;
-        $paths[] = array('path_array' => $path_array,'datatype_property' => $datatype_property,'optional' => !$elem['obligatory']);
+        $paths[] = array('path_array' => $path_array,'datatype_property' => $datatype_property,'required' => $elem['obligatory'],'maximum' => 1);
         if ($elem['obligatory']) break;
         else $elem = next($pattern);
       }
@@ -194,7 +194,7 @@ function _wisski_core_get_sorted_chunk($type,$limit,$offset) {
         $inds = array_keys(wisski_salz_pb_query_multi_path($starting_concept,$paths,$limit,$limit*$offset,TRUE,TRUE,'STR'));
         wisski_core_tick('end sorting');
         if (empty($inds)) {
-          throw new Exception('');
+          throw new Exception('there are no entites matching your request');
         }
         return $inds;
       }
@@ -414,7 +414,7 @@ function _wisski_core_check_titles($uris,$type) {
       foreach ($pattern as $elem) {
         $instance_id = $elem['id'];
         list($starting_concept,$full_path,$data_prop) = wisski_core_make_path_array($instance_id);
-        $paths[] = array('instance_id' => $instance_id, 'path_array' => $full_path, 'datatype_property' => $data_prop, 'optional' => !$elem['obligatory']);
+        $paths[] = array('id' => $instance_id, 'path_array' => $full_path, 'datatype_property' => $data_prop, 'required' => $elem['obligatory'], 'maximum' => $elem['number']);
       }
       $field_info = wisski_salz_pb_title_query($uris,$starting_concept,$paths);
       $insert_query = db_insert('wisski_entity_data')->fields(array('uri','type','title'));

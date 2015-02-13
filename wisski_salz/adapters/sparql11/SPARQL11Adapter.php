@@ -341,101 +341,36 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
   }
 */
+  /**
+   * @param starting_concept string representing an owl:Class, common start for all given paths
+   *
+   * @param paths is an array of associative arrays that may contain
+   * the following entries:
+   * $key								| $value
+   * ------------------------------------------------------------
+   * 'path_array' 			| array of strings representing owl:ObjectProperties 
+   *                    | and owl:Classes in alternating order
+   * 'datatype_property'| string representing an owl:DatatypeProperty
+   * 'required'					| boolean, TRUE if the path must have to return
+   *										| at least one data result
+   * 'maximum'					| int specifying the maximum number of returned
+   *										| data values for this path, unlimited if unspecified
+   *
+   * @param settings is an associative array that may contain the following 
+   * entries:
+   * $key 			| $value
+   * ------------------------------------------------------------
+   * 'limit'		| int setting the SPARQL query LIMIT
+   * 'offset'		| int setting the SPARQL query OFFSET
+   * 'order'		| string containing 'ASC' or 'DESC' (or 'RAND')
+   * 'qualifier'| SPARQL data qualifier e.g. 'STR'
+   * 'matches'	| array of strings, at least one of the data must match
+   * 'uris'			| array of strings representing owl:Individuals on which the
+   *						| query is triggered
+   */
+  public function pbQuery($starting_concept,array $paths,array $settings = array()) {
   
-  public function pbQuery($individual_uri,$starting_concept,$path_array,$datatype_property,$limit = NULL,$offset = 0,$order = FALSE,$asc = TRUE,$qualifier = 'STR') {
-
-    $query = "SELECT DISTINCT ?data WHERE{ $individual_uri rdf:type/rdfs:subClassOf* $starting_concept .";
-    $count = 0;
-    if (empty($path_array)) {
-      $query .= " $individual_uri $datatype_property ?data. }";
-    } else {
-      while(!empty($path_array)) {
-        $query .= ($count == 0) ? "$individual_uri " : "?$count ";
-        $query .= array_shift($path_array);
-        $count++;
-        $query .= " ?$count. ";
-        $query .= " ?$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
-      }
-      $query .= " ?$count $datatype_property ?data. }";
-    }
-    if ($limit !== NULL) {
-      $query .= " LIMIT $limit";
-    }    
-    if ($offset > 0) {
-      $query .= " OFFSET $offset";
-    }
-    if ($order) {
-      $query .= " ORDER BY ".($asc ? 'ASC':'DESC')."(".$qualifier."(?data))";
-    }
-//    dpm($query);
-    list($ok,$result) = $this->querySPARQL($query);
-    if ($ok) {
-      $out = array();
-      foreach ($result as $obj) {
-        $out[] = $obj->data->getValue();
-      }
-//      dpm($out);
-      return $out;
-    }
-    return FALSE;
-  }
-
-  public function pbQueryAll($starting_concept,$path_array,$datatype_property,$limit = NULL,$offset = 0,$order = FALSE,$asc = TRUE,$qualifier = 'STR') {
-
-//    $query = "SELECT DISTINCT ?ind ?data WHERE{ ?ind rdf:type/rdfs:subClassOf* $starting_concept .";
-    $query = "SELECT DISTINCT ?ind ?data WHERE{";
-    $query .= " ?ind rdf:type $starting_concept .";
-    $query .= " OPTIONAL {";
-    $count = 0;
-    if (empty($path_array)) {
-      if (!empty($datatype_property)) {
-        $query .= " ?ind $datatype_property ?data.";
-      }
-    } else {
-      while(!empty($path_array)) {
-        $query .= ($count == 0) ? "?ind " : "?$count ";
-        $query .= array_shift($path_array);
-        $count++;
-        $query .= " ?$count. ";
-//        $query .= " ?$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
-        $query .= " ?$count rdf:type ".array_shift($path_array).". ";
-      }
-      $query .= " ?$count $datatype_property ?data.";
-    }
-    $query .= " }"; // close OPTIONAL
-    $query .= " }"; // close WHERE
-    if ($order) {
-      $range = $asc ? 'ASC':'DESC';
-      $query .= " ORDER BY DESC(BOUND(?data)) ".$range."(".$qualifier."(?data))";
-    }
-    if ($limit !== NULL) {
-      $query .= " LIMIT $limit";
-    }    
-    if ($offset >= 0) {
-      $query .= " OFFSET $offset";
-    }
-    dpm($query);
-    wisski_core_tick('start query');
-    list($ok,$result) = $this->querySPARQL($query);
-    wisski_core_tick('end_query');
-    if ($ok) {
-      $out = array();
-      foreach ($result as $obj) {
-        if (!isset($out[$obj->ind->dumpValue('text')])) {
-          if (property_exists($obj,'data')) $out[$obj->ind->dumpValue('text')] = $obj->data->getValue();
-          else $out[$obj->ind->dumpValue('text')] = '-';
-        }
-      }
-//      dpm($out);
-      return array_keys($out);
-    }
-    return FALSE;
-  }
-
-  public function pbQueryMultiPath($starting_concept,$paths,$limit = NULL,$offset = 0,$order = FALSE,$asc = TRUE,$qualifier = 'STR',$contained_strings = array()) {
-  
-    if (!isset($starting_concept) || $limit === 0 || empty($paths)) return array();
-//    $query = "SELECT DISTINCT ?ind ?data WHERE{ ?ind rdf:type/rdfs:subClassOf* $starting_concept .";
+    if (!isset($starting_concept)) throw new InvalidArgumentException('you must specify a starting concept');
     $query = "SELECT DISTINCT ?ind ";
     $datas = array();
     for ($i = 0; $i < count($paths); $i++) {
@@ -443,15 +378,16 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $query .= "?data$i ";
     }
     $query .= "WHERE{";
+    if (isset($settings['uris'])) $query .= " VALUES ?ind {".implode(' ',$settings['uris'])."}";
     $query .= " ?ind rdf:type $starting_concept .";
     $i = 0;
+    $ids = array();
     foreach($paths as $path) {
+      if (isset($path['id'])) $ids[$i] = $path['id'];
       $path_array = $path['path_array'];
       $datatype_property = $path['datatype_property'];
       $count = 0;
-      $optional = isset($path['optional']) && $path['optional'];
-      $query .= " OPTIONAL";
-      $query .= " {SELECT ?ind ?data$i WHERE {";
+      $query .= "OPTIONAL {SELECT ?ind ?data$i WHERE {";
       if (empty($path_array)) {
         if (!empty($datatype_property)) {
           $query .= " ?ind $datatype_property ?data$i .";
@@ -467,38 +403,43 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         }
         $query .= " ?p".$i."c$count $datatype_property ?data$i .";  
       }
-      $query .= "} LIMIT 1}";//close sub-SELECT
+      $query .= "}";
+      if (isset($path['maximum'])) $query .=  " LIMIT ".$path['maximum'];
+      $query .= " }";//close sub-SELECT
+      if (isset($path['required']) && $path['required']) $query .= " FILTER(BOUND(?data$i))";
       $i++;
     }
-    foreach ($contained_strings as $match) {
-      $query .= " FILTER(";
-      $data = current($datas);
-      if (!empty($data)) $query .= "CONTAINS($data,\"$match\")";
-      $data = next($datas);
-      while ($data = next($datas)) {
-        $query .= " || CONTAINS($data,\"$match\")";
+    if (isset($settings['matches'])) {
+      foreach ($settings['matches'] as $match) {
+        $query .= " FILTER(";
+        $data = current($datas);
+        if (!empty($data)) $query .= "CONTAINS($data,\"$match\")";
+        $data = next($datas);
+        while ($data = next($datas)) {
+          $query .= " || CONTAINS($data,\"$match\")";
+        }
+        $query .= ")";
       }
-      $query .= ")";
     }
     $query .= " }"; // close WHERE
-    if ($order) {
-      $range = $asc ? 'ASC':'DESC';
+    if (isset($settings['order'])) {
       $query .= " ORDER BY";
       foreach($datas as $data) {
         $query .= " DESC(BOUND($data)) ";
-        $query .= $range."(".$qualifier."($data))";
+        if (isset($settings['qualifier'])) $data = $settings['qualifier']."($data)";
+        $query .= $settings['order']."($data)";
       }
     }
-    if ($limit !== NULL) {
-      $query .= " LIMIT $limit";
+    if (isset($settings['limit'])) {
+      $query .= " LIMIT ".$settings['limit'];
     }    
-    if ($offset >= 0) {
-      $query .= " OFFSET $offset";
+    if (isset($settings['offset'])) {
+      $query .= " OFFSET ".$settings['offset'];
     }
     dpm($query);
-    wisski_core_tick('start multi query');
+    wisski_core_tick('start PB query');
     list($ok,$result) = $this->querySPARQL($query);
-    wisski_core_tick('end multi query');
+    wisski_core_tick('end PB query');
     if ($ok) {
       $out = array();
       foreach ($result as $obj) {
@@ -506,8 +447,17 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         if (!isset($out[$ind])) {
           $out[$ind] = array();
         }
-        for ($i = 0; $i < count($paths); $i++) {
-          if (property_exists($obj,'data'.$i)) $out[$ind][$i][] = $obj->{'data'.$i}->getValue();
+        $i = 0;
+        foreach ($paths as $path) {
+          if (property_exists($obj,'data'.$i)) {
+            $value = $obj->{'data'.$i}->getValue();
+            if (isset($ids[$i])) {
+              $out[$ind][$ids[$i]][] = $value;
+            } else {
+              $out[$ind][$i][] = $value;
+            }
+          }
+          $i++;
         }
       }
       dpm($out);
@@ -515,100 +465,69 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }
     return FALSE;
   }
+  
+  public function pbQuerySingle($individual_uri,$starting_concept,$path_array,$datatype_property,$limit = NULL,$offset = 0,$order = FALSE,$asc = TRUE,$qualifier = 'STR') {
+
+    $path = array(
+      'path_array' => $path_array,
+      'datatype_property' => $datatype_property,
+    );
+    $settings = array();
+    if (isset($limit)) $settings['limit'] = $limit;
+    if ($offset > 0) $settings['offset'] = $offset;
+    if ($order) {
+      $settings['order'] = $asc ? 'ASC' : 'DESC';
+    }
+    $settings['qualifier'] = $qualifier;
+    $settings['uris'] = array($individual_uri);
+    return $this->pbQuery($starting_concept,$path,$settings);
+  }
+
+  public function pbQueryAll($starting_concept,$path_array,$datatype_property,$limit = NULL,$offset = 0,$order = FALSE,$asc = TRUE,$qualifier = 'STR') {
+
+    $path = array(
+      'path_array' => $path_array,
+      'datatype_property' => $datatype_property,
+    );
+    $settings = array();
+    if (isset($limit)) $settings['limit'] = $limit;
+    if ($offset > 0) $settings['offset'] = $offset;
+    if ($order) {
+      $settings['order'] = $asc ? 'ASC' : 'DESC';
+    }
+    $settings['qualifier'] = $qualifier;
+    return $this->pbQuery($starting_concept,$path,$settings);
+  }
+
+  public function pbQueryMultiPath($starting_concept,$paths,$limit = NULL,$offset = 0,$order = FALSE,$asc = TRUE,$qualifier = 'STR',$contained_strings = array()) {
+  
+    $settings = array();
+    if (isset($limit)) $settings['limit'] = $limit;
+    if ($offset > 0) $settings['offset'] = $offset;
+    if ($order) {
+      $settings['order'] = $asc ? 'ASC' : 'DESC';
+    }
+    $settings['qualifier'] = $qualifier;
+    if(isset($contained_strings)) $settings['matches'] = $contained_strings;    
+    return $this->pbQuery($starting_concept,$paths,$settings);
+  }
+
 
   public function pbTitleQuery($uris,$starting_concept,$paths) {
 
-//    $query = "SELECT DISTINCT ?ind ?data WHERE{ ?ind rdf:type/rdfs:subClassOf* $starting_concept .";
-    $query = "SELECT DISTINCT ?ind ";
-    for ($i = 0; $i < count($paths); $i++) {
-      $query .= "?data$i ";
-    }
-    $query .= "WHERE{";
-    $query .= " VALUES ?ind {".implode(' ',$uris)."}";
-    $query .= " ?ind rdf:type $starting_concept .";
-    $i = 0;
-    foreach($paths as $path) {
-      $path_array = $path['path_array'];
-      $datatype_property = $path['datatype_property'];
-      $count = 0;
-      $optional = isset($path['optional']) && $path['optional'];
-      $query .= " OPTIONAL";
-      $query .= " {SELECT ?ind ?data$i WHERE {";
-      if (empty($path_array)) {
-        if (!empty($datatype_property)) {
-          $query .= " ?ind $datatype_property ?data$i .";
-        }
-      } else {
-        while(!empty($path_array)) {
-          $query .= ($count == 0) ? "?ind " : "?p".$i."c$count ";
-          $query .= array_shift($path_array);
-          $count++;
-          $query .= " ?p".$i."c$count. ";
-//          $query .= " ?$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
-          $query .= " ?p".$i."c$count rdf:type ".array_shift($path_array).". ";
-        }
-        $query .= " ?p".$i."c$count $datatype_property ?data$i .";    
-      }
-      $query .= " } LIMIT 1}"; // close sub-SELECT
-      if (!$optional) $query .= " FILTER(BOUND(?data$i))";
-      $i++;
-    }
-    $query .= " }"; // close WHERE
-    dpm($query);
-    wisski_core_tick('start title query');
-    list($ok,$result) = $this->querySPARQL($query);
-    wisski_core_tick('end title query');
-    if ($ok) {
-      $out = array();
-      foreach ($result as $obj) {
-        if (!isset($out[$obj->ind->dumpValue('text')])) {
-          for ($i = 0; $i < count($paths); $i++) {
-            $data_name = 'data'.$i;
-            if (property_exists($obj,$data_name)) $out[$obj->ind->dumpValue('text')][$paths[$i]['instance_id']] = $obj->{$data_name}->getValue();
-//            else $out[$obj->ind->dumpValue('text')] = '-';
-          }        
-        }
-      }
-      dpm($out);
-      return $out;
-    }
-    return FALSE;
+    $settings = array('uris' => $uris);
+    return $this->pbQuery($starting_concept,$paths,$settings);
   }
 
   public function pbMultiQuery(array $individual_uris,$starting_concept,$path_array,$datatype_property,$single_result = FALSE) {
     
-    $query = "SELECT DISTINCT ?ind ?data WHERE{";
-    $query .= " VALUES ?ind { ".implode(' ',$individual_uris)." }";
-    $query .= " ?ind rdf:type/rdfs:subClassOf* $starting_concept .";
-    $count = 0;
-    if (empty($path_array)) {
-      $query .= " ?ind $datatype_property ?data. }";
-    } else {
-      while(!empty($path_array)) {
-        $query .= ($count == 0) ? "?ind " : "?$count ";
-        $query .= array_shift($path_array);
-        $count++;
-        $query .= " ?$count. ";
-        $query .= " ?$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
-      }
-      $query .= " ?$count $datatype_property ?data. }";
-    }
-//    dpm($query);
-    list($ok,$result) = $this->querySPARQL($query);
-    if ($ok) {
-      $out = array();
-      foreach ($result as $obj) {
-        $ind_uri = $obj->ind->dumpValue('text');
-//        if (in_array($ind_uri,$individual_uris)) {
-          if ($single_result) {
-            if (!isset($out[$ind_uri])) $out[$ind_uri] = $obj->data->getValue();
-          } else $out[$ind_uri][] = $obj->data->getValue();
-//        }
-      }
-//      dpm($out);
-      return $out;
-    }
-    return FALSE;
+    $path = array(
+      'path_array' => $path_array,
+      'datatype_property' => $datatype_property,
+    );
+    if ($single_result) $path['maximum'] = 1;
+    $settings = array('uris' => $individual_uris);
+    return $this->pbQuery($starting_concept,$path,$settings);
   }
 
   public function pbUpdate($individual_uri,$individual_name,$starting_concept,$path_array,$datatype_property,$new_data,$delete_old) {
