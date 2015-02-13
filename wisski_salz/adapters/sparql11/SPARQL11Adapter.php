@@ -387,7 +387,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $path_array = $path['path_array'];
       $datatype_property = $path['datatype_property'];
       $count = 0;
-      $query .= "OPTIONAL {SELECT ?ind ?data$i WHERE {";
+      if (count($paths) > 1) $query .= "OPTIONAL {SELECT ?ind ?data$i WHERE {";
       if (empty($path_array)) {
         if (!empty($datatype_property)) {
           $query .= " ?ind $datatype_property ?data$i .";
@@ -403,10 +403,12 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         }
         $query .= " ?p".$i."c$count $datatype_property ?data$i .";  
       }
-      $query .= "}";
-      if (isset($path['maximum'])) $query .=  " LIMIT ".$path['maximum'];
-      $query .= " }";//close sub-SELECT
-      if (isset($path['required']) && $path['required']) $query .= " FILTER(BOUND(?data$i))";
+      if (count($paths) > 1) {
+        $query .= "}";
+        if (isset($path['maximum']) && $path['maximum'] > 0) $query .=  " LIMIT ".$path['maximum'];
+        $query .= " }";//close sub-SELECT
+        if (isset($path['required']) && $path['required']) $query .= " FILTER(BOUND(?data$i))";
+      }
       $i++;
     }
     if (isset($settings['matches'])) {
