@@ -128,7 +128,7 @@ class WisskiCoreEntityController extends EntityAPIController {
     if (!isset($values['uri']) && isset($values['type'])) {
       $values['uri'] = wisski_core_make_uri('',$values['type']);
     }
-    dpm($values);
+//    dpm($values);
     if (isset($values['is_new']) && !$values['is_new']) {
       db_update('wisski_entity_data')
         ->fields(array('uri' => $values['uri'],'type' => $values['type']))

@@ -568,13 +568,13 @@ function _wisski_core_extract_paths($array) {
     $single = TRUE;
   }
   foreach($array as $key => $path) {
-    $out = $path->short_name.': ';
+    $out = '<b>'.$path->short_name.'</b>: ';
     do {
       foreach(unserialize($path->path_array) as $step) {
         $out .= $step.' => ';
       }
     } while (isset($path->external_path) && isset($array[$path->external_path]) && $path = $array[$path->external_path]);
-    $out .= $path->datatype_property;
+    $out .= '<b>'.$path->datatype_property.'</b>';
     $output[$key] = $out;
   }
   if ($single) return current($output);
@@ -1006,4 +1006,46 @@ function wisski_core_short_titles_form_cancel($form,&$form_state) {
   variable_del('wisski_core_short_titles_example_entity');
   $bundle = $form_state['storage']['bundle'];
   $form_state['redirect'] = 'admin/structure/wisski_core_bundle/manage/'.$bundle->type;
+}
+
+function wisski_core_data_mapping_form($form,$form_state) {
+
+  $form = array();
+  
+  $hook = 'field_widget_info';
+  $modules = module_implements($hook,TRUE);
+  
+  $form['list'] = array(
+    '#type' => 'select',
+    '#options' => $modules + array(-1 => ' - select - '),
+    '#default_value' => -1,
+    '#ajax' => array(
+      'wrapper' => 'wisski-mapping-form-selection',
+      'callback' => 'wisski_core_data_mapping_form_callback',
+    ),
+  );
+  
+  $disabled = TRUE;
+  $choice = array();
+  if (isset($form_state['values']['list']) && $form_state['values']['list'] !== -1) {
+    $settings = module_invoke($modules[$form_state['values']['list']],$hook);
+    $settings = array_shift($settings);
+    dpm($settings);
+    $choice = array_keys($settings);
+    $disabled = FALSE;
+  }
+  
+  $form['selection'] = array(
+    '#type' => 'select',
+    '#options' => $choice,
+    '#prefix' => '<div id=wisski-mapping-form-selection>',
+    '#suffix' => '</div>',
+    '#disabled' => $disabled,
+  );
+  
+  return $form;
+}
+
+function wisski_core_data_mapping_form_callback($form,$form_state) {
+  return $form['selection'];
 }

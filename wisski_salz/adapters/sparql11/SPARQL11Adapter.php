@@ -229,7 +229,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   * @author domerz
   */
   private function requestSPARQL($type,$query = NULL) {
-        
+    
+    dpm($query);
     $requestcount = &drupal_static('wisski_request_count');
     if (!isset($requestcount)) $requestcount = 0;
     $requestcount++;
@@ -435,7 +436,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       }
     }
     $query .= " }"; // close WHERE
-    if (isset($settings['order'])) {
+    if (isset($settings['order']) && !empty($datas)) {
       $query .= " ORDER BY";
       foreach($datas as $data) {
         $query .= " DESC(BOUND($data)) ";
@@ -449,7 +450,6 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     if (isset($settings['offset'])) {
       $query .= " OFFSET ".$settings['offset'];
     }
-    dpm($query);
     wisski_core_tick('start PB query');
 //    throw new Exception('STOP');
     list($ok,$result) = $this->querySPARQL($query);
@@ -461,8 +461,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         if (!isset($out[$ind])) {
           $out[$ind] = array();
         }
-        $i = 0;
-        foreach ($paths as $path) {
+        for ($i = 0; $i < count($paths); $i++) {
           if (property_exists($obj,'data'.$i)) {
             $value = $obj->{'data'.$i}->getValue();
             if (isset($ids[$i])) {
@@ -471,7 +470,6 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
               $out[$ind][$i][] = $value;
             }
           }
-          $i++;
         }
       }
       dpm($out);
@@ -482,12 +480,15 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   
   public function pbQuerySingle($individual_uri,$starting_concept,$path_array,$datatype_property,$limit = NULL,$offset = 0,$order = FALSE,$asc = TRUE,$qualifier = 'STR') {
 
-    $path = array(
-      array(
-        'path_array' => $path_array,
-        'datatype_property' => $datatype_property,
-      ),
-    );
+    $path = array();
+    if (isset($path_array) || isset($datatype_property)) {
+      $path = array(
+        array(
+          'path_array' => $path_array,
+          'datatype_property' => $datatype_property,
+        ),
+      );
+    }
     $settings = array();
     if (isset($limit)) $settings['limit'] = $limit;
     if ($offset > 0) $settings['offset'] = $offset;
@@ -501,10 +502,15 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
   public function pbQueryAll($starting_concept,$path_array,$datatype_property,$limit = NULL,$offset = 0,$order = FALSE,$asc = TRUE,$qualifier = 'STR') {
 
-    $path = array(
-      'path_array' => $path_array,
-      'datatype_property' => $datatype_property,
-    );
+    $path = array();
+    if (isset($path_array) || isset($datatype_property)) {
+      $path = array(
+        array(
+          'path_array' => $path_array,
+          'datatype_property' => $datatype_property,
+        ),
+      );
+    }
     $settings = array();
     if (isset($limit)) $settings['limit'] = $limit;
     if ($offset > 0) $settings['offset'] = $offset;
@@ -537,10 +543,15 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
   public function pbMultiQuery(array $individual_uris,$starting_concept,$path_array,$datatype_property,$single_result = FALSE) {
     
-    $path = array(
-      'path_array' => $path_array,
-      'datatype_property' => $datatype_property,
-    );
+    $path = array();
+    if (isset($path_array) || isset($datatype_property)) {
+      $path = array(
+        array(
+          'path_array' => $path_array,
+          'datatype_property' => $datatype_property,
+        ),
+      );
+    }
     if ($single_result) $path['maximum'] = 1;
     $settings = array('uris' => $individual_uris);
     return $this->pbQuery($starting_concept,$path,$settings);
@@ -548,6 +559,13 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
   public function pbUpdate($individual_uri,$individual_name,$starting_concept,$path_array,$datatype_property,$new_data,$delete_old) {
     
+    if (is_array($new_data)) {
+      $inds = array();
+      foreach($new_data as $nd) {
+        $inds += $this->pbUpdate($individual_uri,$individual_name,$starting_concept,$path_array,$datatype_property,$nd,$delete_old);
+      }
+      return $inds;
+    }
     global $base_url;
     $graph_name = variable_get('wisski_graph_name','<'.$base_url.'/wisski_graph>');
     list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ GRAPH $graph_name {?s ?p ?o}} LIMIT 1");

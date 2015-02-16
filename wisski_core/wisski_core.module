@@ -254,6 +254,16 @@ function wisski_core_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
   
+  $items['wisski/data_mapping'] = array(
+    'title' => 'WissKI - Manage Data Mapping',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_data_mapping_form',4),
+    'access arguments' => array('administer wisski paths'),
+//    'access callback' => TRUE,
+    'file' => 'wisski_core.pathbuilder.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  
   $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/short_title'] = array(
     'title' => 'Edit Short Titles',
     'page callback' => 'drupal_get_form',
@@ -286,6 +296,8 @@ function wisski_core_menu() {
     'type' => MENU_LOCAL_TASK,
     'weight' => 5,
   );
+  
+  
   
   $entity_info = entity_get_info('wisski_individual');
   foreach ($entity_info['bundles'] as $bundle_name => $bundle_data) {

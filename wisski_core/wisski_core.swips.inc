@@ -4,6 +4,8 @@
 // SWIPS - (Field) {S}torage {w}ith {P}ath{s}
 //////////////////////////////////////////////
 
+include_once 'wisski_core.pathbuilder.inc';
+
 /**
 * implements @see hook_field_storage_info
 */
@@ -89,10 +91,11 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
         $individual = $entity->uri;
         $field_info = array();
         $wrapper = entity_metadata_wrapper('wisski_individual',$entity);
-//        dpm((array)($wrapper));
+        dpm((array)($wrapper->getPropertyInfo()));
         foreach($instances as $instance) {
           list($starting_concept,$full_path,$data) = wisski_core_make_path_array($instance['id']);
           $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
+          $info = _wisski_core_gather_field_data($instance['id'],$info);
           if (!empty($info)) {
             $info = $info[$individual][0];
             try {
@@ -104,7 +107,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
               }
             } catch (EntityMetadataWrapperException $e) {
               trigger_error("EntityMetadataWrapperException ".$e->getMessage(),E_USER_ERROR);
-              dpm(array('type'=>$type,'info'=>$info));
+              dpm(array('info'=>$info));
             }
           }
           $skip_fields[$instance['field_id']] = $entity->id;
@@ -148,7 +151,7 @@ function wisski_core_set_short_title(&$entity) {
     if ($pattern) $title = wisski_core_make_short_title($entity,array_expand($pattern)); 
   }
   $entity->title = $title?:variable_get('wisski_titles_master_fallback','').$entity->uri;
-  dpm($entity);
+//  dpm($entity);
   db_update('wisski_entity_data')
     ->fields(array('title' => $entity->title))
     ->condition('uri',$entity->uri)
@@ -198,10 +201,12 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
       list($starting_concept,$full_path,$data) = wisski_core_make_path_array($instance['id']);
       $new_values = field_get_items($entity_type,$entity,$instance['field_name']);
       $delete = !property_exists($entity,'is_new') || !$entity->is_new;
+      $db_values = array();
       foreach($new_values as $delta) {
-        dpm($delta);
-        if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$full_path,$data,$delta['value'],$delete)) {
-          dpm($news);
+//        dpm($delta);
+        $set_val = _wisski_core_divide_field_data($instance['id'],$delta);
+        if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$full_path,$data,$delta,$delete)) {
+//          dpm($news);
           foreach($news as $class => $inds) {
             if (!isset($new_individuals[$class])) $new_individuals[$class] = array();
             $new_individuals[$class] += $inds;
@@ -261,6 +266,58 @@ function wisski_core_make_uri($entity_title,$bundle_name,$ind_only = TRUE) {
   else return array($ind_uri,$bundle_uri);
 }
 
+/**
+ * This function decides which of the field data is stored by this storage engine
+ * and which to keep in the db table. The storage engine data is returned.
+ */
+function _wisski_core_divide_field_data($instance_id, array $data) {
+
+  dpm(array(__FUNCTION__=>func_get_args()));
+  //while in development we only store ['value'] entries, rest is DB stuff
+  $out = array();
+  if (isset($data['value'])) {
+    $out['value'] = $data['value'];
+    unset($data['value']);
+  }
+  if (!empty($data)) {
+    $result = db_select('wisski_special_field_cache','cache')
+      ->fields('cache')
+      ->condition('instance_id',$instance_id)
+      ->execute()
+      ->fetch();
+    if (empty($result)) {
+      db_insert('wisski_special_field_cache')
+        ->fields(array(
+          'instance_id' => $instance_id,
+          'field_data' => $data,
+          ))
+        ->execute();
+    } else {
+      db_update('wisski_special_field_cache')
+        ->fields(array('field_data' => $data))
+        ->condition('instance_id',$instance_id)
+        ->execute();
+    }
+  }
+  return $out;
+}
+
+function _wisski_core_gather_field_data($instance_id,$data) {
+  
+  dpm(array(__FUNCTION__=>func_get_args()));
+  $out = array();
+  if (is_array($data)) $out = $data;
+  else $out['value'] = $data;
+  $result = db_select('wisski_special_field_cache','cache')
+              ->fields('cache')
+              ->condition('instance_id',$instance_id)
+              ->execute()
+              ->fetch();
+  if (!empty($result) && isset($result['field_data'])) {
+    $out += $result['field_data'];
+  }
+  return $out;
+}
 
 /**
  * Implements hook_field_storage_delete().
