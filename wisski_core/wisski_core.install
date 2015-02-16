@@ -15,7 +15,7 @@ function wisski_core_install() {
 
     // Attach created field to proper bundle.
     if (!field_read_instance('wisski_entity_data', 'wisski_core_field_1', 'wisski_core_bundle_1')) {
-      field_attach_create_bundle('wisski_core_entity', 'wisski_core_bundle_1');
+      field_attach_create_bundle('wisski_individual', 'wisski_core_bundle_1');
       $instance = array(
         'field_name' => 'wisski_core_field_1',
         'label' => t('Field 1 of wisski_core_bundle_1 bundle'),
@@ -366,27 +366,30 @@ function wisski_core_schema() {
 */
   );
 
-/*  $schema['cache_wisski_entity_title_cache'] = array(
-    'description' => 'Stores short tiltes for entities',
+  $schema['wisski_special_field_cache'] = array(
+    'description' => 'table that stores field data that cannot be stored in the triple store',
     'fields' => array(
-      'uri' => array(
-        'description' => 'entity URI',
-        'type' => 'varchar',
-        'length' => 255,
-//        'not null' => TRUE,
-      ),
-      'short_title' => array(
-        'description' => 'the entity\'s short title',
-        'type' => 'varchar',
-        'length' => 255,
+      'instance_id' => array(
+        'description' => 'ID of the field instance',
+        'type' => 'int',
         'not null' => TRUE,
       ),
+      'field_data' => array(
+        'description' => 'array of field data as stored by standard field engine',
+        'type' => 'blob',
+        'size' => 'big',
+        'serialize' => TRUE,
+      ),
     ),
-    'unique keys' => array(
-      'uri' => array('uri'),
+    'foreign keys' => array(
+      'instance_id' => array(
+        'table' => 'field_config_instance',
+        'columns' => array('id' => 'instance_id'),
+      ),
     ),
+    'unique keys' => array('instance_id' => array('instance_id')),
   );
-*/
+  
   // Table for storing data of entity exportable bundles.
   $schema['wisski_entity_bundles'] = array(
     'description' => 'The base table for bundles of wisski entities',

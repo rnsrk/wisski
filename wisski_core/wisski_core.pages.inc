@@ -13,17 +13,15 @@ function wisski_core_list_bundles() {
   $counts = wisski_salz_pb_get_bundles_with_count();
   wisski_core_tick(__FUNCTION__.' counts');
   dpm($counts);
-  foreach (wisski_core_bundle_load_multiple() as $entity_type_key => $entity_type) {
-    $bundle = entity_load_single('wisski_core_bundle',$entity_type_key);
-    $tag = isset($counts[$bundle->uri])?$counts[$bundle->uri]:FALSE;
-//    if (!is_int($tag)) dpm($tag);
+  $bundles = wisski_core_bundle_load_multiple();
+  dpm($bundles);
+  foreach ($bundles as $entity_type_key => $entity_type) {
+    $tag = isset($counts[$entity_type->uri]) ? $counts[$entity_type->uri] : FALSE;
     if ($tag) {
-      $items[] = l(entity_label('wisski_core_bundle', $entity_type).' ('.$tag.')', 'wisski/navigate/' . $entity_type_key);
+      $items[$entity_type_key] = l(entity_label('wisski_core_bundle', $entity_type).' ('.$tag.')', 'wisski/navigate/' . $entity_type_key);
     }
   }
   wisski_core_tick(__FUNCTION__.' names');
-  natsort($items);
-  wisski_core_tick(__FUNCTION__.' sort');
   dpm(wisski_core_tick(NULL));
   return array(
     'list' => array(
@@ -507,21 +505,22 @@ function _wisski_core_get_items($type,$count_only = FALSE) {
  *   Renderable array.
  */
 function wisski_core_entity_view($entity) {
-
+  
+  dpm($entity);
   $wisski_semaphore = &drupal_static(__FUNCTION__);
-  if (isset($wisski_semaphore) && $wisski_semaphore) {
+  if (isset($wisski_semaphore) && $wisski_semaphore > 1) {
     dpm(__FILE__.'('.__LINE__.')'."tick");
+    $wisski_semaphore = 0;
     return;
   }
-  $wisski_semaphore = TRUE;
+  $wisski_semaphore = isset($wisski_semaphore)? $wisski_semaphore+1 : 1;
   if (is_array($entity)) {
     $array = $entity;
     $entity = current($entity);
   } else {
-    $array = array(entity_id('wisski_core_entity', $entity) => $entity);
+    $array = array(entity_id('wisski_individual', $entity) => $entity);
   }
-  drupal_set_title(entity_label('wisski_core_entity', $entity));
-  $entity_view = entity_view('wisski_core_entity', $array);
-  $wisski_semaphore = FALSE;
+  drupal_set_title(entity_label('wisski_individual', $entity));
+  $entity_view = entity_view('wisski_individual', $array);
   return $entity_view;
 }

@@ -70,41 +70,42 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');    
 //  dpm("call to hook_field_storage_pre_load for ".$entity_type);
 //  dpm(func_get_args());
-  if($entity_type == 'wisski_core_entity') {
+  if($entity_type == 'wisski_individual') {
 //    dpm($queried_entities);
     $wisski_semaphore = &drupal_static(__FUNCTION__);
     if (isset($wisski_semaphore) && $wisski_semaphore) {
-      dpm(__FILE__.'('.__LINE__.'): tick');
+      dpm(__FUNCTION__.'('.__LINE__.'): tick');
       return;
     }
     $wisski_semaphore = TRUE;
     if ($age == FIELD_LOAD_REVISION) {
-      dpm(__FILE__.": load revision");
+      dpm(__FUNCTION__.": load revision");
       //load from default storage
 //      module_invoke('field_sql_storage','field_storage_load',$entity_type, $queried_entities, $age, $skip_fields, $options);
     } else {
       foreach($queried_entities as $entity) {
-        //remember that $entity->type is the bundle, not 'wisski_core_entity'
-        $instances = field_info_instances('wisski_core_entity',$entity->type);
+        //remember that $entity->type is the bundle, not 'wisski_individual'
+        $instances = field_info_instances('wisski_individual',$entity->type);
         $individual = $entity->uri;
         $field_info = array();
-        $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
+        $wrapper = entity_metadata_wrapper('wisski_individual',$entity);
 //        dpm((array)($wrapper));
         foreach($instances as $instance) {
           list($starting_concept,$full_path,$data) = wisski_core_make_path_array($instance['id']);
           $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
           if (!empty($info)) {
+            $info = $info[$individual][0];
             try {
               $type = $wrapper->$instance['field_name']->type();
-              if ('list' == substr($type,0,4))
+              if ('list' == substr($type,0,4)) {
                 $wrapper->$instance['field_name']->set($info);
-              else
-                $wrapper->$instance['field_name']->set(current($info));
+              } else {
+                $wrapper->$instance['field_name']->set($info[0]);
+              }
             } catch (EntityMetadataWrapperException $e) {
               trigger_error("EntityMetadataWrapperException ".$e->getMessage(),E_USER_ERROR);
               dpm(array('type'=>$type,'info'=>$info));
             }
-            $field_info[$instance['id']] = $info;
           }
           $skip_fields[$instance['field_id']] = $entity->id;
         }//END foreach $instances
@@ -170,7 +171,7 @@ function wisski_field_storage_load($entity_type, $entities, $age, $fields, $opti
 function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
 
 //  dpm("call to hook_field_storage_write for $entity_type");
-  if ($entity_type == 'wisski_core_entity') {
+  if ($entity_type == 'wisski_individual') {
     $bundle_info = NULL;
 //    dpm(func_get_args());
     if (property_exists($entity,'uri') && $entity->uri != NULL) {
@@ -233,8 +234,8 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
             'title' => $title,
             'same_individuals' => array(),
           );
-          $new_entity = entity_create('wisski_core_entity',$info);
-          entity_save('wisski_core_entity',$new_entity);
+          $new_entity = entity_create('wisski_individual',$info);
+          entity_save('wisski_individual',$new_entity);
         }
       }
     }

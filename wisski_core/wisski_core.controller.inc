@@ -58,11 +58,11 @@ class WisskiCoreEntityController extends EntityAPIController {
                       ->execute()
                       ->fetchAllAssoc('uri');
       foreach ($db_entities as $uri => $obj) {
-        $entity = entity_create("wisski_core_entity", array('type' => $obj->type, 'uri' => $uri, 'is_new' => FALSE, 'id' => $obj->id));
+        $entity = entity_create('wisski_individual', array('type' => $obj->type, 'uri' => $uri, 'is_new' => FALSE, 'id' => $obj->id));
         $entities[$entity->id] = $entity;
       }
       $ids = array_diff($ids,array_keys($db_entities));
-      dpm($ids);
+//      dpm($ids);
       foreach ($ids as $id) {
         //here we assume that $id is a URI
         wisski_core_tick('ids');
@@ -80,7 +80,7 @@ class WisskiCoreEntityController extends EntityAPIController {
             if (isset($bundles[$bundle_uri])) {
               $bundle = $bundles[$bundle_uri];
               //TODO make short title
-              $entity = entity_create("wisski_core_entity", array('type' => $bundle->type, 'uri' => $id));
+              $entity = entity_create('wisski_individual', array('type' => $bundle->type, 'uri' => $id));
               $entity->is_new = FALSE;
               $entities[$entity->id] = $entity;
             }
@@ -100,7 +100,7 @@ class WisskiCoreEntityController extends EntityAPIController {
         foreach($inds as $ind_uri) {
           $entity_title = $ind_uri;
           //TODO make short titles
-          $entity = entity_create("wisski_core_entity", array('type' => $conditions["type"], 'title' => $entity_title, 'uri' => $ind_uri));
+          $entity = entity_create('wisski_individual', array('type' => $conditions["type"], 'title' => $entity_title, 'uri' => $ind_uri));
           $entity->is_new = FALSE;
           $entities[$entity->id] = $entity;
         }
@@ -109,11 +109,15 @@ class WisskiCoreEntityController extends EntityAPIController {
         trigger_error("Problems when loading bundle $bundle_type",E_USER_ERROR);
       }
     }
+//    dpm($entities);
     wisski_core_tick('full run');
-    field_attach_load('wisski_core_entity',$entities);
+    field_attach_load('wisski_individual',$entities);
     wisski_core_tick('field load');
     dpm(wisski_core_tick(NULL));
-    if ($error) dpm($ids);
+    if ($error) {
+      trigger_error('probelems when loading entities '.serialize($ids),E_USER_WARNING);
+    }
+//    dpm($entities);
     return $entities;
   }
   
@@ -142,8 +146,8 @@ class WisskiCoreEntityController extends EntityAPIController {
   
   public function save($entity) {
   
-//    field_attach_presave('wisski_core_entity', $entity);
-//    field_attach_update('wisski_core_entity', $entity);
+//    field_attach_presave('wisski_individual', $entity);
+//    field_attach_update('wisski_individual', $entity);
     if (!property_exists($entity,'title')) {
       dpm("\"title\" does not exist");
       if (!property_exists($entity,'uri')) {
@@ -167,7 +171,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       }
     }
     if (!wisski_salz_pb_insert_individual($entity_uri,$bundle_uri)) trigger_error("Could not save ".$entity->title,E_USER_WARNING);
-    field_attach_insert('wisski_core_entity', $entity);
+    field_attach_insert('wisski_individual', $entity);
   }
 
 
@@ -177,7 +181,7 @@ class WisskiCoreEntityController extends EntityAPIController {
   public function buildContent($entity, $view_mode = 'full', $langcode = NULL, $content = array()) {
     
 
-//    $wrapper = entity_metadata_wrapper('wisski_core_entity', $entity);
+//    $wrapper = entity_metadata_wrapper('wisski_individual', $entity);
 
     // Make "title" and "description" properties themed like default fields.
     $content['title'] = array(
@@ -190,7 +194,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       '#language' => LANGUAGE_NONE,
       '#field_name' => 'field_fake_title',
       '#field_type' => 'text',
-      '#entity_type' => 'wisski_core_entity',
+      '#entity_type' => 'wisski_individual',
       '#bundle' => $entity->type,
       '#items' => array(array('value' => $entity->title)),
       '#formatter' => 'text_default',
@@ -208,7 +212,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       '#language' => LANGUAGE_NONE,
       '#field_name' => 'field_fake_title',
       '#field_type' => 'text',
-      '#entity_type' => 'wisski_core_entity',
+      '#entity_type' => 'wisski_individual',
       '#bundle' => $entity->type,
       '#items' => array(array('value' => $entity->uri)),
       '#formatter' => 'text_default',
@@ -226,7 +230,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       '#language' => LANGUAGE_NONE,
       '#field_name' => 'field_fake_description',
       '#field_type' => 'text',
-      '#entity_type' => 'wisski_core_entity',
+      '#entity_type' => 'wisski_individual',
       '#bundle' => $entity->type,
       '#items' => array(array('value' => $entity->description)),
       
@@ -248,7 +252,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       '#language' => LANGUAGE_NONE,
       '#field_name' => 'field_fake_same_individuals',
       '#field_type' => 'text',
-      '#entity_type' => 'wisski_core_entity',
+      '#entity_type' => 'wisski_individual',
       '#bundle' => $wrapper->type->value(),
       '#items' => array(array('value' => $wrapper->same_individuals->value())),
       '#formatter' => 'text_default',
@@ -351,7 +355,7 @@ class WisskiCoreBundleController extends EntityAPIControllerExportable {
     parent::save($entity, $transaction);
     // Rebuild menu registry.
     variable_set('menu_rebuild_needed', TRUE);
-    field_attach_create_bundle('wisski_core_entity',$this);
+    field_attach_create_bundle('wisski_individual',$this);
   }
 }
 

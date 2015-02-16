@@ -155,7 +155,7 @@ function wisski_core_choose_bundle() {
   drupal_set_title(t('Choose type of entity to add.'));
 
   // Show list of all existing entity bundles.
-  $entity_info = entity_get_info('wisski_core_entity');
+  $entity_info = entity_get_info('wisski_individual');
   $items = array();
   foreach ($entity_info['bundles'] as $bundle_name => $bundle_data) {
     $items[] = l($bundle_data['label'], 'wisski_core/add/' . $bundle_name);
@@ -190,49 +190,11 @@ function wisski_core_entity_add($type) {
   drupal_set_title(t('Create @name', array('@name' => entity_label('entity_type', $entity_type))));
   
   // Return form for the given entity bundle.
-  $entity = entity_create('wisski_core_entity', array('type' => $type));
-//  $output = entity_ui_get_form('wisski_core_entity', $entity);
+  $entity = entity_create('wisski_individual', array('type' => $type));
+//  $output = entity_ui_get_form('wisski_individual', $entity);
   $output = drupal_get_form('wisski_core_entity_form', $entity);
   return $output;
 }
-
-/**
- * Form constructor for "wisski_core_bundle_1" bundle.
- * 
- * This function is necessary for entity_ui_get_form() function.
- * 
- * @see entity_ui_get_form()
- * 
- * @param object $entity
- *   Enity to edit.
- * 
- * @return array
- *   Entity edit form.
- */
-/*
-function wisski_core_entity_edit_wisski_core_bundle_1_form($form, &$form_state, $entity) {
-  return wisski_core_form($form, $form_state, $entity);
-}
-*/
-
-/**
- * Form constructor for "wisski_core_bundle_2" bundle.
- * 
- * This function is necessary for entity_ui_get_form() function.
- * 
- * @see entity_ui_get_form()
- * 
- * @param object $entity
- *   Enity to edit.
- * 
- * @return array
- *   Entity edit form.
- */
-/*
-function wisski_core_entity_edit_wisski_core_bundle_2_form($form, &$form_state, $entity) {
-  return wisski_core_form($form, $form_state, $entity);
-}
-*/
 
 /**
  * Form constructor for the entity edit form.
@@ -258,7 +220,7 @@ function wisski_core_entity_form($form, &$form_state, $entity) {
   $form_state['wisski_core'] = $entity;
 
   // Describe all properties of the entity which shall be shown on the form.
-//  $wrapper = entity_metadata_wrapper('wisski_core_entity', $entity);
+//  $wrapper = entity_metadata_wrapper('wisski_individual', $entity);
   $form['title'] = array(
     '#type' => 'textfield',
     '#required' => TRUE,
@@ -299,7 +261,7 @@ function wisski_core_entity_form($form, &$form_state, $entity) {
   }
   */
   // Add fields of the entity to the form.
-  field_attach_form('wisski_core_entity', $entity, $form, $form_state);
+  field_attach_form('wisski_individual', $entity, $form, $form_state);
 
   // Add some buttons.
   $submit = array();
@@ -314,7 +276,7 @@ function wisski_core_entity_form($form, &$form_state, $entity) {
     '#value' => t('Save entity'),
     '#submit' => $submit + array('wisski_core_entity_form_submit'),
   );
-  $entity_id = entity_id('wisski_core_entity', $entity);
+  $entity_id = entity_id('wisski_individual', $entity);
   if (!empty($entity_id)) {
     $form['actions']['delete'] = array(
       '#type' => 'submit',
@@ -351,12 +313,12 @@ function wisski_core_entity_form_submit(&$form, &$form_state) {
   // Automatically get edited entity from the form and save it.
   // @see entity_form_submit_build_entity()
   $entity = $form_state['wisski_core'];
-  entity_form_submit_build_entity('wisski_core_entity', $entity, $form, $form_state);
-  $wrapper = entity_metadata_wrapper('wisski_core_entity', $entity);
+  entity_form_submit_build_entity('wisski_individual', $entity, $form, $form_state);
+  $wrapper = entity_metadata_wrapper('wisski_individual', $entity);
   $wrapper->save();
 
   // Redirect user to edited entity page.
-  $entity_uri = entity_uri('wisski_core_entity', $entity);
+  $entity_uri = entity_uri('wisski_individual', $entity);
   $form_state['redirect'] = $entity_uri['path'];
 }
 
@@ -366,7 +328,7 @@ function wisski_core_entity_form_submit(&$form, &$form_state) {
 function wisski_core_entity_form_submit_delete($form, &$form_state) {
   // Redirect user to "Delete" URI for this entity.
   $entity = $form_state['wisski_core'];
-  $entity_uri = entity_uri('wisski_core_entity', $entity);
+  $entity_uri = entity_uri('wisski_individual', $entity);
   $form_state['redirect'] = $entity_uri['path'] . '/delete';
 }
 
@@ -384,8 +346,8 @@ function wisski_core_entity_form_delete($form, &$form_state, $entity) {
   $form_state['wisski_core'] = $entity;
 
   // Show confirm dialog.
-  $entity_uri = entity_uri('wisski_core_entity', $entity);
-  $message = t('Are you sure you want to delete wisski_core %title?', array('%title' => entity_label('wisski_core_entity', $entity)));
+  $entity_uri = entity_uri('wisski_individual', $entity);
+  $message = t('Are you sure you want to delete wisski_core %title?', array('%title' => entity_label('wisski_individual', $entity)));
   return confirm_form(
     $form,
     $message,
@@ -402,11 +364,11 @@ function wisski_core_entity_form_delete($form, &$form_state, $entity) {
 function wisski_core_entity_form_delete_submit($form, &$form_state) {
   // Delete the entity.
   $entity = $form_state['wisski_core'];
-  $wrapper = entity_metadata_wrapper('wisski_core_entity', $entity);
+  $wrapper = entity_metadata_wrapper('wisski_individual', $entity);
   $wrapper->delete();
 
   // Redirect user.
-  drupal_set_message(t('Custom entity v4 %title deleted.', array('%title' => entity_label('wisski_core_entity', $entity))));
+  drupal_set_message(t('Custom entity v4 %title deleted.', array('%title' => entity_label('wisski_individual', $entity))));
   $form_state['redirect'] = '<front>';
 }
 

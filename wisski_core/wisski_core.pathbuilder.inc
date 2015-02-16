@@ -30,6 +30,7 @@ function wisski_core_make_path_array($instance_id) {
         $full_path = array_merge($full_path,unserialize($path->path_array));
         $data_prop = $path->datatype_property;
       } while(isset($path_info[$path->external_path]) && $path = $path_info[$path->external_path]);
+      if (count($full_path) % 2) watchdog('wisski_FATAL_ERROR','incorrect path for instance '.$instance_id);
       $result = array($starting_concept,$full_path,$data_prop);
       return $result;
     }
@@ -469,7 +470,7 @@ function wisski_core_field_paths($form,&$form_state,$in_bundle = NULL) {
       $connections[$instance_id]->path_id = $path_id;
     }
   }
-  foreach (field_info_instances('wisski_core_entity',$in_bundle->type) as $instance) {
+  foreach (field_info_instances('wisski_individual',$in_bundle->type) as $instance) {
     $path = t('none');
     if (isset($connections[$instance['id']]) && $connections[$instance['id']]->path_id != NULL) {
       $path = $path_strings[$connections[$instance['id']]->path_id];
@@ -712,7 +713,7 @@ function wisski_core_short_titles_form($form,&$form_state,$in_bundle = NULL) {
     $i = $last['weight'] + 1;
     //re-key the title order to field instance ids
     $title_order = array_change_key($title_order,'name');
-    $instance_info = field_info_instances('wisski_core_entity',$bundle->type);
+    $instance_info = field_info_instances('wisski_individual',$bundle->type);
     $title_order = array_intersect_key($title_order,$instance_info);
     foreach ($instance_info as $name => $field_info) {
       if (isset($title_order[$name]) && $info = &$title_order[$name]) {
@@ -754,7 +755,7 @@ function wisski_core_short_titles_form($form,&$form_state,$in_bundle = NULL) {
   if (!isset($title_order)) {
     $title_order = array();
     $i = 0;
-    foreach (field_info_instances('wisski_core_entity',$bundle->type) as $field_info) {
+    foreach (field_info_instances('wisski_individual',$bundle->type) as $field_info) {
       $field = field_info_field($field_info['field_name']);
       $single = $field['cardinality'] == '1';
       $title_order[$i] = array(

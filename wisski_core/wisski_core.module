@@ -2,7 +2,7 @@
 // $ID$
 
 #include "wisski_core.filler.inc";
-include_once "wisski_core.swips.inc";
+include_once 'wisski_core.swips.inc';
 include_once 'wisski_core.EntityReference_Selection.php';
 
 /**
@@ -41,9 +41,9 @@ function wisski_core_permission() {
  */
 function wisski_core_entity_info() {
   
-  // defines a wisski_core_entity entity
+  // defines a wisski_individual entity
   $info = array(
-    'wisski_core_entity' => array(
+    'wisski_individual' => array(
       // it is called WissKI Entity
       'label' => t('WissKI Entity'),
       
@@ -97,7 +97,7 @@ function wisski_core_entity_info() {
       'label' => 'label',
     ),
     // what is in this bundle?
-    'bundle of' => 'wisski_core_entity',
+    'bundle of' => 'wisski_individual',
     'entity class' => 'WisskiCoreBundle',
     'controller class' => 'WisskiCoreBundleController',
     'metadata controller class' => '',
@@ -149,7 +149,7 @@ function wisski_core_flush_caches() {
  */
 function wisski_core_entity_property_info() {
   $info = array();
-  $properties = &$info['wisski_core_entity']['properties'];
+  $properties = &$info['wisski_individual']['properties'];
   $properties['id'] = array(
     'type' => 'integer',
     'schema field' => 'id',
@@ -216,7 +216,7 @@ function wisski_core_entity_property_info() {
 
 function wisski_core_entity_info_alter(&$entity_info) {
   foreach (wisski_core_bundle_load_multiple() as $type => $info) {
-    $entity_info['wisski_core_entity']['bundles'][$type] = array(
+    $entity_info['wisski_individual']['bundles'][$type] = array(
       'label' => $info->label,
       'admin' => array(
         'path' => 'admin/structure/wisski_core_bundle/manage/%wisski_core_bundle',
@@ -287,7 +287,7 @@ function wisski_core_menu() {
     'weight' => 5,
   );
   
-  $entity_info = entity_get_info('wisski_core_entity');
+  $entity_info = entity_get_info('wisski_individual');
   foreach ($entity_info['bundles'] as $bundle_name => $bundle_data) {
 
     $items['wisski/navigate/'.$bundle_name.'/edit_bundle'] = array(
@@ -332,7 +332,7 @@ function wisski_core_menu() {
   );
 
   // URI for adding entity of proper bundle.
-  $entity_info = entity_get_info('wisski_core_entity');
+  $entity_info = entity_get_info('wisski_individual');
   foreach ($entity_info['bundles'] as $bundle_name => $bundle_data) {
     $items['wisski/create/' . $bundle_name] = array(
       'title' => 'Add ' . $bundle_name,
@@ -564,7 +564,7 @@ function wisski_core_load($teid, $reset = FALSE) {
  *   Founded entities.
  */
 function wisski_core_entity_load_multiple($teids = array(), $conditions = array(), $reset = FALSE) {
-  return entity_load('wisski_core_entity', $teids, $conditions, $reset);
+  return entity_load('wisski_individual', $teids, $conditions, $reset);
 }
 
 

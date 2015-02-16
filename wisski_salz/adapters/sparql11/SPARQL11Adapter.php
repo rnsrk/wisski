@@ -355,6 +355,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
    *										| at least one data result
    * 'maximum'					| int specifying the maximum number of returned
    *										| data values for this path, unlimited if unspecified
+   * 'id'								| ID of the path, matching the key of the result data
+   *										| in the output array
    *
    * @param settings is an associative array that may contain the following 
    * entries:
@@ -369,17 +371,26 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
    *						| query is triggered
    */
   public function pbQuery($starting_concept,array $paths,array $settings = array()) {
-  
+    
     if (!isset($starting_concept)) throw new InvalidArgumentException('you must specify a starting concept');
-    $query = "SELECT DISTINCT ?ind ";
+    $query = "SELECT DISTINCT";
+    if (!isset($settings['uris']) || count($settings['uris']) > 1) $query .= " ?ind";
     $datas = array();
     for ($i = 0; $i < count($paths); $i++) {
       $datas[] = "?data$i";
-      $query .= "?data$i ";
+      $query .= " ?data$i";
     }
-    $query .= "WHERE{";
-    if (isset($settings['uris'])) $query .= " VALUES ?ind {".implode(' ',$settings['uris'])."}";
-    $query .= " ?ind rdf:type $starting_concept .";
+    $query .= " WHERE{";
+    $ind = "?ind";
+    $single_ind = FALSE;
+    if (isset($settings['uris'])) {
+      if(count($settings['uris']) > 1) $query .= " VALUES ?ind {".implode(' ',$settings['uris'])."}";
+      else {
+        $ind = $settings['uris'][0];
+        $single_ind = TRUE;
+      }
+    }
+    $query .= " $ind rdf:type $starting_concept .";
     $i = 0;
     $ids = array();
     foreach($paths as $path) {
@@ -387,14 +398,14 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $path_array = $path['path_array'];
       $datatype_property = $path['datatype_property'];
       $count = 0;
-      if (count($paths) > 1) $query .= "OPTIONAL {SELECT ?ind ?data$i WHERE {";
+      if (count($paths) > 1) $query .= "OPTIONAL {SELECT DISTINCT $ind ?data$i WHERE {";
       if (empty($path_array)) {
         if (!empty($datatype_property)) {
-          $query .= " ?ind $datatype_property ?data$i .";
+          $query .= " $ind $datatype_property ?data$i .";
         }
       } else {
         while(!empty($path_array)) {
-          $query .= ($count == 0) ? "?ind " : "?p".$i."c$count ";
+          $query .= ($count == 0) ? "$ind " : "?p".$i."c$count ";
           $query .= array_shift($path_array);
           $count++;
           $query .= " ?p".$i."c$count. ";
@@ -440,12 +451,13 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }
     dpm($query);
     wisski_core_tick('start PB query');
+//    throw new Exception('STOP');
     list($ok,$result) = $this->querySPARQL($query);
     wisski_core_tick('end PB query');
     if ($ok) {
       $out = array();
       foreach ($result as $obj) {
-        $ind = $obj->ind->dumpValue('text');
+        if (!$single_ind) $ind = $obj->ind->dumpValue('text');
         if (!isset($out[$ind])) {
           $out[$ind] = array();
         }
@@ -471,8 +483,10 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   public function pbQuerySingle($individual_uri,$starting_concept,$path_array,$datatype_property,$limit = NULL,$offset = 0,$order = FALSE,$asc = TRUE,$qualifier = 'STR') {
 
     $path = array(
-      'path_array' => $path_array,
-      'datatype_property' => $datatype_property,
+      array(
+        'path_array' => $path_array,
+        'datatype_property' => $datatype_property,
+      ),
     );
     $settings = array();
     if (isset($limit)) $settings['limit'] = $limit;
@@ -554,7 +568,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     $individual = $individual_uri;
     $class = $starting_concept;
     // we check for the existence of all individuals on the path
-    // and if it does not exist we introduce a new owl:Individual and a new wisski_core_entity
+    // and if it does not exist we introduce a new owl:Individual and a new wisski_individual
     while(!empty($path_array)) {
       if ($switch = !$switch) {
         //even steps are properties
@@ -907,7 +921,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
           $ind_label = $ind;
           $ind_name = $this->makeDrupalName($ind_pref.$ind_label,'ind_');
           $query = new EntityFieldQuery();
-          $query->entityCondition('entity_type', 'wisski_core_entity');
+          $query->entityCondition('entity_type', 'wisski_individual');
           $query->propertyCondition('name',$ind_name,'=');
           $results = $query->execute();            
           if (!empty($results)) continue;
@@ -919,8 +933,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
             'same_individuals' => array($ind_name),
             'timestamp' => 0, //ensures update on first view
           );
-          $entity = entity_create('wisski_core_entity',$info);
-          entity_save('wisski_core_entity',$entity);
+          $entity = entity_create('wisski_individual',$info);
+          entity_save('wisski_individual',$entity);
         }
       }
     }
@@ -979,8 +993,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
             'timestamp' => 0, //ensures update on first view
             'same_individuals' => $same_inds,
           );
-          $entity = entity_create('wisski_core_entity',$info);
-          entity_save('wisski_core_entity',$entity);
+          $entity = entity_create('wisski_individual',$info);
+          entity_save('wisski_individual',$entity);
         if(count($same_inds) > 1) dpm($entity);
         }//foreach ... $class
       }//foreach ... $ind
@@ -1035,7 +1049,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         }
       }
     }
-    $wrapper = entity_metadata_wrapper('wisski_core_entity',$entity);
+    $wrapper = entity_metadata_wrapper('wisski_individual',$entity);
 /*
         if (isset($gather['object'])) {
           foreach($gather['object'] as $prop => $values) {
@@ -1108,9 +1122,9 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
               'field_name' => $field_name,
               'type' => 'entityreference',
               'cardinality' => -1,
-              'entity_types' => array('wisski_core_entity'),
+              'entity_types' => array('wisski_individual'),
               'settings' => array(
-                'target_type' => 'wisski_core_entity',
+                'target_type' => 'wisski_individual',
                 'handler_settings' => array(
                   'target_bundles' => array($target_name => $target_name),
                 ),
@@ -1126,7 +1140,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
               'field_name' => $field_name,
               'label' => t($field_label),
               'bundle' => $class_name,
-              'entity_type' => 'wisski_core_entity',
+              'entity_type' => 'wisski_individual',
               'widget' => array(
                 'type' => 'options_select',
                 'module' => 'options',
@@ -1174,7 +1188,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
               'field_name' => $field_name,
               'type' => 'text',
               'cardinality' => -1,
-              'entity_types' => array('wisski_core_entity'),
+              'entity_types' => array('wisski_individual'),
               'settings' => array(),
             );
           }
@@ -1183,7 +1197,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
               'field_name' => $field_name,
               'label' => t($field_label),
               'bundle' => $class_name,
-              'entity_type' => 'wisski_core_entity',
+              'entity_type' => 'wisski_individual',
               'widget' => array(
                 'type' => 'text_textfield',
                 'module' => 'text',
@@ -1212,7 +1226,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }
     foreach($instances as $bundle_name => $inst_class) {
       foreach($inst_class as $instance) {
-        if (field_info_instance('wisski_core_entity',$instance['field_name'],$bundle_name) == NULL) {
+        if (field_info_instance('wisski_individual',$instance['field_name'],$bundle_name) == NULL) {
           field_create_instance($instance);
         } else {
           field_update_instance($instance);    
@@ -1263,9 +1277,10 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
           );
         }
       }
+      uksort($classes,'strnatcasecmp');
       foreach($classes as $class) {
         try {
-          $class['bundle of'] = 'wisski_core_entity';
+          $class['bundle of'] = 'wisski_individual';
           $entity = entity_create('wisski_core_bundle',$class);
           entity_save('wisski_core_bundle',$entity);
         } catch (PDOException $ex) {
