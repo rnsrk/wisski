@@ -91,10 +91,10 @@ function wisski_core_list($type) {
 
   module_load_include('inc','wisski_core','wisski_core.controller');
   $links = array();
-  $page_count = 0;
   $limit = variable_get('wisski_max_entities_per_page',20);
   $bundle = entity_load_single('wisski_core_bundle',$type);
   $count = wisski_salz_pb_get_bundle_info($bundle->uri,TRUE);
+  $page_count = ceil($count/$limit);
   $offset = pager_default_initialize($count, $limit);
   wisski_core_tick('start');
   //$chunk = _wisski_core_get_chunk($type,$page_count);
@@ -112,7 +112,21 @@ function wisski_core_list($type) {
     }
   }
   wisski_core_tick('links');
-  $output = theme('pager',array('quantity' => min(51,max(floor($page_count/17),9))));
+  $output = theme('pager',array('quantity' => min(51,max(floor($page_count/7),9))));
+  $output .= theme_textfield(
+    array(
+      'element' => array(
+        '#title' => t('Find a ').$bundle->label, 
+        '#value' => '',
+        '#description' => 'autocomplete field looking for entities with given title elements',
+        '#size' => 60,
+        '#maxlength' => 32,
+        '#required' => FALSE,
+        '#attributes' => NULL,
+        '#autocomplete_path' => FALSE,
+      ),
+    )
+  );
   $output .= theme_item_list(
     array(
       'items' => $links,
@@ -121,7 +135,7 @@ function wisski_core_list($type) {
       'attributes' => array(),
     )
   );
-  
+  $output .= theme('pager',array('quantity' => min(51,max(floor($page_count/17),9))));
   wisski_core_tick('theme');
   $times = wisski_core_tick(NULL);
   dpm($times);

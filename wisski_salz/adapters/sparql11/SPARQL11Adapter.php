@@ -387,7 +387,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     if (isset($settings['uris'])) {
       if(count($settings['uris']) > 1) $query .= " VALUES ?ind {".implode(' ',$settings['uris'])."}";
       else {
-        $ind = $settings['uris'][0];
+        $ind = current($settings['uris']);
         $single_ind = TRUE;
       }
     }
@@ -399,7 +399,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $path_array = $path['path_array'];
       $datatype_property = $path['datatype_property'];
       $count = 0;
-      if (count($paths) > 1) $query .= "OPTIONAL {SELECT DISTINCT $ind ?data$i WHERE {";
+      if (count($paths) > 1 || (isset($path['maximum']) && $path['maximum'] > 0)) $query .= " OPTIONAL {SELECT DISTINCT $ind ?data$i WHERE {";
       if (empty($path_array)) {
         if (!empty($datatype_property)) {
           $query .= " $ind $datatype_property ?data$i .";
@@ -415,7 +415,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         }
         $query .= " ?p".$i."c$count $datatype_property ?data$i .";  
       }
-      if (count($paths) > 1) {
+      if (count($paths) > 1 || (isset($path['maximum']) && $path['maximum'] > 0)) {
         $query .= "}";
         if (isset($path['maximum']) && $path['maximum'] > 0) $query .=  " LIMIT ".$path['maximum'];
         $query .= " }";//close sub-SELECT

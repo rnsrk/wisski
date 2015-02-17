@@ -1012,40 +1012,99 @@ function wisski_core_data_mapping_form($form,$form_state) {
 
   $form = array();
   
-  $hook = 'field_widget_info';
-  $modules = module_implements($hook,TRUE);
+//  $modules = module_implements($hook,TRUE);
+  $modules = array();
+  foreach(module_implements('field_info') as $name) {
+    module_load_install($name);
+    if (module_hook($name,'field_schema')) {
+      array_push($modules,$name);
+    }
+  }
   
-  $form['list'] = array(
+  $form['modules'] = array(
     '#type' => 'select',
     '#options' => $modules + array(-1 => ' - select - '),
     '#default_value' => -1,
     '#ajax' => array(
-      'wrapper' => 'wisski-mapping-form-selection',
-      'callback' => 'wisski_core_data_mapping_form_callback',
+      'wrapper' => 'wisski-mapping-form-types',
+      'callback' => 'wisski_core_data_mapping_form_callback_types',
     ),
   );
   
-  $disabled = TRUE;
-  $choice = array();
-  if (isset($form_state['values']['list']) && $form_state['values']['list'] !== -1) {
-    $settings = module_invoke($modules[$form_state['values']['list']],$hook);
-    $settings = array_shift($settings);
-    dpm($settings);
-    $choice = array_keys($settings);
-    $disabled = FALSE;
+  $settings = array();
+  $type_keys = array();
+  if (isset($form_state['values']['modules']) && $form_state['values']['modules'] !== -1) {
+    $module = $modules[$form_state['values']['modules']];
+    $types = module_invoke($module,'field_info');
+    $type_keys = array_keys($types);
+    foreach ($type_keys as $type) {
+      if ($type === 'entityreference') {
+        //this takes an entity type as target_type and possibly adapts the settings
+        $targets = array();
+        foreach(module_implements('entity_info') as $mod) {
+          $targets = array_merge($targets,array_keys(module_invoke($mod,'entity_info')));
+        }
+        $default_settings = $types[$type]['settings'];
+        unset($default_settings['target_type']);
+        $settings[$type] = array();
+        foreach ($targets as $target) {
+          $mod_set = $default_settings + array('target_type' => $target);
+          $schema = module_invoke($module,'field_schema',array('type'=>$type,'settings'=>$mod_set));
+          $settings[$type] = array_unique(array_merge($settings[$type],array_keys($schema['columns'])));
+        }
+      } else {
+        $schema = module_invoke($module,'field_schema',array('type'=>$type,'settings'=>$types[$type]['settings']));
+        $settings[$type] = array_keys($schema['columns']);
+      }
+    }
   }
   
-  $form['selection'] = array(
-    '#type' => 'select',
-    '#options' => $choice,
-    '#prefix' => '<div id=wisski-mapping-form-selection>',
+  $form['cont'] = array(
+    '#type' => 'container',
+    '#prefix' => '<div id=wisski-mapping-form-types>',
     '#suffix' => '</div>',
-    '#disabled' => $disabled,
   );
+  
+  $form['cont']['types'] = array(
+    '#type' => 'select',
+    '#options' => $type_keys,
+    '#ajax' => array(
+      'wrapper' => 'wisski-mapping-form-settings',
+      'callback' => 'wisski_core_data_mapping_form_callback_settings',
+    ),
+    '#defalt_value' => 0,
+  );
+  
+  $selected_settings = array();
+  if (count($settings) === 1) {
+    $selected_settings = current($settings);
+    $form['cont']['types']['#disabled'] = TRUE;
+  } elseif (isset($form_state['values']['types'])) {
+    $selected_settings = $settings[$type_keys[$form_state['values']['types']]];
+  }
+  
+  $form['cont']['settings'] = array(
+    '#type' => 'container',
+    '#prefix' => '<div id=wisski-mapping-form-settings>',
+    '#suffix' => '</div>',
+  );
+  
+  foreach($selected_settings as $set) {
+    $form['cont']['settings'][$set] = array(
+      '#type' => 'textfield',
+      '#title' => $set,
+      '#maxlength' => 1023,
+      '#size' => 30,
+    );
+  }
   
   return $form;
 }
 
-function wisski_core_data_mapping_form_callback($form,$form_state) {
-  return $form['selection'];
+function wisski_core_data_mapping_form_callback_types($form,$form_state) {
+  return $form['cont'];
+}
+
+function wisski_core_data_mapping_form_callback_settings($form,$form_state) {
+  return $form['cont']['settings'];
 }
