@@ -225,8 +225,9 @@ function wisski_core_entity_form($form, &$form_state, $entity) {
     '#type' => 'textfield',
     '#required' => TRUE,
     '#title' => t('Title'),
-    '#default_value' => property_exists($entity,'title') ? $entity->title : '',
+    '#default_value' => property_exists($entity,'title') ? $entity->title : entity_label('wisski_individual',$entity),
     '#weight' => -20,
+    '#disabled' => TRUE,
   );
   $form['uri'] = array(
     '#type' => 'textfield',

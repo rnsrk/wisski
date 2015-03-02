@@ -35,20 +35,9 @@ class WisskiCoreEntityController extends EntityAPIController {
 
   public function load($ids = array(), $conditions = array()) {
   
-//    $query_time = 0.0;
-//    $query_count = &drupal_static('wisski_request_count');
-//    $query_count = 0;
-//    $test_time = 0.0;
-//    $now = microtime();
     $entities = array();
     $bundle_type = isset($conditions['type']) ? $conditions['type'] : arg(1);
     
-//    watchdog('wisski_entity_controller_load',serialize($ids));
-    // This method takes an array of IDs, but our webservice only supports loading one entity at a time.
-    
-#    drupal_set_message(serialize($ids));
-//    dpm($ids);
-#    drupal_set_message(serialize($conditions));
     wisski_core_tick('start');
     $error = FALSE;
     if(!empty($ids)) {
@@ -100,7 +89,7 @@ class WisskiCoreEntityController extends EntityAPIController {
         foreach($inds as $ind_uri) {
           $entity_title = $ind_uri;
           //TODO make short titles
-          $entity = entity_create('wisski_individual', array('type' => $conditions["type"], 'title' => $entity_title, 'uri' => $ind_uri));
+          $entity = entity_create('wisski_individual', array('type' => $bundle_type, 'title' => $entity_title, 'uri' => $ind_uri));
           $entity->is_new = FALSE;
           $entities[$entity->id] = $entity;
         }
@@ -115,7 +104,7 @@ class WisskiCoreEntityController extends EntityAPIController {
     wisski_core_tick('field load');
     dpm(wisski_core_tick(NULL));
     if ($error) {
-      trigger_error('probelems when loading entities '.serialize($ids),E_USER_WARNING);
+      trigger_error('problems when loading entities '.serialize($ids),E_USER_WARNING);
     }
 //    dpm($entities);
     return $entities;

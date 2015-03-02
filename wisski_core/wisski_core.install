@@ -29,6 +29,7 @@ function wisski_core_install() {
   variable_set('field_storage_default','wisski_core_swips');
   variable_set('wisski_max_entities_per_page',42);
   variable_set('wisski_titles_master_fallback','-!- '.t('invalid title').' -!-');
+  variable_set('wisski_standard_field_mapping','value');
 }
 
 function wisski_core_uninstall() {
@@ -44,7 +45,6 @@ function wisski_core_schema() {
       'id' => array(
         'type' => 'serial',
         'not null' => TRUE,
-
         'description' => 'The id of the template.',
       ),      
       'uuid' => array(
@@ -52,6 +52,25 @@ function wisski_core_schema() {
         'not null' => TRUE,
         'length' => 36,
         'description' => 'The uuid of the template.',
+      ),
+      
+      'connected_bundle' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'description' => 'The type name of the connected wisski_core_bundle',
+      ),
+      
+      'connected_field' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'description' => 'The field_name of a field this path represents',
+      ),
+      
+      'connected_field_property' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'description' => 'The property of the field, that is mapped by the path',
+        'default_value' => 'value',
       ),
       
       'starting_concept' => array(
@@ -127,9 +146,23 @@ function wisski_core_schema() {
     ),
     'primary key' => array('id'),
     'unique keys' => array('uuid' => array('uuid')),
-    
+    'foreign keys' => array(
+      'connected_field' => array(
+        'table' => 'field_config_instance',
+        'columns' => array(
+          'field_name' => 'connected_field',
+        ),
+      ),
+      'connected_bundle' => array(
+        'table' => 'wisski_entity_bundles',
+        'columns' => array(
+          'type' => 'connected_bundle',
+          'uri' => 'starting_concept',
+        ),
+      ),
+    ),
   );
-  
+/*  
   $schema['wisski_pb_fielddata'] = array(
     'description' => 'Information on the connection between fields and paths',
     'fields' => array(
@@ -289,7 +322,7 @@ function wisski_core_schema() {
     'primary key' => array('id'),
     'unique keys' => array('uuid' => array('uuid')),
   );
-
+*/
   // Table for storing data of entities.
   $schema['wisski_entity_data'] = array(
     'description' => 'The base table for wisski entity data.',

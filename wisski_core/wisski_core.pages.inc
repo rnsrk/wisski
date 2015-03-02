@@ -172,11 +172,7 @@ function _wisski_core_get_chunk($type,&$page_count) {
 
 function _wisski_core_get_sorted_chunk($type,$limit,$offset) {
 
-/*  if ($position !== 0) {
-    dpm(func_get_args());
-    throw new Exception('MUHAHAHAHAHAHA');
-    return $uris;
-  }*/
+//  dpm(array(__FUNCTION__=>func_get_args()));
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');
   $bundle = entity_load_single('wisski_core_bundle',$type);
   if (!empty($bundle) && !empty($bundle->short_title_pattern)) {
@@ -186,19 +182,15 @@ function _wisski_core_get_sorted_chunk($type,$limit,$offset) {
       $elem = current($pattern);
       $paths = array();
       while (!empty($elem)) {
-        $instance_id = $elem['id'];
-        list($start,$path_array,$datatype_property) = wisski_core_make_path_array($instance_id);
-        if (!isset($starting_concept)) $starting_concept = $start;
-        $paths[] = array('path_array' => $path_array,'datatype_property' => $datatype_property,'required' => $elem['obligatory'],'maximum' => 1);
+        $path_info = wisski_core_make_path_array(array('field_info' => array('field_name' => $elem['name'])));
+        $paths[] = array('path_array' => $path_info['full_path'],'datatype_property' => $path_info['datatype_property'],'required' => $elem['obligatory'],'maximum' => 1);
         if ($elem['obligatory']) break;
         else $elem = next($pattern);
       }
       if (!empty($paths)) {
-        dpm($paths);
-        if (!isset($starting_concept)) $starting_concept = $bundle->uri;
         wisski_core_tick('start sorting');
         //pager offset is page number while SPARQL offset is first element to show
-        $inds = array_keys(wisski_salz_pb_query_multi_path($starting_concept,$paths,$limit,$limit*$offset,TRUE,TRUE,'STR'));
+        $inds = array_keys(wisski_salz_pb_query_multi_path($bundle->uri,$paths,$limit,$limit*$offset,TRUE,TRUE,'STR'));
         wisski_core_tick('end sorting');
         if (empty($inds)) {
           throw new Exception('there are no entites matching your request');
@@ -208,6 +200,7 @@ function _wisski_core_get_sorted_chunk($type,$limit,$offset) {
     }
   }
   if (!empty($bundle) && property_exists($bundle,'uri')) {
+    trigger_error("Bundle $type has no short title pattern defined",E_USER_WARNING);
     return array_keys(wisski_salz_pb_query_all($bundle->uri,NULL,NULL,$limit,$limit*$offset,TRUE,TRUE,'STR'));
   }
 }
@@ -242,10 +235,11 @@ function _wisski_core_check_titles($uris,$type) {
       $paths = array();
       $field_info = array_fill_keys($uris,array());
       foreach ($pattern as $elem) {
-        $instance_id = $elem['id'];
-        list($starting_concept,$full_path,$data_prop) = wisski_core_make_path_array($instance_id);
-        $paths[] = array('id' => $instance_id, 'path_array' => $full_path, 'datatype_property' => $data_prop, 'required' => $elem['obligatory'], 'maximum' => $elem['number']);
+        $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $elem['name'])));
+        $paths[] = array('id' => $elem['id'], 'path_array' => $path_array['full_path'], 'datatype_property' => $path_array['datatype_property'], 'required' => $elem['obligatory'], 'maximum' => $elem['number']);
+        if (!isset($starting_concept)) $starting_concept = $path_array['starting_concept'];
       }
+      if (!isset($starting_concept)) $starting_concept = $bundle->uri;
       $field_info = wisski_salz_pb_title_query($uris,$starting_concept,$paths);
       $insert_query = db_insert('wisski_entity_data')->fields(array('uri','type','title'));
       $invalid_title = variable_get('wisski_titles_master_fallback','-!-');
@@ -338,13 +332,21 @@ function _wisski_core_get_items($type,$count_only = FALSE) {
  */
 function wisski_core_entity_view($entity) {
   
-if (is_array($entity)) {
-    $array = $entity;
-    $entity = current($entity);
-  } else {
-    $array = array(entity_id('wisski_individual', $entity) => $entity);
+  $count = &drupal_static(__FUNCTION__);;
+  if (!isset($count)) $count = 0;
+  $count++;
+  $my_count = $count;
+  watchdog('wisski_view_start',$my_count);
+  if ($count <= 1) {
+    if (is_array($entity)) {
+      $array = $entity;
+      $entity = current($entity);
+    } else {
+      $array = array(entity_id('wisski_individual', $entity) => $entity);
+    }
+    drupal_set_title(entity_label('wisski_individual', $entity));
+    $entity_view = entity_view('wisski_individual', $array);
+    return $entity_view;
   }
-  drupal_set_title(entity_label('wisski_individual', $entity));
-  $entity_view = entity_view('wisski_individual', $array);
-  return $entity_view;
+  watchdog('wisski_view_end',$my_count);
 }

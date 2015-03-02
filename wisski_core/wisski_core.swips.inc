@@ -91,16 +91,23 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
         $individual = $entity->uri;
         $field_info = array();
         $wrapper = entity_metadata_wrapper('wisski_individual',$entity);
-        dpm((array)($wrapper->getPropertyInfo()));
+        dpm(array('instances' => $instances,'property info' => (array)($wrapper->getPropertyInfo())));
         foreach($instances as $instance) {
-          list($starting_concept,$full_path,$data) = wisski_core_make_path_array($instance['id']);
+          $type = $wrapper->$instance['field_name']->type();
+          $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $instance['field_name'])));
+          $starting_concept = $path_array['starting_concept'];
+          $full_path = $path_array['full_path'];
+          $data = $path_array['datatype_property'];
           $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
-          $info = _wisski_core_gather_field_data($instance['id'],$info);
+          $info = _wisski_core_gather_field_data($instance['id'],$info);  
           if (!empty($info)) {
             $info = $info[$individual][0];
             try {
-              $type = $wrapper->$instance['field_name']->type();
-              if ('list' == substr($type,0,4)) {
+              if ($type === 'wisski_individual') {
+                $target_entity = entity_load('wisski_individual',$info);
+                dpm($target_entity);
+                $wrapper->$instance['field_name']->set($target_entity);
+              } elseif ('list' == substr($type,0,4)) {
                 $wrapper->$instance['field_name']->set($info);
               } else {
                 $wrapper->$instance['field_name']->set($info[0]);
@@ -112,7 +119,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
           }
           $skip_fields[$instance['field_id']] = $entity->id;
         }//END foreach $instances
-        wisski_core_set_short_title($entity);
+        wisski_core_set_short_title($entity,FALSE);
       }//END foreach $queried_entities
     }
     $wisski_semaphore = FALSE;
@@ -121,20 +128,22 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
   }
 }
 
-function wisski_core_set_short_title(&$entity) {
+function wisski_core_set_short_title(&$entity,$cached = TRUE) {
 
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');
-  //check, whether we have the title cached
-  $result = db_select('wisski_entity_data','tit')
+  if ($cached) {
+    //check, whether we have the title cached
+    $result = db_select('wisski_entity_data','tit')
                 ->fields('tit')
                 ->condition('uri',$entity->uri)
                 ->condition('dirty',0)
                 ->condition('type',$entity->type)
                 ->execute()
                 ->fetchAssoc();
-  if (isset($result['title'])) {
-    $entity->title = $result['title'];
-    return;
+    if (isset($result['title'])) {
+      $entity->title = $result['title'];
+      return;
+    }
   }
 //  dpm($entity);
   //else create the title from the pattern
@@ -150,10 +159,10 @@ function wisski_core_set_short_title(&$entity) {
     $pattern = unserialize($result['short_title_pattern']);
     if ($pattern) $title = wisski_core_make_short_title($entity,array_expand($pattern)); 
   }
-  $entity->title = $title?:variable_get('wisski_titles_master_fallback','').$entity->uri;
+  $entity->title = $title?:variable_get('wisski_titles_master_fallback','').' ('.$entity->uri.')';
 //  dpm($entity);
   db_update('wisski_entity_data')
-    ->fields(array('title' => $entity->title))
+    ->fields(array('title' => $entity->title,'dirty' => 0))
     ->condition('uri',$entity->uri)
     ->condition('type',$entity->type)
     ->execute();
@@ -198,14 +207,18 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
       $instance = field_info_instance($entity_type,$field['field_name'],$entity->type);
       if (empty($instance)) continue;
 //      dpm("Tick 3");
-      list($starting_concept,$full_path,$data) = wisski_core_make_path_array($instance['id']);
+      $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $instance['field_name'])));
+      $starting_concept = $path_array['starting_concept'];
+      $full_path = $path_array['full_path'];
+      $data = $path_array['datatype_property'];
+      $disamb = $path_array['disamb'];
       $new_values = field_get_items($entity_type,$entity,$instance['field_name']);
       $delete = !property_exists($entity,'is_new') || !$entity->is_new;
       $db_values = array();
       foreach($new_values as $delta) {
 //        dpm($delta);
         $set_val = _wisski_core_divide_field_data($instance['id'],$delta);
-        if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$full_path,$data,$delta,$delete)) {
+        if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$full_path,$data,$disamb,$set_val,$delete)) {
 //          dpm($news);
           foreach($news as $class => $inds) {
             if (!isset($new_individuals[$class])) $new_individuals[$class] = array();
@@ -304,7 +317,7 @@ function _wisski_core_divide_field_data($instance_id, array $data) {
 
 function _wisski_core_gather_field_data($instance_id,$data) {
   
-  dpm(array(__FUNCTION__=>func_get_args()));
+//  dpm(array(__FUNCTION__=>func_get_args()));
   $out = array();
   if (is_array($data)) $out = $data;
   else $out['value'] = $data;

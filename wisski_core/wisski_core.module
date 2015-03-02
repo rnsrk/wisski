@@ -155,6 +155,7 @@ function wisski_core_entity_property_info() {
     'schema field' => 'id',
     'label' => t('WissKI Entity ID'),
     'setter callback' => 'entity_property_verbatim_set',
+
   );
   $properties['type'] = array(
     'type' => 'text',
@@ -167,7 +168,8 @@ function wisski_core_entity_property_info() {
     'type' => 'text',
     'schema field' => 'title',
     'label' => t('WissKI Entity title'),
-    'setter callback' => 'entity_property_verbatim_set',
+//    'setter callback' => 'entity_property_verbatim_set',
+    'setter callback' => 'wisski_core_label_callback',
   );
 /*  $properties['description'] = array(
     'type' => 'text',
@@ -254,16 +256,28 @@ function wisski_core_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
   
-  $items['wisski/data_mapping'] = array(
-    'title' => 'WissKI - Manage Data Mapping',
+  $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/%/choose'] = array(
+    'title callback' => 'wisski_core_data_mapping_title',
+    'title arguments' => array(4,5),
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('wisski_core_data_mapping_form',4),
+    'page arguments' => array('wisski_core_data_mapping_form',4,5),
     'access arguments' => array('administer wisski paths'),
-//    'access callback' => TRUE,
+    'access callback' => TRUE,
     'file' => 'wisski_core.pathbuilder.inc',
-    'type' => MENU_NORMAL_ITEM,
+    'type' => MENU_CALLBACK,
   );
-  
+
+  $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/%/mapping/%'] = array(
+    'title callback' => 'wisski_core_single_path_title',
+    'title arguments' => array(4,5,7),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_single_path_form',4,5,7),
+    'access arguments' => array('administer wisski paths'),
+    'access callback' => TRUE,
+    'file' => 'wisski_core.pathbuilder.inc',
+    'type' => MENU_CALLBACK,
+  );
+
   $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/short_title'] = array(
     'title' => 'Edit Short Titles',
     'page callback' => 'drupal_get_form',
@@ -540,6 +554,33 @@ function wisski_core_menu() {
   return $items;
 }
 
+function wisski_core_data_mapping_title($bundle,$field_name) {
+  
+  try {
+    $field = field_info_field($field_name);
+  } catch (Exception $e) {
+    trigger_error($e->getClass().': '.$e->getMessage(),E_USER_ERROR);
+  }
+  $label = $field_name;
+  if (isset($field['label'])) {
+    $label = $field['label'].' ('.$label.')';
+  }
+  return t('Manage paths for !label in !bundle',array('!label' => $label, '!bundle' => $bundle->type));
+}
+
+function wisski_core_single_path_title($bundle,$field_name,$map) {
+  
+  try {
+    $field = field_info_field($field_name);
+  } catch (Exception $e) {
+    trigger_error($e->getClass().': '.$e->getMessage(),E_USER_ERROR);
+  }
+  $label = $field_name;
+  if (isset($field['label'])) {
+    $label = $field['label'].' ('.$label.')';
+  }
+  return t('Manage path for !label.!map in bundle !bundle',array('!label' => $label, '!map'=>$map, '!bundle' => $bundle->type));
+}
 
 /**
  * Load an instance of wisski_core.
