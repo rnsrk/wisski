@@ -35,9 +35,8 @@ class WisskiCoreEntityController extends EntityAPIController {
 
   public function load($ids = array(), $conditions = array()) {
   
+    dpm('loading '.$ids[0].(count($ids) > 1 ? 'and '.(count($ids) - 1). 'other entities':''));
     $entities = array();
-    $bundle_type = isset($conditions['type']) ? $conditions['type'] : arg(1);
-    
     wisski_core_tick('start');
     $error = FALSE;
     if(!empty($ids)) {
@@ -60,7 +59,6 @@ class WisskiCoreEntityController extends EntityAPIController {
           wisski_core_tick('entities');
           $bundles = db_select('wisski_entity_bundles','b')
                     ->fields('b',array('type','uri','short_title_pattern'))
-                    ->condition('type',$bundle_type)
                     ->execute()
                     ->fetchAllAssoc('uri');
 //          dpm($bundles);
@@ -83,6 +81,7 @@ class WisskiCoreEntityController extends EntityAPIController {
     } else {
       $entity_ids = array();
       // load all
+      $bundle_type = isset($conditions['type']) ? $conditions['type'] : arg(1);
       list(,$bundle_uri) = wisski_core_make_uri("",$bundle_type,FALSE); 
       $inds = wisski_salz_pb_get_bundle_info($bundle_uri);
       if ($inds !== FALSE) {

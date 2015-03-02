@@ -74,12 +74,12 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
 //  dpm(func_get_args());
   if($entity_type == 'wisski_individual') {
 //    dpm($queried_entities);
-    $wisski_semaphore = &drupal_static(__FUNCTION__);
+/*    $wisski_semaphore = &drupal_static(__FUNCTION__);
     if (isset($wisski_semaphore) && $wisski_semaphore) {
       dpm(__FUNCTION__.'('.__LINE__.'): tick');
       return;
     }
-    $wisski_semaphore = TRUE;
+    $wisski_semaphore = TRUE;*/
     if ($age == FIELD_LOAD_REVISION) {
       dpm(__FUNCTION__.": load revision");
       //load from default storage
