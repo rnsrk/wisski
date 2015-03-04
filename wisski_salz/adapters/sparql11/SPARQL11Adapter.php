@@ -476,7 +476,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
           }
         }
       }
-//      dpm(array('query' => $query,'result' => $out));
+      dpm(array('query' => $query,'result' => $out));
       return $out;
     }
     return FALSE;
@@ -793,6 +793,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         $output[$prop] = $prop;
       }
       natsort($output);
+      dpm(array('queried datatype props for '.$class => $output));
       return $output;
     }
     return array();

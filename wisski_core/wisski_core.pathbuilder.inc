@@ -2,66 +2,57 @@
 
 function wisski_core_make_path_array(array $settings) {
 
-  if (isset($settings['path_id'])) $path_id = $settings['path_id'];
-  if (!isset($path_id)) {
-    if (isset($settings['field_info']['field_name'])) {
-      $select = db_select('wisski_pb_pathdata','path')
+  $select = db_select('wisski_pb_pathdata','path')
                   ->fields('path')
-                  ->condition('pending',0)
-                  ->condition('connected_field',$settings['field_info']['field_name']);
-      if (isset($settings['field_info']['mapping'])) {
-        $select = $select->condition('connected_field_property',$settings['field_info']['mapping']);
-      }
-      $select = $select->execute();
-      if ($select->rowCount() > 1) {
-        trigger_error('Multiple Paths were selected, please specify your field info further',E_USER_WARNING);
-        $select = $select->fetchAllAssoc('connected_field_property');
-        if (isset($settings['field_info']['mapping']) && isset($select[$settings['field_info']['mpping']])) {
-          $path_id = $select[$settings['field_info']['mapping']]->uuid;
-        } elseif (isset($select[variable_get('wisski_standard_field_mapping')])) {
-          $path_id = $select[variable_get('wisski_standard_field_mapping')]->uuid;
-        } else $path_id = current($select)->uuid;
-      }
-      elseif ($select->rowCount() == 1) $path_id = $select->fetch()->uuid;
-      else return NULL;
-    } else return NULL;
+                  ->condition('pending',0);
+  if (isset($settings['field_info']['field_name'])) {
+    $select = $select->condition('connected_field',$settings['field_info']['field_name']);
   }
-  
-  $path = db_select('wisski_pb_pathdata','p')
-                ->fields('p')
-                ->condition('uuid',$path_id)
-                ->condition('pending',0)
-                ->execute()
-                ->fetchObject();
-  $starting_concept = $path->starting_concept;
-  $data_prop = $path->datatype_property;
-  $connected_bundle = $path->connected_bundle;
-  $connected_field = $path->connected_field;
-  $connected_field_property = $path->connected_field_property;
-  $disamb = $path->disamb;
-  $full_path = unserialize($path->path_array);
-  if (!empty($path->external_path)) {  
-    while(!empty($path->external_path)) {
-      $path = db_select('wisski_pb_pathdata','p')
+  if (isset($settings['path_id'])) {
+    $select = $select->condition('uuid',$settings['path_id']);
+  }
+  if (isset($settings['field_info']['mapping'])) {
+    $select = $select->condition('connected_field_property',$settings['field_info']['mapping']);
+  }
+  $select = $select->execute();  
+  $paths = array();
+  while ($path = $select->fetchObject()) {
+    $uuid = $path->uuid;
+    $starting_concept = $path->starting_concept;
+    $data_prop = $path->datatype_property;
+    $connected_bundle = $path->connected_bundle;
+    $connected_field = $path->connected_field;
+    $connected_field_property = $path->connected_field_property;
+    $disamb = $path->disamb;
+    $full_path = unserialize($path->path_array);
+    if (!empty($path->external_path)) {  
+      while(!empty($path->external_path)) {
+        $path = db_select('wisski_pb_pathdata','p')
                 ->fields('p')
                 ->condition('uuid',$path->external_path)
                 ->condition('pending',0)
                 ->execute()
                 ->fetchObject();
-      if (empty($path)) break;
-      $full_path = array_merge($full_path,unserialize($path->path_array));
-      $data_prop = $path->datatype_property;
+        if (empty($path)) break;
+        $full_path = array_merge($full_path,unserialize($path->path_array));
+        $data_prop = $path->datatype_property;
+      }
     }
+    $paths[$connected_field][$connected_field_property] = array(
+      'starting_concept' => $starting_concept,
+      'full_path' => $full_path,
+      'datatype_property' => $data_prop,
+      'connected_bundle' => $connected_bundle,
+      'connected_field' => $connected_field,
+      'connected_field_property' => $connected_field_property,
+      'disamb' => isset($disamb) ? $disamb : NULL,
+      'uuid' => $uuid,
+    );
   }
-  return array(
-    'starting_concept' => $starting_concept,
-    'full_path' => $full_path,
-    'datatype_property' => $data_prop,
-    'connected_bundle' => $connected_bundle,
-    'connected_field' => $connected_field,
-    'connected_field_property' => $connected_field_property,
-    'disamb' => isset($disamb) ? $disamb : NULL,
-  );
+  while (count($paths) == 1) {
+    $paths = current($paths);
+  }
+  return $paths;
 }
 
 function wisski_core_edit_bundle_paths($form,&$form_state,$in_bundle = NULL) {
@@ -1095,7 +1086,7 @@ function wisski_core_data_mapping_form($form,$form_state,$bundle,$field_name) {
             ->condition('connected_field',$field_name)
             ->execute();
   $options = array();
-  while($elem = $result->fetch()) {
+  while($elem = $result->fetchObject()) {
     $path_array = wisski_core_make_path_array(array('path_id'=>$elem->uuid));
     $starting_concept = $path_array['starting_concept'];
     $full_path = $path_array['full_path'];
@@ -1115,12 +1106,13 @@ function wisski_core_data_mapping_form($form,$form_state,$bundle,$field_name) {
     $options[$elem->uuid]['datatype_property'] = $datatype_property;
   }
   foreach ($mapping_keys as $map) {
+    //only unspecified mapping keys
     $options[] = array(
       'mapping' => $map,
       'full_path' => ' - '.t('specify').' - ',
       'short_name' => '',
       'datatype_property' => '',
-      'edit' => l(t('Edit'),'admin/structure/wisski_core_bundle/manage/'.$bundle->type.'/'.$field_name.'/mapping/'.$elem->connected_field_property),
+      'edit' => l(t('Edit'),'admin/structure/wisski_core_bundle/manage/'.$bundle->type.'/'.$field_name.'/mapping/'.$map),
     );
   }
   $header = array(
@@ -1171,39 +1163,53 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
     }
   }
   if (!$set) {
-    $path = db_select('wisski_pb_pathdata','p')
+    if (!isset($form_state['storage'])) $form_state['storage'] = array();
+    $select = db_select('wisski_pb_pathdata','p')
           ->fields('p')
           ->condition('pending',0)
           ->condition('connected_field',$field_name)
-          ->condition('connected_field_property',$map)
-          ->condition('connected_bundle',$bundle->type)
-          ->execute();
-    $path = $path->fetch();
-    $starting_concept = $path->starting_concept;
-    $full_path = unserialize($path->path_array);
-    $datatype_property = $path->datatype_property;
-    if (isset($path->external_path)) {
-      $datatype_property = 'external';
-      $external_path = wisski_core_make_path_array(array('path_id' => $path->external_path));
-      $form_state['storage'] += array('external_path' => $external_path);
+          ->condition('connected_bundle',$bundle->type);
+    if ($map !== 'unspecified') {
+      $select = $select->condition('connected_field_property',$map);
     }
-    if (!isset($form_state['storage'])) $form_state['storage'] = array();
+    $select = $select->execute();
+    if ($select->rowCount() === 1) {
+      $path = $select->fetchObject();
+      $starting_concept = $path->starting_concept;
+      $full_path = unserialize($path->path_array);
+      $datatype_property = $path->datatype_property;
+      $form_state['storage']['uuid'] = $path->uuid;
+      if (isset($path->external_path)) {
+        $datatype_property = 'external';
+        $external_path = wisski_core_make_path_array(array('path_id' => $path->external_path));
+        $form_state['storage'] += array('external_path' => $external_path);
+      }  
+    } else {
+      $starting_concept = $bundle->uri;
+      $full_path = array();
+      $datatype_property = 'empty';
+    }
     $form_state['storage'] += array(
       'full_path' => $full_path,
       'datatype_property' => $datatype_property,
       'starting_concept' => $starting_concept,
+      'bundle_name' => $bundle->type,
+      'field_name' => $field_name,
+      'map' => $map,
     );
   }
   
   $selected_row = -1;
   $selected_options = array();
+  if (!isset($external_path) && isset($form_state['storage']['external_path'])) $external_path = $form_state['storage']['external_path'];
   dpm($full_path);
   if (isset($form_state['triggering_element']) && $form_state['triggering_element']['#name'] === 'single_path_remove') {
     //remove
     dpm($form_state);
     $sel = explode(':',$form_state['values']['table'],2);
     $sel = $sel[1];
-    if($sel === 'datatype_property') {
+    if($sel === 'bottom') {
+      unset($external_path);
       $datatype_property = 'empty';
     } elseif ($sel !== 'new') {
       unset($external_path);
@@ -1216,22 +1222,35 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
     //select
     if (isset($form_state['storage']['selected_row'])) {
       $sel = $form_state['storage']['selected_row'];
-      if($sel === 'datatype_property') {
-        $datatype_property = $form_state['input']['step:datatype_property'];
-        $form_state['storage']['datatype_property'] = $datatype_property;
-      } elseif ($sel === 'new' && isset($form_state['input']['adds:new']) && $form_state['input']['adds:new'] !== 'empty') {
-        $input = $form_state['input']['adds:new'];
-        $explode = explode(':',$input,2);
-        if ($explode[0] === 'external') {
-          $external_path = wisski_core_make_path_array(array('path_id' => $explode[1]));
+      dpm(array('sel'=>$sel,'input'=>$form_state['input']));
+      if($sel === 'bottom') {  
+//        $datatype_property = $form_state['input']['step:datatype_property'];
+//        $form_state['storage']['datatype_property'] = $datatype_property;
+        if (isset($form_state['input']['step:external'])) {
+          $explode = explode(':',$form_state['input']['step:external'],2);
+          if ($explode[0] == 'external') {
+            $external_path = wisski_core_make_path_array(array('path_id' => $explode[1]));
+          } else {
+            trigger_error('Unexpected Problem: "'.$form_state['input']['external'].'" is not formatted correctly',E_USER_WARNING);
+            if (isset($external_path)) unset($external_path);
+          }
         } else {
           if (isset($external_path)) unset($external_path);
-          $full_path[] = $input;
         }
-        $form_state['storage']['external_path'] = $external_path;
+        if (isset($form_state['input']['step:datatype_property'])) {
+          $datatype_property = $form_state['input']['step:datatype_property'];
+        }
+      } elseif ($sel === 'new' && isset($form_state['input']['adds:new']) && $form_state['input']['adds:new'] !== 'empty') {
+        $full_path[] = $form_state['input']['adds:new'];
         $form_state['storage']['full_path'] = $full_path;
         $datatype_property = 'empty';
       } elseif (isset($form_state['input']['step:'.$sel])) {
+        if (isset($full_path[$sel])) {
+          if ($full_path[$sel] !== $form_state['input']['step:'.$sel]) {
+            unset($external_path);
+            $datatype_property = 'empty';
+          }
+        }
         $full_path[$sel] = $form_state['input']['step:'.$sel];
         $form_state['storage']['full_path'] = $full_path;
         if((int)$sel === count($full_path) - 1) {
@@ -1242,12 +1261,20 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
     $selection = explode(':',$form_state['values']['table'],2);
     $selected_row = $selection[1];
     $form_state['storage']['selected_row'] = $selected_row;
-    if ($selected_row === 'datatype_property') {
-      $selected_options = wisski_salz_next_datatype_properties(end($full_path));
-    } elseif ($selected_row === 'new' && empty($external_path)) {
-      $selected_options = array('empty' => ' - '.t('select').' -');
+    if (isset($external_path)) {
+      $form_state['storage']['external_path'] = $external_path;
+    } elseif (isset($form_state['storage']['external_path'])) {
+      unset($form_state['storage']['external_path']);
+    }
+    if ($selected_row === 'bottom') {  
       $elem = empty($full_path) ? $starting_concept : end($full_path);
-      $selected_options += wisski_salz_next_steps($elem);
+      $selected_options = wisski_salz_next_datatype_properties($elem);
+      if (count($full_path) % 2 === 0) {
+        $external_options = wisski_core_pb_get_external_paths($elem);
+      }
+    } elseif ($selected_row === 'new' && empty($external_path)) {
+      $elem = empty($full_path) ? $starting_concept : end($full_path);
+      $selected_options = wisski_salz_next_steps($elem);
       if (count($full_path) % 2 === 0) {
         $external_options = wisski_core_pb_get_external_paths($elem);
       }
@@ -1258,15 +1285,15 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
         $before = $full_path[$selected_row-1];
       }
       if (((int)$selected_row) < count($full_path) - 2) {
-        $selected_options += wisski_salz_next_steps($before,$full_path[$selected_row+1]);
+        $selected_options = wisski_salz_next_steps($before,$full_path[$selected_row+1]);
       } elseif (((int)$selected_row) === count($full_path) - 2) {
         if (isset($external_path)) {
-          $selected_options += wisski_salz_next_steps($before,$external_path['starting_concept']);
+          $selected_options = wisski_salz_next_steps($before,$external_path['starting_concept']);
         } else {
-          $selected_options += wisski_salz_next_steps($before,$full_path[$selected_row+1]);
+          $selected_options = wisski_salz_next_steps($before,$full_path[$selected_row+1]);
         }
       } else {
-        $selected_options += wisski_salz_next_steps($before);
+        $selected_options = wisski_salz_next_steps($before);
         if (((int)$selected_row) % 2 === 0) {  
           $external_options = wisski_core_pb_get_external_paths($before);
         }
@@ -1276,53 +1303,38 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
   }
   dpm($full_path);
   $rows = array();
+  $empty_options = array('empty' => ' - '.t('select').' -');
   $rows['starting_concept'] = array('step' => '<b>'.t('Starting Concept').'</b>: '.$starting_concept);
   foreach($full_path as $key => $entry) {
-    if ($selected_row !== 'new' && $selected_row !== 'datatype_property' && substr($selected_row,0,8) !== 'bottom') {
+    if ($selected_row !== 'new' && $selected_row !== 'bottom' && ((int)$selected_row) == $key) {
       $rows['step:'.$key] = array(
         'step' => array(
           'data' => array(
             '#type' => 'select',
-            '#options' => $selected_options,
+            '#options' => $empty_options + $selected_options,
             '#name' => 'step:'.$key,
             '#value' => $entry,
           ),
         ),
       );
-      if ($datatype_property !== 'empty' && count($full_path) === $key+1) $rows['step:'.$key]['step']['data']['#title'] = '! '.t('Datatype Property will be removed, if you change this');
+      if (count($full_path) === $key+1) {
+        if ($datatype_property !== 'empty') $rows['step:'.$key]['step']['data']['#title'] = '! '.t('Datatype Property will be removed, if you change this');
+        if (isset($external_path)) $rows['step:'.$key]['step']['data']['#title'] = '! '.t('Re-Used Path will be removed, if you change this');
+      }
     } else {
       $rows['step:'.$key] = array('step' => $entry);
     }
   }
-  $rows['bottom']['#type'] = 'container';
-  if (substr($selected_row,0,8) === 'bottom') {
-    $rows['bottom']['external'] = array(
-      'step' => array(
-        'data' => array(
-          '#type' => 'select',
-          '#options' => $external_options,
-          '#name' => 'external',
-//          '#value' => 'external',
-        ),
-      ),
-    );
-    if ($datatype_property !== 'empty' && count($full_path) === $key+1) $rows['step:'.$key]['step']['data']['#title'] = '! '.t('Datatype Property will be removed, if you change this');
-  }
+  $bottom_line = array();
   if(!empty($external_path)) {
-    $str = t('Re-Used Path').': ';
+    $str = '<b>'.t('Re-Used Path').':</b> ';
     $str .= $external_path['connected_bundle'].' '.$external_path['connected_field'].'-'.$external_path['connected_field_property'];
     foreach($external_path['full_path'] as $p) {
-      $str .= ' -> '.$p.'</br>';
+      $str .= ' -> '.$p;
     }
     $str .= ' => '.$external_path['datatype_property'];
-    $items = array(
-      '#type' => 'markup',
+    $bottom_line['external'] = array(
       '#markup' => $str,
-    );
-    $rows['bottom']['external'] = array(
-      'step' => array(
-        'data' => $items,
-      ),
     );
   } else {
     if ($selected_row === 'new') {
@@ -1330,7 +1342,7 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
         'step' => array(
           'data' => array(
             '#type' => 'select',
-            '#options' => $selected_options,
+            '#options' => $empty_options + $selected_options,
             '#name' => 'adds:new',
           ),
         ),
@@ -1340,22 +1352,32 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
       $rows['adds:new'] = array('step' => '<b>'.t('NEW').'</b>: '.t('Add new step'));
     }
   }
-  if ($selected_row === 'datatype_property') {
-    $rows['bottom']['datatype_property'] = array(
-      'step' => array(
-        'data' => array(
-          '#type' => 'select',
-          '#options' => $selected_options,
-          '#title' => '<b>'.t('Datatype Property').'</b>',
-          '#title_display' => 'after',
-          '#name' => 'step:datatype_property',
-          '#value' => $datatype_property,
-        ),
-      ),
+  if ($selected_row === 'bottom') {
+    if (!empty($external_options)) {
+      $bottom_line['external'] = array(
+        '#type' => 'select',
+        '#options' => $empty_options + $external_options,
+        '#title' => '<b>'.t('Re-Use Existing Path').'</b>',
+        '#name' => 'step:external',
+        '#value' => isset($external_path) ? 'external:'.$external_path['uuid'] : 'empty',
+      );
+      if (count($full_path) === $key+1) {
+        if ($datatype_property !== 'empty') $bottom_line['external']['#title'] .= ' ! '.t('Datatype Property will be removed, if you change this');
+      }
+    }
+    $bottom_line['datatype_property'] = array(
+      '#type' => 'select',
+      '#options' => $empty_options + $selected_options,
+      '#title' => '<b>'.t('Datatype Property').'</b>',
+      '#name' => 'step:datatype_property',
+      '#value' => $datatype_property,
     );
   } elseif (count($full_path) % 2 === 0) {
     $text = $datatype_property === 'empty' ? '('.t('not set').')' : $datatype_property;
-    $rows['bottom']['datatype_property'] = array('step' => '<b>'.t('Datatype Property').'</b>: '.$text);
+    if (!isset($external_path)) $bottom_line['datatype_property'] = array('#markup' => '<b>'.t('Datatype Property').'</b>: '.$text);
+  }
+  if (!empty($bottom_line)) {
+    $rows['step:bottom'] = array('step'=>array('data'=>array('#type'=>'container')+$bottom_line));
   }
   $form['table'] = array(
     '#type' => 'tableselect',
@@ -1366,6 +1388,7 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
     '#prefix' => '<div id=wisski-core-single-path-table>',
     '#suffix' => '</div>',
     '#name' => 'single_path_table',
+    '#default_value' => 'starting_concept',
   );
   $form['op'] = array(
     '#name' => 'single_path_button',
@@ -1387,7 +1410,14 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
     ),
     '#validate' => array('wisski_core_single_path_validate'),
   );
+  $form['submit'] = array(
+    '#name' => 'single_path_submit',
+    '#type' => 'submit',
+    '#value' => t('Save this path'),
+    '#validate' => array('wisski_core_single_path_validate'),
+  );
   variable_set('wisski_throw_exceptions',FALSE);
+//  dpm($form);
   return $form;
 }
 
@@ -1396,11 +1426,49 @@ function wisski_core_single_path_callback($form,$form_state) {
   return $form['table'];
 }
 
+function wisski_core_single_path_submit($form,&$form_state) {
+
+  $storage = $form_state['storage'];
+  $path_info = array(
+    'path_array' => $storage['full_path'],
+    'short_name' => isset($storage['short_name']) ? $storage['short_name'] : $storage['field_name'],
+    'datatype_property' => isset($storage['datatype_property']) ? $storage['datatype_property'] : NULL,
+    'external_path' => isset($storage['external_path']['uuid']) ? $storage['external_path']['uuid'] : NULL,
+    'starting_concept' => $storage['starting_concept'],  
+    'connected_field' => $storage['field_name'],
+    'connected_field_property' => $storage['map'],
+    'connected_bundle' => $storgae['bundle_name'],
+  );
+  if (isset($storage['uuid'])) {
+    db_update('wisski_pb_pathdata')
+      ->fields($path_info)
+      ->condition('uuid',$storage['uuid'])
+      ->execute();
+  } else {
+    $path_info += array('uuid' => wisski_core_make_uuid($storage['starting_concept']));
+    db_insert('wisski_pb_pathdata')
+      ->fields($path_info)
+      ->execute();
+  }
+  $form_state['redirect'] = 'admin/structure/wisski_core_bundle/manage/'.$storage['bundle_name'].'/'.$storage['field_name'].'/choose';
+}
+
 function wisski_core_single_path_validate($form,$form_state) {
   
-  $tester = substr($form_state['values']['table'],0,5);
-  if($tester !== 'step:' && $tester !== 'adds:') {
+  $explode = explode(':',$form_state['values']['table'],2);
+  if($explode[0] !== 'step' && $explode[0] !== 'adds') {
     form_set_error('single_path_table',t('Choose a concept or property to modify'));
+  }
+//  dpm($form_state);
+  if ($explode[0] === 'step' && $explode[1] === 'bottom') {
+    $set = 0;
+    if (isset($form_state['input']['step:datatype_property'])) {
+      $set += ($form_state['input']['step:datatype_property'] !== 'empty');
+    }
+    if (isset($form_state['input']['step:external'])) {
+      $set += $set && ($form_state['input']['step:external'] !== 'empty');
+    }
+    if ($set > 1) form_set_error('single_path_table][bottom',t('Choose either a datatype property or an external path'));
   }
 }
 

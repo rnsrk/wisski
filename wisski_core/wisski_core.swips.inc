@@ -95,11 +95,15 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
         foreach($instances as $instance) {
           $type = $wrapper->$instance['field_name']->type();
           $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $instance['field_name'])));
-          $starting_concept = $path_array['starting_concept'];
-          $full_path = $path_array['full_path'];
-          $data = $path_array['datatype_property'];
-          $info = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
-          $info = _wisski_core_gather_field_data($instance['id'],$info);  
+          foreach ($path_array as $mapping => $path) {
+            $starting_concept = $path['starting_concept'];
+            $full_path = $path['full_path'];
+            $data = $path['datatype_property'];
+            $info[$mapping] = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
+          }
+          $info = _wisski_core_gather_field_data($instance['id'],$info);
+          dpm($info);
+          //throw new Exception('breaker');
           if (!empty($info)) {
             $info = $info[$individual][0];
             try {
@@ -296,9 +300,8 @@ function _wisski_core_divide_field_data($instance_id, array $data) {
     $result = db_select('wisski_special_field_cache','cache')
       ->fields('cache')
       ->condition('instance_id',$instance_id)
-      ->execute()
-      ->fetch();
-    if (empty($result)) {
+      ->execute();
+    if ($result->rowCount() === 0) {
       db_insert('wisski_special_field_cache')
         ->fields(array(
           'instance_id' => $instance_id,
@@ -325,9 +328,9 @@ function _wisski_core_gather_field_data($instance_id,$data) {
               ->fields('cache')
               ->condition('instance_id',$instance_id)
               ->execute()
-              ->fetch();
-  if (!empty($result) && isset($result['field_data'])) {
-    $out += $result['field_data'];
+              ->fetchObject();
+  if (!empty($result) && isset($result->field_data)) {
+    $out += $result->field_data;
   }
   return $out;
 }
