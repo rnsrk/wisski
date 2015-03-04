@@ -1036,7 +1036,7 @@ function wisski_core_short_titles_form_exit($form, &$form_state) {
     ->execute();
   variable_del('wisski_core_short_titles_order');
   variable_del('wisski_core_short_titles_example_entity');
-  $form_state['redirect'] = 'admin/structure/wisski_core_bundle/manage/'.$bundle->type;
+  $form_state['redirect'] = array('admin/structure/wisski_core_bundle/manage/'.$bundle->type);
 }
 
 function wisski_core_short_titles_form_apply($form,&$form_state) {
@@ -1061,7 +1061,7 @@ function wisski_core_short_titles_form_cancel($form,&$form_state) {
   variable_del('wisski_core_short_titles_order');
   variable_del('wisski_core_short_titles_example_entity');
   $bundle = $form_state['storage']['bundle'];
-  $form_state['redirect'] = 'admin/structure/wisski_core_bundle/manage/'.$bundle->type;
+  $form_state['redirect'] = array('admin/structure/wisski_core_bundle/manage/'.$bundle->type);
 }
 
 
@@ -1426,18 +1426,18 @@ function wisski_core_single_path_callback($form,$form_state) {
   return $form['table'];
 }
 
-function wisski_core_single_path_submit($form,&$form_state) {
+function wisski_core_single_path_form_submit($form,&$form_state) {
 
   $storage = $form_state['storage'];
   $path_info = array(
-    'path_array' => $storage['full_path'],
+    'path_array' => serialize($storage['full_path']),
     'short_name' => isset($storage['short_name']) ? $storage['short_name'] : $storage['field_name'],
-    'datatype_property' => isset($storage['datatype_property']) ? $storage['datatype_property'] : NULL,
+    'datatype_property' => isset($storage['datatype_property']) && $storage['datatype_property'] !== 'empty' ? $storage['datatype_property'] : NULL,
     'external_path' => isset($storage['external_path']['uuid']) ? $storage['external_path']['uuid'] : NULL,
     'starting_concept' => $storage['starting_concept'],  
     'connected_field' => $storage['field_name'],
     'connected_field_property' => $storage['map'],
-    'connected_bundle' => $storgae['bundle_name'],
+    'connected_bundle' => $storage['bundle_name'],
   );
   if (isset($storage['uuid'])) {
     db_update('wisski_pb_pathdata')
@@ -1450,7 +1450,7 @@ function wisski_core_single_path_submit($form,&$form_state) {
       ->fields($path_info)
       ->execute();
   }
-  $form_state['redirect'] = 'admin/structure/wisski_core_bundle/manage/'.$storage['bundle_name'].'/'.$storage['field_name'].'/choose';
+  $form_state['redirect'] = array('admin/structure/wisski_core_bundle/manage/'.$storage['bundle_name'].'/'.$storage['field_name'].'/choose');
 }
 
 function wisski_core_single_path_validate($form,$form_state) {
