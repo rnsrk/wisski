@@ -1377,8 +1377,9 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
     if (!isset($external_path)) $bottom_line['datatype_property'] = array('#markup' => '<b>'.t('Datatype Property').'</b>: '.$text);
   }
   if (!empty($bottom_line)) {
-    $rows['step:bottom'] = array('step'=>array('data'=>array('#type'=>'container')+$bottom_line));
+    $rows['step:bottom'] = array('step'=>array('data'=>array('#type'=>'container', '#attributes' => array( 'class' => array('wki-container-class-bottom')))+$bottom_line));
   }
+  
   $form['table'] = array(
     '#type' => 'tableselect',
     '#options' => $rows,
@@ -1390,6 +1391,7 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
     '#name' => 'single_path_table',
     '#default_value' => 'starting_concept',
   );
+  
   $form['op'] = array(
     '#name' => 'single_path_button',
     '#type' => 'button',
