@@ -105,7 +105,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
           dpm($info);
           //throw new Exception('breaker');
           if (!empty($info)) {
-            $info = $info[$individual][0];
+            $info = current($info);
             try {
               if ($type === 'wisski_individual') {
                 $target_entity = entity_load('wisski_individual',$info);

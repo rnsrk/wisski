@@ -390,6 +390,10 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     foreach($paths as $path) {
       if (isset($path['id'])) $ids[$i] = $path['id'];
       $path_array = $path['path_array'];
+      if (!is_array($path_array)) {
+        dpm(array('path_array'=>$path_array));
+        throw new Exception('path_array');
+      }
       $datatype_property = $path['datatype_property'];
       $count = 0;
       if (count($paths) > 1 || (isset($path['maximum']) && $path['maximum'] > 0)) $query .= " OPTIONAL {SELECT DISTINCT $ind ?data$i WHERE {";
