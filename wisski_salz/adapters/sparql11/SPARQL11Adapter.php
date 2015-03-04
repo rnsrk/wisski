@@ -238,7 +238,9 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 //        wisski_core_tick('SPARQLAdapter: begin query '.$requestcount);
         $results = $this->request($type,$query);
 //        wisski_core_tick('SPARQLAdapter: end query '.$requestcount);
-        if (empty($results) || $results->numRows() === 0) return(array(TRUE,array()));
+        if (get_class($results) == 'EasyRdf_Sparql_Result' && $results->numRows() > 0) {
+          //this is as expected
+        } else return array(FALSE,array());
         $ok = TRUE;
       } else trigger_error("EasyRdf is not installed",E_USER_ERROR);
     } catch (Exception $e) {
