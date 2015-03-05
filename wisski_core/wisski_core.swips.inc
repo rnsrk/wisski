@@ -96,24 +96,28 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
           $type = $wrapper->$instance['field_name']->type();
           $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $instance['field_name'])));
 
-          foreach($path_array as $nonsense => $smthg) {
-            foreach ($smthg as $mapping => $path) {
-              $starting_concept = $path['starting_concept'];
-              $full_path = $path['full_path'];
-              $data = $path['datatype_property'];
-              dpm($path);
-              $info[$mapping] = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
-            }
+          dpm($path_array);
+
+          $paths_for_field = $path_array[$instance['field_name']];
+          foreach ($paths_for_field as $mapping => $path) {
+            $starting_concept = $path['starting_concept'];
+            $full_path = $path['full_path'];
+            $data = $path['datatype_property'];
+            $disamb = $path['disamb'];
+      
+            $info[$mapping] = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
           }
+      
           $info = _wisski_core_gather_field_data($instance,$info);
           dpm($info);
           //throw new Exception('breaker');
           if (!empty($info)) {
+            drupal_set_message(serialize($info));
             $info = current($info);
             
             drupal_set_message(serialize($wrapper));
             drupal_set_message(serialize($wrapper->$instance['field_name']));
-            dpm($info);
+            drupal_set_message(serialize($info));
             
             try {
               if ($type === 'wisski_individual') {
@@ -222,7 +226,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
       if (empty($instance)) continue;
 //      dpm("Tick 3");
       $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $instance['field_name'])));
-      
+      /*
       $paths_for_field = $path_array[$instance['field_name']];
       foreach ($paths_for_field as $mapping => $path) {
         $starting_concept = $path['starting_concept'];
@@ -230,6 +234,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
         $data = $path['datatype_property'];
         $disamb = $path['disamb'];
       }
+      */
       
       
       $new_values = field_get_items($entity_type,$entity,$instance['field_name']);
@@ -238,11 +243,21 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
       foreach($new_values as $delta) {
 //        dpm($delta);
         $set_val = _wisski_core_divide_field_data($instance,$delta);
-        if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$full_path,$data,$disamb,$set_val,$delete)) {
+
+        $paths_for_field = $path_array[$instance['field_name']];
+        foreach ($paths_for_field as $mapping => $path) {
+          $starting_concept = $path['starting_concept'];
+          $full_path = $path['full_path'];
+          $data = $path['datatype_property'];
+          $disamb = $path['disamb'];
+        
+
+          if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$full_path,$data,$disamb,$set_val,$delete)) {
 //          dpm($news);
-          foreach($news as $class => $inds) {
-            if (!isset($new_individuals[$class])) $new_individuals[$class] = array();
-            $new_individuals[$class] += $inds;
+            foreach($news as $class => $inds) {
+              if (!isset($new_individuals[$class])) $new_individuals[$class] = array();
+              $new_individuals[$class] += $inds;
+            }
           }
         }
       }
