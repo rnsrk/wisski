@@ -240,7 +240,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 //        wisski_core_tick('SPARQLAdapter: end query '.$requestcount);
         if (get_class($results) == 'EasyRdf_Sparql_Result' && $results->numRows() > 0) {
           //this is as expected
-        } else return array(FALSE,array());
+        } else return array(TRUE,array());
         $ok = TRUE;
       } else trigger_error("EasyRdf is not installed",E_USER_ERROR);
     } catch (Exception $e) {
@@ -692,12 +692,18 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     
     //just to have some info we take the namespace prefix form the property
     $prefix = strstr($property,':',TRUE);
+    
     //aim at uniqueness
     $suffix = md5(time().$property.rand());
+    
+    
     //ensure uniqueness
     $name = substr($prefix.":".preg_replace('/[^a-zA-Z0-9_]/u','_',$name_part).$suffix,0,32);
+    
+    
     if ($checked) {
       list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE {{ $name ?p ?o .} UNION {?s ?p $name .}} LIMIT 1");
+      
       if (!$ok) return FALSE;
       return empty($result) ? $name : $this->createNewIndividual($property);
     } else return $name;
