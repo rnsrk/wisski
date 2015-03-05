@@ -67,7 +67,7 @@ function wisski_core_field_storage_delete_field($field) {
 /**
 * implements hook_field_storage_pre_load
 */
-function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $age, $skip_fields, $options) {
+function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $age, &$skip_fields, $options) {
 
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');    
 //  dpm("call to hook_field_storage_pre_load for ".$entity_type);
@@ -110,6 +110,11 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
           //throw new Exception('breaker');
           if (!empty($info)) {
             $info = current($info);
+            
+            drupal_set_message(serialize($wrapper));
+            drupal_set_message(serialize($wrapper->$instance['field_name']));
+            dpm($info);
+            
             try {
               if ($type === 'wisski_individual') {
                 $target_entity = entity_load('wisski_individual',$info);
@@ -118,12 +123,13 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
               } elseif ('list' == substr($type,0,4)) {
                 $wrapper->$instance['field_name']->set($info);
               } else {
-                $wrapper->$instance['field_name']->set($info[0]);
+                $wrapper->$instance['field_name']->set($info[$entity->uri][0][0]);
               }
             } catch (EntityMetadataWrapperException $e) {
               trigger_error("EntityMetadataWrapperException ".$e->getMessage(),E_USER_ERROR);
               dpm(array('info'=>$info));
             }
+            
           }
           $skip_fields[$instance['field_id']] = $entity->id;
         }//END foreach $instances
@@ -216,10 +222,16 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
       if (empty($instance)) continue;
 //      dpm("Tick 3");
       $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $instance['field_name'])));
-      $starting_concept = $path_array['starting_concept'];
-      $full_path = $path_array['full_path'];
-      $data = $path_array['datatype_property'];
-      $disamb = $path_array['disamb'];
+      
+      $paths_for_field = $path_array[$instance['field_name']];
+      foreach ($paths_for_field as $mapping => $path) {
+        $starting_concept = $path['starting_concept'];
+        $full_path = $path['full_path'];
+        $data = $path['datatype_property'];
+        $disamb = $path['disamb'];
+      }
+      
+      
       $new_values = field_get_items($entity_type,$entity,$instance['field_name']);
       $delete = !property_exists($entity,'is_new') || !$entity->is_new;
       $db_values = array();
@@ -300,12 +312,12 @@ function _wisski_core_divide_field_data($instance, array $data) {
   $saveable = db_select('wisski_pb_pathdata','p')
               ->fields('p',array('connected_field_property'))
               ->condition('connected_field',$instance['field_name'])
-              ->condition('connected_bunlde',$instance['bundle'])
+              ->condition('connected_bundle',$instance['bundle'])
               ->execute()
               ->fetchAllAssoc('connected_field_property');
   if (!empty($saveable)) {
     foreach (array_keys($saveable) as $mapping) {
-      if (isset($data[$mapping]) {
+      if (isset($data[$mapping])) {
         $out[$mapping] = $data[$mapping];
         unset($data[$mapping]);
       }
@@ -340,12 +352,12 @@ function _wisski_core_gather_field_data($instance,$data) {
   $loadable = db_select('wisski_pb_pathdata','p')
               ->fields('p',array('connected_field_property'))
               ->condition('connected_field',$instance['field_name'])
-              ->condition('connected_bunlde',$instance['bundle'])
+              ->condition('connected_bundle',$instance['bundle'])
               ->execute()
               ->fetchAllAssoc('connected_field_property');
   if (!empty($loadable)) {
     foreach (array_keys($loadable) as $mapping) {
-      if (isset($data[$mapping]) {
+      if (isset($data[$mapping])) {
         $out[$mapping] = $data[$mapping];
       }
     }

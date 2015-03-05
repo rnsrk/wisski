@@ -1088,9 +1088,14 @@ function wisski_core_data_mapping_form($form,$form_state,$bundle,$field_name) {
   $options = array();
   while($elem = $result->fetchObject()) {
     $path_array = wisski_core_make_path_array(array('path_id'=>$elem->uuid));
-    $starting_concept = $path_array['starting_concept'];
-    $full_path = $path_array['full_path'];
-    $datatype_property = $path_array['datatype_property'];
+
+    $paths_for_field = $path_array[$field_name];
+
+    $paths = $paths_for_field[$elem->connected_field_property];
+
+    $starting_concept = $paths['starting_concept'];
+    $full_path = $paths['full_path'];
+    $datatype_property = $paths['datatype_property'];
     $options[$elem->uuid] = array();
     if (isset($elem->connected_field_property)) {
       $options[$elem->uuid]['mapping'] = $elem->connected_field_property;
