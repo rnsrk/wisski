@@ -101,7 +101,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
             $data = $path['datatype_property'];
             $info[$mapping] = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
           }
-          $info = _wisski_core_gather_field_data($instance['id'],$info);
+          $info = _wisski_core_gather_field_data($instance,$info);
           dpm($info);
           //throw new Exception('breaker');
           if (!empty($info)) {
@@ -221,7 +221,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
       $db_values = array();
       foreach($new_values as $delta) {
 //        dpm($delta);
-        $set_val = _wisski_core_divide_field_data($instance['id'],$delta);
+        $set_val = _wisski_core_divide_field_data($instance,$delta);
         if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$full_path,$data,$disamb,$set_val,$delete)) {
 //          dpm($news);
           foreach($news as $class => $inds) {
@@ -287,46 +287,67 @@ function wisski_core_make_uri($entity_title,$bundle_name,$ind_only = TRUE) {
  * This function decides which of the field data is stored by this storage engine
  * and which to keep in the db table. The storage engine data is returned.
  */
-function _wisski_core_divide_field_data($instance_id, array $data) {
+function _wisski_core_divide_field_data($instance, array $data) {
 
   dpm(array(__FUNCTION__=>func_get_args()));
   //while in development we only store ['value'] entries, rest is DB stuff
   $out = array();
-  if (isset($data['value'])) {
-    $out['value'] = $data['value'];
-    unset($data['value']);
+  $saveable = db_select('wisski_pb_pathdata','p')
+              ->fields('p',array('connected_field_property'))
+              ->condition('connected_field',$instance['field_name'])
+              ->condition('connected_bunlde',$instance['bundle'])
+              ->execute()
+              ->fetchAllAssoc('connected_field_property');
+  if (!empty($saveable)) {
+    foreach (array_keys($saveable) as $mapping) {
+      if (isset($data[$mapping]) {
+        $out[$mapping] = $data[$mapping];
+        unset($data[$mapping]);
+      }
+    }
   }
   if (!empty($data)) {
     $result = db_select('wisski_special_field_cache','cache')
       ->fields('cache')
-      ->condition('instance_id',$instance_id)
+      ->condition('instance_id',$instance['id'])
       ->execute();
     if ($result->rowCount() === 0) {
       db_insert('wisski_special_field_cache')
         ->fields(array(
-          'instance_id' => $instance_id,
+          'instance_id' => $instance['id'],
           'field_data' => $data,
           ))
         ->execute();
     } else {
       db_update('wisski_special_field_cache')
         ->fields(array('field_data' => $data))
-        ->condition('instance_id',$instance_id)
+        ->condition('instance_id',$instance['id'])
         ->execute();
     }
   }
   return $out;
 }
 
-function _wisski_core_gather_field_data($instance_id,$data) {
+function _wisski_core_gather_field_data($instance,$data) {
   
 //  dpm(array(__FUNCTION__=>func_get_args()));
   $out = array();
-  if (is_array($data)) $out = $data;
-  else $out['value'] = $data;
+  $loadable = db_select('wisski_pb_pathdata','p')
+              ->fields('p',array('connected_field_property'))
+              ->condition('connected_field',$instance['field_name'])
+              ->condition('connected_bunlde',$instance['bundle'])
+              ->execute()
+              ->fetchAllAssoc('connected_field_property');
+  if (!empty($loadable)) {
+    foreach (array_keys($loadable) as $mapping) {
+      if (isset($data[$mapping]) {
+        $out[$mapping] = $data[$mapping];
+      }
+    }
+  }
   $result = db_select('wisski_special_field_cache','cache')
               ->fields('cache')
-              ->condition('instance_id',$instance_id)
+              ->condition('instance_id',$instance['id'])
               ->execute()
               ->fetchObject();
   if (!empty($result) && isset($result->field_data)) {

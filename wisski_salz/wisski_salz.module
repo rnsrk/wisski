@@ -263,7 +263,7 @@ function wisski_salz_sparql_query($query_string,$dump = TRUE) {
   if ($store->getType() == "SPARQL 1.1") {
     list($ok,$result) = $store->querySPARQL($query_string);
     if ($ok) {
-      if ($dump) drupal_set_message($result->dump());
+      if ($dump && !empty($result)) drupal_set_message($result->dump());
       return $result;
     }
   }
