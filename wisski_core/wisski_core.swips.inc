@@ -107,9 +107,29 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
       
             $info[$mapping] = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
           }
-      
+                
           $info = _wisski_core_gather_field_data($instance,$info);
           dpm($info);
+
+          // get the field infos the field wants to have
+          $field_infos = $wrapper->$instance['field_name']->info();
+
+          // if it is a file we do have to do something special magic
+          if(isset($field_infos['property info']['file'])) {
+            // if there is a fid
+            if(!empty($info['fid'])) {
+            
+              $fid = $info['fid'][$entity->uri][0][0];
+              
+              $file = file_load($fid);
+              
+              $wrapper->$instance['field_name']->set(array('fid' => $fid) );
+              
+              continue;
+              
+            }
+          }
+
           //throw new Exception('breaker');
           if (!empty($info)) {
             drupal_set_message(serialize($info));
@@ -119,6 +139,9 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
             drupal_set_message(serialize($wrapper->$instance['field_name']));
             drupal_set_message(serialize($info));
             
+            dpm($wrapper->$instance['field_name']->info());
+            
+                        
             try {
               if ($type === 'wisski_individual') {
                 $target_entity = entity_load('wisski_individual',$info);
@@ -127,6 +150,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
               } elseif ('list' == substr($type,0,4)) {
                 $wrapper->$instance['field_name']->set($info);
               } else {
+              
                 $wrapper->$instance['field_name']->set($info[$entity->uri][0][0]);
               }
             } catch (EntityMetadataWrapperException $e) {
@@ -250,7 +274,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
         foreach ($paths_for_field as $mapping => $path) {
         
           // evil hack
-          if(empty($set_val[$mapping]))
+          if(!isset($set_val[$mapping]))
             continue;
         
           $starting_concept = $path['starting_concept'];
@@ -354,12 +378,12 @@ function _wisski_core_divide_field_data($instance, array $data) {
       db_insert('wisski_special_field_cache')
         ->fields(array(
           'instance_id' => $instance['id'],
-          'field_data' => $data,
+          'field_data' => serialize($data),
           ))
         ->execute();
     } else {
       db_update('wisski_special_field_cache')
-        ->fields(array('field_data' => $data))
+        ->fields(array('field_data' => serialize($data)))
         ->condition('instance_id',$instance['id'])
         ->execute();
     }
@@ -390,7 +414,7 @@ function _wisski_core_gather_field_data($instance,$data) {
               ->execute()
               ->fetchObject();
   if (!empty($result) && isset($result->field_data)) {
-    $out += $result->field_data;
+    $out += unserialize($result->field_data);
   }
   return $out;
 }
