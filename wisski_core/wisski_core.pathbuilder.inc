@@ -49,9 +49,9 @@ function wisski_core_make_path_array(array $settings) {
       'uuid' => $uuid,
     );
   }
-  while (count($paths) == 1) {
-    $paths = current($paths);
-  }
+#  while (count($paths) == 1) {
+#    $paths = current($paths);
+#  }
   return $paths;
 }
 
