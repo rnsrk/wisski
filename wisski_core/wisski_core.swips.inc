@@ -111,6 +111,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
           $info = _wisski_core_gather_field_data($instance,$info);
           dpm($info);
 
+/*
           // get the field infos the field wants to have
           $field_infos = $wrapper->$instance['field_name']->info();
 
@@ -159,6 +160,48 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
             }
             
           }
+          */
+          
+          dpm($entity);
+          
+          dpm($info);
+          foreach($info as $fieldname => $uri_array) {
+            if(!is_array($uri_array))
+              continue;
+
+            foreach($uri_array as $enturi => $lang_array) {
+
+              if(!is_array($lang_array))
+                continue;
+              foreach($lang_array as $langcode => $deltarray) {
+
+                if(!is_array($deltarray))
+                  continue;
+
+                foreach($deltarray as $delta => $value) { 
+          
+          #if(!property_exists($entity, $instance['field_name'])) {
+                  $curarr = &$entity->$instance['field_name'];
+                  
+                  // get the language code for the field
+                  $language = field_language($entity->type, $entity, $instance['field_name'], $langcode);
+                  
+                  // if it is empty, it probably is LANGUAGE_NONE
+                  if(empty($language))
+                    $language = LANGUAGE_NONE;
+                                    
+                  $curarr[$language][$delta][$fieldname]  = $value;
+                  
+          #}	
+                }
+              }
+            }
+          } 
+          
+
+          
+          //$entity->$instance['field_name'] = $info;
+          
           $skip_fields[$instance['field_id']] = $entity->id;
         }//END foreach $instances
         wisski_core_set_short_title($entity,FALSE);
