@@ -226,8 +226,9 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
       if (empty($instance)) continue;
 //      dpm("Tick 3");
       $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $instance['field_name'])));
-      /*
+      
       $paths_for_field = $path_array[$instance['field_name']];
+      /*
       foreach ($paths_for_field as $mapping => $path) {
         $starting_concept = $path['starting_concept'];
         $full_path = $path['full_path'];
@@ -241,18 +242,24 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
       $delete = !property_exists($entity,'is_new') || !$entity->is_new;
       $db_values = array();
       foreach($new_values as $delta) {
-//        dpm($delta);
+
         $set_val = _wisski_core_divide_field_data($instance,$delta);
 
-        $paths_for_field = $path_array[$instance['field_name']];
+#        dpm($set_val);
+
         foreach ($paths_for_field as $mapping => $path) {
+        
+          // evil hack
+          if(empty($set_val[$mapping]))
+            continue;
+        
           $starting_concept = $path['starting_concept'];
           $full_path = $path['full_path'];
           $data = $path['datatype_property'];
           $disamb = $path['disamb'];
         
 
-          if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$full_path,$data,$disamb,$set_val,$delete)) {
+          if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$full_path,$data,$disamb,$set_val[$mapping],$delete)) {
 //          dpm($news);
             foreach($news as $class => $inds) {
               if (!isset($new_individuals[$class])) $new_individuals[$class] = array();
