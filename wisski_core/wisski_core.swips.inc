@@ -95,11 +95,15 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
         foreach($instances as $instance) {
           $type = $wrapper->$instance['field_name']->type();
           $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $instance['field_name'])));
-          foreach ($path_array as $mapping => $path) {
-            $starting_concept = $path['starting_concept'];
-            $full_path = $path['full_path'];
-            $data = $path['datatype_property'];
-            $info[$mapping] = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
+
+          foreach($path_array as $nonsense => $smthg) {
+            foreach ($smthg as $mapping => $path) {
+              $starting_concept = $path['starting_concept'];
+              $full_path = $path['full_path'];
+              $data = $path['datatype_property'];
+              dpm($path);
+              $info[$mapping] = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
+            }
           }
           $info = _wisski_core_gather_field_data($instance,$info);
           dpm($info);
@@ -276,6 +280,7 @@ function wisski_core_make_uri($entity_title,$bundle_name,$ind_only = TRUE) {
                   ->uri;
 //  dpm($bundle_uri);
   $ind_uri = wisski_salz_pb_make_uri($bundle_uri,substr($entity_title,0,8));
+
   $trace = debug_backtrace();
   watchdog('wisski_make_uri',$entity_title.' '.$bundle_name.' '.$ind_uri.' from '.serialize($trace));
   if ($ind_only)
