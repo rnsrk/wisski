@@ -1266,6 +1266,9 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
     } elseif (isset($form_state['storage']['external_path'])) {
       unset($form_state['storage']['external_path']);
     }
+    
+    $form_state['storage']['datatype_property'] = $datatype_property;
+    
     if ($selected_row === 'bottom') {  
       $elem = empty($full_path) ? $starting_concept : end($full_path);
       $selected_options = wisski_salz_next_datatype_properties($elem);
