@@ -534,7 +534,7 @@ function wisski_core_menu() {
                                                                 
   }
   
-  
+/*  
   $classes = db_query("SELECT * FROM {wisski_pb_treedata} WHERE `group_id` = -1 AND `is_group` = 1 ORDER BY weight ASC");
 
   foreach($classes as $class) {
@@ -551,6 +551,7 @@ function wisski_core_menu() {
     );
 
   }  
+*/
   return $items;
 }
 

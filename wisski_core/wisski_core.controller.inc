@@ -116,23 +116,33 @@ class WisskiCoreEntityController extends EntityAPIController {
     if (!isset($values['uri']) && isset($values['type'])) {
       $values['uri'] = wisski_core_make_uri('',$values['type']);
     }
-//    dpm($values);
+
+/*
     if (isset($values['is_new']) && !$values['is_new']) {
       db_update('wisski_entity_data')
         ->fields(array('uri' => $values['uri'],'type' => $values['type']))
         ->condition('id',$values['id'])
         ->execute();
     } else {
-      $id = db_insert('wisski_entity_data')
-        ->fields(array('uri' => $values['uri'],'type' => $values['type']))
-        ->execute();
-      $values['id'] = $id;
+#      $id = db_insert('wisski_entity_data')
+#        ->fields(array('uri' => $values['uri'],'type' => $values['type']))
+#        ->execute();
+#      $values['id'] = $id;
     }
+*/
     $cache = cache_clear_all('wisski_cache_'.$values['type'],'cache');
     return (object) $values;
   }
   
   public function save($entity) {
+
+    // create a new entity if there was no up to now.
+    if(empty($entity->id)) {
+      $id = db_insert('wisski_entity_data')
+        ->fields(array('uri' => $entity->uri,'type' => $entity->type))
+        ->execute();
+      $entity->id = $id;
+    }
   
 //    field_attach_presave('wisski_individual', $entity);
 //    field_attach_update('wisski_individual', $entity);
