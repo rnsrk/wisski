@@ -90,15 +90,23 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
         $instances = field_info_instances('wisski_individual',$entity->type);
         $individual = $entity->uri;
         $field_info = array();
-        $wrapper = entity_metadata_wrapper('wisski_individual',$entity);
-        dpm(array('instances' => $instances,'property info' => (array)($wrapper->getPropertyInfo())));
+
+#        $wrapper = entity_metadata_wrapper('wisski_individual',$entity);
+
+#        dpm(array('instances' => $instances,'property info' => (array)($wrapper->getPropertyInfo())));
+
         foreach($instances as $instance) {
-          $type = $wrapper->$instance['field_name']->type();
+#          $type = $wrapper->$instance['field_name']->type();
+ 
+          
           $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $instance['field_name'])));
 
           dpm($path_array);
 
+          if(isset($path_array[$instance['field_name']])) {
+
           $paths_for_field = $path_array[$instance['field_name']];
+ 
           foreach ($paths_for_field as $mapping => $path) {
             $starting_concept = $path['starting_concept'];
             $full_path = $path['full_path'];
@@ -107,8 +115,11 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
       
             $info[$mapping] = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
           }
-                
-          $info = _wisski_core_gather_field_data($instance,$info);
+          } else {
+            $info = array();
+          }
+          
+          $info = _wisski_core_gather_field_data($entity, $instance,$info);
           dpm($info);
 
 /*
@@ -164,7 +175,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
           
           dpm($entity);
           
-          dpm($info);
+          drupal_set_message(serialize($info));
           foreach($info as $fieldname => $uri_array) {
             if(!is_array($uri_array))
               continue;
@@ -312,7 +323,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
         dpm($instance);
         dpm($delta);
         
-        $set_val = _wisski_core_divide_field_data($instance,$delta);
+        $set_val = _wisski_core_divide_field_data($entity, $instance, $delta);
 
         dpm($set_val);
 
