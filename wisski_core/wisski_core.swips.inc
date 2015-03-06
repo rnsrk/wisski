@@ -294,7 +294,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
 //      dpm("Tick 3");
       $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $instance['field_name'])));
       
-      $paths_for_field = $path_array[$instance['field_name']];
+      #$paths_for_field = $path_array[$instance['field_name']];
       /*
       foreach ($paths_for_field as $mapping => $path) {
         $starting_concept = $path['starting_concept'];
@@ -309,9 +309,18 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
       $delete = !property_exists($entity,'is_new') || !$entity->is_new;
       $db_values = array();
       foreach($new_values as $delta) {
-
+        dpm($instance);
+        dpm($delta);
+        
         $set_val = _wisski_core_divide_field_data($instance,$delta);
 
+        dpm($set_val);
+
+        // pb handling if possible.        
+        if(isset($path_array[$instance['field_name']])) {
+        
+        $paths_for_field = $path_array[$instance['field_name']];
+        
 #        dpm($set_val);
 
         foreach ($paths_for_field as $mapping => $path) {
@@ -333,6 +342,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
               $new_individuals[$class] += $inds;
             }
           }
+        }
         }
       }
     }
