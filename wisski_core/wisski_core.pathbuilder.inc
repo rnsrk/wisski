@@ -1094,7 +1094,7 @@ function wisski_core_data_mapping_form($form,$form_state,$bundle,$field_name) {
     $paths = $paths_for_field[$elem->connected_field_property];
 
     $starting_concept = $paths['starting_concept'];
-    $full_path = $paths['full_path'];
+    $full_path = $paths['path_array'];
     $datatype_property = $paths['datatype_property'];
     $options[$elem->uuid] = array();
     if (isset($elem->connected_field_property)) {
@@ -1337,7 +1337,7 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
   if(!empty($external_path)) {
     $str = '<b>'.t('Re-Used Path').':</b> ';
     $str .= $external_path['connected_bundle'].' '.$external_path['connected_field'].'-'.$external_path['connected_field_property'];
-    foreach($external_path['full_path'] as $p) {
+    foreach($external_path['path_array'] as $p) {
       $str .= ' -> '.$p;
     }
     $str .= ' => '.$external_path['datatype_property'];

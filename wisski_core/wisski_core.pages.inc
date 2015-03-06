@@ -183,7 +183,7 @@ function _wisski_core_get_sorted_chunk($type,$limit,$offset) {
       $paths = array();
       while (!empty($elem)) {
         $path_info = wisski_core_make_path_array(array('field_info' => array('field_name' => $elem['name'])));
-        $paths[] = array('path_array' => $path_info['full_path'],'datatype_property' => $path_info['datatype_property'],'required' => $elem['obligatory'],'maximum' => 1);
+        $paths[] = array('path_array' => $path_info['path_array'],'datatype_property' => $path_info['datatype_property'],'required' => $elem['obligatory'],'maximum' => 1);
         if ($elem['obligatory']) break;
         else $elem = next($pattern);
       }
@@ -236,7 +236,7 @@ function _wisski_core_check_titles($uris,$type) {
       $field_info = array_fill_keys($uris,array());
       foreach ($pattern as $elem) {
         $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $elem['name'])));
-        $paths[] = array('id' => $elem['id'], 'path_array' => $path_array['full_path'], 'datatype_property' => $path_array['datatype_property'], 'required' => $elem['obligatory'], 'maximum' => $elem['number']);
+        $paths[] = array('id' => $elem['id'], 'path_array' => $path_array['path_array'], 'datatype_property' => $path_array['datatype_property'], 'required' => $elem['obligatory'], 'maximum' => $elem['number']);
         if (!isset($starting_concept)) $starting_concept = $path_array['starting_concept'];
       }
       if (!isset($starting_concept)) $starting_concept = $bundle->uri;

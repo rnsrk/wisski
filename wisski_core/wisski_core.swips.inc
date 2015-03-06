@@ -347,12 +347,12 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
             continue;
         
           $starting_concept = $path['starting_concept'];
-          $full_path = $path['full_path'];
+          $path_array = $path['path_array'];
           $data = $path['datatype_property'];
           $disamb = $path['disamb'];
         
 
-          if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$full_path,$data,$disamb,$set_val[$mapping],$delete)) {
+          if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$path_array,$data,$disamb,$set_val[$mapping],$delete)) {
 //          dpm($news);
             foreach($news as $class => $inds) {
               if (!isset($new_individuals[$class])) $new_individuals[$class] = array();
