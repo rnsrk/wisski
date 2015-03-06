@@ -109,7 +109,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
             if (!empty($paths_for_field)) {
               $starting_concept = current($paths_for_field);
               $starting_concept = $starting_concept['starting_concept'];
-              $info = wisski_salz_pb_query_multi_path($starting_concept,$paths_for_field);
+              $info = wisski_salz_pb_query_single_uri($entity->uri,$starting_concept,$paths_for_field);
             
             }
           }

@@ -391,8 +391,9 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     $query .= " $ind rdf:type $starting_concept .";
     $i = 0;
     $ids = array();
-    foreach($paths as $path) {
+    foreach($paths as $key => $path) {
       if (isset($path['id'])) $ids[$i] = $path['id'];
+      else $ids[$i] = $key;
       $path_array = $path['path_array'];
       if (!is_array($path_array)) {
         dpm(array('path_array'=>$path_array));
@@ -533,6 +534,11 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     return $this->pbQuery($starting_concept,$path,$settings);
   }
 
+  public function pbQuerySingleMultipath($individual_uri,$starting_concept,$paths) {
+    $settings['uris'] = array($individual_uri);
+    return $this->pbQuery($starting_concept,$paths,$settings);
+  }
+  
   public function pbQueryMultiPath($starting_concept,$paths,$limit = NULL,$offset = 0,$order = FALSE,$asc = TRUE,$qualifier = 'STR',$contained_strings = array()) {
   
     $settings = array();
