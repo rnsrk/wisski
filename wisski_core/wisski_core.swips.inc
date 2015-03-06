@@ -403,7 +403,7 @@ function wisski_core_make_uri($entity_title,$bundle_name,$ind_only = TRUE) {
  * This function decides which of the field data is stored by this storage engine
  * and which to keep in the db table. The storage engine data is returned.
  */
-function _wisski_core_divide_field_data($instance, array $data) {
+function _wisski_core_divide_field_data($entity,$instance, array $data) {
 
   dpm(array(__FUNCTION__=>func_get_args()));
   //while in development we only store ['value'] entries, rest is DB stuff
@@ -426,11 +426,13 @@ function _wisski_core_divide_field_data($instance, array $data) {
     $result = db_select('wisski_special_field_cache','cache')
       ->fields('cache')
       ->condition('instance_id',$instance['id'])
+      ->condition('entity_uri',$entity->uri)
       ->execute();
     if ($result->rowCount() === 0) {
       db_insert('wisski_special_field_cache')
         ->fields(array(
           'instance_id' => $instance['id'],
+          'entity_uri' => $entity->uri,
           'field_data' => serialize($data),
           ))
         ->execute();
@@ -438,13 +440,14 @@ function _wisski_core_divide_field_data($instance, array $data) {
       db_update('wisski_special_field_cache')
         ->fields(array('field_data' => serialize($data)))
         ->condition('instance_id',$instance['id'])
+        ->condition('entity_uri',$entity->uri)
         ->execute();
     }
   }
   return $out;
 }
 
-function _wisski_core_gather_field_data($instance,$data) {
+function _wisski_core_gather_field_data($entity,$instance,$data) {
   
 //  dpm(array(__FUNCTION__=>func_get_args()));
   $out = array();
@@ -464,6 +467,7 @@ function _wisski_core_gather_field_data($instance,$data) {
   $result = db_select('wisski_special_field_cache','cache')
               ->fields('cache')
               ->condition('instance_id',$instance['id'])
+              ->condition('entity_uri',$entity->uri)
               ->execute()
               ->fetchObject();
   if (!empty($result) && isset($result->field_data)) {

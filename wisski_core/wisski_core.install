@@ -147,21 +147,6 @@ function wisski_core_schema() {
     ),
     'primary key' => array('id'),
     'unique keys' => array('uuid' => array('uuid')),
-    'foreign keys' => array(
-      'connected_field' => array(
-        'table' => 'field_config_instance',
-        'columns' => array(
-          'field_name' => 'connected_field',
-        ),
-      ),
-      'connected_bundle' => array(
-        'table' => 'wisski_entity_bundles',
-        'columns' => array(
-          'type' => 'connected_bundle',
-          'uri' => 'starting_concept',
-        ),
-      ),
-    ),
   );
 /*  
   $schema['wisski_pb_fielddata'] = array(
@@ -403,6 +388,12 @@ function wisski_core_schema() {
   $schema['wisski_special_field_cache'] = array(
     'description' => 'table that stores field data that cannot be stored in the triple store',
     'fields' => array(
+      'entity_uri' => array(
+        'description' => 'URI of the entity to save the data for',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
       'instance_id' => array(
         'description' => 'ID of the field instance',
         'type' => 'int',
@@ -412,16 +403,9 @@ function wisski_core_schema() {
         'description' => 'array of field data as stored by standard field engine',
         'type' => 'blob',
         'size' => 'big',
-        'serialize' => TRUE,
       ),
     ),
-    'foreign keys' => array(
-      'instance_id' => array(
-        'table' => 'field_config_instance',
-        'columns' => array('id' => 'instance_id'),
-      ),
-    ),
-    'unique keys' => array('instance_id' => array('instance_id')),
+    'unique keys' => array('entity_instance' => array('entity_uri','instance_id')),
   );
   
   // Table for storing data of entity exportable bundles.
