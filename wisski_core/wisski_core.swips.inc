@@ -102,11 +102,18 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
           $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $instance['field_name'])));
 
           dpm($path_array);
-
+          $info = array();
           if(isset($path_array[$instance['field_name']])) {
 
-          $paths_for_field = $path_array[$instance['field_name']];
- 
+            $paths_for_field = $path_array[$instance['field_name']];
+            if (!empty($paths_for_field)) {
+              $starting_concept = current($paths_for_field);
+              $starting_concept = $starting_concept['starting_concept'];
+              $info = wisski_salz_pb_query_multi_path($starting_concept,$paths_for_field);
+            
+            }
+          }
+/* 
           foreach ($paths_for_field as $mapping => $path) {
             $starting_concept = $path['starting_concept'];
             $full_path = $path['full_path'];
@@ -115,10 +122,9 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
       
             $info[$mapping] = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
           }
-          } else {
-            $info = array();
-          }
-          
+*/
+          dpm($info);
+          throw new Exception('breaker');
           $info = _wisski_core_gather_field_data($entity, $instance,$info);
           dpm($info);
 
@@ -438,6 +444,7 @@ function _wisski_core_divide_field_data($entity,$instance, array $data) {
       ->fields('cache')
       ->condition('instance_id',$instance['id'])
       ->condition('entity_uri',$entity->uri)
+//      ->condition('langcode',$langcode)
       ->execute();
     if ($result->rowCount() === 0) {
       db_insert('wisski_special_field_cache')
@@ -445,6 +452,7 @@ function _wisski_core_divide_field_data($entity,$instance, array $data) {
           'instance_id' => $instance['id'],
           'entity_uri' => $entity->uri,
           'field_data' => serialize($data),
+//          'langcode' => $langcode,
           ))
         ->execute();
     } else {
@@ -452,6 +460,7 @@ function _wisski_core_divide_field_data($entity,$instance, array $data) {
         ->fields(array('field_data' => serialize($data)))
         ->condition('instance_id',$instance['id'])
         ->condition('entity_uri',$entity->uri)
+//        ->condition('langcode',$langcode)
         ->execute();
     }
   }
@@ -479,6 +488,7 @@ function _wisski_core_gather_field_data($entity,$instance,$data) {
               ->fields('cache')
               ->condition('instance_id',$instance['id'])
               ->condition('entity_uri',$entity->uri)
+//              ->condition('langcode',$langcode)
               ->execute()
               ->fetchObject();
   if (!empty($result) && isset($result->field_data)) {

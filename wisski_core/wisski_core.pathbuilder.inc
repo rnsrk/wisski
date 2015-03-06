@@ -40,7 +40,7 @@ function wisski_core_make_path_array(array $settings) {
     }
     $paths[$connected_field][$connected_field_property] = array(
       'starting_concept' => $starting_concept,
-      'full_path' => $full_path,
+      'path_array' => $full_path,
       'datatype_property' => $data_prop,
       'connected_bundle' => $connected_bundle,
       'connected_field' => $connected_field,

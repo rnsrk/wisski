@@ -68,6 +68,12 @@ class WisskiCoreEntityController extends EntityAPIController {
               $bundle = $bundles[$bundle_uri];
               //TODO make short title
               $entity = entity_create('wisski_individual', array('type' => $bundle->type, 'uri' => $id));
+              if(empty($entity->id)) {
+                $id = db_insert('wisski_entity_data')
+                  ->fields(array('uri' => $entity->uri,'type' => $entity->type))
+                  ->execute();
+                $entity->id = $id;
+              }
               $entity->is_new = FALSE;
               $entities[$entity->id] = $entity;
             }
@@ -89,6 +95,12 @@ class WisskiCoreEntityController extends EntityAPIController {
           $entity_title = $ind_uri;
           //TODO make short titles
           $entity = entity_create('wisski_individual', array('type' => $bundle_type, 'title' => $entity_title, 'uri' => $ind_uri));
+          if(empty($entity->id)) {
+            $id = db_insert('wisski_entity_data')
+                  ->fields(array('uri' => $entity->uri,'type' => $entity->type))
+                  ->execute();
+            $entity->id = $id;
+          }
           $entity->is_new = FALSE;
           $entities[$entity->id] = $entity;
         }

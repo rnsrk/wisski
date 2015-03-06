@@ -366,7 +366,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
    */
   public function pbQuery($starting_concept,array $paths,array $settings = array()) {
     
-//    dpm(array(__FUNCTION__=>func_get_args()));
+    dpm(array(__FUNCTION__=>func_get_args()));
     if (empty($starting_concept)) {
       ddebug_backtrace();
       throw new InvalidArgumentException('you must specify a starting concept');
