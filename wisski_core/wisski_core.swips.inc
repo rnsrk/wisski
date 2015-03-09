@@ -109,8 +109,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
             if (!empty($paths_for_field)) {
               $starting_concept = current($paths_for_field);
               $starting_concept = $starting_concept['starting_concept'];
-              $info = wisski_salz_pb_query_single_uri($entity->uri,$starting_concept,$paths_for_field);
-            
+              $info = wisski_salz_pb_query_single_uri($entity->uri,$starting_concept,$paths_for_field);            
             }
           }
 /* 
@@ -124,96 +123,46 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
           }
 */
           dpm($info);
-          throw new Exception('breaker');
-          $info = _wisski_core_gather_field_data($entity, $instance,$info);
-          dpm($info);
-
-/*
-          // get the field infos the field wants to have
-          $field_infos = $wrapper->$instance['field_name']->info();
-
-          // if it is a file we do have to do something special magic
-          if(isset($field_infos['property info']['file'])) {
-            // if there is a fid
-            if(!empty($info['fid'])) {
-            
-              $fid = $info['fid'][$entity->uri][0][0];
-              
-              $file = file_load($fid);
-              
-              $wrapper->$instance['field_name']->set(array('fid' => $fid) );
-              
-              continue;
-              
-            }
-          }
-
-          //throw new Exception('breaker');
-          if (!empty($info)) {
-            drupal_set_message(serialize($info));
-            $info = current($info);
-            
-            drupal_set_message(serialize($wrapper));
-            drupal_set_message(serialize($wrapper->$instance['field_name']));
-            drupal_set_message(serialize($info));
-            
-            dpm($wrapper->$instance['field_name']->info());
-            
-                        
-            try {
-              if ($type === 'wisski_individual') {
-                $target_entity = entity_load('wisski_individual',$info);
-                dpm($target_entity);
-                $wrapper->$instance['field_name']->set($target_entity);
-              } elseif ('list' == substr($type,0,4)) {
-                $wrapper->$instance['field_name']->set($info);
-              } else {
-              
-                $wrapper->$instance['field_name']->set($info[$entity->uri][0][0]);
-              }
-            } catch (EntityMetadataWrapperException $e) {
-              trigger_error("EntityMetadataWrapperException ".$e->getMessage(),E_USER_ERROR);
-              dpm(array('info'=>$info));
-            }
-            
-          }
-          */
-          
+//          throw new Exception('breaker');
+          $info = _wisski_core_gather_field_data($entity->uri, $instance,$info);
+          // key order is: [entity_uri][delta][mapping] => values
+          dpm($info);          
           dpm($entity);
           
-          drupal_set_message(serialize($info));
-          foreach($info as $fieldname => $uri_array) {
+//          drupal_set_message(serialize($info));
+          foreach($info as $entity_uri => $uri_array) {
+            
             if(!is_array($uri_array))
               continue;
 
-            foreach($uri_array as $enturi => $lang_array) {
+/*            foreach($uri_array as $enturi => $lang_array) {
 
               if(!is_array($lang_array))
-                continue;
-              foreach($lang_array as $langcode => $deltarray) {
+                continue;*/
+/*              foreach($lang_array as $langcode => $deltarray) {
 
                 if(!is_array($deltarray))
-                  continue;
+                  continue;*/
 
-                foreach($deltarray as $delta => $value) { 
+                foreach($uri_array as $delta => $value) { 
           
           #if(!property_exists($entity, $instance['field_name'])) {
                   $curarr = &$entity->$instance['field_name'];
                   
                   // get the language code for the field
-                  $language = field_language($entity->type, $entity, $instance['field_name'], $langcode);
+//                  $language = field_language($entity->type, $entity, $instance['field_name'], $langcode);
                   
                   // if it is empty, it probably is LANGUAGE_NONE
                   if(empty($language))
                     $language = LANGUAGE_NONE;
                                     
-                  $curarr[$language][$delta][$fieldname]  = $value;
+                  $curarr[$language][$delta] = $value;
                   
           #}	
                 }
               }
-            }
-          } 
+//            }
+//          } 
           
 
           
@@ -309,6 +258,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
       $instance = field_info_instance($entity_type,$field['field_name'],$entity->type);
       if (empty($instance)) continue;
 //      dpm("Tick 3");
+      dpm($instance);
       $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $instance['field_name'])));
       
       #$paths_for_field = $path_array[$instance['field_name']];
@@ -323,16 +273,17 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
       
       
       $new_values = field_get_items($entity_type,$entity,$instance['field_name']);
+      $set_val = _wisski_core_divide_field_data($entity->uri, $instance, array($entity->uri=>$new_values));
+      dpm($set_val);
+
       $delete = !property_exists($entity,'is_new') || !$entity->is_new;
-      $db_values = array();
-      foreach($new_values as $delta) {
-        dpm($instance);
+
+      if (empty($set_val)) continue;
+
+      foreach($set_val[$entity->uri] as $delta) {
+        
         dpm($delta);
         
-        $set_val = _wisski_core_divide_field_data($entity, $instance, $delta);
-
-        dpm($set_val);
-
         // pb handling if possible.        
         if(isset($path_array[$instance['field_name']])) {
         
@@ -343,7 +294,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
         foreach ($paths_for_field as $mapping => $path) {
         
           // evil hack
-          if(!isset($set_val[$mapping]))
+          if(!isset($delta[$mapping]))
             continue;
         
           $starting_concept = $path['starting_concept'];
@@ -352,7 +303,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
           $disamb = $path['disamb'];
         
 
-          if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$path_array,$data,$disamb,$set_val[$mapping],$delete)) {
+          if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$path_array,$data,$disamb,$delta[$mapping],$delete)) {
 //          dpm($news);
             foreach($news as $class => $inds) {
               if (!isset($new_individuals[$class])) $new_individuals[$class] = array();
@@ -420,10 +371,10 @@ function wisski_core_make_uri($entity_title,$bundle_name,$ind_only = TRUE) {
  * This function decides which of the field data is stored by this storage engine
  * and which to keep in the db table. The storage engine data is returned.
  */
-function _wisski_core_divide_field_data($entity,$instance, array $data) {
+function _wisski_core_divide_field_data($entity_uri,$instance, array $data) {
 
   dpm(array(__FUNCTION__=>func_get_args()));
-  //while in development we only store ['value'] entries, rest is DB stuff
+  // key order is: [entity_uri][delta][mapping] => values
   $out = array();
   $saveable = db_select('wisski_pb_pathdata','p')
               ->fields('p',array('connected_field_property'))
@@ -431,68 +382,58 @@ function _wisski_core_divide_field_data($entity,$instance, array $data) {
               ->condition('connected_bundle',$instance['bundle'])
               ->execute()
               ->fetchAllAssoc('connected_field_property');
-  if (!empty($saveable)) {
-    foreach (array_keys($saveable) as $mapping) {
-      if (isset($data[$mapping])) {
-        $out[$mapping] = $data[$mapping];
-        unset($data[$mapping]);
+  $saveable = array_keys($saveable);
+  foreach ($data[$entity_uri] as $delta => &$sub_data) {
+    foreach ($sub_data as $mapping => $values) {
+      if (in_array($mapping,$saveable)) {
+        $out[$entity_uri][$delta][$mapping] = $values;
+        unset($sub_data[$mapping]);
       }
     }
-  }
-  if (!empty($data)) {
-    $result = db_select('wisski_special_field_cache','cache')
-      ->fields('cache')
-      ->condition('instance_id',$instance['id'])
-      ->condition('entity_uri',$entity->uri)
-//      ->condition('langcode',$langcode)
-      ->execute();
-    if ($result->rowCount() === 0) {
-      db_insert('wisski_special_field_cache')
-        ->fields(array(
-          'instance_id' => $instance['id'],
-          'entity_uri' => $entity->uri,
-          'field_data' => serialize($data),
-//          'langcode' => $langcode,
-          ))
-        ->execute();
-    } else {
-      db_update('wisski_special_field_cache')
-        ->fields(array('field_data' => serialize($data)))
+    if (!empty($sub_data)) {
+      $result = db_select('wisski_special_field_cache','cache')
+        ->fields('cache')
         ->condition('instance_id',$instance['id'])
-        ->condition('entity_uri',$entity->uri)
-//        ->condition('langcode',$langcode)
+        ->condition('entity_uri',$entity_uri)
+//      ->condition('langcode',$langcode)
         ->execute();
+      if ($result->rowCount() === 0) {
+        db_insert('wisski_special_field_cache')
+          ->fields(array(
+            'instance_id' => $instance['id'],
+            'entity_uri' => $entity_uri,
+            'field_data' => serialize($sub_data),
+//	          'langcode' => $langcode,
+            ))
+          ->execute();
+      } else {
+        db_update('wisski_special_field_cache')
+          ->fields(array('field_data' => serialize($sub_data)))
+          ->condition('instance_id',$instance['id'])
+          ->condition('entity_uri',$entity_uri)
+//        ->condition('langcode',$langcode)
+          ->execute();
+      }
     }
   }
   return $out;
 }
 
-function _wisski_core_gather_field_data($entity,$instance,$data) {
+function _wisski_core_gather_field_data($entity_uri,$instance,$data) {
   
+  //key order is: [entity_uri][delta][mapping] => values
+        
 //  dpm(array(__FUNCTION__=>func_get_args()));
-  $out = array();
-  $loadable = db_select('wisski_pb_pathdata','p')
-              ->fields('p',array('connected_field_property'))
-              ->condition('connected_field',$instance['field_name'])
-              ->condition('connected_bundle',$instance['bundle'])
-              ->execute()
-              ->fetchAllAssoc('connected_field_property');
-  if (!empty($loadable)) {
-    foreach (array_keys($loadable) as $mapping) {
-      if (isset($data[$mapping])) {
-        $out[$mapping] = $data[$mapping];
-      }
-    }
-  }
+  $out = $data;
   $result = db_select('wisski_special_field_cache','cache')
               ->fields('cache')
               ->condition('instance_id',$instance['id'])
-              ->condition('entity_uri',$entity->uri)
+              ->condition('entity_uri',$entity_uri)
 //              ->condition('langcode',$langcode)
               ->execute()
               ->fetchObject();
   if (!empty($result) && isset($result->field_data)) {
-    $out += unserialize($result->field_data);
+    $out[$entity_uri] += unserialize($result->field_data);
   }
   return $out;
 }

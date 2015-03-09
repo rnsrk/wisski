@@ -215,7 +215,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
 
   public function updateSPARQL($update) {
-    watchdog('wisski_sparql_update',$update);
+//    watchdog('wisski_sparql_update',$update);
     return $this->requestSPARQL('update',$update);
   }
   
@@ -377,6 +377,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     for ($i = 0; $i < count($paths); $i++) {
       $datas[] = "?data$i";
       $query .= " ?data$i";
+      $query .= " ?tar$i";
     }
     $query .= " WHERE{";
     $ind = "?ind";
@@ -401,7 +402,11 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       }
       $datatype_property = $path['datatype_property'];
       $count = 0;
-      if (count($paths) > 1 || (isset($path['maximum']) && $path['maximum'] > 0)) $query .= " OPTIONAL {SELECT DISTINCT $ind ?data$i WHERE {";
+      $disamb = isset($path['disamb']) && $path['disamb'] > 0 ? $path['disamb'] : count($path_array);
+      $disamb = floor($disamb/2);
+      if (count($paths) > 1 || (isset($path['maximum']) && $path['maximum'] > 0)) {
+        $query .= " OPTIONAL {SELECT DISTINCT ".($single_ind ? '' : "?ind")." ?data$i ?tar$i WHERE {";
+      }
       if (empty($path_array)) {
         if (!empty($datatype_property)) {
           $query .= " $ind $datatype_property ?data$i .";
@@ -418,12 +423,15 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
             $concept = array_shift($path_array);
 //          $query .= " ?$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
             $query .= " ?p".$i."c$count rdf:type ".$concept.". ";
+            if ($count == $disamb) {
+              $query .= " BIND(?p".$i."c$count AS ?tar$i)";
+            }
           }
         }
         if (!empty($datatype_property)) {
           $query .= " ?p".$i."c$count $datatype_property ?data$i .";  
         } else {
-          $query .= "BIND(?p".$i."c$count AS ?data$i)";
+          $query .= " BIND(?p".$i."c$count AS ?data$i)";
         }
       }
       if (count($paths) > 1 || (isset($path['maximum']) && $path['maximum'] > 0)) {
@@ -466,21 +474,31 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     list($ok,$result) = $this->querySPARQL($query);
     wisski_core_tick('end PB query');
     if ($ok) {
+      //generate output array, key order is:
+      //[individual uri][target uri][data][0..?]
       $out = array();
+      //make sure we have a numericly keyed output array for every target individual
+      $deltas = array();
       foreach ($result as $obj) {
         if (!$single_ind) $ind = $obj->ind->dumpValue('text');
         if (!isset($out[$ind])) {
           $out[$ind] = array();
         }
         for ($i = 0; $i < count($paths); $i++) {
-          if (property_exists($obj,'data'.$i)) {
-            $obj_data = $obj->{'data'.$i};
-            if (method_exists($obj_data,'getValue')) $value = $obj_data->getValue();
-            else $value = $obj_data->dumpValue('text');
-            if (isset($ids[$i])) {
-              $out[$ind][$ids[$i]][] = $value;
-            } else {
-              $out[$ind][$i][] = $value;
+          if(property_exists($obj,'tar'.$i)) {
+            $target_uri = $obj->{'tar'.$i}->dumpValue('text');
+            $key = array_search($target_uri,$deltas);
+            if ($key === FALSE) {
+              $key = count($deltas);
+              $deltas[] = $target_uri;
+            }
+            if (!isset($out[$ind][$key])) $out[$ind][$key] = array();
+            if (property_exists($obj,'data'.$i)) {
+              $obj_data = $obj->{'data'.$i};
+              if (method_exists($obj_data,'getValue')) $value = $obj_data->getValue();
+              else $value = $obj_data->dumpValue('text');
+//WATCH OUT:	here we assume to have at most one entry per target individual
+              $out[$ind][$key][$ids[$i]] = $value;
             }
           }
         }
