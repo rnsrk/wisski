@@ -2,6 +2,23 @@
 
 function wisski_core_make_path_array(array $settings) {
 
+  if (isset($settings['field_info']['instance_id'])) {
+    if (!isset($settings['field_info']['field_name']) || !isset($settings['connected_bundle'])) {
+      //we should not access the field config instance table directly
+      //BUT since there is no field_info_instance_by_id() there is not other
+      //appropriate way to do this here
+      $inst = db_select('field_config_instance','ins')
+              ->fields('ins')
+              ->condition('id',$settings['field_info']['instance_id'])
+              ->execute();
+      if ($inst->rowCount() !== 1) trigger_error('paths for the following settings could not be loaded: '.serialize($settings),E_USER_WARNING);
+      else {
+        $inst = $inst->fetchObject();
+        $settings['connected_bundle'] = $inst->bundle;
+        $settings['field_info']['field_name'] = $inst->field_name;
+      }
+    }
+  }
   $select = db_select('wisski_pb_pathdata','path')
                   ->fields('path')
                   ->condition('pending',0);
@@ -13,6 +30,9 @@ function wisski_core_make_path_array(array $settings) {
   }
   if (isset($settings['field_info']['mapping'])) {
     $select = $select->condition('connected_field_property',$settings['field_info']['mapping']);
+  }
+  if (isset($settings['connected_bundle'])) {
+    $select = $select->condition('connected_bundle',$settings['connected_bundle']);
   }
   $select = $select->execute();  
   $paths = array();
@@ -52,6 +72,7 @@ function wisski_core_make_path_array(array $settings) {
 #  while (count($paths) == 1) {
 #    $paths = current($paths);
 #  }
+//  dpm(array('settings'=>$settings,'paths'=>$paths),'computed paths');
   return $paths;
 }
 

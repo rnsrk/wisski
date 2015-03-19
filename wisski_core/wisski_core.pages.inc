@@ -183,7 +183,14 @@ function _wisski_core_get_sorted_chunk($type,$limit,$offset) {
       $paths = array();
       while (!empty($elem)) {
         $path_info = wisski_core_make_path_array(array('field_info' => array('field_name' => $elem['name'])));
-        $paths[] = array('path_array' => $path_info['path_array'],'datatype_property' => $path_info['datatype_property'],'required' => $elem['obligatory'],'maximum' => 1);
+        foreach ($path_info as &$field_info) {
+          foreach($field_info as &$mapping_path) {
+            $mapping_path['required'] = $elem['obligatory'];
+            $mapping_path['maximum'] = 1;
+          }
+          $field_info = $mapping_path;
+        }
+        $paths += $path_info;
         if ($elem['obligatory']) break;
         else $elem = next($pattern);
       }
@@ -236,8 +243,13 @@ function _wisski_core_check_titles($uris,$type) {
       $field_info = array_fill_keys($uris,array());
       foreach ($pattern as $elem) {
         $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $elem['name'])));
-        $paths[] = array('id' => $elem['id'], 'path_array' => $path_array['path_array'], 'datatype_property' => $path_array['datatype_property'], 'required' => $elem['obligatory'], 'maximum' => $elem['number']);
-        if (!isset($starting_concept)) $starting_concept = $path_array['starting_concept'];
+        foreach ($path_array as &$field_array) {
+          foreach($field_array as &$mapping_path) {
+            $mapping_path += array('id' => $elem['id'], 'required' => $elem['obligatory'], 'maximum' => $elem['number']);
+            if (!isset($starting_concept)) $starting_concept = $mapping_path['starting_concept'];
+          }
+          $field_array = $mapping_path;
+        }
       }
       if (!isset($starting_concept)) $starting_concept = $bundle->uri;
       $field_info = wisski_salz_pb_title_query($uris,$starting_concept,$paths);

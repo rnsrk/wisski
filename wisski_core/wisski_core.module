@@ -81,6 +81,8 @@ function wisski_core_entity_info() {
       'uri callback' => 'wisski_core_uri_callback',
       // This line must be specified for using entity_label() function.
       'label callback' => 'wisski_core_label_callback',
+      // this should be set for entity_access() and entityreference to work
+      'access callback' => 'wisski_core_access_callback',
       // for obvious reasons
       'module' => 'wisski_core'
     ),
@@ -129,6 +131,15 @@ function wisski_core_label_callback($entity,$entity_type) {
 
   wisski_core_set_short_title($entity);
   return $entity->title;
+}
+
+function wisski_core_access_callback($op, $entity, $account, $entity_type) {
+
+  switch ($op) {
+    case 'view': return user_access('view wisski content',$account);
+    case 'update': return user_access('administer wisski',$account);
+  }
+  return FALSE;
 }
 
 /**

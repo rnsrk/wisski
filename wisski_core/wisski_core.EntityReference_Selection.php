@@ -4,7 +4,7 @@
  * re-implementation of the SelectionHandler to ensure we get triplestore
  * data instead of SQL table data.
  */
-class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityReference_SelectionHandler_Generic {
+class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityReference_SelectionHandler_Generic { 
 
   //////////////////////////////////////
   //
@@ -14,7 +14,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
   //////////////////////////////////////
 
   protected function __construct($field, $instance = NULL, $entity_type = NULL, $entity = NULL) {
-    dpm(array(__FUNCTION__ => func_get_args()));
+
     $this->field = $field;
     $this->instance = $instance;
     $this->entity_type = $entity_type;
@@ -25,7 +25,6 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    * Implements EntityReferenceHandler::settingsForm().
    */
   public static function settingsForm($field, $instance) {
-    dpm(array(__FUNCTION__ => func_get_args()));
     return parent::settingsForm($field,$instance);
   }
 
@@ -58,11 +57,12 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
   /**
    * Implements EntityReferenceHandler::getReferencableEntities().
    */
-  public function getReferencableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
+/*  public function getReferencableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
     dpm(array(__FUNCTION__ => func_get_args()));
     $entity_type = $this->field['settings']['target_type'];
     if ($entity_type !== 'wisski_individual') return parent::getReferencableEntities($match,$match_operator,$limit);
-    if ($limit > 0) {
+    $options = FALSE;
+    if ($limit >= 0) {
       $options = array();
       module_load_include('inc','wisski_core','wisski_core.pathbuilder');
       $bundles = entity_load('wisski_core_bundle',$this->field['settings']['handler_settings']['target_bundles']);
@@ -88,35 +88,161 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
             $title_pattern = array_expand($bundle->short_title_pattern);
             foreach($title_pattern as $elem) {
               $paths[$elem['id']] = wisski_core_make_path_array(array('field_info' => array('field_name' => $elem['id'])));
-              $paths[$elem['id']]['optional'] = TRUE;
+              $paths[$elem['id']]['required'] = FALSE;
               $ids[] = $elem['id'];
             }
+            dpm($paths);
+            $matches = array();
+            if (is_string($match)) $matches = explode(' ',$match);
+            $info = wisski_salz_pb_query_multi_path($bundle->uri,$paths,$limit,0,FALSE,TRUE,'STR',$matches);
+            if ($info !== FALSE) {
+              dpm($info);
+              foreach ($info as $entity_uri => $path_data) {
+                $field_info = array();
+                for ($i = 0; $i < count($path_data); $i++) {
+                  $field_info[$ids[$i]] = $path_data[$i];
+                }
+                $options[$bundle->type][$entity_uri] = wisski_core_make_short_title($field_info,$title_pattern);
+              }
+            }
           } else {
+            $ents = wisski_salz_pb_get_bundle_info($bundle->uri);
             //watch out DIRTY FALLBACK, only for testing
-            $paths[] = array(
+            $paths['actor'] = array(
               'path_array' => array('ecrm:P131_is_identified_by','ecrm:E82_Actor_Appellation'),
               'datatype_property' => 'ecrm:P3_has_note',
-              'optional' => TRUE,
+              'required' => FALSE,
             );
-            $paths[] = array(
+            $paths['all'] = array(
               'path_array' => array('ecrm:P1_is_identified_by','ecrm:E41_Appellation'),
               'datatype_property' => 'ecrm:P3_has_note',
-              'optional' => TRUE,
+              'required' => FALSE,
             );
-          }
-          $matches = array();
-          if (is_string($match)) $matches = explode(' ',$match);
-          $info = wisski_salz_pb_query_multi_path($bundle->uri,$paths,$limit,0,FALSE,TRUE,'STR',$matches);
-          if ($info !== FALSE) {
-            foreach ($info as $entity_uri => $path_data) {
-              $field_info = array();
-              for ($i = 0; $i < count($path_data); $i++) {
-                $field_info[$ids[$i]] = $path_data[$i];
-              }
-              $options[$bundle->type][$entity_uri] = wisski_core_make_short_title($field_info,$title_pattern);
+            $info = wisski_salz_pb_query_multi_path($bundle->uri,$paths,$limit,0,FALSE,TRUE,'STR');
+            foreach($ents as $uri) {
+              $entity = entity_load_single('wisski_individual',$uri);
+              if (isset($info[$uri])) {
+                $options[$bundle->type][$uri] = current(current($info[$uri]));
+              } else $options[$bundle->type][$uri] = $uri;
             }
           }
         }  
+      }
+    }
+    
+//    if (!empty($results[$entity_type])) {
+//      $entities = entity_load($entity_type, array_keys($results[$entity_type]));
+//      foreach ($entities as $entity_id => $entity) {
+//        list(,, $bundle) = entity_extract_ids($entity_type, $entity);
+//        $options[$bundle][$entity_id] = check_plain($this->getLabel($entity));
+//      }
+    }
+
+    dpm($options);
+    return $options;
+  }
+*/
+/**
+   * Implements EntityReferenceHandler::getReferencableEntities().
+   */
+  public function getReferencableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
+//    dpm(func_get_args(),__FUNCTION__);
+    $entity_type = $this->field['settings']['target_type'];
+    if ($entity_type !== 'wisski_individual') return parent::getReferencableEntities($match,$match_operator,$limit);
+    $options = FALSE;
+    if ($limit >= 0) {
+      //WATCH OUT: dirty hard-coded limit, use dynamic threshold later
+      if ($limit == 0 || $limit > 32) $limit = 32;
+      $options = array();
+      if (!empty($this->field['settings']['target_bundles'])) {
+        module_load_include('inc','wisski_core','wisski_core.pathbuilder');
+        $bundles = entity_load('wisski_core_bundle',$this->field['settings']['handler_settings']['target_bundles']);
+        dpm($bundles,'loadable bundles');
+        foreach($bundles as $bundle) {
+          if ($match_operator === '=') {
+            dpm($match);
+            $uris = array();
+            preg_match_all('/\((\w*:\w*)\)/',$match,$uris);
+//  	        dpm($uris);
+            if (count($uris) > 1) {
+              $uris = $uris[0];
+              $ents = wisski_salz_pb_get_bundle_info($bundle->uri);
+              $hit = array_diff($uris,$ents);
+//	            dpm(array('uris' => $uris,'ents' => $ents,'hit' => $hit));
+              $options[$bundle->type] = array_fill($hit,$match);
+            }
+          }
+          if ($match_operator === 'CONTAINS') {
+            $paths = array();
+            $ids = array();
+            if (!empty($bundle->short_title_pattern)) {
+              $title_pattern = array_expand($bundle->short_title_pattern);
+              foreach($title_pattern as $elem) {
+                $path = wisski_core_make_path_array(array('connected_bundle'=>$bundle->type,'field_info' => array('instance_id' => $elem['id'])));
+                while(count($path) == 1) $path = current($path);
+                $paths[$elem['id']] = $path;
+                $paths[$elem['id']]['required'] = FALSE;
+                $ids[] = $elem['id'];
+              }
+//          	  dpm($paths);
+              $matches = array();
+              if (is_string($match)) $matches = explode(' ',$match);
+              $info = wisski_salz_pb_query_multi_path($bundle->uri,$paths,$limit,0,FALSE,TRUE,'STR',$matches);
+              if ($info !== FALSE) {
+//      	        dpm($info);
+                foreach ($info as $entity_uri => $path_data) {
+                  $entity = entity_load_single('wisski_individual',$entity_uri);
+                  $options[$bundle->type][$entity->id] = entity_label('wisski_individual',$entity);
+                }
+              }
+            } else {
+              $ents = wisski_salz_pb_get_bundle_info($bundle->uri);
+              $count = 0;
+              foreach($ents as $uri) {
+                if ($count === $limit) break;
+                $count++;
+                $entity = entity_load_single('wisski_individual',$uri);
+                $options[$bundle->type][$entity->id] = entity_label('wisski_individual',$entity);
+              }
+            }
+          }  
+        }
+      } else {
+        #if ($match_operator == 'CONTAINS') {
+          $match = preg_replace('/^(\"|\')*|(\"|\')*$/','',$match);
+          $match = preg_replace('/\"/','\\"',$match);
+          $match = preg_replace('/\'/','\\\'',$match);
+          $match = preg_replace('/\%/','\\\%',$match);
+          $match = preg_replace('/\_/','\\\_',$match);
+          $or = db_or()->condition('title','%'.$match.'%','LIKE')
+            ->condition('uri','"%'.$match.'%"','LIKE');
+          $ents = db_select('wisski_entity_data','ent')
+            ->fields('ent',array('uri','title'))
+            ->range(0,$limit)
+            ->condition('dirty',0)
+            ->condition($or)
+            ->execute();
+          while($ent = $ents->fetchObject()) {
+            $options[$ent->type][$ent->uri] = $ent->title;
+            $limit--;
+          }
+          if ($limit > 0) {
+            $uris = wisski_salz_pb_get_matching_individuals($match,$limit);
+            foreach($uris as $bundle_uri => $inds) {
+              $bundle_type = db_select('wisski_entity_bundles','bund')
+                ->fields('bund',array('uri','type'))
+                ->condition('uri',$bundle_uri)
+                ->execute()
+                ->fetchObject()
+                ->type;
+              if (!empty($options[$bundle_type])) {
+                $options[$bundle_type] = array_merge($inds,$options[$bundle_type]);
+              } else {
+                $options[$bundle_type] = $inds;
+              }
+            }
+          }          
+        #}
       }
     }
 /*    
@@ -128,7 +254,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
       }
     }
 */
-    dpm($options);
+    dpm($options,'computed options');
     return $options;
   }
 
@@ -137,14 +263,14 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    * Implements EntityReferenceHandler::countReferencableEntities().
    */
   public function countReferencableEntities($match = NULL, $match_operator = 'CONTAINS') {
-    dpm(array(__FUNCTION__ => func_get_args()));
+    dpm(func_get_args(),__FUNCTION__);
   }
 
   /**
    * Implements EntityReferenceHandler::validateReferencableEntities().
    */
   public function validateReferencableEntities(array $ids) {
-    dpm(array(__FUNCTION__ => func_get_args()));
+    dpm(func_get_args(),__FUNCTION__);
     return array();
   }
 
@@ -152,8 +278,12 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    * Implements EntityReferenceHandler::validateAutocompleteInput().
    */
   public function validateAutocompleteInput($input, &$element, &$form_state, $form) {
-      dpm(array(__FUNCTION__ => func_get_args()));
-      $entities = $this->getReferencableEntities($input, '=', 6);
+      dpm(func_get_args(),__FUNCTION__);
+      $entities = array();
+      $sorted_entities = $this->getReferencableEntities($input, '=', 6);
+      foreach($sorted_entities as $bundle_type => $bundle_entities) {
+        $entities += $bundle_entities;
+      }
       if (empty($entities)) {
         // Error if there are no entities available for a required field.
         form_error($element, t('There are no entities matching "%value"', array('%value' => $input)));
@@ -184,7 +314,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    * Build an EntityFieldQuery to get referencable entities.
    */
   protected function buildEntityFieldQuery($match = NULL, $match_operator = 'CONTAINS') {
-    dpm(array(__FUNCTION__ => func_get_args()));
+    dpm(func_get_args(),__FUNCTION__);
     
   }
 
@@ -192,7 +322,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    * Implements EntityReferenceHandler::entityFieldQueryAlter().
    */
   public function entityFieldQueryAlter(SelectQueryInterface $query) {
-
+    dpm(func_get_args(),__FUNCTION__);
   }
 
   /**
@@ -202,14 +332,14 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    * access control mechanisms to alter it again.
    */
   protected function reAlterQuery(SelectQueryInterface $query, $tag, $base_table) {
-    dpm(array(__FUNCTION__ => func_get_args()));
+    dpm(func_get_args(),__FUNCTION__);
   }
 
   /**
    * Implements EntityReferenceHandler::getLabel().
    */
   public function getLabel($entity) {
-    dpm(array(__FUNCTION__ => func_get_args()));
+    dpm(func_get_args(),__FUNCTION__);
     $target_type = $this->field['settings']['target_type'];
     return entity_access('view', $target_type, $entity) ? entity_label($target_type, $entity) : t('- Restricted access -');
   }
@@ -227,7 +357,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    *   The alias of the base-table.
    */
   public function ensureBaseTable(SelectQueryInterface $query) {
-    dpm(array(__FUNCTION__ => func_get_args()));
+    dpm(func_get_args(),__FUNCTION__);
     $tables = $query->getTables();
 
     // Check the current base table.

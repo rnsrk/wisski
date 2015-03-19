@@ -366,7 +366,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
    */
   public function pbQuery($starting_concept,array $paths,array $settings = array()) {
     
-    dpm(array(__FUNCTION__=>func_get_args()));
+//    dpm(func_get_args(),__FUNCTION__);
     if (empty($starting_concept)) {
       ddebug_backtrace();
       throw new InvalidArgumentException('you must specify a starting concept');
@@ -395,11 +395,12 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     foreach($paths as $key => $path) {
       if (isset($path['id'])) $ids[$i] = $path['id'];
       else $ids[$i] = $key;
-      $path_array = $path['path_array'];
-      if (!is_array($path_array)) {
-        dpm(array('path_array'=>$path_array));
+      if (!isset($path['path_array']) || !is_array($path['path_array'])) {
+        dpm($path,'wrong path');
+        ddebug_backtrace();
         throw new Exception('path_array');
       }
+      $path_array = $path['path_array'];
       $datatype_property = $path['datatype_property'];
       $count = 0;
       $disamb = isset($path['disamb']) && $path['disamb'] > 0 ? $path['disamb'] : count($path_array);
@@ -445,9 +446,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     if (isset($settings['matches'])) {
       foreach ($settings['matches'] as $match) {
         $query .= " FILTER(";
-        $data = current($datas);
-        if (!empty($data)) $query .= "CONTAINS($data,\"$match\")";
         $data = next($datas);
+        if (!empty($data)) $query .= "CONTAINS($data,\"$match\")";
         while ($data = next($datas)) {
           $query .= " || CONTAINS($data,\"$match\")";
         }
@@ -463,7 +463,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         $query .= $settings['order']."($data)";
       }
     }
-    if (isset($settings['limit'])) {
+    if (isset($settings['limit']) && $settings['limit'] > 0) {
       $query .= " LIMIT ".$settings['limit'];
     }    
     if (isset($settings['offset'])) {
@@ -476,14 +476,14 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     if ($ok) {
       //generate output array, key order is:
       //[individual uri][target uri][data][0..?]
-      $out = array();
-      //make sure we have a numericly keyed output array for every target individual
-      $deltas = array();
+      $out = array();      
       foreach ($result as $obj) {
         if (!$single_ind) $ind = $obj->ind->dumpValue('text');
         if (!isset($out[$ind])) {
           $out[$ind] = array();
         }
+        //make sure we have a numerically keyed output array for every target individual
+        $deltas = array();
         for ($i = 0; $i < count($paths); $i++) {
           if(property_exists($obj,'tar'.$i)) {
             $target_uri = $obj->{'tar'.$i}->dumpValue('text');
@@ -499,11 +499,12 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
               else $value = $obj_data->dumpValue('text');
 //WATCH OUT:	here we assume to have at most one entry per target individual
               $out[$ind][$key][$ids[$i]] = $value;
+              if ($ids[$i] === 'target_id') dpm($out,'hit the target');
             }
           }
         }
       }
-      dpm(array('query' => $query,'result' => $out));
+//      dpm(array('query' => $query,'result' => $out));
       return $out;
     }
     return FALSE;
@@ -566,7 +567,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $settings['order'] = $asc ? 'ASC' : 'DESC';
     }
     $settings['qualifier'] = $qualifier;
-    if(isset($contained_strings)) $settings['matches'] = $contained_strings;    
+    if(!empty($contained_strings)) $settings['matches'] = $contained_strings;    
     return $this->pbQuery($starting_concept,$paths,$settings);
   }
 
@@ -594,7 +595,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   }
 
   public function pbUpdate($individual_uri,$individual_name,$starting_concept,$path_array,$datatype_property,$disamb,$new_data,$delete_old) {
-    dpm(array(__FUNCTION__=>func_get_args()));
+    dpm(func_get_args(),__FUNCTION__);
     if (is_array($new_data)) {
       $inds = array();
       foreach($new_data as $nd) {
@@ -644,7 +645,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
           return FALSE;
         } else {
           if (empty($result)) {
-            $new_individual = $this->createNewIndividual($property,'',TRUE);
+            $new_individual = $this->createNewIndividual($property,'',TRUE,'show_errors');
             list($ok_ok,$ok_result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $individual $property $new_individual .}} WHERE { ?s ?p ?o .}");
             if(!$ok_ok) {
               trigger_error("Errors while inserting data: ",E_USER_ERROR);
@@ -678,18 +679,20 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         }
       }
     }
-    if ($delete_old) {
+    if (isset($datatype_property)) {
+      if ($delete_old) {
       list($ok,$result) = $this->updateSPARQL("DELETE WHERE {GRAPH $graph_name { $individual $datatype_property ?data.}}");
+        if (!$ok) {
+          trigger_error("Errors while inserting data: ",E_USER_ERROR);
+          return FALSE;
+        }
+      }
+      $insertion = "\"".preg_replace('/[\"\']/','',utf8_decode($new_data))."\"";
+      list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $individual $datatype_property $insertion .}} WHERE {?s ?p ?o .}");
       if (!$ok) {
         trigger_error("Errors while inserting data: ",E_USER_ERROR);
         return FALSE;
       }
-    }
-    $insertion = "\"".preg_replace('/[\"\']/','',utf8_decode($new_data))."\"";
-    list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $individual $datatype_property $insertion .}} WHERE {?s ?p ?o .}");
-    if (!$ok) {
-      trigger_error("Errors while inserting data: ",E_USER_ERROR);
-      return FALSE;
     }
     //returns set of newly introduced uris
     return $new_individuals;
@@ -712,6 +715,11 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     return $ok;
   }
 
+  public function uriExists($uri) {
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE {{ $uri ?p ?o .} UNION {?s ?p $uri .}} LIMIT 1");
+    return $ok && !empty($result);
+  }
+
   public function createNewIndividual($property,$name_part = '',$checked = FALSE) {
     
     //just to have some info we take the namespace prefix form the property
@@ -723,14 +731,14 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     
     //ensure uniqueness
     $name = substr($prefix.":".preg_replace('/[^a-zA-Z0-9_]/u','_',$name_part).$suffix,0,32);
-    
-    
+    if (count(func_get_args()) === 4) {
+      dpm(func_get_args()+array('result'=>$name),'FAIL: '.__FUNCTION__);
+//      throw new Exception('Could not create new URI');
+    }
     if ($checked) {
-      list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE {{ $name ?p ?o .} UNION {?s ?p $name .}} LIMIT 1");
-      
-      if (!$ok) return FALSE;
-      return empty($result) ? $name : $this->createNewIndividual($property);
-    } else return $name;
+      if ($this->uriExists($name)) return $this->createNewIndividual($property,$name_part,TRUE);
+    }
+    return $name;
   }
   
   public function deleteAllTriples($uri) {
@@ -929,9 +937,13 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     return FALSE;
   }
   
-  public function getIndCount($class_uri) {
+  public function getIndCount($class_uri = NULL) {
     
-    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT (COUNT(?ind) AS ?count) WHERE {?ind a $class_uri .}");
+    if (empty($class_uri)) {
+      list($ok,$result) = $this->querySPARQL("SELECT DISTINCT (COUNT(?ind) AS ?count) WHERE {?ind a/a ?type}");
+    } else {
+      list($ok,$result) = $this->querySPARQL("SELECT DISTINCT (COUNT(?ind) AS ?count) WHERE {?ind a $class_uri .}");
+    }
     if ($ok) return current($result)->count->getValue();
     return FALSE;
   }
@@ -952,7 +964,28 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }  
     return FALSE;
   }
-                                                                                
+  
+  public function getMatchingInds($match,$limit=0) {
+  
+    $query = "SELECT DISTINCT ?ind ?class"
+      ." WHERE {"
+        ." ?ind a ?class."
+        ." ?class a ?type."
+        ." FILTER(CONTAINS(STR(?ind),\"$match\"))"
+      ."}";
+    if ($limit > 0) $query .= " LIMIT $limit";
+    list($ok,$result) = $this->querySPARQL($query);
+    if ($ok) {
+      $out = array();
+      foreach($result as $obj) {
+        $uri = $obj->ind->dumpValue('text');
+        $out[$obj->class->dumpValue('text')][$uri] = $uri;
+      }
+      dpm(func_get_args()+array('query'=>$query,'result'=>$out),__FUNCTION__);
+      return $out;
+    }
+    return FALSE;
+  }                                                                              
   
   public function createEntitiesForBundle($bundle) {
     

@@ -35,23 +35,38 @@ class WisskiCoreEntityController extends EntityAPIController {
 
   public function load($ids = array(), $conditions = array()) {
   
-    dpm('loading '.$ids[0].(count($ids) > 1 ? 'and '.(count($ids) - 1). 'other entities':''));
+    if (empty($ids)) {
+      dpm('loading WisskiCoreEntities'.(empty($conditions) ? '' : 'with conditions'));
+      dpm($conditions,'conditions');
+    } else {
+      dpm('loading '.$ids[0].(count($ids) > 1 ? 'and '.(count($ids) - 1). 'other entities':''));
+    }
     $entities = array();
     wisski_core_tick('start');
     $error = FALSE;
     if(!empty($ids)) {
+      $or = db_or()->condition('uri',$ids,'IN')->condition('id',$ids,'IN');
       $db_entities = db_select('wisski_entity_data','ent')
                       ->fields('ent')
-                      ->condition('uri',$ids,'IN')
+                      ->condition($or)
                       ->execute()
-                      ->fetchAllAssoc('uri');
-      foreach ($db_entities as $uri => $obj) {
-        $entity = entity_create('wisski_individual', array('type' => $obj->type, 'uri' => $uri, 'is_new' => FALSE, 'id' => $obj->id));
+                      ->fetchAllAssoc('id');
+//      dpm($db_entities,'$db_entities');
+      $sdi = array_flip($ids);
+      foreach ($db_entities as $obj) {
+        $entity = entity_create('wisski_individual', array('type' => $obj->type, 'uri' => $obj->uri, 'is_new' => FALSE, 'id' => $obj->id));
         $entities[$entity->id] = $entity;
+        if (isset($sdi[$entity->uri])) unset($sdi[$entity->uri]);
+        elseif (isset($sdi[$entity->id])) unset($sdi[$entity->id]);
       }
-      $ids = array_diff($ids,array_keys($db_entities));
-//      dpm($ids);
+      $ids = array_merge(array_flip($sdi));
       foreach ($ids as $id) {
+        if (strpos($id,':') === FALSE) {
+          //$id is definitely no uri. Since this id also was not found in the DB
+          // we have a problem here
+          trigger_error('the entity with the ID '.$id.' does not exist',E_USER_WARNING);
+          continue;
+        }
         //here we assume that $id is a URI
         wisski_core_tick('ids');
         $types = wisski_salz_pb_get_entity_info($id);
@@ -69,9 +84,18 @@ class WisskiCoreEntityController extends EntityAPIController {
               //TODO make short title
               $entity = entity_create('wisski_individual', array('type' => $bundle->type, 'uri' => $id));
               if(empty($entity->id)) {
-                $id = db_insert('wisski_entity_data')
-                  ->fields(array('uri' => $entity->uri,'type' => $entity->type))
+                $id = db_select('wisski_entity_data','d')
+                  ->fields('d')
+                  ->condition('uri',$entity->uri)
+                  ->condition('type',$entity->type)
                   ->execute();
+                if ($id->rowCount() > 0) {
+                  $id = $id->fetchObject()->id;
+                } else {
+                  $id = db_insert('wisski_entity_data')
+                    ->fields(array('uri' => $entity->uri,'type' => $entity->type))
+                    ->execute();
+                }
                 $entity->id = $id;
               }
               $entity->is_new = FALSE;
@@ -88,35 +112,42 @@ class WisskiCoreEntityController extends EntityAPIController {
       $entity_ids = array();
       // load all
       $bundle_type = isset($conditions['type']) ? $conditions['type'] : arg(1);
-      list(,$bundle_uri) = wisski_core_make_uri("",$bundle_type,FALSE); 
-      $inds = wisski_salz_pb_get_bundle_info($bundle_uri);
-      if ($inds !== FALSE) {
-        foreach($inds as $ind_uri) {
-          $entity_title = $ind_uri;
-          //TODO make short titles
-          $entity = entity_create('wisski_individual', array('type' => $bundle_type, 'title' => $entity_title, 'uri' => $ind_uri));
-          if(empty($entity->id)) {
-            $id = db_insert('wisski_entity_data')
-                  ->fields(array('uri' => $entity->uri,'type' => $entity->type))
-                  ->execute();
-            $entity->id = $id;
+      $uri_info = wisski_core_make_uri("",$bundle_type,FALSE);
+      if ($uri_info !== FALSE) {
+        $bundle_uri = $uri_info[1];
+        $inds = wisski_salz_pb_get_bundle_info($bundle_uri);
+        if ($inds !== FALSE) {
+          foreach($inds as $ind_uri) {
+            $entity_title = $ind_uri;
+            //TODO make short titles
+            $entity = entity_create('wisski_individual', array('type' => $bundle_type, 'title' => $entity_title, 'uri' => $ind_uri));
+            if(empty($entity->id)) {
+              $id = db_insert('wisski_entity_data')
+                    ->fields(array('uri' => $entity->uri,'type' => $entity->type))
+                    ->execute();
+              $entity->id = $id;
+            }
+            $entity->is_new = FALSE;
+            $entities[$entity->id] = $entity;
           }
-          $entity->is_new = FALSE;
-          $entities[$entity->id] = $entity;
+        } else {
+          ddebug_backtrace();
+          trigger_error("Problems when loading bundle $bundle_type",E_USER_ERROR);
         }
       } else {
-        ddebug_backtrace();
-        trigger_error("Problems when loading bundle $bundle_type",E_USER_ERROR);
+        $count = wisski_salz_pb_get_bundle_info(NULL,TRUE);
+        drupal_set_message(t('trying to load !count wisski_individuals',array('!count'=>$count)));
       }
     }
 //    dpm($entities);
-    wisski_core_tick('full run');
-    field_attach_load('wisski_individual',$entities);
-    wisski_core_tick('field load');
-    dpm(wisski_core_tick(NULL));
     if ($error) {
+      ddebug_backtrace();
       trigger_error('problems when loading entities '.serialize($ids),E_USER_WARNING);
     }
+    wisski_core_tick('entity stub load');
+    field_attach_load('wisski_individual',$entities);
+    wisski_core_tick('field load');
+    dpm(wisski_core_tick(NULL),'time measures');
 //    dpm($entities);
     return $entities;
   }
