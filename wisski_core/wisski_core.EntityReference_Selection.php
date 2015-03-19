@@ -217,7 +217,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
           $or = db_or()->condition('title','%'.$match.'%','LIKE')
             ->condition('uri','"%'.$match.'%"','LIKE');
           $ents = db_select('wisski_entity_data','ent')
-            ->fields('ent',array('uri','title'))
+            ->fields('ent',array('uri','title','type'))
             ->range(0,$limit)
             ->condition('dirty',0)
             ->condition($or)
