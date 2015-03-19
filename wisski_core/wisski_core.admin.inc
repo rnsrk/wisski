@@ -185,14 +185,17 @@ function wisski_core_choose_bundle() {
  *   Entity edit form.
  */
 function wisski_core_entity_add($type) {
+
   $entity_type = wisski_core_bundle_load_multiple($type);
 //  drupal_set_title(t('Create new %type', array('%type' => $type)));
   drupal_set_title(t('Create @name', array('@name' => entity_label('entity_type', $entity_type))));
   
   // Return form for the given entity bundle.
   $entity = entity_create('wisski_individual', array('type' => $type));
+
 //  $output = entity_ui_get_form('wisski_individual', $entity);
   $output = drupal_get_form('wisski_core_entity_form', $entity);
+
   return $output;
 }
 

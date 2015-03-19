@@ -410,6 +410,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       }
       if (empty($path_array)) {
         if (!empty($datatype_property)) {
+          $query .= " BIND($ind AS ?tar$i)";
           $query .= " $ind $datatype_property ?data$i .";
         }
       } else {
@@ -499,12 +500,11 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
               else $value = $obj_data->dumpValue('text');
 //WATCH OUT:	here we assume to have at most one entry per target individual
               $out[$ind][$key][$ids[$i]] = $value;
-              if ($ids[$i] === 'target_id') dpm($out,'hit the target');
             }
           }
         }
       }
-//      dpm(array('query' => $query,'result' => $out));
+//      dpm(func_get_args()+array('query' => $query,'result' => $out),__FUNCTION__);
       return $out;
     }
     return FALSE;

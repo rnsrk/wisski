@@ -217,13 +217,13 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
           $or = db_or()->condition('title','%'.$match.'%','LIKE')
             ->condition('uri','"%'.$match.'%"','LIKE');
           $ents = db_select('wisski_entity_data','ent')
-            ->fields('ent',array('uri','title','type'))
+            ->fields('ent',array('id','uri','title','type'))
             ->range(0,$limit)
             ->condition('dirty',0)
             ->condition($or)
             ->execute();
           while($ent = $ents->fetchObject()) {
-            $options[$ent->type][$ent->uri] = $ent->title;
+            $options[$ent->type][$ent->id] = $ent->title;
             $limit--;
           }
           if ($limit > 0) {
@@ -235,10 +235,27 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
                 ->execute()
                 ->fetchObject()
                 ->type;
+              $added_ents = array();
+              foreach ($inds as $uri) {
+                $id = db_select('wisski_entity_data','e')
+                      ->fields('e',array('id'))
+                      ->condition('uri',$uri)
+                      ->condition('type',$bundle_type)
+                      ->execute();
+                if ($id->rowCount() === 1) {
+                  $id = $id->fetchObject()->id; 
+                } else {
+                  $id = db_insert('wisski_entity_data')
+                      ->fields(array('uri'=>$uri,'type'=>$bundle_type))
+                      ->execute();
+                }
+                $added_ents[$id] = $uri;
+              }
+              dpm(array('inds'=>$inds,'added'=>$added_ents),'loaded');
               if (!empty($options[$bundle_type])) {
-                $options[$bundle_type] = array_merge($inds,$options[$bundle_type]);
+                $options[$bundle_type] = array_merge($added_ents,$options[$bundle_type]);
               } else {
-                $options[$bundle_type] = $inds;
+                $options[$bundle_type] = $added_ents;
               }
             }
           }          
@@ -254,7 +271,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
       }
     }
 */
-    dpm($options,'computed options');
+    dpm(func_get_args()+array('result'=>$options),__FUNCTION__);
     return $options;
   }
 
@@ -339,7 +356,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    * Implements EntityReferenceHandler::getLabel().
    */
   public function getLabel($entity) {
-    dpm(func_get_args(),__FUNCTION__);
+//    dpm(func_get_args(),__FUNCTION__);
     $target_type = $this->field['settings']['target_type'];
     return entity_access('view', $target_type, $entity) ? entity_label($target_type, $entity) : t('- Restricted access -');
   }

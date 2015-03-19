@@ -122,7 +122,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
             $info[$mapping] = wisski_salz_pb_query($individual,$starting_concept,$full_path,$data);
           }
 */
-//          dpm($info);
+//          dpm($info,'load info');
 //          throw new Exception('breaker');
           $info = _wisski_core_gather_field_data($entity->uri, $instance,$info);
           // key order is: [entity_uri][delta][mapping] => values
@@ -239,7 +239,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
 //  dpm("call to hook_field_storage_write for $entity_type");
   if ($entity_type == 'wisski_individual') {
     $bundle_info = NULL;
-//    dpm(func_get_args());
+//    dpm(func_get_args(),__FUNCTION__);
     if (property_exists($entity,'uri') && $entity->uri != NULL) {
       $individual = $entity->uri;
     } else {
@@ -277,7 +277,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
       
       $new_values = field_get_items($entity_type,$entity,$instance['field_name']);
       $set_val = _wisski_core_divide_field_data($entity->uri, $instance, array($entity->uri=>$new_values));
-//      if ($field['type'] == 'entityreference') dpm($set_val);
+//      if ($field['type'] == 'entityreference') dpm($set_val,'set_val');
 
       $delete = !property_exists($entity,'is_new') || !$entity->is_new;
 
@@ -285,7 +285,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
 
       foreach($set_val[$entity->uri] as $delta) {
         
-//        if ($field['type'] == 'entityreference') dpm($delta);
+//        if ($field['type'] == 'entityreference') dpm($delta,'delta');
         
         // pb handling if possible.        
         if(isset($path_array[$instance['field_name']])) {
@@ -376,7 +376,7 @@ function wisski_core_make_uri($entity_title,$bundle_name,$ind_only = TRUE) {
  */
 function _wisski_core_divide_field_data($entity_uri,$instance, array $data) {
 
-//  dpm(func_get_args(),__FUNCTION__);
+  dpm(func_get_args(),__FUNCTION__);
   // key order is: [entity_uri][delta][mapping] => values
   $out = array();
   $saveable = db_select('wisski_pb_pathdata','p')
@@ -395,6 +395,7 @@ function _wisski_core_divide_field_data($entity_uri,$instance, array $data) {
       }
     }  
   }
+  dpm('insert into DB: '.serialize($data[$entity_uri]));
   if (!empty($data[$entity_uri])) {
       $result = db_select('wisski_special_field_cache','cache')
         ->fields('cache')
