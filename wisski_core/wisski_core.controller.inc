@@ -122,9 +122,18 @@ class WisskiCoreEntityController extends EntityAPIController {
             //TODO make short titles
             $entity = entity_create('wisski_individual', array('type' => $bundle_type, 'title' => $entity_title, 'uri' => $ind_uri));
             if(empty($entity->id)) {
-              $id = db_insert('wisski_entity_data')
+              $id = db_select('wisski_entity_data','ents')
+                    ->fields('ents',array('id'))
+                    ->condition('uri',$entity->uri)
+                    ->condition('type',$entity->type)
+                    ->execute();
+              if ($id->rowCount() === 1) {
+                $id = $id->fetchObject()->id;
+              } else {
+                $id = db_insert('wisski_entity_data')
                     ->fields(array('uri' => $entity->uri,'type' => $entity->type))
                     ->execute();
+              }
               $entity->id = $id;
             }
             $entity->is_new = FALSE;
