@@ -287,8 +287,13 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    * Implements EntityReferenceHandler::validateReferencableEntities().
    */
   public function validateReferencableEntities(array $ids) {
-    dpm(func_get_args(),__FUNCTION__);
-    return array();
+//    dpm(func_get_args(),__FUNCTION__);
+    $real_ids = db_select('wisski_entity_data','e')
+                ->fields('e',array('id'))
+                ->condition('id',$ids,'IN')
+                ->execute()
+                ->fetchAllAssoc('id');
+    return array_keys($real_ids);
   }
 
   /**
