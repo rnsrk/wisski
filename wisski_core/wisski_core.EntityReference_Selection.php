@@ -154,7 +154,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
       //WATCH OUT: dirty hard-coded limit, use dynamic threshold later
       if ($limit == 0 || $limit > 32) $limit = 32;
       $options = array();
-      if (!empty($this->field['settings']['target_bundles'])) {
+      if (!empty($this->field['settings']['handler_settings']['target_bundles'])) {
         module_load_include('inc','wisski_core','wisski_core.pathbuilder');
         $bundles = entity_load('wisski_core_bundle',$this->field['settings']['handler_settings']['target_bundles']);
         dpm($bundles,'loadable bundles');
@@ -251,7 +251,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
                 }
                 $added_ents[$id] = $uri;
               }
-              dpm(array('inds'=>$inds,'added'=>$added_ents),'loaded');
+//              dpm(array('inds'=>$inds,'added'=>$added_ents),'loaded');
               if (!empty($options[$bundle_type])) {
                 $options[$bundle_type] = array_merge($added_ents,$options[$bundle_type]);
               } else {

@@ -1228,7 +1228,7 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
   $selected_row = -1;
   $selected_options = array();
   if (!isset($external_path) && isset($form_state['storage']['external_path'])) $external_path = $form_state['storage']['external_path'];
-  dpm($full_path);
+//  dpm($full_path);
   if (isset($form_state['triggering_element']) && $form_state['triggering_element']['#name'] === 'single_path_remove') {
     //remove
     dpm($form_state);
@@ -1330,7 +1330,7 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
     }
 //    dpm(array('selected_row'=>$selected_row,'selected_options'=>$selected_options));
   }
-  dpm($full_path);
+//  dpm($full_path);
   $rows = array();
   $empty_options = array('empty' => ' - '.t('select').' -');
   $rows['starting_concept'] = array('step' => '<b>'.t('Starting Concept').'</b>: '.$starting_concept);

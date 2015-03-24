@@ -504,7 +504,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
           }
         }
       }
-//      dpm(func_get_args()+array('query' => $query,'result' => $out),__FUNCTION__);
+      dpm(func_get_args()+array('query' => $query,'result' => $out),__FUNCTION__);
       return $out;
     }
     return FALSE;
