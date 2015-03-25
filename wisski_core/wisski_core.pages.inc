@@ -8,18 +8,18 @@
 function wisski_core_list_bundles() {
   
   module_load_include('inc','wisski_core','wisski_core.controller');
-  wisski_core_tick(__FUNCTION__);
+  wisski_core_tick(__FUNCTION__.' start');
   $items = array();
   $counts = wisski_salz_pb_get_bundles_with_count();
-  wisski_core_tick(__FUNCTION__.' counts');
+  wisski_core_tick('counts');
   foreach (wisski_core_bundle_load_multiple() as $entity_type_key => $entity_type) {
     $tag = isset($counts[$entity_type->uri]) ? $counts[$entity_type->uri] : FALSE;
     if ($tag) {
       $items[$entity_type_key] = l(entity_label('wisski_core_bundle', $entity_type).' ('.$tag.')', 'wisski/navigate/' . $entity_type_key);
     }
   }
-  wisski_core_tick(__FUNCTION__.' names');
-  dpm(wisski_core_tick(NULL));
+  wisski_core_tick('names');
+  dpm(wisski_core_tick(NULL),__FUNCTION__.' time measures');
   return array(
     'list' => array(
       '#theme' => 'item_list',
@@ -116,14 +116,14 @@ function wisski_core_list($type) {
   $output .= theme_textfield(
     array(
       'element' => array(
-        '#title' => t('Find a ').$bundle->label, 
-        '#value' => '',
+        '#title' => t('Find a ').$bundle->type, 
+        '#default_value' => '',
         '#description' => 'autocomplete field looking for entities with given title elements',
         '#size' => 60,
         '#maxlength' => 32,
         '#required' => FALSE,
-        '#attributes' => NULL,
-        '#autocomplete_path' => FALSE,
+        '#attributes' => array('id' => $bundle->type),
+        '#autocomplete_path' => 'wisski/autocomplete/'.$bundle->type,
       ),
     )
   );
@@ -138,7 +138,7 @@ function wisski_core_list($type) {
   $output .= theme('pager',array('quantity' => min(51,max(floor($page_count/17),9))));
   wisski_core_tick('theme');
   $times = wisski_core_tick(NULL);
-  dpm($times);
+  dpm($times,__FUNCTION__.' time measures');
 //  dpm('query time: '.$times['end_query'].' secs');
   return $output;
 }
@@ -361,4 +361,37 @@ function wisski_core_entity_view($entity) {
     return $entity_view;
   }
   watchdog('wisski_view_end',$my_count);
+}
+
+function _wisski_core_autocomplete($bundle,$search_string) {
+
+  dpm(func_get_args(),__FUNCTION__);
+  $matches = array();
+  $search_string = preg_replace('/^(\"|\')*|(\"|\')*$/','',$search_string);
+  $search_string = preg_replace('/\"/','\\"',$search_string);
+  $search_string = preg_replace('/\'/','\\\'',$search_string);
+  $search_string = preg_replace('/\%/','\\\%',$search_string);
+  $search_string = preg_replace('/\_/','\\\_',$search_string);
+  $or = db_or()->condition('title','%'.$search_string.'%','LIKE')
+            ->condition('uri','"%'.$search_string.'%"','LIKE');
+  $result = db_select('wisski_entity_data','w')
+              ->fields('w',array('id','title'))
+              ->condition('type',$bundle->type)
+              ->condition($or)
+              ->condition('dirty',0)
+              ->range(0,10)
+              ->execute();
+  while ($obj = $result->fetchObject()) {
+    $matches[$obj->id] = $obj->title;
+  }
+  dpm($matches,__FUNCTION__.' intermediate result');
+  if (count($matches) < 10) {
+    $ents = wisski_salz_pb_get_matching_individuals($search_string,10-count($matches),$bundle->uri);
+    foreach($ents[$bundle->uri] as $uri) {
+      $entity = entity_load_single('wisski_individual',$uri);
+      $matches[$entity->id] = entity_label('wisski_individual',$entity);
+    }
+    dpm($matches,__FUNCTION__.' full result');
+  }
+  drupal_json_output($matches);
 }

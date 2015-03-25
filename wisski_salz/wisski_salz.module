@@ -377,9 +377,9 @@ function wisski_salz_pb_get_bundles_with_count() {
   return FALSE;
 }
 
-function wisski_salz_pb_get_matching_individuals($match,$limit=0) {
+function wisski_salz_pb_get_matching_individuals($match,$limit=0,$class=NULL) {
   $store = wisski_salz_invoke_local_store();
-  if ($store->getType() == "SPARQL 1.1") return $store->getMatchingInds($match,$limit);
+  if ($store->getType() == "SPARQL 1.1") return $store->getMatchingInds($match,$limit,$class);
   return FALSE;
 }
 

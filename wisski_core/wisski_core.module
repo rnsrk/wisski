@@ -451,6 +451,16 @@ function wisski_core_menu() {
   );
 
   /********* PB Stuff *************/
+  
+  $items['wisski/autocomplete/%wisski_core_bundle'] = array(
+    'title' => 'WissKI atocomplete path',
+    'page callback' => '_wisski_core_autocomplete',
+    'page arguments' => array(2),
+    'file' => 'wisski_core.pages.inc',
+    'access arguments' => array('view wisski content'),
+    'type' => MENU_CALLBACK,
+  );
+  
   $items['admin/config/wisski/pathbuilder'] = array(
       'title' => 'Pathbuilder',
       'description' => 'Manage semantically annotated fields',

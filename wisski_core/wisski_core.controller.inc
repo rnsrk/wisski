@@ -34,13 +34,14 @@ class WisskiCoreEntity extends Entity {
 class WisskiCoreEntityController extends EntityAPIController {
 
   public function load($ids = array(), $conditions = array()) {
-  
-    if (empty($ids)) {
+//dpm(func_get_args(),__FUNCTION__);  
+/*    if (empty($ids)) {
       dpm('loading WisskiCoreEntities'.(empty($conditions) ? '' : 'with conditions'));
       dpm($conditions,'conditions');
     } else {
       dpm('loading '.$ids[0].(count($ids) > 1 ? 'and '.(count($ids) - 1). 'other entities':''));
     }
+*/
     $entities = array();
     wisski_core_tick('start');
     $error = FALSE;

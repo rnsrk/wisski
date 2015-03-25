@@ -72,19 +72,26 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');    
 //  dpm("call to hook_field_storage_pre_load for ".$entity_type);
 //  dpm(func_get_args());
+  
   if($entity_type == 'wisski_individual') {
 //    dpm($queried_entities);
-    $wisski_semaphore = &drupal_static(__FUNCTION__);
+/*    $wisski_semaphore = &drupal_static(__FUNCTION__);
     if (isset($wisski_semaphore) && $wisski_semaphore) {
       dpm(func_get_args(),'DOUBLE CALL '.__FUNCTION__);
+      throw new Exception('breaker');
 //      return;
     }
     $wisski_semaphore = TRUE;
+*/
+      
     if ($age == FIELD_LOAD_REVISION) {
       dpm(__FUNCTION__.": load revision");
       //load from default storage
 //      module_invoke('field_sql_storage','field_storage_load',$entity_type, $queried_entities, $age, $skip_fields, $options);
     } else {
+      $loaded = &drupal_static(__FUNCTION__);
+      if (!isset($loaded)) $loaded = array();
+      
       foreach($queried_entities as $entity) {
         //remember that $entity->type is the bundle, not 'wisski_individual'
         $instances = field_info_instances('wisski_individual',$entity->type);
@@ -98,7 +105,11 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
         foreach($instances as $instance) {
 #          $type = $wrapper->$instance['field_name']->type();
           //dpm($instance,'$instance '.$instance['field_name'].$instance['id']);
-          
+          if (in_array($entity->id,$loaded)) {
+            //we don't want to load the fields multiple times
+            $skip_fields[$instance['field_name']] = $entity->id;
+            continue;
+          }
           $path_array = wisski_core_make_path_array(array('connected_bundle'=>$instance['bundle'],'field_info' => array('field_name' => $instance['field_name'])));
 
 //          dpm($path_array);
@@ -174,8 +185,9 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
         }//END foreach $instances
         wisski_core_set_short_title($entity,FALSE);
       }//END foreach $queried_entities
+      $loaded += array_keys($queried_entities);
     }
-    $wisski_semaphore = FALSE;
+//    $wisski_semaphore = FALSE;
   } else {
     module_invoke('field_sql_storage','field_storage_pre_load',$entity_type, $queried_entities, $age, $skip_fields, $options);
   }
@@ -224,7 +236,7 @@ function wisski_core_set_short_title(&$entity,$cached = TRUE) {
 /**
 * implements hook_field_storage_load
 */ 
-function wisski_field_storage_load($entity_type, $entities, $age, $fields, $options) {
+function wisski_core_field_storage_load($entity_type, $entities, $age, $fields, $options) {
   dpm(func_get_args(),__FUNCTION__);
   if ($entity_type != 'wisski_individual') module_invoke('field_sql_storage','field_storage_load',$entity_type, $entities, $age, $fields, $options);
 }
