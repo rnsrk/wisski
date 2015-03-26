@@ -233,11 +233,10 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
                 $entity = entity_load_single('wisski_individual',$uri);
                 
                 $label = entity_label('wisski_individual',$entity);
+                if (empty($label)) $label = $entity->uri;
+                //we only allow the answers that match $match
                 if (isset($match) && stripos($label,$match) === FALSE) continue;
-                if(!empty($label))
-                  $options[$bundle->type][$entity->id] = $label;
-                else
-                  $options[$bundle->type][$entity->id] = $entity->uri;
+                $options[$bundle->type][$entity->id] = $label;
               }
             }
           }  

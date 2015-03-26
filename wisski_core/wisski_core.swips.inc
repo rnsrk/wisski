@@ -70,27 +70,28 @@ function wisski_core_field_storage_delete_field($field) {
 function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $age, &$skip_fields, $options) {
 
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');    
-//  dpm("call to hook_field_storage_pre_load for ".$entity_type);
-//  dpm(func_get_args());
+  dpm("call to hook_field_storage_pre_load for ".$entity_type);
+  dpm(func_get_args());
   
   if($entity_type == 'wisski_individual') {
 //    dpm($queried_entities);
-/*    $wisski_semaphore = &drupal_static(__FUNCTION__);
+
+    $wisski_semaphore = &drupal_static(__FUNCTION__);
     if (isset($wisski_semaphore) && $wisski_semaphore) {
       dpm(func_get_args(),'DOUBLE CALL '.__FUNCTION__);
-      throw new Exception('breaker');
-//      return;
+//      throw new Exception('breaker');
+      return;
     }
     $wisski_semaphore = TRUE;
-*/
+
       
     if ($age == FIELD_LOAD_REVISION) {
       dpm(__FUNCTION__.": load revision");
       //load from default storage
 //      module_invoke('field_sql_storage','field_storage_load',$entity_type, $queried_entities, $age, $skip_fields, $options);
     } else {
-      $loaded = &drupal_static(__FUNCTION__);
-      if (!isset($loaded)) $loaded = array();
+#      $loaded = &drupal_static(__FUNCTION__);
+#      if (!isset($loaded)) $loaded = array();
       
       foreach($queried_entities as $entity) {
         //remember that $entity->type is the bundle, not 'wisski_individual'
@@ -105,11 +106,11 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
         foreach($instances as $instance) {
 #          $type = $wrapper->$instance['field_name']->type();
           //dpm($instance,'$instance '.$instance['field_name'].$instance['id']);
-          if (in_array($entity->id,$loaded)) {
+#          if (in_array($entity->id,$loaded)) {
             //we don't want to load the fields multiple times
-            $skip_fields[$instance['field_name']] = $entity->id;
-            continue;
-          }
+#            $skip_fields[$instance['field_name']] = $entity->id;
+#            continue;
+#          }
           $path_array = wisski_core_make_path_array(array('connected_bundle'=>$instance['bundle'],'field_info' => array('field_name' => $instance['field_name'])));
 
 //          dpm($path_array);
@@ -164,13 +165,15 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                   
                     if ($instance['display']['default']['module'] === 'entityreference') {
                       //make sure we load the right one
+      
                       $values['target_id'] = entity_load_single('wisski_individual',$values['target_id'])->id;
+                      
                     }
                     $curarr = &$entity->$instance['field_name'];
                   
                                     
                     $curarr[$language][$delta] = $values;
-                    
+               
           #}	
                 }
               }
@@ -185,12 +188,18 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
         }//END foreach $instances
         wisski_core_set_short_title($entity,FALSE);
       }//END foreach $queried_entities
-      $loaded += array_keys($queried_entities);
+#      $loaded += array_keys($queried_entities);
     }
-//    $wisski_semaphore = FALSE;
+    
+  
+    $wisski_semaphore = FALSE;
   } else {
+      
+  
     module_invoke('field_sql_storage','field_storage_pre_load',$entity_type, $queried_entities, $age, $skip_fields, $options);
   }
+  
+//  return;
 }
 
 function wisski_core_set_short_title(&$entity,$cached = TRUE) {
@@ -376,7 +385,7 @@ function wisski_core_make_uri($entity_title,$bundle_name,$ind_only = TRUE) {
   $ind_uri = wisski_salz_pb_make_uri($bundle_uri,substr($entity_title,0,8));
 
   $trace = debug_backtrace();
-  watchdog('wisski_make_uri',$entity_title.' '.$bundle_name.' '.$ind_uri.' from '.serialize($trace));
+  watchdog('wisski_make_uri',$entity_title.' '.$bundle_name.' '.$ind_uri.' from '.serialize($trace[1]));
   if ($ind_only)
     return $ind_uri;
   else return array($ind_uri,$bundle_uri);
