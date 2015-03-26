@@ -72,18 +72,23 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');    
   dpm("call to hook_field_storage_pre_load for ".$entity_type);
   dpm(func_get_args());
-  
+    
   if($entity_type == 'wisski_individual') {
 //    dpm($queried_entities);
 
+/*
     $wisski_semaphore = &drupal_static(__FUNCTION__);
-    if (isset($wisski_semaphore) && $wisski_semaphore) {
+    if(!isset($wisski_semaphore))
+      $wisski_semaphore = 0;
+      
+    if (isset($wisski_semaphore) && $wisski_semaphore > 3) {
       dpm(func_get_args(),'DOUBLE CALL '.__FUNCTION__);
+      drupal_set_message(serialize(debug_backtrace()));
 //      throw new Exception('breaker');
       return;
     }
-    $wisski_semaphore = TRUE;
-
+    $wisski_semaphore++;
+*/
       
     if ($age == FIELD_LOAD_REVISION) {
       dpm(__FUNCTION__.": load revision");
@@ -164,14 +169,17 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                 foreach($uri_array as $delta => $values) { 
                   
                     if ($instance['display']['default']['module'] === 'entityreference') {
-                      //make sure we load the right one
-      
-                      $values['target_id'] = entity_load_single('wisski_individual',$values['target_id'])->id;
+                      // make sure we load the right one by loading it
+                      // the value might be a non-numeric id
+                      // by loading it it is a numeric one after that.
+                      if(!is_numeric($values['target_id'])) {
+                        $tmp_entity = entity_load_single('wisski_individual',$values['target_id']);
                       
+                        $values['target_id'] = $tmp_entity->id;
+                      }
                     }
                     $curarr = &$entity->$instance['field_name'];
-                  
-                                    
+                                                      
                     $curarr[$language][$delta] = $values;
                
           #}	
@@ -192,7 +200,8 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
     }
     
   
-    $wisski_semaphore = FALSE;
+#    $wisski_semaphore--;
+
   } else {
       
   
