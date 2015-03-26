@@ -1532,10 +1532,11 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
     // check if the Ontology is already there
     list($ok,$result) = $this->querySPARQL("ASK {<$iri> a owl:Ontology}");
+
     if (!$ok) { // we've got something weired.
       drupal_set_message("Store is not requestable.", 'error');
       return;
-    } else if(!$result->isFalse()){ // if it is not false it is already there
+    } else if(!empty($result)){ // if it is not false it is already there
       drupal_set_message("$iri is already loaded.", 'error');
       return;
     }
