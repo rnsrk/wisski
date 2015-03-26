@@ -342,9 +342,10 @@ function _wisski_core_get_items($type,$count_only = FALSE) {
  * @return array
  *   Renderable array.
  */
-function wisski_core_entity_view($entity) {
-  
-  $count = &drupal_static(__FUNCTION__);;
+
+function wisski_core_individual_view($entity) {
+
+  $count = &drupal_static(__FUNCTION__);
   if (!isset($count)) $count = 0;
   $count++;
   $my_count = $count;
@@ -361,7 +362,9 @@ function wisski_core_entity_view($entity) {
     return $entity_view;
   }
   watchdog('wisski_view_end',$my_count);
+
 }
+
 
 function _wisski_core_autocomplete($bundle,$search_string) {
 

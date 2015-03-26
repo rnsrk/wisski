@@ -368,12 +368,17 @@ function wisski_core_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
 
+  /* Naming Convention:
+   * we don't use _entity_ in our functions
+   * but _individual_ to make clear that it is not a hook
+   */
+
   // URI for adding entity of proper bundle.
   $entity_info = entity_get_info('wisski_individual');
   foreach ($entity_info['bundles'] as $bundle_name => $bundle_data) {
     $items['wisski/create/' . $bundle_name] = array(
       'title' => 'Add ' . $bundle_name,
-      'page callback' => 'wisski_core_entity_add',
+      'page callback' => 'wisski_core_individual_add',
       'page arguments' => array(2),
       'access arguments' => array('administer wisski'),
       'file' => 'wisski_core.admin.inc',
@@ -385,7 +390,7 @@ function wisski_core_menu() {
   $items[$base_uri] = array(
     'title callback' => 'entity_label',
     'title arguments' => array('wisski_core', $base_uri_argument_position),
-    'page callback' => 'wisski_core_entity_view',
+    'page callback' => 'wisski_core_individual_view',
     'page arguments' => array($base_uri_argument_position),
     'access arguments' => array('view wisski content'),
     'file' => 'wisski_core.pages.inc',
@@ -400,7 +405,7 @@ function wisski_core_menu() {
   $items[$base_uri . '/edit'] = array(
     'title' => 'Edit Entity',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('wisski_core_entity_form', $base_uri_argument_position),
+    'page arguments' => array('wisski_core_individual_form', $base_uri_argument_position),
     'access arguments' => array('administer wisski'),
     'file' => 'wisski_core.admin.inc',
     'type' => MENU_LOCAL_TASK,
@@ -411,7 +416,7 @@ function wisski_core_menu() {
   $items[$base_uri . '/delete'] = array(
     'title' => 'Delete Entity',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('wisski_core_entity_form_delete', $base_uri_argument_position),
+    'page arguments' => array('wisski_core_individual_form_delete', $base_uri_argument_position),
     'access arguments' => array('administer wisski'),
     'file' => 'wisski_core.admin.inc',
     'type' => MENU_LOCAL_TASK,
@@ -479,7 +484,7 @@ function wisski_core_menu() {
     'type' => MENU_NORMAL_ITEM,
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('wisski_core_entity_display'),
+    'page arguments' => array('wisski_core_individual_display'),
     'file' => 'wisski_core.admin.inc',
     'access arguments' => array('administer wisski'),
   );

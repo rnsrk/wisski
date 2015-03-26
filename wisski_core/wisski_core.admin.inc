@@ -184,7 +184,7 @@ function wisski_core_choose_bundle() {
  * @return array
  *   Entity edit form.
  */
-function wisski_core_entity_add($type) {
+function wisski_core_individual_add($type) {
 
   $entity_type = wisski_core_bundle_load_multiple($type);
 //  drupal_set_title(t('Create new %type', array('%type' => $type)));
@@ -194,7 +194,7 @@ function wisski_core_entity_add($type) {
   $entity = entity_create('wisski_individual', array('type' => $type));
 
 //  $output = entity_ui_get_form('wisski_individual', $entity);
-  $output = drupal_get_form('wisski_core_entity_form', $entity);
+  $output = drupal_get_form('wisski_core_individual_form', $entity);
 
   return $output;
 }
@@ -211,7 +211,7 @@ function wisski_core_entity_add($type) {
  * @return array
  *   Entity edit form.
  */
-function wisski_core_entity_form($form, &$form_state, $entity) {
+function wisski_core_individual_form($form, &$form_state, $entity) {
   
   //ensure that $entity is actually an entity
   if (is_array($entity)) {
@@ -278,14 +278,14 @@ function wisski_core_entity_form($form, &$form_state, $entity) {
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save entity'),
-    '#submit' => $submit + array('wisski_core_entity_form_submit'),
+    '#submit' => $submit + array('wisski_core_individual_form_submit'),
   );
   $entity_id = entity_id('wisski_individual', $entity);
   if (!empty($entity_id)) {
     $form['actions']['delete'] = array(
       '#type' => 'submit',
       '#value' => t('Delete'),
-      '#submit' => array('wisski_core_entity_form_submit_delete'),
+      '#submit' => array('wisski_core_individual_form_submit_delete'),
     );
   }
 
@@ -313,7 +313,7 @@ function wisski_core_entity_form($form, &$form_state, $entity) {
 /**
  * Entity edit form "Save" submit handler.
  */
-function wisski_core_entity_form_submit(&$form, &$form_state) {
+function wisski_core_individual_form_submit(&$form, &$form_state) {
   // Automatically get edited entity from the form and save it.
   // @see entity_form_submit_build_entity()
   $entity = $form_state['wisski_core'];
@@ -329,7 +329,7 @@ function wisski_core_entity_form_submit(&$form, &$form_state) {
 /**
  * Entity edit form "Delete" submit handler.
  */
-function wisski_core_entity_form_submit_delete($form, &$form_state) {
+function wisski_core_individual_form_submit_delete($form, &$form_state) {
   // Redirect user to "Delete" URI for this entity.
   $entity = $form_state['wisski_core'];
   $entity_uri = entity_uri('wisski_individual', $entity);
@@ -345,7 +345,7 @@ function wisski_core_entity_form_submit_delete($form, &$form_state) {
  * @return array
  *   Confirmation form.
  */
-function wisski_core_entity_form_delete($form, &$form_state, $entity) {
+function wisski_core_individual_form_delete($form, &$form_state, $entity) {
   // Store the entity in the form.
   $form_state['wisski_core'] = $entity;
 
@@ -365,7 +365,7 @@ function wisski_core_entity_form_delete($form, &$form_state, $entity) {
 /**
  * Entity "Confirm delete" form submit handler.
  */
-function wisski_core_entity_form_delete_submit($form, &$form_state) {
+function wisski_core_individual_form_delete_submit($form, &$form_state) {
   // Delete the entity.
   $entity = $form_state['wisski_core'];
   $wrapper = entity_metadata_wrapper('wisski_individual', $entity);
@@ -555,7 +555,7 @@ function wisski_core_pathbuilder_form_submit(&$form, &$form_state) {
     $form_state['redirect'] = 'admin/structure/wisski_core_bundle/' . $form_state['wisski_core_bundle']->type . '/paths';
 }
 
-function wisski_core_entity_display($form,&$form_state) {
+function wisski_core_individual_display($form,&$form_state) {
   
   $form['max_entites_per_page'] = array(
     '#type' => 'textfield',
@@ -573,7 +573,7 @@ function wisski_core_entity_display($form,&$form_state) {
   return $form;
 }
 
-function wisski_core_entity_display_submit($form,&$form_state) {
+function wisski_core_individual_display_submit($form,&$form_state) {
 
   variable_set('wisski_max_entities_per_page',(int)$form_state['values']['max_entites_per_page']);
   drupal_flush_all_caches();
