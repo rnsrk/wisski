@@ -146,19 +146,40 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    * Implements EntityReferenceHandler::getReferencableEntities().
    */
   public function getReferencableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
-//    dpm(func_get_args(),__FUNCTION__);
+
+    dpm(func_get_args(),__FUNCTION__);
+
+    // get the entity type for this query
     $entity_type = $this->field['settings']['target_type'];
+    drupal_set_message(serialize($entity_type));
+
+    // in any case which does not refer to us - let the parent do the work
     if ($entity_type !== 'wisski_individual') return parent::getReferencableEntities($match,$match_operator,$limit);
+
     $options = FALSE;
+
+    // if there is a limit ... this seems to be useless, rewrite? what is with negative limits?
     if ($limit >= 0) {
+    
       //WATCH OUT: dirty hard-coded limit, use dynamic threshold later
       if ($limit == 0 || $limit > 32) $limit = 32;
+      
+      // do something
       $options = array();
-      if (!empty($this->field['settings']['handler_settings']['target_bundles'])) {
+      
+      $target_bundle_names = $this->field['settings']['handler_settings']['target_bundles'];
+      
+      // if there are target bundles
+      if (!empty($target_bundle_names)) {
+
+        // load the pathbuilder
         module_load_include('inc','wisski_core','wisski_core.pathbuilder');
-        $bundles = entity_load('wisski_core_bundle',$this->field['settings']['handler_settings']['target_bundles']);
-        dpm($bundles,'loadable bundles');
+        
+        // why do we do this? I don't understand this...
+        $bundles = entity_load('wisski_core_bundle',array_values($target_bundle_names));
+
         foreach($bundles as $bundle) {
+          dpm($match_operator);
           if ($match_operator === '=') {
             dpm($match);
             $uris = array();
@@ -167,6 +188,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
             if (count($uris) > 1) {
               $uris = $uris[0];
               $ents = wisski_salz_pb_get_bundle_info($bundle->uri);
+
               $hit = array_diff($uris,$ents);
 //	            dpm(array('uris' => $uris,'ents' => $ents,'hit' => $hit));
               $options[$bundle->type] = array_fill($hit,$match);
@@ -175,7 +197,9 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
           if ($match_operator === 'CONTAINS') {
             $paths = array();
             $ids = array();
+            dpm("hier");
             if (!empty($bundle->short_title_pattern)) {
+               dpm("hier2");
               $title_pattern = array_expand($bundle->short_title_pattern);
               foreach($title_pattern as $elem) {
                 $path = wisski_core_make_path_array(array('connected_bundle'=>$bundle->type,'field_info' => array('instance_id' => $elem['id'])));
@@ -191,22 +215,34 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
               if ($info !== FALSE) {
 //      	        dpm($info);
                 foreach ($info as $entity_uri => $path_data) {
-                  $entity = entity_load_single('wisski_individual',$entity_uri);
+                  $entity = entity_load_single('wisski_individual',$entity_uri,array('no_fields'=>TRUE));
                   $options[$bundle->type][$entity->id] = entity_label('wisski_individual',$entity);
                 }
               }
             } else {
+              dpm("hier3");
+              
+              dpm($bundle);
               $ents = wisski_salz_pb_get_bundle_info($bundle->uri);
+              dpm($bundle->uri);
+              dpm($ents);
               $count = 0;
               foreach($ents as $uri) {
                 if ($count === $limit) break;
                 $count++;
                 $entity = entity_load_single('wisski_individual',$uri);
-                $options[$bundle->type][$entity->id] = entity_label('wisski_individual',$entity);
+                
+                $label = entity_label('wisski_individual',$entity);
+                if (isset($match) && stripos($label,$match) === FALSE) continue;
+                if(!empty($label))
+                  $options[$bundle->type][$entity->id] = $label;
+                else
+                  $options[$bundle->type][$entity->id] = $entity->uri;
               }
             }
           }  
         }
+      // if there is no target bundle
       } else {
         #if ($match_operator == 'CONTAINS') {
           $match = preg_replace('/^(\"|\')*|(\"|\')*$/','',$match);
@@ -272,6 +308,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
     }
 */
     dpm(func_get_args()+array('result'=>$options),__FUNCTION__);
+//    drupal_set_message(__FUNCTION__.' should have DPMed here');
     return $options;
   }
 
