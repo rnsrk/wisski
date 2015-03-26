@@ -345,23 +345,25 @@ function _wisski_core_get_items($type,$count_only = FALSE) {
 
 function wisski_core_individual_view($entity) {
 
-  $count = &drupal_static(__FUNCTION__);
-  if (!isset($count)) $count = 0;
-  $count++;
-  $my_count = $count;
-  watchdog('wisski_view_start',$my_count);
-  if ($count <= 1) {
+//  $count = &drupal_static(__FUNCTION__);
+//  if (!isset($count)) $count = 0;
+//  $count++;
+//  $my_count = $count;
+//  watchdog('wisski_view_start',$my_count);
+//  if ($count <= 1) {
     if (is_array($entity)) {
       $array = $entity;
       $entity = current($entity);
     } else {
       $array = array(entity_id('wisski_individual', $entity) => $entity);
     }
+    entity_get_controller('wisski_individual')->resetCache(array($entity->id));
+
     drupal_set_title(entity_label('wisski_individual', $entity));
     $entity_view = entity_view('wisski_individual', $array);
     return $entity_view;
-  }
-  watchdog('wisski_view_end',$my_count);
+//  }
+//  watchdog('wisski_view_end',$my_count);
 
 }
 
