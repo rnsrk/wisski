@@ -84,7 +84,9 @@ function wisski_core_entity_info() {
       // this should be set for entity_access() and entityreference to work
       'access callback' => 'wisski_core_access_callback',
       // for obvious reasons
-      'module' => 'wisski_core'
+      'module' => 'wisski_core',
+      'field cache' => FALSE,
+      'entity cache'=> FALSE,
     ),
   );
   
