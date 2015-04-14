@@ -357,6 +357,7 @@ function wisski_core_individual_view($entity) {
     } else {
       $array = array(entity_id('wisski_individual', $entity) => $entity);
     }
+//    dpm(entity_get_controller('wisski_individual'));
     entity_get_controller('wisski_individual')->resetCache(array($entity->id));
 
     drupal_set_title(entity_label('wisski_individual', $entity));

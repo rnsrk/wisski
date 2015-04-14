@@ -70,10 +70,35 @@ function wisski_core_field_storage_delete_field($field) {
 function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $age, &$skip_fields, $options) {
 
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');    
-  dpm("call to hook_field_storage_pre_load for ".$entity_type);
-  dpm(func_get_args());
-    
-  if($entity_type == 'wisski_individual') {
+//  dpm("call to hook_field_storage_pre_load for ".$entity_type);
+  dpm(func_get_args(),__FUNCTION__);
+  //we track the loading process for all entities to ensure we know
+  //where the field collection is used
+  $loaded_field_collections = &drupal_static(__FUNCTION__.'field_collections');
+  //we must make sure that "our" field collection items are stored correctly
+  if ($entity_type == 'field_collection_item') {
+    $strange_entities = array();
+    foreach ($queried_entities as $key => $ent) {
+      $top_bundle = wisski_core_get_bundles_for_field($ent->field_name);
+      if (empty($top_bundle)) {
+        $strange_entities[$key] = $ent;
+      }
+    }
+    if (!empty($strange_entities)) {
+      module_invoke('field_sql_storage','field_storage_pre_load',$entity_type, $strange_entities, $age, $skip_fields, $options);
+      $queried_entities = array_diff_key($queried_entities,$strange_entities);
+    }
+    $referencing_entities = array();
+    foreach(array_keys($queried_entities) as $field_collection_id) {
+      if (isset($loaded_field_collections[$field_collection_id])) {
+        $referencing_entities[$field_collection_id] = $loaded_field_collections[$field_collection_id];
+      }
+    }
+//    dpm($referencing_entities,__FUNCTION__.' field collection');
+  }
+  
+  if($entity_type == 'wisski_individual' || $entity_type === 'field_collection_item') {
+
 //    dpm($queried_entities);
 
 /*
@@ -98,10 +123,33 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
 #      $loaded = &drupal_static(__FUNCTION__);
 #      if (!isset($loaded)) $loaded = array();
       
-      foreach($queried_entities as $entity) {
-        //remember that $entity->type is the bundle, not 'wisski_individual'
-        $instances = field_info_instances('wisski_individual',$entity->type);
-        $individual = $entity->uri;
+      foreach($queried_entities as $entity_id => $entity) {
+        
+/*        if (isset($referencing_entities[$entity_id])) {
+          $loaded_field_collection = $referencing_entities[$entity_id];
+        } else {
+          //we don't know this one
+          //it must come from elsewhere i.e. is not connected to a wisski_core_entity
+          trigger_error('failed loading due to referencing entities',E_USER_WARNING);
+          module_invoke('field_sql_storage','field_storage_pre_load',$entity_type, $queried_entities, $age, $skip_fields, $options);
+          return;
+        }
+*/        //since we have at least two entity_types to care about we need
+        //a generic approach to the field instances
+        list($entity_id,,$bundle_name) = entity_extract_ids($entity_type,$entity);
+        $instances = field_info_instances($entity_type,$bundle_name);
+        //reading the uridirectly will only work for wisski_individual
+        //field_collections are handled by our cache
+        if (isset($loaded_field_collection)) {
+          if (isset($loaded_field_collection['target_uri'])) {
+            $entity_uri = $loaded_field_collection['target_uri'];
+          } else {
+            //oops, not sure what to do now
+            throw new Exception('field collection has no related URI');
+          }
+        } else {
+          $entity_uri = $entity->uri;
+        }
         $field_info = array();
 
 #        $wrapper = entity_metadata_wrapper('wisski_individual',$entity);
@@ -110,23 +158,28 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
 
         foreach($instances as $instance) {
 #          $type = $wrapper->$instance['field_name']->type();
-          //dpm($instance,'$instance '.$instance['field_name'].$instance['id']);
+//          dpm($instance,'$instance '.$instance['field_name'].$instance['id']);
+          
 #          if (in_array($entity->id,$loaded)) {
             //we don't want to load the fields multiple times
 #            $skip_fields[$instance['field_name']] = $entity->id;
 #            continue;
 #          }
-          $path_array = wisski_core_make_path_array(array('connected_bundle'=>$instance['bundle'],'field_info' => array('field_name' => $instance['field_name'])));
-
-//          dpm($path_array);
+          if (isset($loaded_field_collection['paths'])) {
+            $path_array = $loaded_field_collection['paths'];
+          } else {
+            $path_array = wisski_core_make_path_array(array('connected_bundle'=>$instance['bundle'],'field_info' => array('field_name' => $instance['field_name'])));
+          }
+#          dpm($path_array,'computed path array');
           $info = array();
           if(isset($path_array[$instance['field_name']])) {
 
             $paths_for_field = $path_array[$instance['field_name']];
             if (!empty($paths_for_field)) {
+#              dpm($paths_for_field,'paths for field '.$instance['field_name']);
               $starting_concept = current($paths_for_field);
               $starting_concept = $starting_concept['starting_concept'];
-              $info = wisski_salz_pb_query_single_uri($entity->uri,$starting_concept,$paths_for_field);
+              $info = wisski_salz_pb_query_single_uri($entity_uri,$starting_concept,$paths_for_field);
             }
           }
 /* 
@@ -141,9 +194,9 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
 */
 //          dpm($info,'load info');
 //          throw new Exception('breaker');
-          $info = _wisski_core_gather_field_data($entity->uri, $instance,$info);
+          $info = _wisski_core_gather_field_data($entity_uri, $bundle_name,$instance['field_name'],$info);
           // key order is: [entity_uri][delta][mapping] => values
-          //dpm($info,'gathered info');
+          dpm($info,'gathered info');
 //          dpm($entity);
           
 //          drupal_set_message(serialize($info));
@@ -168,7 +221,7 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
 
                 foreach($uri_array as $delta => $values) { 
                   
-                    if ($instance['display']['default']['module'] === 'entityreference') {
+                    if ($instance['widget']['module'] === 'entityreference') {
                       // make sure we load the right one by loading it
                       // the value might be a non-numeric id
                       // by loading it it is a numeric one after that.
@@ -177,6 +230,30 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                       
                         $values['target_id'] = $tmp_entity->id;
                       }
+                    }
+                    if ($instance['widget']['module'] === 'field_collection') {
+                      //hack to ensure field_collection working correctly:
+                      //we always need a revision id, so let's assume
+                      //we have no revision
+                      if (!isset($values['revision_id'])) {
+                        $values['revision_id'] = $values['value'];
+                      }
+                      dpm($info,'values for field collection');
+                      //pb_query gives us the values, which should save the target id
+                      //plus the target entity uri, which is not saved in the FieldCollectionItem
+                      //but used by our loading routine.
+                      //The paths we need for loading the fields contained in the
+                      //field collection can be gathered from $paths_for_field
+                      $group_paths = array();
+                      foreach($paths_for_field as $pff_key => $pff) {
+                        if ($pff_key != 'value' && $pff['group_id'] === $paths_for_field['value']['group_id']) {
+                          $group_paths[$pff_key] = $pff;
+                        }
+                      }
+                      $loaded_field_collections[$values['value']] = array(
+                        'target_uri' => isset($values['target_uri']) ? $values['target_uri'] : NULL,
+                        'paths' => $group_paths,
+                      );
                     }
                     $curarr = &$entity->$instance['field_name'];
                                                       
@@ -192,9 +269,9 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
           
           //$entity->$instance['field_name'] = $info;
           
-          $skip_fields[$instance['field_id']] = $entity->id;
+          $skip_fields[$instance['field_id']] = $entity_id;
         }//END foreach $instances
-        wisski_core_set_short_title($entity,FALSE);
+        if ($entity_type === 'wisski_individual') wisski_core_set_short_title($entity,FALSE);
       }//END foreach $queried_entities
 #      $loaded += array_keys($queried_entities);
     }
@@ -203,8 +280,6 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
 #    $wisski_semaphore--;
 
   } else {
-      
-  
     module_invoke('field_sql_storage','field_storage_pre_load',$entity_type, $queried_entities, $age, $skip_fields, $options);
   }
   
@@ -255,7 +330,7 @@ function wisski_core_set_short_title(&$entity,$cached = TRUE) {
 * implements hook_field_storage_load
 */ 
 function wisski_core_field_storage_load($entity_type, $entities, $age, $fields, $options) {
-  dpm(func_get_args(),__FUNCTION__);
+//  dpm(func_get_args(),__FUNCTION__);
   if ($entity_type != 'wisski_individual') module_invoke('field_sql_storage','field_storage_load',$entity_type, $entities, $age, $fields, $options);
 }
 
@@ -266,14 +341,45 @@ function wisski_core_field_storage_load($entity_type, $entities, $age, $fields, 
 */
 function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
 
+  static $loading_order = array();
+  $referenced_field_collections = &drupal_static(__FUNCTION__.'references');
+  if (!isset($referenced_field_collections)) $referenced_field_collectons = array();
+  list($entity_id,,$bundle_name) = entity_extract_ids($entity_type,$entity);
+  $entity_title = entity_label($entity_type,$entity);
+  if ($entity_type === 'field_collection_item') {
+    $top_bundle = wisski_core_get_bundles_for_field($bundle_name);
+    if (empty($bundle_name)) {
+      //no top bundle is given for this field collection in 'wisski_individual'
+      //i.e. this is not connected to a 'wisski_individual'
+      module_invoke('field_sql_storage','field_storage_write',$entity_type, $entity, $op, $fields);
+      return;
+    }
+    if (!property_exists($entity,'uri') || empty($entity->uri) || !isset($referenced_field_collections[$bundle_name][$entity_id]['bundle_name'])) {
+      //here we can profit from the bundle name of a field collection
+      //being equal to the field name it is referenced by
+      $referenced_field_collections[$bundle_name] = array(
+        'fields' => $fields,
+        'field_collection' => $entity,
+      );
+      
+      $return = TRUE;
+    }
+  }
+  if (!isset($connected_bundle)) $connected_bundle = $bundle_name;
+  $loading_order[] = array($entity_type,$bundle_name,$entity_id,$connected_bundle,isset($entity->uri)?$entity->uri:'');
+  dpm($loading_order,'loading order');
+  if (isset($return) && $return) return;
+//  dpm($referenced_field_collections,'referenced field collections');
+  
 //  dpm("call to hook_field_storage_write for $entity_type");
   if ($entity_type == 'wisski_individual') {
+    
     $bundle_info = NULL;
 //    dpm(func_get_args(),__FUNCTION__);
     if (property_exists($entity,'uri') && $entity->uri != NULL) {
       $individual = $entity->uri;
     } else {
-      trigger_error("The entity ".$entity->title." does not have a uri",E_USER_ERROR);
+      trigger_error("The entity ".$entity_title." does not have a uri",E_USER_ERROR);
       return;
 /*      $individual =  wisski_core_make_uri($entity->title,$entity->type);
       $entity->uri = $individual;
@@ -285,29 +391,39 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
 //    dpm(entity_uri($entity_type,$entity));
 //    dpm("computed uri: ".$individual);
     $new_individuals = array();
-    foreach($fields as $field_id) {
+    //calling the field by reference gives us the possibility to add fields
+    foreach($fields as &$field_id) {
 //      dpm("Tick 2");
-      $field = field_info_field_by_id($field_id);
-      $instance = field_info_instance($entity_type,$field['field_name'],$entity->type);
-      if (empty($instance)) continue;
-//      dpm("Tick 3");
-//      dpm($instance);
-      $path_array = wisski_core_make_path_array(array('connected_bundle'=>$instance['bundle'],'field_info' => array('field_name' => $instance['field_name'])));
-      
-      #$paths_for_field = $path_array[$instance['field_name']];
-      /*
-      foreach ($paths_for_field as $mapping => $path) {
-        $starting_concept = $path['starting_concept'];
-        $full_path = $path['full_path'];
-        $data = $path['datatype_property'];
-        $disamb = $path['disamb'];
+      if (is_numeric($field_id)) {          
+        $field = field_info_field_by_id($field_id);
+        $field_name = $field['field_name'];
+        if (isset($referenced_field_collections[$field_name])) {
+          foreach($referenced_field_collections[$field_name]['fields'] as $fc_field_id) {
+            array_push($fields,array(
+              'bundle'=>$field_name,
+              'field_id'=>$fc_field_id,
+              'entity'=>$referenced_field_collections[$field_name]['field_collection'],
+            ));
+          }      
+          continue;
+        }
+        $new_values = field_get_items($entity_type,$entity,$field_name);
+      } else {
+        dpm($field_id,'load non-numeric');
+        $field_id = $field_id['field_id'];
+        $fc_bundle = $field_id['bundle'];
+        $field = field_info_field_by_id($field_id);
+        $field_name = $field['field_name'];
+        $new_values = field_get_items('field_collection_item',$field_id['entity'],$field_name);
       }
-      */
+//      dpm("Tick 3");
       
       
-      $new_values = field_get_items($entity_type,$entity,$instance['field_name']);
-      $set_val = _wisski_core_divide_field_data($entity->uri, $instance, array($entity->uri=>$new_values));
-//      if ($field['type'] == 'entityreference') dpm($set_val,'set_val');
+//      dpm($new_values,'values to set for '.$field_name);
+      $path_array = wisski_core_make_path_array(array('connected_bundle'=>$connected_bundle,'field_info' => array('field_name' => $field_name)));
+      
+      $set_val = _wisski_core_divide_field_data($entity->uri, $bundle_name, $field_name, array($entity->uri=>$new_values));
+//      /*if ($field['type'] == 'field_collection')*/ dpm($set_val,'set_val');
 
       $delete = !property_exists($entity,'is_new') || !$entity->is_new;
 
@@ -317,10 +433,25 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
         
 //        if ($field['type'] == 'entityreference') dpm($delta,'delta');
         
+/*        if ($field['type'] === 'field_collection') {
+          $field_collection_id = $delta['value'];
+          if (isset($referenced_field_collections[$field_name][$field_collection_id])) {
+            $field_collection_info = &$referenced_field_collections[$field_name][$field_collection_id];
+            $field_collection = $field_collection_info['field_collection'];
+            if (!property_exists($field_collection,'uri') || empty($field_collection->uri)) {
+              $field_collection->uri = wisski_core_make_uri('fc_'.$field_collection->item_id.'_',$bundle_name,TRUE);
+              unset($field_collection_info['field_collection']);
+              $field_collection_info['bundle_name'] = $bundle_name;
+              //this one will save the field collection again
+              //this time with a valid uri
+              field_attach_update('field_collection_item',$field_collection);
+            }
+          }
+        }*/
         // pb handling if possible.        
-        if(isset($path_array[$instance['field_name']])) {
+        if(isset($path_array[$field_name])) {
         
-        $paths_for_field = $path_array[$instance['field_name']];
+        $paths_for_field = $path_array[$field_name];
         
 #        dpm($set_val);
 
@@ -336,7 +467,7 @@ function wisski_core_field_storage_write($entity_type, $entity, $op, $fields) {
           $disamb = $path['disamb'];
         
 
-          if ($news = wisski_salz_pb_update($individual,$entity->title,$starting_concept,$path_array,$data,$disamb,$delta[$mapping],$delete)) {
+          if ($news = wisski_salz_pb_update($individual,$entity_title,$starting_concept,$path_array,$data,$disamb,$delta[$mapping],$delete)) {
 //          dpm($news);
             foreach($news as $class => $inds) {
               if (!isset($new_individuals[$class])) $new_individuals[$class] = array();
@@ -404,15 +535,15 @@ function wisski_core_make_uri($entity_title,$bundle_name,$ind_only = TRUE) {
  * This function decides which of the field data is stored by this storage engine
  * and which to keep in the db table. The storage engine data is returned.
  */
-function _wisski_core_divide_field_data($entity_uri,$instance, array $data) {
+function _wisski_core_divide_field_data($entity_uri,$bundle_name,$field_name,array $data) {
 
   dpm(func_get_args(),__FUNCTION__);
   // key order is: [entity_uri][delta][mapping] => values
   $out = array();
   $saveable = db_select('wisski_pb_pathdata','p')
               ->fields('p',array('connected_field_property'))
-              ->condition('connected_field',$instance['field_name'])
-              ->condition('connected_bundle',$instance['bundle'])
+              ->condition('connected_field',$field_name)
+              ->condition('connected_bundle',$bundle_name)
               ->execute()
               ->fetchAllAssoc('connected_field_property');
   $saveable = array_keys($saveable);
@@ -429,14 +560,16 @@ function _wisski_core_divide_field_data($entity_uri,$instance, array $data) {
   if (!empty($data[$entity_uri])) {
       $result = db_select('wisski_special_field_cache','cache')
         ->fields('cache')
-        ->condition('instance_id',$instance['id'])
+        ->condition('bundle_name',$bundle_name)
+        ->condition('field_name',$field_name)
         ->condition('entity_uri',$entity_uri)
 //      ->condition('langcode',$langcode)
         ->execute();
       if ($result->rowCount() === 0) {
         db_insert('wisski_special_field_cache')
           ->fields(array(
-            'instance_id' => $instance['id'],
+            'bunlde_name' => $bundle_name,
+            'field_name' => $field_name,
             'entity_uri' => $entity_uri,
             'field_data' => serialize($data[$entity_uri]),
 //	          'langcode' => $langcode,
@@ -445,7 +578,8 @@ function _wisski_core_divide_field_data($entity_uri,$instance, array $data) {
       } else {
         db_update('wisski_special_field_cache')
           ->fields(array('field_data' => serialize($data[$entity_uri])))
-          ->condition('instance_id',$instance['id'])
+          ->condition('bundle_name',$bundle_name)
+          ->condition('instance_id',$field_name)
           ->condition('entity_uri',$entity_uri)
 //        ->condition('langcode',$langcode)
           ->execute();
@@ -454,7 +588,7 @@ function _wisski_core_divide_field_data($entity_uri,$instance, array $data) {
   return $out;
 }
 
-function _wisski_core_gather_field_data($entity_uri,$instance,$data) {
+function _wisski_core_gather_field_data($entity_uri,$bundle_name,$field_name,$data) {
   
   //key order is: [entity_uri][delta][mapping] => values
         
@@ -463,7 +597,8 @@ function _wisski_core_gather_field_data($entity_uri,$instance,$data) {
   if (!isset($out[$entity_uri])) $out[$entity_uri] = array();
   $result = db_select('wisski_special_field_cache','cache')
               ->fields('cache')
-              ->condition('instance_id',$instance['id'])
+              ->condition('bundle_name',$bundle_name)
+              ->condition('field_name',$field_name)
               ->condition('entity_uri',$entity_uri)
 //              ->condition('langcode',$langcode)
               ->execute()
@@ -502,7 +637,8 @@ function wisski_core_field_storage_purge($entity_type, $entity, $field, $instanc
  */
 function wisski_core_field_storage_query(EntityFieldQuery $query) {
   dpm(func_get_args(),__FUNCTION__);
-  watchdog(__FUNCTION__,serialize($query));
+//  watchdog(__FUNCTION__,serialize($query));
+//  ddebug_backtrace();
   if ($query->age == FIELD_LOAD_CURRENT) {
     
   }

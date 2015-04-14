@@ -229,6 +229,9 @@ function wisski_core_entity_property_info() {
   return $info;
 }
 
+/**
+ * implements hook_entity_info_alter()
+ */
 function wisski_core_entity_info_alter(&$entity_info) {
   foreach (wisski_core_bundle_load_multiple() as $type => $info) {
     $entity_info['wisski_individual']['bundles'][$type] = array(
@@ -241,6 +244,25 @@ function wisski_core_entity_info_alter(&$entity_info) {
       ),
     );
   }
+  $fc_info = &$entity_info['field_collection_item'];
+  $fc_info['entity keys']['uri'] = 'uri';
+  $fc_info['entity keys']['group_id'] = 'group_id';
+  $fc_info['schema_fields_sql']['base table'][] = 'uri';
+  $fc_info['schema_fields_sql']['base table'][] = 'group_id';
+//  $fc_info['entity cache'] = FALSE;
+  $fc_info['field cache'] = FALSE;
+  $fc_info['creation callback'] = 'wisski_core_field_collection_create';
+}
+
+/**
+ * implements hook_entity_property_info_alter
+ */
+function wisski_core_entity_property_info_alter(&$info) {
+
+#  dpm(func_get_args(),__FUNCTION__);
+/*  $info['field_collection_item']['field']['uri'] = array(
+  
+  );*/
 }
 
 /**
@@ -269,11 +291,11 @@ function wisski_core_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
   
-  $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/%/choose'] = array(
+  $items['admin/structure/%/manage/%/%/choose'] = array(
     'title callback' => 'wisski_core_data_mapping_title',
-    'title arguments' => array(4,5),
+    'title arguments' => array(5),
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('wisski_core_data_mapping_form',4,5),
+    'page arguments' => array('wisski_core_data_mapping_form',2,4,5),
     'access arguments' => array('administer wisski paths'),
     'access callback' => TRUE,
     'file' => 'wisski_core.pathbuilder.inc',
@@ -324,6 +346,18 @@ function wisski_core_menu() {
     'weight' => 5,
   );
   
+  $items['admin/structure/field-collections/%/paths'] = array(
+    'title' => 'Manage WissKI Paths',
+    'type' => MENU_LOCAL_TASK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+    'position' => 'left',
+    'weight' => -100,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_field_collection_paths',3),
+    'access arguments' => array('administer wisski paths'),
+    'file' => 'wisski_core.pathbuilder.inc',
+#    'file path' => drupal_get_path('module', 'system'),
+  );
   
   
   $entity_info = entity_get_info('wisski_individual');
@@ -580,10 +614,13 @@ function wisski_core_menu() {
 
   }  
 */
+
+
+
   return $items;
 }
 
-function wisski_core_data_mapping_title($bundle,$field_name) {
+function wisski_core_data_mapping_title($field_name) {
   
   try {
     $field = field_info_field($field_name);
@@ -594,7 +631,7 @@ function wisski_core_data_mapping_title($bundle,$field_name) {
   if (isset($field['label'])) {
     $label = $field['label'].' ('.$label.')';
   }
-  return t('Manage paths for !label in !bundle',array('!label' => $label, '!bundle' => $bundle->type));
+  return t('Manage paths for !label',array('!label' => $label));
 }
 
 function wisski_core_single_path_title($bundle,$field_name,$map) {
@@ -1364,4 +1401,68 @@ class wisskiRemoteEntityController extends EntityAPIController {
 class wisskiRemoteEntityUIController extends EntityDefaultUIController {
 }
 
+function wisski_core_form_alter(&$form, &$form_state, $form_id) {
 
+#  dpm(func_get_args(),__FUNCTION__);
+#  dpm(array_search_recursive($form,'fields'));
+  if ($form_id === 'field_ui_field_overview_form') {
+    $fields = &$form['fields'];
+    $fields['#header'][6]['colspan'] = 4;
+    foreach($fields as $key => $value) {
+    
+      if(is_array($value) && strpos($key, '#') !== 0) {
+        
+        if ($value['#row_type'] !== 'field') {
+          $fields[$key][] = array('wisski_paths' => array());
+          $fields[$key][] = array('field_col' => array());
+        } else {
+          $type_key = 'wisski_core_bundle';
+          if ($form['#entity_type'] === 'field_collection_item') {
+            $type_key = 'field-collections';
+          }
+          $fields[$key][] = array('wisski_paths' => array('#type' => 'link', '#title' => t('paths'), '#href' => 'admin/structure/'.$type_key.'/manage/'.$form['#bundle'].'/'.$key.'/choose', '#options' => array()));
+          if($value['type']['#title'] == "Field collection") {
+            $fields[$key][] = array('field_col' => array('#type' => 'link', '#title' => t('fields'), '#href' => 'admin/structure/field-collections/' . $key . '/field', '#options' => array()));
+          } else {
+            $fields[$key][] = array('field_col' => array());
+          }
+        }
+      }
+    }
+  }
+  
+#  dpm($form);
+  
+  
+}
+
+function array_search_recursive(array $haystack,$needle) {
+
+  $hits = array();
+  foreach($haystack as $key=>$value) {
+    if (is_array($value)) {
+      $sub_hits = array_search_recursive($value,$needle);
+      if ($sub_hits !== FALSE) $hits[$key] = $sub_hits;
+    } else {
+      if ($value === $needle) {
+        $hits[$key] = $key;
+      }
+    }
+  }
+  if (empty($hits)) return FALSE;
+  else return $hits;
+}
+
+function wisski_core_field_collection_create($values,$entity_type) {
+  
+  //this one is extremely dirty
+  //we hack the creation of the field_collection_item to add the uri
+  if ($entity_type === 'field_collection_item') {
+    $info = entity_get_info('field_collection_item');
+    if (in_array('EntityAPIControllerInterface', class_implements($info['controller class']))) {
+      $creature = entity_get_controller('field_collection_item')->create($values);
+    }
+    dpm(func_get_args()+array('result'=>$creature,'host entity'=>$creature->hostEntity()),__FUNCTION__);
+    return $creature;
+  }
+}

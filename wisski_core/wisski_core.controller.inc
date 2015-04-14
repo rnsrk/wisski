@@ -28,13 +28,15 @@ class WisskiCoreEntity extends Entity {
   }
 }
 
+
 /**
  * Typical Entity 4 controller class.
  */
 class WisskiCoreEntityController extends EntityAPIController {
 
   public function load($ids = array(), $conditions = array()) {
-//dpm(func_get_args(),__FUNCTION__);  
+//  dpm("Loading the entity " . serialize($ids));
+//  dpm(func_get_args(),__CLASS__.'->'.__FUNCTION__);  
 /*    if (empty($ids)) {
       dpm('loading WisskiCoreEntities'.(empty($conditions) ? '' : 'with conditions'));
       dpm($conditions,'conditions');
@@ -45,7 +47,8 @@ class WisskiCoreEntityController extends EntityAPIController {
     $entities = array();
     wisski_core_tick('start');
     $error = FALSE;
-    if(!empty($ids)) {
+    if($ids !== FALSE) {
+      if (empty($ids)) return array();
       $or = db_or()->condition('uri',$ids,'IN')->condition('id',$ids,'IN');
       $db_entities = db_select('wisski_entity_data','ent')
                       ->fields('ent')
@@ -137,7 +140,7 @@ class WisskiCoreEntityController extends EntityAPIController {
               }
               $entity->id = $id;
             }
-            $entity->is_new = FALSE;
+//            $entity->is_new = FALSE;
             $entities[$entity->id] = $entity;
           }
         } else {
@@ -155,9 +158,11 @@ class WisskiCoreEntityController extends EntityAPIController {
       trigger_error('problems when loading entities '.serialize($ids),E_USER_WARNING);
     }
     wisski_core_tick('entity stub load');
-    field_attach_load('wisski_individual',$entities);
-    wisski_core_tick('field load');
-    dpm(wisski_core_tick(NULL),'time measures');
+    if (!isset($conditions['no_fields']) || !$conditions['no_fields']) {
+      field_attach_load('wisski_individual',$entities);
+      wisski_core_tick('field load');
+    }
+    if (isset($conditions['debug']) && $settings['debug']) dpm(wisski_core_tick(NULL),'time measures');
 //    dpm($entities);
     return $entities;
   }
@@ -189,12 +194,17 @@ class WisskiCoreEntityController extends EntityAPIController {
   
   public function save($entity) {
 
-    // create a new entity if there was no up to now.
+    // create a new entity if there was none up to now.
     if(empty($entity->id)) {
-      $id = db_insert('wisski_entity_data')
-        ->fields(array('uri' => $entity->uri,'type' => $entity->type))
-        ->execute();
-      $entity->id = $id;
+      try {
+        $id = db_insert('wisski_entity_data')
+          ->fields(array('uri' => $entity->uri,'type' => $entity->type))
+          ->execute();
+        $entity->id = $id;
+      } catch (PDOException $e) {
+        ddebug_backtrace();
+        return;
+      }
     }
   
 //    field_attach_presave('wisski_individual', $entity);
@@ -222,7 +232,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       }
     }
     if (!wisski_salz_pb_insert_individual($entity_uri,$bundle_uri)) trigger_error("Could not save ".$entity->title,E_USER_WARNING);
-    field_attach_insert('wisski_individual', $entity);
+    field_attach_update('wisski_individual', $entity);
   }
 
 
@@ -247,9 +257,9 @@ class WisskiCoreEntityController extends EntityAPIController {
       '#field_type' => 'text',
       '#entity_type' => 'wisski_individual',
       '#bundle' => $entity->type,
-      '#items' => array(array('value' => $entity->title)),
+      '#items' => array(array('value' => entity_label('wisski_individual',$entity))),
       '#formatter' => 'text_default',
-      0 => array('#markup' => check_plain($entity->title)),
+      0 => array('#markup' => check_plain(entity_label('wisski_individual',$entity))),
     );
 
         

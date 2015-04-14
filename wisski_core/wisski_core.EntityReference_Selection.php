@@ -151,7 +151,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
 
     // get the entity type for this query
     $entity_type = $this->field['settings']['target_type'];
-    drupal_set_message(serialize($entity_type));
+#    drupal_set_message(serialize($entity_type));
 
     // in any case which does not refer to us - let the parent do the work
     if ($entity_type !== 'wisski_individual') return parent::getReferencableEntities($match,$match_operator,$limit);
@@ -175,13 +175,13 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
         // load the pathbuilder
         module_load_include('inc','wisski_core','wisski_core.pathbuilder');
         
-        // why do we do this? I don't understand this...
+        // load the bundle info to grab URIs and short title patterns later
         $bundles = entity_load('wisski_core_bundle',array_values($target_bundle_names));
 
         foreach($bundles as $bundle) {
-          dpm($match_operator);
+          
           if ($match_operator === '=') {
-            dpm($match);
+
             $uris = array();
             preg_match_all('/\((\w*:\w*)\)/',$match,$uris);
 //  	        dpm($uris);
@@ -197,9 +197,9 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
           if ($match_operator === 'CONTAINS') {
             $paths = array();
             $ids = array();
-            dpm("hier");
+#            dpm("hier");
             if (!empty($bundle->short_title_pattern)) {
-               dpm("hier2");
+#               dpm("hier2");
               $title_pattern = array_expand($bundle->short_title_pattern);
               foreach($title_pattern as $elem) {
                 $path = wisski_core_make_path_array(array('connected_bundle'=>$bundle->type,'field_info' => array('instance_id' => $elem['id'])));
@@ -220,17 +220,17 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
                 }
               }
             } else {
-              dpm("hier3");
+//              dpm("hier3");
               
-              dpm($bundle);
+//              dpm($bundle);
               $ents = wisski_salz_pb_get_bundle_info($bundle->uri);
-              dpm($bundle->uri);
-              dpm($ents);
+//              dpm($bundle->uri);
+//              dpm($ents);
               $count = 0;
               foreach($ents as $uri) {
                 if ($count === $limit) break;
                 $count++;
-                $entity = entity_load_single('wisski_individual',$uri);
+                $entity = entity_load_single('wisski_individual',$uri,array('no_fields'=>TRUE));
                 
                 $label = entity_label('wisski_individual',$entity);
                 if (empty($label)) $label = $entity->uri;
@@ -323,7 +323,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    * Implements EntityReferenceHandler::validateReferencableEntities().
    */
   public function validateReferencableEntities(array $ids) {
-//    dpm(func_get_args(),__FUNCTION__);
+    dpm(func_get_args(),__FUNCTION__);
     $real_ids = db_select('wisski_entity_data','e')
                 ->fields('e',array('id'))
                 ->condition('id',$ids,'IN')
@@ -340,7 +340,9 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
       $entities = array();
       $sorted_entities = $this->getReferencableEntities($input, '=', 6);
       foreach($sorted_entities as $bundle_type => $bundle_entities) {
-        $entities += $bundle_entities;
+        if (!empty($bundle_entities)) {
+          $entities += $bundle_entities;
+        }
       }
       if (empty($entities)) {
         // Error if there are no entities available for a required field.

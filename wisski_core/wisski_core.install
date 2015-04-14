@@ -1,4 +1,6 @@
 <?php
+
+
 // $Id$
 
 function wisski_core_install() {
@@ -30,12 +32,26 @@ function wisski_core_install() {
   variable_set('wisski_max_entities_per_page',42);
   variable_set('wisski_titles_master_fallback','-!- '.t('invalid title').' -!-');
   variable_set('wisski_standard_field_mapping','value');
+  db_add_field('field_collection_item','uri',array(
+        	'description' => 'URI of the corresponding owl:Individual',
+	        'type' => 'varchar',
+        	'length' => 255,
+	        'not null' => FALSE,
+	 ));
+  db_add_field('field_collection_item','group_id',array(
+        'type' => 'int',
+        'not null' => FALSE,
+        'description' => 'The parent this item belongs to.',
+      ));
+
 }
 
 function wisski_core_uninstall() {
   
   if (variable_get('field_storage_default') == 'wisski_core_swips') variable_del('field_storage_default');
   variable_del('wisski_max_entities_per_page');
+  db_drop_field('field_collection_item','uri');
+  db_drop_field('field_collection_item','group_id');
 }
 
 function wisski_core_schema() {
@@ -119,7 +135,8 @@ function wisski_core_schema() {
       ),
 
       'group_id' => array(
-        'type' => 'int',
+        'type' => 'char',
+	'length' => 36,
         'not null' => FALSE,
         'description' => 'The parent this item belongs to.',
       ),
@@ -394,9 +411,16 @@ function wisski_core_schema() {
         'length' => 255,
         'not null' => TRUE,
       ),
-      'instance_id' => array(
-        'description' => 'ID of the field instance',
-        'type' => 'int',
+      'bundle_name' => array(
+	'description' => 'bundle name',
+	'type' => 'varchar',
+	'length' => 128,
+	'not null' => TRUE,
+      ),	
+      'field_name' => array(
+        'description' => 'machine name of the field',
+        'type' => 'varchar',
+	'length' => 32,
         'not null' => TRUE,
       ),
       'field_data' => array(
@@ -405,7 +429,6 @@ function wisski_core_schema() {
         'size' => 'big',
       ),
     ),
-    'unique keys' => array('entity_instance' => array('entity_uri','instance_id')),
   );
   
   // Table for storing data of entity exportable bundles.
