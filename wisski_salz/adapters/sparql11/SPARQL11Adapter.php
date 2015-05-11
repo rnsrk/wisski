@@ -35,7 +35,9 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   * @ignore
   */
   protected function request($type, $query) {
-    
+
+    $log = fopen(dirname(__FILE__).'/log.txt','a');
+    fwrite($log,time()." - ".$type."\n".$query."\n\n");
     // Check for undefined prefixes
     $prefixes = '';
     $this->updateNamespaces();
@@ -96,19 +98,22 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
             // No content
             return $response;
         } elseif ($response->isSuccessful()) {
-            list($type, $params) = EasyRdf_Utils::parseMimeType(
-                $response->getHeader('Content-Type')
-            );
-            if (strpos($type, 'application/sparql-results') === 0) {
-                return new EasyRdf_Sparql_Result($response->getBody(), $type);
-            } else {
-                return new EasyRdf_Graph($this->settings['query_endpoint'], $response->getBody(), $type);
-            }
+          list($type, $params) = EasyRdf_Utils::parseMimeType(
+            $response->getHeader('Content-Type')
+          );
+          if (strpos($type, 'application/sparql-results') === 0) {
+            return new EasyRdf_Sparql_Result($response->getBody(), $type);
+          } else {
+            return new EasyRdf_Graph($this->settings['query_endpoint'], $response->getBody(), $type);
+          }
         } else {
-            throw new EasyRdf_Exception(
-                "HTTP request for SPARQL query failed: ".$response->getBody()
-            );
+          fwrite($log,"FAIL\n\n");
+          echo __METHOD__.' (line: '.__LINE__.') failed request '.htmlentities($query)."\n\r";
+          throw new EasyRdf_Exception(
+            "HTTP request for SPARQL query failed: ".$response->getBody()
+          );
         }
+      fclose($log);
     }
   
 
@@ -340,29 +345,30 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
    *
    * @param paths is an array of associative arrays that may contain
    * the following entries:
-   * $key								| $value
+   * $key		| $value
    * ------------------------------------------------------------
-   * 'path_array' 			| array of strings representing owl:ObjectProperties 
+   * 'path_array' 	| array of strings representing owl:ObjectProperties 
    *                    | and owl:Classes in alternating order
    * 'datatype_property'| string representing an owl:DatatypeProperty
-   * 'required'					| boolean, TRUE if the path must have to return
-   *										| at least one data result
-   * 'maximum'					| int specifying the maximum number of returned
-   *										| data values for this path, unlimited if unspecified
-   * 'id'								| ID of the path, matching the key of the result data
-   *										| in the output array
+   * 'required'		| boolean, TRUE if the path must have to return
+   *			| at least one data result
+   * 'maximum'		| int specifying the maximum number of returned
+   *			| data values for this path, unlimited if unspecified
+   * 'id'		| ID of the path, matching the key of the result data
+   *			| in the output array e.g. 'value' for the 'value'-key
+   *			| in a text-field-info-array
    *
    * @param settings is an associative array that may contain the following 
    * entries:
-   * $key 			| $value
+   * $key 		| $value
    * ------------------------------------------------------------
    * 'limit'		| int setting the SPARQL query LIMIT
    * 'offset'		| int setting the SPARQL query OFFSET
    * 'order'		| string containing 'ASC' or 'DESC' (or 'RAND')
-   * 'qualifier'| SPARQL data qualifier e.g. 'STR'
-   * 'matches'	| array of strings, at least one of the data must match
-   * 'uris'			| array of strings representing owl:Individuals on which the
-   *						| query is triggered
+   * 'qualifier'	| SPARQL data qualifier e.g. 'STR'
+   * 'matches'		| array of strings, at least one of the data must match
+   * 'uris'		| array of strings representing owl:Individuals on which the
+   *			| query is triggered
    */
   public function pbQuery($starting_concept,array $paths,array $settings = array()) {
     
@@ -382,10 +388,14 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     $query .= " WHERE{";
     $ind = "?ind";
     $single_ind = FALSE;
-    if (isset($settings['uris'])) {
+    if (!empty($settings['uris'])) {
       if(count($settings['uris']) > 1) $query .= " VALUES ?ind {".implode(' ',$settings['uris'])."}";
       else {
         $ind = current($settings['uris']);
+        if (trim($ind) === '') {
+          ddebug_backtrace();
+          throw new InvalidArgumentException('empty URI given');
+        }
         $single_ind = TRUE;
       }
     }
@@ -425,7 +435,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
             $concept = array_shift($path_array);
 //          $query .= " ?$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
             $query .= " ?p".$i."c$count rdf:type ".$concept.". ";
-            if ($count == $disamb) {
+            if ($count == $disamb || empty($path_array)) {
               $query .= " BIND(?p".$i."c$count AS ?tar$i)";
             }
           }
@@ -470,10 +480,10 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     if (isset($settings['offset'])) {
       $query .= " OFFSET ".$settings['offset'];
     }
-    wisski_core_tick('start PB query');
+//    wisski_core_tick('start PB query');
 //    throw new Exception('STOP');
     list($ok,$result) = $this->querySPARQL($query);
-    wisski_core_tick('end PB query');
+//    wisski_core_tick('end PB query');
     if ($ok) {
       //generate output array, key order is:
       //[individual uri][target uri][data][0..?]
@@ -602,27 +612,54 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
    * Escapes a string according to http://www.w3.org/TR/rdf-sparql-query/#rSTRING_LITERAL.
    * @author Martin Scholz
    */
-  function wisski_store_escape_sparql_literal($literal, $escape_backslash = TRUE) {
+  function escape_sparql_literal($literal, $escape_backslash = TRUE) {
     $sic  = array("\\",   '"',   "'",   "\b",  "\f",  "\n",  "\r",  "\t");
     $corr = array($escape_backslash ? "\\\\" : "\\", '\\"', "\\'", "\\b", "\\f", "\\n", "\\r", "\\t");
-    #$literal = wisski_store_mb_str_replace($sic, $corr, $literal);
     $literal = str_replace($sic, $corr, $literal);
     return $literal;
   }
 
-  public function pbUpdate($individual_uri,$individual_name,$starting_concept,$path_array,$datatype_property,$disamb,$new_data,$delete_old) {
-    dpm(func_get_args(),__FUNCTION__);
-    if (is_array($new_data)) {
-      $inds = array();
-      foreach($new_data as $nd) {
-        $new_inds = $this->pbUpdate($individual_uri,$individual_name,$starting_concept,$path_array,$datatype_property,$disamb,$nd,$delete_old);
-        if ($new_inds !== FALSE)
-          $inds += $new_inds;
-        else return FALSE;
-      }
-      return $inds;
+  /**
+   * generates and executes a SPARQL query to ensure the existence of a path
+   * of the given path template structure ($path_array) going from $starting_individual_uri
+   * to $target_individual_uri. The $disamb parameter states where to cut the
+   * path_array, i.e. holds the $path_array index of the target_individuals class
+   * @return an array holding the disamb class and the rest of the path array
+   * to be used in another pbQuery or pbUpdate, or FALSE if the path between
+   * the uris does not exist
+   */
+  private function pbTwoEndsQuery($starting_individual_uri,$starting_concept,$path_array,$disamb,$target_individual_uri) {
+  
+    $query = "ASK { $starting_individual_uri a $starting_concept .";
+    $count = 0;
+    $pos = 0;
+    $switch = FALSE;
+    while ($pos + 1 < $disamb && !empty($path_array)) {
+      
+      $pos++;
     }
-    $new_data = $this->wisski_store_escape_sparql_literal($new_data);
+    if (empty($path_array)) return FALSE;
+    $query .= (($count > 0) ? " ?c$count " : " $starting_individual_uri ").array_shift($path_array)." $target_individual_uri .";
+    if (empty($path_array)) return FALSE;
+    $target_concept = array_shift($path_array);
+    $query .= " $target_individual_uri a $target_concept .";
+    $query .= "}";
+    list($ok,$result) = $this->querySPARQL($query);
+    $dump = array('query'=>$query);
+    if ($ok) {
+      var_dump($result);
+//      $dump += array('OK' => 'TRUE','result' => $result->getBoolean() ? 'TRUE' : 'FALSE');
+    } else $dump += array('OK' => 'FALSE');
+    dpm($dump,__METHOD__);
+    if ($ok) {
+      return array($target_concept,$path_array);
+    }
+  }
+
+  private function getGraphName() {
+    
+    $graph_name = &drupal_static(__METHOD__);    
+    if (!empty($graph_name)) return $graph_name;
     global $base_url;
     $graph_name = variable_get('wisski_graph_name','<'.$base_url.'/wisski_graph>');
     list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ GRAPH $graph_name {?s ?p ?o}} LIMIT 1");
@@ -632,15 +669,28 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         variable_set('wisski_graph_name',$graph_name);
       }
     }
+    return $graph_name;
+  }
+
+  /**
+   * this function generates a fully new path for the given template
+   * i.e. it generates new owl:Individuals for every concepts on the path
+   * and connects them via the given properties
+   * @return a list of all newly introduced individual uris grouped by class
+   * and the uri of the last individual on the path stated specially
+   */
+  private function pbGenerate($individual_uri,$starting_concept,$path_array,$target_uri=NULL) {
+    
+    dpm(func_get_args(),__METHOD__);
+    
+    $graph_name = $this->getGraphName();
     // check and if neccessary insert individual information
     list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ $individual_uri rdf:type/rdfs:subClassOf* $starting_concept. }");
     if ($ok && empty($result)) {
-      $insertion = "\"".preg_replace('/[\"\']/','',utf8_decode($individual_name))."\"";
       $query = "INSERT{"
         ."GRAPH $graph_name {"
           ." $individual_uri rdf:type $starting_concept ."
           ." $individual_uri rdf:type owl:Individual ."
-          ." $individual_uri rdf:note $insertion ."
         ."}"
       ."} WHERE {?s ?p ?o .}";
       list($ok,$result) = $this->updateSPARQL($query);
@@ -650,52 +700,137 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     $switch = FALSE;
     $individual = $individual_uri;
     $class = $starting_concept;
-    // we check for the existence of all individuals on the path
-    // and if it does not exist we introduce a new owl:Individual
+    // we introduce a new owl:Individual for every individual on the path
     while(!empty($path_array)) {
       if ($switch = !$switch) {
         //even steps are properties
         $property = array_shift($path_array);
-        list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { $individual $property ?other. }");
-        if(!$ok) {
-          trigger_error("Errors while inserting data",E_USER_ERROR);
-          return FALSE;
+        if (!empty($target_uri) && count($path_array) === 1) {
+          $new_individual = $target_uri;
         } else {
-          if (empty($result)) {
-            $new_individual = $this->createNewIndividual($property,'',TRUE,'show_errors');
-            list($ok_ok,$ok_result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $individual $property $new_individual .}} WHERE { ?s ?p ?o .}");
-            if(!$ok_ok) {
-              trigger_error("Errors while inserting data: ",E_USER_ERROR);
-              return FALSE;
-            } else $individual = $new_individual;
-          } else {
-            $individual = current($result)->other->dumpValue('text');
-          }
+          $new_individual = $this->createNewIndividual($property,'',TRUE,'show_errors');
         }
+        list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $individual $property $new_individual .}} WHERE { ?s ?p ?o .}");
+        if(!$ok) {
+          trigger_error("Errors while inserting data: ",E_USER_ERROR);
+          return FALSE;
+        } else $individual = $new_individual;
       } else {
         //odd steps are classes
         $class = array_shift($path_array);
-        if (!empty($disamb) && $disamb === $class) {
-          $other_new_individuals = $this->pbUpdate($individual,$individual,$disamb,$path_array,$datatype_property,'',$new_data,$delete_old);
-          if ($other_new_individuals !== FALSE)
-            return $new_individuals + $other_new_individuals;
-          else return FALSE;
-        }
-        list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { $individual rdf:type/rdfs:subClassOf* $class . }");
+        list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $individual rdf:type $class . $individual rdf:type owl:Individual .}} WHERE {?s ?p ?o .}");
         if(!$ok) {
-          trigger_error("Errors while inserting data",E_USER_ERROR);
+          trigger_error("Errors while inserting data: ",E_USER_ERROR);
           return FALSE;
-        } else {
-          if (empty($result)) {
-            list($ok_ok,$ok_result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $individual rdf:type $class . $individual rdf:type owl:Individual .}} WHERE {?s ?p ?o .}");
-            if(!$ok_ok) {
-              trigger_error("Errors while inserting data: ",E_USER_ERROR);
-              return FALSE;
-            } else $new_individuals[$class][] = $individual;
-          }
-        }
+        } else $new_individuals[$class][] = $individual;
       }
+    } //END while(!empty($path_array))
+    //returns set of newly introduced uris
+    return array($new_individuals,$individual);
+  }
+  
+  /**
+   * this updates the triple store according the given path template, disamb
+   * and data
+   * we assume the class and individual at the disamb position in the path
+   * array to be the last point to keep and cut the path behind that class
+   * negative disambs are allowed and are then taken from the end of the template
+   * i.e. $disamb = -1 means we take the last concept in the line as disamb
+   * $disamb = FALSE overrides everything i.e. the starting concept is the
+   * disambiguation point
+   */
+  public function pbUpdate($individual_uri,$individual_name,$starting_concept,$path_array,$datatype_property,$disamb,$new_data,$delete_old,$target_uri=NULL) {
+  
+    variable_set('wisski_throw_exceptions',TRUE);
+    dpm(func_get_args(),__METHOD__);
+    
+    if (is_array($new_data)) {
+      $inds = array();
+      foreach($new_data as $nd) {
+        $new_inds = $this->pbUpdate($individual_uri,$individual_name,$starting_concept,$path_array,$datatype_property,$disamb,$nd,$delete_old,$target_uri);
+        if ($new_inds !== FALSE)
+          $inds += $new_inds;
+        else return FALSE;
+      }
+      return $inds;
     }
+    
+    $graph_name = $this->getGraphName();
+    
+    // check and if neccessary insert individual information
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ $individual_uri rdf:type/rdfs:subClassOf* $starting_concept. }");
+    if (!$ok) {
+      trigger_error("Errors while inserting data: ",E_USER_ERROR);
+    }
+    elseif (empty($result)) {
+      $query = "INSERT{"
+        ."GRAPH $graph_name {"
+          ." $individual_uri rdf:type $starting_concept ."
+          ." $individual_uri rdf:type owl:Individual ."
+        ."}"
+      ."} WHERE {?s ?p ?o .}";
+      list($ok,$result) = $this->updateSPARQL($query);
+      if (!$ok) return FALSE;
+    }
+
+    if (!empty($disamb)) {
+      if ($disamb < 0) $disamb = count($path_array) + $disamb;
+      // we walk through the path template until we reach the disambiguation point
+      // or end up earlier in the path
+      $switch = FALSE;
+      $individuals = array($individual_uri);
+      $concept = $starting_concept;
+      $count = 0;
+      $pos = 0;
+      while(!empty($path_array)) {
+        $property = array_shift($path_array);
+        if (!empty($path_array)) {
+          $pos++;
+          //for the rollback
+          $old_concept = $concept;
+          $concept = array_shift($path_array);
+        } else {
+          trigger_error("Errors while inserting data: ",E_USER_ERROR);
+        }
+        $query = "SELECT DISTINCT ?target_uri WHERE {"
+          ."VALUES ?ind {".implode(' ',$individuals)."} "
+          ."?ind $property ?target_uri. "
+          ."?target_uri a $concept . "
+        ."}";
+        list($ok,$result) = $this->querySPARQL($query);
+        if ($ok) {
+          if (!empty($result)) {
+            $individuals = array();
+            foreach ($result as $obj) {
+              $individuals[] = $obj->target_uri->dumpValue('text');
+            }
+          } else {
+            //there has been no value for the path up to now,
+            //=> rollback
+            array_unshift($path_array,$concept);
+            array_unshift($path_array,$property);
+            $concept = $old_concept;
+            break;
+          }
+        } else {
+          trigger_error("Errors while inserting data: ",E_USER_ERROR);
+        }
+        if ($pos == $disamb) break;
+        $pos++;
+      }
+      dpm($individuals,'computed targets');
+      $starting_uri = $individuals[0];
+      
+      // we now have $concept to be the class at the disambiguation point
+      // and $target_uri the last valid uri in the path
+      // additionally $path_array only holds the rest of the input $path_array
+      // that must now be built new
+      
+      list($new_individuals,$individual) = $this->pbGenerate($starting_uri,$concept,$path_array,$target_uri);    
+    } else {//i.e. $disamb === NULL || $disamb === FALSE || $disamb === 0
+      list($new_individuals,$individual) = $this->pbGenerate($individual_uri,$starting_concept,$path_array,$target_uri);
+    }
+    
     if (isset($datatype_property)) {
       if ($delete_old) {
       list($ok,$result) = $this->updateSPARQL("DELETE WHERE {GRAPH $graph_name { $individual $datatype_property ?data.}}");
@@ -704,7 +839,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
           return FALSE;
         }
       }
-      $insertion = "\"".preg_replace('/[\"\']/','',utf8_decode($new_data))."\"";
+      $insertion = $this->escape_sparql_literal($new_data);
+      $insertion = "\"".utf8_decode($insertion)."\"";
       list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $individual $datatype_property $insertion .}} WHERE {?s ?p ?o .}");
       if (!$ok) {
         trigger_error("Errors while inserting data: ",E_USER_ERROR);
@@ -712,20 +848,13 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       }
     }
     //returns set of newly introduced uris
+    variable_del('wisski_throw_exceptions');
     return $new_individuals;
   }
-  
+ 
   public function insertIndividual($entity_uri,$bundle_uri,$comment = FALSE) {
     
-    global $base_url;
-    $graph_name = variable_get('wisski_graph_name','<'.$base_url.'/wisski_graph>');
-    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ GRAPH $graph_name {?s ?p ?o}} LIMIT 1");
-    if ($ok) {
-      if (empty($result)) {
-        $this->updateSPARQL("CREATE GRAPH $graph_name");
-        variable_set('wisski_graph_name',$graph_name);
-      }
-    }
+    $graph_name = $this->getGraphName();
     $insert_string = " $entity_uri a $bundle_uri .";
     $insert_string .= $comment ? " $entity_uri rdfs:comment $comment ." : '';
     list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $insert_string }} WHERE {?s ?p ?o.}");
@@ -760,7 +889,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   
   public function deleteAllTriples($uri) {
   
-    $graph_name = variable_get('wisski_graph_name');
+    $graph_name = $this->getGraphName();
     list($ok,$result) = $this->updateSPARQL("DELETE WHERE {GRAPH $graph_name {{ $uri ?p1 ?o1. } UNION {?s1 ?p2 $uri . } UNION {?s2 $uri ?o2}}");
     if (!$ok) {
       trigger_error("Errors while inserting data: ",E_USER_ERROR);
@@ -905,7 +1034,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     if (is_array($uris)) {
       $uris = implode(' ',$uris);
     }
-    $query = "SELECT ?s ?p ?o WHERE {
+    $query = "SELECT DISTINCT ?s ?p ?o WHERE {
       VALUES ?x { $uris }
       {?x ?p ?o. BIND(?x AS ?s)}
       UNION {?s ?x ?o. BIND(?x AS ?p)}

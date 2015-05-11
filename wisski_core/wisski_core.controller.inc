@@ -36,7 +36,7 @@ class WisskiCoreEntityController extends EntityAPIController {
 
   public function load($ids = array(), $conditions = array()) {
 //  dpm("Loading the entity " . serialize($ids));
-//  dpm(func_get_args(),__CLASS__.'->'.__FUNCTION__);  
+//  dpm(func_get_args(),__METHOD__);  
 /*    if (empty($ids)) {
       dpm('loading WisskiCoreEntities'.(empty($conditions) ? '' : 'with conditions'));
       dpm($conditions,'conditions');
@@ -195,17 +195,6 @@ class WisskiCoreEntityController extends EntityAPIController {
   public function save($entity) {
 
     // create a new entity if there was none up to now.
-    if(empty($entity->id)) {
-      try {
-        $id = db_insert('wisski_entity_data')
-          ->fields(array('uri' => $entity->uri,'type' => $entity->type))
-          ->execute();
-        $entity->id = $id;
-      } catch (PDOException $e) {
-        ddebug_backtrace();
-        return;
-      }
-    }
   
 //    field_attach_presave('wisski_individual', $entity);
 //    field_attach_update('wisski_individual', $entity);
@@ -214,7 +203,7 @@ class WisskiCoreEntityController extends EntityAPIController {
       if (!property_exists($entity,'uri')) {
         dpm("\"uri\" does not exist");
         list($entity_uri,$bundle_uri) = wisski_core_make_uri('',$entity->type,FALSE);
-        if (property_exists($entity,'id')) $entity_uri = $entity->id;
+        $entity->uri = $entity_uri;
       } else {
         $entity_uri = $entity->uri;
         list(,$bundle_uri) = wisski_core_make_uri('',$entity->type,FALSE);
@@ -225,14 +214,34 @@ class WisskiCoreEntityController extends EntityAPIController {
       if (!property_exists($entity,'uri')) {
         dpm("\"uri\" does not exist");
         list($entity_uri,$bundle_uri) = wisski_core_make_uri($entity_title,$entity->type,FALSE);
-        if (property_exists($entity,'id')) $entity_uri = $entity->id;
+        $entity->uri = $entity_uri;
       } else {
         $entity_uri = $entity->uri;
         list(,$bundle_uri) = wisski_core_make_uri($entity_title,$entity->type,FALSE);
       }
     }
     if (!wisski_salz_pb_insert_individual($entity_uri,$bundle_uri)) trigger_error("Could not save ".$entity->title,E_USER_WARNING);
-    field_attach_update('wisski_individual', $entity);
+    
+    if(empty($entity->id)) {
+      try {
+        $id = db_insert('wisski_entity_data')
+          ->fields(array('uri' => $entity->uri,'type' => $entity->type))
+          ->execute();
+        $entity->id = $id;
+      } catch (PDOException $e) {
+        ddebug_backtrace();
+        return;
+      }
+    } else {
+      db_update('wisski_entity_data')
+      ->fields(array('uri' => $entity->uri))
+      ->condition('id',$entity->id)
+      ->condition('type',$entity->type)
+      ->execute();
+    }
+
+    //field_attach_update('wisski_individual', $entity);
+    field_attach_insert('wisski_individual',$entity);
   }
 
 
@@ -432,4 +441,32 @@ class WisskiCoreBundleUiController extends EntityDefaultUIController {
     $items[$this->path]['description'] = 'Manage WissKI Core Bundles';
     return $items;
   }
+}
+
+class WisskiCoreFieldCollectionController extends EntityAPIController{
+  
+ public function create(array $values = array()) {
+   dpm(func_get_args(),__METHOD__);
+   $ind = parent::create($values);
+   wisski_core_ensure_field_collection_uri($ind);
+   dpm($ind,'ITEM');
+   return $ind;
+ }
+ 
+/* public function load($ids = array(),$conditions = array()) {
+   dpm(func_get_args(),__METHOD__);
+   return array();
+ }*/
+ 
+/* public function view($entities, $view_mode = 'full', $langcode = NULL, $page = NULL) {
+   dpm(func_get_args(),__METHOD__);
+   return array();
+ }*/
+ 
+/* public function buildQuery($ids, $conditions = array(), $revision_id = FALSE) {
+ 
+   dpm(func_get_args(),__METHOD__);
+   return NULL;
+ }*/
+ 
 }

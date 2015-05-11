@@ -29,7 +29,7 @@ function wisski_core_permission() {
     ),
     'administer wisski paths' => array(
       'title' => t('Administer paths and fields for WissKI entities'),
-      'restricted access' => TRUE,
+      'restrict access' => TRUE,
     ),
   );  
 }
@@ -244,14 +244,32 @@ function wisski_core_entity_info_alter(&$entity_info) {
       ),
     );
   }
+
   $fc_info = &$entity_info['field_collection_item'];
+
   $fc_info['entity keys']['uri'] = 'uri';
   $fc_info['entity keys']['group_id'] = 'group_id';
   $fc_info['schema_fields_sql']['base table'][] = 'uri';
   $fc_info['schema_fields_sql']['base table'][] = 'group_id';
-//  $fc_info['entity cache'] = FALSE;
+  //$fc_info['entity cache'] = FALSE;
   $fc_info['field cache'] = FALSE;
-  $fc_info['creation callback'] = 'wisski_core_field_collection_create';
+  //$fc_info['controller class'] = 'WisskiCoreFieldCollectionController';
+}
+
+/**
+ + implements hook_schema_alter
+ */
+function wisski_core_schema_alter(&$schema) {
+
+
+  dpm($schema,__FUNCTION__);
+  $fc_schema_fields = &$schema['field_collection_item']['fields'];
+  $fc_schema_fields['uri'] = array(
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => FALSE,
+    'description' => 'triple store URI for WissKI purposes',
+  );
 }
 
 /**
@@ -1406,6 +1424,13 @@ function wisski_core_form_alter(&$form, &$form_state, $form_id) {
 #  dpm(func_get_args(),__FUNCTION__);
 #  dpm(array_search_recursive($form,'fields'));
   if ($form_id === 'field_ui_field_overview_form') {
+    if ($form['#entity_type'] !== 'wisski_individual') {
+      if ($form['#entity_type'] === 'field_collection_item') {
+        $super = wisski_core_get_bundles_for_field($form['#bundle']);
+        if (empty($super)) return;
+      }
+      else return;
+    }
     $fields = &$form['fields'];
     $fields['#header'][6]['colspan'] = 4;
     foreach($fields as $key => $value) {
@@ -1454,15 +1479,23 @@ function array_search_recursive(array $haystack,$needle) {
 }
 
 function wisski_core_field_collection_create($values,$entity_type) {
-  
+  dpm(func_get_args(), __METHOD__);  
   //this one is extremely dirty
   //we hack the creation of the field_collection_item to add the uri
   if ($entity_type === 'field_collection_item') {
     $info = entity_get_info('field_collection_item');
     if (in_array('EntityAPIControllerInterface', class_implements($info['controller class']))) {
       $creature = entity_get_controller('field_collection_item')->create($values);
+      $field_name = $values['field_name'];
+      $top_bundles = wisski_core_get_bundles_for_field($field_name);
+      if (!empty($top_bundles)) {
+        if (strpos($field_name,'field_') === 0) {
+          $field_name = substr($field_name,6); 
+        }
+        $creature->uri = wisski_core_make_uri($field_name,$top_bundles['bundle'],TRUE);
+      }
+      dpm(func_get_args()+array('result'=>$creature),__FUNCTION__);
+      return $creature;
     }
-    dpm(func_get_args()+array('result'=>$creature,'host entity'=>$creature->hostEntity()),__FUNCTION__);
-    return $creature;
   }
 }

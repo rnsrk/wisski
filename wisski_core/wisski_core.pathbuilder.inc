@@ -1,7 +1,6 @@
 <?php
 
-function wisski_core_make_path_array(array $settings) {
-
+function wisski_core_make_path_array(array $settings,$resolve_path=FALSE) {
   if (isset($settings['field_info']['instance_id'])) {
     if (!isset($settings['field_info']['field_name']) || !isset($settings['connected_bundle'])) {
       //we should not access the field config instance table directly
@@ -34,7 +33,9 @@ function wisski_core_make_path_array(array $settings) {
   if (isset($settings['connected_bundle'])) {
     $select = $select->condition('connected_bundle',$settings['connected_bundle']);
   }
+  
   $select = $select->execute();  
+  
   $paths = array();
   while ($path = $select->fetchObject()) {
     $uuid = $path->uuid;
@@ -61,8 +62,11 @@ function wisski_core_make_path_array(array $settings) {
       }
     }
     if (!empty($path->group_id)) {
-      $group_prefix = current(current(wisski_core_make_path_array(array('path_id'=>$path->group_id))));
-      $full_path = array_merge($group_prefix,$full_path);
+      $group_prefix = current(current(wisski_core_make_path_array(array('path_id'=>$path->group_id),TRUE)));
+      if ($resolve_path) {
+        $full_path = array_merge($group_prefix['path_array'],$full_path);
+        $starting_concept = $group_prefix['starting_concept'];
+      }
     }
     $paths[$connected_field][$connected_field_property] = array(
       'starting_concept' => $starting_concept,
@@ -74,6 +78,7 @@ function wisski_core_make_path_array(array $settings) {
       'disamb' => isset($disamb) ? $disamb : NULL,
       'is_group' => $is_group,
       'group_id' => $group_id,
+      'group_prefix' => isset($group_prefix) ? $group_prefix : NULL,
       'uuid' => $uuid,
     );
   }
@@ -1190,12 +1195,12 @@ function wisski_core_data_mapping_form($form,$form_state,$entity_type_key,$bundl
             ->execute();
   $options = array();
   while($elem = $result->fetchObject()) {
-    $path_array = wisski_core_make_path_array(array('path_id'=>$elem->uuid));
+    $path_array = wisski_core_make_path_array(array('path_id'=>$elem->uuid),TRUE);
 
     $paths_for_field = $path_array[$field_name];
 
     $paths = $paths_for_field[$elem->connected_field_property];
-
+    dpm($paths,'path for field');
     $starting_concept = $paths['starting_concept'];
     $full_path = $paths['path_array'];
     $datatype_property = $paths['datatype_property'];
@@ -1210,7 +1215,7 @@ function wisski_core_data_mapping_form($form,$form_state,$entity_type_key,$bundl
     }
     if (isset($elem->short_name)) $options[$elem->uuid]['short_name'] = $elem->short_name;
     else $options[$elem->uuid]['short_name'] = '';
-    $options[$elem->uuid]['full_path'] = implode(' -> ',$full_path);
+    $options[$elem->uuid]['full_path'] = $starting_concept.' -> '.implode(' -> ',$full_path);
     $options[$elem->uuid]['datatype_property'] = $datatype_property;
   }
   foreach ($mapping_keys as $map) {
@@ -1302,8 +1307,10 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
       if (!empty($path->group_id)) {
         $group_id = $path->group_id;
         $form_state['storage']['group_id'] = $group_id;
-        $group_prefix = current(current(wisski_core_make_path_array(array('path_id'=>$group_id))));
+        $group_prefix = current(current(wisski_core_make_path_array(array('path_id'=>$group_id),TRUE)));
+        $starting_concept = $group_prefix['starting_concept'];
         $group_prefix = $group_prefix['path_array'];
+        array_unshift($group_prefix,$starting_concept);
         $form_state['storage']['group_prefix'] = $group_prefix;
         $starting_concept = end($group_prefix);
       }
@@ -1614,10 +1621,9 @@ function wisski_core_single_path_form_submit($form,&$form_state) {
   $storage = $form_state['storage'];
   $full_path = $storage['full_path'];
   $starting_concept = $storage['starting_concept'];
-  if (isset($storage['group_prefix'])) {
+/*  if (isset($storage['group_prefix'])) {
     $prefix = $storage['group_prefix'];
-    $starting_concept = array_shift($prefix);
-  }
+  }*/
   $path_info = array(
     'path_array' => serialize($full_path),
     'short_name' => isset($storage['short_name']) ? $storage['short_name'] : $storage['field_name'],
