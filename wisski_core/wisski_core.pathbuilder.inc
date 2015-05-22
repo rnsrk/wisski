@@ -466,7 +466,7 @@ function wisski_core_pb_all_paths($form,&$form_state) {
 
 function wisski_core_pb_all_validate($form,&$form_state) {
 
-  dpm(func_get_args());
+//  dpm(func_get_args());
   if ($form_state['values']['table'] == '') {
     form_set_error('table',"choose a path to edit");
   } else {
@@ -791,14 +791,18 @@ function array_flatten(array $array) {
   return $out;
 }
 
-function wisski_core_make_short_title($field_data,$short_title_pattern) {
+function wisski_core_make_short_title($input_field_data,$short_title_pattern) {
   
-  if (!is_array($field_data)) {
-    $field_data = (array) $field_data;  
-    foreach ($field_data as $key => $value) {
+  if (!is_array($input_field_data)) {
+    $field_data = array();
+    //$field_data = (array) $field_data;  
+    foreach ($input_field_data as $key => $value) {
       if (is_array($value)) $field_data[$key] = array_flatten($value);
     }
+  } else {
+    $field_data = $input_field_data; 
   }
+
   $title = '';
   $empty = TRUE;
   foreach ($short_title_pattern as $elem) {
@@ -1138,8 +1142,8 @@ function wisski_core_short_titles_form_exit($form, &$form_state) {
 function wisski_core_short_titles_form_apply($form,&$form_state) {
 
   $new_title_order = array();
-  dpm($form_state['values']['titles']);
-  dpm($form_state['storage']['title_order']);
+//  dpm($form_state['values']['titles']);
+//  dpm($form_state['storage']['title_order']);
   foreach($form_state['storage']['title_order'] as $values) {
     $new_values = $values;
     foreach($form_state['values']['titles'][$values['name']] as $key => $value) {
@@ -1153,7 +1157,7 @@ function wisski_core_short_titles_form_apply($form,&$form_state) {
 }
 
 function wisski_core_short_titles_form_cancel($form,&$form_state) {
-  dpm($form_state);
+//  dpm($form_state);
   variable_del('wisski_core_short_titles_order');
   variable_del('wisski_core_short_titles_example_entity');
   $bundle = $form_state['storage']['bundle'];
@@ -1200,7 +1204,7 @@ function wisski_core_data_mapping_form($form,$form_state,$entity_type_key,$bundl
     $paths_for_field = $path_array[$field_name];
 
     $paths = $paths_for_field[$elem->connected_field_property];
-    dpm($paths,'path for field');
+//    dpm($paths,'path for field');
     $starting_concept = $paths['starting_concept'];
     $full_path = $paths['path_array'];
     $datatype_property = $paths['datatype_property'];
@@ -1258,9 +1262,10 @@ function wisski_core_data_mapping_form_callback_settings($form,$form_state) {
   return $form['settings'];
 }
 
-function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map) {
+function wisski_core_single_path_form($form,&$form_state,$bundle,$field_name,$map) {
   
-  dpm(func_get_args(),__FUNCTION__);
+//  dpm(debug_backtrace());
+//  dpm(func_get_args(),__FUNCTION__);
   variable_set('wisski_throw_exceptions',TRUE);
   $set = FALSE;
   if (isset($form_state['storage'])) {
@@ -1282,7 +1287,7 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
     }
   }
   if (!$set) {
-  dpm('not set',__FUNCTION__.' STORAGE');
+//  dpm('not set',__FUNCTION__.' STORAGE');
     if (!isset($form_state['storage'])) $form_state['storage'] = array();
     $select = db_select('wisski_pb_pathdata','p')
           ->fields('p')
@@ -1319,7 +1324,7 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
       if ($used_bundles['bundle'] !== $bundle->type) {
         throw new InvalidArgumentException('this field cannot be used in the specified bundle');
       }
-      dpm($used_bundles,'used bundles');
+//      dpm($used_bundles,'used bundles');
       $no_group_found = TRUE;
       if (isset($used_bundles['super_fields'])) {
         $super_fields = $used_bundles['super_fields'];
@@ -1329,7 +1334,7 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
         //$super_fields[1]. $super_fields[1] is $super_fields[2]s parent ...
         foreach ($super_fields as $super_field) {
         
-          dpm($super_field,'super field');
+//          dpm($super_field,'super field');
           $result = db_select('wisski_pb_pathdata','p')
             ->fields('p')
             ->condition('connected_bundle',$bundle->type)
@@ -1365,7 +1370,7 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
         $group_prefix = $group_prefix_info['path_array'];
         array_unshift($group_prefix,$group_prefix_info['starting_concept']);
         $starting_concept = end($group_prefix);
-        dpm($group_prefix,'group prefix');
+//        dpm($group_prefix,'group prefix');
         $form_state['storage']['group_prefix'] = $group_prefix;
       }
     }
@@ -1385,7 +1390,7 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
 //  dpm($full_path);
   if (isset($form_state['triggering_element']) && $form_state['triggering_element']['#name'] === 'single_path_remove') {
     //remove
-    dpm($form_state,'REMOVE');
+//    dpm($form_state,'REMOVE');
     $sel = explode(':',$form_state['values']['table'],2);
     $sel = $sel[1];
     if($sel === 'bottom') {
@@ -1403,7 +1408,7 @@ function wisski_core_single_path_form($form,$form_state,$bundle,$field_name,$map
     //select
     if (isset($form_state['storage']['selected_row'])) {
       $sel = $form_state['storage']['selected_row'];
-      dpm(array('sel'=>$sel,'form_state'=>$form_state),'SELECT');
+//      dpm(array('sel'=>$sel,'form_state'=>$form_state),'SELECT');
       if($sel === 'bottom') {  
 //        $datatype_property = $form_state['input']['step:datatype_property'];
 //        $form_state['storage']['datatype_property'] = $datatype_property;

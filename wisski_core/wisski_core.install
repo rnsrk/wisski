@@ -1,6 +1,4 @@
 <?php
-
-
 // $Id$
 
 function wisski_core_install() {
@@ -401,6 +399,37 @@ function wisski_core_schema() {
     ),
 */
   );
+
+	$schema['wisski_uris'] = array(
+		'description' => 'Maps the entity ID to URIs in the specified stores',
+		'fields' => array(
+			'entity_id' => array(
+        'description' => 'The drupal ID of the entity',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'bundle_name' => array(
+        'description' => 'The bundle in which the entity resides.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'uri' => array(
+        'description' => 'URI of the corresponding entity in the store',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+      'store_id' => array(
+				'description' => 'ID of the store in which the URI is valid',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+			),
+		),
+	);
 
   $schema['wisski_special_field_cache'] = array(
     'description' => 'table that stores field data that cannot be stored in the triple store',

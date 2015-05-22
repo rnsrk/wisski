@@ -162,17 +162,27 @@ function wisski_core_choose_bundle() {
   }
   */
   
-  $items = array();
+  $used = array();
+  $unused = array();
   foreach (wisski_core_bundle_load_multiple() as $entity_type_key => $entity_type) {
-    $items[] = l(entity_label('wisski_core_bundle', $entity_type), 'wisski/create/' . $entity_type_key);
+    $label = entity_label('wisski_core_bundle', $entity_type);
+    if ($label == $entity_type->uri)
+      $unused[] = l($label, 'wisski/create/' . $entity_type_key);
+    else
+      $used[] = l($label.' ('.$entity_type->uri.')', 'wisski/create/' . $entity_type_key);
   }
-  return array(
-    'list' => array(
+  $out = array();
+  if (!empty($used)) $out['used_list'] = array(
       '#theme' => 'item_list',
-      '#items' => $items,
-      '#title' => t('Choose type of entity to add.'),
-    ),
-  );
+      '#items' => $used,
+      '#title' => t('Titled Entity Types'),
+    );
+  if (!empty($unused)) $out['other_list'] = array(
+      '#theme' => 'item_list',
+      '#items' => $unused,
+      '#title' => t('Other Entity Types'),
+    );
+  return $out ?:t('Sorry, there are no bundles available');
 }
 
 /**
@@ -194,7 +204,7 @@ function wisski_core_individual_add($type) {
   $entity = entity_create('wisski_individual', array('type' => $type));
 
 //  $output = entity_ui_get_form('wisski_individual', $entity);
-  $output = drupal_get_form('wisski_core_individual_form', $entity);
+  $output = drupal_get_form('wisski_core_individual_form', $entity,'add');
 
   return $output;
 }
@@ -211,7 +221,7 @@ function wisski_core_individual_add($type) {
  * @return array
  *   Entity edit form.
  */
-function wisski_core_individual_form($form, &$form_state, $entity) {
+function wisski_core_individual_form($form, &$form_state, $entity, $operation = 'edit') {
   
   //ensure that $entity is actually an entity
   if (is_array($entity)) {
@@ -306,7 +316,12 @@ function wisski_core_individual_form($form, &$form_state, $entity) {
     );
   }
 */
-
+  if ($operation === 'edit')  
+    drupal_set_title(t('Edit').' '.entity_label('wisski_individual', $entity));
+  if ($operation === 'add') {
+    $bundle_label = entity_label('wisski_core_bundle',entity_load_single('wisski_core_bundle',$entity->type));
+    drupal_set_title(t('Add new').' '.$bundle_label);
+  }
   return $form;
 }
 
@@ -578,3 +593,53 @@ function wisski_core_individual_display_submit($form,&$form_state) {
   variable_set('wisski_max_entities_per_page',(int)$form_state['values']['max_entites_per_page']);
   drupal_flush_all_caches();
 }
+
+
+function wisski_core_admin_lod_and_uri ($form, &$form_state) {
+  
+  global $base_url;
+
+  $form['uri'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('URI generation'),
+  );
+  $templates = variable_get('wisski_core_lod_uri_templates', array('' => $base_url . '/inst/%{bundle}/%{hash}'));
+  $form['uri']['template'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Template'),
+    '#field_prefix' => check_plain($base_url . '/'),
+    '#default_value' => substr($templates[''], strlen($base_url) + 1),
+    '#description' => t('<p>The URI will be registered so that a LOD-conforming HTTP redirect can be performed. ' . 
+                        'The user must make sure that the URI path does not interfere with any Drupal-related paths.</p>' . 
+                        '<p>You may use placeholders of the form "%pl1" or "%pl2". The following placeholders may be used:<dl>!l</dl></p>',
+                        array(
+                          '%pl1' => "%{placeholder}",
+                          '%pl2' => "%{placeholder}{append if empty}{append if not empty}",
+                          '!l' => join('', array(
+      '<dt>hash</dt><dd>A randomly generated md5 hash</dd>',
+      '<dt>number</dt><dd>A number, starting from 1, that will be incremented until the URI does not already exist</dd>',
+      '<dt>bundle</dt><dd>The name of the entity bundle/class with non-alphanumeric chars replaced and collapsed to "_"</dd>',
+      '<dt>title</dt><dd>The title of the entity with non-alphanumeric chars replaced and collapsed to "_"</dd>',
+    )))),
+  );
+  
+  // Add some buttons.
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save configuration'),
+    '#weight' => 40,
+  );
+  return $form;
+  
+}
+
+
+function wisski_core_admin_lod_and_uri_submit ($form, &$form_state) {
+  
+  global $base_url;
+
+  variable_set('wisski_core_lod_uri_templates', array('' => $base_url . '/' . $form_state['values']['template'])); 
+
+}
+

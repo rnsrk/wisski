@@ -147,7 +147,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    */
   public function getReferencableEntities($match = NULL, $match_operator = 'CONTAINS', $limit = 0) {
 
-    dpm(func_get_args(),__FUNCTION__);
+//    dpm(func_get_args(),__FUNCTION__);
 
     // get the entity type for this query
     $entity_type = $this->field['settings']['target_type'];
@@ -306,7 +306,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
       }
     }
 */
-    dpm(func_get_args()+array('result'=>$options),__FUNCTION__);
+//    dpm(func_get_args()+array('result'=>$options),__FUNCTION__);
 //    drupal_set_message(__FUNCTION__.' should have DPMed here');
     return $options;
   }
@@ -316,14 +316,14 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    * Implements EntityReferenceHandler::countReferencableEntities().
    */
   public function countReferencableEntities($match = NULL, $match_operator = 'CONTAINS') {
-    dpm(func_get_args(),__FUNCTION__);
+//    dpm(func_get_args(),__FUNCTION__);
   }
 
   /**
    * Implements EntityReferenceHandler::validateReferencableEntities().
    */
   public function validateReferencableEntities(array $ids) {
-    dpm(func_get_args(),__FUNCTION__);
+//    dpm(func_get_args(),__FUNCTION__);
     $real_ids = db_select('wisski_entity_data','e')
                 ->fields('e',array('id'))
                 ->condition('id',$ids,'IN')
@@ -336,7 +336,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    * Implements EntityReferenceHandler::validateAutocompleteInput().
    */
   public function validateAutocompleteInput($input, &$element, &$form_state, $form) {
-      dpm(func_get_args(),__FUNCTION__);
+//      dpm(func_get_args(),__FUNCTION__);
       $entities = array();
       $sorted_entities = $this->getReferencableEntities($input, '=', 6);
       foreach($sorted_entities as $bundle_type => $bundle_entities) {
@@ -374,7 +374,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    * Build an EntityFieldQuery to get referencable entities.
    */
   protected function buildEntityFieldQuery($match = NULL, $match_operator = 'CONTAINS') {
-    dpm(func_get_args(),__FUNCTION__);
+//    dpm(func_get_args(),__FUNCTION__);
     
   }
 
@@ -382,7 +382,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    * Implements EntityReferenceHandler::entityFieldQueryAlter().
    */
   public function entityFieldQueryAlter(SelectQueryInterface $query) {
-    dpm(func_get_args(),__FUNCTION__);
+//    dpm(func_get_args(),__FUNCTION__);
   }
 
   /**
@@ -392,7 +392,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    * access control mechanisms to alter it again.
    */
   protected function reAlterQuery(SelectQueryInterface $query, $tag, $base_table) {
-    dpm(func_get_args(),__FUNCTION__);
+//    dpm(func_get_args(),__FUNCTION__);
   }
 
   /**
@@ -417,7 +417,7 @@ class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityR
    *   The alias of the base-table.
    */
   public function ensureBaseTable(SelectQueryInterface $query) {
-    dpm(func_get_args(),__FUNCTION__);
+//    dpm(func_get_args(),__FUNCTION__);
     $tables = $query->getTables();
 
     // Check the current base table.

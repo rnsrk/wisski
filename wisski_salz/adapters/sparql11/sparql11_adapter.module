@@ -70,6 +70,8 @@ function sparql11_adapter_menu() {
 */
 function sparql11_adapter_entity_info_alter(&$entity_info) {
   
+//dpm( 'lala');
+#dpm(debug_backtrace(), 'lala');
 /*
   $results = db_select('wisski_salz_sparql11_bundles','bundles')
               ->fields('bundles')
@@ -370,6 +372,22 @@ function sparql11_adapter_wisski_add_form($form, &$form_state) {
 
 function sparql11_adapter_wisski_edit_form($form, &$form_state) {
   return sparql11_adapter_wisski_settings_page(arg(6),FALSE);
+}
+
+/**
+ * implements hook_wisski_salz_map_namespaces
+ */
+function sparql11_adapter_wisski_map_namespaces($namespace) {
+//dpm(func_get_args(),__METHOD__);  
+  $or = db_or()->condition('short_name',$namespace)->condition('long_name',$namespace);
+  $result = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
+    ->fields('ns')
+    ->condition($or)
+    ->execute();
+  if ($result->rowCount() > 0) {
+    $answer = $result->fetchObject();
+    return array('short'=>$answer->short_name,'long'=>$answer->long_name);
+  }
 }
 
 

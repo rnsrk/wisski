@@ -36,7 +36,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   */
   protected function request($type, $query) {
 
-    $log = fopen(dirname(__FILE__).'/log.txt','a');
+    $log = fopen(dirname(__FILE__).'/wisski_log.txt','a');
     fwrite($log,time()." - ".$type."\n".$query."\n\n");
     // Check for undefined prefixes
     $prefixes = '';
@@ -46,7 +46,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         $prefixes .=  "PREFIX $prefix: <$uri>\n";
       }
     }
-
+    
     $client = EasyRdf_Http::getDefaultHttpClient();
     $client->resetParameters();
 
@@ -91,7 +91,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
                 $client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
             }
         }
-#        dpm((array)$client);
+//        dpm((array)$client,'client');
 //        watchdog('wisski_SPARQL_request_uri',$client->getUri());
         $response = $client->request();
         if ($response->getStatus() == 204) {
@@ -181,7 +181,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       foreach($this->getNamespaces() as $key => $value) {
         $this->putNamespace($key, $value);
       }
-    } else { // @TODO: this is not good
+    } /*else { // @TODO: this is not good
       $this->putNamespace('nso',  'http://erlangen-crm.org/120111/');
       $this->putNamespace('ns1',  'http://erlangen-crm.org/140220/');
       $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');  
@@ -194,7 +194,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
       $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
       $this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
-    }
+    }*/
     
   }
 
@@ -235,7 +235,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   * @author domerz
   */
   private function requestSPARQL($type,$query = NULL) {
-    
+
     $ok = FALSE;
     $results = array();
     try {
@@ -245,11 +245,16 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 //        wisski_core_tick('SPARQLAdapter: end query '.$requestcount);
         if (get_class($results) == 'EasyRdf_Sparql_Result' && $results->numRows() > 0) {
           //this is as expected
-        } else return array(TRUE,array());
+          return array(TRUE, $results);
+        } elseif (get_class($results) == 'EasyRdf_Graph') {
+          return array(TRUE, $results);
+        } else {
+          return array(TRUE,array());
+        }
         $ok = TRUE;
       } else trigger_error("EasyRdf is not installed",E_USER_ERROR);
     } catch (Exception $e) {
-      watchdog('wisski_SPARQL_'.$type.'_fail',"Request: ".$query."\nError Message: ".get_class($e)."\n".$e->getMessage());
+      watchdog('wisski_SPARQL_'.$type.'_fail',"Request: ".htmlentities($query)."\nError Message: ".get_class($e)."\n".$e->getMessage());
       if (variable_get('wisski_throw_exceptions',FALSE)) {
         $trace = debug_backtrace();
         $i = 0;
@@ -341,7 +346,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   }
 */
   /**
-   * @param starting_concept string representing an owl:Class, common start for all given paths
+   * @param starting_concept string representing an concept, common start for all given paths
    *
    * @param paths is an array of associative arrays that may contain
    * the following entries:
@@ -435,7 +440,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
             $concept = array_shift($path_array);
 //          $query .= " ?$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
             $query .= " ?p".$i."c$count rdf:type ".$concept.". ";
-            if ($count == $disamb || empty($path_array)) {
+            if ($count == $disamb) {
               $query .= " BIND(?p".$i."c$count AS ?tar$i)";
             }
           }
@@ -456,13 +461,15 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }
     if (isset($settings['matches'])) {
       foreach ($settings['matches'] as $match) {
-        $query .= " FILTER(";
-        $data = next($datas);
-        if (!empty($data)) $query .= "CONTAINS($data,\"$match\")";
-        while ($data = next($datas)) {
-          $query .= " || CONTAINS($data,\"$match\")";
+        if (!empty($datas)) {
+          $contains = array();
+          foreach ($datas as $data) {
+            $contains[] = "CONTAINS($data,\"$match\")";
+          }
+          $filter = " FILTER(".implode(' || ',$contains).")";
+//          dpm($filter,'FILTER');
+          $query .= $filter;
         }
-        $query .= ")";
       }
     }
     $query .= " }"; // close WHERE
@@ -681,7 +688,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
    */
   private function pbGenerate($individual_uri,$starting_concept,$path_array,$target_uri=NULL) {
     
-    dpm(func_get_args(),__METHOD__);
+//    dpm(func_get_args(),__METHOD__);
     
     $graph_name = $this->getGraphName();
     // check and if neccessary insert individual information
@@ -708,7 +715,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         if (!empty($target_uri) && count($path_array) === 1) {
           $new_individual = $target_uri;
         } else {
-          $new_individual = $this->createNewIndividual($property,'',TRUE,'show_errors');
+          $new_individual = $this->createNewIndividual(strstr($property,':'));
         }
         list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $individual $property $new_individual .}} WHERE { ?s ?p ?o .}");
         if(!$ok) {
@@ -742,7 +749,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   public function pbUpdate($individual_uri,$individual_name,$starting_concept,$path_array,$datatype_property,$disamb,$new_data,$delete_old,$target_uri=NULL) {
   
     variable_set('wisski_throw_exceptions',TRUE);
-    dpm(func_get_args(),__METHOD__);
+//    dpm(func_get_args(),__METHOD__);
     
     if (is_array($new_data)) {
       $inds = array();
@@ -818,7 +825,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         if ($pos == $disamb) break;
         $pos++;
       }
-      dpm($individuals,'computed targets');
+//      dpm($individuals,'computed targets');
       $starting_uri = $individuals[0];
       
       // we now have $concept to be the class at the disambiguation point
@@ -856,6 +863,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     
     $graph_name = $this->getGraphName();
     $insert_string = " $entity_uri a $bundle_uri .";
+    $insert_string .= " $entity_uri a owl:Individual .";
     $insert_string .= $comment ? " $entity_uri rdfs:comment $comment ." : '';
     list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH $graph_name { $insert_string }} WHERE {?s ?p ?o.}");
     return $ok;
@@ -866,27 +874,31 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     return $ok && !empty($result);
   }
 
-  public function createNewIndividual($property,$name_part = '',$checked = FALSE) {
+  public function createNewIndividual($name_part = '', $placeholders = array()) {
+
+    global $base_url;    
+    $prefix = variable_get('wisski_core_lod_prefix', $base_url);
+    $templates = variable_get('wisski_core_lod_uri_templates', array('' => $base_url . '/inst/%{bundle}/%{hash}'));
+    $template = isset($templates[$name_part]) ? $templates[$name_part] : $templates[''];
+    $name_part = trim(substr(preg_replace('/[^a-zA-Z0-9_]+/u','_',$name_part),0,32),'_');
     
-    //just to have some info we take the namespace prefix form the property
-    $prefix = strstr($property,':',TRUE);
-    
-    //aim at uniqueness
-    $suffix = md5(time().$property.rand());
-    
-    
+
     //ensure uniqueness
-    $name = substr($prefix.":".preg_replace('/[^a-zA-Z0-9_]/u','_',$name_part).$suffix,0,32);
-    if (count(func_get_args()) === 4) {
-      dpm(func_get_args()+array('result'=>$name),'FAIL: '.__FUNCTION__);
-//      throw new Exception('Could not create new URI');
-    }
-    if ($checked) {
-      if ($this->uriExists($name)) return $this->createNewIndividual($property,$name_part,TRUE);
-    }
-    return $name;
+    $placeholders['number'] = 0;
+    do {
+      $placeholders['hash'] = md5(time() . rand());
+      $placeholders['number']++;
+      $ind_uri = $template;
+      $ind_uri = '<'.wisski_core_fill_template_string($template, $placeholders).'>';
+//      $ind_uri = '<'.$prefix . '/inst/' . $name_part . '_' . $hash.'>';
+    } while ($this->uriExists($ind_uri));
+    watchdog('wisski sushi mako uri', 'input: '.htmlentities(implode(', ',func_get_args())).'<br>output: '.htmlentities($ind_uri));
+
+//    wisski_core_lod_register_redirects($ind_uri);
+
+    return $ind_uri;
   }
-  
+
   public function deleteAllTriples($uri) {
   
     $graph_name = $this->getGraphName();
@@ -930,7 +942,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         $output[$class] = $class;
       }
       natsort($output);
-      dpm($output,$query);
+//      dpm($output,$query);
       return $output;   
     }
     return array();
@@ -978,7 +990,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         natsort($props);
         $real_output[$key] = $props;
       }
-      dpm($real_output,$query);
+//      dpm($real_output,$query);
       return $real_output;
     }
     return array();
@@ -1000,7 +1012,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         $output[$prop] = $prop;
       }
       natsort($output);
-      dpm($output,'queried datatype props for '.$class);
+//      dpm($output,'queried datatype props for '.$class);
       return $output;
     }
     return array();
@@ -1034,7 +1046,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     if (is_array($uris)) {
       $uris = implode(' ',$uris);
     }
-    $query = "SELECT DISTINCT ?s ?p ?o WHERE {
+    $query = "CONSTRUCT { ?s ?p ?o . } WHERE {
       VALUES ?x { $uris }
       {?x ?p ?o. BIND(?x AS ?s)}
       UNION {?s ?x ?o. BIND(?x AS ?p)}
@@ -1130,7 +1142,13 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         
     list($ok,$result) = $this->querySPARQL(
       "SELECT ?class (COUNT(?ind) as ?count)"
-      ." WHERE {SELECT DISTINCT ?class ?ind WHERE {?class a owl:Class. ?ind a ?class.}}"  
+      ." WHERE {"
+        ."SELECT DISTINCT ?class ?ind "
+        ."WHERE {"
+          ."?class rdfs:subClassOf ?topclass."
+          ."?ind a ?class."
+        ."}"
+      ."}"  
       ." GROUP BY ?class"
     ); 
     if ($ok) {
@@ -1159,7 +1177,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         $uri = $obj->ind->dumpValue('text');
         $out[$obj->class->dumpValue('text')][$uri] = $uri;
       }
-      dpm(func_get_args()+array('query'=>$query,'result'=>$out),__FUNCTION__);
+//      dpm(func_get_args()+array('query'=>$query,'result'=>$out),__FUNCTION__);
       return $out;
     }
     return FALSE;
@@ -1219,7 +1237,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
   }
   
   public function createEntities() {
-    
+//dpm(func_get_args(),__METHOD__);    
     $now = time();
     $result = array();
     list($ok,$result) 
@@ -1227,7 +1245,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         "SELECT DISTINCT ?ind ?class "
         ."WHERE "
         ."{ "
-          ."?class a owl:Class. "
+          ."?class rdfs:subClassOf ?topclass. "
           ."?ind a ?class. "
           ."FILTER NOT EXISTS { "
             ."?n (rdfs:subClassOf)+ ?class. "
@@ -1248,13 +1266,13 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       }
       foreach ($individuals as $ind => $classes) {
         $same_inds = array();
-        foreach ($classes as $class) {
+        /*foreach ($classes as $class) {
           $class_label = $class;
           $ind_pref = substr(strstr($class_label,':'),1,4);
           $ind_label = $ind;
           $ind_name = $this->makeDrupalName($ind_pref.$ind_label,'ind_');
           $same_inds[] = $ind_name;
-        }
+        }*/
         foreach ($classes as $class) {
           $class_label = $class;
           $class_name = $this->makeDrupalName($class_label,'');
@@ -1265,9 +1283,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
             'type' => $class_name,
             'name' => $ind_name,  
             'title' => $ind_label,
-            'uri' => $ind_label,
+            'uri' => $this->createNewIndividual(),
             'timestamp' => 0, //ensures update on first view
-            'same_individuals' => $same_inds,
           );
           $entity = entity_create('wisski_individual',$info);
           entity_save('wisski_individual',$entity);
@@ -1291,7 +1308,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         "SELECT DISTINCT ?property ?target "
         ."WHERE "
         ."{ "
-          ."?class a owl:Class. "
+          ."?class rdfs:subClassOf ?topclass. "
           ."$ind_uri a ?class. "
           ."?property a owl:ObjectProperty. "
           ."$ind_uri ?property ?target. "
@@ -1309,7 +1326,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         "SELECT DISTINCT ?property ?data "
         ."WHERE "
         ."{ "
-          ."?class a owl:Class. "
+          ."?class rdfs:subClassOf ?topclass. "
           ."$ind_uri a ?class. "
           ."?property a owl:DatatypeProperty. "
           ."$ind_uri ?property ?data. "
@@ -1521,6 +1538,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
   public function loadClasses() {
    
+    $this->addOntologies();
     $now = time();
     list($ok,$result) 
       = $this->querySPARQL(
@@ -1572,6 +1590,9 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       foreach($errors as $err) $out .= $err[0] ."<br>";
       trigger_error('There were exceptions during the setup: '.$out,E_USER_ERROR);
 
+    } else {
+      $count = count($classes);
+      trigger_error("Loaded $count classes",E_USER_NOTICE);
     }
   }
 
@@ -1708,6 +1729,22 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }
 */
 
+    if (empty($iri)) {
+      //load all ontologies
+      $query = "SELECT ?ont WHERE {?ont a owl:Ontology}";
+      list($ok,$result) = $this->querySPARQL($query);
+      if ($ok) {
+        foreach ($result as $obj) {
+          $this->addOntologies(strval($obj->ont));
+        }
+      } else {
+        foreach ($result as $err) {
+          drupal_set_message(t('Error getting imports of ontology %iri: @e', array('%ont' => $o, '@e' => $err)), 'error');
+        }
+      }
+      return;
+    }
+
     // check if the Ontology is already there
     list($ok,$result) = $this->querySPARQL("ASK {<$iri> a owl:Ontology}");
 
@@ -1721,7 +1758,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
     // if we get here we may load the ontology
     $query = "LOAD <$iri> INTO GRAPH <$iri>";
-   list($ok, $result) = $this->updateSPARQL($query);
+    list($ok, $result) = $this->updateSPARQL($query);
 
     // everything worked?  
     if (!$ok) {

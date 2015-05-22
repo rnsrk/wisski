@@ -76,7 +76,69 @@ function wisski_salz_menu() {
 return $items;
 }
 
+function wisski_salz_map_namespaces($namespace) {
 
+  $maps = array();
+  $hook = 'wisski_map_namespaces';
+  foreach (module_implements($hook) as $module) {
+    $map = module_invoke($module,$hook,$namespace);
+    if (!empty($map)) $maps[$module] = $map;
+  }
+//  dpm(array('namespace'=>$namespace,'maps'=>$maps));
+  return $maps;
+}
+
+function wisski_salz_ensure_long_namespace($uri) {
+
+//dpm(func_get_args(),__METHOD__);
+  $matches = array();
+  if (preg_match('/^(\w+?):([\w\-]+)$/u',$uri,$matches)) {
+    $ns = $matches[1];
+    $map = wisski_salz_map_namespaces($ns);
+    if (!empty($map)) {
+      $map = current($map);
+      return '<'.$map['long'].$matches[2].'>';
+    } else {
+      trigger_error("Unknown namespace '$ns'",E_USER_ERROR);
+      return $uri;
+    }
+  } else {
+    //possibly we already got a long namespace
+    $matches = array();
+    if (preg_match('/^<?(.+[\/\#])([\w\-]+)>?$/u',$uri,$matches)) {
+      return '<'.$matches[1].$matches[2].'>';
+    } else {
+      trigger_error('Invalid URI '.$uri,E_USER_ERROR);
+      return FALSE;
+    }
+  }
+}
+
+function wisski_salz_ensure_short_namespace($uri) {
+  
+  $matches = array();
+  if (preg_match('/^<?(.+[\/\#])([\w\-]+)>?$/u',$uri,$matches)) {
+//dpm(func_get_args()+array('matches'=>$matches),__METHOD__);
+    $ns = $matches[1];
+    $map = wisski_salz_map_namespaces($ns);
+    if (!empty($map)) {
+//dpm(func_get_args()+array('matches'=>$matches,'map'=>$map),__METHOD__);
+      $map = current($map);
+      return $map['short'].':'.$matches[2];
+    } else {
+      trigger_error("Unknown namespace '$ns'",E_USER_ERROR);
+      return '<'.$ns.$matches[2].'>';
+    }
+  } else {
+    //possibly we already got a short namespace
+    if (preg_match('/^(\w+?):([\w\-]+)$/u',$uri)) {
+      return $uri;
+    } else {
+      trigger_error('Invalid URI '.$uri,E_USER_ERROR);
+      return FALSE;
+    }
+  }
+}
 
 function wisski_salz_view_installed_store_instances($form, &$form_state) {
     wisski_salz_set_store_types();	
@@ -274,13 +336,16 @@ function wisski_salz_all_triples($uri,$dump = TRUE) {
 
   $store = wisski_salz_invoke_local_store();
   if ($store->getType() == "SPARQL 1.1") {
+    // $result will be FALSE on failure
+    // otherwise it will be an easyrdf graph object that contains the triples
     $result = $store->getAllTriplesForURI($uri);
     if ($dump) {
       if ($result === FALSE) drupal_set_message('ERROR');
       elseif (empty($result)) drupal_set_message('no triples found');
       else drupal_set_message($result->dump());
+    } else {
+      return $result;
     }
-    return $result;
   }
   return FALSE;
 }
@@ -350,11 +415,11 @@ function wisski_salz_pb_update($individual_uri,$individual_name,$starting_concep
   return array();
 }
 
-function wisski_salz_pb_make_uri($class,$name_part = '',$checked = TRUE) {
+function wisski_salz_pb_make_uri($name_part = '') {
 
   //we take the class uri to retrieve the correct namespace prefix
   $store = wisski_salz_invoke_local_store();
-  if ($store->getType() == "SPARQL 1.1") return $store->createNewIndividual($class,$name_part,$checked);
+  if ($store->getType() == "SPARQL 1.1") return wisski_salz_ensure_long_namespace($store->createNewIndividual($name_part));
   return '';
 }
 

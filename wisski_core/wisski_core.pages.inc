@@ -15,11 +15,12 @@ function wisski_core_list_bundles() {
   foreach (wisski_core_bundle_load_multiple() as $entity_type_key => $entity_type) {
     $tag = isset($counts[$entity_type->uri]) ? $counts[$entity_type->uri] : FALSE;
     if ($tag) {
-      $items[$entity_type_key] = l(entity_label('wisski_core_bundle', $entity_type).' ('.$tag.')', 'wisski/navigate/' . $entity_type_key);
+      $label = entity_label('wisski_core_bundle', $entity_type);
+      $items[$entity_type_key] = l($label . ' ('.$tag.')', 'wisski/navigate/' . $entity_type_key);
     }
   }
   wisski_core_tick('names');
-  dpm(wisski_core_tick(NULL),__FUNCTION__.' time measures');
+//  dpm(wisski_core_tick(NULL),__FUNCTION__.' time measures');
   return array(
     'list' => array(
       '#theme' => 'item_list',
@@ -29,65 +30,7 @@ function wisski_core_list_bundles() {
   );
 }
 
-
-/**
- * Show list of existing entities.
- */
-/*
-function wisski_core_list($type) {
-  $now = time();
-  $output = '<br/>';
-  $output .= theme_item_list(
-    array(
-      'items' => _wisski_core_get_items($type),
-      'title' => t('List of existing entities.'),
-      'type' => 'ul',
-      'attributes' => array(),
-    )
-  );
-  $limit = variable_get('wisski_max_entities_per_page',20);
-  dpm($limit);
-  $num = _wisski_core_get_items($type,TRUE);
-  dpm($num);
-  $options = array('default' => '- choose -');
-  $i = 0;
-  while ($i * $limit < $num - $limit) {
-    $options['wisski/navigate/'.$type.'/'.($i)] = ($i*$limit + 1).' - '.(($i+1)*$limit);
-    $i++;
-  }
-  $options['wisski/navigate/'.$type.'/'.($i)] = ($i*$limit + 1). ' - '.$num;
-  $output .= theme_select(
-    array(
-      'element' => array(
-        '#name' => 'choice',
-        '#type' => 'select',
-        '#options' => $options,
-        '#title' => t('View entities'),
-        '#default_value' => 'default',
-      ),
-    )
-  );
-  $output .= theme_button(
-    array(
-      'element' => array(
-        '#button_type' => 'submit',
-        '#submit' => 'wisski_core_list_submit',
-        '#value' => t('Go'),
-      ),
-    )
-  );
-  $time = time() - $now;
-  dpm("Loading took $time seconds");
-  return $output;
-}
-
-function wisski_core_list_submit($form,&$form_state) {
-  dpm($form_state['values']);
-  $form_state['redirect'] = $form_state['values']['choice'];
-}
-
-*/
-function wisski_core_list($type) {
+function wisski_core_list_individuals($type) {
 
   module_load_include('inc','wisski_core','wisski_core.controller');
   $links = array();
@@ -99,16 +42,17 @@ function wisski_core_list($type) {
   wisski_core_tick('start');
   //$chunk = _wisski_core_get_chunk($type,$page_count);
   $chunk = _wisski_core_get_sorted_chunk($type,$limit,$offset);
+
   wisski_core_tick('sorting');
   $short_titles = _wisski_core_check_titles($chunk,$type);
   wisski_core_tick('titles');
   if ($short_titles !== 'fail') {
     foreach ($short_titles as $uri => $title) {
-      $links[] = l($title,'wisski_core/'.$type.'/'.$uri);
+      $links[] = l($title,'wisski/get/'.$type,array('query'=>array('uri'=>wisski_salz_ensure_long_namespace($uri))));
     }
   } else {
     foreach ($chunk as $uri) {
-      $links[] = l($uri,'wisski_core/'.$type.'/'.$uri);
+      $links[] = l($uri,'wisski/get/'.$type,array('query'=>array('uri'=>wisski_salz_ensure_long_namespace($uri))));
     }
   }
   wisski_core_tick('links');
@@ -143,32 +87,6 @@ function wisski_core_list($type) {
   return $output;
 }
 
-function _wisski_core_get_chunk($type,&$page_count) {
-
-  $limit = variable_get('wisski_max_entities_per_page',20);
-  if ($cache = cache_get('wisski_entity_list_'.$type.'_count')) {
-    $count = $cache->data;
-    $page_count = floor($count/$limit);
-    $offset = pager_default_initialize($count, $limit);
-  } else {
-    dpm(__FILE__.' ('.__LINE__.'): make new');
-    $bundle = entity_load_single('wisski_core_bundle',$type);
-    $inds = wisski_salz_pb_get_bundle_info($bundle->uri);
-//    $inds = _wisski_core_sort_titles_stupid($type,$inds);
-    $count = count($inds);
-    $page_count = floor($count/$limit);
-    cache_set('wisski_entity_list_'.$type.'_count',$count);
-    $offset = pager_default_initialize($count, $limit);
-    $chunks = array_chunk($inds,$limit);
-    foreach ($chunks as $pos => $chunk) {
-      cache_set('wisski_entity_list_'.$type.'_'.$pos,$chunk);
-    }
-  }
-  if (isset($chunks)) return $chunks[$offset];
-  else {
-    return cache_get('wisski_entity_list_'.$type.'_'.$offset)->data;
-  }
-}
 
 function _wisski_core_get_sorted_chunk($type,$limit,$offset) {
 
@@ -241,14 +159,16 @@ function _wisski_core_check_titles($uris,$type) {
     if (!empty($pattern)) {
       $paths = array();
       $field_info = array_fill_keys($uris,array());
+//dpm($pattern,__METHOD__.' Pattern');
       foreach ($pattern as $elem) {
         $path_array = wisski_core_make_path_array(array('field_info' => array('field_name' => $elem['name'])));
-        foreach ($path_array as &$field_array) {
-          foreach($field_array as &$mapping_path) {
+        foreach ($path_array as $field_array) {
+          foreach($field_array as $mapping_path) {
             $mapping_path += array('id' => $elem['id'], 'required' => $elem['obligatory'], 'maximum' => $elem['number']);
+            $paths[$elem['name']] = $mapping_path;
             if (!isset($starting_concept)) $starting_concept = $mapping_path['starting_concept'];
           }
-          $field_array = $mapping_path;
+          //$field_array = $mapping_path;
         }
       }
       if (!isset($starting_concept)) $starting_concept = $bundle->uri;
@@ -256,7 +176,7 @@ function _wisski_core_check_titles($uris,$type) {
       $insert_query = db_insert('wisski_entity_data')->fields(array('uri','type','title'));
       $invalid_title = variable_get('wisski_titles_master_fallback','-!-');
       foreach ($field_info as $uri => $info) {
-        $title = wisski_core_make_short_title($info,$pattern);
+        $title = wisski_core_make_short_title($info[0],$pattern);
         $title = $title?:$invalid_title.' ('.$uri.')';
         $titles[$uri] = $title;
         if (isset($cache[$uri])) {
@@ -344,19 +264,22 @@ function _wisski_core_get_items($type,$count_only = FALSE) {
  */
 
 function wisski_core_individual_view($entity) {
-
-//  $count = &drupal_static(__FUNCTION__);
-//  if (!isset($count)) $count = 0;
-//  $count++;
-//  $my_count = $count;
+//dpm($entity,__METHOD__);
+if (empty($entity)) ddebug_backtrace($entity);
 //  watchdog('wisski_view_start',$my_count);
-//  if ($count <= 1) {
     if (is_array($entity)) {
       $array = $entity;
       $entity = current($entity);
     } else {
       $array = array(entity_id('wisski_individual', $entity) => $entity);
     }
+
+  include_once('wisski_core.lod.inc');
+  wisski_core_lod_register_redirects($entity->uri);
+
+    $accept = $_SERVER['HTTP_ACCEPT'];
+//dpm(array($entity->uri, $accept), 'accept the truth, honk');
+
 //    dpm(entity_get_controller('wisski_individual'));
     entity_get_controller('wisski_individual')->resetCache(array($entity->id));
 
@@ -368,6 +291,11 @@ function wisski_core_individual_view($entity) {
 
 }
 
+function wisski_core_individual_resolve($entity) {
+  
+//  drupal_set_message(t('You\'ve been redirected from wisski/individual/@id',array('id'=>$entity->id)));
+  drupal_goto('wisski/individual/'.$entity->id.'/view');
+}
 
 function _wisski_core_autocomplete($bundle,$search_string) {
 
@@ -400,4 +328,23 @@ function _wisski_core_autocomplete($bundle,$search_string) {
     dpm($matches,__FUNCTION__.' full result');
   }
   drupal_json_output($matches);
+}
+//</htdocs/dev7/sites/all/modules/wisski/wisski_core>
+
+function wisski_core_bundle_sort($bundle1,$bundle2) {
+
+  $b1 = explode(':',$bundle1,2);
+  $b2 = explode(':',$bundle2,2);
+  if (count($b1) > count($b2)) {
+    return 1;
+  }
+  if (count($b1) < count($b2)) {
+    return -1;
+  }
+  $comp = strnatcasecmp($b1[0],$b2[0]);
+//dpm(array($b1,$b2,$comp),__FUNCTION__);
+  if (count($b1) === 1 || $comp !== 0) {
+    return $comp;
+  }
+  return strnatcasecmp($b1[1],$b2[1]);
 }

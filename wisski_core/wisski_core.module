@@ -124,9 +124,7 @@ function wisski_core_entity_info() {
 
 function wisski_core_uri_callback($entity) {
 
-//  dpm("Call to wisski_core_entity uri callback");;
-  $uri = array('path' => 'wisski_core/'.$entity->type.'/'.$entity->uri);
-  return $uri;
+  return array('path' => 'wisski/individual/' . $entity->id);
 }
 
 function wisski_core_label_callback($entity,$entity_type) {
@@ -261,8 +259,7 @@ function wisski_core_entity_info_alter(&$entity_info) {
  */
 function wisski_core_schema_alter(&$schema) {
 
-
-  dpm($schema,__FUNCTION__);
+//  dpm($schema,__FUNCTION__);
   $fc_schema_fields = &$schema['field_collection_item']['fields'];
   $fc_schema_fields['uri'] = array(
     'type' => 'varchar',
@@ -294,10 +291,7 @@ function wisski_core_menu() {
   
   /********** Entity Stuff ***************/
 
-  // Base URI for dealing with entity.
-  $base_uri = 'wisski_core/%wisski_core_bundle/%wisski_core';
-  $base_uri_argument_position = 2;
-
+  
   // URI for viewing list of existing entities.
 
   
@@ -393,7 +387,7 @@ function wisski_core_menu() {
     
     $items['wisski/navigate/'.$bundle_name."/list"] = array(
       'title' => 'List',
-      'page callback' => 'wisski_core_list',
+      'page callback' => 'wisski_core_list_individuals',
       'page arguments' => array(2),
       'access arguments' => array('view wisski content'),
       'file' => 'wisski_core.pages.inc',
@@ -403,7 +397,7 @@ function wisski_core_menu() {
 
     $items['wisski/navigate/' . $bundle_name] = array(
       'title' => 'View ' . $bundle_name,
-      'page callback' => 'wisski_core_list',
+      'page callback' => 'wisski_core_list_individuals',
       'page arguments' => array(2),
       'access arguments' => array('view wisski content'),
       'file' => 'wisski_core.pages.inc',
@@ -439,27 +433,44 @@ function wisski_core_menu() {
       'type' => MENU_SUGGESTED_ITEM,
     );
   }
+  
+  $items['wisski/get'] = array(
+    'page callback' => 'wisski_core_lod_resolve_uri',
+    'page arguments' => array(NULL),
+    'access arguments' => array('view wisski content'),
+    'file' => 'wisski_core.lod.inc',
+    'type' => MENU_CALLBACK,
+  );
 
-  // URI for viewing entity instances.
-  $items[$base_uri] = array(
-    'title callback' => 'entity_label',
-    'title arguments' => array('wisski_core', $base_uri_argument_position),
+  $items['wisski/get/%wisski_core_bundle'] = array(
+    'page callback' => 'wisski_core_lod_resolve_uri',
+    'page arguments' => array(2),
+    'access arguments' => array('view wisski content'),
+    'file' => 'wisski_core.lod.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['wisski/individual/%wisski_core'] = array (
     'page callback' => 'wisski_core_individual_view',
-    'page arguments' => array($base_uri_argument_position),
+    'page arguments' => array(2),
     'access arguments' => array('view wisski content'),
     'file' => 'wisski_core.pages.inc',
   );
-  $items[$base_uri . '/view'] = array(
-    'title' => 'View Entity',
+
+  // URI for viewing entity instances.
+  $items['wisski/individual/%wisski_core/view'] = array(
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
+    'title' => 'View Individual',
+		//'title callback' => 'entity_label',
+    //'title arguments' => array('wisski_core', 2),
   );
-
+  
   // URI for editing entity instances.
-  $items[$base_uri . '/edit'] = array(
-    'title' => 'Edit Entity',
+  $items['wisski/individual/%wisski_core/edit'] = array(
+    'title' => 'Edit Individual',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('wisski_core_individual_form', $base_uri_argument_position),
+    'page arguments' => array('wisski_core_individual_form', 2),
     'access arguments' => array('administer wisski'),
     'file' => 'wisski_core.admin.inc',
     'type' => MENU_LOCAL_TASK,
@@ -467,20 +478,23 @@ function wisski_core_menu() {
   );
 
   // URI for deleting entity instances.
-  $items[$base_uri . '/delete'] = array(
-    'title' => 'Delete Entity',
+  $items['wisski/individual/%wisski_core/delete'] = array(
+    'title' => 'Delete Individual',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('wisski_core_individual_form_delete', $base_uri_argument_position),
+    'page arguments' => array('wisski_core_individual_form_delete', 2),
     'access arguments' => array('administer wisski'),
     'file' => 'wisski_core.admin.inc',
     'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
   );
+  
+
+  /*********** Admin Section, again ... ***************/
 
   $items['admin/structure/wisski_core_bundle/%wisski_core_bundle/delete'] = array(
     'title' => 'Delete WissKI Core Bundle',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('wisski_core_bundle_form_delete_confirm', 4),
+    'page arguments' => array('wisski_core_bundle_form_delete_confirm', 3),
     'access arguments' => array('administer wisski'),
     'weight' => 1,
     'type' => MENU_NORMAL_ITEM,
@@ -607,6 +621,17 @@ function wisski_core_menu() {
     );
     
     
+  $items['admin/config/wisski/wisski_core_uris'] = array(
+    'title' => 'WissKI LOD & URIs',
+    'description' => 'Configure Linked Open Data Behaviour and URI management',
+    'type' => MENU_NORMAL_ITEM,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_admin_lod_and_uri'),
+    'file' => 'wisski_core.admin.inc',
+    'access arguments' => array('administer wisski'),
+  );
+  
     
     
     //if($key == "internal")
@@ -678,6 +703,7 @@ function wisski_core_single_path_title($bundle,$field_name,$map) {
  *   An actual entity, or false.
  */
 function wisski_core_load($teid, $reset = FALSE) {
+//dpm(func_get_args(), __METHOD__);
   $entities = &drupal_static(__FUNCTION__);
   if (isset($entities)) return $entities;
   $entities = wisski_core_entity_load_multiple(array($teid), array(), $reset);
@@ -706,6 +732,7 @@ function wisski_core_entity_load_multiple($teids = array(), $conditions = array(
 
 
 function wisski_core_bundle_load($entity_type) {
+//dpm(func_get_args(), __METHOD__);
   return wisski_core_bundle_load_multiple($entity_type);
 }
 
@@ -1479,7 +1506,8 @@ function array_search_recursive(array $haystack,$needle) {
 }
 
 function wisski_core_field_collection_create($values,$entity_type) {
-  dpm(func_get_args(), __METHOD__);  
+
+//  dpm(func_get_args(), __METHOD__);  
   //this one is extremely dirty
   //we hack the creation of the field_collection_item to add the uri
   if ($entity_type === 'field_collection_item') {
@@ -1494,8 +1522,61 @@ function wisski_core_field_collection_create($values,$entity_type) {
         }
         $creature->uri = wisski_core_make_uri($field_name,$top_bundles['bundle'],TRUE);
       }
-      dpm(func_get_args()+array('result'=>$creature),__FUNCTION__);
+//      dpm(func_get_args()+array('result'=>$creature),__FUNCTION__);
       return $creature;
     }
   }
 }
+
+
+function wisski_core_get_id_for_uri($uri, $bundle) {
+  
+//  dpm(func_get_args(),__METHOD__);
+  $tmp = db_select('wisski_uris', 'bla')->fields('bla', array('entity_id'))->condition('bundle_name', $bundle->type)->condition('uri', $uri)->execute();
+
+  if (empty($tmp) || $tmp->rowCount() == 0) {
+    // this URI is not known for this bundle
+    return FALSE;
+  }
+
+  return $tmp->fetchObject()->entity_id;
+
+}
+
+
+function wisski_core_fill_template_string($template, $placeholders) {
+  
+  if (preg_match_all('/%\{([a-zA-Z0-9_]+)\}/u', $template, $matches, PREG_SET_ORDER)) {
+    $replaces = array();
+    foreach ($matches as $match) {
+      if (isset($replaces[$match[0]])) continue;
+      $placeholder = $match[1];
+      $replaces[$match[0]] = isset($placeholders[$placeholder]) ? $placeholders[$placeholder] : '';
+    }
+    return strtr($template, $replaces);
+  }
+  return $template;
+
+/*  if (preg_match_all('/%\{([a-zA-Z0-9_]+)\}(?:\{((?:[^\{\\]|\\\\|\\\{)*)\}\{((?:[^\{\\]|\\\\|\\\{)*)\})?/u', $template, $matches, PREG_SET_ORDER)) {
+    $replaces = array();
+    foreach ($matches as $match) {
+      if (isset($replaces[$match[0]])) continue;
+      $placeholder = $match[1];
+      $ifempty = isset($match[2]) ? $match[2] : '';
+      $ifnotempty = isset($match[3]) ? $match[3] : '';
+      if (!isset($placeholders[$placeholder])) {
+        $replaces[$match[0]] = $ifempty;
+      } elseif (empty($placeholders[$placeholder])) {
+        $replaces[$match[0]] = $placeholders[$placeholder] . $ifempty;
+      } else {
+        $replaces[$match[0]] = $placeholders[$placeholder] . $ifnotempty;
+      }
+    }
+    return strtr($template, $replaces);
+  }
+  return $template;*/
+
+}
+
+  
+
