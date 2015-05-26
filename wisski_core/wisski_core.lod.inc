@@ -210,8 +210,9 @@ function wisski_core_lod_register_redirects($uris) {
     $uri = trim(wisski_salz_ensure_long_namespace($uri), '<>');
     $suffix = str_replace($base_url . '/', '', $uri);
 
+    $gotback = redirect_load_by_source($suffix);
     
-    if (empty(redirect_load_by_source($suffix))) {
+    if (empty($gotback)) {
 
       // register a redirect for the URI
       // to the generic URI lookup mechanism
