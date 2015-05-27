@@ -1544,7 +1544,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       = $this->querySPARQL(
         "SELECT DISTINCT ?class"
           ." WHERE {"
-            ."?class (rdfs:subClassOf)+ owl:Thing."
+            ."?class (rdfs:subClassOf)+ ?super."
           ."}"
 //        ." LIMIT 20"
       );

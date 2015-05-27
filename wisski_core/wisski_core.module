@@ -1545,13 +1545,13 @@ function wisski_core_get_id_for_uri($uri, $bundle) {
 
 
 function wisski_core_fill_template_string($template, $placeholders) {
-  
-  if (preg_match_all('/%\{([a-zA-Z0-9_]+)\}/u', $template, $matches, PREG_SET_ORDER)) {
+dpm(func_get_args(),__METHOD__);  
+  if (preg_match_all('/\/%\{([a-zA-Z0-9_]+)\}/u', $template, $matches, PREG_SET_ORDER)) {
     $replaces = array();
     foreach ($matches as $match) {
       if (isset($replaces[$match[0]])) continue;
       $placeholder = $match[1];
-      $replaces[$match[0]] = isset($placeholders[$placeholder]) ? $placeholders[$placeholder] : '';
+      $replaces[$match[0]] = isset($placeholders[$placeholder]) ? '/'.$placeholders[$placeholder] : '';
     }
     return strtr($template, $replaces);
   }

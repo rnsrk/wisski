@@ -7784,3 +7784,47 @@ SELECT DISTINCT ?data0 ?tar0 WHERE{ wisski_inst:_e30a47217cac8fddf134cbb75be59e5
 1432225390 - query
 SELECT DISTINCT ?data0 ?tar0 WHERE{ wisski_inst:_e30a47217cac8fddf134cbb75be59e54 rdf:type ecrm:E21_Person .wisski_inst:_e30a47217cac8fddf134cbb75be59e54 ecrm:P98i_was_born ?p0c1.  ?p0c1 rdf:type ecrm:E67_Birth. ?p0c1 ecrm:P7_took_place_at ?p0c2.  ?p0c2 rdf:type ecrm:E53_Place. ?p0c2 ecrm:P87_is_identified_by ?p0c3.  ?p0c3 rdf:type ecrm:E47_Spatial_Coordinates.  BIND(?p0c3 AS ?tar0) ?p0c3 ecrm:P3_has_note ?data0 . }
 
+1432738690 - query
+SELECT ?ont WHERE {?ont a owl:Ontology}
+
+1432738690 - query
+ASK {<http://erlangen-crm.org/150218/> a owl:Ontology}
+
+1432738690 - update
+LOAD <http://erlangen-crm.org/150218/> INTO GRAPH <http://erlangen-crm.org/150218/>
+
+1432738693 - query
+SELECT DISTINCT ?ont FROM <http://erlangen-crm.org/150218/> WHERE { ?s a owl:Ontology . ?s owl:imports ?ont . }
+
+1432738693 - query
+SELECT DISTINCT ?class WHERE {?class (rdfs:subClassOf)+ ?super.}
+
+1432738906 - query
+SELECT DISTINCT * WHERE {{ <http://wisski2.cs.fau.de/dm_7dev/inst//8ea5ba554eb691349991f6bef7849039> ?p ?o .} UNION {?s ?p <http://wisski2.cs.fau.de/dm_7dev/inst//8ea5ba554eb691349991f6bef7849039> .}} LIMIT 1
+
+1432739012 - query
+SELECT DISTINCT * WHERE {{ <http://wisski2.cs.fau.de/dm_7dev/inst//20ff59a6eaf8aaf8fb000edb778b89f8> ?p ?o .} UNION {?s ?p <http://wisski2.cs.fau.de/dm_7dev/inst//20ff59a6eaf8aaf8fb000edb778b89f8> .}} LIMIT 1
+
+1432739015 - query
+SELECT DISTINCT * WHERE {{ <http://wisski2.cs.fau.de/dm_7dev/inst//86b4482ab26c6bf1091694013ea3ee9c> ?p ?o .} UNION {?s ?p <http://wisski2.cs.fau.de/dm_7dev/inst//86b4482ab26c6bf1091694013ea3ee9c> .}} LIMIT 1
+
+1432739017 - query
+SELECT DISTINCT * WHERE {{ <http://wisski2.cs.fau.de/dm_7dev/inst//6f28593a6cbe49131f8ef4dca5a8a950> ?p ?o .} UNION {?s ?p <http://wisski2.cs.fau.de/dm_7dev/inst//6f28593a6cbe49131f8ef4dca5a8a950> .}} LIMIT 1
+
+1432739038 - query
+SELECT DISTINCT * WHERE {{ <http://wisski2.cs.fau.de/dm_7dev/inst//3b763fed2fbf5a35c83bd90811808efc> ?p ?o .} UNION {?s ?p <http://wisski2.cs.fau.de/dm_7dev/inst//3b763fed2fbf5a35c83bd90811808efc> .}} LIMIT 1
+
+1432739069 - query
+SELECT DISTINCT * WHERE {{ <http://wisski2.cs.fau.de/dm_7dev/inst//08f809817e83aa0846b059154828fc5f> ?p ?o .} UNION {?s ?p <http://wisski2.cs.fau.de/dm_7dev/inst//08f809817e83aa0846b059154828fc5f> .}} LIMIT 1
+
+1432739473 - query
+SELECT DISTINCT * WHERE {{ <http://wisski2.cs.fau.de/dm_7dev/inst//5ab19c9ac413b1fc6604e06678eb26f2> ?p ?o .} UNION {?s ?p <http://wisski2.cs.fau.de/dm_7dev/inst//5ab19c9ac413b1fc6604e06678eb26f2> .}} LIMIT 1
+
+1432739564 - query
+SELECT DISTINCT * WHERE {{ <http://wisski2.cs.fau.de/dm_7dev/inst/%{hash}> ?p ?o .} UNION {?s ?p <http://wisski2.cs.fau.de/dm_7dev/inst/%{hash}> .}} LIMIT 1
+
+FAIL
+
+1432739707 - query
+SELECT DISTINCT * WHERE {{ <http://wisski2.cs.fau.de/dm_7dev/inst/202f605cdfa0549d5a08c003c969576d> ?p ?o .} UNION {?s ?p <http://wisski2.cs.fau.de/dm_7dev/inst/202f605cdfa0549d5a08c003c969576d> .}} LIMIT 1
+
