@@ -464,6 +464,7 @@ function wisski_core_bundle_form($form, &$form_state, $entity_type, $op = 'edit'
       '#disabled' => TRUE,
       '#markup' => $default_uri.' <font size=1 color=red>['.l('Edit',current_path(),array('query'=>array('edit_uri'=>$default_uri))).']</font>',
       '#description' => t('The URI of the corresponding owl:Class in the local ontology'),
+      '#value' => $default_uri,
     );
   } else {
     $options = array('empty'=>' - '.t('select').' - ') + wisski_salz_pb_list_bundles();
@@ -523,9 +524,27 @@ function wisski_core_bundle_form_ajax_callback($form,$form_state) {
 
 function wisski_core_bundle_form_validate($form,&$form_state) {
 
-  if (empty($form_state['input']['uri']) || $form_state['input']['uri'] === 'empty') {
-    form_set_error('uri',t('The URI for the bundle must be specified'));
+  $error = FALSE;
+  if (!empty($form_state['input']['uri'])) {
+    if ($form_state['input']['uri'] === 'empty') {
+      $error = TRUE;
+    } else {
+      $form_state['values']['uri'] = $form_state['input']['uri'];
+    }
+  } elseif (!empty($form_state['values']['uri'])) {
+    if ($form_state['values']['uri'] === 'empty') {
+      $error = TRUE;
+    } 
+  } elseif (!empty($form['uri']['#value'])) {
+    if ($form['uri']['#value'] === 'empty') {
+      $error = TRUE;
+    }	else {
+      $form_state['values']['uri'] = $form['uri']['#value'];
+    }
   }
+
+  if ($error) form_set_error('uri',t('The URI for the bundle must be specified'));
+
 }
 
 /**
