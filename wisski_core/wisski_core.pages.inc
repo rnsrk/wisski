@@ -21,7 +21,7 @@ function wisski_core_list_bundles() {
     }
   }
   foreach ($counts as $uri => $count) {
-    $unknown_classes[$uri] = l($uri . ' ('.$count.')', 'wisski/get',array('query'=>array('bundle_uri'=> $uri)));
+    $unknown_classes[$uri] = l($uri . ' ('.$count.')', 'admin/structure/wisski_core_bundle/add',array('query'=>array('bundle_uri'=> $uri)));
   }
   wisski_core_tick('names');
 //  dpm(wisski_core_tick(NULL),__FUNCTION__.' time measures');
@@ -37,18 +37,24 @@ function wisski_core_list_bundles() {
     );
   }
   if (!empty($unknown_classes)) {
-    $output += array(
-      'unused_list' => array(
-        '#theme' => 'item_list',
-        '#items' => $unknown_classes,
-        '#title' => t('Unused Classes'),
-      ),
+    $unused_list = theme('item_list',
+      array(
+        'items' => $unknown_classes,
+        'title' => '<font size=1>'.t('Click to add a bundle for the URI').'</font>',
+      )
+    );
+    $output['other_list'] = array(
+      '#theme' => 'ctools_collapsible',
+      '#handle' => count($unknown_classes).' '.t('Unused Classes'),
+      '#content' => $unused_list,
+      '#collapsed' => TRUE,
     );
   }
+  
   if (empty($output)) $output = array(
     'markup'=> array('#markup' => t('There are no individuals in this store')),
   );
-  return $output +array('adder' => array('#markup' => l('Add an individual','wisski/create')));
+  return $output;
 }
 
 function wisski_core_list_individuals($type) {

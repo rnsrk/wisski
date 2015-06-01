@@ -164,25 +164,39 @@ function wisski_core_choose_bundle() {
   
   $used = array();
   $unused = array();
+  $ts_classes = wisski_salz_pb_list_bundles();
   foreach (wisski_core_bundle_load_multiple() as $entity_type_key => $entity_type) {
     $label = entity_label('wisski_core_bundle', $entity_type);
     if ($label == $entity_type->uri)
-      $unused[] = l($label, 'wisski/create/' . $entity_type_key);
+      $used[] = l($label, 'wisski/create/' . $entity_type_key);
     else
       $used[] = l($label.' ('.$entity_type->uri.')', 'wisski/create/' . $entity_type_key);
+    unset($ts_classes[$entity_type->uri]);
   }
   $out = array();
+  foreach ($ts_classes as $uri) {
+    $unused[] = l($uri,'admin/structure/wisski_core_bundle/add',array('query'=>array('bundle_uri'=>$uri)));
+  }
   if (!empty($used)) $out['used_list'] = array(
       '#theme' => 'item_list',
       '#items' => $used,
-      '#title' => t('Titled Entity Types'),
+      '#title' => t('WissKI Bundles'),
     );
-  if (!empty($unused)) $out['other_list'] = array(
-      '#theme' => 'item_list',
-      '#items' => $unused,
-      '#title' => t('Other Entity Types'),
+  if (!empty($unused)) {
+    $other_list = theme('item_list',
+      array(
+        'items' => $unused,
+        'title' => '<font size=1>'.t('Click to add a bundle for the URI').'</font>',
+      )
     );
-  return $out ?:t('Sorry, there are no bundles available');
+    $out['other_list'] = array(
+      '#theme' => 'ctools_collapsible',
+      '#handle' => count($unused).' '.t('Unused Classes'),
+      '#content' => $other_list, //$other_list,
+      '#collapsed' => TRUE,
+    );
+  }
+  return $out ?:t('Sorry, there are no bundles or classes available');
 }
 
 /**
@@ -400,14 +414,37 @@ function wisski_core_bundle_form($form, &$form_state, $entity_type, $op = 'edit'
     $entity_type->type = '';
   }
 
+  $edit = FALSE;
+  if (!empty($_GET['edit_uri'])) {
+    $edit = 2;
+    $default_uri = $_GET['edit_uri'];
+  } elseif (!empty($_GET['bundle_uri'])) {
+    $default_uri = $_GET['bundle_uri'];
+  } elseif (isset($entity_type->uri)) {
+    $default_uri = $entity_type->uri;      
+  } else {
+    $edit = 1;
+    $default_uri = 'empty';
+  }
+  
+  $default_label = $entity_type->label;
   // Describe all properties of the entity which shall be shown on the form.
+  if ($edit >= 2)  {
+    //standard fallback to have a generic title
+    if (empty($default_label)) {
+      $default_label = $default_uri;
+    }
+  }
+
   $form['label'] = array(
     '#title' => t('Label'),
     '#type' => 'textfield',
-    '#default_value' => $entity_type->label,
+    '#default_value' => $default_label,
     '#description' => t('The human-readable name of this entity type.'),
     '#required' => TRUE,
     '#size' => 30,
+    '#prefix' => '<div id=wisski-label>',
+    '#suffix' => '</div>',
   );
   $form['type'] = array(
     '#type' => 'machine_name',
@@ -420,26 +457,30 @@ function wisski_core_bundle_form($form, &$form_state, $entity_type, $op = 'edit'
     ),
     '#description' => t('A unique machine-readable name for this entity type. It must only contain lowercase letters, numbers, and underscores.'),
   );
-  if (empty($_GET['edit_uri']) && property_exists($entity_type,'uri') && !empty($entity_type->uri)) {
+  if (!$edit) {
     $form['uri'] = array(
       '#title' => 'URI',
       '#type' => 'item',
       '#disabled' => TRUE,
-      '#markup' => $entity_type->uri.' <font size=1 color=red>['.l('Edit',current_path(),array('query'=>array('edit_uri'=>1))).']</font>',
+      '#markup' => $default_uri.' <font size=1 color=red>['.l('Edit',current_path(),array('query'=>array('edit_uri'=>$default_uri))).']</font>',
       '#description' => t('The URI of the corresponding owl:Class in the local ontology'),
     );
   } else {
-    $options = wisski_salz_pb_list_bundles();
-    if (isset($entity_type->uri) && !in_array($entity_type->uri,$options)) {
-      $options[$entity_type->uri] = $entity_type->uri.' ('.t('Not in the Ontology').')';
+    $options = array('empty'=>' - '.t('select').' - ') + wisski_salz_pb_list_bundles();
+    if (!isset($options[$default_uri])) {
+      $options[$default_uri] = $default_uri.' ('.t('Not in the Ontology').')';
     }
     $form['uri'] = array(
       '#title' => 'URI',
       '#type' => module_exists('select_or_other') ? 'select_or_other' : 'select',
       '#options' => $options,
-      '#default_value' => isset($entity_type->uri) ? $entity_type->uri : FALSE,
+      '#default_value' => $default_uri,
       '#required' => TRUE,
       '#description' => t('The URI of the corresponding owl:Class in the local ontology'),
+      '#ajax' => array(
+        'wrapper' => 'wisski-label',
+        'callback' => 'wisski_core_bundle_form_ajax_callback',
+      ),
     );
   }
   $form['description'] = array(
@@ -473,6 +514,18 @@ function wisski_core_bundle_form($form, &$form_state, $entity_type, $op = 'edit'
 
 //  dpm($form,'pre-render');
   return $form;
+}
+
+function wisski_core_bundle_form_ajax_callback($form,$form_state) {
+
+  return $form['label'];
+}
+
+function wisski_core_bundle_form_validate($form,&$form_state) {
+
+  if (empty($form_state['input']['uri']) || $form_state['input']['uri'] === 'empty') {
+    form_set_error('uri',t('The URI for the bundle must be specified'));
+  }
 }
 
 /**
