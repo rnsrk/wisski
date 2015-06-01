@@ -229,7 +229,13 @@ function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $ag
                     $language = LANGUAGE_NONE;
 
 //                if(!is_array($deltarray)) continue;
-
+                if ($instance['widget']['module'] === 'double_field') {
+                  //double_field seems to get something wrong
+                  if (count($uri_array) === 2) {
+                    $new_delta = array_merge($uri_array[0],$uri_array[1]);
+                    $uri_array = array($new_delta);
+                  }
+                }
                 foreach($uri_array as $delta => $values) { 
 
                     if ($instance['widget']['module'] === 'entityreference') {

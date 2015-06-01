@@ -325,7 +325,10 @@ function wisski_salz_sparql_query($query_string,$dump = TRUE) {
   if ($store->getType() == "SPARQL 1.1") {
     list($ok,$result) = $store->querySPARQL($query_string);
     if ($ok) {
-      if ($dump && !empty($result)) drupal_set_message($result->dump());
+      if ($dump) {
+        if (empty($result)) drupal_set_message('no triples match your query');
+        else drupal_set_message($result->dump());
+      }
       return $result;
     }
   }
@@ -518,12 +521,15 @@ function wisski_salz_invoke_local_store($timestamp = NULL) {
 
 function wisski_salz_next_steps($node,$node_after = NULL) {
 
+  $node = wisski_salz_ensure_long_namespace($node);
+  if (!is_null($node_after)) $node_after = wisski_salz_ensure_long_namespace($node_after);
   $local_store = wisski_salz_invoke_local_store();
   return $local_store->nextSteps($node,$node_after);
 }
 
 function wisski_salz_next_datatype_properties($class) {
 
+  $class = wisski_salz_ensure_long_namespace($class);
   $local_store = wisski_salz_invoke_local_store();
   return $local_store->nextDatatypeProperties($class);
 }

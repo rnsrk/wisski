@@ -91,13 +91,15 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
                 $client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
             }
         }
-//        dpm((array)$client,'client');
+        //dpm((array)$client,'client');
 //        watchdog('wisski_SPARQL_request_uri',$client->getUri());
         $response = $client->request();
         if ($response->getStatus() == 204) {
+          fclose($log);
             // No content
             return $response;
         } elseif ($response->isSuccessful()) {
+          fclose($log);
           list($type, $params) = EasyRdf_Utils::parseMimeType(
             $response->getHeader('Content-Type')
           );
@@ -108,12 +110,13 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
           }
         } else {
           fwrite($log,"FAIL\n\n");
+          fclose($log);
           echo __METHOD__.' (line: '.__LINE__.') failed request '.htmlentities($query)."\n\r";
           throw new EasyRdf_Exception(
             "HTTP request for SPARQL query failed: ".$response->getBody()
           );
         }
-      fclose($log);
+      
     }
   
 
@@ -663,17 +666,17 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }
   }
 
-  private function getGraphName() {
+  private function getGraphName($type = '') {
     
-    $graph_name = &drupal_static(__METHOD__);    
+    $graph_name = &drupal_static(__METHOD__.$type);    
     if (!empty($graph_name)) return $graph_name;
     global $base_url;
-    $graph_name = variable_get('wisski_graph_name','<'.$base_url.'/wisski_graph>');
+    $graph_name = variable_get('wisski_graph_name'.$type,'<'.$base_url.'/wisski_graph'.$type.'>');
     list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ GRAPH $graph_name {?s ?p ?o}} LIMIT 1");
     if ($ok) {
       if (empty($result)) {
         $this->updateSPARQL("CREATE GRAPH $graph_name");
-        variable_set('wisski_graph_name',$graph_name);
+        variable_set('wisski_graph_name'.$type,$graph_name);
       }
     }
     return $graph_name;
@@ -948,7 +951,50 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     return array();
   }
   
+  private function simpleNextClasses($property,$property_after) {
+    
+  }
+  
   public function nextPropertiesHierarchy($class,$class_after = NULL) {
+    //old name, but no hierarchy anymore
+    $query = 
+      "SELECT DISTINCT ?property ?d_superclass "
+      ."WHERE { "
+        ."?property a owl:ObjectProperty. "
+        ."?property rdfs:domain ?d_superclass. "
+        ."$class rdfs:subClassOf* ?d_superclass. "
+      ;
+    if (isset($class_after)) {
+      $query .= 
+        "?property rdfs:range ?r_superclass. "
+        ."$class_after rdfs:subClassOf* ?r_superclass. "
+      ;
+    }
+    $query .= "}";
+    list($ok,$result) = $this->querySPARQL($query);
+    if ($ok) {
+      if (empty($result)) return array();
+      $output = array();
+      foreach ($result as $obj) {
+        $prop = $obj->property->dumpValue('text');
+        $superclass = $obj->d_superclass->dumpValue('text');
+        if (isset($output[$prop])) {
+          if (!in_array($superclass,$output[$prop])) {
+            $output[$prop][] = $superclass;
+          }
+        } else {
+          $output[$prop] = array($superclass);
+        }
+      }
+      array_walk($output,'sparql11_adapter_makestring');
+      uksort($output,'strnatcasecmp');
+      return $output;
+    }
+    return array();
+  }
+  
+  
+  public function OLD_nextPropertiesHierarchy($class,$class_after = NULL) {
     
     $query = 
       "SELECT DISTINCT ?property ?d_superclass "
@@ -1143,11 +1189,11 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     list($ok,$result) = $this->querySPARQL(
       "SELECT ?class (COUNT(?ind) as ?count)"
       ." WHERE {"
-        ."SELECT DISTINCT ?class ?ind "
-        ."WHERE {"
-          ."?class rdfs:subClassOf ?topclass."
+ //       ."SELECT DISTINCT ?class ?ind "
+ //       ."WHERE {"
+ //         ."?class rdfs:subClassOf ?topclass."
           ."?ind a ?class."
-        ."}"
+ //       ."}"
       ."}"  
       ." GROUP BY ?class"
     ); 
@@ -1538,22 +1584,24 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
   public function loadClasses() {
    
-    $this->addOntologies();
+    //$this->addOntologies();
     $now = time();
     list($ok,$result) 
       = $this->querySPARQL(
         "SELECT DISTINCT ?class"
           ." WHERE {"
-            ."?class (rdfs:subClassOf)+ ?super."
+            ."{?class (rdfs:subClassOf)+ ?super.}"
+            ."UNION"
+            ."{?ind a ?class.}"
           ."}"
 //        ." LIMIT 20"
       );
     $then = time();
     trigger_error("Query took ".$this->makeTimeString($then-$now)." seconds",E_USER_NOTICE);
     $now = time();
+    $classes = array();
     if ($ok) {
       $errors = array();
-      $classes = array();
       foreach($result as $obj) {
         $class_label = $obj->class->dumpValue('text');
         $class_name = $this->makeDrupalName($class_label,'');
@@ -1902,4 +1950,177 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     $hours = ($mins - $sub_mins) / 60;
     return $hours.':'.$min_string.':'.$sec_string.' hours';
   }
+
+  public function simpleInferences() {
+    
+    drupal_set_message('Start reasoning');
+    $this->inferClasses();
+    $this->inferClassHierarchy();
+    drupal_set_message('Inferred class hierarchy');
+    $this->inferPropertyHierarchy();
+    drupal_set_message('Inferred property hierarchy');
+    $this->inferDomains();
+    $this->inferRanges();
+    $this->inferClearDomainsAndRanges();
+    drupal_set_message('Inferred domains and ranges');
+    drupal_set_message('Stop reasoning');
+  }
+  
+  public function inferClasses() {
+    $query = "SELECT DISTINCT ?class WHERE {"
+      ." ?class rdfs:subClassOf owl:Thing ."
+      ." FILTER NOT EXISTS {"
+        ." ?class a owl:Class."
+      ."}"
+    ."}";
+    list($ok,$result) = $this->querySPARQL($query);
+    if ($ok && !empty($result) && $result->numRows() > 0) {
+      $graph_name = $this->getGraphName('inference');
+      foreach ($result as $obj) {
+        $class = $obj->class->getUri();
+        $this->updateSPARQL("INSERT DATA {GRAPH $graph_name {"
+          ."<$class> a owl:Class."
+        ."}}");
+      }
+    }
+  }
+  
+  public function inferClassHierarchy() {
+  
+    $query = "SELECT DISTINCT ?class ?supersuper WHERE {"
+      ." ?class rdfs:subClassOf ?super."
+      ." ?super rdfs:subClassOf ?supersuper."
+      ." ?supersuper a owl:Class. "
+      ." FILTER NOT EXISTS {"
+        ." ?class rdfs:subClassOf ?supersuper."
+      ."}"
+    ."}";
+    list($ok,$result) = $this->querySPARQL($query);
+    if ($ok && !empty($result) && $result->numRows() > 0) {
+      $graph_name = $this->getGraphName('inference');
+      foreach ($result as $obj) {
+        $class = $obj->class->getUri();
+        $supersuper = $obj->supersuper->getUri();
+        $this->updateSPARQL("INSERT DATA {GRAPH $graph_name {"
+          ."<$class> rdfs:subClassOf <$supersuper>."
+        ."}}");
+      }
+      //this probably were not the only missing links
+      $this->inferClassHierarchy();
+    }
+  }
+    
+  public function inferPropertyHierarchy() {
+  
+    $query = "SELECT DISTINCT ?property ?supersuper WHERE {"
+      ." ?property rdfs:subPropertyOf ?super."
+      ." ?super rdfs:subPropertyOf ?supersuper."
+      ." ?supersuper a owl:ObjectProperty"
+      ." FILTER NOT EXISTS {"
+        ." ?property rdfs:subPropertyOf ?supersuper."
+      ."}"
+    ."}";
+    list($ok,$result) = $this->querySPARQL($query);
+    if ($ok && !empty($result) && $result->numRows() > 0) {
+      $graph_name = $this->getGraphName('inference');
+      foreach ($result as $obj) {
+        $property = $obj->property->getUri();
+        $supersuper = $obj->supersuper->getUri();
+        $this->updateSPARQL("INSERT DATA {GRAPH $graph_name {"
+          ."<$property> rdfs:subPropertyOf <$supersuper>."
+        ."}}");
+      }
+      //this probably were not the only missing links
+      $this->inferPropertyHierarchy();
+    }
+  }
+  
+  public function inferDomains() {
+  
+    $query = "SELECT DISTINCT ?property ?domain WHERE {"
+      ."{"
+        ." ?property rdfs:subPropertyOf ?super."
+        ." ?super rdfs:domain ?domain."
+      ."}"
+      ."UNION"
+      ."{"
+        ." ?property owl:inverseOf ?inverse."
+        ." ?inverse rdfs:range ?domain."
+      ."}"
+      ." FILTER NOT EXISTS {"
+        ." ?property rdfs:domain ?any_class."
+      ."}"
+    ."}";
+    list($ok,$result) = $this->querySPARQL($query);
+    if ($ok && !empty($result) && $result->numRows() > 0) {
+      $graph_name = $this->getGraphName('inference');
+      foreach($result as $obj) {
+        $property = $obj->property->getUri();
+        $domain = $obj->domain->getUri();
+        $this->updateSPARQL("INSERT DATA {GRAPH $graph_name {"
+          ."<$property> rdfs:domain <$domain>."
+        ."}}");
+      }
+      $this->inferDomains();
+    }
+  }
+  
+  public function inferRanges() {
+    
+    $query = "SELECT DISTINCT ?property ?range WHERE {"
+      ."{"
+        ." ?property rdfs:subPropertyOf ?super."
+        ." ?super rdfs:range ?range."
+      ."}"
+      ."UNION"
+      ."{"
+        ." ?property owl:inverseOf ?inverse."
+        ." ?inverse rdfs:domain ?range."
+      ."}"
+      ." FILTER NOT EXISTS {"
+        ." ?property rdfs:range ?any_class."
+      ."}"
+    ."}";
+    list($ok,$result) = $this->querySPARQL($query);
+    if ($ok && !empty($result) && $result->numRows() > 0) {
+      $graph_name = $this->getGraphName('inference');
+      foreach($result as $obj) {
+        $property = $obj->property->getUri();
+        $range = $obj->range->getUri();
+        $this->updateSPARQL("INSERT DATA {GRAPH $graph_name {"
+          ."<$property> rdfs:range <$range>."
+        ."}}");
+      }
+      $this->inferRanges();
+    }
+  }
+  
+  public function inferClearDomainsAndRanges() {
+    
+    $graph_name = $this->getGraphName('inference');
+    $update = "WITH $graph_name"
+      ." DELETE {?property rdfs:domain ?superclass.}"
+      ." WHERE {"
+        ." ?property rdfs:domain ?class."
+        ." ?class rdfs:subClassOf+ ?superclass."
+      ."}"
+    ;
+    $this->updateSPARQL($update);
+    $update = "WITH $graph_name"
+      ." DELETE {?property rdfs:range ?superclass.}"
+      ." WHERE {"
+        ." ?property rdfs:range ?class."
+        ." ?class rdfs:subClassOf+ ?superclass."
+      ."}"
+    ;
+    $this->updateSPARQL($update);
+  }
 }
+
+function sparql11_adapter_makestring(&$value,$key) {
+
+  $prefix = preg_replace('/^\w+:\w+\d+i?_/u','',$key);
+  $prefix = str_replace('_',' ',$prefix);
+  $value = $prefix.' ('.implode(', ',$value).')';
+}
+

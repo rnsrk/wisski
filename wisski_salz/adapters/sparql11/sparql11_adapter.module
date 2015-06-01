@@ -195,11 +195,11 @@ function sparql11_adapter_wisski_settings_page($store_instance_name = "",$clean)
       '#weight' => 22,
     );
   */
-    $form['clear'] = array(
+    $form['infer'] = array(
       '#type' => 'submit',
-      '#value' => t('Remove all Fields'),
+      '#value' => t('Make Some Inferences'),
       '#limit_validation_errors' => array(), // No validation.
-      '#submit' => array('sparql11_adapter_remove_all_fields'),
+      '#submit' => array('sparql11_adapter_simple_inferences'),
       '#weight' => 23,
     );
   $installed_store_instances = sparql11_adapter_wisski_get_store_instances();
@@ -252,6 +252,14 @@ function sparql11_adapter_invoke_instance($name) {
                 ->execute()->fetchAssoc();
   $store_instance->setSettings(unserialize($settings['settings']));
   return $store_instance;
+}
+
+function sparql11_adapter_simple_inferences() {
+
+  $store = wisski_salz_invoke_local_store();
+  if ($store->getType() == "SPARQL 1.1") {
+    $store->simpleInferences();
+  }
 }
 
 /**
