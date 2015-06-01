@@ -447,6 +447,13 @@ function wisski_salz_pb_get_entity_info($entity_uri) {
   return FALSE;
 }
 
+function wisski_salz_pb_list_bundles() {
+  
+  $store = wisski_salz_invoke_local_store();
+  if ($store->getType() == "SPARQL 1.1") return $store->getClasses();
+  return FALSE;
+}
+
 function wisski_salz_pb_bundle_exists($bundle_uri) {
   
   $store = wisski_salz_invoke_local_store();

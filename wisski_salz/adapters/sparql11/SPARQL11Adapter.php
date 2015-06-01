@@ -1117,15 +1117,24 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     return FALSE;
   }
   
-  public function getClasses($entity_uri) {
-    
-    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { $entity_uri rdf:type ?class .}");
+  public function getClasses($entity_uri=NULL) {
+  
+    if (isset($entity_uri)) {
+      $query = "SELECT DISTINCT ?class WHERE { $entity_uri rdf:type ?class .}";
+    } else {
+      $query = "SELECT DISTINCT ?class WHERE {"
+        ." ?class a owl:Class."
+      ."}";  
+    }
+    list($ok,$result) = $this->querySPARQL($query);
     if ($ok) {
       if (count($result) > 0) {
         $out = array();
         foreach ($result as $obj) {
-          $out[] = $obj->class->dumpValue('text');
+          $class = $obj->class->dumpValue('text');
+          $out[$class] = $class;
         }
+        uksort($out,'strnatcasecmp');
         return $out;
       }
     }
@@ -1189,11 +1198,11 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     list($ok,$result) = $this->querySPARQL(
       "SELECT ?class (COUNT(?ind) as ?count)"
       ." WHERE {"
- //       ."SELECT DISTINCT ?class ?ind "
- //       ."WHERE {"
- //         ."?class rdfs:subClassOf ?topclass."
+        ."SELECT DISTINCT ?class ?ind "
+        ."WHERE {"
+          ."?class rdfs:subClassOf ?topclass."
           ."?ind a ?class."
- //       ."}"
+        ."}"
       ."}"  
       ." GROUP BY ?class"
     ); 
@@ -1590,9 +1599,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       = $this->querySPARQL(
         "SELECT DISTINCT ?class"
           ." WHERE {"
-            ."{?class (rdfs:subClassOf)+ ?super.}"
-            ."UNION"
-            ."{?ind a ?class.}"
+            ."?class (rdfs:subClassOf)+ ?super."
           ."}"
 //        ." LIMIT 20"
       );

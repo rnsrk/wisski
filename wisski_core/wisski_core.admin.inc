@@ -409,13 +409,6 @@ function wisski_core_bundle_form($form, &$form_state, $entity_type, $op = 'edit'
     '#required' => TRUE,
     '#size' => 30,
   );
-  $form['uri'] = array(
-    '#title' => 'URI',
-    '#type' => 'textfield',
-    '#default_value' => property_exists($entity_type,'uri') ? $entity_type->uri : '',
-    '#required' => TRUE,
-    '#description' => t('The URI of the corresponding owl:Class in the local ontology'),
-  );
   $form['type'] = array(
     '#type' => 'machine_name',
     '#default_value' => isset($entity_type->type) ? $entity_type->type : '',
@@ -427,6 +420,28 @@ function wisski_core_bundle_form($form, &$form_state, $entity_type, $op = 'edit'
     ),
     '#description' => t('A unique machine-readable name for this entity type. It must only contain lowercase letters, numbers, and underscores.'),
   );
+  if (empty($_GET['edit_uri']) && property_exists($entity_type,'uri') && !empty($entity_type->uri)) {
+    $form['uri'] = array(
+      '#title' => 'URI',
+      '#type' => 'item',
+      '#disabled' => TRUE,
+      '#markup' => $entity_type->uri.' <font size=1 color=red>['.l('Edit',current_path(),array('query'=>array('edit_uri'=>1))).']</font>',
+      '#description' => t('The URI of the corresponding owl:Class in the local ontology'),
+    );
+  } else {
+    $options = wisski_salz_pb_list_bundles();
+    if (isset($entity_type->uri) && !in_array($entity_type->uri,$options)) {
+      $options[$entity_type->uri] = $entity_type->uri.' ('.t('Not in the Ontology').')';
+    }
+    $form['uri'] = array(
+      '#title' => 'URI',
+      '#type' => module_exists('select_or_other') ? 'select_or_other' : 'select',
+      '#options' => $options,
+      '#default_value' => isset($entity_type->uri) ? $entity_type->uri : FALSE,
+      '#required' => TRUE,
+      '#description' => t('The URI of the corresponding owl:Class in the local ontology'),
+    );
+  }
   $form['description'] = array(
     '#type' => 'textarea',
     '#default_value' => isset($entity_type->description) ? $entity_type->description : '',
@@ -456,7 +471,7 @@ function wisski_core_bundle_form($form, &$form_state, $entity_type, $op = 'edit'
     '#submit' => array('wisski_core_pathbuilder_form_submit'),
   );
 
-
+//  dpm($form,'pre-render');
   return $form;
 }
 
@@ -642,4 +657,3 @@ function wisski_core_admin_lod_and_uri_submit ($form, &$form_state) {
   variable_set('wisski_core_lod_uri_templates', array('' => $base_url . '/' . $form_state['values']['template'])); 
 
 }
-

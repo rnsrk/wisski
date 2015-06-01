@@ -9,25 +9,46 @@ function wisski_core_list_bundles() {
   
   module_load_include('inc','wisski_core','wisski_core.controller');
   wisski_core_tick(__FUNCTION__.' start');
-  $items = array();
+  $known_classes = $unknown_classes = array();
   $counts = wisski_salz_pb_get_bundles_with_count();
   wisski_core_tick('counts');
   foreach (wisski_core_bundle_load_multiple() as $entity_type_key => $entity_type) {
-    $tag = isset($counts[$entity_type->uri]) ? $counts[$entity_type->uri] : FALSE;
-    if ($tag) {
+    if (isset($counts[$entity_type->uri])) {
+      $tag = $counts[$entity_type->uri];
+      unset($counts[$entity_type->uri]);
       $label = entity_label('wisski_core_bundle', $entity_type);
-      $items[$entity_type_key] = l($label . ' ('.$tag.')', 'wisski/navigate/' . $entity_type_key);
+      $known_classes[$entity_type_key] = l($label . ' ('.$tag.')', 'wisski/navigate/' . $entity_type_key);
     }
+  }
+  foreach ($counts as $uri => $count) {
+    $unknown_classes[$uri] = l($uri . ' ('.$count.')', 'wisski/get',array('query'=>array('bundle_uri'=> $uri)));
   }
   wisski_core_tick('names');
 //  dpm(wisski_core_tick(NULL),__FUNCTION__.' time measures');
-  return array(
-    'list' => array(
-      '#theme' => 'item_list',
-      '#items' => $items,
-      '#title' => t('Choose type of entity to view.'),
-    ),
+//  dpm(array('used' => $known_classes,'unused' => $unknown_classes),__METHOD__);
+  $output = array();
+  if (!empty($known_classes)) {
+    $output += array(
+      'used_list' => array(
+        '#theme' => 'item_list',
+        '#items' => $known_classes,
+        '#title' => t('WissKI Bundles'),
+      ),
+    );
+  }
+  if (!empty($unknown_classes)) {
+    $output += array(
+      'unused_list' => array(
+        '#theme' => 'item_list',
+        '#items' => $unknown_classes,
+        '#title' => t('Unused Classes'),
+      ),
+    );
+  }
+  if (empty($output)) $output = array(
+    'markup'=> array('#markup' => t('There are no individuals in this store')),
   );
+  return $output +array('adder' => array('#markup' => l('Add an individual','wisski/create')));
 }
 
 function wisski_core_list_individuals($type) {
