@@ -339,7 +339,7 @@ function wisski_core_menu() {
   $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/edit_paths'] = array(
     'title' => 'Edit Paths',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('wisski_core_edit_bundle_paths',4),
+    'page arguments' => array('wisski_core_pb_all_paths',4),
     'access arguments' => array('administer wisski paths'),
     'access callback' => TRUE,
     'file' => 'wisski_core.pathbuilder.inc',
@@ -540,7 +540,7 @@ function wisski_core_menu() {
       'type' => MENU_NORMAL_ITEM,
       'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('wisski_core_pb_all_paths'),
+      'page arguments' => array('wisski_core_pb_all_paths',NULL),
       'file' => 'wisski_core.pathbuilder.inc',
       'access arguments' => array('administer wisski'),
   );

@@ -454,6 +454,13 @@ function wisski_salz_pb_list_bundles() {
   return FALSE;
 }
 
+function wisski_salz_pb_get_class_hierarchy($indexed_by_superclasses=FALSE) {
+
+  $store = wisski_salz_invoke_local_store();
+  if ($store->getType() == "SPARQL 1.1") return $store->getClassHierarchy($indexed_by_superclasses);
+  return FALSE;
+}
+
 function wisski_salz_pb_bundle_exists($bundle_uri) {
   
   $store = wisski_salz_invoke_local_store();

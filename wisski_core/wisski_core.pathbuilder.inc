@@ -80,6 +80,7 @@ function wisski_core_make_path_array(array $settings,$resolve_path=FALSE) {
       'group_id' => $group_id,
       'group_prefix' => isset($group_prefix) ? $group_prefix : NULL,
       'uuid' => $uuid,
+      'edit_link_url' => 'admin/structure/wisski_core_bundle'.$connected_bundle.'/'.$connected_field.'/mapping/'.$connected_field_property,
     );
   }
 #  while (count($paths) == 1) {
@@ -89,6 +90,7 @@ function wisski_core_make_path_array(array $settings,$resolve_path=FALSE) {
   return $paths;
 }
 
+/*
 function wisski_core_edit_bundle_paths($form,&$form_state,$in_bundle = NULL) {
 
   if (isset($form_state['storage']['bundle'])) {
@@ -185,14 +187,14 @@ function wisski_core_edit_bundle_paths($form,&$form_state,$in_bundle = NULL) {
     '#suffix' => '</div>',
   );
   
-  /*
-  $form['item']['description'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Description'),
-    '#default_value' => '',
-    '#description' => t(''),
-  );
-  */
+  
+//  $form['item']['description'] = array(
+//    '#type' => 'textfield',
+//    '#title' => t('Description'),
+//    '#default_value' => '',
+//    '#description' => t(''),
+//  );
+  
   
   $path = array();
   $new = FALSE;
@@ -333,14 +335,14 @@ function wisski_core_edit_bundle_paths($form,&$form_state,$in_bundle = NULL) {
     );
   }
   
-/*
-  $form['item']['enabled'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Enabled'),
-    '#default_value' => '',
-    '#description' => t(''),
-  );
-*/
+
+//  $form['item']['enabled'] = array(
+//    '#type' => 'checkbox',
+//    '#title' => t('Enabled'),
+//    '#default_value' => '',
+//    '#description' => t(''),
+//  );
+
 
   $form['submit'] = array(
     '#type' => 'submit',
@@ -403,6 +405,7 @@ function wisski_pb_validator($form,&$form_state) {
   }
   if ($boo) form_set_error('item][path][datatype_property',"Choose either a datatype property or an external path");
 }
+*/
 
 function wisski_core_make_uuid($concept,$path_name = '') {
   
@@ -410,21 +413,32 @@ function wisski_core_make_uuid($concept,$path_name = '') {
   return md5($concept.$now);
 }
 
-function wisski_core_pb_all_paths($form,&$form_state) {
+function wisski_core_pb_all_paths($form,&$form_state,$bundle=NULL) {
 
+//dpm(func_get_args(),__METHOD__);
   $form = array();
   $header = array(
-    'starting_concept' => t('Starting Concept'),
     'title' => t('Title'),
+    'starting_concept' => t('Starting Concept'),
     'path' => t('Path'),
+    'datatype_property' => t('Datatype Property'),
+    'op' => array(
+      'data' => t('Operations'),
+      'colspan' => 2,
+    ),
   );
   $paths = db_select('wisski_pb_pathdata','paths')
             ->fields('paths')
-            ->condition('pending',0,'=')
-            ->execute()
-            ->fetchAllAssoc('uuid');
+            ->condition('pending',0,'=');
+  if (!is_null($bundle) && isset($bundle->uri)) {  
+    $paths = $paths->condition('starting_concept',$bundle->uri);
+  }
+  $paths = $paths->execute()->fetchAllAssoc('uuid');
   $options = array();
   foreach($paths as $path) {
+    $uuid = $path->uuid;
+    
+  /*
     $path_array = unserialize($path->path_array);
     $current = $path;
     while ($current->external_path != NULL) {
@@ -436,30 +450,38 @@ function wisski_core_pb_all_paths($form,&$form_state) {
       $item .= ' ==> '.$step;
     }
     $item .= ' --> '.$current->datatype_property;
-    $options[$path->uuid] = array(
+  */
+    $path_array = current(current(wisski_core_make_path_array(array('path_id'=>$uuid),TRUE)));
+    dpm($path_array,'path_array');
+    $item = implode('-->',$path_array['path_array']);
+    $options[$uuid] = array(
       'title' => $path->short_name,
       'starting_concept' => $path->starting_concept,
       'path' => $item,
+      'datatype_property' => !empty($path_array['datatype_property']) ? $path_array['datatype_property'] : '',
+      'op1' => l('Edit',$path_array['edit_link_url']),
+      'op2' => l('Delete',''),
     );
   }
+//  dpm($options,'options');
   
+  $colgroup = array(
+    'title' => array(),
+    'starting_concept' => array(),
+    'path' => array(
+      'style' => array(
+        'width' => '100px',
+      ),
+    ),
+  );
   
   $form['table'] = array(
-    '#type' => 'tableselect',
+    '#theme' => 'table',
     '#header' => $header,
-    '#options' => $options,
-    '#empty' => 'no data available',
-    '#multiple' => FALSE,
-  );
-  $form['chosen'] = array(
-    '#type' => 'hidden',
-    '#default_value' => 0,
-  );
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Edit Path'),
-    '#submit' => array('wisski_core_pb_all_edit'),
-    '#validate' => array('wisski_core_pb_all_validate'),
+    '#rows' => $options,
+    '#colgroup' => $colgroup,
+    '#empty' => t('no paths defined'),
+    '#sticky' => TRUE,
   );
   return $form;
 }
@@ -733,11 +755,65 @@ function _wisski_core_extract_paths($array) {
   return $output;
 }
 
-function array_extract_key(array $array, $key) {
+function array_extract_pattern(array $array, $key_pattern, $wildcard='%') {
 
+  if (is_array($key_pattern)) $keys = $key_pattern;
+  else $keys = explode('][',$key_pattern);
+  $out = array();
+  $key = array_shift($keys);
+  foreach ($array as $pos => $subarray) {
+    if ($pos !== $key) {
+      $regex = str_replace($wildcard,'.*',$key);
+      $match = preg_match('/'.$regex.'/u',$pos);
+      dpm(array('key'=>$key,'match'=>$match));
+      if ($match === FALSE) continue;
+    }
+    if (is_array($subarray)) {
+      $sub = array_extract_pattern($subarray,$keys,$wildcard);
+      if (!empty($sub)) $out[$pos] = $sub;
+    } else {
+      $out[$pos] = $subarray;
+    }
+  }
+  return $out;
+}
+
+function array_extract_key(array $array, $key, $suffixed=FALSE) {
+
+  $keys = explode('][',$key);
+  $suffix = $suffixed && !empty($key) ? ']['.$key : '';
   $out = array();
   foreach ($array as $pos => $subarray) {
-    if (isset($subarray[$key])) $out[$pos] = $subarray[$key];
+    reset($keys);
+    $subkey = current($keys);
+    while ($subkey !== FALSE && isset($subarray[$subkey])) {
+      $subarray = $subarray[$subkey];
+      $subkey = next($keys);
+    }
+    if ($subkey === FALSE) $out[$pos.$suffix] = $subarray;
+  }
+  return $out;
+}
+
+function array_flatten_and_extract($array,$depth=0,$key='') {
+
+  if ($depth === 0) {
+    return array_extract_key($array,$key,TRUE);
+  }
+  $out = array();
+  foreach ($array as $pos => $subarray) {
+    $carry_pos = &drupal_static(__FUNCTION__);
+    $carry_pos = $pos.'][';
+    if (is_array($subarray)) {
+      $subarray = array_combine(
+        array_map(
+          function($k){return drupal_static('array_flatten_and_extract').$k; }
+          ,array_keys($subarray)
+        )
+        ,$subarray
+      );
+      $out = array_merge($out,array_flatten_and_extract($subarray,$depth-1,$key));
+    } elseif ($pos === $key) $out[$key] = $subarray;
   }
   return $out;
 }

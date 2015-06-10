@@ -40,12 +40,19 @@ function wisski_core_list_bundles() {
     $unused_list = theme('item_list',
       array(
         'items' => $unknown_classes,
-        'title' => '<font size=1>'.t('Click to add a bundle for the URI').'</font>',
+        'title' => '<font size=1>'.t('Click to add a bundle for the class').'</font>',
       )
     );
+    $class_count = count($unknown_classes);
+    $ind_count = array_sum($counts);
     $output['other_list'] = array(
       '#theme' => 'ctools_collapsible',
-      '#handle' => count($unknown_classes).' '.t('Unused Classes'),
+      '#handle' => t('!ind_count more individuals in !class_count classes',
+        array(
+          '!ind_count'=>$ind_count,
+          '!class_count'=>$class_count,
+        )
+      ),
       '#content' => $unused_list,
       '#collapsed' => TRUE,
     );

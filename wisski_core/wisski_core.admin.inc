@@ -186,7 +186,7 @@ function wisski_core_choose_bundle() {
     $other_list = theme('item_list',
       array(
         'items' => $unused,
-        'title' => '<font size=1>'.t('Click to add a bundle for the URI').'</font>',
+        'title' => '<font size=1>'.t('Click to add a bundle for the class').'</font>',
       )
     );
     $out['other_list'] = array(

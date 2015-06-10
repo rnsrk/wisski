@@ -1140,6 +1140,38 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     }
     return FALSE;
   }
+
+  public function getClassHierarchy($indexed_by_superclasses=FALSE) {
+  
+    $query = "SELECT DISTINCT * WHERE {"
+      ." ?sub rdfs:subClassOf ?super."
+      ." ?super a owl:Class."
+      ." FILTER NOT EXISTS {"
+        ." ?sub rdfs:subClassOf ?subsuper."
+        ." ?subsuper rdfs:subClassOf ?super."
+      ." }"
+    ."}"
+    ;
+    list($ok,$result) = $this->querySPARQL($query);
+    if ($ok && !empty($result)) {
+      $out = array();
+      foreach ($result as $obj) {
+        if ($indexed_by_superclasses) {
+          $super = $obj->super->dumpValue('text');
+          if (!isset($out[$super])) $out[$super] = array();
+          $sub = $obj->sub->dumpValue('text');
+          $out[$super][] = $sub;
+        } else {
+          $sub = $obj->sub->dumpValue('text');
+          if (!isset($out[$sub])) $out[$sub] = array();
+          $super = $obj->super->dumpValue('text');
+          $out[$sub][] = $super;
+        }
+      }
+      return $out;
+    }
+    return FALSE;
+  }
   
   public function getIndsWithComments($class_uri) {
   
