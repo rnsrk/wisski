@@ -325,6 +325,17 @@ function wisski_core_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['admin/structure/wisski_core_bundle/manage/edit_path/%'] = array(
+    'title' => 'Add/Edit Path',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wisski_core_single_path_form_by_uuid',5),
+    'access arguments' => array('administer wisski paths'),
+    'access callback' => TRUE,
+    'file' => 'wisski_core.pathbuilder.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+
   $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/short_title'] = array(
     'title' => 'Edit Short Titles',
     'page callback' => 'drupal_get_form',
