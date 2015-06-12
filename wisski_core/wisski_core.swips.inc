@@ -812,8 +812,9 @@ function wisski_core_field_storage_query(EntityFieldQuery $query) {
     $entity_type = $query->entityConditions['entity_type']['value'];
 
     $query->entityConditions['entity_type']['operator'] = '=';
+    dpm($query->propertyConditions,'Property Conditions');
     foreach ($query->propertyConditions as $property_condition) {
-
+      
     }
   }
   foreach ($query->entityConditions as $key => $condition) {

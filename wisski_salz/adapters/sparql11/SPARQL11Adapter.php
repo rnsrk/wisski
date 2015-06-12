@@ -2158,8 +2158,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 
 function sparql11_adapter_makestring(&$value,$key) {
 
-  $prefix = preg_replace('/^\w+:\w+\d+i?_/u','',$key);
-  $prefix = str_replace('_',' ',$prefix);
+  //$prefix = preg_replace('/^\w+:\w+\d+i?_/u','',$key);
+  $prefix = str_replace('_',' ',$key);
   $value = $prefix.' ('.implode(', ',$value).')';
 }
 
