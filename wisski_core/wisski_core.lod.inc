@@ -128,8 +128,14 @@ function wisski_core_lod_callback_for_mime_type($mime_types) {
 function wisski_core_lod_accept_text_html($uri,$mimetype, $bundle=NULL) {
 
 //dpm(func_get_args(),__METHOD__);
+  drupal_set_message(t("You were redirected !uri <br>@bundle",
+      array(
+        '!uri'=>empty($uri) ? '' : t('to the page for URI:<br><span style="white-space: nowrap;">@uri</span>',array('@uri'=>$uri)),
+        '@bundle'=>is_null($bundle) ? '' : 'Bundle: '.$bundle->label,
+      )
+    )
+  );
   if ($bundle === NULL) {
-    
     $individual_info = wisski_salz_pb_get_entity_info($uri);
 //    dpm($individual_info,'info');
     $items = array();
@@ -166,6 +172,7 @@ function wisski_core_lod_accept_text_html($uri,$mimetype, $bundle=NULL) {
 
   } else {
     
+//    dpm($bundle);
     $id = wisski_core_get_id_for_uri($uri, $bundle);
     if ($id === FALSE) {
       $cache = db_select('wisski_entity_data','e')

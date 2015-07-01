@@ -389,7 +389,7 @@ function wisski_core_menu() {
     $items['wisski/navigate/'.$bundle_name.'/edit_bundle'] = array(
       'title' => 'Edit Paths',
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('wisski_core_edit_bundle_paths',2),
+      'page arguments' => array('wisski_core_pb_all_paths',2),
       'access arguments' => array('administer wisski paths'),
       'access callback' => TRUE,
       'file' => 'wisski_core.pathbuilder.inc',

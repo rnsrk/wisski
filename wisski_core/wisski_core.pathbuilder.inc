@@ -1838,13 +1838,14 @@ function wisski_core_pb_get_external_paths($concept) {
   
   $return = array();
   $result = db_select('wisski_pb_pathdata','p')
-              ->fields('p',array('uuid','short_name','connected_bundle'))
+              ->fields('p',array('uuid'))
               ->condition('pending',0)
               ->condition('starting_concept',$concept)
               ->execute();
   while ($obj = $result->fetch()) {
-    if (!isset($return[$obj->connected_bundle])) $return[$obj->connected_bundle] = array();
-    $return[$obj->connected_bundle]['external:'.$obj->uuid] = $obj->short_name;
+    $path = wisski_core_make_path_array(array('path_id'=>$obj->uuid),TRUE);
+    if (!isset($return[$path->connected_bundle])) $return[$path->connected_bundle] = array();
+    $return[$path->connected_bundle]['external:'.$path->uuid] = $path->short_name.' '.implode('->',$path->path_array).'->'.$path->datatype_property;
   }
   return $return;
 }
