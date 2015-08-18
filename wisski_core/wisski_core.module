@@ -549,13 +549,35 @@ function wisski_core_menu() {
       'title' => 'Pathbuilder',
       'description' => 'Manage semantically annotated fields',
       'type' => MENU_NORMAL_ITEM,
-      'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+      //'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
       'page callback' => 'drupal_get_form',
       'page arguments' => array('wisski_core_pb_all_paths',NULL),
       'file' => 'wisski_core.pathbuilder.inc',
       'access arguments' => array('administer wisski'),
   );
 
+  $items['admin/config/wisski/pathbuilder/view'] = array(
+      'title' => 'View all Paths',
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      //'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('wisski_core_pb_all_paths',NULL),
+      'file' => 'wisski_core.pathbuilder.inc',
+      'access arguments' => array('administer wisski'),
+      'weight' => -20,
+  );
+
+  $items['admin/config/wisski/pathbuilder/export'] = array(
+      'title' => 'Path Export',
+      'description' => 'Prepare XML export of WissKI Ontology Paths',
+      'type' => MENU_LOCAL_TASK,
+      //'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('wisski_core_path_export_form'),
+      'file' => 'wisski_core.import_export.inc',
+      'access arguments' => array('administer wisski'),
+      'weight' => -10,
+  );
 
   $items['admin/config/wisski/wisski_core_entities'] = array(
     'title' => 'WissKI entities',
@@ -578,6 +600,9 @@ function wisski_core_menu() {
     'file' => 'system.admin.inc',
     'file path' => drupal_get_path('module', 'system'),
   );
+  
+  
+  
 /*  
   $items['admin/config/wisski/pathbuilder'] = array(
     'title' => t('Pathbuilder'),
@@ -592,8 +617,10 @@ function wisski_core_menu() {
     'weight' => 2,
   );
   */
+  
+/*
   $trees = wisski_core_get_pb_trees();
-    
+  
   foreach($trees as $key => $treeinfo) {
     $items['admin/config/wisski_core/pathbuilder/'.$key] = array(
       'title' => t($treeinfo['title']),
@@ -630,8 +657,14 @@ function wisski_core_menu() {
 //      'file' => 'wisski_pathbuilder.inc',
       'weight' => 2,
     );
+
     
     
+    //if($key == "internal")
+    //  $items['admin/config/wisski_core/pathbuilder/'.$key.'/']['type'] = MENU_DEFAULT_LOCAL_TASK;                                                              
+  }
+*/  
+  
   $items['admin/config/wisski/wisski_core_uris'] = array(
     'title' => 'WissKI LOD & URIs',
     'description' => 'Configure Linked Open Data Behaviour and URI management',
@@ -644,11 +677,6 @@ function wisski_core_menu() {
   );
   
     
-    
-    //if($key == "internal")
-    //  $items['admin/config/wisski_core/pathbuilder/'.$key.'/']['type'] = MENU_DEFAULT_LOCAL_TASK;
-                                                                
-  }
   
 /*  
   $classes = db_query("SELECT * FROM {wisski_pb_treedata} WHERE `group_id` = -1 AND `is_group` = 1 ORDER BY weight ASC");

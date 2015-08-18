@@ -61,7 +61,7 @@ function wisski_core_make_path_array(array $settings,$resolve_path=FALSE) {
         $data_prop = $path->datatype_property;
       }
     }
-    if (!empty($path->group_id)) {
+    if (isset($group_id) && !empty($group_id)) {
       $group_prefix = current(current(wisski_core_make_path_array(array('path_id'=>$path->group_id),TRUE)));
       if ($resolve_path) {
         $full_path = array_merge($group_prefix['path_array'],$full_path);
@@ -86,8 +86,51 @@ function wisski_core_make_path_array(array $settings,$resolve_path=FALSE) {
 #  while (count($paths) == 1) {
 #    $paths = current($paths);
 #  }
-//  dpm(array('settings'=>$settings,'paths'=>$paths),'computed paths');
+  dpm(array('settings'=>$settings,'paths'=>$paths),'computed paths');
   return $paths;
+}
+
+
+
+function wisski_core_standard_path_settings() {
+  
+  // key => type
+  return array(
+      'starting_concept' => 's',
+      'path_array' => 'a',
+      'datatype_property' => 's',
+      'connected_bundle' => 's',
+      'connected_field' => 's',
+      'connected_field_property' => 's',
+      'disamb' => 'i',
+      'is_group' => 'b',
+      'group_id' => 'i',
+      'group_prefix' => 'a',
+      'uuid' => 's',
+    );
+}
+
+function wisski_one_standard_path_settings() {
+  
+  // key => type
+  return array(
+    'path_array' => 'a',
+    'datatype_property' => 's',
+    'short_name' => 's',
+    'disamb' => 'i',
+    'length' => 'i',
+    'name' => 's',
+    'description' => 's', 
+    'group_id' => 'i',
+    'weight' => 'i',
+    'is_group' => 'b',
+    'fieldtype' => 's',
+    'enabled' => 'b', 
+    'mandatory' => 'b',
+    'repeatable' => 'b',
+    'type' => 's',
+    'uuid' => 's',
+  );
 }
 
 /*
@@ -1773,6 +1816,19 @@ function wisski_core_single_path_form($form,&$form_state,$bundle,$field_name='un
   if ($result->rowCount() === 1) {
     $path = $result->fetchObject();
     return wisski_core_single_path_form_by_uuid($form,$form_state,$path->uuid);
+  } elseif ($result->rowCount() === 0) {
+    $uuid = wisski_core_make_uuid('');
+    $fields = array(
+      'uuid' => $uuid,
+      'connected_bundle' => $bundle->type,
+      'starting_concept' => $bundle->uri,
+      'connected_field' => $field_name,
+      'connected_field_property' => $map,
+      'path_array' => serialize(array()),
+    );
+    db_insert('wisski_pb_pathdata')->fields($fields)->execute();
+    return wisski_core_single_path_form_by_uuid($form,$form_state,$uuid);
+    return array('moo' => array('#markup'=>'<h1>MOO</h1><p>You did not get a path here</p>'));
   }
 }
 
@@ -1849,3 +1905,4 @@ function wisski_core_pb_get_external_paths($concept) {
   }
   return $return;
 }
+
