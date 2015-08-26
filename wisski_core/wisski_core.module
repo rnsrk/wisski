@@ -311,7 +311,7 @@ function wisski_core_menu() {
     'access arguments' => array('administer wisski paths'),
     'access callback' => TRUE,
     'file' => 'wisski_core.pathbuilder.inc',
-    'type' => MENU_CALLBACK,
+    'type' => MENU_CALLBACK | MENU_VISIBLE_IN_BREADCRUMB,
   );
 
   $items['admin/structure/wisski_core_bundle/manage/%wisski_core_bundle/%/mapping/%'] = array(
@@ -322,7 +322,7 @@ function wisski_core_menu() {
     'access arguments' => array('administer wisski paths'),
     'access callback' => TRUE,
     'file' => 'wisski_core.pathbuilder.inc',
-    'type' => MENU_CALLBACK,
+    'type' => MENU_CALLBACK | MENU_VISIBLE_IN_BREADCRUMB,
   );
 
   $items['admin/structure/wisski_core_bundle/manage/edit_path/%'] = array(
@@ -332,7 +332,7 @@ function wisski_core_menu() {
     'access arguments' => array('administer wisski paths'),
     'access callback' => TRUE,
     'file' => 'wisski_core.pathbuilder.inc',
-    'type' => MENU_CALLBACK,
+    'type' => MENU_CALLBACK | MENU_VISIBLE_IN_BREADCRUMB,
   );
 
 
@@ -553,7 +553,7 @@ function wisski_core_menu() {
       'page callback' => 'drupal_get_form',
       'page arguments' => array('wisski_core_pb_all_paths',NULL),
       'file' => 'wisski_core.pathbuilder.inc',
-      'access arguments' => array('administer wisski'),
+      'access arguments' => array('administer wisski paths'),
   );
 
   $items['admin/config/wisski/pathbuilder/view'] = array(
@@ -563,7 +563,7 @@ function wisski_core_menu() {
       'page callback' => 'drupal_get_form',
       'page arguments' => array('wisski_core_pb_all_paths',NULL),
       'file' => 'wisski_core.pathbuilder.inc',
-      'access arguments' => array('administer wisski'),
+      'access arguments' => array('administer wisski paths'),
       'weight' => -20,
   );
 
@@ -575,7 +575,54 @@ function wisski_core_menu() {
       'page callback' => 'drupal_get_form',
       'page arguments' => array('wisski_core_path_export_form'),
       'file' => 'wisski_core.import_export.inc',
-      'access arguments' => array('administer wisski'),
+      'access arguments' => array('administer wisski paths'),
+      'weight' => -10,
+  );
+  
+  $items['admin/config/wisski/pathbuilder/import'] = array(
+      'title' => 'Path/Field Import',
+      'description' => 'Prepare XML import of WissKI Ontology Paths and Drupal Fields',
+      'type' => MENU_LOCAL_TASK,
+      //'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('wisski_core_path_import_form'),
+      'file' => 'wisski_core.import_export.inc',
+      'access arguments' => array('administer wisski paths'),
+      'weight' => -10,
+  );
+  
+  $items['admin/config/wisski/pathbuilder/import/choose'] = array(
+      'title' => 'Path/Field Import',
+      'description' => 'Select WissKI Ontology Paths and Drupal Fields to import',
+      'type' => MENU_CALLBACK | MENU_VISIBLE_IN_BREADCRUMB,
+      'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('wisski_core_path_import_selection_form'),
+      'file' => 'wisski_core.import_export.inc',
+      'access arguments' => array('administer wisski paths'),
+      'weight' => -10,
+  );
+  
+  $items['admin/config/wisski/pathbuilder/import/confirm'] = array(
+      'title' => 'Path/Field Import',
+      'description' => 'Select WissKI Ontology Paths and Drupal Fields to import',
+      'type' => MENU_CALLBACK | MENU_VISIBLE_IN_BREADCRUMB,
+      'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('wisski_core_path_import_confirmation_form'),
+      'file' => 'wisski_core.import_export.inc',
+      'access arguments' => array('administer wisski paths'),
+      'weight' => -10,
+  );
+  
+  $items['admin/config/wisski/pathbuilder/import/conflict'] = array(
+      'title' => 'Path/Field Import',
+      'type' => MENU_CALLBACK | MENU_VISIBLE_IN_BREADCRUMB,
+      'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('wisski_core_path_import_conflict_form'),
+      'file' => 'wisski_core.import_export.inc',
+      'access arguments' => array('administer wisski paths'),
       'weight' => -10,
   );
 

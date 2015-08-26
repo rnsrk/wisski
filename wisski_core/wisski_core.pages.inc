@@ -21,7 +21,7 @@ function wisski_core_list_bundles() {
     }
   }
   foreach ($counts as $uri => $count) {
-    $unknown_classes[$uri] = l($uri . ' ('.$count.')', 'admin/structure/wisski_core_bundle/add',array('query'=>array('bundle_uri'=> $uri)));
+    $unknown_classes[$uri] = array('#type'=>'item','#markup'=>l($uri . ' ('.$count.')', 'admin/structure/wisski_core_bundle/add',array('query'=>array('bundle_uri'=> $uri))));
   }
   wisski_core_tick('names');
 //  dpm(wisski_core_tick(NULL),__FUNCTION__.' time measures');
@@ -37,25 +37,32 @@ function wisski_core_list_bundles() {
     );
   }
   if (!empty($unknown_classes)) {
-    $unused_list = theme('item_list',
-      array(
-        'items' => $unknown_classes,
-        'title' => '<font size=1>'.t('Click to add a bundle for the class').'</font>',
-      )
-    );
+    /*$unused_list = array(
+      '#theme' => 'item_list',
+      '#items' => $unknown_classes,
+      '#title' => '<font size=1>'.t('Click to add a bundle for the class').'</font>',
+    );*/
     $class_count = count($unknown_classes);
     $ind_count = array_sum($counts);
+    drupal_add_library('system', 'drupal.collapse');
     $output['other_list'] = array(
-      '#theme' => 'ctools_collapsible',
-      '#handle' => t('!ind_count more individuals in !class_count classes',
+      '#type' => 'fieldset',
+      '#title' => t('!ind_count more individuals in !class_count classes',
         array(
           '!ind_count'=>$ind_count,
           '!class_count'=>$class_count,
         )
       ),
-      '#content' => $unused_list,
-      '#collapsed' => TRUE,
+      '#description' => '<font size=1>'.t('Click to add a bundle for the class').'</font>',
+      //'#collapsible' => TRUE,
+      //'#collapsed' => TRUE,
+      '#attributes' => array (
+        'class' => array(
+          'collapsible', 'collapsed'
+        )
+      ),
     );
+    $output['other_list'] += $unknown_classes;
   }
   
   if (empty($output)) $output = array(

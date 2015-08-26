@@ -96,17 +96,19 @@ function wisski_core_standard_path_settings() {
   
   // key => type
   return array(
+      'uuid' => 's',
       'starting_concept' => 's',
       'path_array' => 'a',
       'datatype_property' => 's',
       'connected_bundle' => 's',
       'connected_field' => 's',
+      'field_type' => 's',
       'connected_field_property' => 's',
+      'short_name' => 's',
       'disamb' => 'i',
       'is_group' => 'b',
       'group_id' => 'i',
       'group_prefix' => 'a',
-      'uuid' => 's',
     );
 }
 
@@ -1817,6 +1819,7 @@ function wisski_core_single_path_form($form,&$form_state,$bundle,$field_name='un
     $path = $result->fetchObject();
     return wisski_core_single_path_form_by_uuid($form,$form_state,$path->uuid);
   } elseif ($result->rowCount() === 0) {
+    $field_info = field_info_field($field_name);
     $uuid = wisski_core_make_uuid('');
     $fields = array(
       'uuid' => $uuid,
@@ -1825,6 +1828,7 @@ function wisski_core_single_path_form($form,&$form_state,$bundle,$field_name='un
       'connected_field' => $field_name,
       'connected_field_property' => $map,
       'path_array' => serialize(array()),
+      'field_type' => $field_info['type'],
     );
     db_insert('wisski_pb_pathdata')->fields($fields)->execute();
     return wisski_core_single_path_form_by_uuid($form,$form_state,$uuid);
@@ -1845,6 +1849,7 @@ function wisski_core_single_path_form_submit($form,&$form_state) {
 /*  if (isset($storage['group_prefix'])) {
     $prefix = $storage['group_prefix'];
   }*/
+  $field_info = field_info_field($storage['field_name']);
   $path_info = array(
     'path_array' => serialize($full_path),
     'short_name' => isset($form_state['values']['short_name']) ? $form_state['values']['short_name'] : $storage['field_name'],
@@ -1852,6 +1857,7 @@ function wisski_core_single_path_form_submit($form,&$form_state) {
     'external_path' => isset($storage['external_path']['uuid']) ? $storage['external_path']['uuid'] : NULL,
     'starting_concept' => $starting_concept,
     'connected_field' => $storage['field_name'],
+    'field_type' => $field_info['type'],
     'connected_field_property' => $storage['map'],
     'connected_bundle' => $storage['bundle_name'],
     'group_id' => isset($storage['group_id']) ? $storage['group_id'] : NULL,

@@ -671,3 +671,14 @@ function wisski_salz_store_modes(){
   $store_modes = module_invoke_all('wisski_get_store_mode');
 }
 
+function wisski_salz_valid_uri($uri) {
+
+  $matches = array();
+  if (preg_match('/^(\w+):(\w+)$/u',$uri,$matches)) {
+    return array($matches[1],$matches[2]);
+  }
+  if (preg_match('/^<(\w+\:\/(?:\/(?:\w+\.)+\w+)?(?:\/[\w]+)+[#\/])(\w+)>$/u',$uri,$matches)) {
+    return array('<'.$matches[1].'>',$matches[2]);
+  }
+  return FALSE;
+}

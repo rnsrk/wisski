@@ -87,6 +87,12 @@ function wisski_core_schema() {
         'default_value' => 'value',
       ),
       
+      'field_type' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'description' => 'The type of the field',
+      ),
+      
       'starting_concept' => array(
         'type' => 'varchar',
         'length' => 255,

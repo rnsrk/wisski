@@ -175,7 +175,7 @@ function wisski_core_choose_bundle() {
   }
   $out = array();
   foreach ($ts_classes as $uri) {
-    $unused[] = l($uri,'admin/structure/wisski_core_bundle/add',array('query'=>array('bundle_uri'=>$uri)));
+    $unused[] = array('#type'=>'item','#markup'=>l($uri,'admin/structure/wisski_core_bundle/add',array('query'=>array('bundle_uri'=>$uri))));
   }
   if (!empty($used)) $out['used_list'] = array(
       '#theme' => 'item_list',
@@ -183,18 +183,20 @@ function wisski_core_choose_bundle() {
       '#title' => t('WissKI Bundles'),
     );
   if (!empty($unused)) {
-    $other_list = theme('item_list',
-      array(
-        'items' => $unused,
-        'title' => '<font size=1>'.t('Click to add a bundle for the class').'</font>',
-      )
-    );
+    drupal_add_library('system', 'drupal.collapse');
     $out['other_list'] = array(
-      '#theme' => 'ctools_collapsible',
-      '#handle' => count($unused).' '.t('Unused Classes'),
-      '#content' => $other_list, //$other_list,
-      '#collapsed' => TRUE,
+      '#type' => 'fieldset',
+      '#title' => count($unused).' '.t('Unused Classes'),
+      '#description' => '<font size=1>'.t('Click to add a bundle for the class').'</font>',
+      //'#collapsed' => TRUE,
+      //'#collapsible' => TRUE,
+      '#attributes' => array (
+        'class' => array(
+          'collapsible', 'collapsed'
+        )
+      ),
     );
+    $out['other_list'] += $unused;
   }
   return $out ?:t('Sorry, there are no bundles or classes available');
 }
@@ -482,6 +484,8 @@ function wisski_core_bundle_form($form, &$form_state, $entity_type, $op = 'edit'
         'wrapper' => 'wisski-label',
         'callback' => 'wisski_core_bundle_form_ajax_callback',
       ),
+      '#other' => t('Introduce another URI'),
+      '#other_unknown_defaults' => 'ignore',
     );
   }
   $form['description'] = array(
@@ -529,7 +533,17 @@ function wisski_core_bundle_form_validate($form,&$form_state) {
     if ($form_state['input']['uri'] === 'empty') {
       $error = TRUE;
     } else {
-      $form_state['values']['uri'] = $form_state['input']['uri'];
+      if (module_exists('select_or_other')) {
+        $sel = $form_state['input']['uri']['select'];
+        if ($sel === 'select_or_other') {
+          $sel = $form_state['input']['uri']['other'];
+          if (empty($sel)) $error = TRUE;
+          elseif (!wisski_salz_valid_uri($sel)) {
+            form_set_error('uri',t('Invalid URI'));
+          }
+        }
+        $form_state['values']['uri'] = $sel;
+      } else $form_state['values']['uri'] = $form_state['input']['uri'];
     }
   } elseif (!empty($form_state['values']['uri'])) {
     if ($form_state['values']['uri'] === 'empty') {
@@ -553,6 +567,7 @@ function wisski_core_bundle_form_validate($form,&$form_state) {
 function wisski_core_bundle_form_submit(&$form, &$form_state) {
   // Automatically get edited entity type from the form and save it.
   // @see entity_ui_form_submit_build_entity()
+  dpm($form_state,__METHOD__);
   $entity_type = entity_ui_form_submit_build_entity($form, $form_state);
   entity_save('wisski_core_bundle', $entity_type);
 
