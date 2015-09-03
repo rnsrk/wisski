@@ -400,7 +400,16 @@ function wisski_core_path_import_selection_form($form,&$form_state) {
   //dpm($uris,'uris');
     
   foreach($input_paths as $path) {
-  
+    
+    if (!isset($path['starting_concept'])) {
+      $path_array = $path['path_array'];
+      if (count($path_array) % 2 === 1) {
+        //we assume an old wisski export file and thus the first element
+        //in the path is the starting concept
+        $path['starting_concept'] = array_shift($path_array);
+        $path['path_array'] = $path_array;
+      }
+    }
     if (!isset($path['connected_buhdle'])) {
       $path['connected_bundle'] = array();
       if (isset($uris[$path['starting_concept']])) {
@@ -587,9 +596,12 @@ function wisski_core_path_import_confirmation_form_validate($form,&$form_state) 
 }
 
 function wisski_core_path_import_confirmation_form_submit($form,&$form_state) {
-
+  
+  $settings = wisski_core_standard_path_settings();
+  
   if (isset($form_state['storage']['paths'])) {
     $paths = $form_state['storage']['paths'];
+  
     foreach ($paths as $path) {
       $check = db_select('wisski_pb_pathdata','p')->fields('p')->condition('uuid',$path['uuid'],'LIKE')->execute();
       if ($check->rowCount() > 0) {
@@ -605,6 +617,8 @@ function wisski_core_path_import_confirmation_form_submit($form,&$form_state) {
         return;
       }
       $path['path_array'] = serialize($path['path_array']);
+      $path = array_intersect_key($path,$settings);
+#      drupal_set_message(serialize($path));
       db_insert('wisski_pb_pathdata')->fields($path)->execute();
       if ($path['connected_bundle'] !== 'empty') {
         if ($path['field_type'] !== 'empty') {
@@ -755,7 +769,12 @@ function _wisski_core_SXI_to_array(SimpleXMLIterator $sxi, array &$array) {
         $array[$sk][] = (string)$sxi->current();
       } else $array[$sk] = (string)$sxi->current();
     }
+    if ($sk === 'path_array' && isset($array[$sk][0]) && is_array($array[$sk][0])) {
+      //dpm($array,'path_array');
+      $array[$sk] = $array[$sk][0];
+    }
   }
+  
 }
 
 /**

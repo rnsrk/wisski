@@ -62,10 +62,13 @@ function wisski_core_make_path_array(array $settings,$resolve_path=FALSE) {
       }
     }
     if (isset($group_id) && !empty($group_id)) {
-      $group_prefix = current(current(wisski_core_make_path_array(array('path_id'=>$path->group_id),TRUE)));
-      if ($resolve_path) {
-        $full_path = array_merge($group_prefix['path_array'],$full_path);
-        $starting_concept = $group_prefix['starting_concept'];
+      $gr = wisski_core_make_path_array(array('path_id'=>$path->group_id),TRUE);
+      if (!empty($gr)) {      
+        $group_prefix = current(current($gr));
+        if ($resolve_path) {
+          $full_path = array_merge($group_prefix['path_array'],$full_path);
+          $starting_concept = $group_prefix['starting_concept'];
+        }
       }
     }
     $paths[$connected_field][$connected_field_property] = array(
@@ -86,7 +89,7 @@ function wisski_core_make_path_array(array $settings,$resolve_path=FALSE) {
 #  while (count($paths) == 1) {
 #    $paths = current($paths);
 #  }
-  dpm(array('settings'=>$settings,'paths'=>$paths),'computed paths');
+  //dpm(array('settings'=>$settings,'paths'=>$paths),'computed paths');
   return $paths;
 }
 
@@ -497,7 +500,7 @@ function wisski_core_pb_all_paths($form,&$form_state,$bundle=NULL) {
     $item .= ' --> '.$current->datatype_property;
   */
     $path_array = current(current(wisski_core_make_path_array(array('path_id'=>$uuid),TRUE)));
-    dpm($path_array,'path_array');
+    //dpm($path_array,'path_array');
     $item = implode('-->',$path_array['path_array']);
     $options[$uuid] = array(
       'title' => $path->short_name,
@@ -1611,6 +1614,7 @@ function wisski_core_single_path_form_by_uuid($form,&$form_state,$uuid='unspecif
 //    dpm(array('selected_row'=>$selected_row,'selected_options'=>$selected_options));
   }
 //  dpm($full_path);
+  if (isset($external_options)) dpm($external_options,'external');
   $rows = array();
   $empty_options = array('empty' => ' - '.t('select').' -');
   if ($set_starting_concept && $selected_row !== 'starting_concept') {
@@ -1680,7 +1684,7 @@ function wisski_core_single_path_form_by_uuid($form,&$form_state,$uuid='unspecif
       if (!empty($external_options)) {
         $bottom_line['external'] = array(
           '#type' => 'select',
-          '#options' => $empty_options + $external_options,
+          '#options' => array_merge($empty_options,$external_options),
           '#title' => '<b>'.t('Re-Use Existing Path').'</b>',
           '#name' => 'step:external',
           '#value' => isset($external_path) ? 'external:'.$external_path['uuid'] : 'empty',
@@ -1898,16 +1902,19 @@ function wisski_core_single_path_validate($form,$form_state) {
 
 function wisski_core_pb_get_external_paths($concept) {
   
+  $short = wisski_salz_ensure_short_namespace($concept);
+  $long = wisski_salz_ensure_long_namespace($concept);
   $return = array();
   $result = db_select('wisski_pb_pathdata','p')
               ->fields('p',array('uuid'))
               ->condition('pending',0)
-              ->condition('starting_concept',$concept)
+              ->condition('starting_concept',array($short,$long),'IN')
               ->execute();
   while ($obj = $result->fetch()) {
-    $path = wisski_core_make_path_array(array('path_id'=>$obj->uuid),TRUE);
-    if (!isset($return[$path->connected_bundle])) $return[$path->connected_bundle] = array();
-    $return[$path->connected_bundle]['external:'.$path->uuid] = $path->short_name.' '.implode('->',$path->path_array).'->'.$path->datatype_property;
+    $path = current(current(wisski_core_make_path_array(array('path_id'=>$obj->uuid),TRUE)));
+    dpm($path,$obj->uuid);
+    if (!isset($return[$path['connected_bundle']])) $return[$path['connected_bundle']] = array();
+    $return[$path['connected_bundle']]['external:'.$path['uuid']] = $path['short_name'].' '.implode(' -> ',$path['path_array']).' -> '.$path['datatype_property'];
   }
   return $return;
 }
