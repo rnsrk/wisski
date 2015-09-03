@@ -487,3 +487,30 @@ class WisskiCoreFieldCollectionController extends EntityAPIController{
  }*/
  
 }
+
+class WisskiCoreEntityViewsController extends EntityDefaultViewsController {
+
+  /**
+   * Edit or add extra fields to views_data().
+   */
+  public function views_data() {
+    dpm(func_get_args(),__METHOD__);
+    $data = parent::views_data();
+             
+    // Add your custom data here
+                 
+    /* 
+     * Example: change the handler of a field
+     * if the 'created' field is a unix timestamp in the database, 
+     * Entity API will set the handler to views_handler_field_numeric, 
+     * change this to the views date handler
+     */ 
+    $data['entity_test']['created']['field']['handler'] = 'views_handler_field_date';
+
+    //drupal_set_message("data: " . serialize($data));
+    dpm($data);
+                                             
+    return $data;
+  }
+
+}
