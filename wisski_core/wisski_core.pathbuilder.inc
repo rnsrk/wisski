@@ -93,51 +93,6 @@ function wisski_core_make_path_array(array $settings,$resolve_path=FALSE) {
   return $paths;
 }
 
-
-
-function wisski_core_standard_path_settings() {
-  
-  // key => type
-  return array(
-      'uuid' => 's',
-      'starting_concept' => 's',
-      'path_array' => 'a',
-      'datatype_property' => 's',
-      'connected_bundle' => 's',
-      'connected_field' => 's',
-      'field_type' => 's',
-      'connected_field_property' => 's',
-      'short_name' => 's',
-      'disamb' => 'i',
-      'is_group' => 'b',
-      'group_id' => 'i',
-      'group_prefix' => 'a',
-    );
-}
-
-function wisski_one_standard_path_settings() {
-  
-  // key => type
-  return array(
-    'path_array' => 'a',
-    'datatype_property' => 's',
-    'short_name' => 's',
-    'disamb' => 'i',
-    'length' => 'i',
-    'name' => 's',
-    'description' => 's', 
-    'group_id' => 'i',
-    'weight' => 'i',
-    'is_group' => 'b',
-    'fieldtype' => 's',
-    'enabled' => 'b', 
-    'mandatory' => 'b',
-    'repeatable' => 'b',
-    'type' => 's',
-    'uuid' => 's',
-  );
-}
-
 /*
 function wisski_core_edit_bundle_paths($form,&$form_state,$in_bundle = NULL) {
 

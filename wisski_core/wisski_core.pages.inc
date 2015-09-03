@@ -35,32 +35,44 @@ function wisski_core_list_bundles() {
         '#title' => t('WissKI Bundles'),
       ),
     );
-  }
-  if (!empty($unknown_classes)) {
-    /*$unused_list = array(
-      '#theme' => 'item_list',
-      '#items' => $unknown_classes,
-      '#title' => '<font size=1>'.t('Click to add a bundle for the class').'</font>',
-    );*/
+    if (!empty($unknown_classes)) {
+      /*$unused_list = array(
+        '#theme' => 'item_list',
+        '#items' => $unknown_classes,
+        '#title' => '<font size=1>'.t('Click to add a bundle for the class').'</font>',
+      );*/
+      $class_count = count($unknown_classes);
+      $ind_count = array_sum($counts);
+      drupal_add_library('system', 'drupal.collapse');
+      $output['other_list'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('!ind_count more individuals in !class_count classes',
+          array(
+            '!ind_count'=>$ind_count,
+            '!class_count'=>$class_count,
+          )
+        ),
+        '#description' => '<font size=1>'.t('Click to add a bundle for the class').'</font>',
+        '#attributes' => array (
+          'class' => array(
+            'collapsible', 'collapsed'
+          )
+        ),
+      );
+      $output['other_list'] += $unknown_classes;
+    }
+  } else {
     $class_count = count($unknown_classes);
     $ind_count = array_sum($counts);
-    drupal_add_library('system', 'drupal.collapse');
     $output['other_list'] = array(
       '#type' => 'fieldset',
-      '#title' => t('!ind_count more individuals in !class_count classes',
+      '#title' => t('No bundles defined yet').' <font size=1>('.t('!ind_count individuals in !class_count classes',
         array(
           '!ind_count'=>$ind_count,
           '!class_count'=>$class_count,
         )
-      ),
+      ).')</font>',
       '#description' => '<font size=1>'.t('Click to add a bundle for the class').'</font>',
-      //'#collapsible' => TRUE,
-      //'#collapsed' => TRUE,
-      '#attributes' => array (
-        'class' => array(
-          'collapsible', 'collapsed'
-        )
-      ),
     );
     $output['other_list'] += $unknown_classes;
   }
