@@ -58,6 +58,14 @@ function wisski_core_entity_info() {
         'label' => 'title',
       ),
       
+      // set view modes in views (?)
+      'view modes' => array(
+        'full' => array(
+          'label' => t('Full content'),
+          'custom settings' => FALSE,
+        ),
+      ),
+      
       // the keys which refer to bundles
       'bundle keys' => array(
         'bundle' => 'type',
@@ -73,6 +81,7 @@ function wisski_core_entity_info() {
       'controller class' => 'WisskiCoreEntityController',
       // I have no idea what this does
       'metadata controller class' => '',
+      'views controller class' => 'EntityDefaultViewsController',
       
       // we want it fieldable
       'fieldable' => TRUE,
@@ -87,6 +96,9 @@ function wisski_core_entity_info() {
       'module' => 'wisski_core',
       'field cache' => FALSE,
       'entity cache'=> FALSE,
+      
+      // stolen from http://colans.net/blog/integrating-remote-data-drupal-7-and-exposing-it-views
+      'static cache' => FALSE,
     ),
   );
   
@@ -140,6 +152,79 @@ function wisski_core_access_callback($op, $entity, $account, $entity_type) {
     case 'update': return user_access('administer wisski',$account);
   }
   return FALSE;
+}
+
+/**
+ * Implementation of hook_entity_query_alter
+ * We want to change the callback so we can handle execute by ourselves.
+ * Freedom for the elves!
+ *
+ * @author: Mark Fichtner
+ *
+ */
+function wisski_core_entity_query_alter($query) {
+
+  // change callback  
+  $query->executeCallback = 'wisski_core_entity_field_query_callback';
+  
+}
+
+/**
+ * now we handle the query :D
+ *
+ * @author: Mark Fichtner
+ */
+function wisski_core_entity_field_query_callback($query) {
+
+#  drupal_set_message(serialize("pager: " . $query->pager . " count " . $query->count));
+
+  if($query->count)
+    return 20;
+
+  #drupal_set_message(serialize($query));
+  
+  #drupal_set_message(serialize( $query->entityConditions['entity_type']['value']));
+  
+  #return entity_load_single('wisski_core_bundle', 'ecrm_e1_crm_entity');
+  #$bundle = entity_load_single('wisski_core_bundle', 'ecrm_e1_crm_entity');
+  #drupal_set_message(serialize($bundle));
+  
+  
+  
+  module_load_include('inc','wisski_core','wisski_core.pathbuilder');
+  module_load_include('inc','wisski_core','wisski_core.pages');
+  $blubb = _wisski_core_get_sorted_chunk('ecrm_e1_crm_entity',20,0);
+  
+  
+  
+  $entities = entity_load('wisski_individual', $blubb);
+  
+  drupal_set_message('out:');
+  drupal_set_message(serialize($entities));
+  
+  drupal_set_message("keys: " . serialize(array_keys($entities)));
+  
+  $entity_stubs = array();
+  
+  foreach($entities as $key => $entity) {
+    drupal_set_message("juhu!" . $key);
+    
+    $exids = entity_extract_ids('wisski_individual', $entity);
+    
+    drupal_set_message(serialize($exids));
+    
+    $entity_stubs[] = entity_create_stub_entity('wisski_individual', $exids);
+    drupal_set_message("stubs: " . serialize($entity_stubs));
+  
+  }
+  
+  drupal_set_message("stubs: " . serialize($entity_stubs));
+  
+  #return entity_load($blubb);
+  
+  #return $blubb;
+  
+  return array('wisski_individual' => $entity_stubs);
 }
 
 /**
