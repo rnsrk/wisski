@@ -69,7 +69,7 @@ function wisski_core_field_storage_delete_field($field) {
 */
 function wisski_core_field_storage_pre_load($entity_type, $queried_entities, $age, &$skip_fields, $options) {
 
-  module_load_include('inc','wisski_core','wisski_core.pathbuilder');    
+  module_load_include('inc','wisski_core','wisski_core.pathbuilder');
 //  dpm("call to hook_field_storage_pre_load for ".$entity_type);
 //  dpm(func_get_args(),__FUNCTION__);
   //we track the loading process for all entities to ensure we know

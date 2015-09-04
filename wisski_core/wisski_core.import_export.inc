@@ -1,5 +1,54 @@
 <?php
 
+function wisski_core_standard_path_settings() {
+  
+  // key => type
+  return array (
+    'type' => 'wisski_two',
+    'path' => array(
+      'uuid' => 's',
+      'starting_concept' => 's',
+      'path_array' => 'a',
+      'datatype_property' => 's',
+      'connected_bundle' => 's',
+      'connected_field' => 's',
+      'field_type' => 's',
+      'connected_field_property' => 's',
+      'short_name' => 's',
+      'disamb' => 'i',
+      'is_group' => 'b',
+      'group_id' => 'i',
+      'group_prefix' => 'a',
+    )
+  );
+}
+
+function wisski_one_standard_path_settings() {
+  
+  // key => type
+  return array(
+    'type' => 'wisski_one',  
+    'path' => array(
+      'path_array' => 'a',
+      'datatype_property' => 's',
+      'short_name' => 's',
+      'disamb' => 'i',
+      'length' => 'i',
+      'name' => 's',
+      'description' => 's', 
+      'group_id' => 'i',
+      'weight' => 'i',
+      'is_group' => 'b',
+      'fieldtype' => 's',
+      'enabled' => 'b', 
+      'mandatory' => 'b',
+      'repeatable' => 'b',
+      'type' => 's',
+      'uuid' => 's',
+  ));
+}
+
+
 /**
  * @param settings 
  * Associative array defining field and instance with the following keys and
@@ -21,6 +70,7 @@ function wisski_core_create_instance($settings) {
     }
   }
   if (!empty($errors)) {
+    dpm($settings,__FUNCTION__.' Exception');
     throw new WisskiMissingArgumentException($errors);
   }
   $field_info = array(
@@ -90,19 +140,17 @@ function wisski_core_path_export_form($form,&$form_state) {
   $form_state['storage']['paths'] = array();
   $real_paths = &$form_state['storage']['paths'];
   $print_paths = array();
-  $hash = array();
   $defs = array();
   $lookbehind = array(); //we save paths, that cannot be resolved at first sight
                         //should theoretically always be empty
   $paths = db_select('wisski_pb_pathdata','p')->fields('p',$settings)->condition('pending',0)->execute();
-  $count = 0;
   while ($path = $paths->fetchObject()) {
     $uuid = $path->uuid;
     $path->path_array = unserialize($path->path_array);
-    if (!empty($path->group_id)) {
+/*    if (!empty($path->group_id)) {
       $gid = $path->group_id;
-      if (isset($hash[$gid])) {
-        $rp = $real_paths[$hash[$gid]];
+      if (isset($real_paths[$gid])) {
+        $rp = $real_paths[$gid];
         $path->path_array = array_merge($rp['path_array'],$path->path_array);
         $path->starting_concept = $rp['starting_concept'];
         $path->field_type = $rp['field_type'];
@@ -113,23 +161,21 @@ function wisski_core_path_export_form($form,&$form_state) {
     }
     if (!empty($path->external_path)) {
       $xid = $path->external_path;
-      if (isset($hash[$xid])) {
-        $path->path_array = array_merge($path->path_array,$real_paths[$hash[$xid]]['path_array']);
-        $path->datatype_property = $real_paths[$hash[$xid]]['datatype_property'];
+      if (isset($real_paths[$xid])) {
+        $path->path_array = array_merge($path->path_array,$real_paths[$xid]['path_array']);
+        $path->datatype_property = $real_paths[$xid]['datatype_property'];
       } else {
         $lookbehind[$uuid] = $path;
         continue;
       }
-    }
-    $hash[$uuid] = $count;
-    $defs[$count] = 1;
-    $real_paths[$count] = (array)$path;
+    }*/
+    $defs[$uuid] = $uuid;
+    $real_paths[$uuid] = (array)$path;
     $path->path_array = implode(' -> ',$path->path_array);
-    $print_paths[$count] = (array)$path;
-    $count++;
+    $print_paths[$uuid] = (array)$path;
   }
   
-  dpm(array('header'=>$settings,'defs'=>$defs,'paths'=>$print_paths),'input');
+  dpm(array('header'=>$settings,'defs'=>$defs,'paths'=>$print_paths,'realdefs'=>array_intersect_key($print_paths,$defs)),'input');
   
   if (!empty($lookbehind)) {
     trigger_error('errors when loading paths '.implode(', ',array_keys($lookbehind)),E_USER_WARNING);
@@ -207,25 +253,41 @@ function wisski_core_path_export_form_validate($form,&$form_state) {
 
 function wisski_core_path_export_form_submit($form,$form_state) {
 
-  dpm($form_state,__METHOD__);  
+  //dpm($form_state,__METHOD__);  
   $export = array_intersect_key($form_state['storage']['paths'],$form_state['storage']['selected']);
   $export = array('path'=>$export);
-  $export = wisski_core_array_to_xml($export,'pathbuilder');
+  $export = wisski_core_path_array_to_xml($export,'pathbuilder');
+  //dpm($export,'Export');
   $file = file_save_data($export,NULL);
   $cur = variable_get("wisski_pb_export", array());    
   $cur[$file->filename] = $file;
   variable_set("wisski_pb_export", $cur);
 }
 
-function wisski_core_path_import_form($form,$form_state) {
+function wisski_core_path_import_form($form,&$form_state) {
   dpm(array($form, $form_state), 'ffs');
   
-  $form['string_input'] = array(
-    '#type' => 'textarea',
+  $form['upper'] = array(
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
     '#title' => t('Paste path XML here'),
-    '#prefix' => '<div id="path-xml-text">',
-    '#suffix' => '</div>',
+  );  
+  
+  $form['upper']['string_input'] = array(
+    '#type' => 'textarea',
   );
+  
+  if (isset($form_state['storage']['wrong_xml'])) {
+    $form['upper']['string_input']['#value'] = $form_state['storage']['wrong_xml'];
+  }
+  
+  $form['upper']['btn_xml'] = array(
+    '#type' => 'submit',
+    '#value' => t('Import XML'),
+    '#name' => 'btn_xml',
+  );
+  
   
   $files = variable_get('wisski_pb_export',array());
   
@@ -256,14 +318,16 @@ function wisski_core_path_import_form($form,$form_state) {
       );
     }
     
-    $form['upper'] = array(
+    $form_state['storage']['files'] = $files;
+    
+    $form['middle'] = array(
       '#type'  => 'fieldset',
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
       '#title' => t('or choose an available export file'),
     );
     
-    $form['upper']['tbl_available'] = array(
+    $form['middle']['tbl_available'] = array(
       '#type' => 'tableselect',
       '#header' => $header,
       '#options' => $rows,
@@ -273,14 +337,9 @@ function wisski_core_path_import_form($form,$form_state) {
       '#empty' => t('No export files available'),
     );
     
-    $form['upper']['btn_available'] = array(
-      '#type' => 'button',
-      '#value' => t('Select'),
-      '#ajax'=> array(
-        'wrapper' => 'path-xml-text',
-        'callback' => 'wisski_core_path_import_form_callback',
-      ),
-      '#limit_validation_errors' => array(),
+    $form['middle']['btn_available'] = array(
+      '#type' => 'submit',
+      '#value' => t('Select and import'),
       '#name' => 'btn_available',
     );
   }
@@ -298,16 +357,19 @@ function wisski_core_path_import_form($form,$form_state) {
   );
   
   $form['lower']['btn_upload'] = array(
-    '#type' => 'button',
-    '#value' => t('Upload'),
-    '#ajax'=> array(
-      'wrapper' => 'path-xml-text',
-      'callback' => 'wisski_core_path_import_form_callback',
-    ),
-    '#limit_validation_errors' => array(),
+    '#type' => 'submit',
+    '#value' => t('Upload and import'),
     '#name' => 'btn_upload',
   );
   
+  if (isset($default)) $form['string_input']['#value'] = $default;
+  
+  
+  return $form;
+}
+
+function wisski_core_path_import_form_validate($form,&$form_state) {
+
   if (isset($form_state['triggering_element'])) {
     if ($form_state['triggering_element']['#name'] == 'btn_upload') {
       $file = file_save_upload('path_file_upload', array(
@@ -315,53 +377,47 @@ function wisski_core_path_import_form($form,$form_state) {
         'file_validate_extensions' => array('xml xhtml'),
       ));
       if ($file) {
-        $default = file_get_contents($file->uri);
+        $input = file_get_contents($file->uri);
       }
     }
     if ($form_state['triggering_element']['#name'] == 'btn_available') {
-      $file = $files[$form_state['input']['tbl_available']];
+      $file = $form_state['storage']['files'][$form_state['input']['tbl_available']];
       if ($file) {
-        $default = file_get_contents($file->uri);
+        $input = file_get_contents($file->uri);
       }
+    }
+    if ($form_state['triggering_element']['#name'] == 'btn_xml') {
+      $input = $form_state['input']['btn_xml'];
     }
   }
   
-  if (isset($default)) $form['string_input']['#value'] = $default;
-  
-  $form['btn_next'] = array(
-    '#type' => 'submit',
-    '#value' => t('Next Step'),
-  );
-  
-  return $form;
-}
-
-function wisski_core_path_import_form_callback($form,$form_state) {
-  return $form['string_input'];
-}
-
-function wisski_core_path_import_form_validate($form,&$form_state) {
-
-  if (empty($form_state['values']['string_input'])) {
+  if (empty($input)) {
+    $form_state['storage']['wrong_xml'] = $input;
     form_set_error('string_input',t('Please Insert some WissKI path XML'));
   } else {
     variable_set('wisski_path_import',NULL);
-    $errors = array();
+    variable_del('wisski_path_settings');
+    $matches = array();
+    if (preg_match("/\<(\w+)\>/", $input, $matches)) {
+      if ($matches[1] === 'pathbuilderinterface') {
+        //we guess it is an old wisski version import file here
+        $path_settings = wisski_one_standard_path_settings();
+      } else $path_settings = wisski_core_standard_path_settings();  
+    } else throw new InvalidArgumentException('Invalid XML');
     try {
-      $path_array = wisski_core_xml_to_array($form_state['values']['string_input'],$errors);
+      $path_array = wisski_core_path_xml_to_array($input,$path_settings);
     } catch (Exception $e) {
-      form_set_error('string_inpüt',t('Invalid XML'));
+      dpm(get_class($e));
+      form_set_error('string_input',t('Invalid XML'));
     }
-    if (!empty($errors)) {
-      dpm($errors,'ERRORS');
-      //form_set_error('string_input',t('Invalid WissKI path XML'));
-    }
+    variable_set('wisski_path_settings',$path_settings);
     if (isset($path_array)) {
       $timestamp = time();
       variable_set('wisski_path_import',array($timestamp => $path_array['path']));
       $form_state['storage']['timestamp'] = $timestamp;
     }
   }
+  
 }
 
 function wisski_core_path_import_form_submit($form,&$form_state) {
@@ -384,7 +440,9 @@ function wisski_core_path_import_selection_form($form,&$form_state) {
   } else throw new WisskiWrongPathException($input_paths);
   dpm($input_paths,'Path Input');
   
-  $settings = array_keys(wisski_core_standard_path_settings());
+  $settings = variable_get('wisski_path_settings');
+  $old_wisski = ($settings['type'] === 'wisski_one');
+  $settings = array_keys($settings['path']);
   $settings = drupal_map_assoc(array_diff($settings,array('group_prefix','connected_field','connected_field_property','field_type')));
   
   //we do not use wisski_core_make_path_array(array(),TRUE) here to avoid multiple
@@ -403,7 +461,7 @@ function wisski_core_path_import_selection_form($form,&$form_state) {
     
     if (!isset($path['starting_concept'])) {
       $path_array = $path['path_array'];
-      if (count($path_array) % 2 === 1) {
+      if ($old_wisski) {
         //we assume an old wisski export file and thus the first element
         //in the path is the starting concept
         $path['starting_concept'] = array_shift($path_array);
@@ -426,24 +484,29 @@ function wisski_core_path_import_selection_form($form,&$form_state) {
     $real_paths[$key] = $path;
     $print_paths[$key] = $path;
     if (!empty($path['path_array'])) $print_paths[$key]['path_array'] = implode(' -> ',$path['path_array']);
-    $print_paths[$key]['connected_bundle'] = array(
-      'data' => array(
-        '#title' => t('Connected Bundle'),
-        '#title_display' => 'invisible',
-        '#type' => 'select',
-        '#options' => array('empty'=>t('none')) + $path['connected_bundle'],
-        '#required' => FALSE,
-        '#default_value' => 'empty',
-        '#name' => 'connected_bundle['.$key.']',
-        '#ajax' => array(
-          'callback' => 'wisski_core_path_import_selection_form_callback',
-          'wrapper' => 'wisski-path-table',
+    if (empty($path['connected_bundle'])) {
+      $print_paths[$key]['connected_bundle'] = t('No Bundles available');
+    } else {
+      $bdl = $path['connected_bundle'];
+      $print_paths[$key]['connected_bundle'] = array(
+        'data' => array(
+          '#title' => t('Connected Bundle'),
+          '#title_display' => 'invisible',
+          '#type' => 'select',
+          '#options' => array('empty'=>t('none')) + $bdl,
+          '#required' => FALSE,
+          '#value' => key($bdl),
+          '#name' => 'connected_bundle['.$key.']',
+          '#ajax' => array(
+            'callback' => 'wisski_core_path_import_selection_form_callback',
+            'wrapper' => 'wisski-path-table',
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
   
-  //dpm(array('header'=>$settings,'paths'=>$real_paths,'print'=>$print_paths),'input');
+  dpm(array('header'=>$settings,'paths'=>$real_paths,'print'=>$print_paths),'input');
   
   $defs = array();
   
@@ -546,7 +609,7 @@ function wisski_core_path_import_confirmation_form($form,&$form_state) {
         '#required' => TRUE,
         '#name' => 'field['.$key.']',
       );
-      if (isset($path['field_type'])) {
+      if (isset($path['field_type']) && !empty($path['field_type'])) {
         $data['#options'] = $field_types;
         $data['#value'] = $path['field_type'];
       } else {
@@ -557,7 +620,7 @@ function wisski_core_path_import_confirmation_form($form,&$form_state) {
     }
   }
   
-  //dpm(array('header'=>$settings,'paths'=>$real_paths,'print'=>$print_paths),'input');
+  dpm(array('header'=>$settings,'paths'=>$real_paths,'print'=>$print_paths),'input');
   
   $form['question'] = array('#type' => 'item','#markup' => t('Do you really want to import these paths and connect them with the given fields and bundles?'));
   
@@ -597,8 +660,16 @@ function wisski_core_path_import_confirmation_form_validate($form,&$form_state) 
 
 function wisski_core_path_import_confirmation_form_submit($form,&$form_state) {
   
-  $settings = wisski_core_standard_path_settings();
+  dpm(func_get_args(),__FUNCTION__);
   
+  $old_wisski = FALSE;
+  $settings = variable_get('wisski_path_settings');
+  //dpm($settings,'path settings');
+  $old_wisski = ($settings['type'] === 'wisski_one');
+  //for DB purposes we need clean settings
+  $settings = wisski_core_standard_path_settings();
+  $settings = $settings['path'];
+  //dpm($settings,'path settings');
   if (isset($form_state['storage']['paths'])) {
     $paths = $form_state['storage']['paths'];
   
@@ -616,19 +687,35 @@ function wisski_core_path_import_confirmation_form_submit($form,&$form_state) {
         );
         return;
       }
+      if ($old_wisski) {
+        if (isset($path['fieldtype'])) $path['field_type'] = $path['fieldtype'];
+        if (isset($path['name'])) $path['short_name'] = $path['name'];
+      }
+      if (empty($path['field_type'])) {
+        $path['field_type'] = $form_state['input']['field'][$path['uuid']];
+      }
+      if (!empty($path['connected_bundle']) && $path['connected_bundle'] !== 'empty') {
+        if (!empty($path['field_type']) && $path['field_type'] !== 'empty') {
+          dpm($path['short_name'],'short name');
+          $name = preg_replace('/[^\w]/','_',$path['short_name']);
+          /*
+          if (!empty($path['short_name'])) {
+            $name = $path['short_name'];
+            if (!ctype_alphanum($name)) $name = wisski_core_guess_path_name($path);
+          } else $name = wisski_core_guess_path_name($path);
+          */
+          $field_settings = array(
+            'field_name' => $name,
+            'field_type' => $path['field_type'],
+            'bundle_name' => $path['connected_bundle'],
+          );
+          wisski_core_create_instance($field_settings);
+        }
+      }
       $path['path_array'] = serialize($path['path_array']);
       $path = array_intersect_key($path,$settings);
 #      drupal_set_message(serialize($path));
       db_insert('wisski_pb_pathdata')->fields($path)->execute();
-      if ($path['connected_bundle'] !== 'empty') {
-        if ($path['field_type'] !== 'empty') {
-          $settings = array(
-            'field_name' => isset($path['short_name']) ? $path['short_name'] : wisski_core_guess_path_name($path),
-            'field_type' => $path['field_type'],
-            'bundle_name' => $path['connected_bundle'],
-          );
-        }
-      }
     }    
   }
   drupal_set_message(t('Imported external paths'));
@@ -734,126 +821,73 @@ function wisski_core_path_import_conflict_form_submit($form,&$form_state) {
   drupal_goto('admin/config/wisski/pathbuilder/import/confirm',array('query'=>array('imp'=>$timestamp)));
 }
 
-function wisski_core_xml_to_array($xml,&$errors) {
-  
+function wisski_core_path_xml_to_array($xml,$path_settings) {
+
   $sxi = new SimpleXMLIterator($xml);
   $array = array();
-  $settings = array_keys(wisski_core_standard_path_settings());
-  $settings = array_fill_keys(array_diff($settings,array('group_prefix','connected_bundle','connected_field','connected_field_property')),FALSE);
-  $settings['starting_concept'] = TRUE;
-  $settings['path_array'] = TRUE;
-  $settings = array('path'=>$settings);
-  $errors = _wisski_core_SXI_to_array($sxi,$array,$settings);
-  dpm(array('xml'=>$xml,'settings'=>$settings,'result'=>$array,'errors'=>$errors),__METHOD__);
+  _wisski_core_SXI_to_array($sxi,$array,$path_settings);
+  dpm(array('xml'=>$xml,'settings'=>$path_settings,'result'=>$array),__METHOD__);
   return $array;
 }
 
-function _wisski_core_SXI_to_array(SimpleXMLIterator $sxi, array &$array) {
+function _wisski_core_SXI_to_array(SimpleXMLIterator $sxi, array &$array,$path_settings) {
   
-  foreach($sxi->attributes() as $key => $attr) {
-    $array[$key] = (string)$attr;
-  }
   for ($sxi->rewind(); $sxi->valid(); $sxi->next()) {
     $sk = $sxi->key();
-    if ($sxi->hasChildren()) {
-      $sub = array();
-      _wisski_core_SXI_to_array($sxi->current(),$sub);
-      $array[$sk][] = $sub;
-    } else {
-      if (isset($array[$sk])) {
-        if (!is_array($array[$sk]) || !isset($array[$sk][0])) {
-          $m = $array[$sk];
-          $array[$sk] = array();
-          $array[$sk][0] = $m;
+    if (isset($path_settings[$sk])) {
+      if (!isset($array[$sk])) $array[$sk] = array();
+      if (is_array($path_settings[$sk])) {
+        if ($sxi->hasChildren()) {
+          $sub = array();
+          _wisski_core_SXI_to_array($sxi->current(),$sub,$path_settings[$sk]);
+          $array[$sk][] = $sub;
         }
-        $array[$sk][] = (string)$sxi->current();
-      } else $array[$sk] = (string)$sxi->current();
-    }
-    if ($sk === 'path_array' && isset($array[$sk][0]) && is_array($array[$sk][0])) {
-      //dpm($array,'path_array');
-      $array[$sk] = $array[$sk][0];
-    }
-  }
-  
-}
-
-/**
- * takes the $array as an associative array representing the key hierarchy of the final
- * output array
- */
-function _wisski_core_SXI_to_structured_array(SimpleXMLIterator $sxi,array &$array,array $structure) {
-
-  $required = array();
-  foreach($structure as $key => $value) {
-    if (is_bool($value)) {
-      if ($value) $required[$key] = $key;
-    } elseif (is_array($value)) {
-      if (wisski_array_is_something_true($value)) $required[$key] = $key;
-    }
-  }
-  dpm($required,'required');
-  dpm($sxi->asXML(),'XML');
-  dpm($structure,'Structure');
-  for ($sxi->rewind(); $sxi->valid(); $sxi->next()) {
-    $sk = $sxi->key();
-    dpm($sk,'key');
-    if (array_key_exists($structure,$sk)) {
-      if ($sxi->hasChildren()) {
-        $sub = array();
-        $sub_struct = $structure[$sk];
-        $sub_req = _wisski_core_SXI_to_array($sxi->current(),$sub,$sub_struct);
-        if (!empty($sub_req)) {
-          dpm($sxi->current()->asXML(),$sk);
-          return array($sk => $sub_req);
-        }
-        $array[$sk][] = $sub;
+      } elseif ($path_settings[$sk] === 'a') {
+        if ($sxi->hasChildren()) {
+          $sub = &$array[$sk];
+          _wisski_core_flat_SXI_to_array($sxi->current(),$sub);
+        } else $array[$sk][] = (string)$sxi->current();
       } else {
-        if (isset($array[$sk])) {
-          if (!is_array($array[$sk]) || !isset($array[$sk][0])) {
-            $m = $array[$sk];
-            $array[$sk] = array();
-            $array[$sk][0] = $m;
-          }
-          $array[$sk][] = (string)$sxi->current();
-        } else $array[$sk] = (string)$sxi->current();
+        $array[$sk] = (string)$sxi->current();
       }
-      if (isset($required[$sk])) unset($required[$sk]);
     }
   }
-  return $required;
 }
 
-function wisski_core_array_to_xml(array $array,$tag='xml') {
+function _wisski_core_flat_SXI_to_array(SimpleXMLIterator $sxi, array &$array) {
+
+  for ($sxi->rewind(); $sxi->valid(); $sxi->next()) {
+    $array[] = (string)$sxi->current();
+  }
+}
+
+function wisski_core_path_array_to_xml(array $array,$path_settings,$tag='xml') {
 
   $sxe = new SimpleXMLElement("<$tag></$tag>");
-  _wisski_core_array_to_SXE($array,$sxe,$tag);
+  _wisski_core_array_to_SXE($array,$sxe,$tag,$path_settings);
   return $sxe->asXML();
 }
 
-function _wisski_core_array_to_SXE(array $array,SimpleXMLElement $sxe,$tag) {
+function _wisski_core_array_to_SXE(array $array,SimpleXMLElement $sxe,$tag,$path_settings) {
   
   foreach ($array as $key => $value) {
-    if (!ctype_alpha($key[0])) $key = $tag.$key;
-    if (is_array($value)) {
-      if (is_numeric(key($value))) {
-        foreach($value as $sub_value) {
-          if (is_array($sub_value)) {
+    if (isset($path_settings[$key])) {
+      if (is_array($path_settings[$key])) {
+        if (is_array($value)) {
+          foreach ($value as $subvalue) {
             $child = $sxe->addChild($key);
-            _wisski_core_array_to_SXE($sub_value,$child,$key);
-          } else {
-            $sxe->addChild($key,$sub_value);
+            _wisski_core_array_to_SXE($subvalue,$child,$key,$path_settings[$key]);
+          }
+        }
+      } elseif ($path_settings[$key] === 'a') {
+        if (is_array($value)) {
+          foreach ($value as $subvalue) {
+            $sxe->addChild($key,$subvalue);
           }
         }
       } else {
-        $child = $sxe->addChild($key);
-        _wisski_core_array_to_SXE($value,$child,$key);
-      }
-    } else {
-//      if (is_numeric($key)) {
         $sxe->addChild($key,$value);
-//      } else {
-//        $sxe->addAttribute($key,$value);
-//      }
+      }
     }
   }
 }
@@ -887,36 +921,6 @@ function dm_first_error($str1,$str2) {
   }
   if ($fallback) return $len;
   return -1;
-}
-
-/**
- * @param $path_choice an array of uuids of the paths to export
- * @return the export XML as a String
- */
-function wisski_core_export_paths($path_choice,$old_wisski=FALSE) {
-  
-  $xmldoc = new SimpleXMLElement('<paths></paths>');
-  $std_settings = $old_wisski ? wisski_old_standard_path_settings() :
-    wisski_core_standard_path_settings();
-  
-  $result = db_select('wisski_pb_pathdata','p')
-    ->fields('p')
-    ->condition('uuid',$path_choice,'IN')
-    ->execute();
-  
-  while($path = $result->fetchObject()) {
-
-    $xml_path = $xmldoc->addChild('path');
-
-    foreach ($std_settings as $set) {
-      if (property_exists($path,$set)) {
-        
-        $xml_path->addChild($set,htmlentities((string)$path->{$set}));
-      }
-    }
-  }
-  
-  return $xmldoc->asXML();
 }
 
 function wisski_file_size_pretty_print($size_in_bytes) {
