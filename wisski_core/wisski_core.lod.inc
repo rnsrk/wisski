@@ -21,8 +21,8 @@ function wisski_core_lod_make_internal_uri($entity_title,$bundle_name,$ind_only 
     }
   }
   
-	$ind_uri = wisski_salz_pb_make_uri($bundle_name, array('bundle' => $bundle_name, 'title' => $entity_title));
-	watchdog('wisski sushi mako uri', 'input: '.htmlentities(implode(', ',func_get_args())).'<br>output: '.htmlentities($ind_uri));
+  $ind_uri = wisski_salz_pb_make_uri($bundle_name, array('bundle' => $bundle_name, 'title' => $entity_title));
+  watchdog('wisski sushi mako uri', 'input: '.htmlentities(implode(', ',func_get_args())).'<br>output: '.htmlentities($ind_uri));
 
   if ($ind_only)
     return $ind_uri;
