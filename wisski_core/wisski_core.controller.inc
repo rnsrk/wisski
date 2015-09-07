@@ -34,35 +34,65 @@ class WisskiCoreEntity extends Entity {
  */
 class WisskiCoreEntityController extends EntityAPIController {
 
+  /**
+   * Load wisski-entities.
+   * @param $ids List of entity-ids typically as URLs.
+   *             if this is FALSE load any wisski-entity
+   * @param $conditions List of conditions
+   */
+   
   public function load($ids = array(), $conditions = array()) {
-//  dpm("Loading the entity " . serialize($ids));
-//  dpm(func_get_args(),__METHOD__);  
-/*    if (empty($ids)) {
+  
+  dpm("Loading the entity " . serialize($ids));
+  dpm(func_get_args(),__METHOD__);  
+    if (empty($ids)) {
       dpm('loading WisskiCoreEntities'.(empty($conditions) ? '' : 'with conditions'));
       dpm($conditions,'conditions');
     } else {
       dpm('loading '.$ids[0].(count($ids) > 1 ? 'and '.(count($ids) - 1). 'other entities':''));
     }
-*/
+
+    // the entities to get - initialize as empty.
     $entities = array();
     wisski_core_tick('start');
     $error = FALSE;
+    
+    // $ids is not false -> load specific ones
     if($ids !== FALSE) {
+    
+      // if it is empty, return an empty set if matches
       if (empty($ids)) return array();
+      
+      // get the entity either via the uri in the triple store
+      // or via the numeric id
+      // @TODO:  this should be optimized by checking if the ids are numeric!
+      // @CHECK: Optimization
       $or = db_or()->condition('uri',$ids,'IN')->condition('id',$ids,'IN');
       $db_entities = db_select('wisski_entity_data','ent')
                       ->fields('ent')
                       ->condition($or)
                       ->execute()
                       ->fetchAllAssoc('id');
+
+
 //      dpm($db_entities,'$db_entities');
+      
+      // haha... sdi is ids flipped... ;)
       $sdi = array_flip($ids);
+      
+      // iterate through all the gathered entities
       foreach ($db_entities as $obj) {
+        // create entity objects
         $entity = entity_create('wisski_individual', array('type' => $obj->type, 'uri' => $obj->uri, 'is_new' => FALSE, 'id' => $obj->id));
+        // add them to the return list
         $entities[$entity->id] = $entity;
+      
+        // clear the id from the array of ids to load  
         if (isset($sdi[$entity->uri])) unset($sdi[$entity->uri]);
         elseif (isset($sdi[$entity->id])) unset($sdi[$entity->id]);
       }
+      
+      // why do we merge this here again?
       $ids = array_merge(array_flip($sdi));
       foreach ($ids as $id) {
         if (strpos($id,':') === FALSE) {
