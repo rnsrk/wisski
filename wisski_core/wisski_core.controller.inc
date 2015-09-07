@@ -94,9 +94,18 @@ class WisskiCoreEntityController extends EntityAPIController {
       
       // why do we merge this here again?
       $ids = array_merge(array_flip($sdi));
+
+      // go through all remaining ids
       foreach ($ids as $id) {
+        drupal_set_message("argh: " . $id);
+        // if there is no : in it, it is neither a long uri (http: has a double point)
+        // nor a namespaced uri 
         if (strpos($id,':') === FALSE) {
+        
+          // check if the : is encoded
           $id = urldecode($id);
+          
+          // if there still is nothing it is a number
           if (strpos($id,':') === FALSE) {
             
             //$id is definitely no uri. Since this id also was not found in the DB
@@ -105,7 +114,16 @@ class WisskiCoreEntityController extends EntityAPIController {
             continue;
             
           }
+          
+          /*
+          
+          This is evil... we want clean ids and we add <> if we need it.
+          
+          // if there is something now 
+          // check if it has http in the beginning
           if (strpos($id,'http:') !== FALSE) {
+          
+            // if so add <> if they have not been there already
             if (strpos($id,'<') !== 0) {
               $id = '<'.$id;
             }
@@ -113,39 +131,63 @@ class WisskiCoreEntityController extends EntityAPIController {
               $id = $id.'>';
             }
           }
+          
+          */
         }
-        //here we assume that $id is a URI
+        
+        // here we assume that $id is a URI
         wisski_core_tick('ids');
+        
+        // which types are available for this uri?
         $types = wisski_salz_pb_get_entity_info($id);
+        
+        // there are available types
         if ($types !== FALSE) {
           wisski_core_tick('entities');
+
+          // get the bundle information
           $bundles = db_select('wisski_entity_bundles','b')
                     ->fields('b',array('type','uri','short_title_pattern'))
                     ->execute()
                     ->fetchAllAssoc('uri');
 //          dpm($bundles);
           wisski_core_tick('bundles');
+          
+          // go through the types of the uri
           foreach($types as $bundle_uri) {
+          
+            // look at the bundle information
             if (isset($bundles[$bundle_uri])) {
+              
+              // we found the bundle
               $bundle = $bundles[$bundle_uri];
+
               //TODO make short title
               $entity = entity_create('wisski_individual', array('type' => $bundle->type, 'uri' => $id));
+
+              // we just got the id hopefully, if not we can select it now.
               if(empty($entity->id)) {
+                // where do we find the id?
                 $id = db_select('wisski_entity_data','d')
                   ->fields('d')
                   ->condition('uri',$entity->uri)
                   ->condition('type',$entity->type)
                   ->execute();
                 if ($id->rowCount() > 0) {
+                  // did we get something?
                   $id = $id->fetchObject()->id;
                 } else {
+                  // if not we add the information to the table
                   $id = db_insert('wisski_entity_data')
                     ->fields(array('uri' => $entity->uri,'type' => $entity->type))
                     ->execute();
                 }
                 $entity->id = $id;
               }
+              
+              // our entities are never new
               $entity->is_new = FALSE;
+              // add it to the output
               $entities[$entity->id] = $entity;
             }
           }
@@ -155,14 +197,24 @@ class WisskiCoreEntityController extends EntityAPIController {
           $error = TRUE;
         }
       } 
-    } else {
+    } else { // $ids is FALSE
+
+      // initialize
       $entity_ids = array();
-      // load all
+
+      // load all of a certain type?
       $bundle_type = isset($conditions['type']) ? $conditions['type'] : arg(1);
       $uri_info = wisski_core_make_uri("",$bundle_type,FALSE);
+
+      // check if we've got an uri
       if ($uri_info !== FALSE) {
+      
+        // uri of the bundle
         $bundle_uri = $uri_info[1];
+
+        // get all individuals of this type
         $inds = wisski_salz_pb_get_bundle_info($bundle_uri);
+
         if ($inds !== FALSE) {
           foreach($inds as $ind_uri) {
             $entity_title = $ind_uri;
