@@ -176,10 +176,23 @@ function wisski_core_entity_query_alter($query) {
  */
 function wisski_core_entity_field_query_callback($query) {
 
+  drupal_set_message(serialize($query));
+
+  // this should always hold
+  if($query->entityConditions['entity_type']['value'] != "wisski_individual") {
+    return 0;
+  }
+  
+  // which type should we fetch?
+  
+  $type = $query->propertyConditions[0]['value'];
+  
+  drupal_set_message(serialize($type));
+
 #  drupal_set_message(serialize("pager: " . $query->pager . " count " . $query->count));
 
   if($query->count)
-    return 20;
+    return 999;
 
   #drupal_set_message(serialize($query));
   
@@ -193,7 +206,7 @@ function wisski_core_entity_field_query_callback($query) {
   
   module_load_include('inc','wisski_core','wisski_core.pathbuilder');
   module_load_include('inc','wisski_core','wisski_core.pages');
-  $blubb = _wisski_core_get_sorted_chunk('ecrm_e1_crm_entity',20,0);
+  $blubb = _wisski_core_get_sorted_chunk($type,20,0);
   
   
   

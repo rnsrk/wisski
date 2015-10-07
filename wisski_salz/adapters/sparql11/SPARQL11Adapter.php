@@ -40,6 +40,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     fwrite($log,time()." - ".$type."\n".$query."\n\n");
     // Check for undefined prefixes
     $prefixes = '';
+    // @TODO: Check - this should not happen every time I query something, this is very 
+    // inefficient. Just check it in case of updates!
     $this->updateNamespaces();
     foreach (EasyRdf_Namespace::namespaces() as $prefix => $uri) {
       if (strpos($query, "$prefix:") !== false and strpos($query, "PREFIX $prefix:") === false) {
@@ -112,6 +114,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
           fwrite($log,"FAIL\n\n");
           fclose($log);
           echo __METHOD__.' (line: '.__LINE__.') failed request '.htmlentities($query)."\n\r";
+
           throw new EasyRdf_Exception(
             "HTTP request for SPARQL query failed: ".$response->getBody()
           );
@@ -177,14 +180,17 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
     $this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
     */
-    
+
+    // @TODO: This seems useless.
+    /*    
     $namespaces = $this->getNamespaces();
 
     if(!empty($namespaces)) { 	   
       foreach($this->getNamespaces() as $key => $value) {
         $this->putNamespace($key, $value);
       }
-    } /*else { // @TODO: this is not good
+    }*/
+     /*else { // @TODO: this is not good
       $this->putNamespace('nso',  'http://erlangen-crm.org/120111/');
       $this->putNamespace('ns1',  'http://erlangen-crm.org/140220/');
       $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');  
@@ -302,6 +308,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       foreach ($db_spaces as $space) {
         EasyRdf_Namespace::set($space->short_name,$space->long_name);
       }
+
       $spaces_set = TRUE;
     }
   }
@@ -317,7 +324,14 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         ->fields(array('short_name' => $short_name,'long_name' => $long_name))
         ->execute();
     } else {
-//      drupal_set_message('Namespace '.$short_name.' already exists in DB');
+      if(!empty($short_name) && !empty($long_name)) {
+        ddebug_backtrace();
+        db_update('wisski_salz_sparql11_ontology_namespaces')
+          ->fields(array('long_name' => $long_name))
+          ->condition('short_name', $short_name, '=')
+          ->execute();
+        drupal_set_message('Warning: Namespace '.$short_name.' already exists in DB','warning');
+      }
     }
   }
   
@@ -330,6 +344,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     foreach ($db_spaces as $space) {
       $ns[$space->short_name] = $space->long_name;
     }
+    
     return $ns;
   }
   
@@ -672,6 +687,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     if (!empty($graph_name)) return $graph_name;
     global $base_url;
     $graph_name = variable_get('wisski_graph_name'.$type,$base_url.'/wisski_graph'.$type);
+
     list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ GRAPH <$graph_name> {?s ?p ?o}} LIMIT 1");
     if ($ok) {
       if (empty($result)) {
@@ -679,6 +695,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         variable_set('wisski_graph_name'.$type,$graph_name);
       }
     }
+
     return $graph_name;
   }
 
@@ -882,7 +899,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     // escape comment and go through it - check for any special characters which should not be there
     // @TODO: @CHECK: escape!
     $insert_string .= $comment ? "<$entity_uri> rdfs:comment '$comment' ." : '';
-
+    drupal_set_message(htmlentities("INSERT {GRAPH <$graph_name> { $insert_string }} WHERE {?s ?p ?o.}"));
     list($ok,$result) = $this->updateSPARQL("INSERT {GRAPH <$graph_name> { $insert_string }} WHERE {?s ?p ?o.}");
     return $ok;
   }
@@ -908,7 +925,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       $placeholders['hash'] = md5(time() . rand());
       $placeholders['number']++;
       $ind_uri = $template;
-      $ind_uri = '<'.wisski_core_fill_template_string($template, $placeholders).'>';
+      $ind_uri = wisski_core_fill_template_string($template, $placeholders);
+#      $ind_uri = '<'.wisski_core_fill_template_string($template, $placeholders).'>';
 //      $ind_uri = '<'.$prefix . '/inst/' . $name_part . '_' . $hash.'>';
     } while ($this->uriExists($ind_uri));
     watchdog('wisski sushi mako uri', 'input: '.htmlentities(implode(', ',func_get_args())).'<br>output: '.htmlentities($ind_uri));
@@ -1669,7 +1687,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
           $classes[$class_name] = array(
             'type' => $class_name,
             'label' => $class_label,
-            'uri' => $class_label,
+            'uri' => wisski_salz_ensure_long_namespace($class_label),
             'title' => $class_title,
             'weight' => 0,
             'description' => 'retrieved from ontology',
@@ -1946,7 +1964,11 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
 	foreach($ns as $key => $value) {
   	  $this->putNamespace($key, $value);
   	} 
-
+  	
+  	global $base_url;
+  	// @TODO: check if it is already in the ontolog.
+  	$this->putNamespace("local", $base_url . '/');
+  	$this->putNamespace("data", $base_url . '/inst/');
       }
       
       

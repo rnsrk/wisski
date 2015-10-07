@@ -84,6 +84,7 @@ function wisski_salz_map_namespaces($namespace) {
     $map = module_invoke($module,$hook,$namespace);
     if (!empty($map)) $maps[$module] = $map;
   }
+    
 //  dpm(array('namespace'=>$namespace,'maps'=>$maps));
   return $maps;
 }
@@ -451,6 +452,7 @@ function wisski_salz_pb_make_uri($name_part = '') {
 function wisski_salz_pb_insert_individual($entity_uri,$bundle_uri,$comment = FALSE) {
   
   $store = wisski_salz_invoke_local_store();
+
   if ($store->getType() == "SPARQL 1.1") return $store->insertIndividual($entity_uri,$bundle_uri,$comment);
   return FALSE;
 }

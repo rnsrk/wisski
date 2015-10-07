@@ -213,6 +213,7 @@ function wisski_core_choose_bundle() {
 function wisski_core_individual_add($type) {
 
   $entity_type = wisski_core_bundle_load_multiple($type);
+  drupal_set_message(htmlentities(serialize($entity_type)));
 //  drupal_set_title(t('Create new %type', array('%type' => $type)));
   drupal_set_title(t('Create @name', array('@name' => entity_label('entity_type', $entity_type))));
   
@@ -244,7 +245,7 @@ function wisski_core_individual_form($form, &$form_state, $entity, $operation = 
     if (count($entity) == 1) $entity = current($entity);
     else throw new InvalidArgumentException("\$entity must be a drupal entity");
   }
-  
+
   // Store the entity in the form.
   $form_state['wisski_core'] = $entity;
 
@@ -265,6 +266,8 @@ function wisski_core_individual_form($form, &$form_state, $entity, $operation = 
     '#default_value' => $entity->uri,
     '#weight' => -10,
   );
+  
+    
 /*  $form['description'] = array(
     '#type' => 'textfield',
     '#title' => t('Description'),
