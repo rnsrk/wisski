@@ -163,10 +163,11 @@ function wisski_core_access_callback($op, $entity, $account, $entity_type) {
  *
  */
 function wisski_core_entity_query_alter($query) {
-
-  // change callback  
-  $query->executeCallback = 'wisski_core_entity_field_query_callback';
   
+  // change callback - but only for individuals, not for bundles etc...
+  if($query->entityConditions['entity_type']['value'] == "wisski_individual") {
+    $query->executeCallback = 'wisski_core_entity_field_query_callback';
+  }
 }
 
 /**
