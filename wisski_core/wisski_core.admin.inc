@@ -239,7 +239,7 @@ function wisski_core_individual_add($type) {
  *   Entity edit form.
  */
 function wisski_core_individual_form($form, &$form_state, $entity, $operation = 'edit') {
-  
+
   //ensure that $entity is actually an entity
   if (is_array($entity)) {
     if (count($entity) == 1) $entity = current($entity);
@@ -412,7 +412,7 @@ function wisski_core_individual_form_delete_submit($form, &$form_state) {
 
 
 function wisski_core_bundle_form($form, &$form_state, $entity_type, $op = 'edit') {
-//  dpm($entity_type);
+#  dpm($entity_type);
   // Handle the case when cloning is performed.
   if ($op == 'clone') {
     $entity_type->label .= ' (cloned)';
