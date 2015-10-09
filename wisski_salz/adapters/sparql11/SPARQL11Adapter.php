@@ -413,7 +413,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     $ind = "?ind";
     $single_ind = FALSE;
     if (!empty($settings['uris'])) {
-      if(count($settings['uris']) > 1) $query .= " VALUES ?ind {".implode(' ',$settings['uris'])."}";
+      if(count($settings['uris']) > 1) $query .= " VALUES ?ind {<".implode('> <',$settings['uris']).">}";
       else {
         $ind = current($settings['uris']);
         if (trim($ind) === '') {
@@ -423,7 +423,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         $single_ind = TRUE;
       }
     }
-    $query .= " <$ind> rdf:type $starting_concept .";
+    $query .= " <$ind> rdf:type <$starting_concept> .";
     $i = 0;
     $ids = array();
     foreach($paths as $key => $path) {
@@ -445,27 +445,27 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
       if (empty($path_array)) {
         if (!empty($datatype_property)) {
           $query .= " BIND($ind AS ?tar$i)";
-          $query .= " <$ind> $datatype_property ?data$i .";
+          $query .= " <$ind> <$datatype_property> ?data$i .";
         }
       } else {
         $switch = FALSE;
         while(!empty($path_array)) {
           if ($switch = !$switch) {
-            $query .= ($count == 0) ? "$ind " : "?p".$i."c$count ";
-            $query .= array_shift($path_array);
+            $query .= ($count == 0) ? "<$ind> " : "?p".$i."c$count ";
+            $query .= "<" . array_shift($path_array) . ">";
             $count++;
             $query .= " ?p".$i."c$count. ";
           } else {
             $concept = array_shift($path_array);
 //          $query .= " ?$count rdf:type/rdfs:subClassOf* ".array_shift($path_array).". ";
-            $query .= " ?p".$i."c$count rdf:type ".$concept.". ";
+            $query .= " ?p".$i."c$count rdf:type <".$concept."> . ";
             if ($count == $disamb) {
               $query .= " BIND(?p".$i."c$count AS ?tar$i)";
             }
           }
         }
         if (!empty($datatype_property)) {
-          $query .= " ?p".$i."c$count $datatype_property ?data$i .";  
+          $query .= " ?p".$i."c$count <$datatype_property> ?data$i .";  
         } else {
           $query .= " BIND(?p".$i."c$count AS ?data$i)";
         }

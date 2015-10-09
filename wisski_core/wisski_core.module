@@ -165,7 +165,7 @@ function wisski_core_access_callback($op, $entity, $account, $entity_type) {
 function wisski_core_entity_query_alter($query) {
   
   // change callback - but only for individuals, not for bundles etc...
-  if($query->entityConditions['entity_type']['value'] == "wisski_individual") {
+  if(!empty($query->entityConditions['entity_type']) && $query->entityConditions['entity_type']['value'] == "wisski_individual") {
     $query->executeCallback = 'wisski_core_entity_field_query_callback';
   }
 }
@@ -179,11 +179,6 @@ function wisski_core_entity_field_query_callback($query) {
 
   drupal_set_message(serialize($query));
 
-  // this should always hold
-  if($query->entityConditions['entity_type']['value'] != "wisski_individual") {
-    return 0;
-  }
-  
   // which type should we fetch?
   
   $type = $query->propertyConditions[0]['value'];

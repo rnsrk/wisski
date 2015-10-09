@@ -1356,6 +1356,8 @@ function wisski_core_single_path_form_by_uuid($form,&$form_state,$uuid='unspecif
 //  dpm(func_get_args(),__FUNCTION__);
   variable_set('wisski_throw_exceptions',TRUE);
   $set = FALSE;
+
+  // If there is something already there
   if (isset($form_state['storage'])) {
     $storage = &$form_state['storage'];
     if (isset($storage['full_path'])) {
@@ -1364,7 +1366,7 @@ function wisski_core_single_path_form_by_uuid($form,&$form_state,$uuid='unspecif
         $starting_concept = $storage['starting_concept'];
         $set = TRUE;
         if (isset($storage['datatype_property'])) {
-          $datatype_property = $storage['datatype_property'];
+          $datatype_property = wisski_salz_ensure_short_namespace($storage['datatype_property']);
         }
         if (isset($storage['group_id'])) {
           $group_id = $storage['group_id'];
@@ -1374,11 +1376,13 @@ function wisski_core_single_path_form_by_uuid($form,&$form_state,$uuid='unspecif
         }
       }
     }
-  } else {
+  } else { // if it is not, initialize empty
     $form_state['storage'] = array();
     $storage = &$form_state['storage'];
   }
   $set_starting_concept = FALSE;
+  
+  // if we have no starting concept now we have to fetch one
   if (!$set) {
 //  dpm('not set',__FUNCTION__.' STORAGE');
     $select = db_select('wisski_pb_pathdata','p')
@@ -1803,18 +1807,24 @@ function wisski_core_single_path_callback($form,$form_state) {
 function wisski_core_single_path_form_submit($form,&$form_state) {
 
   $storage = $form_state['storage'];
+  
   $full_path = $storage['full_path'];
   $starting_concept = $storage['starting_concept'];
 /*  if (isset($storage['group_prefix'])) {
     $prefix = $storage['group_prefix'];
   }*/
+  
+  foreach($full_path as $key => $step) {
+    $full_path[$key] = wisski_salz_ensure_long_namespace($step);
+  }
+  
   $field_info = field_info_field($storage['field_name']);
   $path_info = array(
     'path_array' => serialize($full_path),
     'short_name' => isset($form_state['values']['short_name']) ? $form_state['values']['short_name'] : $storage['field_name'],
-    'datatype_property' => isset($storage['datatype_property']) && $storage['datatype_property'] !== 'empty' ? $storage['datatype_property'] : NULL,
+    'datatype_property' => isset($storage['datatype_property']) && $storage['datatype_property'] !== 'empty' ? wisski_salz_ensure_long_namespace($storage['datatype_property']) : NULL,
     'external_path' => isset($storage['external_path']['uuid']) ? $storage['external_path']['uuid'] : NULL,
-    'starting_concept' => $starting_concept,
+    'starting_concept' => wisski_salz_ensure_long_namespace($starting_concept),
     'connected_field' => $storage['field_name'],
     'field_type' => $field_info['type'],
     'connected_field_property' => $storage['map'],
