@@ -1,6 +1,8 @@
 <?php
 // $ID$
 
+use Drupal\Core\Url;
+
 /**
 * Basic module for the WissKI-Communication with Drupal 7
 * Provides the Pathbuilder Interface
@@ -170,9 +172,9 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
     // drupal_set_message("Store Instances = " . serialize($store_instances));
     //  $key = _sparql11_adapter_get_db_key();
     $link = array();
+
     foreach($store_types as $key => $store_type){
-	    $link[$store_type['name']] = array(
-		    'data' => l('Add new Store Instance of Type ' . $store_type['label'], 'admin/config/wisski/salz/add/' . $store_type['name']));
+	    $link[$store_type['name']] = Drupal::l('Add new Store Instance of Type ' . $store_type['label'], Url::fromUri('internal:/admin/config/wisski/salz/add/' . $store_type['name']));
     }
     //  $form = array();
     $sorted_store_instances_by_type = array();
@@ -252,6 +254,7 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
       '#prefix' => '<br>',
       '#suffix' => '<br>',
     );   
+
 /*
     foreach($sorted_store_instances_by_type as $key => $value) {
      drupal_set_message("sorted store instances = " . serialize($sorted_store_instances_by_type));
@@ -282,12 +285,15 @@ function wisski_salz_config_page() {
   wisski_salz_set_store_types();
   $store_types = wisski_salz_get_store_types();
   $items = array();
+
   foreach($store_types as $key => $store_type) {
-     $items[] = array(
-     //'data' => l($store_type['label'], 'admin/config/wisski/salz/add/' . $key),
-     'data' => l($store_type['label'], 'admin/config/wisski/salz/add/' . $store_type['name']),
-    );
+     $items[] = Drupal::l($store_type['label'], Url::fromUri('internal:/admin/config/wisski/salz/add/' . $store_type['name']));
+     //array(
+     //'data' => Drupal::l($store_type['label'], 'admin/config/wisski/salz/add/' . $key),
+     //'value' => Drupal::l($store_type['label'], Url::fromUri('internal:/admin/config/wisski/salz/add/' . $store_type['name'])),
+    //);
   }
+
   return array(
     'list' => array(
       '#theme' => 'item_list',

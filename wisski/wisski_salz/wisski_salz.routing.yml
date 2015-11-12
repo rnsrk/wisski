@@ -22,7 +22,7 @@ wisski_salz.admin_config_wisski_salz_navigate:
 wisski_salz.admin_config_wisski_salz_add:
   path: '/admin/config/wisski/salz/add'
   defaults:
-    _controller: '\Drupal\wisski_salz\Controller\wisski_salzController::content'
+    _form: '\Drupal\wisski_salz\Form\wisski_salz_config_pageForm'
     _title: 'Hello World'
   requirements:
     _permission: 'access content'
