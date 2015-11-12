@@ -1,0 +1,9 @@
+system.admin_config_wisski_salz:
+  route_name: system.admin_config_wisski_salz
+  title: 'List'
+  base_route: system.admin_config_wisski_salz
+system.admin_config_wisski_salz2:
+  route_name: system.admin_config_wisski_salz2
+  title: 'Settings'
+  base_route: system.admin_config_wisski_salz
+  weight: 100

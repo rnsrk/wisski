@@ -1,0 +1,12 @@
+wisski.content:
+  title: 'WissKI'
+  description: 'WissKI Module Settings'
+  parent: system.admin_config
+  route_name: wisski.content
+  weight: -100
+wisski_salz.admin_config_wisski_salz:
+  title: 'WissKI Salz'
+  description: 'WissKI Salz Module Settings'
+  parent: wisski.content
+  route_name: wisski_salz.admin_config_wisski_salz
+  weight: 100
