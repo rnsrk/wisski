@@ -1,0 +1,69 @@
+
+*** These modified files were found in JOE when it aborted on Wed Sep  9 16:31:02 2015
+*** JOE was aborted because the terminal closed
+
+*** File '(Unnamed)'
+wisski_entity
+wisski_core
+wisski_core_bundle
+wisski_core_bundle
+https://www.jvd.nl
+120111
+150218
+150218
+/current/
+$item['length']
+
+*** File '(Unnamed)'
+ wisski_core_bundle_load_multiple
+ wisski_core_bundle_load_multiple
+entity_load_multiple_by_name
+entity_load_multiple_by_name
+entity_bundles
+_menu
+wisski_salz_view_installed_store_instances
+Load Classes
+sparql11_adapter_wisski_load_entities_and_fields
+loadClasses
+
+*** File '(Unnamed)'
+wisski_core.module
+wisski_core.controller.inc
+wisski_core.module
+wisski_core.pathbuilder.inc
+wisski_core.module
+wisski_salz.module
+sparql11_adapter.module
+SPARQL11Adapter.php
+wisski_salz.module
+sparql11_adapter.module
+SPARQL11Adapter.php
+SPARQL11Adapter.php
+
+*** These modified files were found in JOE when it aborted on Fri Nov 13 15:50:11 2015
+*** JOE was aborted because the terminal closed
+
+*** File '(Unnamed)'
+wisski_salz_view_installed_store_instances
+Add new Store
+wisski_add_form
+settings_page
+library
+libra
+install
+uninstall
+arg
+arg(
+
+*** File '(Unnamed)'
+sparql11_adapter.module
+src/Form/sparql11_adapter_wisski_add_formForm.php
+sparql11_adapter.module
+src/Form/sparql11_adapter_wisski_add_formForm.phpd
+src/Form/sparql11_adapter_wisski_add_formForm.phpd
+sparql11_adapter.module
+sparql11_adapter.module
+src/Form/sparql11_adapter_wisski_add_formForm.php
+sparql11_adapter.module
+src/Form/sparql11_adapter_wisski_add_formForm.php
+src/Form/sparql11_adapter_wisski_add_formForm.php

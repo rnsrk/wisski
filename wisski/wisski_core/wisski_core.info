@@ -1,0 +1,19 @@
+; $Id$
+name = WissKI Core
+description = The Core of the WissKI module set
+core = 7.x
+package = "WissKI"
+//dependencies[] = wisski_salz
+//dependencies[] = wisski_nocompat
+//dependencies[] = easyrdf
+//dependencies[] = entity
+//dependencies[] = entityreference
+//dependencies[] = field_collection
+//dependencies[] = libraries
+//dependencies[] = redirect
+files[] = wisski_core.controller.inc
+files[] = wisski_core.swips.inc
+files[] = wisski_core.admin.inc
+files[] = wisski_core.pages.inc
+files[] = wisski_core.pathbuilder.inc
+files[] = wisski_core.EntityReference_Selection.php

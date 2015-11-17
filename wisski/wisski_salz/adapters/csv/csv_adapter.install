@@ -1,0 +1,94 @@
+<?php
+
+/**
+* implements hook_install()
+*/
+function csv_adapter_install() {
+
+//  csv_adapter_test();
+}
+
+function csv_adapter_schema(){
+/*    $schema = array();
+    $schema['wisski_salz_csv_store_instances'] = array(
+        'description' => 'Settings for the WissKI CSV store instances',
+        'fields' => array(
+            'csid' => array(
+               'description' => 'CSV store ID',
+               'type' => 'serial',
+               'unsigned' => TRUE,
+               'not null' => TRUE,
+            ),
+            'type' => array(
+               'description' => 'ID of the CSV store type of this instance',
+               'type' => 'int',
+               'unsigned' => TRUE,
+               'not null' => TRUE,
+            ),
+            'name' => array(
+               'description' => 'machine-readable name of the store',
+               'type' => 'varchar',
+               'length' => 255,
+               'not null' => TRUE,
+               'default' => '',
+             ),
+             'label' => array(
+                'description' => 'human-readable name of the store',
+                'type' => 'varchar',
+                'length' => 255,
+              ),
+             'file_path' => array(
+                'description' => 'path to the CSV file',
+                'type' => 'varchar',
+                'length' => 255,
+              ),
+             'separators' => array(
+                'description' => 'group of characters that are separating entries in the file',
+                'type' => 'varchar',
+                'length' => 255,
+              ),
+             'allowed_chars' => array(
+                'description' => 'group of allowed characters',
+                'type' => 'varchar',
+                'length' => 255,
+              ),
+             'delimiters' => array(
+                'description' => 'pairs of surrounding delimiters of strings',
+                'type' => 'varchar',
+                'length' => 255,
+             ),
+             'headline' => array(
+                 'description' => 'file contains headline',
+                 'type' => 'int',
+                 'default' => 0,
+             ),
+             'auto_inc_key' => array(
+                 'description' => 'column number of the key value used for auto-incrementation',
+                 'type' => 'int',
+                 'default' => 0,
+             ),
+             'name_key' => array(
+                 'description' => 'name or column number of the (human-readable) unique key that identifies the row',
+                 'type' => 'varchar',
+                 'length' => 255,
+             ),
+             'deleted' => array(
+                 'description' => 'instance has been deleted',
+                 'type' => 'int',
+                 'default' => 0,
+             ),
+    ),
+    'primary key' => array('csid'),
+    'foreign keys' => array(
+        'types' => array(
+            'table' => 'wisski_salz_store_types',
+            'columns' => array(
+                'type' => 'stid',
+            ),
+         ),
+    ),
+    ); 
+    return $schema;
+*/
+}
+

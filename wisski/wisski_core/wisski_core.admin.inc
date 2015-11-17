@@ -1,0 +1,750 @@
+<?php
+
+/**
+ * @file
+ * Callbacks for administrating entities.
+ */
+
+/**
+ * Overview form for ontology handling
+ * 
+ * @return form
+ *   Form for the ontology handling menu
+ * @author Mark Fichtner
+ */
+function wisski_core_ontology_overview() {
+  $form = array();
+
+  $local_store = wisski_salz_invoke_local_store();
+
+  // check if there is a local store    
+  if(empty($local_store)) {
+    // give out a message that there is no local store currently - the user should select one
+    $form['nothing_here'] = array(
+      '#type' => 'item',
+      '#markup' => '<b>No local store is specified currently.</b><br/> Please select a local store <a href="salz">here</a>',
+    );
+
+    // stop here
+    return $form;
+  }
+  
+  // if there is a local store - check if there is an ontology in the store
+  
+  if(stristr($local_store->getType(), 'SPARQL') !== FALSE) {
+    $infos = $local_store->getOntologies();
+    
+    // there already is an ontology
+    if(!empty($infos) && count($infos) > 0 ) {
+      $form['header'] = array(
+        '#type' => 'item',
+        '#markup' => '<b>Currently loaded Ontology:</b><br/>',
+      );
+      
+      $table = "<table><tr><th>Name</th><th>Iri</th><th>Version</th><th>Graph</th></tr>";
+      foreach($infos as $ont) {
+        $table .= "<tr><td>" . $ont->ont . "</td><td>" . $ont->iri . "</td><td>" . $ont->ver . "</td><td>" . $ont->graph . "</td></tr>";
+      }
+      $table .= "</table>";
+      
+      
+      $form['table'] = array(
+        '#type' => 'item',
+        '#markup' => $table,
+      );
+      
+      $form['delete_ont'] = array(
+        '#type' => 'submit',
+        '#name' => 'Delete Ontology',
+        '#value' => 'Delete Ontology',
+        '#submit' => array('wisski_core_delete_ontology'),
+      );
+    } else {
+    // No ontology was found
+    
+      $form['load_onto'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Load Ontology:',
+        '#description' => 'Please give the URL to a loadable ontology.',
+      );
+    
+      $form['delete_ont'] = array(
+        '#type' => 'submit',
+        '#name' => 'Load Ontology',
+        '#value' => 'Load Ontology',
+        '#submit' => array('wisski_core_load_ontology'),
+      );
+    
+    }
+  }
+  
+  $ns = $local_store->getNamespaces();  
+
+  $table = "<table><tr><th>Short Name</th><th>URI</th></tr>";
+  foreach($ns as $key => $value) {
+    $table .= "<tr><td>" . $key . "</td><td>" . $value . "</td></tr>";
+  }
+  $table .= "</table>";
+   
+  $form['ns_table'] = array(
+    '#type' => 'item',
+    '#markup' => $table,
+  );
+
+  return $form; 
+}
+
+function wisski_core_load_ontology($form, $form_state) {
+  $local_store = wisski_salz_invoke_local_store();
+
+  // check if there is a local store    
+  if(empty($local_store)) {
+    return;
+  }
+  
+  // if there is a local store - check if there is an ontology in the store
+  if(stristr($local_store->getType(), 'SPARQL') !== FALSE) {
+    $local_store->addOntologies($form_state['values']['load_onto']);
+  }
+  
+  return; 
+  
+
+}
+
+function wisski_core_delete_ontology() {
+
+  $local_store = wisski_salz_invoke_local_store();
+
+  // check if there is a local store    
+  if(empty($local_store)) {
+    return;
+  }
+  
+  // if there is a local store - check if there is an ontology in the store
+  
+  if(stristr($local_store->getType(), 'SPARQL') !== FALSE) {
+    $infos = $local_store->getOntologies();
+    
+    // there already is an ontology
+    if(!empty($infos)) {
+      foreach($infos as $ont) {
+        if(strval($ont->graph) != "default") 
+          $local_store->deleteOntology(strval($ont->graph));
+        else
+          $local_store->deleteOntology(strval($ont->ont), 'no-graph');
+      }
+    }
+    
+  }
+  
+  return; 
+}
+
+
+
+
+/**
+ * Choose bundle of entity to add.
+ * 
+ * @return array
+ *   Array describing a list of bundles to render.
+ */
+function wisski_core_choose_bundle() {
+/*
+  drupal_set_title(t('Choose type of entity to add.'));
+
+  // Show list of all existing entity bundles.
+  $entity_info = entity_get_info('wisski_individual');
+  $items = array();
+  foreach ($entity_info['bundles'] as $bundle_name => $bundle_data) {
+    $items[] = l($bundle_data['label'], 'wisski_core/add/' . $bundle_name);
+  }
+  */
+  
+  $used = array();
+  $unused = array();
+  $ts_classes = wisski_salz_pb_list_bundles();
+  foreach (wisski_core_bundle_load_multiple() as $entity_type_key => $entity_type) {
+    $label = entity_label('wisski_core_bundle', $entity_type);
+    if ($label == $entity_type->uri)
+      $used[] = l($label, 'wisski/create/' . $entity_type_key);
+    else
+      $used[] = l($label.' ('.$entity_type->uri.')', 'wisski/create/' . $entity_type_key);
+    unset($ts_classes[$entity_type->uri]);
+  }
+  $out = array();
+  foreach ($ts_classes as $uri) {
+    $unused[] = array('#type'=>'item','#markup'=>l($uri,'admin/structure/wisski_core_bundle/add',array('query'=>array('bundle_uri'=>$uri))));
+  }
+  if (!empty($used)) $out['used_list'] = array(
+      '#theme' => 'item_list',
+      '#items' => $used,
+      '#title' => t('WissKI Bundles'),
+    );
+  if (!empty($unused)) {
+    drupal_add_library('system', 'drupal.collapse');
+    $out['other_list'] = array(
+      '#type' => 'fieldset',
+      '#title' => count($unused).' '.t('Unused Classes'),
+      '#description' => '<font size=1>'.t('Click to add a bundle for the class').'</font>',
+      //'#collapsed' => TRUE,
+      //'#collapsible' => TRUE,
+      '#attributes' => array (
+        'class' => array(
+          'collapsible', 'collapsed'
+        )
+      ),
+    );
+    $out['other_list'] += $unused;
+  }
+  return $out ?:t('Sorry, there are no bundles or classes available');
+}
+
+/**
+ * Form constructor for the entity add form.
+ * 
+ * @param string $type
+ *   Bundle of the entity to add.
+ * 
+ * @return array
+ *   Entity edit form.
+ */
+function wisski_core_individual_add($type) {
+
+  $entity_type = wisski_core_bundle_load_multiple($type);
+  drupal_set_message(htmlentities(serialize($entity_type)));
+//  drupal_set_title(t('Create new %type', array('%type' => $type)));
+  drupal_set_title(t('Create @name', array('@name' => entity_label('entity_type', $entity_type))));
+  
+  // Return form for the given entity bundle.
+  $entity = entity_create('wisski_individual', array('type' => $type));
+
+//  $output = entity_ui_get_form('wisski_individual', $entity);
+  $output = drupal_get_form('wisski_core_individual_form', $entity,'add');
+
+  return $output;
+}
+
+/**
+ * Form constructor for the entity edit form.
+ * 
+ * In this form we shall manually define all form elements related to editable
+ * properties of the entity.
+ * 
+ * @param object $entity
+ *   Enity to edit.
+ * 
+ * @return array
+ *   Entity edit form.
+ */
+function wisski_core_individual_form($form, &$form_state, $entity, $operation = 'edit') {
+
+  //ensure that $entity is actually an entity
+  if (is_array($entity)) {
+    if (count($entity) == 1) $entity = current($entity);
+    else throw new InvalidArgumentException("\$entity must be a drupal entity");
+  }
+
+  // Store the entity in the form.
+  $form_state['wisski_core'] = $entity;
+
+  // Describe all properties of the entity which shall be shown on the form.
+//  $wrapper = entity_metadata_wrapper('wisski_individual', $entity);
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#title' => t('Title'),
+    '#default_value' => property_exists($entity,'title') ? $entity->title : entity_label('wisski_individual',$entity),
+    '#weight' => -20,
+    '#disabled' => TRUE,
+  );
+  $form['uri'] = array(
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#title' => 'URI',
+    '#default_value' => $entity->uri,
+    '#weight' => -10,
+  );
+  
+    
+/*  $form['description'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Description'),
+    '#default_value' => $wrapper->description->value(),
+    '#weight' => -10,
+  );*/
+/*  
+  try {
+    $same_inds = $wrapper->same_individuals->value();
+    $same_string = "";
+    if ($same_inds != NULL) {
+      foreach($same_inds as $ind) {
+        $same_string .= $ind."\n";
+      }
+    }
+    $form['same_individuals'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Same Individuals'),
+      '#default_value' => $same_string,
+      '#weight' => -5,
+    );
+  } catch (EntityMetadataWrapperException $ex) {
+    dpm((array)$wrapper);
+  }
+  */
+  // Add fields of the entity to the form.
+  field_attach_form('wisski_individual', $entity, $form, $form_state);
+
+  // Add some buttons.
+  $submit = array();
+  if (!empty($form['#submit'])) {
+    $submit += $form['#submit'];
+  }
+  $form['actions'] = array(
+    '#weight' => 100,
+  );
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save entity'),
+    '#submit' => $submit + array('wisski_core_individual_form_submit'),
+  );
+  $entity_id = entity_id('wisski_individual', $entity);
+  if (!empty($entity_id)) {
+    $form['actions']['delete'] = array(
+      '#type' => 'submit',
+      '#value' => t('Delete'),
+      '#submit' => array('wisski_core_individual_form_submit_delete'),
+    );
+  }
+
+/*
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+    '#weight' => 5,
+    '#submit' => array('wisski_core_form_submit'),
+  );
+  if (empty($entity->is_new)) {
+    $form['actions']['delete'] = array(
+      '#type' => 'submit',
+      '#value' => t('Delete'),
+      '#weight' => 15,
+      '#submit' => array('wisski_core_form_submit_delete'),
+    );
+  }
+*/
+  if ($operation === 'edit')  
+    drupal_set_title(t('Edit').' '.entity_label('wisski_individual', $entity));
+  if ($operation === 'add') {
+    $bundle_label = entity_label('wisski_core_bundle',entity_load_single('wisski_core_bundle',$entity->type));
+    drupal_set_title(t('Add new').' '.$bundle_label);
+  }
+  return $form;
+}
+
+/**
+ * Entity edit form "Save" submit handler.
+ */
+function wisski_core_individual_form_submit(&$form, &$form_state) {
+  // Automatically get edited entity from the form and save it.
+  // @see entity_form_submit_build_entity()
+  $entity = $form_state['wisski_core'];
+  entity_form_submit_build_entity('wisski_individual', $entity, $form, $form_state);
+  $wrapper = entity_metadata_wrapper('wisski_individual', $entity);
+  $wrapper->save();
+
+  // Redirect user to edited entity page.
+  $entity_uri = entity_uri('wisski_individual', $entity);
+  $form_state['redirect'] = $entity_uri['path'];
+}
+
+/**
+ * Entity edit form "Delete" submit handler.
+ */
+function wisski_core_individual_form_submit_delete($form, &$form_state) {
+  // Redirect user to "Delete" URI for this entity.
+  $entity = $form_state['wisski_core'];
+  $entity_uri = entity_uri('wisski_individual', $entity);
+  $form_state['redirect'] = $entity_uri['path'] . '/delete';
+}
+
+/**
+ * Form constructor for the entity delete confirmation form.
+ * 
+ * @param object $entity
+ *   Entity to delete.
+ * 
+ * @return array
+ *   Confirmation form.
+ */
+function wisski_core_individual_form_delete($form, &$form_state, $entity) {
+  // Store the entity in the form.
+  $form_state['wisski_core'] = $entity;
+
+  // Show confirm dialog.
+  $entity_uri = entity_uri('wisski_individual', $entity);
+  $message = t('Are you sure you want to delete wisski_core %title?', array('%title' => entity_label('wisski_individual', $entity)));
+  return confirm_form(
+    $form,
+    $message,
+    $entity_uri['path'],
+    t('This action cannot be undone.'),
+    t('Delete'),
+    t('Cancel')
+  );
+}
+
+/**
+ * Entity "Confirm delete" form submit handler.
+ */
+function wisski_core_individual_form_delete_submit($form, &$form_state) {
+  // Delete the entity.
+  $entity = $form_state['wisski_core'];
+  $wrapper = entity_metadata_wrapper('wisski_individual', $entity);
+  $wrapper->delete();
+
+  // Redirect user.
+  drupal_set_message(t('Custom entity v4 %title deleted.', array('%title' => entity_label('wisski_individual', $entity))));
+  $form_state['redirect'] = '<front>';
+}
+
+
+function wisski_core_bundle_form($form, &$form_state, $entity_type, $op = 'edit') {
+
+#  dpm($entity_type);
+  // Handle the case when cloning is performed.
+  if ($op == 'clone') {
+    $entity_type->label .= ' (cloned)';
+    $entity_type->type = '';
+  }
+
+  $edit = FALSE;
+  if (!empty($_GET['edit_uri'])) {
+    $edit = 2;
+    $default_uri = $_GET['edit_uri'];
+  } elseif (!empty($_GET['bundle_uri'])) {
+    $default_uri = $_GET['bundle_uri'];
+  } elseif (isset($entity_type->uri)) {
+    $default_uri = $entity_type->uri;      
+  } else {
+    $edit = 1;
+    $default_uri = 'empty';
+  }
+  
+  $default_label = $entity_type->label;
+  // Describe all properties of the entity which shall be shown on the form.
+  if ($edit >= 2)  {
+    //standard fallback to have a generic title
+    if (empty($default_label)) {
+      $default_label = $default_uri;
+    }
+  }
+
+  $form['label'] = array(
+    '#title' => t('Label'),
+    '#type' => 'textfield',
+    '#default_value' => $default_label,
+    '#description' => t('The human-readable name of this entity type.'),
+    '#required' => TRUE,
+    '#size' => 30,
+    '#prefix' => '<div id=wisski-label>',
+    '#suffix' => '</div>',
+  );
+  $form['type'] = array(
+    '#type' => 'machine_name',
+    '#default_value' => isset($entity_type->type) ? $entity_type->type : '',
+    '#maxlength' => 32,
+    '#disabled' => $entity_type->isLocked() && $op != 'clone',
+    '#machine_name' => array(
+      'exists' => 'wisski_core_bundle_load_multiple',
+      'source' => array('label'),
+    ),
+    '#description' => t('A unique machine-readable name for this entity type. It must only contain lowercase letters, numbers, and underscores.'),
+  );
+  if (!$edit) {
+    $form['uri'] = array(
+      '#title' => 'URI',
+      '#type' => 'item',
+      '#disabled' => TRUE,
+      '#markup' => $default_uri.' <font size=1 color=red>['.l('Edit',current_path(),array('query'=>array('edit_uri'=>$default_uri))).']</font>',
+      '#description' => t('The URI of the corresponding owl:Class in the local ontology'),
+      '#value' => $default_uri,
+    );
+  } else {
+    $options = array('empty'=>' - '.t('select').' - ') + wisski_salz_pb_list_bundles();
+    if (!isset($options[$default_uri])) {
+      $options[$default_uri] = $default_uri.' ('.t('Not in the Ontology').')';
+    }
+    $form['uri'] = array(
+      '#title' => 'URI',
+      '#type' => module_exists('select_or_other') ? 'select_or_other' : 'select',
+      '#options' => $options,
+      '#default_value' => $default_uri,
+      '#required' => TRUE,
+      '#description' => t('The URI of the corresponding owl:Class in the local ontology'),
+      '#ajax' => array(
+        'wrapper' => 'wisski-label',
+        'callback' => 'wisski_core_bundle_form_ajax_callback',
+      ),
+      '#other' => t('Introduce another URI'),
+      '#other_unknown_defaults' => 'ignore',
+    );
+  }
+  $form['description'] = array(
+    '#type' => 'textarea',
+    '#default_value' => isset($entity_type->description) ? $entity_type->description : '',
+    '#description' => t('Description about the entity type.'),
+  );
+
+  // Add some buttons.
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save entity type'),
+    '#weight' => 40,
+  );
+  if (!$entity_type->isLocked() && $op != 'add' && $op != 'clone') {
+    $form['actions']['delete'] = array(
+      '#type' => 'submit',
+      '#value' => t('Delete entity type'),
+      '#weight' => 45,
+      '#limit_validation_errors' => array(),
+      '#submit' => array('wisski_core_bundle_form_submit_delete'),
+    );
+  }
+ $form['actions']['pathbuilder'] = array(
+    '#type' => 'submit',
+    '#value' => t('Go to Pathbuilder Fields'),
+    '#weight' => 50,
+    '#submit' => array('wisski_core_pathbuilder_form_submit'),
+  );
+
+//  dpm($form,'pre-render');
+  return $form;
+}
+
+function wisski_core_bundle_form_ajax_callback($form,$form_state) {
+
+  return $form['label'];
+}
+
+function wisski_core_bundle_form_validate($form,&$form_state) {
+
+  $error = FALSE;
+  if (!empty($form_state['input']['uri'])) {
+    if ($form_state['input']['uri'] === 'empty') {
+      $error = TRUE;
+    } else {
+      if (module_exists('select_or_other')) {
+        $sel = $form_state['input']['uri']['select'];
+        if ($sel === 'select_or_other') {
+          $sel = $form_state['input']['uri']['other'];
+          if (empty($sel)) $error = TRUE;
+          elseif (!wisski_salz_valid_uri($sel)) {
+            form_set_error('uri',t('Invalid URI'));
+          }
+        }
+        $form_state['values']['uri'] = $sel;
+      } else $form_state['values']['uri'] = $form_state['input']['uri'];
+    }
+  } elseif (!empty($form_state['values']['uri'])) {
+    if ($form_state['values']['uri'] === 'empty') {
+      $error = TRUE;
+    } 
+  } elseif (!empty($form['uri']['#value'])) {
+    if ($form['uri']['#value'] === 'empty') {
+      $error = TRUE;
+    }	else {
+      $form_state['values']['uri'] = $form['uri']['#value'];
+    }
+  }
+
+  if ($error) form_set_error('uri',t('The URI for the bundle must be specified'));
+
+}
+
+/**
+ * Entity type edit form "Save" submit handler.
+ */
+function wisski_core_bundle_form_submit(&$form, &$form_state) {
+  // Automatically get edited entity type from the form and save it.
+  // @see entity_ui_form_submit_build_entity()
+  dpm($form_state,__METHOD__);
+  $entity_type = entity_ui_form_submit_build_entity($form, $form_state);
+  entity_save('wisski_core_bundle', $entity_type);
+
+  // Redirect user.
+  $form_state['redirect'] = 'admin/structure/wisski_core_bundle';
+}
+
+/**
+ * Entity edit form "Delete" submit handler.
+ */
+function wisski_core_bundle_form_submit_delete(&$form, &$form_state) {
+  // Redirect user to "Delete" URI for this entity type.
+  $form_state['redirect'] = 'admin/structure/wisski_core_bundle/' . $form_state['wisski_core_bundle']->type . '/delete';
+}
+
+/**
+ * Form constructor for the entity type delete confirmation form.
+ * 
+ * @param object $entity_type
+ *   Entity type to delete.
+ * 
+ * @return array
+ *   Confirmation form.
+ */
+function wisski_core_bundle_form_delete_confirm($form, &$form_state, $entity_type) {
+  // Store the entity in the form.
+  $form_state['entity_type'] = $entity_type;
+
+  // Show confirm dialog.
+  $message = t('Are you sure you want to delete entity type %title?', array('%title' => entity_label('entity_type', $entity_type)));
+  return confirm_form(
+    $form,
+    $message,
+    'wisski_core_bundle/' . entity_id('wisski_core_bundle', $entity_type),
+    t('This action cannot be undone.'),
+    t('Delete'),
+    t('Cancel')
+  );
+}
+
+/**
+ * Entity type "Confirm delete" form submit handler.
+ */
+function wisski_core_bundle_form_delete_confirm_submit($form, &$form_state) {
+  // Delete the entity type.
+  $entity_type = $form_state['entity_type'];
+  entity_delete('wisski_core_bundle', entity_id('wisski_core_bundle', $entity_type));
+
+  // Redirect user.
+  drupal_set_message(t('@type %title has been deleted.', array('@type' => $entity_type->type, '%title' => $entity_type->label)));
+  $form_state['redirect'] = 'admin/structure/wisski_core_bundle';
+}
+
+function wisski_core_pathbuilder_form($form, &$form_state, $entity_type) {
+  $form['label'] = array(
+    '#title' => t('Label'),
+    '#type' => 'textfield',
+    '#default_value' => $entity_type->label,
+    '#description' => t('The human-readable name of this entity type.'),
+    '#required' => TRUE,
+    '#size' => 35,
+  );
+  $form['type'] = array(
+    '#type' => 'machine_name',
+    '#default_value' => isset($entity_type->type) ? $entity_type->type : '',
+    '#maxlength' => 32,
+    //'#disabled' => $entity_type->isLocked() && $op != 'clone',
+    '#machine_name' => array(
+      'exists' => 'wisski_core_bundle_load_multiple',
+      'source' => array('label'),
+    ),
+    '#description' => t('A unique machine-readable name for this entity type. It must only contain lowercase letters, numbers, and underscores.'),
+  );
+  
+  $paths = array();
+  $paths = wisski_salz_next_steps($entity_type->label);
+  foreach($paths as $path){
+  
+
+  $form['pb_path' . $path] = array(
+    '#title' => t('Pathbuilder Path'),
+    '#type' => 'textfield',
+    '#default_value' => $path,
+ //   '#description' => t('The pathbuilder path of this wisski core bundle.'),
+    '#required' => TRUE,
+    '#size' => 35,
+  );
+  }
+  $form['pb_external_path'] = array(
+    '#title' => t('External Path'),
+    '#type' => 'textfield',
+    //'#default_value' => $entity_type->label,
+   // '#description' => t('An external path of this wisski core bundle.'),
+    '#required' => FALSE,
+    '#size' => 35,
+);
+    return $form;
+}
+
+function wisski_core_pathbuilder_form_submit(&$form, &$form_state) {
+    //$form_state['values']['pb_path'] = 'ecrm_e18_physical_thing';	
+    $form_state['redirect'] = 'admin/structure/wisski_core_bundle/' . $form_state['wisski_core_bundle']->type . '/paths';
+}
+
+function wisski_core_individual_display($form,&$form_state) {
+  
+  $form['max_entites_per_page'] = array(
+    '#type' => 'textfield',
+    '#default_value' => variable_get('wisski_max_entities_per_page',20),
+    '#description' => t('Maximum number of entities that are shown per listing page'),
+  );
+
+  // Add some buttons.
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Set'),
+    '#weight' => 40,
+  );
+  return $form;
+}
+
+function wisski_core_individual_display_submit($form,&$form_state) {
+
+  variable_set('wisski_max_entities_per_page',(int)$form_state['values']['max_entites_per_page']);
+  drupal_flush_all_caches();
+}
+
+
+function wisski_core_admin_lod_and_uri ($form, &$form_state) {
+  
+  global $base_url;
+
+  $form['uri'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('URI generation'),
+  );
+  $templates = variable_get('wisski_core_lod_uri_templates', array('' => $base_url . '/inst/%{bundle}/%{hash}'));
+  $form['uri']['template'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Template'),
+    '#field_prefix' => check_plain($base_url . '/'),
+    '#default_value' => substr($templates[''], strlen($base_url) + 1),
+    '#description' => t('<p>The URI will be registered so that a LOD-conforming HTTP redirect can be performed. ' . 
+                        'The user must make sure that the URI path does not interfere with any Drupal-related paths.</p>' . 
+                        '<p>You may use placeholders of the form "%pl1" or "%pl2". The following placeholders may be used:<dl>!l</dl></p>',
+                        array(
+                          '%pl1' => "%{placeholder}",
+                          '%pl2' => "%{placeholder}{append if empty}{append if not empty}",
+                          '!l' => join('', array(
+      '<dt>hash</dt><dd>A randomly generated md5 hash</dd>',
+      '<dt>number</dt><dd>A number, starting from 1, that will be incremented until the URI does not already exist</dd>',
+      '<dt>bundle</dt><dd>The name of the entity bundle/class with non-alphanumeric chars replaced and collapsed to "_"</dd>',
+      '<dt>title</dt><dd>The title of the entity with non-alphanumeric chars replaced and collapsed to "_"</dd>',
+    )))),
+  );
+  
+  // Add some buttons.
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save configuration'),
+    '#weight' => 40,
+  );
+  return $form;
+  
+}
+
+
+function wisski_core_admin_lod_and_uri_submit ($form, &$form_state) {
+  
+  global $base_url;
+
+  variable_set('wisski_core_lod_uri_templates', array('' => $base_url . '/' . $form_state['values']['template'])); 
+
+}

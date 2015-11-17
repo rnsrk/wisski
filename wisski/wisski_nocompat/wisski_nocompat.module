@@ -1,0 +1,8 @@
+<?php
+
+
+function wisski_nocompat_module_implements_alter() {
+  if (drupal_get_bootstrap_phase() != DRUPAL_BOOTSTRAP_FULL) {
+    trigger_error('module_implements called before full bootstrap.');
+  }
+}

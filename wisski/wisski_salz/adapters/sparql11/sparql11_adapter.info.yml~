@@ -1,0 +1,10 @@
+; $Id$
+name = WissKI SPARQL 1.1 Store
+description = Provides a SPARQL 1.1 Store
+core = 7.x
+package = "WissKI"
+version = 1.0-dev 
+//dependencies[] = wisski_salz
+dependencies[] = easyrdf
+dependencies[] = entityreference
+//dependencies[] = wisski_core

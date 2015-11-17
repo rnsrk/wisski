@@ -203,18 +203,27 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
       }
 	    //$text = $store_instance->label;
 	    $path = 'admin/config/wisski/salz/edit/' . $store_type_name . '/' . $store_instance->name;
-	    $primary_settings = module_invoke($store_type_module,'wisski_primary_store_settings');
+	    $primary_settings = Drupal::moduleHandler()->invoke($store_type_module,'wisski_primary_store_settings');
+#	    drupal_set_message(serialize($primary_settings));
+	    #$primary_settings = module_invoke($store_type_module,'wisski_primary_store_settings');
 	    if (!empty($primary_settings)) $store_instance_settings = array_intersect_key($store_instance_settings,array_flip($primary_settings));
 	    if ($store_type_label == sparql11_adapter_wisski_get_store_type()){ 
+
+	            $url = Url::fromUri('internal:/' . $path);
+#	            drupal_set_message(serialize($url));
+	            $link = \Drupal::l(t($text), $url);
+#	            drupal_set_message(serialize($link));
 		    $options[$key2] = array(
-			    'store_instance_name' => array(
-				    'data' => array(
-					    '#type' => 'link',
-					    '#title' => $text,
-					    '#href' => $path,
+			    'store_instance_name' => $link, 
+			    #array(
+			            
+#				    'data' => array(
+#					    '#type' => 'link',
+#					    '#title' => $text,
+#					    '#href' => $path,
 					   // '#options' => $l_options,
-				    ),
-			    ),
+#				    ),
+			    #),
 			    'store_type' => $store_type_label,
 			    'settings' => "<div class='wki_grey'>" . implode(', ',$store_instance_settings) . "</div>",
 		    );  

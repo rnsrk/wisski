@@ -1,0 +1,61 @@
+<?php
+
+function sparql11_adapter_schema() {
+
+  $schema = array();
+  $schema['wisski_salz_sparql11_ontology_namespaces'] = array(
+    'description' => 'Store of custom namespaces',
+    'fields' => array(
+      'short_name' => array(
+        'description' => 'The short name e.g. "rdf"',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ),
+      'long_name' => array(
+        'description' => 'The long name e.g. "http://www.w3.org/1999/02/22-rdf-syntax-ns#"',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',   
+      ),
+    ),
+    'primary key' => array('short_name'),
+  );                
+  return $schema;                                                                                               
+}
+
+/** hook_uninstall() still exists in D8, but is not necessary, if all tables are defined by hook_schema()
+* Database tables defined by hook_schema() will be removed automatically!
+* just for information: 
+* hook_uninstall() will fire when the module gets uninstalled but before the module's database tables are removed, 
+* allowing your module to query its own tables during this routine.
+*/   
+/*function sparql11_adapter_uninstall() {
+  sparql11_adapter_remove_all_fields();
+  drupal_set_message("Sparql 1.1 Adapter successfully uninstalled");
+}
+
+function sparql11_adapter_remove_all_fields() {
+  drupal_set_message("Trying to delete all CRM fields");
+  $result = db_select('field_config_instance','ins')
+              ->fields('ins')
+              ->condition('deleted',0,'=')
+              ->condition('field_name','wsk_%','LIKE')
+              ->execute()
+              ->fetchAllAssoc('id');
+  foreach($result as $row) {
+    try {
+      $instance = field_info_instance($row->entity_type,$row->field_name,$row->bundle);
+      field_delete_instance($instance,TRUE);
+    } catch (Exception $e) {
+      trigger_error("Errors when deleting $row->field_name",E_USER_ERROR);
+    }
+  }
+
+  cache_clear_all();
+  drupal_cron_run();
+  menu_rebuild();
+  drupal_set_message("Deletion successfull");
+}
+*/
