@@ -208,8 +208,8 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
 	    #$primary_settings = module_invoke($store_type_module,'wisski_primary_store_settings');
 	    if (!empty($primary_settings)) $store_instance_settings = array_intersect_key($store_instance_settings,array_flip($primary_settings));
 	    if ($store_type_label == sparql11_adapter_wisski_get_store_type()){ 
-	            drupal_set_message(serialize($path));
-	            $url = Url::fromRoute('internal:/' . $path);
+
+	            $url = Url::fromUri('internal:/' . $path);
 #	            drupal_set_message(serialize($url));
 	            $link = \Drupal::l(t($text), $url);
 #	            drupal_set_message(serialize($link));
@@ -313,7 +313,7 @@ function wisski_salz_config_page() {
 }
 
 function wisski_salz_set_local_store($form, &$form_state){
-    $local_store = $form_state['values']['table'];
+    $local_store = $form_state->getValue('table');
     $result_local = db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('local_data',0,'=')->condition('name',$local_store,'LIKE')->execute();
     $result_others = db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('local_data',1,'=')->condition('name',$local_store,'NOT LIKE')->execute();
     if (empty($result_local)) drupal_set_message("Instance $local_store does not exist"); 

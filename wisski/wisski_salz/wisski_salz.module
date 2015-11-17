@@ -313,7 +313,7 @@ function wisski_salz_config_page() {
 }
 
 function wisski_salz_set_local_store($form, &$form_state){
-    $local_store = $form_state['values']['table'];
+    $local_store = $form_state->getValue('table');
     $result_local = db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('local_data',0,'=')->condition('name',$local_store,'LIKE')->execute();
     $result_others = db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('local_data',1,'=')->condition('name',$local_store,'NOT LIKE')->execute();
     if (empty($result_local)) drupal_set_message("Instance $local_store does not exist"); 
@@ -330,7 +330,7 @@ function wisski_salz_set_local_store($form, &$form_state){
 }
     
 function wisski_salz_unset_local_store($form, &$form_state){
-    $local_store_to_unset = $form_state['values']['table'];
+    $local_store_to_unset = $form_state->getValue('table');
     $result = db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('local_data',1,'=')->condition('name',$local_store_to_unset,'LIKE')->execute();
     if (empty($result)) drupal_set_message("Instance $local_store_to_unset does not exist"); 
     else {
