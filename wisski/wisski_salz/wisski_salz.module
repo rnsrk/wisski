@@ -211,10 +211,10 @@ function wisski_salz_view_installed_store_instances($form, &$form_state) {
 
 	            $url = Url::fromUri('internal:/' . $path);
 #	            drupal_set_message(serialize($url));
-	            $link = \Drupal::l(t($text), $url);
+	            $storelink = \Drupal::l(t($text), $url);
 #	            drupal_set_message(serialize($link));
 		    $options[$key2] = array(
-			    'store_instance_name' => $link, 
+			    'store_instance_name' => $storelink, 
 			    #array(
 			            
 #				    'data' => array(

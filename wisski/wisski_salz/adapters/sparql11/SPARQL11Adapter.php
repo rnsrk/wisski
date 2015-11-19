@@ -249,7 +249,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
     $ok = FALSE;
     $results = array();
     try {
-      if (easyrdf()) {
+      if (TRUE) {#easyrdf()) {
 //        wisski_core_tick('SPARQLAdapter: begin query '.$requestcount);
         $results = $this->request($type,$query);
 //        wisski_core_tick('SPARQLAdapter: end query '.$requestcount);
@@ -264,8 +264,8 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
         $ok = TRUE;
       } else trigger_error("EasyRdf is not installed",E_USER_ERROR);
     } catch (Exception $e) {
-      watchdog('wisski_SPARQL_'.$type.'_fail',"Request: ".htmlentities($query)."\nError Message: ".get_class($e)."\n".$e->getMessage());
-      if (variable_get('wisski_throw_exceptions',FALSE)) {
+//      watchdog('wisski_SPARQL_'.$type.'_fail',"Request: ".htmlentities($query)."\nError Message: ".get_class($e)."\n".$e->getMessage());
+      if (TRUE) {#variable_get('wisski_throw_exceptions',FALSE)) {
         $trace = debug_backtrace();
         $i = 0;
         $subtrace = array();
@@ -275,7 +275,7 @@ class SPARQL11Adapter extends EasyRdf_Sparql_Client implements AdapterInterface 
           $i++;
         }
         dpm($subtrace);
-        throw $e;
+//        throw $e;
       }
     }
 //    drupal_set_message("SPARQL1.1 $type request successfull.<br>Query was '".htmlentities($query)."'");
