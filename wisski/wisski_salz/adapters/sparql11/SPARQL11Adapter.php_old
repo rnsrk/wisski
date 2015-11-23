@@ -5,8 +5,7 @@ module_load_include('php', 'wisski_salz', "adapters/sparql11/wisski_easyrdf");
 #libraries_load('easyrdf');
 // include_once "sites/all/libraries/easyrdf/lib/EasyRdf/Sparql/Client.php";
 
-class SPARQL11Adapter {
-#class SPARQL11Adapter implements AdapterInterface {
+class SPARQL11Adapter implements AdapterInterface {
 
 
   /**
@@ -16,94 +15,134 @@ class SPARQL11Adapter {
   * update_endpoint: The URL to connect to for write operations
   */
   protected $settings = array();
-	private $endpoint = NULL;
+	protected $endpoint = NULL;
 	
   
-  public function __construct(array $settings) {
+  public function __construct($settings) {
     
 		$this->settings = $settings;
 
     if (!isset($this->updateUri)) {
-      $this->settings['update_endpoint'] = $this->settings['query_endpoint'];
+      $this->settings['update_endpoint'] = $updateUri;
+    } else {
+      $this->settings['update_endpoint'] = $queryUri;
     }
-		
-		
-		
   }
-	
-	/** Return the API to connect to the sparql endpoint
-	* 
-	* This method should be called if you need an endpoint. It lazy loads the Easyrdf instance
-  * which may save time.
-  * 
-  * @return Returns a EasyRdf_Sparql_Client instance (or a subclass) that is inited to
-  * connect to the givensparql 1.1 endpoint.
-	*/
-	protected function getEndpoint() {
-		
-		if ($this->endpoint === NULL) {
-      include_once(__DIR__ . '/WissKI_Sparql_Client.php');
-			$this->endpoint = new WissKI_Sparql_Client($this->settings['query_endpoint'], $this->settings['update_endpoint']);
-#			$this->endpoint = new EasyRdf_Sparql_Client($this->settings['query_endpoint'], $this->settings['update_endpoint']);
-		}
-		return $this->endpoint;
-
-	}	
-	
-	
-	// 
-  // Functions for direct access, firstly designed for test purposes	
-	// 
-		
-
-	// 
-  // Functions for direct access, firstly designed for test purposes	
-	// 
-		
-	/** Can be used to directly access the easyrdf sparql interface
-	*
-	* If not necessary, don't use this interface
-	* 
-	* @return @see EasyRdf_Sparql_Client->query
-	*/
-	public function _directQuery($query) {
-		return $this->getEndpoint()->query($query);
-	}
-
-	/** Can be used to directly access the easyrdf sparql interface
-	*
-	* If not necessary, don't use this interface
-	* 
-	* @return @see EasyRdf_Sparql_Client->update
-	*/
-	public function _directUpdate($query) {
-		return $this->getEndpoint()->update($query);
-	}
-	
-	/** Can be used to directly access the easyrdf sparql interface
-	*
-	* If not necessary, don't use this interface
-	* 
-	* @return @see EasyRdf_Sparql_Client
-	*/
-	public function _getEndpoint() {
-		return $this->getEndpoint();
-	}
 
 
-	// 
-  // getters, setters, and administrative stuff	
-	// 
-		
-	
-	/** Defined in AdapterInterface
+  /**
+  * Internal function to make an HTTP request to SPARQL endpoint
+  * copy from original EasyRdf_Client with Sesame-specific overrides
+  * this is NOT the function to be called from outside @see requestSPARQL
+  *
+  * @ignore
   */
+  protected function request($type, $query) {
+
+    $log = fopen(dirname(__FILE__).'/wisski_log.txt','a');
+    fwrite($log,time()." - ".$type."\n".$query."\n\n");
+//    fwrite($log, serialize(debug_backtrace()));
+    // Check for undefined prefixes
+    $prefixes = '';
+    // @TODO: Check - this should not happen every time I query something, this is very 
+    // inefficient. Just check it in case of updates!
+    $this->updateNamespaces();
+    foreach (EasyRdf_Namespace::namespaces() as $prefix => $uri) {
+      if (strpos($query, "$prefix:") !== false and strpos($query, "PREFIX $prefix:") === false) {
+        $prefixes .=  "PREFIX $prefix: <$uri>\n";
+      }
+    }
+    
+    $client = EasyRdf_Http::getDefaultHttpClient();
+    $client->resetParameters();
+
+    // Tell the server which response formats we can parse
+    $accept = EasyRdf_Format::getHttpAcceptHeader(
+      array(
+          'application/sparql-results+json' => 1.0,
+              'application/sparql-results+xml' => 0.8
+            )
+        );
+        $client->setHeaders('Accept', $accept);
+
+        if ($type == 'update') {
+            $client->setMethod('POST');
+            $client->setUri($this->settings['update_endpoint']);
+//Begin Dorian
+            $encodedQuery = 'update='.urlencode($prefixes . $query);
+            $client->setRawData($encodedQuery);
+            $client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
+	    
+//End Dorian
+/*
+	    //Begin Old            
+//	    $client->setRawData($prefixes . $query);
+	    //End Old            
+	    $client->setHeaders('Content-Type', 'application/rdf+xml;charset=UTF-8'/*'text/plain' /*'application/sparql-update','application/x-www-form-urlencoded');
+	    */           
+        } elseif ($type == 'query') {
+            // Use GET if the query is less than 2kB
+            // 2046 = 2kB minus 1 for '?' and 1 for NULL-terminated string on server
+            $encodedQuery = 'query='.urlencode($prefixes . $query);
+            if (strlen($encodedQuery) + strlen($this->settings['query_endpoint']) <= 2046) {
+                $client->setMethod('GET');
+                $client->setUri($this->settings['query_endpoint'].'?'.$encodedQuery);
+            } else {
+//                dpm(array('query' => $query, 'encoded' => $this->settings['query_endpoint'].'?'.$encodedQuery));
+//                trigger_error('Query size > 2048. Switch to POST mode',E_USER_NOTICE);
+                // Fall back to POST instead (which is un-cacheable)
+                $client->setMethod('POST');
+                $client->setUri($this->settings['query_endpoint']);
+                $client->setRawData($encodedQuery);
+                $client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
+            }
+        }
+        //dpm((array)$client,'client');
+//        watchdog('wisski_SPARQL_request_uri',$client->getUri());
+        $response = $client->request();
+        if ($response->getStatus() == 204) {
+          fclose($log);
+            // No content
+            return $response;
+        } elseif ($response->isSuccessful()) {
+          fclose($log);
+          list($type, $params) = EasyRdf_Utils::parseMimeType(
+            $response->getHeader('Content-Type')
+          );
+          if (strpos($type, 'application/sparql-results') === 0) {
+            return new EasyRdf_Sparql_Result($response->getBody(), $type);
+          } else {
+            return new EasyRdf_Graph($this->settings['query_endpoint'], $response->getBody(), $type);
+          }
+        } else {
+          fwrite($log,"FAIL\n\n");
+          fclose($log);
+          echo __METHOD__.' (line: '.__LINE__.') failed request '.htmlentities($query)."\n\r";
+
+          throw new EasyRdf_Exception(
+            "HTTP request for SPARQL query failed: ".$response->getBody()
+          );
+        }
+      
+    }
+  
+
+  /*
+  public function __construct($settings_input) {
+    $this->settings = $settings_input;
+  }
+  
+  
+  public function __construct($query_endpoint,$update_endpoint) {
+    $this->settings['query_endpoint'] = $query_endpoint;
+    $this->settings['update_edpoint'] = $update_endpoint;
+  }
+*/
+
   public function getName() {
     return get_class($this);
   }
 
-	/** Defined in AdapterInterface
-  */
   public function getType() {
     return "SPARQL 1.1";
   }
@@ -119,6 +158,57 @@ class SPARQL11Adapter {
     if (isset($this->settings['query_endpoint']) && !isset($this->settings['update_endpoint'])) {
       $this->settings['update_endpoint'] = $this->settings['query_endpoint'];
     }
+//    drupal_set_message(serialize($this));
+    /*
+    if (!empty($this->settings['do_ontologies_add'])) {
+      if (empty($this->settings['ontologies_pending'])) {
+        $this->settings['ontologies_pending'] = $this->settings['do_ontologies_add'];
+      } else {
+        $this->settings['ontologies_pending'] = array_merge($this->settings['ontologies_pending'], $this->settings['do_ontologies_add']);
+      }
+      unset($this->settings['do_ontologies_add']);
+
+      $this->addOntologies();
+    }
+    
+
+    $this->putNamespace('nso',  'http://erlangen-crm.org/120111/');
+    $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');  
+    $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
+    $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
+    $this->putNamespace('protege', 'http://protege.stanford.edu/plugins/owl/protege#');
+    $this->putNamespace('xsp', 'http://www.owl-ontologies.com/2005/08/07/xsp.owl#');
+    $this->putNamespace('owl', 'http://www.w3.org/2002/07/owl#');
+    $this->putNamespace('xsd', 'http://www.w3.org/2001/XMLSchema#');
+    $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
+    $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+    $this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
+    */
+
+    // @TODO: This seems useless.
+    /*    
+    $namespaces = $this->getNamespaces();
+
+    if(!empty($namespaces)) { 	   
+      foreach($this->getNamespaces() as $key => $value) {
+        $this->putNamespace($key, $value);
+      }
+    }*/
+     /*else { // @TODO: this is not good
+      $this->putNamespace('nso',  'http://erlangen-crm.org/120111/');
+      $this->putNamespace('ns1',  'http://erlangen-crm.org/140220/');
+      $this->putNamespace('ecrm',  'http://erlangen-crm.org/140617/');  
+      $this->putNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
+      $this->putNamespace('swrl', 'http://www.w3.org/2003/11/swrl#');
+      $this->putNamespace('protege', 'http://protege.stanford.edu/plugins/owl/protege#');
+      $this->putNamespace('xsp', 'http://www.owl-ontologies.com/2005/08/07/xsp.owl#');
+      $this->putNamespace('owl', 'http://www.w3.org/2002/07/owl#');
+      $this->putNamespace('xsd', 'http://www.w3.org/2001/XMLSchema#');
+      $this->putNamespace('swrlb', 'http://www.w3.org/2003/11/swrlb#');
+      $this->putNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+      $this->putNamespace('skos', 'http://www.w3.org/2004/02/skos/core#');
+    }*/
+    
   }
 
   public function getSettings($name = NULL) {
@@ -136,17 +226,17 @@ class SPARQL11Adapter {
     
     $this->settings[$name] = $value;
   }
-	
-	public function settingsForm() {
-	
-	}
-	
 
-	// 
-  // query/update functions	for WissKI Pathbuilder Interface
-	// 
-		
-	
+  public function querySPARQL($query) {
+    return $this->requestSPARQL('query',$query);
+  }
+
+
+  public function updateSPARQL($update) {
+//    watchdog('wisski_sparql_update',$update);
+    return $this->requestSPARQL('update',$update);
+  }
+  
   /**
   * Performs a SPARQL 1.1 query or update.
   * The SPARQL query endpoint must be set in $this->settings['query_endpoint']
@@ -303,7 +393,7 @@ echo ($e->getTraceAsString());
    *			| in the output array e.g. 'value' for the 'value'-key
    *			| in a text-field-info-array
    *
-   * @param options is an associative array that may contain the following 
+   * @param settings is an associative array that may contain the following 
    * entries:
    * $key 		| $value
    * ------------------------------------------------------------
@@ -317,11 +407,11 @@ echo ($e->getTraceAsString());
    * 'count'            | int indicating the concept which should be counted -> query 
    *                    | is a count query for paging.
    */
-  public function query($starting_concept,array $paths,array $options = array()) {  
-  
+  public function pbQuery($starting_concept,array $paths,array $settings = array()) {
+    
 //    dpm(func_get_args(),__FUNCTION__);
 
-    // if there is no starting concepst - die.
+    // if there is no starting concept - die.
     if (empty($starting_concept)) {
       ddebug_backtrace();
       throw new InvalidArgumentException('you must specify a starting concept');
@@ -331,15 +421,15 @@ echo ($e->getTraceAsString());
     $query = "SELECT DISTINCT";
     
     // @TODO: why !isset here? I don't get it.
-    // if there are not any uris in the options or if there are uris, 
+    // if there are not any uris in the settings or if there are uris, 
     // then we are searching for an individual
-    if (!isset($options['uris']) || count($options['uris']) > 1) $query .= " ?ind";
+    if (!isset($settings['uris']) || count($settings['uris']) > 1) $query .= " ?ind";
         
     // array for the data parts
     $datas = array();
     
     // if count is in the path we make a count query now.
-    if (isset($options['count'])) {
+    if (isset($settings['count'])) {
       $query .= " count(?cnt)";
     }
     
@@ -357,12 +447,12 @@ echo ($e->getTraceAsString());
     $single_ind = FALSE;
     
     // if there are any uris
-    if (!empty($options['uris'])) {
+    if (!empty($settings['uris'])) {
       // if there are more than one we add all values to the query
-      if(count($options['uris']) > 1) $query .= " VALUES ?ind {<".implode('> <',$options['uris']).">}";
+      if(count($settings['uris']) > 1) $query .= " VALUES ?ind {<".implode('> <',$settings['uris']).">}";
       // if there is exactly one we add it
       else {
-        $ind = current($options['uris']);
+        $ind = current($settings['uris']);
         // if the one is an empty uri we die here.
         if (trim($ind) === '') {
           ddebug_backtrace();
@@ -383,7 +473,7 @@ echo ($e->getTraceAsString());
     
       // if there is an array of ids in it, we get them
       if (isset($path['id'])) $ids[$i] = $path['id'];
-      //$this->settings['query_endpoint'] @TODO this seems to be a little bit optimistic - shouldn't we check for numeric?
+      // @TODO this seems to be a little bit optimistic - shouldn't we check for numeric?
       // if there is no id in it, it is probably the key number of a path.
       else $ids[$i] = $key;
       
@@ -451,8 +541,8 @@ echo ($e->getTraceAsString());
         
         // if it is a count query
         
-        if(isset($options['count'])) {
-          $query .= " BIND(?p".$i."c" . $options['count'] . " AS ?cnt)";
+        if(isset($settings['count'])) {
+          $query .= " BIND(?p".$i."c" . $settings['count'] . " AS ?cnt)";
         }
 
         // if there is a datatype property
@@ -469,14 +559,14 @@ echo ($e->getTraceAsString());
       // if there are several paths we have to close the brackets because there will be more coming
       if (count($paths) > 1 || (isset($path['maximum']) && $path['maximum'] > 0)) {
         $query .= "}";
-				if (isset($path['maximum']) && $path['maximum'] > 0) $query .=  " LIMIT ".$path['maximum'];
+        if (isset($path['maximum']) && $path['maximum'] > 0) $query .=  " LIMIT ".$path['maximum'];
         $query .= " }";//close sub-SELECT
         if (isset($path['required']) && $path['required']) $query .= " FILTER(BOUND(?data$i))";
       }
       $i++;
     }
-    if (isset($options['matches'])) {
-      foreach ($options['matches'] as $match) {
+    if (isset($settings['matches'])) {
+      foreach ($settings['matches'] as $match) {
         if (!empty($datas)) {
           $contains = array();
           foreach ($datas as $data) {
@@ -489,19 +579,19 @@ echo ($e->getTraceAsString());
       }
     }
     $query .= " }"; // close WHERE
-    if (isset($options['order']) && !empty($datas)) {
+    if (isset($settings['order']) && !empty($datas)) {
       $query .= " ORDER BY";
       foreach($datas as $data) {
         $query .= " DESC(BOUND($data)) ";
-        if (isset($options['qualifier'])) $data = $options['qualifier']."($data)";
-        $query .= $options['order']."($data)";
+        if (isset($settings['qualifier'])) $data = $settings['qualifier']."($data)";
+        $query .= $settings['order']."($data)";
       }
     }
-    if (isset($options['limit']) && $options['limit'] > 0) {
-      $query .= " LIMIT ".$options['limit'];
+    if (isset($settings['limit']) && $settings['limit'] > 0) {
+      $query .= " LIMIT ".$settings['limit'];
     }    
-    if (isset($options['offset'])) {
-      $query .= " OFFSET ".$options['offset'];
+    if (isset($settings['offset'])) {
+      $query .= " OFFSET ".$settings['offset'];
     }
 //    wisski_core_tick('start PB query');
 //    throw new Exception('STOP');

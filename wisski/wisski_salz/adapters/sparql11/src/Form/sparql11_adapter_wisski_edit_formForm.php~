@@ -50,7 +50,7 @@ class sparql11_adapter_wisski_edit_formForm extends FormBase {
 
     $label = $form_state->getValue('name');
     $name = preg_replace('/[^a-z0-9_]/u','',strtolower($label));
-    $form_state->setRedirectUrl(new Url('internal
+    $form_state->setRedirectUrl(new Url('wisski_salz.admin_config_wisski_salz'));
     $settings = array(
       'old_name' => $args[1],
       'name' => $name,

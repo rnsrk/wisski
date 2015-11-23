@@ -31,7 +31,7 @@ class sparql11_adapter_wisski_edit_formForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state, $store_type_name = NULL, $store_name = NULL) {
 #    drupal_set_message(serialize($form));
 #    drupal_set_message(serialize($form_state));
-    drupal_set_message(serialize($store_type_name));
+#    drupal_set_message(serialize($store_type_name));
     return sparql11_adapter_wisski_settings_page($store_name, FALSE);
   }
   
@@ -61,13 +61,8 @@ class sparql11_adapter_wisski_edit_formForm extends FormBase {
      // 'local_data' => $form_state['values']['local_data'],
     );
     sparql11_adapter_db_insert_settings($settings, FALSE);
-    drupal_set_message("Saved settings.");
-    $installed_store_instances = sparql11_adapter_wisski_get_store_instances();
-#    foreach($installed_store_instances as $key => $installed_store_instance) {
-#      $form_state['redirect'] = 'admin/config/wisski/salz/edit/' . arg(5) . '/' . $installed_store_instance->name;
-#    }
-#    menu_rebuild();
-  
+    drupal_set_message("Changed settings.");
+    $installed_store_instances = sparql11_adapter_wisski_get_store_instances();  
 
   }
 

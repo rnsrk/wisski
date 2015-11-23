@@ -1,0 +1,9 @@
+sparql11_adapter.admin_config_wisski_salz_edit_storetypename_storename:
+  title: 'Edit Store @store_name'
+  route_name: sparql11_adapter.admin_config_wisski_salz_edit_storetypename_storename
+  base_route: sparql11_adapter.admin_config_wisski_salz_edit_storetypename_storename
+sparql11_adapter.admin_config_wisski_salz_edit_storetypename_storename_test:
+  title: 'Edit Store Test'
+  route_name: sparql11_adapter.admin_config_wisski_salz_edit_storetypename_storename_test
+  base_route: sparql11_adapter.admin_config_wisski_salz_edit_storetypename_storename
+

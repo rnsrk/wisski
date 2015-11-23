@@ -304,6 +304,11 @@ function sparql11_adapter_wisski_load_entities_and_fields() {
   sparql11_adapter_invoke_instance(arg(6))->loadClasses();
   menu_rebuild();
 }
+/**
+ * The form submit function for adding a new sparql11 store is now in src/Form/sparql11_adapter_wisski_add_formForm.php,
+ * the form submit function for editing a sparql11 store is now in src/Form/sparql11_adapter_wisski_edit_formForm.php   
+ */
+  
 /*
 function sparql11_adapter_wisski_form_submit($form, &$form_state, $store_instance = NULL){
   if(arg(4)=="add"){
@@ -332,7 +337,7 @@ else {
     $form_state['redirect'] = 'admin/config/wisski/salz/';
     $label = $form_state['values']['name'];
     $name = preg_replace('/[^a-z0-9_]/u','',strtolower($label));
-    $settings = array(
+    $settings = array(~
       'old_name' => arg(6),
       'name' => $name,
       'label' => $label,
