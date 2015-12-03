@@ -45,9 +45,15 @@ function wisski_core_install() {
 }
 
 function wisski_core_uninstall() {
-  
-  if (variable_get('field_storage_default') == 'wisski_core_swips') variable_del('field_storage_default');
-  variable_del('wisski_max_entities_per_page');
+
+  $wisski_core_config = \Drupal::service('config.factory')
+                         ->getEditable('wisski_core.settings');
+  drupal_set_message(serialize($wisski_core_config));
+  # in d8 variable_get/set/del API is now removed, so you have to use the new configuration system API/storage
+  #if (variable_get('field_storage_default') == 'wisski_core_swips') variable_del('field_storage_default');
+  if ($wisski_core_config->get('field_storage_default') == 'wisski_core_swips') $wisski_core_config->delete('field_storage_default');
+  $wisski_core_config->delete('wisski_max_entities_per_page');
+  #variable_del('wisski_max_entities_per_page');
   db_drop_field('field_collection_item','uri');
   db_drop_field('field_collection_item','group_id');
 }
@@ -520,7 +526,9 @@ function wisski_core_schema() {
         'type' => 'int',
         'default' => '0',
       ),
-    ) + entity_exportable_schema_fields(),
+    # in d8 entity_exportable_schema_fields() function does not exist
+    #) + entity_exportable_schema_fields(),
+    ),
     'primary key' => array('id'),
     'unique keys' => array(
       'type' => array('type'),

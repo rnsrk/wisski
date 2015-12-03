@@ -1,6 +1,6 @@
 wisski.content:
-  path: '/admin/config/wisski/'
-  defaults: 
+  path: '/admin/config/wisski'
+  defaults:
     _controller: '\Drupal\wisski_salz\Controller\wisski_salzController::content'
     _title: 'Hello World'
   requirements:
@@ -9,7 +9,7 @@ wisski_salz.admin_config_wisski_salz:
   path: '/admin/config/wisski/salz'
   defaults:
     _form: '\Drupal\wisski_salz\Form\wisski_salz_view_installed_store_instancesForm'
-    _title: 'Hello World'
+    _title: 'Manage Stores'
   requirements:
     _permission: 'access content'
 wisski_salz.admin_config_wisski_salz_navigate:
@@ -23,6 +23,6 @@ wisski_salz.admin_config_wisski_salz_add:
   path: '/admin/config/wisski/salz/add'
   defaults:
     _form: '\Drupal\wisski_salz\Form\wisski_salz_config_pageForm'
-    _title: 'Hello World'
+    _title: 'Add Store'
   requirements:
     _permission: 'access content'

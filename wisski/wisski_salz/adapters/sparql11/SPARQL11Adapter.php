@@ -1,5 +1,8 @@
 <?php
 
+use Drupal\wisski\wisski_salz\AdapterInterface;
+use Drupal\wisski\wisski_salz\adapters\sparql11\wisski_easyrdf;
+
 module_load_include('php', 'wisski_salz', "interface/AdapterInterface");
 module_load_include('php', 'wisski_salz', "adapters/sparql11/wisski_easyrdf");
 #libraries_load('easyrdf');
@@ -145,6 +148,17 @@ class SPARQL11Adapter {
 	// 
   // query/update functions	for WissKI Pathbuilder Interface
 	// 
+/*
+  public function querySPARQL($query) {
+    return $this->requestSPARQL('query',$query);
+  }
+          
+          
+  public function updateSPARQL($update) {
+    //    watchdog('wisski_sparql_update',$update);
+    return $this->requestSPARQL('update',$update);
+  }
+*/                  		
 		
 	
   /**

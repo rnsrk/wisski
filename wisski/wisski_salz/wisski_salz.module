@@ -599,7 +599,6 @@ function wisski_salz_next_datatype_properties($class) {
 
 function wisski_salz_recover_deleted_stores() {
   db_update('wisski_salz_store_instances')->fields(array('deleted' => 0))->condition('deleted',1,'=')->execute();
-  menu_rebuild();
 }
 
 function wisski_salz_set_store_types() {
@@ -645,15 +644,23 @@ function wisski_salz_get_installed_store_instances() {
 }
 
 function wisski_salz_delete_store_instances($instance_to_delete = NULL){
-    if ($instance_to_delete == NULL) $instance_to_delete = arg(6);
+    $current_url = Url::fromRoute('<current>');
+    $urlstring = $current_url->toString();
+    $path_args = explode('/', $urlstring);
+    $store_name = $path_args[8];
+    drupal_set_message($store_name);
+    // the following line is old d7 code, arg() is deprecated in d8!  
+    #if ($instance_to_delete == NULL) $instance_to_delete = arg(6); 
+    // instead take store_name from url      
+    if ($instance_to_delete == NULL) $instance_to_delete = $store_name;
     $result = db_select('wisski_salz_store_instances','ins')->fields('ins')->condition('deleted',0,'=')->condition('name',$instance_to_delete,'LIKE')->execute();
     if (empty($result)) drupal_set_message("Instance $instance_to_delete does not exist or has already been deleted");
         else {
             db_update('wisski_salz_store_instances')->fields(array('deleted' => 1))->condition('name',$instance_to_delete,'LIKE')->execute();
-                return TRUE;
-                  }
-                    return FALSE;
-                    }
+            return TRUE;
+        }
+          return FALSE;
+}
 
 function wisski_salz_db_get_instance_by_name($name) {
     return db_select('wisski_salz_store_instances','s')->fields('s')->condition('name',$name,'LIKE')->execute()->fetchObject();
@@ -680,17 +687,31 @@ function wisski_salz_db_get_instance_by_name($name) {
 * @author Kerstin Reinfandt
 */
 function wisski_salz_submit_delete_form($form, &$form_state){
-    // Redirect user to "delete" uri for this store.
-    $form_state['redirect'] = 'admin/config/wisski/salz/delete/' . arg(5) . '/' . arg(6);
+    $buildinfo = $form_state->getBuildInfo();
+    
+    $args = $buildinfo['args'];
+    // args[1] is the store name
+    $store_name = $args[1];
+    // args[0] is the store type name
+    $store_type_name = $args[0];
+    
+    // Redirect user to "delete" uri for this store. This is the old d7 way to do this
+    #$form_state['redirect'] = 'admin/config/wisski/salz/delete/' . arg(5) . '/' . arg(6);
+    // in d8 you have to redirect like this:
+    $url = \Drupal\Core\Url::fromRoute('sparql11_adapter.admin_config_wisski_salz_delete_storetypename_storename')
+             ->setRouteParameters(array('store_type_name'=>$store_type_name,'store_name'=>$store_name));
+    $form_state->setRedirectUrl($url);                           
 }
 
 /**
+* This form is now in /src/Form/wisski_salz_deleteForm.php !
+*
 * Form constructor for the store delete confirmation form.
 * @return array
 *  Confirmation form.
 * @author Kerstin Reinfandt
 */
-function wisski_salz_delete_form($form, &$form_state){
+/*function wisski_salz_delete_form($form, &$form_state){
     $message = t('Are you sure you want to delete store ' . arg(6) . '?');
     $path = 'admin/config/wisski/salz/edit/' . arg(5) . '/' . arg(6);
     return confirm_form(
@@ -702,12 +723,15 @@ function wisski_salz_delete_form($form, &$form_state){
         t('Cancel')
     );
 }
+*/
 
 /**
+* This function is now in /src/Form/wisski_salz_deleteForm.php !
+*
 * Store "Confirm delete" form submit handler.
 * @author Kerstin Reinfandt
 */
-function wisski_salz_delete_form_submit($form, &$form_state){
+/*function wisski_salz_delete_form_submit($form, &$form_state){
     $result = wisski_salz_delete_store_instances();
     menu_rebuild();
     if ($result) {
@@ -715,6 +739,7 @@ function wisski_salz_delete_form_submit($form, &$form_state){
     }
     $form_state['redirect'] = 'admin/config/wisski/salz';
 }
+*/
             
 function wisski_salz_store_modes(){
   $store_modes = array();

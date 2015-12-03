@@ -4,7 +4,8 @@
  * re-implementation of the SelectionHandler to ensure we get triplestore
  * data instead of SQL table data.
  */
-class EntityReference_SelectionHandler_Generic_wisski_individual extends EntityReference_SelectionHandler_Generic { 
+#class EntityReference_SelectionHandler_Generic_wisski_individual #extends EntityReference_SelectionHandler_Generic { 
+class EntityReference_SelectionHandler_Generic_wisski_individual {
 
   //////////////////////////////////////
   //

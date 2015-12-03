@@ -1,5 +1,7 @@
 <?php
 // $ID$
+use Drupal\Core\Url;
+//use Drupal\Component\Utility\UrlHelper;
 
 /**
 * Basic module for the WissKI-Communication with Drupal 7
@@ -13,8 +15,9 @@ module_load_include('php', 'wisski_salz', "adapters/sparql11/SPARQL11Adapter");
 module_load_include('php', 'wisski_salz', "interface/AdapterInterface");
 
 /**
- * Implements hook_menu().
+ * Implements hook_menu(). This hook is not available in d8 anymore. You have to use the yml-files instead!
  */
+/*
 function sparql11_adapter_menu() {
     $items = array();
     $store_type = sparql11_adapter_wisski_get_store_type();
@@ -64,6 +67,7 @@ function sparql11_adapter_menu() {
     }
   return $items;
  }
+*/
 
 /**
 * implements hook_entity_info_alter()
@@ -299,11 +303,24 @@ function sparql11_adapter_wisski_load_individuals(){
   menu_rebuild();
 }
 
-function sparql11_adapter_wisski_load_entities_and_fields() {
-  
-  sparql11_adapter_invoke_instance(arg(6))->loadClasses();
-  menu_rebuild();
+function sparql11_adapter_wisski_load_entities_and_fields() {  
+  $current_url = Url::fromRoute('<current>');
+  $urlstring = $current_url->toString();
+  $path_args = explode('/', $urlstring);
+  $store_name = $path_args[8];
+
+  drupal_set_message('current_url is');
+  drupal_set_message($current_url); 
+  drupal_set_message(serialize($path_args));
+  drupal_set_message($store_name);  
+  # dpm( get_defined_vars() );  
+  #drupal_set_message(serialize(parse_url($urlstring)));
+                            
+  sparql11_adapter_invoke_instance($store_name)->loadClasses();              
+ # sparql11_adapter_invoke_instance(arg(6))->loadClasses();
+ # menu_rebuild();
 }
+
 /**
  * The form submit function for adding a new sparql11 store is now in src/Form/sparql11_adapter_wisski_add_formForm.php,
  * the form submit function for editing a sparql11 store is now in src/Form/sparql11_adapter_wisski_edit_formForm.php   
@@ -381,13 +398,20 @@ function sparql11_adapter_db_insert_settings($settings,$clean = TRUE) {
   }                                                         
 }
 
-function sparql11_adapter_wisski_add_form($form, &$form_state) {
+/**
+ * The form for sparql11_adapter_wisski_add_form is now in /src/Form/sparql11_adapter_wisski_add_formForm.php 
+ */
+/*function sparql11_adapter_wisski_add_form($form, &$form_state) {
   return sparql11_adapter_wisski_settings_page(arg(6),TRUE);
 }
-
-function sparql11_adapter_wisski_edit_form($form, &$form_state) {
+*/
+/**
+ * The form for sparql11_adapter_wisski_edit_form is now in /src/Form/sparql11_adapter_wisski_edit_formForm.php
+ */  
+/*function sparql11_adapter_wisski_edit_form($form, &$form_state) {
   return sparql11_adapter_wisski_settings_page(arg(6),FALSE);
 }
+*/
 
 /**
  * implements hook_wisski_salz_map_namespaces

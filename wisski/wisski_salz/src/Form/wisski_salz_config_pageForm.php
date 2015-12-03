@@ -1,7 +1,6 @@
 <?php
 /**
  * @file
- * Contains \Drupal\wisski_salz\Form\wisski_salzForm
  *
  */
  
@@ -12,7 +11,9 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 
 /**
- * Implements wisski_salz_view_installed_store_instances
+ * Implements the form for the wisski_salz_config_page 
+ * which enables you to choose from a list the type of store to add.
+ * The url of the form is '/admin/config/wisski/salz/add'
  */
  
 class wisski_salz_config_pageForm extends FormBase {
@@ -20,9 +21,11 @@ class wisski_salz_config_pageForm extends FormBase {
   
   /**
    * {@inheritdoc}.
+   * The Id of every WissKI form is the name of the form class except that
+   * 'Form' is added with '_form'    
    */
   public function getFormId() {
-    return 'wisski_salz_view_installed_store_instancesForm';
+    return 'wisski_salz_config_page_form';
   }
   
   public function buildForm(array $form, FormStateInterface $form_state) {
@@ -34,7 +37,6 @@ class wisski_salz_config_pageForm extends FormBase {
   }
   
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    drupal_set_message("muahah");
   }
 
   

@@ -4,5 +4,6 @@ wisski_salz.admin_config_wisski_salz:
   base_route: wisski_salz.admin_config_wisski_salz
 wisski_salz.admin_config_wisski_salz_add:
   title: 'Add Store'
-  route_name: wisski_salz.admin_config_wisski_salz
+  route_name: wisski_salz.admin_config_wisski_salz_add
   base_route: wisski_salz.admin_config_wisski_salz
+ 
