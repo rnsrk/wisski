@@ -20,7 +20,7 @@ use Drupal\Core\Url;
  * The url of the form is '/admin/config/wisski/salz/edit/{store_type_name}/{store_name}'
  */
         
- */
+
  
 class sparql11_adapter_wisski_edit_formForm extends FormBase {
   

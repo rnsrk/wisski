@@ -26,10 +26,12 @@ function wisski_core_install() {
     }
   }
 */
-  variable_set('field_storage_default','wisski_core_swips');
-  variable_set('wisski_max_entities_per_page',42);
-  variable_set('wisski_titles_master_fallback','-!- '.t('invalid title').' -!-');
-  variable_set('wisski_standard_field_mapping','value');
+  # in d8 variable_get/set/del API is now removed! You have to use the new configuration system API/storage instead
+  # instead of using variable_set you have to define the variables in a .yml file in dir wisski_core/config/install
+  # variable_set('field_storage_default','wisski_core_swips');
+  # variable_set('wisski_max_entities_per_page',42);
+  # variable_set('wisski_titles_master_fallback','-!- '.t('invalid title').' -!-');
+  # variable_set('wisski_standard_field_mapping','value');
   db_add_field('field_collection_item','uri',array(
         	'description' => 'URI of the corresponding owl:Individual',
 	        'type' => 'varchar',
@@ -48,7 +50,7 @@ function wisski_core_uninstall() {
 
   $wisski_core_config = \Drupal::service('config.factory')
                          ->getEditable('wisski_core.settings');
-  drupal_set_message(serialize($wisski_core_config));
+  #drupal_set_message(serialize($wisski_core_config));
   # in d8 variable_get/set/del API is now removed, so you have to use the new configuration system API/storage
   #if (variable_get('field_storage_default') == 'wisski_core_swips') variable_del('field_storage_default');
   if ($wisski_core_config->get('field_storage_default') == 'wisski_core_swips') $wisski_core_config->delete('field_storage_default');

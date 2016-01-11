@@ -283,11 +283,6 @@ echo ($e->getTraceAsString());
     
     return $ns;
   }
-  
-  private function makeDrupalName($entity,$prefix) {
-    $pre_len = strlen($prefix);
-    return $prefix.preg_replace('/[^a-z0-9_]/u','_',substr(strtolower($entity),0,32-$pre_len));
-  }  
 
 
   public function pb_definition_settings_page($path_steps = array()) {
@@ -347,6 +342,9 @@ echo ($e->getTraceAsString());
     // @TODO: why !isset here? I don't get it.
     // if there are not any uris in the options or if there are uris, 
     // then we are searching for an individual
+		// Martin's explanation: the complement of the if test is the
+		// case where we have exactly one uri given. i.e. we can leave out
+		// ?ind as it can be directly bound!
     if (!isset($options['uris']) || count($options['uris']) > 1) $query .= " ?ind";
         
     // array for the data parts
@@ -560,6 +558,315 @@ echo ($e->getTraceAsString());
     }
     return FALSE;
   }
+
+	
+	/** This is a convenience function for query().
+	* $paths is just one assoc array, ie. one path 
+   * @param starting_concept string representing an concept, common start for all given paths
+   *
+   * @param paths is an associative array that may contain
+   * the following entries:
+   * $key		| $value
+   * ------------------------------------------------------------
+   * 'path_array' 	| array of strings representing owl:ObjectProperties 
+   *                    | and owl:Classes in alternating order
+   * 'datatype_property'| string representing an owl:DatatypeProperty
+   *
+   * @param options is an associative array that may contain the following 
+   * entries:
+   * $key 		| $value
+   * ------------------------------------------------------------
+   * 'limit'		| int setting the SPARQL query LIMIT
+   * 'offset'		| int setting the SPARQL query OFFSET
+	 * 'vars' 		| array with the variables that should be returned
+   * 'var_inst_prefix'		| SPARQL variable name for the datatype value
+   * 'var_offset'		| int offset for SPARQL variable names
+   * 'var_dt'		| SPARQL variable name for the datatype value
+   * 'order'		| string containing 'ASC' or 'DESC' (or 'RAND')
+   * 'qualifier'	| SPARQL data qualifier e.g. 'STR'
+   * 'dt_search'		| a search struct
+   * 'uris'		| array of strings representing owl:Individuals on which the
+   *			| query is triggered or:
+   *			| an assoc array of such arrays where the keys are the variable offset
+	 *			| that the uris shall be bound to
+   * 'count'            | int indicating the concept which should be counted -> query 
+   *                    | is a count query for paging.
+   */
+	public function execQuerySinglePath(array $path,array $options = array()) {
+		
+		$options['fields'] = FALSE;
+
+		$sparql = $this->buildQuerySinglePath($path, $options);
+
+
+			
+	}
+
+	public function buildQuerySinglePath(array $path, array $options = []) {
+		
+//    dpm(func_get_args(),__FUNCTION__);
+    
+		// variable naming
+		$varInstPrefix = isset($options['var_inst_prefix']) ? $options['var_inst_prefix'] : 'x';
+		$varOffset = isset($options['var_offset']) ? $options['var_offset'] : 0;
+		$varDt = isset($options['var_dt']) ? $options['var_dt'] : 'out';
+				
+		// array for the data parts
+    $head = "SELECT DISTINCT ";
+    $vars = [];
+   	$triples = '';
+		$constraints = '';
+		$order = '';
+		$limit = '';
+		
+		$pathArray = $paths['path_array'];
+		if (empty($pathArray)) {
+			throw new InvalidArgumentException('Path of length zero given.');
+		}
+
+		$uris = isset($options['uris']) ? $options['uris'] : [];
+
+		$var = '';
+		
+		while (!empty($pathArray)) {
+			
+			// an individual
+		  //
+			// currently supported keys:
+			// uris: an array of uris	that this position is limited to
+			// constraints: an assoc array where the keys are properties
+			//			and the value is an array of URIs for classes or indivs
+			//      the constraints are or'ed
+
+			$indiv = array_shift($pathArray);
+			$var = "?$varInstPrefix$varOffset";
+			$vars[$var] = $var;
+
+			if (!is_array($elem)) {
+				$indiv = [
+					'constraints' => [
+						'a' => [$indiv],
+					],
+				];
+			}
+			
+			// constrain possible uris
+			if (isset($uris[$var])) {
+				$constraints .= "VALUES $var {<" . implode('> <', $uris[$var]) . ">} .\n";
+			}
+			
+			// further triplewise constraints
+			foreach ($indiv['constraints'] as $prop => $val) {
+				$triples .= $var . ($prop == 'a' ? ' a ' : " <$prop> ") . "<$val> .\n";
+			}
+
+			if (!empty($pathArray)) {
+				// a property
+				//
+				// currently supported keys:
+				// uris: an assoc array where the keys are uris
+				// 			and the value is either:
+				//			1: normal direction
+				//			2: inverse direction
+				//			3: both directions (symmetric property)
+				// expand inverses: if TRUE, expand the given uris to all inverses, too
+
+				$prop = array_shift($pathArray);
+				
+				if (!is_array($elem)) {
+					$prop = [
+						'uris' => [$prop => 1],	// normal direction
+					];
+				}
+				
+				if (empty($prop['uris'])) {
+					throw new InvalidArgumentException('No URIs given for property.');
+				} 
+
+				// compute the inverse(s) if not given
+				if (!empty($prop['expand inverses'])) {
+					foreach ($prop['uris'] as $uri => $direction) {
+						if ($direction == 3) continue; // its own inverse => do nothing
+						$inv = $this->getInverse($uri);
+						if (!isset($prop['uris'][$inv])) {
+							// if prop does not exist, we add it with the opposite direction
+							$prop['uris'][$this->getInverse($uri)] = $direction == 2 ? 1 : 2;
+						} else {
+							// if prop does exist, we or existing and new direction
+							// making it possibly symmetric
+							$prop['uris'][$this->getInverse($uri)] |= $direction;
+						}
+					}
+				}
+				
+				// variable for next indiv				
+				$varPlus = "?$varInstPrefix" . ($varOffset + 1);
+				$vars[$varPlus] = $varPlus;
+	
+				
+				// generate triples for inverse and normal
+				$tr = [];
+				foreach ($prop['uris'] as $uri => $direction) {
+					if ($direction | 1) {
+						$tr[] = "$var <$uri> $varPlus . ";
+					}
+					if ($direction | 2) {
+						$tr[] = "$varPlus <$uri> $var . ";
+					}
+				}
+				if (count($tr) == 1) {
+					$triples .= $tr[0];
+				} else {
+					$triples .= '{ { ' . join(' } UNION { ', $tr) . ' } }';
+				}
+				$triples .= "\n";
+				
+				// we update the last var here
+				$var = $varPlus;
+
+			}
+			
+			// we always increment the counter, even if a step defines its own name
+			// this helps for more opacity
+			$varOffset++;	
+
+		} // end path while loop
+		
+		// add datatype property/ies if there
+		if (isset($path['datatype_property'])) {
+			
+			$props = $path['datatype_property'];
+			
+			if (!is_array($props)) {
+				$props = [
+					'uris' => [$props],
+			 	];
+			}
+
+			// add the triple(s)
+			$tr = [];
+			foreach ($props['uris'] as $prop) {
+				$tr[] = "$var <$prop> $varDt .";
+			}
+			if (count($tr) == 1) {
+				$triples .= $tr[0];
+			} else {
+				$triples .= '{ { ' . join(' } UNION { ', $tr) . ' } }';
+			}
+			$triples .= "\n";
+
+			// add constraints
+			if (empty($props['search']) && isset($options['search_dt'])) {
+				$props['search'] = $options['search_dt'];
+			}
+			
+			if (isset($options['search_dt'])) {
+				$constraints .= $this->_buildSparqlFilter($options['search_dt'], $varDt) . "\n";
+			}
+
+		} // end datatype prop
+	
+		// set order: we either order by 
+		// - the variable set in order_var (and it exists)
+		// - or the datatype variable (if it exists)
+		// otherwise we ignore order option
+		if (isset($options['order']) && $options['order'] != 'RAND' &&
+				((isset($options['order_var']) && isset($vars[$options['order_var']])) || isset($path['datatype_property']))
+				) {
+			$orderVar = (isset($options['order_var']) && isset($vars[$options['order_var']])) ? $options['order_var'] : $varDt;
+			$order .= "ORDER BY";
+			$order .= $options['order'] . '(';
+			if (isset($options['qualifier'])) {
+				$order .= $options['qualifier'] . "($orderVar)";
+			} else {
+				$order .= $orderVar;
+			}
+			$order .= ')';
+		}
+		
+		// set limit and offset
+		if (!empty($options['limit'])) $limit .= 'LIMIT ' . $options['limit'];
+		if (!empty($options['offset'])) $limit .= 'OFFSET ' . $options['offset'];
+
+		// filter out vars that we don't want to have
+		if (isset($options['vars'])) {
+			$vars = array_intersect($vars, $options['vars']);
+		}
+		
+		return empty($options['fields']) ? 
+			$head . join(' ', $vars) . ' WHERE { ' . $triples . $constraints . '} ' . $order . $limit
+			: [
+				'head' => $head,
+				'vars' => $vars,
+				'triples' => $triples,
+				'constraints' => $constraints,
+				'order' => $order,
+				'limit' => $limit,
+			];
+
+	}
+
+
+	public function _buildSearchFilter($search, $dtVar, $depth = 0) {
+		
+		if (empty($search)) {
+
+			return '';
+
+		} elseif ($depth == 0 && isset($search['mode'])) {
+			
+			return "FILTER " . $this->_buildSearchFilter($search, $dtVar, 1);
+				
+		} elseif ($depth == 0 && !empty($search)) {
+
+			// an easy case: we just search for a list of literals
+			// we use the values construct as it may be faster and more readable
+			$res = "VALUES $dtVar { ";
+			foreach ($search as $t) {
+				$res .= "'" . $this->_escapeSparqlLiteral($t) . "' ";
+			}
+			$res .= "}";
+			return $res;
+
+		} elseif (isset($search['mode'])) {
+			
+			$mode = strtoupper($search['mode']);
+			switch ($mode) {
+				case 'AND':
+				case 'OR':
+					$res = [];
+					foreach ($search['terms'] as $terms) {
+						$res = $this->_buildSearchFilter($terms, $dtVar, $depth + 1);
+					}
+					return '(' . join(" $mode ", $res) . ')';
+
+				case 'NOT':
+					$res = $this->_buildSearchFilter($search['term'], $dtVar, $depth + 1);
+					return "( NOT$res )";
+				
+				// 
+				case '=':
+				case '!=':
+				case '<':
+				case '>':
+					return "(INT($dtVar) $mode '" . $this->_escapeSparqlLiteral($term) . "')";
+				
+				case 'regex':
+					
+
+			}
+
+		}
+
+		return '';
+
+	}
+	
+	
+	public function getInverse($prop) {
+		return NULL;
+	}
+		
   
   /**
    * Function for counting and paging
