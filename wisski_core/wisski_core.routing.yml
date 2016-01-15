@@ -12,6 +12,13 @@ wisski_core.wisski_individual_create:
     _title: 'Hello World'
   requirements:
     _permission: 'access content'
+wisski_core.admin_config_wisski_core:
+  path: '/admin/config/wisski/core'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\wisski_core_ontology_overviewForm'
+    _title: 'Ontology (Stub!)'
+  requirements:
+    _permission: 'access content'
 wisski_core.admin_config_wisski_core_ontology:
   path: '/admin/config/wisski/core/ontology'
   defaults:
