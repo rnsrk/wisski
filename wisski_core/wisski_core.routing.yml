@@ -1,0 +1,21 @@
+wisski_core.wisski_navigate:
+  path: '/admin/config/wisski/navigate'
+  defaults:
+    _form: '\Drupal\wisski_salz\Form\wisski_salz_view_installed_store_instancesForm'
+    _title: 'Hello World'
+  requirements:
+    _permission: 'access content'
+wisski_core.wisski_individual_create:
+  path: '/admin/config/wisski/create/{bundle_name}'
+  defaults:
+    _form: '\Drupal\wisski_salz\Form\wisski_salz_view_installed_store_instancesForm'
+    _title: 'Hello World'
+  requirements:
+    _permission: 'access content'
+wisski_core.admin_config_wisski_core_ontology:
+  path: '/admin/config/wisski/core/ontology'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\wisski_core_ontology_overviewForm'
+    _title: 'Ontology'
+  requirements:
+    _permission: 'access content'

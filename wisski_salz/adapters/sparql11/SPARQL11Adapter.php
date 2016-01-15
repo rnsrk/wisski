@@ -18,7 +18,7 @@ class SPARQL11Adapter {
   * query_endpoint: The URL to connect to for read operations
   * update_endpoint: The URL to connect to for write operations
   */
-  protected $settings = array();
+  protected $settings = [];
 	private $endpoint = NULL;
 	
   
@@ -26,7 +26,7 @@ class SPARQL11Adapter {
     
 		$this->settings = $settings;
 
-    if (!isset($this->updateUri)) {
+    if (!isset($settings['update_endpoint'])) {
       $this->settings['update_endpoint'] = $this->settings['query_endpoint'];
     }
 		
@@ -69,7 +69,7 @@ class SPARQL11Adapter {
 	* 
 	* @return @see EasyRdf_Sparql_Client->query
 	*/
-	public function _directQuery($query) {
+	public function directQuery($query) {
 		return $this->getEndpoint()->query($query);
 	}
 
@@ -79,19 +79,10 @@ class SPARQL11Adapter {
 	* 
 	* @return @see EasyRdf_Sparql_Client->update
 	*/
-	public function _directUpdate($query) {
+	public function directUpdate($query) {
 		return $this->getEndpoint()->update($query);
 	}
 	
-	/** Can be used to directly access the easyrdf sparql interface
-	*
-	* If not necessary, don't use this interface
-	* 
-	* @return @see EasyRdf_Sparql_Client
-	*/
-	public function _getEndpoint() {
-		return $this->getEndpoint();
-	}
 
 
 	// 
@@ -559,9 +550,18 @@ echo ($e->getTraceAsString());
     return FALSE;
   }
 
+
+	
+	public function getPathArray($path) {
+		
+		
+		
+	}
+	
+
 	
 	/** This is a convenience function for query().
-	* $paths is just one assoc array, ie. one path 
+	 * $paths is just one assoc array, ie. one path 
    * @param starting_concept string representing an concept, common start for all given paths
    *
    * @param paths is an associative array that may contain
@@ -592,16 +592,68 @@ echo ($e->getTraceAsString());
    * 'count'            | int indicating the concept which should be counted -> query 
    *                    | is a count query for paging.
    */
-	public function execQuerySinglePath(array $path,array $options = array()) {
+	public function execQuerySinglePath(array $path, array $options = array()) {
 		
+		if (empty($path)) {
+			throw new InvalidArgumentException("Empty path given");
+		}
+		
+		if (is_numeric($path)) {
+			$path = $this->getPathArray($path);
+		}
+
+		if (!is_array($path) || empty($path)) {
+			throw new InvalidArgumentException("Bad path given: " . serialize($path));
+		}
+		
+		// prepare query
 		$options['fields'] = FALSE;
-
+		
+		// build it
 		$sparql = $this->buildQuerySinglePath($path, $options);
-
-
+		
+		// exec
+		$result = $this->directQuery($sparql);
+		
+		// postprocess result?
+		
+		
+		return $result;
 			
 	}
+	
 
+	
+	/** This function returns a SPARQL 1.1 query for a given path.
+   *
+   * @param path is an associative array that may contain
+   * the following entries:
+   * $key		| $value
+   * ------------------------------------------------------------
+   * 'path_array' 	| array of strings representing owl:ObjectProperties 
+   *                    | and owl:Classes in alternating order
+   * 'datatype_property'| string representing an owl:DatatypeProperty
+   *
+   * @param options is an associative array that may contain the following 
+   * entries:
+   * $key 		| $value
+   * ------------------------------------------------------------
+   * 'limit'		| int setting the SPARQL query LIMIT
+   * 'offset'		| int setting the SPARQL query OFFSET
+	 * 'vars' 		| array with the variables that should be returned
+   * 'var_inst_prefix'		| SPARQL variable name for the datatype value
+   * 'var_offset'		| int offset for SPARQL variable names
+   * 'var_dt'		| SPARQL variable name for the datatype value
+   * 'order'		| string containing 'ASC' or 'DESC' (or 'RAND')
+   * 'qualifier'	| SPARQL data qualifier e.g. 'STR'
+   * 'search_dt'		| a search struct
+   * 'uris'		| array of strings representing owl:Individuals on which the
+   *			| query is triggered or:
+   *			| an assoc array of such arrays where the keys are the variable offset
+	 *			| that the uris shall be bound to
+   * 'count'            | int indicating the concept which should be counted -> query 
+   *                    | is a count query for paging.
+   */
 	public function buildQuerySinglePath(array $path, array $options = []) {
 		
 //    dpm(func_get_args(),__FUNCTION__);
@@ -609,7 +661,7 @@ echo ($e->getTraceAsString());
 		// variable naming
 		$varInstPrefix = isset($options['var_inst_prefix']) ? $options['var_inst_prefix'] : 'x';
 		$varOffset = isset($options['var_offset']) ? $options['var_offset'] : 0;
-		$varDt = isset($options['var_dt']) ? $options['var_dt'] : 'out';
+		$varDt = '?' . (isset($options['var_dt']) ? $options['var_dt'] : 'out');
 				
 		// array for the data parts
     $head = "SELECT DISTINCT ";
@@ -619,7 +671,7 @@ echo ($e->getTraceAsString());
 		$order = '';
 		$limit = '';
 		
-		$pathArray = $paths['path_array'];
+		$pathArray = $path['path_array'];
 		if (empty($pathArray)) {
 			throw new InvalidArgumentException('Path of length zero given.');
 		}
@@ -632,9 +684,11 @@ echo ($e->getTraceAsString());
 			
 			// an individual
 		  //
-			// currently supported keys:
-			// uris: an array of uris	that this position is limited to
-			// constraints: an assoc array where the keys are properties
+			// currently supported values:
+			// - a string containing a single uri which is the name of the
+			//  	this individual belongs to
+			// - an array with the following supported keys:
+			//   - constraints: an assoc array where the keys are properties
 			//			and the value is an array of URIs for classes or indivs
 			//      the constraints are or'ed
 
@@ -642,7 +696,7 @@ echo ($e->getTraceAsString());
 			$var = "?$varInstPrefix$varOffset";
 			$vars[$var] = $var;
 
-			if (!is_array($elem)) {
+			if (!is_array($indiv)) {
 				$indiv = [
 					'constraints' => [
 						'a' => [$indiv],
@@ -656,15 +710,19 @@ echo ($e->getTraceAsString());
 			}
 			
 			// further triplewise constraints
-			foreach ($indiv['constraints'] as $prop => $val) {
-				$triples .= $var . ($prop == 'a' ? ' a ' : " <$prop> ") . "<$val> .\n";
+			foreach ($indiv['constraints'] as $prop => $vals) {
+				foreach ($vals as $val) {
+					$triples .= $var . ($prop == 'a' ? ' a ' : " <$prop> ") . "<$val> .\n";
+				}
 			}
 
 			if (!empty($pathArray)) {
 				// a property
 				//
-				// currently supported keys:
-				// uris: an assoc array where the keys are uris
+				// currently supported values:
+				// - a string containing the uri of the property
+				// - an array with the following supported keys:
+				//   - uris: an assoc array where the keys are uris
 				// 			and the value is either:
 				//			1: normal direction
 				//			2: inverse direction
@@ -684,17 +742,20 @@ echo ($e->getTraceAsString());
 				} 
 
 				// compute the inverse(s) if not given
+				// TODO: magic numbers to constants
 				if (!empty($prop['expand inverses'])) {
 					foreach ($prop['uris'] as $uri => $direction) {
 						if ($direction == 3) continue; // its own inverse => do nothing
 						$inv = $this->getInverse($uri);
-						if (!isset($prop['uris'][$inv])) {
-							// if prop does not exist, we add it with the opposite direction
-							$prop['uris'][$this->getInverse($uri)] = $direction == 2 ? 1 : 2;
-						} else {
-							// if prop does exist, we or existing and new direction
-							// making it possibly symmetric
-							$prop['uris'][$this->getInverse($uri)] |= $direction;
+						if (!empty($inv)) {
+							if (!isset($prop['uris'][$inv])) {
+								// if prop does not exist, we add it with the opposite direction
+								$prop['uris'][$this->getInverse($uri)] = $direction == 2 ? 1 : 2;
+							} else {
+								// if prop does exist, we or existing and new direction
+								// making it possibly symmetric
+								$prop['uris'][$this->getInverse($uri)] |= $direction;
+							}
 						}
 					}
 				}
@@ -707,10 +768,10 @@ echo ($e->getTraceAsString());
 				// generate triples for inverse and normal
 				$tr = [];
 				foreach ($prop['uris'] as $uri => $direction) {
-					if ($direction | 1) {
+					if ($direction & 1) {
 						$tr[] = "$var <$uri> $varPlus . ";
 					}
-					if ($direction | 2) {
+					if ($direction & 2) {
 						$tr[] = "$varPlus <$uri> $var . ";
 					}
 				}
@@ -735,6 +796,7 @@ echo ($e->getTraceAsString());
 		// add datatype property/ies if there
 		if (isset($path['datatype_property'])) {
 			
+			$vars[$varDt] = $varDt;
 			$props = $path['datatype_property'];
 			
 			if (!is_array($props)) {
@@ -761,7 +823,7 @@ echo ($e->getTraceAsString());
 			}
 			
 			if (isset($options['search_dt'])) {
-				$constraints .= $this->_buildSparqlFilter($options['search_dt'], $varDt) . "\n";
+				$constraints .= $this->_buildSearchFilter($options['search_dt'], $varDt) . "\n";
 			}
 
 		} // end datatype prop
@@ -807,7 +869,7 @@ echo ($e->getTraceAsString());
 	}
 
 
-	public function _buildSearchFilter($search, $dtVar, $depth = 0) {
+	public function _buildSearchFilter(array $search, $dtVar, $depth = 0) {
 		
 		if (empty($search)) {
 
@@ -835,25 +897,39 @@ echo ($e->getTraceAsString());
 				case 'AND':
 				case 'OR':
 					$res = [];
-					foreach ($search['terms'] as $terms) {
-						$res = $this->_buildSearchFilter($terms, $dtVar, $depth + 1);
+					$terms = $search['terms'];
+					foreach ($terms as $term) {
+						$res[] = $this->_buildSearchFilter($term, $dtVar, $depth + 1);
 					}
 					return '(' . join(" $mode ", $res) . ')';
 
 				case 'NOT':
 					$res = $this->_buildSearchFilter($search['term'], $dtVar, $depth + 1);
-					return "( NOT$res )";
+					return "( NOT $res )";
 				
-				// 
+				// comparison of strings and numbers
 				case '=':
 				case '!=':
 				case '<':
 				case '>':
-					return "(INT($dtVar) $mode '" . $this->_escapeSparqlLiteral($term) . "')";
-				
-				case 'regex':
-					
+					$term = $search['term'];
+					if (is_numeric($term)) {
+						// TODO: how to cast to a number type in sparql?
+						return "($dtVar $mode '" . $this->escapeSparqlLiteral($term) . "')";
+					} else {
+						return "(STR($dtVar) $mode " . $this->escapeSparqlLiteral($term) . ')';
+					}
+				case 'CONTAINS':
+					// contains behaves like regex but we also have to escape the special
+					// regex chars
+					$term = $search['term'];
+					return "(REGEX(STR($dtVar), '" . $this->escapeSparqlRegex($term, TRUE) . "'))";
+				case 'REGEX':
+					$term = $search['term'];
+					return "(REGEX(STR($dtVar), '" . $this->escapeSparqlLiteral($term) . "'))";
 
+				default:	
+					throw new InvalidArgumentException("Unknown search operator: $mode");
 			}
 
 		}
@@ -863,8 +939,44 @@ echo ($e->getTraceAsString());
 	}
 	
 	
+	/** Computes the inverse of a property
+	*	@param prop the property
+	* @return the inverse or NULL if there is none. 
+	*   In case of a symmetric property the property itself is returned
+	* @author Martin Scholz
+	*/
 	public function getInverse($prop) {
 		return NULL;
+	}
+
+
+	/** Escapes a string according to http://www.w3.org/TR/rdf-sparql-query/#rSTRING_LITERAL.
+	* @param literal the literal as a string
+	* @param escape_backslash if FALSE, the pattern will not escape backslashes.
+	*		This may be used to prevent double escapes
+	* @return the escaped string
+	* @author Martin Scholz
+	*/
+	public function escapeSparqlLiteral(string $literal, $escape_backslash = TRUE) {
+	  $sic  = array("\\",   '"',   "'",   "\b",  "\f",  "\n",  "\r",  "\t");
+	  $corr = array($escape_backslash ? "\\\\" : "\\", '\\"', "\\'", "\\b", "\\f", "\\n", "\\r", "\\t");
+  	$literal = str_replace($sic, $corr, $literal);
+  	return $literal;
+	}
+
+
+	/** Escapes the special characters for a sparql regex.
+	* @param regex the pattern as a string
+	* @param also_literal if TRUE, the pattern will also go through @see escapeSparqlLiteral
+	* @return the escaped string
+	* @author Martin Scholz
+	*/
+	public function escapeSparqlRegex(string $regex, $also_literal = FALSE) {
+		//  $chars = "\\.*+?^$()[]{}|";
+	  $sic = array('\\', '.', '*', '+', '?', '^', '$', '(', ')', '[', ']', '{', '}', '|');
+  	$corr = array('\\\\', '\.', '\*', '\+', '\?', '\^', '\$', '\(', '\)', '\[', '\]', '\{', '\}', '\|');
+  	$regex = str_replace($sic, $corr, $regex);
+		return $also_literal ? $this->escapeSparqlLiteral($regex) : $regex;
 	}
 		
   
@@ -972,16 +1084,6 @@ echo ($e->getTraceAsString());
     return $this->pbQuery($starting_concept,$path,$settings);
   }
 
-  /** 
-   * Escapes a string according to http://www.w3.org/TR/rdf-sparql-query/#rSTRING_LITERAL.
-   * @author Martin Scholz
-   */
-  function escape_sparql_literal($literal, $escape_backslash = TRUE) {
-    $sic  = array("\\",   '"',   "'",   "\b",  "\f",  "\n",  "\r",  "\t");
-    $corr = array($escape_backslash ? "\\\\" : "\\", '\\"', "\\'", "\\b", "\\f", "\\n", "\\r", "\\t");
-    $literal = str_replace($sic, $corr, $literal);
-    return $literal;
-  }
 
   /**
    * generates and executes a SPARQL query to ensure the existence of a path

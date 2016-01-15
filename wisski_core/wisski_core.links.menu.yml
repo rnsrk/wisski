@@ -1,0 +1,13 @@
+wisski_core.admin_config_wisski_core:
+  title: 'WissKI Core'
+  description: 'WissKI Core Module Settings'
+  parent: wisski.content
+  route_name: wisski_core.admin_config_wisski_core
+  weight: -100
+wisski_core.admin_config_wisski_core_ontology:
+  title: 'WissKI Ontology'
+  description: 'Specify/detect the ontology for this WissKI system'
+  parent: wisski_core.admin_config_wisski_core
+  route_name: wisski_core.admin_config_wisski_core_ontology
+  weight: 100
+

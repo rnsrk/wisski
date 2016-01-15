@@ -1630,6 +1630,7 @@ function wisski_core_wisski_pb_storeinformation() {
   return array("local" => array("title" => "Local Store"), );
 }
 
+/*
 class wisskiRemoteEntityController extends EntityAPIController {
   public function load($ids = array(), $conditions = array()) {
     $entities = array();
@@ -1651,6 +1652,7 @@ class wisskiRemoteEntityController extends EntityAPIController {
 
 class wisskiRemoteEntityUIController extends EntityDefaultUIController {
 }
+*/
 
 function wisski_core_form_alter(&$form, &$form_state, $form_id) {
 
