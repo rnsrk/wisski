@@ -15,7 +15,14 @@ include_once 'wisski_core.EntityReference_Selection.php';
 * @TODO: Fill in all permissions for this module!
 */
 
-function wisski_core_permission() {
+
+
+/**
+* hook_permission() is replaced in d8 with permissions defined in a $module.permissions.yml file
+* see wisski_core.permissions.yml for all wisski_core related permissions
+*/
+
+/*function wisski_core_permission() {
   
   return array(
   
@@ -33,6 +40,7 @@ function wisski_core_permission() {
     ),
   );  
 }
+*/
 
 /************************ Entity Section ***********************/
 

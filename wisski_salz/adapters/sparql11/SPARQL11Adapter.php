@@ -144,7 +144,7 @@ class SPARQL11Adapter {
     return $this->requestSPARQL('query',$query);
   }
           
-          
+         
   public function updateSPARQL($update) {
     //    watchdog('wisski_sparql_update',$update);
     return $this->requestSPARQL('update',$update);
