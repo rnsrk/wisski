@@ -30,14 +30,15 @@ class wisski_core_ontology_overviewForm extends FormBase {
   }
                         
   public function buildForm(array $form, FormStateInterface $form_state) {
+    //drupal_set_message("muahah");
     
-    $form['my_text_field'] = array(
+/*    $form['my_text_field'] = array(
       '#type' => 'textfield',
       '#title' => 'Example',
     );
     return $form;                          
+ */ 
   
-  /*
     $form = array();
         
     $local_store = wisski_salz_invoke_local_store();
@@ -53,6 +54,8 @@ class wisski_core_ontology_overviewForm extends FormBase {
       // stop here
       return $form;
     }
+    
+   
                                                 
     // if there is a local store - check if there is an ontology in the store
                                                   
@@ -117,7 +120,7 @@ class wisski_core_ontology_overviewForm extends FormBase {
    );
                                                                                                                   
    return $form;
-   */
+   
   }
   
 
@@ -126,7 +129,7 @@ class wisski_core_ontology_overviewForm extends FormBase {
   }
    
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    drupal_set_message("muahah");
+   # drupal_set_message("muahah");
   }
              
 }                                                                                                                                                                                                                                                                          
