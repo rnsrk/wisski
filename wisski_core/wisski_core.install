@@ -55,6 +55,7 @@ function wisski_core_uninstall() {
   #if (variable_get('field_storage_default') == 'wisski_core_swips') variable_del('field_storage_default');
   if ($wisski_core_config->get('field_storage_default') == 'wisski_core_swips') $wisski_core_config->delete('field_storage_default');
   $wisski_core_config->delete('wisski_max_entities_per_page');
+  $wisski_core_config->delete();
   #variable_del('wisski_max_entities_per_page');
   db_drop_field('field_collection_item','uri');
   db_drop_field('field_collection_item','group_id');

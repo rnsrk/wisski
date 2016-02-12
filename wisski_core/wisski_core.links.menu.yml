@@ -1,13 +1,25 @@
-wisski_core.admin_config_wisski_core:
-  title: 'WissKI Core'
-  description: 'WissKI Core Module Settings'
-  parent: wisski.content
-  route_name: wisski_core.admin_config_wisski_core
-  weight: -100
-wisski_core.admin_config_wisski_core_ontology:
+wisski_core.wisski_ontology:
   title: 'WissKI Ontology'
   description: 'Specify/detect the ontology for this WissKI system'
-  parent: wisski_core.admin_config_wisski_core
-  route_name: wisski_core.admin_config_wisski_core_ontology
+  parent: wisski.content
+  route_name: wisski_core.wisski_ontology
   weight: 100
+wisski_core.wisski_pathbuilder:
+  title: 'WissKI Pathbuilder'
+  description: 'Manage semantically annotated fields'
+  parent: wisski.content
+  route_name: wisski_core.wisski_pathbuilder
+  weight: 80
+wisski_core.wisski_uris:
+  title: 'WissKI LOD & URIs'
+  description: 'Configure Linked Open Data Behaviour and URI management'
+  parent: wisski.content
+  route_name: wisski_core.wisski_uris
+  weight: 60
+wisski_core.wisski_entities:
+  title: 'WissKI entities'
+  description: 'Specify entity display configurations'
+  parent: wisski.content
+  route_name: wisski_core.wisski_entities
+  weight: 50
 

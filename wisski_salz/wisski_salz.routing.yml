@@ -2,7 +2,7 @@ wisski.content:
   path: '/admin/config/wisski'
   defaults:
     _controller: '\Drupal\wisski_salz\Controller\wisski_salzController::content'
-    _title: 'Hello World'
+    _title: 'WissKI module settings'
   requirements:
     _permission: 'access content'
 wisski_salz.admin_config_wisski_salz:
@@ -26,3 +26,4 @@ wisski_salz.admin_config_wisski_salz_add:
     _title: 'Add Store'
   requirements:
     _permission: 'access content'
+

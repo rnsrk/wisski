@@ -3,8 +3,8 @@
 /**
 * This is a subclass of EasyRdf_Sparql_client that overrides
 * the communication with the sparql endpoint.
-* This is necessary as the Sesame restful interface differs
-* from the sparql 1.1 specification
+* This is necessary for Sesame as the Sesame restful interface does not fully
+* support the sparql 1.1 specification
 */
 class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 
@@ -17,14 +17,10 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
   */
   protected function request($type, $query) {
 
-//    $log = fopen(dirname(__FILE__).'/wisski_log.txt','a');
-//    fwrite($log,time()." - ".$type."\n".$query."\n\n");
-//    fwrite($log, serialize(debug_backtrace()));
     // Check for undefined prefixes
     $prefixes = '';
     // @TODO: Check - this should not happen every time I query something, this is very 
     // inefficient. Just check it in case of updates!
-//    $this->updateNamespaces();
     foreach (EasyRdf_Namespace::namespaces() as $prefix => $uri) {
       if (strpos($query, "$prefix:") !== false and strpos($query, "PREFIX $prefix:") === false) {
         $prefixes .=  "PREFIX $prefix: <$uri>\n";
@@ -46,6 +42,9 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 
 		if ($type == 'update') {
 
+      // this is where Sesame differs
+      // it does not accept POST directly as described in
+      // https://www.w3.org/TR/2013/REC-sparql11-protocol-20130321/#query-operation
 			$client->setMethod('POST');
 			$client->setUri($this->getUpdateUri());
 			$encodedQuery = 'update='.urlencode($prefixes . $query);
@@ -60,8 +59,6 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 						$client->setMethod('GET');
 						$client->setUri($this->getQueryUri().'?'.$encodedQuery);
 				} else {
-//                dpm(array('query' => $query, 'encoded' => $this->settings['query_endpoint'].'?'.$encodedQuery));
-//                trigger_error('Query size > 2048. Switch to POST mode',E_USER_NOTICE);
 						// Fall back to POST instead (which is un-cacheable)
 						$client->setMethod('POST');
 						$client->setUri($this->getQueryUri());
@@ -69,8 +66,6 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 						$client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
 				}
 		}
-		//dpm((array)$client,'client');
-//        watchdog('wisski_SPARQL_request_uri',$client->getUri());
 		$response = $client->request();
 		if ($response->getStatus() == 204) {
 			// No content

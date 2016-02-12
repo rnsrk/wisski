@@ -9,4 +9,6 @@ wisski_salz.admin_config_wisski_salz:
   description: 'WissKI Salz Module Settings'
   parent: wisski.content
   route_name: wisski_salz.admin_config_wisski_salz
-  weight: 100
+  weight: 50
+
+

@@ -1,25 +1,25 @@
-sparql11_adapter.admin_config_wisski_salz_add_storetype:
-  path: '/admin/config/wisski/salz/add/{store_type_name}'
-  defaults:
-    _form: '\Drupal\sparql11_adapter\Form\sparql11_adapter_wisski_add_formForm'
-    _title: 'Add new store of type @store_type_name'
-  requirements:
-    _permission: 'access content'
-sparql11_adapter.admin_config_wisski_salz_edit_storetypename_storename:
-  path: '/admin/config/wisski/salz/edit/{store_type_name}/{store_name}'
-  defaults:
-    _form: '\Drupal\sparql11_adapter\Form\sparql11_adapter_wisski_edit_formForm'
-    _title: 'Edit @store_type_name store @store_name'
-    store_name: ''
-    store_type_name: ''
-  requirements:
-    _permission: 'access content'
-sparql11_adapter.admin_config_wisski_salz_delete_storetypename_storename:
-  path: '/admin/config/wisski/salz/delete/{store_type_name}/{store_name}'
-  defaults:
-    _form: '\Drupal\wisski_salz\Form\wisski_salz_deleteForm'
-    _title: 'Delete @store_type_name store @store_name'
-    store_name: ''
-    store_type_name: ''
-  requirements:
-    _permission: 'access content'
+# sparql11_adapter.admin_config_wisski_salz_add_storetype:
+#   path: '/admin/config/wisski/salz/add/{store_type_name}'
+#   defaults:
+#     _form: '\Drupal\sparql11_adapter\Form\sparql11_adapter_wisski_add_formForm'
+#     _title: 'Add new store of type @store_type_name'
+#   requirements:
+#     _permission: 'access content'
+# sparql11_adapter.admin_config_wisski_salz_edit_storetypename_storename:
+#   path: '/admin/config/wisski/salz/edit/{store_type_name}/{store_name}'
+#   defaults:
+#     _form: '\Drupal\sparql11_adapter\Form\sparql11_adapter_wisski_edit_formForm'
+#     _title: 'Edit @store_type_name store @store_name'
+#     store_name: ''
+#     store_type_name: ''
+#   requirements:
+#     _permission: 'access content'
+# sparql11_adapter.admin_config_wisski_salz_delete_storetypename_storename:
+#   path: '/admin/config/wisski/salz/delete/{store_type_name}/{store_name}'
+#   defaults:
+#     _form: '\Drupal\wisski_salz\Form\wisski_salz_deleteForm'
+#     _title: 'Delete @store_type_name store @store_name'
+#     store_name: ''
+#     store_type_name: ''
+#   requirements:
+#     _permission: 'access content'

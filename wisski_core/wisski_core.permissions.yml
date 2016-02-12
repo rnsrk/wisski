@@ -1,0 +1,9 @@
+administer wisski:
+  title: 'Administer WissKI Core modules'
+  restrict access: TRUE
+view wisski content:
+  title: 'View WissKI Entities'
+  restrict access: FALSE
+administer wisski paths:
+  title: 'Administer paths and fields for WissKI entities'
+  restrict access: TRUE
