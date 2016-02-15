@@ -3,7 +3,7 @@
 namespace Drupal\wisski_core\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBundleBase;
-use Drupal\wisski_core\DMBundleInterface;
+use Drupal\wisski_core\WisskiBundleInterface;
 
 /**
  * Defines the bundle configuration entity.
@@ -13,11 +13,11 @@ use Drupal\wisski_core\DMBundleInterface;
  *   label = @Translation("Wisski Bundle"),
  *   handlers = {
  *     "form" = {
- *       "add" = "Drupal\wisski_core\Form\DMTestBundleForm",
- *       "edit" = "Drupal\wisski_core\Form\DMTestBundleForm",
+ *       "add" = "Drupal\wisski_core\Form\WisskiBundleForm",
+ *       "edit" = "Drupal\wisski_core\Form\WisskiBundleForm",
  *     },
- *     "list_builder" = "Drupal\wisski_core\Controller\DMBundleListBuilder",
- *		 "access" = "Drupal\wisski_core\Controller\DMBundleAccessHandler",
+ *     "list_builder" = "Drupal\wisski_core\Controller\WisskiBundleListBuilder",
+ *		 "access" = "Drupal\wisski_core\Controller\WisskiBundleAccessHandler",
  *   },
  *   admin_permission = "administer wisski_core",
  *   config_prefix = "bundle",

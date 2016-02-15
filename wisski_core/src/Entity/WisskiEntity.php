@@ -18,16 +18,16 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *   label = @Translation("Wisski Entity"),
  *   bundle_label = @Translation("Wisski Bundle"),
  *   handlers = {
- *		 "storage" = "Drupal\wisski_core\DMTestStorage",
+ *		 "storage" = "Drupal\wisski_core\WisskiStorage",
  *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
- *     "list_builder" = "Drupal\wisski_core\Controller\DMEntityListBuilder",
+ *     "list_builder" = "Drupal\wisski_core\Controller\WisskiEntityListBuilder",
  *     "form" = {
- *       "default" = "Drupal\wisski_core\Form\DMTestEntityForm",
- *       "edit" = "Drupal\wisski_core\Form\DMTestEntityForm",
- *			 "add" = "Drupal\wisski_core\Form\DMTestEntityForm",
- *			 "delete" = "Drupal\wisski_core\Form\DMTestEntityDeleteForm",
+ *       "default" = "Drupal\wisski_core\Form\WisskiEntityForm",
+ *       "edit" = "Drupal\wisski_core\Form\WisskiEntityForm",
+ *			 "add" = "Drupal\wisski_core\Form\WisskiEntityForm",
+ *			 "delete" = "Drupal\wisski_core\Form\WisskiEntityDeleteForm",
  *     },
- *     "access" = "Drupal\wisski_core\Controller\DMEntityAccessHandler",
+ *     "access" = "Drupal\wisski_core\Controller\WisskiEntityAccessHandler",
  *   },
  *   base_table = "wisski_core",
  *   data_table = "wisski_core_field_data",
@@ -56,7 +56,7 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *   translatable = FALSE,
  * )
  */
-class DMTestEntity extends ContentEntityBase implements DMTestInterface {
+class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
   
   public function __construct($values, $type, $b = FALSE, $t = array()) {
 
