@@ -1,0 +1,3 @@
+services:
+  entity.query.wisski_core:
+    class: Drupal\wisski_core\Query\QueryFactory
