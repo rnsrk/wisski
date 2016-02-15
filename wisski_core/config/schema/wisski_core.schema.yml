@@ -1,0 +1,16 @@
+wisski_core.bundle.*:
+  type: config_entity
+  label: 'WissKI Bundle'
+  mapping:
+    id:
+      type: string
+      label: 'Machine name'
+    label:
+      type: label
+      label: 'Label'
+    description:
+      type: text
+      label: 'Description'
+    field_map:
+      type: mapping
+      label: 'Field map'
