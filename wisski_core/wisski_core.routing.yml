@@ -15,7 +15,7 @@ wisski_core.wisski_individual_create:
 wisski_core.wisski_core:
   path: '/admin/config/wisski/core'
   defaults:
-    _controller: '\Drupal\wisski_core\Controller\wisski_coreController::content
+    _controller: '\Drupal\wisski_core\Controller\wisski_coreController::content'
     _title: 'Hello World!!'
   requirements:
     _permission: 'access content'
