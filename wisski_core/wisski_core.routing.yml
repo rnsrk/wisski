@@ -12,18 +12,46 @@ wisski_core.wisski_individual_create:
     _title: 'Hello World'
   requirements:
     _permission: 'access content'
-wisski_core.admin_config_wisski_core:
+wisski_core.wisski_core:
   path: '/admin/config/wisski/core'
   defaults:
-    _form: '\Drupal\wisski_core\Form\wisski_core_ontology_overviewForm'
-    _title: 'Ontology (Stub!)'
+    _controller: '\Drupal\wisski_core\Controller\wisski_coreController::content
+    _title: 'Hello World!!'
   requirements:
     _permission: 'access content'
-wisski_core.admin_config_wisski_core_ontology:
-  path: '/admin/config/wisski/core/ontology'
+wisski_core.wisski_ontology:
+  path: '/admin/config/wisski/ontology'
   defaults:
     _form: '\Drupal\wisski_core\Form\wisski_core_ontology_overviewForm'
     _title: 'Ontology'
+  requirements:
+    _permission: 'access content'
+wisski_core.wisski_pathbuilder:
+  path: '/admin/config/wisski/pathbuilder'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\wisski_core_pb_all_pathsForm'
+    _title: 'Pathbuilder'
+  requirements:
+    _permission: 'access content'
+wisski_core.wisski_bundle_manage:
+  path: 'admin/structure/wisski_core_bundle/manage/edit_path/unspecified'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\wisski_core_single_path_by_uuidForm'
+    _title: 'Add/Edit Path'
+  requirements:
+    _permission: 'access content'
+wisski_core.wisski_uris:
+  path: 'admin/config/wisski/uris'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\wisski_core_admin_lod_and_uriForm'
+    _title: 'WissKI LOD & URIs'
+  requirements:
+    _permission: 'access content'
+wisski_core.wisski_entities:
+  path: 'admin/config/wisski/entities'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\wisski_core_individual_displayForm'
+    _title: 'WissKI entities'
   requirements:
     _permission: 'access content'
 
