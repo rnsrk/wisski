@@ -1,0 +1,17 @@
+entity.wisski_core.add_entity:
+  route_name: entity.wisski_core_bundle.entity_add
+  title: 'Add Entity'
+  appears_on:
+    - entity.wisski_core_bundle.collection
+
+entity.wisski_core_bundle.add:
+  route_name: entity.wisski_core_bundle.add
+  title: 'Add new Bundle'
+  appears_on:
+    - entity.wisski_core_bundle.list
+
+entity.wisski_core.list_bundles:
+  route_name: entity.wisski_core_bundle.list
+  title: 'Show Bundles'
+  appears_on:
+    - entity.wisski_core.list
