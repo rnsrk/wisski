@@ -4,4 +4,4 @@ core: 8.x
 package: WissKI
 version: 0.1-dev
 type: module
-configure: admin/config/wisski_core/core
+configure: wisski_core.wisski_core
