@@ -20,16 +20,16 @@ wisski_core.wisski_entities:
   title: 'WissKI entities'
   description: 'Specify entity display configurations'
   parent: wisski.content
-  route_name: entity.wisski_core.list
+  route_name: entity.wisski_individual.list
   weight: 50
 
-entity.wisski_core.bundle_menu:
+entity.wisski_individual.bundle_menu:
   title: 'WissKI Entities and Bundles'
   parent: system.admin_structure
   description: 'Manage WissKI Entities'
-  route_name: entity.wisski_core_bundle.list
+  route_name: entity.wisski_bundle.list
 
-entity.wisski_core.list:
-  route_name: entity.wisski_core.list
+entity.wisski_individual.list:
+  route_name: entity.wisski_individual.list
   description: ' - none - '
   title: 'WissKI Entities'

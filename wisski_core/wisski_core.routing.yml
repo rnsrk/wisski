@@ -55,115 +55,115 @@ wisski_core.wisski_entities:
   requirements:
     _permission: 'access content'
 
-entity.wisski_core.list:
+entity.wisski_individual.list:
   path: '/wisski_core/list'
   defaults:
-    _entity_list: 'wisski_core'
+    _entity_list: 'wisski_individual'
     _title: 'WissKI Entities'
   requirements:
-    _permission: 'view wisski_core'
+    _entity_access: 'wisski_individual.view'
 
 # the canonical link template as seen in the WisskiEntity class annotations
 # is crucial for the Views module to integrate a link to the entity
 # it MUST be named 'canonical'
-entity.wisski_core.canonical:
-  path: '/wisski_core/{wisski_core}/view'
+entity.wisski_individual.canonical:
+  path: '/wisski_core/{wisski_individual}/view'
   defaults:
   # Calls the view controller, defined in the annotation of the contact entity
-    _entity_view: 'wisski_core'
+    _entity_view: 'wisski_individual'
     _title: 'WissKI Entity Content'
   requirements:
   # Calls the access controller of the entity, $operation 'view'
     _entity_access: 'wisski_core.view'
 
-entity.wisski_core.view:
-  path: '/wisski_core/{wisski_core}/view'
+entity.wisski_individual.view:
+  path: '/wisski_core/{wisski_individual}/view'
   defaults:
-    _entity_view: 'wisski_core'
+    _entity_view: 'wisski_individual'
     _title: 'WissKI Entity Content'
   requirements:
     _entity_access: 'wisski_core.view'
 
 
-entity.wisski_core.edit_form:
-  path: '/wisski_core/{wisski_core}/edit'
+entity.wisski_individual.edit_form:
+  path: '/wisski_core/{wisski_individual}/edit'
   defaults:
-    _entity_form: 'wisski_core'
+    _entity_form: 'wisski_individual'
     _title: 'Edit entity'
   requirements:
     _entity_access: 'wisski_core.edit'
 
-entity.wisski_core.delete_form:
-  path: '/wisski_core/{wisski_core}/delete'
+entity.wisski_individual.delete_form:
+  path: '/wisski_core/{wisski_individual}/delete'
   defaults:
-    _entity_form: 'wisski_core.delete'
+    _entity_form: 'wisski_individual.delete'
     _title: 'Delete entity'
   requirements:
-    _entity_access: 'wisski_core.delete'
+    _entity_access: 'wisski_individual.delete'
 
-entity.wisski_core.add:
-  path: '/wisski_core/{wisski_core_bundle}/add'
+entity.wisski_individual.add:
+  path: '/wisski_core/{wisski_bundle}/add'
   defaults:
-    _entity_form: 'wisski_core'
+    _entity_form: 'wisski_individual'
     _title: 'Add WissKI Entity'
   requirements:
     _permission: 'administer wisski_core entities'
 
-entity.wisski_core_bundle.list:
+entity.wisski_bundle.list:
   path: '/admin/structure/wisski_core'
   defaults:
-    _entity_list: 'wisski_core_bundle'
+    _entity_list: 'wisski_bundle'
     _title: 'WissKI Bundles and Object Classes'
   requirements:
-    _permission: 'administer wisski_core bundles'
+    _permission: 'administer wisski bundles'
 
-entity.wisski_core_bundle.add:
+entity.wisski_bundle.add:
   path: '/admin/structure/wisski_core/add'
   defaults:
-    _entity_form: wisski_core_bundle.add
+    _entity_form: wisski_bundle.add
   requirements:
-    _permission: 'administer wisski_core bundles'
+    _permission: 'administer wisski bundles'
 
-entity.wisski_core_bundle.entity_add:
-  path: '/admin/structure/wisski_core/{wisski_core_bundle}/add'
+entity.wisski_bundle.entity_add:
+  path: '/admin/structure/wisski_core/{wisski_bundle}/add'
   defaults:
     _controller: 'Drupal\wisski_core\Controller\WisskiEntityController::add'
     _title: 'Add WissKI Entity'
   options:
     parameters:
-      bundle: wisski_core_bundle
+      bundle: wisski_bundle
   requirements:
-    _entity_create_access: 'wisski_core'
+    _entity_create_access: 'wisski_individual'
 
 #notice that the route name has to match the one given in the WisskiBundle annotation
 #i.e.
 #  links = {
-#     "edit-form" = "/admin/structure/wisski_core/{wisski_core_bundle}/edit",
+#     "edit-form" = "/admin/structure/wisski_core/{wisski_bundle}/edit",
 #  }
 # maps to this route here
-entity.wisski_core_bundle.edit_form:
-  path: '/admin/structure/wisski_core/{wisski_core_bundle}/edit'
+entity.wisski_bundle.edit_form:
+  path: '/admin/structure/wisski_core/{wisski_bundle}/edit'
   defaults:
-    _entity_form: wisski_core_bundle.edit
+    _entity_form: wisski_bundle.edit
     _title: 'Edit Bundle'
   requirements:
-    _entity_access: 'wisski_core_bundle.edit'
+    _entity_access: 'wisski_bundle.edit'
 
-entity.wisski_core_bundle.delete_form:
-  path: '/admin/structure/wisski_core/{wisski_core_bundle}/delete'
+entity.wisski_bundle.delete_form:
+  path: '/admin/structure/wisski_core/{wisski_bundle}/delete'
   defaults:
-    _entity_form: wisski_core_bundle.delete
+    _entity_form: wisski_bundle.delete
     _title: 'Delete Bundle'
   requirements:
-    _entity_access: 'wisski_core_bundle.delete'
+    _entity_access: 'wisski_bundle.delete'
 
-entity.wisski_core_bundle.collection:
-  path: '/admin/structure/wisski_core/{wisski_core_bundle}/list'
+entity.wisski_bundle.entity_list:
+  path: '/admin/structure/wisski_core/{wisski_bundle}/list'
   defaults:
-    _entity_list: wisski_core
+    _entity_list: wisski_individual
     _title: 'Entities in Bundle'
   options:
     parameters:
-      bundle: wisski_core_bundle
+      bundle: wisski_bundle
   requirements:
-    _permission: 'view wisski_core'
+    _entity_access: 'wisski_individual.view'

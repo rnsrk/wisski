@@ -14,7 +14,7 @@ use Drupal\wisski_core\WisskiEntityInterface;
  * Defines the entity class.
  *
  * @ContentEntityType(
- *   id = "wisski_core",
+ *   id = "wisski_individual",
  *   label = @Translation("Wisski Entity"),
  *   bundle_label = @Translation("Wisski Bundle"),
  *   handlers = {
@@ -29,10 +29,6 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     },
  *     "access" = "Drupal\wisski_core\Controller\WisskiEntityAccessHandler",
  *   },
- *   base_table = "wisski_core",
- *   data_table = "wisski_core_field_data",
- *   revision_table = "wisski_core_revision",
- *   revision_data_table = "wisski_core_field_revision",
  *   render_cache = TRUE,
  *   entity_keys = {
  *     "id" = "eid",
@@ -42,40 +38,21 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     "langcode" = "langcode",
  *     "uuid" = "uuid"
  *   },
- *   bundle_entity_type = "wisski_core_bundle",
+ *   bundle_entity_type = "wisski_bundle",
  *   permission_granularity = "entity_type",
  *   admin_permission = "administer wisski_core",
  *	 fieldable = TRUE,
- *   field_ui_base_route = "entity.wisski_core_bundle.entity_add",
+ *   field_ui_base_route = "entity.wisski_bundle.entity_add",
  *   links = {
- *     "canonical" = "/wisski_core/{wisski_core}/view",
- *     "delete-form" = "/wisski_core/{wisski_core}/delete",
- *     "edit-form" = "/wisski_core/{wisski_core}/edit",
- *     "admin-form" = "/admin/structure/wisski_core/manage/{wisski_core_bundle}"
+ *     "canonical" = "/wisski_core/{wisski_individual}/view",
+ *     "delete-form" = "/wisski_core/{wisski_individual}/delete",
+ *     "edit-form" = "/wisski_core/{wisski_individual}/edit",
+ *     "admin-form" = "/admin/structure/wisski_core/manage/{wisski_bundle}"
  *   },
  *   translatable = FALSE,
  * )
  */
 class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
-  
-  public function __construct($values, $type, $b = FALSE, $t = array()) {
-
-    /*
-    $outvalues = array();
-    foreach ($values as $field_name => $field_values) {
-      if (!isset($field_values[LanguageInterface::LANGCODE_DEFAULT])) {
-        $outvalues[$field_name][LanguageInterface::LANGCODE_DEFAULT] = $field_values;
-      } else $outvalues[$field_name] = $field_values;
-    }
-    parent::__construct($outvalues, $type, $b, $t);
- #   dpm($this->entityKeys,'keys');
-    dpm(array($values,$outvalues, $type, $b, $t, $this), 'cons');
-    */
-    dpm($values,'Construct Entity');
-    //ddebug_backtrace();
-    //throw new \Exception('BOOM');
-    parent::__construct($values,$type,$b,$t);
-  }
   
   /**
    * {@inheritdoc}
@@ -104,7 +81,7 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
     $fields['bundle'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Bundle'))
       ->setDescription(t('The bundle.'))
-      ->setSetting('target_type', 'wisski_core_bundle')
+      ->setSetting('target_type', 'wisski_bundle')
       ->setReadOnly(TRUE);
 
     $fields['langcode'] = BaseFieldDefinition::create('language')
