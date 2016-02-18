@@ -4,7 +4,7 @@
  * Contains \Drupal\wisski_pathbuilder\WisskiPathbuilderInterface
  */
 
-namespace Drupal\wisski_pathbuilder
+namespace Drupal\wisski_pathbuilder;
 
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 
@@ -14,6 +14,3 @@ use Drupal\Core\Config\Entity\ConfigEntityInterface;
 interface WisskiPathbuilderInterface extends ConfigEntityInterface {
 
 }
- 
- 
- 

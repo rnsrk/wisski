@@ -16,7 +16,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
    *   id = "wisski_pathbuilder",
    *   label = @Translation("WisskiPathbuilder"),
    *   fieldable = FALSE,
-   *   controllers = {
+   *   handlers = {
    *	 "list_builder" = "Drupal\wisski_pathbuilder\WisskiPathbuilderListBuilder",
    *	 "form" = {
    *       "add" = "Drupal\wisski_pathbuilder\Form\WisskiPathbuilderForm",
@@ -31,8 +31,8 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
    *     "label" = "name"
    *   },
    *   links = {
-   *     "edit-form" = "wisski_pathbuilder.edit",
-   *     "delete-form" = "wisski_pathbuilder.delete",
+   *     "edit-form" = "/admin/structure/pb/edit/{wisski_pathbuilder}",
+   *     "delete-form" = "/admin/structure/pb/delete/{wisski_pathbuilder}",
    *   }
    * )
    */
@@ -46,19 +46,4 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
     public $id;
    
   } 
-                                                                                                                                                                                                                                                                            
-                                                                                                                                                                                                                                                                                  /**
-                                                                                                                                                                                                                                                                                         * The number of petals.
-                                                                                                                                                                                                                                                                                                *
-                                                                                                                                                                                                                                                                                                       * @var int
-                                                                                                                                                                                                                                                                                                              */
-                                                                                                                                                                                                                                                                                                                    public $petals;
-                                                                                                                                                                                                                                                                                                                     
-                                                                                                                                                                                                                                                                                                                           /**
-                                                                                                                                                                                                                                                                                                                                  * The season in which this flower can be found.
-                                                                                                                                                                                                                                                                                                                                         *
-                                                                                                                                                                                                                                                                                                                                                * @var string
-                                                                                                                                                                                                                                                                                                                                                       */
-                                                                                                                                                                                                                                                                                                                                                             public $season;
-                                                                                                                                                                                                                                                                                                                                                              
-                                                                                                                                                                                                                                                                                                                                                                  }
+              
