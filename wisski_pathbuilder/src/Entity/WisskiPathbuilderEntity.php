@@ -1,3 +1,4 @@
+<?php
 /**
  * @file
  * Contains \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity.
