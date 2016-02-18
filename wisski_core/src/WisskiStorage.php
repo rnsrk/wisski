@@ -79,7 +79,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * {@inheritdoc}
    */
   protected function doLoadMultiple(array $ids = NULL) {
-    $field_definitions = $this->entityManager->getFieldStorageDefinitions('wisski_core');
+    $field_definitions = $this->entityManager->getFieldStorageDefinitions('wisski_individual');
     $entities = array();
     foreach ($ids as $id) {
       $values = array();
@@ -92,7 +92,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           
         }
       }
-      if (!isset($values['id'])) $values['id'] = $id);
+      if (!isset($values['id'])) $values['id'] = $id;
       $entities[$id] = $this->create($values);
     }
     return $entities;
