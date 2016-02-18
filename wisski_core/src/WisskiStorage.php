@@ -10,7 +10,7 @@ use Drupal\Core\Field\FieldDefinitionInterface;
 
 use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\wisski_core\Query\WisskiQueryInterface;
-use Drupal\wisski_core\WisskiInvalidArgumentException;
+//use Drupal\wisski_core\WisskiInvalidArgumentException;
 
 /**
  * Test Storage that returns a Singleton Entity, so we can see what the FieldItemInterface does
