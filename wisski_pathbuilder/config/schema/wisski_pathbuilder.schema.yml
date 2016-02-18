@@ -1,0 +1,10 @@
+# Schema for configuration of the pathbuilder module
+
+  wisski_pathbuilder.wisski_pathbuilder.*:
+    type: mapping
+    label: 'Pathbuilder'
+    mapping:
+      id:
+        type: string
+        label: 'Pathbuilder ID'
+

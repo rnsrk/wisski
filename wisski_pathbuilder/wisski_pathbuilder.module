@@ -1,0 +1,12 @@
+use \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+
+/**
+ * Menu arugment loader. Returns a pathbuilder entity
+ *
+ * @param $id
+ * @return \Drupal\Core\Entity\EntityInterface|static
+ */
+ 
+function wisski_pathbuilder_load($id) {
+  return WisskiPathbuilderEntity::load($id);
+}

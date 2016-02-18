@@ -1,0 +1,5 @@
+wisski_pathbuilder.add:
+  route_name: 'wisski_pathbuilder.add'
+  title: 'Add flower'
+  appears_on:
+    - wisski_pathbuilder.list

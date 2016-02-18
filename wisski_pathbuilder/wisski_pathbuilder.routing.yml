@@ -1,0 +1,28 @@
+wisski_pathbuilder.list:
+  path: '/admin/structure/pb'
+  defaults:
+    _entity_list: 'wisski_pathbuilder'
+    _title: 'Pathbuilders'
+  requirements:
+    _permission: 'administer site configuration'
+wisski_pathbuilder.add:
+  path: '/admin/structure/pb/add'
+  defaults:
+    _entity_form: 'wisski_pathbuilder.add'
+    _title: 'Add a new Pathbuilder'
+  requirements:
+    _permission: 'administer site configuration'
+wisski_pathbuilder.edit:
+  path: '/admin/structure/pb/edit/{wisski_pathbuilder}'
+  defaults:
+    _entity_form: 'wisski_pathbuilder.edit'
+    _title: 'Edit Pathbuilder'
+  requirements:
+    _permission: 'administer site configuration'
+wisski_pathbuilder.delete:
+  path: '/admin/structure/pb/delete/{wisski_pathbuilder}'
+  defaults:
+    _entity_form: 'wisski_pathbuilder.delete'
+    _title: 'Delete Pathbuilder'
+  requirements:
+    _permission: 'administer site configuration'

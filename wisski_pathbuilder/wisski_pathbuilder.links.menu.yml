@@ -1,0 +1,5 @@
+wisski_pathbuilder.list:
+  title: Pathbuilders
+  description: 'Administer the Pathbuilder entities'
+  parent: system.admin_structure
+  route_name: wisski_pathbuilder.list
