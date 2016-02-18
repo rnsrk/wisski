@@ -107,7 +107,7 @@ entity.wisski_individual.add:
     _entity_form: 'wisski_individual'
     _title: 'Add WissKI Entity'
   requirements:
-    _permission: 'administer wisski_core entities'
+    _entity_access: 'wisski_individual.create'
 
 entity.wisski_bundle.list:
   path: '/admin/structure/wisski_core'
