@@ -36,10 +36,10 @@ interface WisskiQueryInterface {
   
   /**
    * loads the entity with the given ID
-   * @param $id the internal i.e. Drupal-specific Entity ID
+   * @param $entity_id the internal i.e. Drupal-specific Entity ID
    * @return the external i.e. Adapter-Specific Entity ID
    */
-  protected function getExternalID($id);
+  protected function getExternalID($entity_id);
   
   /**
    * retrieves the field data for the given entity ID and field name
