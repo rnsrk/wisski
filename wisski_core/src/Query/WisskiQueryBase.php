@@ -2,6 +2,8 @@
 
 namespace Drupal\wisski_core\Query;
 
+use Drupal\Core\Language\LanguageInterface;
+
 class WisskiQueryBase implements WisskiQueryInterface {
 
   /**
@@ -14,10 +16,16 @@ class WisskiQueryBase implements WisskiQueryInterface {
   /**
    * {@inheritdoc}
    */
-  protected function getExternalID($entity_id) {
+  public function getExternalID($entity_id) {
   
     return '42';
   }
+  
+  private $dummy_field_values = array(
+    'bundle' => 'e21_person',
+    'name' => 'Super Mario',
+    'id' => 42,
+  );
   
   /**
    * {@inheritdoc}
@@ -25,8 +33,10 @@ class WisskiQueryBase implements WisskiQueryInterface {
   public function loadFieldValues($entity_id,$field_name,$language = LanguageInterface::LANGCODE_DEFAULT,$field_property = NULL) {
 
     if (isset($field_property)) {
+      if (isset($this->dummy_field_values[$field_name])) return $this->dummy_field_values[$field_name];
       return 'Hello';
-    }  
+    }
+    if (isset($this->dummy_field_values[$field_name])) return array('value'=>$this->dummy_field_values[$field_name]);
     return array('value'=>'Ciao');
   }
   
@@ -52,6 +62,6 @@ class WisskiQueryBase implements WisskiQueryInterface {
   public function getBundlesForEntity($entity_id) {
   
     //this is a hardcoded example bundle, should exist in your Drupal
-    return 'e21_person';
+    return array('e21_person');
   }
 }
