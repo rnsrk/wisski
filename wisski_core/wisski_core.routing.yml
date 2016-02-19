@@ -26,13 +26,6 @@ wisski_core.wisski_ontology:
     _title: 'Ontology'
   requirements:
     _permission: 'access content'
-wisski_core.wisski_pathbuilder:
-  path: '/admin/config/wisski/pathbuilder'
-  defaults:
-    _form: '\Drupal\wisski_core\Form\wisski_core_pb_all_pathsForm'
-    _title: 'Pathbuilder'
-  requirements:
-    _permission: 'access content'
 wisski_core.wisski_bundle_manage:
   path: 'admin/structure/wisski_core_bundle/manage/edit_path/unspecified'
   defaults:

@@ -4,12 +4,6 @@ wisski_core.wisski_ontology:
   parent: wisski.content
   route_name: wisski_core.wisski_ontology
   weight: 100
-wisski_core.wisski_pathbuilder:
-  title: 'WissKI Pathbuilder'
-  description: 'Manage semantically annotated fields'
-  parent: wisski.content
-  route_name: wisski_core.wisski_pathbuilder
-  weight: 80
 wisski_core.wisski_uris:
   title: 'WissKI LOD & URIs'
   description: 'Configure Linked Open Data Behaviour and URI management'

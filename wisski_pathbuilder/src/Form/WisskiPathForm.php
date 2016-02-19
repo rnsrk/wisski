@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Contains \Drupal\wisski_pathbuilder\Form\WisskiPathbuilderForm
+ * Contains \Drupal\wisski_pathbuilder\Form\WisskiPathForm
  */
  
 namespace Drupal\wisski_pathbuilder\Form;
@@ -15,12 +15,12 @@ use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Url;
 
 /**
- * Class WisskiPathbuilderForm
+ * Class WisskiPathForm
  * 
- * Fom class for adding/editing WisskiPathbuilder config entities.
+ * Fom class for adding/editing WisskiPath config entities.
  */
  
-class WisskiPathbuilderForm extends EntityForm {
+class WisskiPathForm extends EntityForm {
 
    /**
    * {@inheritdoc}
@@ -29,21 +29,21 @@ class WisskiPathbuilderForm extends EntityForm {
   
     $form = parent::form($form, $form_state);
     
-    $pathbuilder = $this->entity;
+    $path = $this->entity;
     
     // Change page title for the edit operation
     if($this->operation == 'edit') {
-      $form['#title'] = $this->t('Edit Pathbuilder: @id', array('@id' => $pathbuilder->id));
+      $form['#title'] = $this->t('Edit Path: @id', array('@id' => $path->id));
     }
     
     $form['id'] = array(
       '#type' => 'machine_name',
       '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
-      '#default_value' => $pathbuilder->id,
-      '#disabled' => !$pathbuilder->isNew(),
+      '#default_value' => $path->id,
+      '#disabled' => !$path->isNew(),
       '#machine_name' => array(
         'source' => array('name'),
-        'exists' => 'wisski_pathbuilder_load',
+        'exists' => 'wisski_path_load',
       ),
     );
     
@@ -51,8 +51,8 @@ class WisskiPathbuilderForm extends EntityForm {
       '#type' => 'textfield',
       '#maxlength' => 255,
       '#title' => $this->t('Name'),
-      '#default_value' => $pathbuilder->name,
-      '#description' => $this->t("Name of the Pathbuilder-Tree."),
+      '#default_value' => $path->name,
+      '#description' => $this->t("Name of the Path."),
       '#required' => true,
 #      '#disabled' => !$pathbuilder->isNew(),
 #      '#machine_name' => array(
@@ -69,22 +69,22 @@ class WisskiPathbuilderForm extends EntityForm {
    */
   public function save(array $form, FormStateInterface $form_state) {
     
-    $pathbuilder = $this->entity;
+    $path = $this->entity;
     
-    $status = $pathbuilder->save();
+    $status = $path->save();
     
     if($status) {
       // Setting the success message.
-      drupal_set_message($this->t('Saved the pathbuilder: @id.', array(
-        '@id' => $pathbuilder->id,
+      drupal_set_message($this->t('Saved the path: @id.', array(
+        '@id' => $path->id,
       )));
     } else {
-      drupal_set_message($this->t('The Pathbuilder @id could not be saved.', array(
-        '@id' => $pathbuilder->id,
+      drupal_set_message($this->t('The path @id could not be saved.', array(
+        '@id' => $path->id,
       )));
     }
     
-    $url = new Url('entity.wisski_pathbuilder.collection');
+    $url = new Url('entity.wisski_path.collection');
     $form_state->setRedirect = $url->toString();
  }
 }
