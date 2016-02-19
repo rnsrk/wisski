@@ -21,6 +21,21 @@ wisski_pathbuilder.wisski_path.*:
     name:
       type: label
       label: 'Label'
-  description:
-      type: text
-      label: 'Description'
+    weight:
+      type: integer
+      label: 'Weight'
+    uuid:
+      type: string
+      label: 'uuid'
+    path_array:
+      type: string
+      label: 'Path Array'
+    datatype_property:
+      type: string
+      label: 'Datatype Property'
+    short_name:
+      type: string
+      label: 'Short Name'
+    disamb:
+      type: integer
+      label: 'Disambiguation'

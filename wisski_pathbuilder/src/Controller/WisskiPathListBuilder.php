@@ -27,20 +27,24 @@ class WisskiPathListBuilder extends DraggableListBuilder {
    * {@inheritdoc}
    */
   public function buildHeader() {
-    $header['id'] = $this->t('id');
+    #$header['id'] = $this->t('id');
     #$header['label'] = $this->t('name');
-            
+    $header['label'] = t('Name');        
     return $header + parent::buildHeader();
   }
     
  /**
   * {@inheritdoc}
   */
-  public function buildRow(EntityInterface $entity) {
-         
+  public function buildRow(EntityInterface $entity) {         
     // id
-    $row['id'] = $entity->id();
+   # $row['id'] = $entity->id();
+    $row['label'] = $this->getLabel($entity);
     #$this->getLabel($entity);
+    #$row['label'] = array(
+    #       'data' => $this->getLabel($entity),
+    #             'class' => array('menu-label'),
+    #                 );                     
                
     return $row + parent::buildRow($entity);
   }

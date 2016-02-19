@@ -8,7 +8,7 @@ namespace Drupal\wisski_pathbuilder\Entity;
   
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
-use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
+#use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
 use Drupal\wisski_pathbuilder\WisskiPathInterface;
    
  /**
@@ -25,28 +25,42 @@ use Drupal\wisski_pathbuilder\WisskiPathInterface;
   *       "add" = "Drupal\wisski_pathbuilder\Form\WisskiPathForm",
   *       "edit" = "Drupal\wisski_pathbuilder\Form\WisskiPathForm",
   *       "delete" = "Drupal\wisski_pathbuilder\Form\WisskiPathDeleteForm",
-  *     }
-  *   },
+  *     }             
+  *    },
   *   config_prefix = "wisski_path",
   *   admin_permission = "administer site configuration",
   *   entity_keys = {
   *     "id" = "id",
-  *     "label" = "name"
+  *     "label" = "name",
+  *     "weight" = "weight"
   *   },
   *   links = {
-  *     "edit-form" = "/admin/config/wisski/pathbuilder/path/{wisski_path}",
-  *     "delete-form" = "/admin/config/wisski/pathbuilder/path/{wisski_path}/delete",
-  *   }
-  * )
+  *     "edit-form" = "/admin/config/wisski/path/{wisski_path}",
+  *     "delete-form" = "/admin/config/wisski/path/{wisski_path}/delete",
+  *   }        
+  *  )
   */
 class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
  
      /**
-      * The ID of the Path
+      * The ID of the path
       *
       * @var string
       */
   public $id;
+  /**
+   * The human readable name of the path
+   *
+   * @var string
+   */
+  public $name;
+   
+   /**
+    * The position weight of the path
+    *
+    * @var int
+    */
+  public $weight;                                                       
                              
 }
      

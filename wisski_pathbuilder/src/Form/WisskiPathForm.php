@@ -85,7 +85,8 @@ class WisskiPathForm extends EntityForm {
     }
     
     $url = new Url('entity.wisski_path.collection');
-    $form_state->setRedirect = $url->toString();
+    #$form_state->setRedirect = $url->toString();
+    $form_state->setRedirectUrl($url);    
  }
 }
     
