@@ -2,6 +2,8 @@
 
 namespace Drupal\wisski_core\Query;
 
+use Drupal\Core\Language\LanguageInterface;
+
 class WisskiQueryBase implements WisskiQueryInterface {
 
   /**
@@ -24,10 +26,17 @@ class WisskiQueryBase implements WisskiQueryInterface {
    */
   public function loadFieldValues($entity_id,$field_name,$language = LanguageInterface::LANGCODE_DEFAULT,$field_property = NULL) {
 
-    if (isset($field_property)) {
-      return 'Hello';
-    }  
-    return array('value'=>'Ciao');
+#    if (isset($field_property)) {
+#      return 'Hello';
+#    }  
+#    return array('value'=>'Ciao');
+    switch ($field_name) {
+      case 'bundle': 	return 'e21_person';
+      case 'eid': 		return 42;
+      case 'name': 		return 'Super Mario';
+      case 'vid': 		return 42;
+      default: return 'Ciao';
+    }
   }
   
   /**
