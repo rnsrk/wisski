@@ -10,3 +10,17 @@ wisski_pathbuilder.wisski_pathbuilder.*:
     name:
       type: label
       label: 'Label'
+
+wisski_pathbuilder.wisski_path.*:
+  type: config_entity
+  label: 'Path'
+  mapping:
+    id:
+      type: string
+      label: 'Path ID'
+    name:
+      type: label
+      label: 'Label'
+  description:
+      type: text
+      label: 'Description'

@@ -20,31 +20,36 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   /**
    * stores the adpter names and classes used by this storage
    */
-  private static $adapters = array();
+  private $adapters = array();
   
   /**
    * stores mappings from entity IDs to arrays of storages, that handle the id
    * and arrays of bundles the entity is in
    */
-  private static $entity_info = array();
+  private $entity_info = array();
   
   /**
    * adds a WisskiQueryInterface to the list of adapters
    * @param $machine_name the machine name of the adapter, must start with lower_case letter, followed by lower case letters or underscores
    * @param $override TRUE if old adapter info should be overrided
    */
-  public static function addAdapter($machine_name,$class_name,$override=FALSE) {
+  public function addAdapter($machine_name,$class_name,$override=FALSE) {
     
-    if (!preg_match('/^[a-z][_a-z]/*$',$machine_name)) {
+    if (!preg_match('/^[a-z][_a-z]*$/',$machine_name)) {
       throw new WisskiInvalidArgumentException(t('%machine_name is not a valid adapter name.',array('%machine_name'=>$machine_name)));
     }
-    if (!class_exists($class_name) || !($class_name instanceof WisskiQueryInterface)) {
+    
+    if (!class_exists($class_name)) {
       throw new WisskiInvalidArgumentException(t('%class is not a valid adapter class.',array('%class'=>$class_name)));
+    }
+    $adapter = new $class_name();
+    if (!($adapter instanceof WisskiQueryInterface)) {
+      throw new WisskiInvalidArgumentException(t('%class is not a valid WissiQuery Adapter',array('%class'=>$class_name)));
     }
     if (array_key_exists($this->adapters,$machine_name) && !$override) {
       return FALSE;
     }
-    $this->adapters[$machine_name] = new $class_name();
+    $this->adapters[$machine_name] = $adapter;
     return TRUE;
   }
 
@@ -120,7 +125,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     $entity_info[$id] = array();
     foreach ($this->adapters as $name => $adapter) {
       if ($adapter->hasEntity($id)) {
-        $entity_info[$id][$name]['bundles'] = $adapter->bundlesForEntity($id);
+        $entity_info[$id][$name]['bundles'] = $adapter->getBundlesForEntity($id);
       }
     }
     return $entity_info[$id];
@@ -129,50 +134,50 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   /**
    * {@inheritdoc}
    */
-  public function load($id) {
-    //@TODO load WisskiEntity here
-  }
+//  public function load($id) {
+//    //@TODO load WisskiEntity here
+//  }
 
   /**
    * {@inheritdoc}
    */
-  public function loadRevision($revision_id) {
-    return NULL;
-  }
+#  public function loadRevision($revision_id) {
+#    return NULL;
+#  }
 
   /**
    * {@inheritdoc}
    */
-  public function deleteRevision($revision_id) {
-  }
+#  public function deleteRevision($revision_id) {
+#  }
 
   /**
    * {@inheritdoc}
    */
-  public function loadByProperties(array $values = array()) {
-    
-    return array();
-  }
+#  public function loadByProperties(array $values = array()) {
+#    
+#    return array();
+#  }
 
   /**
    * {@inheritdoc}
    */
-  public function delete(array $entities) {
-  }
+#  public function delete(array $entities) {
+#  }
 
   /**
    * {@inheritdoc}
    */
-  protected function doDelete($entities) {
-  }
+#  protected function doDelete($entities) {
+#  }
 
   /**
    * {@inheritdoc}
    */
-  public function save(EntityInterface $entity) {
-
-    return parent::save($entity);
-  }
+#  public function save(EntityInterface $entity) {
+#
+#    return parent::save($entity);
+#  }
 
   /**
    * {@inheritdoc}
@@ -183,30 +188,35 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
   /**
    * {@inheritdoc}
+   * @TODO must be implemented
    */
   protected function doLoadRevisionFieldItems($revision_id) {
   }
 
   /**
    * {@inheritdoc}
+   * @TODO must be implemented
    */
   protected function doSaveFieldItems(ContentEntityInterface $entity, array $names = []) {
   }
 
   /**
    * {@inheritdoc}
+   * @TODO must be implemented
    */
   protected function doDeleteFieldItems($entities) {
   }
 
   /**
    * {@inheritdoc}
+   * @TODO must be implemented
    */
   protected function doDeleteRevisionFieldItems(ContentEntityInterface $revision) {
   }
 
   /**
    * {@inheritdoc}
+   * @TODO must be implemented
    */
   protected function readFieldItemsToPurge(FieldDefinitionInterface $field_definition, $batch_size) {
     return array();
@@ -214,6 +224,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
   /**
    * {@inheritdoc}
+   * @TODO must be implemented
    */
   protected function purgeFieldItems(ContentEntityInterface $entity, FieldDefinitionInterface $field_definition) {
   }
@@ -221,17 +232,19 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   /**
    * {@inheritdoc}
    */
-  protected function doSave($id, EntityInterface $entity) {
-  }
+#  protected function doSave($id, EntityInterface $entity) {
+#  }
 
   /**
    * {@inheritdoc}
+   * @TODO must be implemented
    */
   protected function has($id, EntityInterface $entity) {
   }
 
   /**
    * {@inheritdoc}
+   * @TODO must be implemented
    */
   public function countFieldData($storage_definition, $as_bool = FALSE) {
     //@TODO return the truth
@@ -241,7 +254,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   /**
    * {@inheritdoc}
    */
-  public function hasData() {
-    return FALSE;
-  }  
+#  public function hasData() {
+#    return FALSE;
+#  }  
 }

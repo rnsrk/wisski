@@ -3,3 +3,8 @@ entity.wisski_pathbuilder.add:
   title: 'Add Pathbuilder'
   appears_on:
     - entity.wisski_pathbuilder.collection
+entity.wisski_path.add:
+  route_name: 'entity.wisski_path.add_form'
+  title: 'Add Path'
+  appears_on:
+    - entity.wisski_pathbuilder.collection
