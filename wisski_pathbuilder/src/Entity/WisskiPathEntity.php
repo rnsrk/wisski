@@ -34,8 +34,8 @@ use Drupal\wisski_pathbuilder\WisskiPathInterface;
   *     "label" = "name"
   *   },
   *   links = {
-  *     "edit-form" = "/admin/config/wisski/pathbuilder/{wisski_path}",
-  *     "delete-form" = "/admin/config/wisski/pathbuilder/{wisski_path}/delete",
+  *     "edit-form" = "/admin/config/wisski/pathbuilder/path/{wisski_path}",
+  *     "delete-form" = "/admin/config/wisski/pathbuilder/path/{wisski_path}/delete",
   *   }
   * )
   */
