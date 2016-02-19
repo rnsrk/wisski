@@ -17,7 +17,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
    *   label = @Translation("WisskiPathbuilder"),
    *   fieldable = FALSE,
    *   handlers = {
-   *	 "list_builder" = "Drupal\wisski_pathbuilder\WisskiPathbuilderListBuilder",
+   *	 "list_builder" = "Drupal\wisski_pathbuilder\Controller\WisskiPathbuilderListBuilder",
    *	 "form" = {
    *       "add" = "Drupal\wisski_pathbuilder\Form\WisskiPathbuilderForm",
    *       "edit" = "Drupal\wisski_pathbuilder\Form\WisskiPathbuilderForm",
@@ -31,8 +31,8 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
    *     "label" = "name"
    *   },
    *   links = {
-   *     "edit-form" = "/admin/structure/pb/edit/{wisski_pathbuilder}",
-   *     "delete-form" = "/admin/structure/pb/delete/{wisski_pathbuilder}",
+   *     "edit-form" = "/admin/structure/pb/{wisski_pathbuilder}",
+   *     "delete-form" = "/admin/structure/pb/{wisski_pathbuilder}/delete",
    *   }
    * )
    */

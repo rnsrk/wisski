@@ -1,10 +1,12 @@
 # Schema for configuration of the pathbuilder module
 
-  wisski_pathbuilder.wisski_pathbuilder.*:
-    type: mapping
-    label: 'Pathbuilder'
-    mapping:
-      id:
-        type: string
-        label: 'Pathbuilder ID'
-
+wisski_pathbuilder.wisski_pathbuilder.*:
+  type: config_entity
+  label: 'Pathbuilder'
+  mapping:
+    id:
+      type: string
+      label: 'Pathbuilder ID'
+    name:
+      type: label
+      label: 'Label'

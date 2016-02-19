@@ -5,10 +5,13 @@
  */
  
 namespace Drupal\wisski_pathbuilder\Form;
- 
+
+use Drupal\Core\Form\FormStateInterface; 
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Url;
 
 /**
@@ -22,7 +25,7 @@ class WisskiPathbuilderForm extends EntityForm {
    /**
    * {@inheritdoc}
    */
-  public function form(array $form, array $form_state) {
+  public function form(array $form, FormStateInterface $form_state) {
   
     $form = parent::form($form, $form_state);
     
@@ -40,8 +43,22 @@ class WisskiPathbuilderForm extends EntityForm {
       '#disabled' => !$pathbuilder->isNew(),
       '#machine_name' => array(
         'source' => array('name'),
-        'exists' => 'wisskipathbuilder_load',
+        'exists' => 'wisski_pathbuilder_load',
       ),
+    );
+    
+    $form['name'] = array(
+      '#type' => 'textfield',
+      '#maxlength' => 255,
+      '#title' => $this->t('Name'),
+      '#default_value' => $pathbuilder->name,
+      '#description' => $this->t("Name of the Pathbuilder-Tree."),
+      '#required' => true,
+#      '#disabled' => !$pathbuilder->isNew(),
+#      '#machine_name' => array(
+#        'source' => array('name'),
+#        'exists' => 'wisski_pathbuilder_load',
+#      ),
     );
     
     return $form;
@@ -50,7 +67,7 @@ class WisskiPathbuilderForm extends EntityForm {
   /**
    * {@inheritdoc}
    */
-  public function save(array $form, array &$form_state) {
+  public function save(array $form, FormStateInterface $form_state) {
     
     $pathbuilder = $this->entity;
     
@@ -67,9 +84,9 @@ class WisskiPathbuilderForm extends EntityForm {
       )));
     }
     
-    $url = new Url('wisskipathbuilder.list');
-    $form_state['redirect'] = $url->toString();
-  }
+    $url = new Url('entity.wisski_pathbuilder.collection');
+    $form_state->setRedirect = $url->toString();
+ }
 }
     
-  }
+ 

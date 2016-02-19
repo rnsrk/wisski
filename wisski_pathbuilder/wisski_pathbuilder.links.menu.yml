@@ -1,5 +1,5 @@
-wisski_pathbuilder.list:
+entity.wisski_pathbuilder.collection:
   title: Pathbuilders
   description: 'Administer the Pathbuilder entities'
   parent: system.admin_structure
-  route_name: wisski_pathbuilder.list
+  route_name: entity.wisski_pathbuilder.collection

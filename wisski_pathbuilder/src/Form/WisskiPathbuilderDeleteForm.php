@@ -26,7 +26,7 @@ class WisskiPathbuilderDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelRoute() {
-    return new Url('WisskiPathbuilder.list');
+    return new Url('entity.wisski_pathbuilder.collection');
   }
   
   /**
@@ -39,7 +39,7 @@ class WisskiPathbuilderDeleteForm extends EntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submit(array $form, array &$form_state) {
+  public function submit(array $form, FormStateInterface &$form_state) {
     
     // Delete and set message
     $this->entity->delete();
