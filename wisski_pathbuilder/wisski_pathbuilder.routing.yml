@@ -29,3 +29,11 @@ entity.wisski_pathbuilder.delete_form:
     _title: 'Delete Pathbuilder'
   requirements:
     _permission: 'administer site configuration'
+
+entity.wisski_path.collection:
+  path: '/admin/config/wisski/pathbuilder'
+  defaults:
+    _entity_list: 'wisski_path'
+    _title: 'WissKI Paths'
+  requirements:
+    _permission: 'administer site configuration'

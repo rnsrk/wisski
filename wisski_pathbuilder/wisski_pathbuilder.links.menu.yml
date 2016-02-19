@@ -3,3 +3,9 @@ entity.wisski_pathbuilder.collection:
   description: 'Administer the Pathbuilder entities'
   parent: system.admin_structure
   route_name: entity.wisski_pathbuilder.collection
+entity.wisski_path.collection:
+  title: 'WissKI Pathbuilder Paths'
+  description: 'Manage semantically annotated fields'
+  parent: wisski.content
+  route_name: entity.wisski_path.collection
+  weight: 80
