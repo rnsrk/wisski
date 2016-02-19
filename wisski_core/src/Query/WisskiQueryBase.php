@@ -14,7 +14,7 @@ class WisskiQueryBase implements WisskiQueryInterface {
   /**
    * {@inheritdoc}
    */
-  protected function getExternalID($entity_id) {
+  public function getExternalID($entity_id) {
   
     return '42';
   }
