@@ -35,7 +35,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   public static function addAdapter($machine_name,$class_name,$override=FALSE) {
     
-    if (!preg_match('/^[a-z][_a-z]*$',$machine_name)) {
+    if (!preg_match('/^[a-z][_a-z]/*$',$machine_name)) {
       throw new WisskiInvalidArgumentException(t('%machine_name is not a valid adapter name.',array('%machine_name'=>$machine_name)));
     }
     if (!class_exists($class_name) || !($class_name instanceof WisskiQueryInterface)) {
