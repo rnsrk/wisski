@@ -98,7 +98,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           
         }
       }
-      if (!isset($values['id'])) $values['id'] = $id;
+//      if (!isset($values['id'])) $values['id'] = $id;
+      if (is_array($values['bundle'])) $values['bundle'] = current($values['bundle']);
       $entities[$id] = $this->create($values);
     }
     return $entities;
