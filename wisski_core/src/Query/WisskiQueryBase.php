@@ -21,23 +21,18 @@ class WisskiQueryBase implements WisskiQueryInterface {
     return '42';
   }
   
-  private $dummy_field_values = array(
-    'bundle' => 'e21_person',
-    'name' => 'Super Mario',
-    'id' => 42,
-  );
-  
   /**
    * {@inheritdoc}
    */
   public function loadFieldValues($entity_id,$field_name,$language = LanguageInterface::LANGCODE_DEFAULT,$field_property = NULL) {
 
-    if (isset($field_property)) {
-      if (isset($this->dummy_field_values[$field_name])) return $this->dummy_field_values[$field_name];
-      return 'Hello';
+    switch ($field_name) {
+      case 'bundle': 	return 'e21_person';
+      case 'eid': 		return 42;
+      case 'name': 		return 'Super Mario';
+      case 'vid': 		return 42;
+      default: return 'Ciao';
     }
-    if (isset($this->dummy_field_values[$field_name])) return array('value'=>$this->dummy_field_values[$field_name]);
-    return array('value'=>'Ciao');
   }
   
   /**
