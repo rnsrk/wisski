@@ -48,14 +48,15 @@ class WisskiSalzAdapterForm extends EntityForm {
         
     $plugins = $manager->getDefinitions();
     
-    drupal_set_message(serialize($plugins));
+#    drupal_set_message(serialize($plugins));
     
-    return $form;
+#    return $form;
     
     $client_options = [];
     foreach ($plugins as $client) {
       $client_options[$client['id']] = $client['name'];
     }
+            
     $form['storage_settings']['client'] = array(
       '#type' => 'select',
       '#title' => $this->t('Storage client'),
@@ -65,22 +66,22 @@ class WisskiSalzAdapterForm extends EntityForm {
     );
 
 #    $formats = \Drupal::service('external_entity.storage_client.response_decoder_factory')->supportedFormats();
-    $form['storage_settings']['format'] = array(
-      '#type' => 'select',
-      '#title' => $this->t('Format'),
-      '#options' => array_combine($formats, $formats),
-      '#required' => TRUE,
-#      '#default_value' => $type->getFormat(),
-    );
+#    $form['storage_settings']['format'] = array(
+#      '#type' => 'select',
+#      '#title' => $this->t('Format'),
+#      '#options' => array_combine($formats, $formats),
+#      '#required' => TRUE,
+##      '#default_value' => $type->getFormat(),
+#    );
 
-    $form['storage_settings']['endpoint'] = array(
-      '#type' => 'textfield',
-      '#title' => $this->t('Endpoint'),
-      '#required' => TRUE,
-#      '#default_value' => $type->getEndpoint(),
-      '#size' => 255,
-      '#maxlength' => 255,
-    );
+#    $form['storage_settings']['endpoint'] = array(
+#      '#type' => 'textfield',
+#      '#title' => $this->t('Endpoint'),
+#      '#required' => TRUE,
+##      '#default_value' => $type->getEndpoint(),
+#      '#size' => 255,
+#      '#maxlength' => 255,
+#    );
 
     return $form;
   }
