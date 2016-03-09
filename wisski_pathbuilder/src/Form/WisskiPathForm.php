@@ -84,9 +84,25 @@ class WisskiPathForm extends EntityForm {
       )));
     }
     
-    $url = new Url('entity.wisski_path.collection');
-    #$form_state->setRedirect = $url->toString();
-    $form_state->setRedirectUrl($url);    
+   /**
+     $buildinfo = $form_state->getBuildInfo();
+    # drupal_set_message(serialize($buildinfo));
+      $args = $buildinfo['args'];
+      drupal_set_message($args);
+      // args[1] is the store name
+      $store_name = $args[1];
+      // args[0] is the store type name
+      $wisski_pathbuilder = $args[0];
+   */                      
+    
+    $wisski_pathbuilder = 'pb';
+    // in d8 you have to redirect like this, if you have a slug like {wisski_pathbuilder} in the routing.yml file:
+    #$url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.overview')
+    #                 ->setRouteParameters(array('wisski_pathbuilder'=>$wisski_pathbuilder));
+    $url = \Drupal\Core\Url::fromRoute('entity.wisski_path.edit_form')
+                         ->setRouteParameters(array('wisski_pathbuilder'=>$wisski_pathbuilder, 'wisski_path'=>$path->id));
+                         
+    $form_state->setRedirectUrl($url);             
  }
 }
     

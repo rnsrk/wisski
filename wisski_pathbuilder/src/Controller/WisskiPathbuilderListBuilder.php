@@ -16,7 +16,7 @@ class WisskiPathbuilderListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function buildHeader() {
-    $header['id'] = $this->t('id');
+    $header['name'] = $this->t('name');
     #$header['label'] = $this->t('name');
     
     return $header + parent::buildHeader();
@@ -28,11 +28,35 @@ class WisskiPathbuilderListBuilder extends ConfigEntityListBuilder {
   public function buildRow(EntityInterface $entity) {
  
     // id
-    $row['id'] = $entity->id(); 
+    $row['name'] = $entity->name; 
     #$this->getLabel($entity);
    
     return $row + parent::buildRow($entity);
   }
+
+  /**
+   * Gets this list's default operations.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity the operations are for.
+   *
+   * @return array
+   *   The array structure is identical to the return value of
+   *   self::getOperations().
+   */
+  public function getDefaultOperations(EntityInterface $entity) {
+    $operations = parent::getDefaultOperations($entity);
+    
+    $url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.overview', ['wisski_pathbuilder' => $entity->id()]);
+                           
+    $operations['view_paths'] = array(
+      'title' => $this->t('View Paths'),
+      'weight' => 10,
+      'url' => $url, 
+    );
+                        
+    return $operations;
+  } 
   
   /**
    * {@inheritdoc}

@@ -4,11 +4,11 @@ wisski.content:
   parent: system.admin_config
   route_name: wisski.content
   weight: -100
-wisski_salz.admin_config_wisski_salz:
+entity.wisski_salz_adapter.collection:
   title: 'WissKI Salz'
   description: 'WissKI Salz Module Settings'
   parent: wisski.content
-  route_name: wisski_salz.admin_config_wisski_salz
+  route_name: entity.wisski_salz_adapter.collection
   weight: 50
 
 

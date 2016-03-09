@@ -1,6 +1,0 @@
-name: WissKI SPARQL 1.1 Store
-description: Provides a SPARQL 1.1 Store
-core: 8.x
-package: WissKI
-version: 0.1-dev 
-type: module

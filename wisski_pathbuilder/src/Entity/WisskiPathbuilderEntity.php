@@ -28,11 +28,12 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
    *   admin_permission = "administer site configuration",
    *   entity_keys = {
    *     "id" = "id",
-   *     "label" = "name"
+   *     "name" = "name"
    *   },
    *   links = {
-   *     "edit-form" = "/admin/structure/pb/{wisski_pathbuilder}",
-   *     "delete-form" = "/admin/structure/pb/{wisski_pathbuilder}/delete",
+   *     "edit-form" = "/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/edit",
+   *     "delete-form" = "/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/delete",
+   *     "overview" = "/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/view"
    *   }
    * )
    */
@@ -44,6 +45,20 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      * @var string
      */
     public $id;
+
+    /**
+     * The name of the PB
+     *
+     * @var string
+     */
+    public $name;
+
+    /**
+     * The paths of the PB
+     *
+     * @var array
+     */    
+    public $paths;
    
   } 
               

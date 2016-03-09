@@ -28,8 +28,13 @@ class WisskiPathDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    drupal_set_message(htmlentities(new Url('entity.wisski_path.collection')));
-    return new Url('entity.wisski_path.collection');
+   # drupal_set_message(htmlentities(new Url('entity.wisski_pathbuilder.overview')));
+   # return new Url('entity.wisski_pathbuilder.overview');
+   #$pb_entities = entity_load_multiple('wisski_pathbuilder');
+                                        
+   $url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.overview')
+                        ->setRouteParameters(array('wisski_pathbuilder'=>'pb'));
+   return $url;                       
   }
   
   /**

@@ -24,7 +24,7 @@ use Drupal\wisski_pathbuilder\WisskiPathInterface;
   *     "form" = {
   *       "add" = "Drupal\wisski_pathbuilder\Form\WisskiPathForm",
   *       "edit" = "Drupal\wisski_pathbuilder\Form\WisskiPathForm",
-  *       "delete" = "Drupal\wisski_pathbuilder\Form\WisskiPathDeleteForm",
+  *       "delete" = "Drupal\wisski_pathbuilder\Form\WisskiPathDeleteForm"
   *     }             
   *    },
   *   config_prefix = "wisski_path",
@@ -35,8 +35,9 @@ use Drupal\wisski_pathbuilder\WisskiPathInterface;
   *     "weight" = "weight"
   *   },
   *   links = {
-  *     "edit-form" = "/admin/config/wisski/path/{wisski_path}",
-  *     "delete-form" = "/admin/config/wisski/path/{wisski_path}/delete",
+  *     "edit-form" = "/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/{wisski_path}",
+  *     "delete-form" = "/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/{wisski_path}/delete",
+  *     "entity-list" = "/admin/structure/wisski_core/{wisski_bundle}/list"
   *   }        
   *  )
   */

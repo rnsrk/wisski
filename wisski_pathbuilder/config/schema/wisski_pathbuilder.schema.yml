@@ -39,3 +39,12 @@ wisski_pathbuilder.wisski_path.*:
     disamb:
       type: integer
       label: 'Disambiguation'
+    length:
+      type: integer
+      label: 'Length'
+    parent:
+      type: integer
+      label: 'Parent'
+    parent_id:
+      type: integer
+      label: 'Parent ID'

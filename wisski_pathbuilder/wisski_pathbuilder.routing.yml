@@ -1,5 +1,5 @@
 entity.wisski_pathbuilder.collection:
-  path: '/admin/structure/pb'
+  path: '/admin/config/wisski/pathbuilder'
   defaults:
     _entity_list: 'wisski_pathbuilder'
     _title: 'Pathbuilders'
@@ -7,7 +7,7 @@ entity.wisski_pathbuilder.collection:
     _permission: 'administer site configuration'
 
 entity.wisski_pathbuilder.add_form:
-  path: '/admin/structure/pb/add'
+  path: '/admin/config/wisski/pathbuilder/add'
   defaults:
     _entity_form: 'wisski_pathbuilder.add'
     _title: 'Add a new Pathbuilder'
@@ -15,7 +15,7 @@ entity.wisski_pathbuilder.add_form:
     _permission: 'administer site configuration'
 
 entity.wisski_pathbuilder.edit_form:
-  path: '/admin/structure/pb/{wisski_pathbuilder}'
+  path: '/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/edit'
   defaults:
     _entity_form: 'wisski_pathbuilder.edit'
     _title: 'Edit Pathbuilder'
@@ -23,36 +23,40 @@ entity.wisski_pathbuilder.edit_form:
     _permission: 'administer site configuration'
 
 entity.wisski_pathbuilder.delete_form:
-  path: '/admin/structure/pb/{wisski_pathbuilder}/delete'
+  path: '/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/delete'
   defaults:
     _entity_form: 'wisski_pathbuilder.delete'
     _title: 'Delete Pathbuilder'
   requirements:
     _permission: 'administer site configuration'
 
-entity.wisski_path.collection:
-  path: '/admin/config/wisski/pathbuilder/path'
+entity.wisski_pathbuilder.overview:
+  path: '/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/view'
   defaults:
-    _entity_list: 'wisski_path'
-    _title: 'WissKI Paths'
+#    _entity_list: 'wisski_path'
+   _controller: '\Drupal\wisski_pathbuilder\Controller\WisskiPathbuilderController::viewPB'
+#   _title: 'WissKI Paths'
   requirements:
     _permission: 'administer site configuration'
+
 entity.wisski_path.add_form:
-  path: '/admin/config/wisski/pathbuilder/path/add'
+  path: '/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/add'
   defaults:
     _entity_form: 'wisski_path.add'
     _title: 'Add a new Path'
   requirements:
     _permission: 'administer site configuration'
+
 entity.wisski_path.edit_form:
-  path: '/admin/config/wisski/pathbuilder/path/{wisski_path}'
+  path: '/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/{wisski_path}'
   defaults:
     _entity_form: 'wisski_path.edit'
     _title: 'Edit Path'
   requirements:
     _permission: 'administer site configuration'
+
 entity.wisski_path.delete_form:
-  path: '/admin/config/wisski/pathbuilder/path/{wisski_path}/delete'
+  path: '/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/{wisski_path}/delete'
   defaults:
     _entity_form: 'wisski_path.delete'
     _title: 'Delete Path'
