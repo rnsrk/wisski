@@ -127,9 +127,9 @@ class WisskiPathbuilderController extends ControllerBase {
 
 
 
- # function viewPB(FormStateInterface $form_state, $wisski_pathbuilder) {   
+#  function viewPB(FormStateInterface $form_state, $wisski_pathbuilder) {   
   public function form(array $form, FormStateInterface $form_state) {
-     
+    drupal_set_message("using function form");     
     #$form = array(
      # '#type' => 'markup',
       #'#markup' => 'hello world',
@@ -190,7 +190,70 @@ class WisskiPathbuilderController extends ControllerBase {
     
     }
     
+  /**
+   * {@inheritdoc}
+   */
+  public function save(array $form, FormStateInterface $form_state) {
+    $menu = $this->entity;
+    if (!$menu->isNew() || $menu->isLocked()) {
+      $this->submitOverviewForm($form, $form_state);
+    }
+
+    $status = $menu->save();
+
+    $edit_link = $this->entity->link($this->t('Edit'));
+    if ($status == SAVED_UPDATED) {
+      drupal_set_message($this->t('Menu %label has been updated.', array('%label' => $menu->label())));
+      $this->logger('menu')->notice('Menu %label has been updated.', array('%label' => $menu->label(), 'link' => $edit_link));
+    }
+    else {
+      drupal_set_message($this->t('Menu %label has been added.', array('%label' => $menu->label())));
+      $this->logger('menu')->notice('Menu %label has been added.', array('%label' => $menu->label(), 'link' => $edit_link));
+    }
+
+    $form_state->setRedirectUrl($this->entity->urlInfo('edit-form'));
+  }
     
+  
+  private function pb_render_path($path) {
+    $pathform = array();
+    
+    $pathform['#item'] = $path;
+    
+    $pathform['#attributes'] = $path->enabled ? array('class' => array('menu-enabled')) : array('class' => array('menu-disabled')); 
+      
+    $pathform['title'] = $path->name;
+      
+    if (!$path->enabled) {
+      $pathform['title']['#suffix'] = ' (' . $this->t('disabled') . ')';
+    }
+      
+    $pathform['enabled'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable @title path', array('@title' => $path->name)),
+      '#title_display' => 'invisible',
+      '#default_value' => $path->enabled,
+    );
+
+    $pathform['weight'] = array(
+      '#type' => 'weight',
+      '#delta' => 100, # Do something more cute here $delta,
+      '#default_value' => $path->weight,
+      '#title' => $this->t('Weight for @title', array('@title' => $path->name)),
+      '#title_display' => 'invisible',
+    );
+
+    $pathform['id'] = array(
+      '#type' => 'hidden',
+      '#value' => $path->id,
+    );
+
+    $pathform['parent'] = array(
+      '#type' => 'hidden',
+      '#default_value' => $path->parent,
+    );
+    return $pathform;
+  }
     
   function viewPB($wisski_pathbuilder) {
   // Ensure that menu_overview_form_submit() knows the parents of this form
@@ -198,15 +261,222 @@ class WisskiPathbuilderController extends ControllerBase {
 #  if (!$form_state->has('pathbuilder_overview_form_parents')) {
 #   $form_state->set('pathbuilder_overview_form_parents', []);
 #  }
-                        
+
+    // load the pathbuilder entity that is used - given by the parameter
+    // in the url.                        
     $pathbuilder_entity = entity_load('wisski_pathbuilder', $wisski_pathbuilder);
     
+    // load all paths - here we should load just the ones of this pathbuilder
     $path_entities = entity_load_multiple('wisski_path');
-    drupal_set_message('wisski pathbuilder id: ' . serialize($wisski_pathbuilder));
+    #drupal_set_message('wisski pathbuilder id: ' . serialize($wisski_pathbuilder));    
+
+    $form = array();
     
-    $form['#attached']['library'][] = 'menu_ui/drupal.menu_ui.adminforms';
-       
+    $header = array("title", "Path", array('data' => $this->t("Enabled"), 'class' => array('checkbox')), "Weight", array('data' => $this->t('Operations'), 'colspan' => 3));
     
+    $form['pathbuilder_table'] = array(
+      '#type' => 'table',
+#      '#theme' => 'table__menu_overview',
+      '#header' => $header,
+#      '#rows' => $rows,
+      '#attributes' => array(
+        'id' => 'my-module-table',
+      ),
+      '#tabledrag' => array(
+        array(
+          'action' => 'match',
+          'relationship' => 'parent',
+          'group' => 'menu-parent',
+          'subgroup' => 'menu-parent',
+          'source' => 'menu-id',
+          'hidden' => TRUE,
+          'limit' => 9,
+        ),
+        array(
+          'action' => 'order',
+          'relationship' => 'sibling',
+          'group' => 'menu-weight',
+        ),
+      ),
+    );
+    
+    foreach($path_entities as $path) {
+      #drupal_set_message(serialize($path));
+
+      $pathform = $this->pb_render_path($path);
+
+      $form['pathbuilder_table'][$path->id]['#item'] = $pathform['#item'];
+      
+      // TableDrag: Mark the table row as draggable.
+      $form['pathbuilder_table'][$path->id]['#attributes'] = $pathform['#attributes'];
+      $form['pathbuilder_table'][$path->id]['#attributes']['class'][] = 'draggable';
+
+
+        // TableDrag: Sort the table row according to its existing/configured weight.
+      $form['pathbuilder_table'][$path->id]['#weight'] = $pathform['#item']->weight;
+
+      // Add special classes to be used for tabledrag.js.
+      $pathform['parent']['#attributes']['class'] = array('menu-parent');
+      $pathform['weight']['#attributes']['class'] = array('menu-weight');
+      $pathform['id']['#attributes']['class'] = array('menu-id');
+
+      $form['pathbuilder_table'][$path->id]['title'] = array(
+          array(
+            '#theme' => 'indentation',
+            '#size' => $pathform['#item']->depth - 1,
+          ),
+          $pathform['title'],
+        );
+      $form['pathbuilder_table'][$path->id]['enabled'] = $pathform['enabled'];
+      $form['pathbuilder_table'][$path->id]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
+
+      $form['pathbuilder_table'][$path->id]['weight'] = $pathform['weight'];
+
+        // Operations (dropbutton) column.
+      $form['pathbuilder_table'][$path->id]['operations'] = $pathform['operations'];
+
+      $form['pathbuilder_table'][$path->id]['id'] = $pathform['id'];
+      $form['pathbuilder_table'][$path->id]['parent'] = $pathform['parent'];
+                      
+      
+      
+    }
+/*
+        // Build a list of operations.
+        $operations = array();
+        $operations['edit'] = array(
+          'title' => $this->t('Edit'),
+        );
+        // Allow for a custom edit link per plugin.
+        $edit_route = $link->getEditRoute();
+        if ($edit_route) {
+          $operations['edit']['url'] = $edit_route;
+          // Bring the user back to the menu overview.
+          $operations['edit']['query'] = $this->getDestinationArray();
+        }
+        else {
+          // Fall back to the standard edit link.
+          $operations['edit'] += array(
+            'url' => Url::fromRoute('menu_ui.link_edit', ['menu_link_plugin' => $link->getPluginId()]),
+          );
+        }
+        // Links can either be reset or deleted, not both.
+        if ($link->isResettable()) {
+          $operations['reset'] = array(
+            'title' => $this->t('Reset'),
+            'url' => Url::fromRoute('menu_ui.link_reset', ['menu_link_plugin' => $link->getPluginId()]),
+          );
+        }
+        elseif ($delete_link = $link->getDeleteRoute()) {
+          $operations['delete']['url'] = $delete_link;
+          $operations['delete']['query'] = $this->getDestinationArray();
+          $operations['delete']['title'] = $this->t('Delete');
+        }
+        if ($link->isTranslatable()) {
+          $operations['translate'] = array(
+            'title' => $this->t('Translate'),
+            'url' => $link->getTranslateRoute(),
+          );
+        }
+        $form[$id]['operations'] = array(
+          '#type' => 'operations',
+          '#links' => $operations,
+        );                                
+*/
+/*      
+      $rows[] = array(
+        'data' => array(
+          'name' => $path->name,
+          'path' => $path->path,
+          'enabled' => $path->enabled,
+          'weight' => array(
+            '#type' => 'weight',
+            '#title' => t('Weight'),
+            '#default_value' => $path->weight,
+            '#delta' => 10,
+            '#title_display' => 'invisible',
+          ),
+          'operations' => 'juhu',
+        ),
+        'class' => array('draggable'),
+      );
+    }
+    */
+    /*  
+    $rows[] = array( 
+      'data' => array(
+        'name' => "hallo",
+         'weight' => array(
+                 '#type' => 'weight',
+                         '#title' => t('Weight'),
+                                 '#default_value' => 0,
+                                         '#delta' => 10,
+                                                 '#title_display' => 'invisible',
+                                                       ),
+      ),
+      'class' => array('draggable'),
+    );
+    
+    $rows[] = array( 
+      'data' => array(
+        'name' => "welt",
+         'weight' => array(
+                 '#attributes' => array(
+                   'class' => 'example-item-weight',
+                  ),
+                 '#type' => 'weight',
+                         '#title' => t('Weight'),
+                                 '#default_value' => 1,
+                                         '#delta' => 10,
+                                                 '#title_display' => 'invisible',
+                                                       ),
+      ),
+      'class' => array('draggable'),
+    );
+    */
+    
+    /*
+    $form = array(
+      '#type' => 'table',
+#      '#theme' => 'table__menu_overview',
+      '#header' => $header,
+      '#rows' => $rows,
+      '#attributes' => array(
+        'id' => 'my-module-table',
+      ),
+      '#tabledrag' => array(
+        array(
+          'action' => 'match',
+          'relationship' => 'parent',
+          'group' => 'menu-parent',
+          'subgroup' => 'menu-parent',
+          'source' => 'menu-id',
+          'hidden' => TRUE,
+          'limit' => 9,
+        ),
+        array(
+          'action' => 'order',
+          'relationship' => 'sibling',
+          'group' => 'menu-weight',
+        ),
+      ),
+    );
+*/
+#    drupal_attach_tabledrag($form, array(
+#      'action' => 'order',
+#        'relationship' => 'sibling',
+#          'group' => 'my-elements-weight',
+#          ));
+
+    #drupal_set_message(serialize($form));
+
+    return $form;
+  
+    
+  
+  
+  }
+/* BY KERSTIN    
     foreach ($path_entities as $entity){        
     #$tree = $this->menuTree->load($this->entity->id(), new MenuTreeParameters());
     drupal_set_message('entity: ' . serialize($entity));
@@ -321,7 +591,7 @@ class WisskiPathbuilderController extends ControllerBase {
     return $form;
     }
                                                                         
-                                                                                                       
+            */                                                                                           
                                                              
           
     

@@ -61,7 +61,29 @@ class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
     *
     * @var int
     */
-  public $weight;                                                       
+  public $weight;
+  
+   /**
+    * The parent of the path, usually the group it belongs to
+    *
+    * @var int
+    */
+  public $parent;
+  
+   /**
+    * True if this path is a group, false otherwise.
+    *
+    * @var boolean
+    */
+  public $group;
+  
+  /**
+    * True if this path is a enabled, false otherwise.
+    *
+    * @var boolean
+    */
+  public $enabled;
                              
+
 }
      
