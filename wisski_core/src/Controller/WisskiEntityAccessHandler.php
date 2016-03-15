@@ -21,16 +21,16 @@ class WisskiEntityAccessHandler extends EntityAccessControlHandler {
    * $operation as defined in the routing.yml file.
    */
   protected function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
-  
+dpm(func_get_args(),__METHOD__);
     switch ($operation) {
       case 'view':
-        return AccessResult::allowedIfHasPermission($account, 'view wisski_core');
+        return AccessResult::allowedIfHasPermission($account, 'view wisski content');
 
       case 'edit':
-        return AccessResult::allowedIfHasPermission($account, 'administer wisski_core entities');
+        return AccessResult::allowedIfHasPermission($account, 'administer wisski');
 
       case 'delete':
-        return AccessResult::allowedIfHasPermission($account, 'administer wisski_core entities');
+        return AccessResult::allowedIfHasPermission($account, 'administer wisski');
     }
   
     return AccessResult::allowed();
@@ -44,7 +44,7 @@ class WisskiEntityAccessHandler extends EntityAccessControlHandler {
    */
   protected function checkCreateAccess(AccountInterface $account, array $context, $entity_bundle = NULL) {
     //dpm(func_get_args(),__METHOD__);
-    return AccessResult::allowedIfHasPermission($account, 'administer wisski_core entities');
+    return AccessResult::allowedIfHasPermission($account, 'administer wisski');
   }
 
 }
