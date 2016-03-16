@@ -142,7 +142,6 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
    * {@inheritdoc}
    */
   public function getEngine() {
-var_dump("get", $this->engine_id, $this->engine);
     return $this->getEngineCollection()->get($this->engine_id);
   }
 
