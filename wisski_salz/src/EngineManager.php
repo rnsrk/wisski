@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\wisski_salz\WisskiSalzAdapterPluginManager.
+ * Contains \Drupal\wisski_salz\EngineManager.
  */
 
 namespace Drupal\wisski_salz;
@@ -12,11 +12,11 @@ use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 
 /**
- * WisskiSalzAdapterPlugin plugin manager.
+ * Engine plugin manager.
  */
-class WisskiSalzAdapterPluginManager extends DefaultPluginManager {
+class EngineManager extends DefaultPluginManager {
   /**
-   * Constructs an WisskiSalzAdapterPluginManager object.
+   * Constructs an EngineManager object.
    *
    * @param \Traversable $namespaces
    *   An object that implements \Traversable which contains the root paths
@@ -28,13 +28,12 @@ class WisskiSalzAdapterPluginManager extends DefaultPluginManager {
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler) {
     parent::__construct(
-      'Plugin/WisskiSalzAdapterPlugin',
+      'Plugin/wisski_salz/Engine',
       $namespaces,
       $module_handler,
-      'Drupal\wisski_salz\WisskiSalzAdapterPluginInterface',
-      'Drupal\wisski_salz\Annotation\WisskiSalzAdapterPlugin'
+      'Drupal\wisski_salz\EngineInterface',
+      'Drupal\wisski_salz\Annotation\Engine'
     );
-    $this->alterInfo('wisski_salz_adapter_plugin');
-#    $this->setCacheBackend($cache_backend, 'external_entity_storage_client');
+    $this->alterInfo('wisski_salz_engine');
   }
 }

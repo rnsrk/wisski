@@ -1,29 +1,33 @@
-#entity.wisski_salz.overview:
-#  path: '/admin/config/wisski/salz'
-#  defaults:
-#    _entity_list: 'wisski_salz'
-#    _title: 'WissKI Salz Stores'
-#  requirements:
-#    _permission: 'administer site configuration'
-
 entity.wisski_salz_adapter.collection:
-  path: '/admin/config/wisski/salz'
+  path: '/admin/config/wisski/salz/adapter'
   defaults:
     _entity_list: 'wisski_salz_adapter'
     _title: 'WissKI Salz Adapter'
   requirements:
     _permission: 'administer site configuration'
 
-entity.wisski_salz_adapter.add_form:
-  path: '/admin/config/wisski/salz/add'
+entity.wisski_salz_adapter.add_overview:
+  path: '/admin/config/wisski/salz/adapter/add'
   defaults:
-    _entity_form: 'wisski_salz_adapter.add'
+    _form: '\Drupal\wisski_salz\Form\Adapter\AddOverviewForm'
     _title: 'Add SALZ Store'
   requirements:
     _permission: 'administer site configuration'
 
+entity.wisski_salz_adapter.add_form:
+  path: '/admin/config/wisski/salz/adapter/add/{engine_id}'
+  defaults:
+    _entity_form: 'wisski_salz_adapter.add'
+    _title: 'Add SALZ Store'
+  options:
+    parameters:
+      engine_id: engine_id
+  requirements:
+    _permission: 'administer site configuration'
+
+
 entity.wisski_salz_adapter.edit_form:
-  path: '/admin/config/wisski/salz/{wisski_salz_adapter}'
+  path: '/admin/config/wisski/salz/adapter/{wisski_salz_adapter}'
   defaults:
     _entity_form: 'wisski_salz_adapter.edit'
     _title: 'Edit SALZ Store'
@@ -31,42 +35,27 @@ entity.wisski_salz_adapter.edit_form:
     _permission: 'administer site configuration'
 
 entity.wisski_salz_adapter.delete_form:
-  path: '/admin/config/wisski/salz/{wisski_salz_adapter}/delete'
+  path: '/admin/config/wisski/salz/adapter/{wisski_salz_adapter}/delete'
   defaults:
     _entity_form: 'wisski_salz_adapter.delete'
     _title: 'Delete SALZ Store'
   requirements:
     _permission: 'administer site configuration'
 
-wisski.content:
-  path: '/admin/config/wisski'
+# Site config group 
+wisski_salz.admin.overview:
+  path: '/admin/config/wisski/salz'
   defaults:
-    _controller: '\Drupal\wisski_salz\Controller\wisski_salzController::content'
-    _title: 'WissKI module settings'
+    _title: 'WissKI Salz'
+    _controller: 'Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
   requirements:
-    _permission: 'access content'
+    _permission: 'administer site configuration'
 
-#wisski_salz.admin_config_wisski_salz:
-#  path: '/admin/config/wisski/salz'
-#  defaults:
-#    _form: '\Drupal\wisski_salz\Form\wisski_salz_view_installed_store_instancesForm'
-#    _title: 'Manage Stores'
-#  requirements:
-#    _permission: 'access content'
-
-#wisski_salz.admin_config_wisski_salz_navigate:
-#  path: '/admin/config/wisski/salz/navigate'
-#  defaults:
-#    _controller: '\Drupal\wisski_salz\Controller\wisski_salzController::content'
-#    _title: 'Hello World'
-#  requirements:
-#    _permission: 'access content'
-
-#wisski_salz.admin_config_wisski_salz_add:
-#  path: '/admin/config/wisski/salz/add'
-#  defaults:
-#    _form: '\Drupal\wisski_salz\Form\wisski_salz_config_pageForm'
-#    _title: 'Add Store'
-#  requirements:
-#    _permission: 'access content'
+wisski_salz.admin.overview1:
+  path: '/admin/config/wisski_salz'
+  defaults:
+    _title: 'WissKI Salz'
+    _controller: 'Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+  requirements:
+    _permission: 'administer site configuration'
 

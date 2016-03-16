@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\wisski_salz\WisskiSalzAdapterListBuilder.
+ * Contains \Drupal\wisski_salz\AdapterListBuilder.
  */
 
 namespace Drupal\wisski_salz;
@@ -13,13 +13,14 @@ use Drupal\Core\Entity\EntityInterface;
 /**
  * Provides a listing of WissKI Salz Adapter entities.
  */
-class WisskiSalzAdapterListBuilder extends ConfigEntityListBuilder {
+class AdapterListBuilder extends ConfigEntityListBuilder {
   /**
    * {@inheritdoc}
    */
   public function buildHeader() {
     $header['label'] = $this->t('WissKI Salz Adapter');
     $header['id'] = $this->t('Machine name');
+    $header['description'] = $this->t('Description');
     return $header + parent::buildHeader();
   }
 
@@ -29,6 +30,7 @@ class WisskiSalzAdapterListBuilder extends ConfigEntityListBuilder {
   public function buildRow(EntityInterface $entity) {
     $row['label'] = $entity->label();
     $row['id'] = $entity->id();
+    $row['description'] = $entity->getDescription();
     // You probably want a few more properties here...
     return $row + parent::buildRow($entity);
   }

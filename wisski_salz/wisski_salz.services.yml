@@ -1,4 +1,9 @@
 services:
+  plugin.manager.wisski_salz_engine:
+    class: Drupal\wisski_salz\EngineManager
+    parent: default_plugin_manager
+
+# stuff from external entities
 #  entity.query.external:
 #    class: Drupal\external_entities\Entity\Query\External\QueryFactory
 #    arguments: ['@plugin.manager.external_entity_storage_client', '@external_entity.storage_client.response_decoder_factory', '@http_client', '@entity.manager']
@@ -8,9 +13,6 @@ services:
 #    class: Drupal\external_entities\ResponseDecoderFactory
 #    tags:
 #      - { name: service_collector, tag: external_entity_response_decoder, call: addDecoder }
-  plugin.manager.wisski_salz_adapter_plugin:
-    class: Drupal\wisski_salz\WisskiSalzAdapterPluginManager
-    parent: default_plugin_manager
 #  entity.external_entities.routes:
 #    class: Drupal\external_entities\Routing\ExternalEntityRoutes
 #    arguments: ['@entity.manager']

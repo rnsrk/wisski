@@ -1,14 +1,21 @@
-wisski.content:
-  title: 'WissKI'
-  description: 'WissKI Module Settings'
-  parent: system.admin_config
-  route_name: wisski.content
-  weight: -100
 entity.wisski_salz_adapter.collection:
   title: 'WissKI Salz'
   description: 'WissKI Salz Module Settings'
-  parent: wisski.content
+  parent: wisski_salz.admin.overview
   route_name: entity.wisski_salz_adapter.collection
   weight: 50
 
-
+wisski_salz.admin.overview:
+  title: 'WissKI SALZ'
+  description: "Configure WissKI's Starogge Adapters"
+  parent: wisski_salz.admin.overview1
+  route_name: wisski_salz.admin.overview
+  weight: 100
+           
+wisski_salz.admin.overview1:
+  title: 'WissKI SALZ'
+  description: "Configure WissKI's Starogge Adapters"
+  parent: system.admin_config
+  route_name: wisski_salz.admin.overview1
+  weight: 100
+           
