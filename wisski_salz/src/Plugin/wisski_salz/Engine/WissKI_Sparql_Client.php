@@ -1,5 +1,16 @@
 <?php
 
+namespace Drupal\wisski_salz\Plugin\wisski_salz\Engine;
+
+use EasyRdf_Sparql_Client;
+use EasyRdf_Namespace;
+use EasyRdf_Http;
+use EasyRdf_Format;
+use EasyRdf_Graph;
+use EasyRdf_Exception;
+use EasyRdf_Utils;
+use EasyRdf_Sparql_Result;
+
 /**
 * This is a subclass of EasyRdf_Sparql_client that overrides
 * the communication with the sparql endpoint.
