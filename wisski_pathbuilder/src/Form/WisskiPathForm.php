@@ -21,6 +21,23 @@ use Drupal\Core\Url;
  */
  
 class WisskiPathForm extends EntityForm {
+      
+
+  protected $pb = NULL;
+  
+  /**
+   * @{inheritdoc}
+   */
+  public function buildForm(array $form, FormStateInterface $form_state, $wisski_pathbuilder = NULL) { 
+
+    // the form() function will not accept additional args,
+    // but this function does
+    // so we have to override this one to get hold of the pb id
+
+    $this->pb = $wisski_pathbuilder;
+    return parent::buildForm($form, $form_state, $wisski_pathbuilder);
+  }
+    
 
    /**
    * {@inheritdoc}
@@ -30,6 +47,10 @@ class WisskiPathForm extends EntityForm {
     $form = parent::form($form, $form_state);
     
     $path = $this->entity;
+    
+    // this is the engine that must implement the PathbuilderEngineInterface
+    // currently the adapter must have the same machine name as the pb
+    $engine = entity_load('wisski_salz_adapter', $this->pb)->getEngine();
     
       
     // Change page title for the edit operation
@@ -69,6 +90,12 @@ class WisskiPathForm extends EntityForm {
       'x2' => $this->t('ecrm:E82_Actor_Appellation'),
     );
     
+    // you must set the options like this:
+    $path_options_first = $engine->getPathAlternatives();
+    if ($form_state->getValue('path_array')) {
+      $path_options = $engine->getPathAlternatives($form_state->getValue('path_array'));
+    }
+    
     // If we have a value for the first dropdown from $form_state['values'] we use
     // this both as the default value for the first dropdown and also as a
     // parameter to pass to the function that retrieves the options for the
@@ -105,7 +132,8 @@ class WisskiPathForm extends EntityForm {
         #),
       ),     
     );
- 
+    
+
                
      
  #  if ($form_state->getValue('path_array')!='0') {
