@@ -107,11 +107,18 @@ class WisskiPathbuilderForm extends EntityForm {
 
 #    drupal_set_message(serialize($this));
 
+    $pathforms = array();
 #    while(false) {
     foreach($pathbuilder->getPathTree() as $grouparray) {
       // $grouparray has structure: (ID, weight, children) 
-      
-      $pathform = $this->recursive_render_tree($grouparray);
+      $pathforms = array_merge($pathforms, $this->recursive_render_tree($grouparray));
+    }
+    
+#    drupal_set_message(serialize($pathforms));
+    
+#    return $form;
+
+    foreach($pathforms as $pathform) {    
     
 #      $pathform = $this->pb_render_path($path);
 
@@ -135,7 +142,7 @@ class WisskiPathbuilderForm extends EntityForm {
       $form['pathbuilder_table'][$path->getID()]['title'] = array(
           array(
             '#theme' => 'indentation',
-            '#size' => 0, //$pathform['#item']->depth - 1,
+            '#size' => $pathform['#item']->depth,
           ),
           $pathform['title'],
       );
@@ -203,11 +210,11 @@ class WisskiPathbuilderForm extends EntityForm {
     return $form;
   }
   
-  private function recursive_render_tree($grouparray, $parent = 0, $delta = 0) {
-    $pathform = $this->pb_render_path($grouparray['id'], $grouparray['weight'], $parent);
+  private function recursive_render_tree($grouparray, $parent = 0, $delta = 0, $depth = 0) {
+    $pathform[$grouparray['id']] = $this->pb_render_path($grouparray['id'], $grouparray['weight'], $depth, $parent);
     
     foreach($grouparray['children'] as $childpath) {
-      $subform = $this->recursive_render_tree($childpath, $grouparray['id'], $delta +1);
+      $subform = $this->recursive_render_tree($childpath, $grouparray['id'], $delta, $depth +1);
       $pathform = array_merge($pathform, $subform);
     }
     
@@ -215,7 +222,7 @@ class WisskiPathbuilderForm extends EntityForm {
     
   }
   
-  private function pb_render_path($pathid, $weight, $parent) {
+  private function pb_render_path($pathid, $weight, $depth, $parent) {
     $path = entity_load('wisski_path', $pathid);
     
     $pathform = array();
@@ -224,7 +231,10 @@ class WisskiPathbuilderForm extends EntityForm {
     
 #    $item['#title'] = $path->getName();
     
+    $path->depth = $depth;
+    
     $pathform['#item'] = $path;
+    
     
     $pathform['#attributes'] = $path->getEnabled() ? array('class' => array('menu-enabled')) : array('class' => array('menu-disabled')); 
       
@@ -248,8 +258,9 @@ class WisskiPathbuilderForm extends EntityForm {
     );
 
     $pathform['weight'] = array(
-      '#type' => 'weight',
-      '#delta' => 100, # Do something more cute here $delta,
+#      '#type' => 'weight',
+      '#type' => 'textfield',
+#      '#delta' => 100, # Do something more cute here $delta,
       '#default_value' => $weight,
       '#title' => $this->t('Weight for @title', array('@title' => $path->getName())),
       '#title_display' => 'invisible',
@@ -258,6 +269,11 @@ class WisskiPathbuilderForm extends EntityForm {
     $pathform['id'] = array(
       '#type' => 'hidden',
       '#value' => $path->getID(),
+    );
+    
+    $pathform['parent'] = array(
+      '#type' => 'hidden',
+      '#value' => $parent,
     );
     
  #   $pathform['path'] = array(
@@ -270,15 +286,15 @@ class WisskiPathbuilderForm extends EntityForm {
     return $pathform;
   }
   
-  private function recursive_build_tree($pathdata) {
-    $pathtree = array();
-    foreach($pathdata as $path) {
-#      drupal_set_message(serialize($path));
-      $pathtree[] = array('id' => $path['id'], 'weight' => $path['weight'], 'children' => array());
-    }
-    
-    return $pathtree;
-  }
+#  private function recursive_build_tree($pathdata) {
+#    $pathtree = array();
+#    foreach($pathdata as $path) {
+##      drupal_set_message(serialize($path));
+#      $pathtree[] = array('id' => $path['id'], 'weight' => $path['weight'], 'children' => array());
+#    }
+#    
+#    return $pathtree;
+#  }
   
   /**
    * {@inheritdoc}
@@ -295,14 +311,25 @@ class WisskiPathbuilderForm extends EntityForm {
 
 #    drupal_set_message(serialize($pathtree));
     
-#    drupal_set_message(serialize($paths));
+    #drupal_set_message(serialize($paths));
     
     $pathtree = array();
+    $map = array();
     
     foreach($paths as $key => $path) {
 #      drupal_set_message("path: " . serialize($path));
-      $pathtree = array_merge($pathtree, $this->recursive_build_tree(array($key => $path)));
+#      $pathtree = array_merge($pathtree, $this->recursive_build_tree(array($key => $path)));
+      
+      if(!empty($path['parent'])) { // it has parents... we have to add it somewhere
+        $map[$path['parent']]['children'][$path['id']] = array('id' => $path['id'], 'weight' => $path['weight'], 'children' => array());
+        $map[$path['id']] = &$map[$path['parent']]['children'][$path['id']];
+      } else { // it has no parent - so it is a main thing
+        $pathtree[$path['id']] = array('id' => $path['id'], 'weight' => $path['weight'], 'children' => array());
+        $map[$path['id']] = &$pathtree[$path['id']];
+      }
+
     }
+
 #    drupal_set_message(serialize($pathtree));    
     $pathbuilder->setPathTree($pathtree);
     
