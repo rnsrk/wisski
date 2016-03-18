@@ -12,7 +12,7 @@ wisski_pathbuilder.wisski_pathbuilder.*:
       label: 'Label'
     pathtree:
       type: sequence
-      'label': 'Store an array of paths as triples (ID, weight, children)'
+      'label': 'Store an array of paths as quadrupel (ID, weight, enabled, children)'
       sequence:
         type: mapping
         mapping:

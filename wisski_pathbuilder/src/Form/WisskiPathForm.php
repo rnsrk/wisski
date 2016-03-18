@@ -13,6 +13,12 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Url;
+use Drupal\wisski_salz\EngineInterface;
+use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
+use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11Engine;
+use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11Engine\Sparql11EngineWithPB;
+#use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11EngineWithPB;
+#use Drupal\wisski_pathbuilder\Plugin\wisski_salz\Engine\Sparql11EngineWithPB;
 
 /**
  * Class WisskiPathForm
@@ -48,10 +54,13 @@ class WisskiPathForm extends EntityForm {
     
     $path = $this->entity;
     
+    $test_object = entity_load('wisski_salz_adapter', $this->pb);
+    drupal_set_message($this->pb);
+    drupal_set_message(serialize($test_object));
     // this is the engine that must implement the PathbuilderEngineInterface
     // currently the adapter must have the same machine name as the pb
-    $engine = entity_load('wisski_salz_adapter', $this->pb)->getEngine();
-    
+    $engine = entity_load('wisski_salz_adapter', $this->pb)->getEngine();    
+    drupal_set_message('engine: ' . serialize($engine));
       
     // Change page title for the edit operation
     if($this->operation == 'edit') {
@@ -94,6 +103,7 @@ class WisskiPathForm extends EntityForm {
     $path_options_first = $engine->getPathAlternatives();
     if ($form_state->getValue('path_array')) {
       $path_options = $engine->getPathAlternatives($form_state->getValue('path_array'));
+      drupal_set_message('path options: ' . serialize($path_options));    
     }
     
     // If we have a value for the first dropdown from $form_state['values'] we use
@@ -235,10 +245,10 @@ class WisskiPathForm extends EntityForm {
    # $response->addCommand(new ReplaceCommand('#edit-date-format-suffix', '<small id="edit-date-format-suffix">' . $format . '</small>'));
   #  return $response;
  # return $form['replace_textfield'];   
-    if ($form_state->getValue('path_array')!='0') {
+  #  if ($form_state->getValue('path_array')!='0') {
      
       return $form['new_select'];
-    }
+   # }
   }
   
   /**

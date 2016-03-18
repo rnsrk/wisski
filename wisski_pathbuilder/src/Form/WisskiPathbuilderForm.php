@@ -29,27 +29,17 @@ class WisskiPathbuilderForm extends EntityForm {
   
     $form = parent::form($form, $form_state);
     
+    // what entity do we work on?
     $pathbuilder = $this->entity;
     
     // Change page title for the edit operation
     if($this->operation == 'edit') {
-      $form['#title'] = $this->t('Edit Pathbuilder: @id', array('@id' => $pathbuilder->getID()));
+      $form['#title'] = $this->t('Edit Pathbuilder: @id', array('@id' => $pathbuilder->id()));
     }
-    
-    $form['id'] = array(
-      '#type' => 'machine_name',
-      '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
-      '#default_value' => $pathbuilder->getID(),
-      '#disabled' => !$pathbuilder->isNew(),
-      '#machine_name' => array(
-        'source' => array('name'),
-        'exists' => 'wisski_pathbuilder_load',
-      ),
-    );
     
     $form['name'] = array(
       '#type' => 'textfield',
-      '#maxlength' => 255,
+#      '#maxlength' => 255,
       '#title' => $this->t('Name'),
       '#default_value' => $pathbuilder->getName(),
       '#description' => $this->t("Name of the Pathbuilder-Tree."),
@@ -59,6 +49,20 @@ class WisskiPathbuilderForm extends EntityForm {
 #        'source' => array('name'),
 #        'exists' => 'wisski_pathbuilder_load',
 #      ),
+    );
+    
+    // we need an id
+    $form['id'] = array(
+      '#type' => 'machine_name',
+#      '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
+      '#default_value' => $pathbuilder->id(),
+      '#disabled' => !$pathbuilder->isNew(),
+      '#machine_name' => [
+        'source' => array('name'),
+        'exists' => ['\Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity.', 'load']
+#        'source' => array('name'),
+#        'exists' => 'wisski_pathbuilder_load',
+      ],
     );
 
     
@@ -124,22 +128,22 @@ class WisskiPathbuilderForm extends EntityForm {
 
       $path = $pathform['#item'];
 
-      $form['pathbuilder_table'][$path->getID()]['#item'] = $pathform['#item'];
+      $form['pathbuilder_table'][$path->id()]['#item'] = $pathform['#item'];
       
       // TableDrag: Mark the table row as draggable.
-      $form['pathbuilder_table'][$path->getID()]['#attributes'] = $pathform['#attributes'];
-      $form['pathbuilder_table'][$path->getID()]['#attributes']['class'][] = 'draggable';
+      $form['pathbuilder_table'][$path->id()]['#attributes'] = $pathform['#attributes'];
+      $form['pathbuilder_table'][$path->id()]['#attributes']['class'][] = 'draggable';
 
 
       // TableDrag: Sort the table row according to its existing/configured weight.
-#      $form['pathbuilder_table'][$path->getID()]['#weight'] = $path->getWeight();
+#      $form['pathbuilder_table'][$path->id()]['#weight'] = $path->getWeight();
 
       // Add special classes to be used for tabledrag.js.
       $pathform['parent']['#attributes']['class'] = array('menu-parent');
       $pathform['weight']['#attributes']['class'] = array('menu-weight');
       $pathform['id']['#attributes']['class'] = array('menu-id');
 
-      $form['pathbuilder_table'][$path->getID()]['title'] = array(
+      $form['pathbuilder_table'][$path->id()]['title'] = array(
           array(
             '#theme' => 'indentation',
             '#size' => $pathform['#item']->depth,
@@ -147,20 +151,20 @@ class WisskiPathbuilderForm extends EntityForm {
           $pathform['title'],
       );
       
-      #$form['pathbuilder_table'][$path->getID()]['path'] = array('#type' => 'label', '#title' => 'Mu -> ha -> ha');
-      $form['pathbuilder_table'][$path->getID()]['path'] = $pathform['path'];
-      $form['pathbuilder_table'][$path->getID()]['enabled'] = $pathform['enabled'];
-      $form['pathbuilder_table'][$path->getID()]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
+      #$form['pathbuilder_table'][$path->id()]['path'] = array('#type' => 'label', '#title' => 'Mu -> ha -> ha');
+      $form['pathbuilder_table'][$path->id()]['path'] = $pathform['path'];
+      $form['pathbuilder_table'][$path->id()]['enabled'] = $pathform['enabled'];
+      $form['pathbuilder_table'][$path->id()]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
 
-      $form['pathbuilder_table'][$path->getID()]['weight'] = $pathform['weight'];
+      $form['pathbuilder_table'][$path->id()]['weight'] = $pathform['weight'];
 
         // Operations (dropbutton) column.
-      $form['pathbuilder_table'][$path->getID()]['operations'] = $pathform['operations'];
+      $form['pathbuilder_table'][$path->id()]['operations'] = $pathform['operations'];
 
-      $form['pathbuilder_table'][$path->getID()]['id'] = $pathform['id'];
-      $form['pathbuilder_table'][$path->getID()]['parent'] = $pathform['parent'];
+      $form['pathbuilder_table'][$path->id()]['id'] = $pathform['id'];
+      $form['pathbuilder_table'][$path->id()]['parent'] = $pathform['parent'];
     
-#      drupal_set_message(serialize($form['pathbuilder_table'][$path->getID()]));
+#      drupal_set_message(serialize($form['pathbuilder_table'][$path->id()]));
     }
 
 /*    
@@ -168,22 +172,22 @@ class WisskiPathbuilderForm extends EntityForm {
       
       $pathform = $this->pb_render_path($path);
 
-      $form['pathbuilder_table'][$path->getID()]['#item'] = $pathform['#item'];
+      $form['pathbuilder_table'][$path->id()]['#item'] = $pathform['#item'];
       
       // TableDrag: Mark the table row as draggable.
-      $form['pathbuilder_table'][$path->getID()]['#attributes'] = $pathform['#attributes'];
-      $form['pathbuilder_table'][$path->getID()]['#attributes']['class'][] = 'draggable';
+      $form['pathbuilder_table'][$path->id()]['#attributes'] = $pathform['#attributes'];
+      $form['pathbuilder_table'][$path->id()]['#attributes']['class'][] = 'draggable';
 
 
       // TableDrag: Sort the table row according to its existing/configured weight.
-      $form['pathbuilder_table'][$path->getID()]['#weight'] = $path->getWeight();
+      $form['pathbuilder_table'][$path->id()]['#weight'] = $path->getWeight();
 
       // Add special classes to be used for tabledrag.js.
       $pathform['parent']['#attributes']['class'] = array('menu-parent');
       $pathform['weight']['#attributes']['class'] = array('menu-weight');
       $pathform['id']['#attributes']['class'] = array('menu-id');
 
-      $form['pathbuilder_table'][$path->getID()]['title'] = array(
+      $form['pathbuilder_table'][$path->id()]['title'] = array(
           array(
             '#theme' => 'indentation',
             '#size' => 0, //$pathform['#item']->depth - 1,
@@ -191,19 +195,19 @@ class WisskiPathbuilderForm extends EntityForm {
           $pathform['title'],
       );
       
-      #$form['pathbuilder_table'][$path->getID()]['path'] = array('#type' => 'label', '#title' => 'Mu -> ha -> ha');
-      $form['pathbuilder_table'][$path->getID()]['path'] = $pathform['path'];
-      $form['pathbuilder_table'][$path->getID()]['enabled'] = $pathform['enabled'];
-      $form['pathbuilder_table'][$path->getID()]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
+      #$form['pathbuilder_table'][$path->id()]['path'] = array('#type' => 'label', '#title' => 'Mu -> ha -> ha');
+      $form['pathbuilder_table'][$path->id()]['path'] = $pathform['path'];
+      $form['pathbuilder_table'][$path->id()]['enabled'] = $pathform['enabled'];
+      $form['pathbuilder_table'][$path->id()]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
 
-      $form['pathbuilder_table'][$path->getID()]['weight'] = $pathform['weight'];
+      $form['pathbuilder_table'][$path->id()]['weight'] = $pathform['weight'];
 
         // Operations (dropbutton) column.
-      $form['pathbuilder_table'][$path->getID()]['operations'] = $pathform['operations'];
+      $form['pathbuilder_table'][$path->id()]['operations'] = $pathform['operations'];
 
-      $form['pathbuilder_table'][$path->getID()]['id'] = $pathform['id'];
-      $form['pathbuilder_table'][$path->getID()]['parent'] = $pathform['parent'];
-      drupal_set_message(serialize($form['pathbuilder_table'][$path->getID()]));
+      $form['pathbuilder_table'][$path->id()]['id'] = $pathform['id'];
+      $form['pathbuilder_table'][$path->id()]['parent'] = $pathform['parent'];
+      drupal_set_message(serialize($form['pathbuilder_table'][$path->id()]));
     }
  */
     
@@ -211,7 +215,7 @@ class WisskiPathbuilderForm extends EntityForm {
   }
   
   private function recursive_render_tree($grouparray, $parent = 0, $delta = 0, $depth = 0) {
-    $pathform[$grouparray['id']] = $this->pb_render_path($grouparray['id'], $grouparray['weight'], $depth, $parent);
+    $pathform[$grouparray['id']] = $this->pb_render_path($grouparray['id'], $grouparray['enabled'], $grouparray['weight'], $depth, $parent);
     
     foreach($grouparray['children'] as $childpath) {
       $subform = $this->recursive_render_tree($childpath, $grouparray['id'], $delta, $depth +1);
@@ -222,7 +226,7 @@ class WisskiPathbuilderForm extends EntityForm {
     
   }
   
-  private function pb_render_path($pathid, $weight, $depth, $parent) {
+  private function pb_render_path($pathid, $enabled, $weight, $depth, $parent) {
     $path = entity_load('wisski_path', $pathid);
     
     $pathform = array();
@@ -236,12 +240,12 @@ class WisskiPathbuilderForm extends EntityForm {
     $pathform['#item'] = $path;
     
     
-    $pathform['#attributes'] = $path->getEnabled() ? array('class' => array('menu-enabled')) : array('class' => array('menu-disabled')); 
+    $pathform['#attributes'] = $enabled ? array('class' => array('menu-enabled')) : array('class' => array('menu-disabled')); 
       
   #  $pathform['title'] = '<a href="/dev/contact" data-drupal-selector="edit-links-menu-plugin-idcontactsite-page-title-1" id="edit-links-menu-plugin-idcontactsite-page-title-1" class="menu-item__link">Contact</a>';
     #$path->name;
     $pathform['title'] = array('#type' => 'label', '#title' =>  $path->getName());   
-    if (!$path->getEnabled()) {
+    if (!$enabled) {
       $pathform['title']['#suffix'] = ' (' . $this->t('disabled') . ')';
     }
     
@@ -254,7 +258,7 @@ class WisskiPathbuilderForm extends EntityForm {
       '#type' => 'checkbox',
       '#title' => $this->t('Enable @title path', array('@title' => $path->getName())),
       '#title_display' => 'invisible',
-      '#default_value' => $path->getEnabled(),
+      '#default_value' => $enabled
     );
 
     $pathform['weight'] = array(
@@ -268,7 +272,7 @@ class WisskiPathbuilderForm extends EntityForm {
 
     $pathform['id'] = array(
       '#type' => 'hidden',
-      '#value' => $path->getID(),
+      '#value' => $path->id(),
     );
     
     $pathform['parent'] = array(
@@ -319,12 +323,13 @@ class WisskiPathbuilderForm extends EntityForm {
     foreach($paths as $key => $path) {
 #      drupal_set_message("path: " . serialize($path));
 #      $pathtree = array_merge($pathtree, $this->recursive_build_tree(array($key => $path)));
+
       
       if(!empty($path['parent'])) { // it has parents... we have to add it somewhere
-        $map[$path['parent']]['children'][$path['id']] = array('id' => $path['id'], 'weight' => $path['weight'], 'children' => array());
+        $map[$path['parent']]['children'][$path['id']] = array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array());
         $map[$path['id']] = &$map[$path['parent']]['children'][$path['id']];
       } else { // it has no parent - so it is a main thing
-        $pathtree[$path['id']] = array('id' => $path['id'], 'weight' => $path['weight'], 'children' => array());
+        $pathtree[$path['id']] = array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array());
         $map[$path['id']] = &$pathtree[$path['id']];
       }
 
@@ -338,11 +343,11 @@ class WisskiPathbuilderForm extends EntityForm {
     if($status) {
       // Setting the success message.
       drupal_set_message($this->t('Saved the pathbuilder: @id.', array(
-        '@id' => $pathbuilder->getID(),
+        '@id' => $pathbuilder->id(),
       )));
     } else {
       drupal_set_message($this->t('The Pathbuilder @id could not be saved.', array(
-        '@id' => $pathbuilder->getID(),
+        '@id' => $pathbuilder->id(),
       )));
     }
     
