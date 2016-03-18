@@ -12,10 +12,11 @@ class Query extends QueryBase implements QueryInterface, QueryAggregateInterface
    * {@inheritdoc}
    */
   public function execute() {
+    ddebug_backtrace();
     if ($this->count) {
       return 1;
     }
-    return array(4711=>4711);
+    return array(42=>42);
   }
 
   /**

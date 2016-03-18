@@ -27,6 +27,16 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * and arrays of bundles the entity is in
    */
   private $entity_info = array();
+
+  /**
+   * Dummy Construcor for Testing purposes
+   * @TODO override
+   */
+   public function __construct(EntityTypeInterface $entity_type, EntityManagerInterface $entity_manager, CacheBackendInterface $cache) {
+     parent::__construct($entity_type,$entity_manager,$cache);
+     $this->addAdapter('dummy','Drupal\\wisski_core\\Query\\WisskiQueryBase');
+   }
+
   
   /**
    * adds a WisskiQueryInterface to the list of adapters
@@ -85,6 +95,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * {@inheritdoc}
    */
   protected function doLoadMultiple(array $ids = NULL) {
+  dpm($ids,__METHOD__);
     $field_definitions = $this->entityManager->getFieldStorageDefinitions('wisski_individual');
     $entities = array();
     foreach ($ids as $id) {

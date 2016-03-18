@@ -81,7 +81,7 @@ entity.wisski_individual.view:
 entity.wisski_individual.edit_form:
   path: '/wisski_core/{wisski_individual}/edit'
   defaults:
-    _entity_form: 'wisski_individual'
+    _entity_form: 'wisski_individual.edit'
     _title: 'Edit entity'
   requirements:
     _entity_access: 'wisski_core.edit'
@@ -159,7 +159,7 @@ entity.wisski_bundle.entity_list:
     parameters:
       bundle: wisski_bundle
   requirements:
-    _entity_access: 'wisski_individual.view'
+    _permission: 'view wisski content'
 
 wisski.menu:
   path: '/admin/config/wisski'

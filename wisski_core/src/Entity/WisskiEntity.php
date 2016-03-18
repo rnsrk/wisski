@@ -40,7 +40,7 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *   },
  *   bundle_entity_type = "wisski_bundle",
  *   permission_granularity = "entity_type",
- *   admin_permission = "administer wisski_core",
+ *   admin_permission = "administer wisski",
  *	 fieldable = TRUE,
  *   field_ui_base_route = "entity.wisski_bundle.entity_add",
  *   links = {

@@ -21,7 +21,8 @@ class WisskiEntityAccessHandler extends EntityAccessControlHandler {
    * $operation as defined in the routing.yml file.
    */
   protected function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
-dpm(func_get_args(),__METHOD__);
+//dpm(func_get_args(),__METHOD__);
+//throw new \Exception('ka-BOOM');
     switch ($operation) {
       case 'view':
         return AccessResult::allowedIfHasPermission($account, 'view wisski content');
