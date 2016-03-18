@@ -10,6 +10,18 @@ wisski_pathbuilder.wisski_pathbuilder.*:
     name:
       type: label
       label: 'Label'
+    pathtree:
+      type: sequence
+      'label': 'Store an array of paths as triples (ID, weight, children)'
+      sequence:
+        type: mapping
+        mapping:
+          key: 
+            type: string
+            label: the key
+          value:
+            type: string
+            label: the value
 
 wisski_pathbuilder.wisski_path.*:
   type: config_entity
@@ -42,9 +54,9 @@ wisski_pathbuilder.wisski_path.*:
     length:
       type: integer
       label: 'Length'
-    parent:
-      type: integer
-      label: 'Parent'
-    parent_id:
-      type: integer
-      label: 'Parent ID'
+    description:
+      type: string
+      label: 'Description'
+    group:
+      type: boolean
+      label: 'Group'

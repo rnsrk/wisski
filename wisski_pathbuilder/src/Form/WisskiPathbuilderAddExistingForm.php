@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Contains \Drupal\wisski_pathbuilder\Form\WisskiPathForm
+ * Contains \Drupal\wisski_pathbuilder\Form\WisskiPathbuilderAddExistingForm
  */
  
 namespace Drupal\wisski_pathbuilder\Form;
@@ -15,12 +15,12 @@ use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Url;
 
 /**
- * Class WisskiPathForm
+ * Class WisskiPathbuilderAddExistingForm
  * 
  * Fom class for adding/editing WisskiPath config entities.
  */
  
-class WisskiPathForm extends EntityForm {
+class WisskiPathbuilderAddExistingForm extends EntityForm {
 
    /**
    * {@inheritdoc}
@@ -29,9 +29,27 @@ class WisskiPathForm extends EntityForm {
  
     $form = parent::form($form, $form_state);
     
-    $path = $this->entity;
+    drupal_set_message(serialize($this->entity));
     
-      
+    #$path = $this->entity;
+
+    $paths = entity_load_multiple('wisski_path');
+ 
+    $options = array();
+    
+    foreach($paths as $path) {
+      $options[$path->getID()] = $path->getName();
+    }
+    
+    $form['path'] = array(
+      '#type' => 'select',
+      '#title' => $this->t('Available paths to add'),
+      #'#default_value' => $path->getDatatypeProperty(),
+      #'#description' => $this->t("Available datatype properties."),
+      '#options' => $options,
+       #'#required' => true,
+    );
+    /*
     // Change page title for the edit operation
     if($this->operation == 'edit') {
       $form['#title'] = $this->t('Edit Path: @id', array('@id' => $path->getID()));
@@ -62,79 +80,24 @@ class WisskiPathForm extends EntityForm {
 #      ),
     );
     
-    $path_options_first = array(
-      '0' => $this->t('Select one'),
-      'x0' =>  $this->t('ecrm:E1_CRM_Entity'),
-      'x1' => $this->t('ecrm:E39_Actor'),
-      'x2' => $this->t('ecrm:E82_Actor_Appellation'),
-    );
-    
-    // If we have a value for the first dropdown from $form_state['values'] we use
-    // this both as the default value for the first dropdown and also as a
-    // parameter to pass to the function that retrieves the options for the
-    // second dropdown.
-  #  $selected = (null !== $form_state->getValue('path_array')) ? $form_state->getValue('path_array') : key($path_options_first));                             
-    
     $form['path_array'] = array(
       '#type' => 'select',
       '#title' => $this->t('Path'),
-      #'#default_value' => $path->getPathArray(),
-   #   '#default_value' => $selected,
+      '#default_value' => $path->getPathArray(),
       '#description' => $this->t("Select the next step of the path."),
-      '#options' => $path_options_first,
-     /** '#options' => [
+      '#options' => [
         '0' => $this->t('Select one'),
-        'x0' => $this->t('ecrm:E39_Actor'),
+        '1' => $this->t('ecrm:E39_Actor'),
      # '2' => [
       #  '2.1' => $this->t('Two point one'),
       #  '2.2' => $this->t('Two point two'),
      # ],
-        'y0' => $this->t('ecrm:P131_is_identified_by'),
-        'x1' => $this->t('ecrm:E82_Actor_Appellation'),
-      ],
-      **/    
+        '2' => $this->t('ecrm:P131_is_identified_by'),
+        '3' => $this->t('ecrm:E82_Actor_Appellation'),
+      ],    
       #'#required' => true,
-      '#ajax' => array(
-        'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
-        'wrapper' => 'new_select_div',
-        'effect' => 'slide',
-        #'event' => 'keyup',
-        #'progress' => array(
-         # 'type' => 'throbber', 
-          #'message' => NULL
-        #),
-      ),     
     );
- 
-               
-     
- #  if ($form_state->getValue('path_array')!='0') {
-      drupal_set_message(t("The value of path is not empty: '@value'", array('@value' => $form_state->getValue('path_array'))));
-   // This entire form element will be replaced whenever 'changethis' is updated.
-   $form['new_select'] = array(
-     '#type' => 'select',
-     '#title' => t("Select step 2 of the path"),
-     // The prefix/suffix provide the div that we're replacing, named by
-     // #ajax['wrapper'] above.
-     '#prefix' => '<div id="new_select_div">',
-     '#suffix' => '</div>',
-     '#options' => $path_options,
-   );
-   
-#  } 
-    // In d8 the newly added FormStateInterface is used instead of an array for $form_state,
-    // use the appropriate function instead, in this case $form_state->getValue().
-    // Look at https://www.drupal.org/node/2310411 for more details
-     # $wisski_core_config->set('wisski_core_lod_uri_templates', array('' => $base_url .  '/' . $form_state->getValue('template')));
-     
-                    
-   // An AJAX request calls the form builder function for every change.
-   // We can change how we build the form based on $form_state.
-   #if (!empty($form_state['values']['path_array'])) {   
-  # if (!empty($form_state->getValue('path_array'))) {
-   #  $form['replace_textfield']['#description'] = t("Say why you chose '@value'", array('@value' => $form_state->getValue('path_array')));
-   #} 
-  /**  
+    
     $form['datatype_property'] = array(
       '#type' => 'select',
       '#title' => $this->t('Available datatype properties'),
@@ -180,44 +143,38 @@ class WisskiPathForm extends EntityForm {
       #'#required' => true,
       
     );
-  **/                                                                                          
+     */                                                                                       
     return $form;
-  }
-  
-/**
-  * Ajax callback to render a sample of the input path data.
-  *
-  * @param array $form
-  *   Form API array structure.
-  * @param array $form_state
-  *   Form state information.
-  *
-  * @return AjaxResponse
-  *   Ajax replace command with the rendered sample date using the given
-  *   format. If the given format cannot be identified or was empty, the
-  *   rendered sample date will be empty as well.
-  */
-  
-  public function ajaxPathData(array $form, array $form_state) {
-   # $value = \Drupal\Component\Utility\NestedArray::getValue(
-    #  $form_state->getValues(),
-     # $form_state->getTriggeringElement()['#array_parents']); 
-   # drupal_set_message($form_state->getTriggeringElement()['#path_array']);  
-   # $response = new AjaxResponse();
-   # $response->addCommand(new ReplaceCommand('#edit-date-format-suffix', '<small id="edit-date-format-suffix">' . $format . '</small>'));
-  #  return $response;
- # return $form['replace_textfield'];   
-    if ($form_state->getValue('path_array')!='0') {
-     
-      return $form['new_select'];
-    }
   }
   
   /**
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
+#    drupal_set_message(serialize($form_state)); 
     
+    $value = $form_state->getValue('path');
+    
+    drupal_set_message(serialize($value));
+    
+    $pb = $this->entity;
+
+    drupal_set_message(serialize($pb));
+    
+    $pb->addPathToPathTree($value);   
+    
+#    $pb->setName("Hans Kaspar");
+    
+    drupal_set_message(serialize($pb)); 
+
+    $this->entity = $pb;
+    
+    $status = $pb->save();
+    
+    drupal_set_message(serialize($status));
+    
+    
+    /*
     $path = $this->entity;
     
     $status = $path->save();
@@ -233,16 +190,16 @@ class WisskiPathForm extends EntityForm {
       )));
     }
     
-   /**
-     $buildinfo = $form_state->getBuildInfo();
-    # drupal_set_message(serialize($buildinfo));
-      $args = $buildinfo['args'];
-      drupal_set_message($args);
-      // args[1] is the store name
-      $store_name = $args[1];
-      // args[0] is the store type name
-      $wisski_pathbuilder = $args[0];
-   */                      
+
+#     $buildinfo = $form_state->getBuildInfo();
+#    # drupal_set_message(serialize($buildinfo));
+#      $args = $buildinfo['args'];
+#      drupal_set_message($args);
+#      // args[1] is the store name
+#      $store_name = $args[1];
+#      // args[0] is the store type name
+#      $wisski_pathbuilder = $args[0];
+
     $wisski_pathbuilder = '';
     // get the current internal path to search for the pathbuilder id component
     $url = Url::fromRoute('<current>');
@@ -284,6 +241,8 @@ class WisskiPathForm extends EntityForm {
                          ->setRouteParameters(array('wisski_pathbuilder'=>$wisski_pathbuilder, 'wisski_path'=>$path->getID()));
                          
     $form_state->setRedirectUrl($redirect_url);             
+ */
+#   $form_state->setRedirect('entity.wisski_pathbuilder.collection');
  }
 }
     

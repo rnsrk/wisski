@@ -35,55 +35,186 @@ use Drupal\wisski_pathbuilder\WisskiPathInterface;
   *     "weight" = "weight"
   *   },
   *   links = {
-  *     "edit-form" = "/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/{wisski_path}",
-  *     "delete-form" = "/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/{wisski_path}/delete",
+  *     "edit-form" = "/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/path/{wisski_path}",
+  *     "delete-form" = "/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/path/{wisski_path}/delete",
   *     "entity-list" = "/admin/structure/wisski_core/{wisski_bundle}/list"
   *   }        
   *  )
   */
 class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
  
-     /**
-      * The ID of the path
-      *
-      * @var string
-      */
-  public $id;
+  /**
+   * The ID of the path
+   *
+   * @var string
+   */
+  protected $id;
+  
   /**
    * The human readable name of the path
    *
    * @var string
    */
-  public $name;
-   
+  protected $name;
+  
+  /**
+   * The path array containing the complete path structure 
+   * beginning with its starting concept, 
+   * followed by the property-concept pairs ending with a concept.
+   *
+   * @var string
+   */
+  protected $path_array;
+  
+  /**
+   * The datatype property of the path
+   *
+   * @var string
+   */
+  protected $datatype_property;
+  
+  /**
+   * The short name of the path
+   *
+   * @var string
+   */
+  protected $short_name;
+  
+  /**
+   * The integer value as position number of the disambiguation
+   * drop down list array 
+   *
+   * @var int
+   */
+  protected $disamb;
+  
+  /**
+   * The length of the path
+   *
+   * @var int
+   */
+  protected $length;
+  
+  /**
+   * The description text of the path
+   *
+   * @var string
+   */
+  protected $description;
+                                                                                                                  
    /**
     * The position weight of the path
     *
     * @var int
     */
-  public $weight;
-  
-   /**
-    * The parent of the path, usually the group it belongs to
-    *
-    * @var int
-    */
-  public $parent;
+  protected $weight;
   
    /**
     * True if this path is a group, false otherwise.
     *
     * @var boolean
     */
-  public $group;
+  protected $group;
   
   /**
     * True if this path is a enabled, false otherwise.
     *
     * @var boolean
     */
-  public $enabled;
-                             
+  protected $enabled;
 
+  public function getID(){
+    return $this->id;
+  }
+  
+  public function setID($id){
+    $this->id = $id;
+  }
+         
+  public function getName(){
+    return $this->name;
+  }
+  
+  public function setName($name){
+    $this->name = $name;
+  }
+         
+  public function getPathArray(){
+    return $this->path_array;  
+  }
+  
+  public function setPathArray($path_array){
+    $this->path_array = $path_array;
+  }
+          
+  public function getDatatypeProperty(){
+    return $this->datatype_property;
+  }
+  
+  public function setDatatypeProperty($datatype_property){
+    $this->datatype_property = $datatype_property;
+  }
+         
+  public function getShortName(){
+    return $this->short_name;
+  }
+  
+  public function setShortName($short_name){
+    $this->short_name = $short_name;
+         }
+                       
+  public function getDisamb(){
+    return $this->disamb;
+  }
+  
+  public function setDisamb($disamb){
+    $this->disamb = $disamb;
+  }
+                                    
+  public function getLength(){
+    return $this->length;
+  }
+  
+  public function setLength($length){
+    $this->length = $length;
+  }
+         
+  public function getDescription(){
+    return $this->description;
+  }
+  
+  public function setDescription($description){
+    $this->description = $description;
+  }
+               
+  public function getGroup(){
+    return $this->group;
+  }
+  
+  public function setGroup($group){
+    $this->group = $group;
+  }
+         
+  public function getEnabled(){
+    return $this->enabled;
+  }
+  
+  public function setEnabled($enabled){
+    $this->enabled = $enabled;
+  }
+ 
+#  public function getWeight(){
+#    return $this->weight;
+#  }
+  
+  public function printPath(){
+    $out = "";
+    foreach($this->getPathArray() as $step) {
+      $out .= empty($out) ? $step : ' -> ' . $step;
+    }
+    
+    return $out;
+  }
+                                       
 }
-     
+    

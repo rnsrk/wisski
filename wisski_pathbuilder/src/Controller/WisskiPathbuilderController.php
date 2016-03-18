@@ -220,38 +220,38 @@ class WisskiPathbuilderController extends ControllerBase {
     
     $pathform['#item'] = $path;
     
-    $pathform['#attributes'] = $path->enabled ? array('class' => array('menu-enabled')) : array('class' => array('menu-disabled')); 
+    $pathform['#attributes'] = $path->getEnabled() ? array('class' => array('menu-enabled')) : array('class' => array('menu-disabled')); 
       
-    $pathform['title'] = $path->name;
+    $pathform['title'] = $path->getName();
       
-    if (!$path->enabled) {
+    if (!$path->getEnabled()) {
       $pathform['title']['#suffix'] = ' (' . $this->t('disabled') . ')';
     }
       
     $pathform['enabled'] = array(
       '#type' => 'checkbox',
-      '#title' => $this->t('Enable @title path', array('@title' => $path->name)),
+      '#title' => $this->t('Enable @title path', array('@title' => $path->getName())),
       '#title_display' => 'invisible',
-      '#default_value' => $path->enabled,
+      '#default_value' => $path->getEnabled(),
     );
 
     $pathform['weight'] = array(
       '#type' => 'weight',
       '#delta' => 100, # Do something more cute here $delta,
-      '#default_value' => $path->weight,
-      '#title' => $this->t('Weight for @title', array('@title' => $path->name)),
+      '#default_value' => $path->getWeight(),
+      '#title' => $this->t('Weight for @title', array('@title' => $path->getName())),
       '#title_display' => 'invisible',
     );
 
     $pathform['id'] = array(
       '#type' => 'hidden',
-      '#value' => $path->id,
+      '#value' => $path->getID(),
     );
 
-    $pathform['parent'] = array(
-      '#type' => 'hidden',
-      '#default_value' => $path->parent,
-    );
+   # $pathform['parent'] = array(
+    #  '#type' => 'hidden',
+     # '#default_value' => $path->parent,
+    #);
     return $pathform;
   }
     
@@ -304,39 +304,40 @@ class WisskiPathbuilderController extends ControllerBase {
       #drupal_set_message(serialize($path));
 
       $pathform = $this->pb_render_path($path);
-
-      $form['pathbuilder_table'][$path->id]['#item'] = $pathform['#item'];
+      $path_id = $path->getID();
+      
+      $form['pathbuilder_table'][$path_id]['#item'] = $pathform['#item'];
       
       // TableDrag: Mark the table row as draggable.
-      $form['pathbuilder_table'][$path->id]['#attributes'] = $pathform['#attributes'];
-      $form['pathbuilder_table'][$path->id]['#attributes']['class'][] = 'draggable';
+      $form['pathbuilder_table'][$path_id]['#attributes'] = $pathform['#attributes'];
+      $form['pathbuilder_table'][$path_id]['#attributes']['class'][] = 'draggable';
 
 
         // TableDrag: Sort the table row according to its existing/configured weight.
-      $form['pathbuilder_table'][$path->id]['#weight'] = $pathform['#item']->weight;
+      $form['pathbuilder_table'][$path_id]['#weight'] = $pathform['#item']->getWeight();
 
       // Add special classes to be used for tabledrag.js.
       $pathform['parent']['#attributes']['class'] = array('menu-parent');
       $pathform['weight']['#attributes']['class'] = array('menu-weight');
       $pathform['id']['#attributes']['class'] = array('menu-id');
 
-      $form['pathbuilder_table'][$path->id]['title'] = array(
+      $form['pathbuilder_table'][$path_id]['title'] = array(
           array(
             '#theme' => 'indentation',
             '#size' => $pathform['#item']->depth - 1,
           ),
           $pathform['title'],
         );
-      $form['pathbuilder_table'][$path->id]['enabled'] = $pathform['enabled'];
-      $form['pathbuilder_table'][$path->id]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
+      $form['pathbuilder_table'][$path_id]['enabled'] = $pathform['enabled'];
+      $form['pathbuilder_table'][$path_id]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
 
-      $form['pathbuilder_table'][$path->id]['weight'] = $pathform['weight'];
+      $form['pathbuilder_table'][$path_id]['weight'] = $pathform['weight'];
 
         // Operations (dropbutton) column.
-      $form['pathbuilder_table'][$path->id]['operations'] = $pathform['operations'];
+      $form['pathbuilder_table'][$path_id]['operations'] = $pathform['operations'];
 
-      $form['pathbuilder_table'][$path->id]['id'] = $pathform['id'];
-      $form['pathbuilder_table'][$path->id]['parent'] = $pathform['parent'];
+      $form['pathbuilder_table'][$path_id]['id'] = $pathform['id'];
+      $form['pathbuilder_table'][$path_id]['parent'] = $pathform['parent'];
                       
       
       

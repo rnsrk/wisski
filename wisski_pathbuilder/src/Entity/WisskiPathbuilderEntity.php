@@ -20,6 +20,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
    *	 "list_builder" = "Drupal\wisski_pathbuilder\Controller\WisskiPathbuilderListBuilder",
    *	 "form" = {
    *       "add" = "Drupal\wisski_pathbuilder\Form\WisskiPathbuilderForm",
+   *       "add_existing" = "Drupal\wisski_pathbuilder\Form\WisskiPathbuilderAddExistingForm",
    *       "edit" = "Drupal\wisski_pathbuilder\Form\WisskiPathbuilderForm",
    *       "delete" = "Drupal\wisski_pathbuilder\Form\WisskiPathbuilderDeleteForm",
    *     }
@@ -44,21 +45,54 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      *
      * @var string
      */
-    public $id;
+    protected $id;
 
     /**
      * The name of the PB
      *
      * @var string
      */
-    public $name;
+    protected $name;
 
     /**
-     * The paths of the PB
+     * The hierarchical tree of paths consisting of three values:
+     * (id, weight, children) and children pointing to other triples.
      *
      * @var array
      */    
-    public $paths;
-   
+    protected $pathtree;
+    
+    public function getID(){
+      return $this->id;
+    }
+            
+    public function setID($id){
+      $this->id = $id;
+    }
+                   
+    public function getName(){
+      return $this->name;
+    }
+                           
+    public function setName($name){
+      $this->name = $name;
+    }
+                                    
+    public function getPathTree(){
+      return $this->pathtree;
+    }
+                                            
+    public function setPathTree($pathtree){
+      $this->pathtree = $pathtree;
+    }
+    
+    public function addPathToPathTree($pathid) {
+      $pathtree = $this->getPathTree();
+      $pathtree[] = array('id' => $pathid, 'weight' => 0, 'children' => array());
+      $this->setPathTree($pathtree);
+      
+      return true;      
+    }
+              
   } 
               

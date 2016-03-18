@@ -28,7 +28,7 @@ class WisskiPathbuilderListBuilder extends ConfigEntityListBuilder {
   public function buildRow(EntityInterface $entity) {
  
     // id
-    $row['name'] = $entity->name; 
+    $row['name'] = $entity->getName(); 
     #$this->getLabel($entity);
    
     return $row + parent::buildRow($entity);
