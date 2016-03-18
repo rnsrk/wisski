@@ -160,3 +160,8 @@ entity.wisski_bundle.entity_list:
       bundle: wisski_bundle
   requirements:
     _entity_access: 'wisski_individual.view'
+
+wisski.menu:
+  path: '/admin/config/wisski'
+  requirements:
+    _permission: 'administer wisski'

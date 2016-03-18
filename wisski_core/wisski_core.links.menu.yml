@@ -17,6 +17,12 @@ wisski_core.wisski_entities:
   route_name: entity.wisski_individual.list
   weight: 50
 
+wisski.content:
+  title: 'WissKI'
+  parent: system.admin_config
+  weight: -10
+  route_name: wisski.menu
+
 entity.wisski_individual.bundle_menu:
   title: 'WissKI Entities and Bundles'
   parent: system.admin_structure

@@ -1,4 +1,3 @@
-field_storage_default: 'wisski_core_swips'
 wisski_max_entities_per_page: '42'
 wisski_titles_master_fallback: '"-!- ".t("invalid title")." -!-"'
 wisski_standard_field_mapping: 'value'
