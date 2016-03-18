@@ -20,7 +20,7 @@ wisski_core.wisski_entities:
 wisski.content:
   title: 'WissKI'
   parent: system.admin_config
-  weight: -10
+  weight: -100
   route_name: wisski.menu
 
 entity.wisski_individual.bundle_menu:
