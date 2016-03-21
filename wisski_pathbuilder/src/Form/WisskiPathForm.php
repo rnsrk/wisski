@@ -15,10 +15,6 @@ use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Url;
 use Drupal\wisski_salz\EngineInterface;
 use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
-use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11Engine;
-use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11Engine\Sparql11EngineWithPB;
-#use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11EngineWithPB;
-#use Drupal\wisski_pathbuilder\Plugin\wisski_salz\Engine\Sparql11EngineWithPB;
 
 /**
  * Class WisskiPathForm
@@ -53,15 +49,20 @@ class WisskiPathForm extends EntityForm {
     $form = parent::form($form, $form_state);
     
     $path = $this->entity;
+
+    $got_engine = FALSE;
     
-    $test_object = entity_load('wisski_salz_adapter', $this->pb);
+    $adapter = entity_load('wisski_salz_adapter', $this->pb);
     drupal_set_message($this->pb);
-    drupal_set_message(serialize($test_object));
-    // this is the engine that must implement the PathbuilderEngineInterface
-    // currently the adapter must have the same machine name as the pb
-    $engine = entity_load('wisski_salz_adapter', $this->pb)->getEngine();    
-    drupal_set_message('engine: ' . serialize($engine));
-      
+    drupal_set_message(serialize($adapter));
+    if ($adapter) {
+      // this is the engine that must implement the PathbuilderEngineInterface
+      // currently the adapter must have the same machine name as the pb
+      $engine = $adapter->getEngine();    
+      drupal_set_message('engine: ' . serialize($engine));
+      if ($engine) $got_engine = TRUE;
+    }
+
     // Change page title for the edit operation
     if($this->operation == 'edit') {
       $form['#title'] = $this->t('Edit Path: @id', array('@id' => $path->getID()));
@@ -99,11 +100,13 @@ class WisskiPathForm extends EntityForm {
       'x2' => $this->t('ecrm:E82_Actor_Appellation'),
     );
     
-    // you must set the options like this:
-    $path_options_first = $engine->getPathAlternatives();
-    if ($form_state->getValue('path_array')) {
-      $path_options = $engine->getPathAlternatives($form_state->getValue('path_array'));
-      drupal_set_message('path options: ' . serialize($path_options));    
+    if ($got_engine) {
+      // you must set the options like this:
+      $path_options_first = $engine->getPathAlternatives();
+      if ($form_state->getValue('path_array')) {
+        $path_options = $engine->getPathAlternatives($form_state->getValue('path_array'));
+        drupal_set_message('path options: ' . serialize($path_options));    
+      }
     }
     
     // If we have a value for the first dropdown from $form_state['values'] we use
