@@ -27,8 +27,7 @@ class EngineManager extends DefaultPluginManager {
    *   The module handler to invoke the alter hook with.
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler) {
-    ddebug_backtrace();
-    dpm(func_get_args(),__METHOD__);
+//    dpm(func_get_args(),__METHOD__);
     parent::__construct(
       'Plugin/wisski_salz/Engine',
       $namespaces,
