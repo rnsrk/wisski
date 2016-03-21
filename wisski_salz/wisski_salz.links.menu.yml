@@ -8,7 +8,7 @@ entity.wisski_salz_adapter.collection:
 wisski_salz.admin.overview1:
   title: 'WissKI SALZ'
   description: "Configure WissKI's Starogge Adapters"
-  parent: wisski.content
+  parent: system.admin_config
   route_name: wisski_salz.admin.overview1
-  weight: 100
+  weight: -99
            

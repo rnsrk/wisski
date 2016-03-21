@@ -5,7 +5,7 @@
  * Contains \Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11EngineWithPB.
  */
 
-namespace Drupal\wisski_pathbuilder\Plugin\wisski_salz\Engine;
+namespace Drupal\wisski_adapter_sparql11PB\Plugin\wisski_salz\Engine;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11Engine;
