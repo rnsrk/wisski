@@ -20,7 +20,7 @@ use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
  *   description = @Translation("Provides access to a SPARQL 1.1 endpoint and is configurable via a Pathbuilder")
  * )
  */
-class Sparql11EngineWithPB extends Sparql11Engine implements PathBuilderEngineInterface  {
+class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineInterface  {
 
   /**
    * @{inheritdoc}
