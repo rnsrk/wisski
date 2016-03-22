@@ -92,6 +92,14 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   public function calculateDependencies() {
     return [];
   }
+  
 
+
+  /**
+   * {@inheritdoc}
+   */
+  public function load($entity_id) {
+    $this->loadMultiple(array($entity_id));
+  }
 
 }

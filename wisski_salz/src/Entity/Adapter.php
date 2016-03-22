@@ -179,5 +179,30 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
   public function setDescription($d) {
     $this->description = trim($d);
   }
+
+
+    
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function hasEntity($entity_id) {
+    $this->getEngine()->hasEntity($entity_id);
+  }
+
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+    $this->getEngine()->loadFieldValues($entity_ids, $field_ids, $language);
+  }
+
+
+  public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+    $this->getEngine()->loadPropertyValuesForField($field_id, $property_ids, $entity_ids, $language);
+  }
+
+
   
 }

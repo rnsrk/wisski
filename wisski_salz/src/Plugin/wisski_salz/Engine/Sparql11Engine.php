@@ -98,16 +98,41 @@ class Sparql11Engine extends EngineBase {
   }
   
 
-  public function load($uri) {
-    return "bla";
+  
+  //*** Implementation of the EngineInterface methods ***//
+  
+
+  public function hasEntity($entity_id) {
+    return FALSE;
   }
 
-
-  public function loadMultiple($uris = NULL) {
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function loadMultiple($entity_ids = NULL) {
     return array("bla", "blubb");
-
   }
   
+
+  /**
+   * {@inheritdoc}
+   */
+  public function loadFieldValues($entity_id, $field_id, $language = LanguageInterface::LANGCODE_DEFAULT, $property_ids = array()) {
+    return array(
+      "foo" => array(
+        'x-default' => array(
+          'main' => 'abc',
+          'value' => 'def',
+        )
+      )
+    );
+  }
+  
+
+
+
+
 
 
   //*** SPARQL 11 specific members and methods ***//
@@ -157,7 +182,7 @@ class Sparql11Engine extends EngineBase {
 	public function directUpdate($query) {
 		return $this->getEndpoint()->update($query);
 	}
-	
+
 
 
 	public function getPathArray($path) {

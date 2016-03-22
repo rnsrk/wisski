@@ -17,7 +17,46 @@ use Drupal\Core\Plugin\PluginFormInterface;
  */
 interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginInterface, PluginFormInterface  {
   
-  public function load($uri);
   
-  public function loadMultiple($uris = NULL);
+  /**
+   * determines whether an entity with this ID exists in the storage
+   * @param $entity_id the ID of the given entity
+   * @return TRUE if the storage handles this entity, FALSE otherwise
+   */
+  public function hasEntity($entity_id);
+
+
+  /* Loads all field data for multiple entities.
+   *
+   * Note that this function gets passed Drupal entity IDs.
+   * The engine is responsible for doing whatever ID handling/mapping/managing
+   * is necessary to garantee stable, persistent Drupal IDs if the storage
+   * type does not use Drupal IDs.
+   * 
+   * @param $entity_ids an array of the entity IDs.
+   * @param $field_ids an array with the machine names of the fields to search the values for
+   * @param $language language code for the desired translation
+   * @return an array describing the values TODO: describe structure
+   */
+  public function loadFieldValues(array $entity_ids = NULL, $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
+
+  
+  /* Loads property data for a given field for multiple entities.
+   *
+   * Note that this function gets passed Drupal entity IDs.
+   * The engine is responsible for doing whatever ID handling/mapping/managing
+   * is necessary to garantee stable, persistent Drupal IDs if the storage
+   * type does not use Drupal IDs.
+   * 
+   * retrieves the field data for the given entity IDs and field name
+   * @param $field_id the machine name of the field to search the value for
+   * @param $property_ids an array of specific sub-field property names e.g. value
+   * @param $entity_ids an array of the entity IDs.
+   * @param $language language code for the desired translation
+   * @return an array describing the values TODO: describe structure
+   */
+  public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
+
+  
+
 }
