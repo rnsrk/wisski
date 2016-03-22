@@ -108,6 +108,7 @@ class Sparql11Engine extends EngineBase {
 
   
   /**
+   * @deprecated
    * {@inheritdoc}
    */
   public function loadMultiple($entity_ids = NULL) {
@@ -118,7 +119,7 @@ class Sparql11Engine extends EngineBase {
   /**
    * {@inheritdoc}
    */
-  public function loadFieldValues($entity_id, $field_id, $language = LanguageInterface::LANGCODE_DEFAULT, $property_ids = array()) {
+  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
     return array(
       "foo" => array(
         'x-default' => array(
@@ -130,6 +131,21 @@ class Sparql11Engine extends EngineBase {
   }
   
 
+  
+
+  /**
+   * {@inheritdoc}
+   */
+  public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+    return array(
+      "foo" => array(
+        'x-default' => array(
+          'main' => 'abc',
+          'value' => 'def',
+        )
+      )
+    );
+  }
 
 
 

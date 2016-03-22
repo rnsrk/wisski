@@ -94,12 +94,4 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   }
   
 
-
-  /**
-   * {@inheritdoc}
-   */
-  public function load($entity_id) {
-    $this->loadMultiple(array($entity_id));
-  }
-
 }
