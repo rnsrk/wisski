@@ -1,21 +1,19 @@
 <?php
 
-namespace Drupal\wisski_core\Query;
-use Drupal\Core\Entity\Query\QueryBase;
-use Drupal\Core\Entity\Query\QueryInterface;
-use Drupal\Core\Entity\Query\QueryAggregateInterface;
+namespace Drupal\wisski_adapter_yaml\Query;
 
+use Drupal\wisski_core\Query\Query as QueryBase;
+use Drupal\wisski_adapter_yaml\Plugin\wisski_salz\Engine\YamlAdapterEngine;
 
-class Query extends QueryBase implements QueryInterface, QueryAggregateInterface {
-
-  private static $adapters = array();
+class Query extends QueryBase {
 
   /**
    * {@inheritdoc}
    */
   public function execute() {
-    
-    return array();
+    $engine = new YamlAdapterEngine();
+    $ents = $engine->loadMultiple();
+    return array_keys($ents);
   }
 
   /**

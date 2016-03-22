@@ -1,5 +1,5 @@
-name: WissKI Sparql11 PB Adapter
-description: A WissKI adapter module for the connection to a SPARQL-Endpoint.
+name: WissKI SPARQL1.1 adapter with pathbuilder
+description: A WissKI adapter module that connects to a SPARQL1.1 store using a path builder
 core: 8.x
 package: WissKI
 version: 0.1-dev

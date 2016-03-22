@@ -18,8 +18,6 @@ use Drupal\Core\Plugin\PluginFormInterface;
 interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginInterface, PluginFormInterface  {
   
   public function load($uri);
-
   
   public function loadMultiple($uris = NULL);
-
 }

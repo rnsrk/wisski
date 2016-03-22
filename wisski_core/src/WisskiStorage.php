@@ -18,11 +18,6 @@ use Drupal\wisski_core\Query\WisskiQueryInterface;
 class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInterface {
 
   /**
-   * stores the adpter names and classes used by this storage
-   */
-  private $adapters = array();
-  
-  /**
    * stores mappings from entity IDs to arrays of storages, that handle the id
    * and arrays of bundles the entity is in
    */
@@ -34,34 +29,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
    public function __construct(EntityTypeInterface $entity_type, EntityManagerInterface $entity_manager, CacheBackendInterface $cache) {
      parent::__construct($entity_type,$entity_manager,$cache);
-     $this->addAdapter('dummy','Drupal\\wisski_core\\Query\\WisskiQueryBase');
    }
-
-  
-  /**
-   * adds a WisskiQueryInterface to the list of adapters
-   * @param $machine_name the machine name of the adapter, must start with lower_case letter, followed by lower case letters or underscores
-   * @param $override TRUE if old adapter info should be overrided
-   */
-  public function addAdapter($machine_name,$class_name,$override=FALSE) {
-    
-    if (!preg_match('/^[a-z][_a-z]*$/',$machine_name)) {
-      throw new WisskiInvalidArgumentException(t('%machine_name is not a valid adapter name.',array('%machine_name'=>$machine_name)));
-    }
-    
-    if (!class_exists($class_name)) {
-      throw new WisskiInvalidArgumentException(t('%class is not a valid adapter class.',array('%class'=>$class_name)));
-    }
-    $adapter = new $class_name();
-    if (!($adapter instanceof WisskiQueryInterface)) {
-      throw new WisskiInvalidArgumentException(t('%class is not a valid WissiQuery Adapter',array('%class'=>$class_name)));
-    }
-    if (array_key_exists($this->adapters,$machine_name) && !$override) {
-      return FALSE;
-    }
-    $this->adapters[$machine_name] = $adapter;
-    return TRUE;
-  }
 
   /**
    * !!! inherited from SqlContentEntityStorage. This should NEVER be called
@@ -95,33 +63,25 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * {@inheritdoc}
    */
   protected function doLoadMultiple(array $ids = NULL) {
-  dpm($ids,__METHOD__);
+//  dpm($ids,__METHOD__);
     $field_definitions = $this->entityManager->getFieldStorageDefinitions('wisski_individual');
     $entities = array();
     foreach ($ids as $id) {
-      $values = array();
-      $info = $this->getEntityInfo($id);
-      foreach ($info as $adapter_name => $bundles) {
-        foreach ($field_definitions as $field_name => $def) {
-          $values[$field_name] = $this->doLoadFieldItems($id,$field_name,$adapter_name);
-        }
-        foreach ($bundles as $bundle) {
-          
-        }
-      }
+      $values = $this->getEntityInfo($id);
 //      if (!isset($values['id'])) $values['id'] = $id;
       if (is_array($values['bundle'])) $values['bundle'] = current($values['bundle']);
-      $entities[$id] = $this->create($values);
+      //dummy fallback
+      if (empty($values) && $id === 42) {
+        $values = array(
+          'bundle' => 'e21_person',
+          'eid' => 42,
+          'name' =>'There was nothing',
+          'vid' => 42,
+        );
+      }
+      if (!empty($values)) $entities[$id] = $this->create($values);
     }
     return $entities;
-  }
-
-  /**
-   * makes the adapter class load the entity information
-   */
-  protected function doLoadFieldItems($entity_id,$field_name,$adapter_name) {
-    $adapter = $this->adapters[$adapter_name];
-    return $adapter->loadFieldValues($id,$field_name);
   }
 
   /**
@@ -133,14 +93,20 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   protected function getEntityInfo($id,$cached = TRUE) {
     
     $entity_info = &$this->entity_info;
-    if (isset($entity_info[$id])) return $entity_info[$id];
-    $entity_info[$id] = array();
-    foreach ($this->adapters as $name => $adapter) {
-      if ($adapter->hasEntity($id)) {
-        $entity_info[$id][$name]['bundles'] = $adapter->getBundlesForEntity($id);
+    if ($cached && isset($entity_info[$id])) return $entity_info[$id];
+    $info = array();
+    $adapters = entity_load_multiple('wisski_salz_adapter');
+//    dpm($adapters);
+    foreach ($adapters as $adapter) {
+      $info = array();
+      try {
+        $info = $adapter->getEngine()->load($id);
+      } catch (\Exception $e) {
+        drupal_set_message('Could not load entity '.$id);
       }
     }
-    return $entity_info[$id];
+    $entity_info[$id] = $info;
+    return $info;
   }
 
   /**
