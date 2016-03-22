@@ -38,7 +38,7 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * @param $language language code for the desired translation
    * @return an array describing the values TODO: describe structure
    */
-  public function loadFieldValues(array $entity_ids = NULL, $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
+  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
 
   
   /* Loads property data for a given field for multiple entities.
@@ -55,7 +55,7 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * @param $language language code for the desired translation
    * @return an array describing the values TODO: describe structure
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
+  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
 
   
 
