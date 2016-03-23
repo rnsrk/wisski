@@ -18,7 +18,56 @@ use Drupal\Core\Entity\EntityWithPluginCollectionInterface;
  */
 interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollectionInterface {
   
+  /**
+   * @return string
+   *  The human-readable description of the adapter instance set by the GUI
+   */
+  public function getDescription();
+
+  /**
+   * Sets the description
+   *
+   * @param description a string with the description
+   */
+  public function setDescription($description);
+
+
+  /**
+   * @return string
+   *  The ID of the adapter's engine 
+   */
+  public function getEngineId();
+
+
+  /**
+   * Sets the engine ID for this adapter
+   *
+   * @param id the engine ID
+   */
+  public function setEngineId($id);
+
+
+  /**
+   * @return \Drupal\wisski_salz\EngineInterface
+   *  The engine used by this adapter
+   */
+  public function getEngine();
   
+
+  /**
+   * Sets the configuration for the adapter's engine
+   *
+   * @param array the configuration
+   */
+  public function setEngineConfig(array $configuration);
+
+  /**
+   * @return \Drupal\Core\Plugin\DefaultSingleLazyPluginCollection
+   *  The plugin collection with the single engine
+   */
+  public function getEngineCollection();
+
+
   /**
    * @see EngineInterface::hasEntity()
    */
