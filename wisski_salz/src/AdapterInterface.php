@@ -37,7 +37,4 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
   public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
 
   
-
-
-
 }

@@ -52,6 +52,7 @@ use Psr\Log\LoggerInterface;
  * )
  */
 class Adapter extends ConfigEntityBase implements AdapterInterface {
+
   /**
    * The WissKI Salz Adapter ID.
    *
@@ -202,7 +203,5 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
   public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
     $this->getEngine()->loadPropertyValuesForField($field_id, $property_ids, $entity_ids, $language);
   }
-
-
   
 }

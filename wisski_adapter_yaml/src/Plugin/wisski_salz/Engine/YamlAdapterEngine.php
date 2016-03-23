@@ -54,12 +54,17 @@ class YamlAdapterEngine extends YamlAdapterBase  {
    */
   public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
 
-    if (is_null($entity_ids)) return $this->loadMultiple();
+    if (is_null($entity_ids)) {
+      $ents = $this->loadMultiple();
+      if (is_null($field_ids)) return $ents;
+      $field_ids = array_flip($field_ids);
+      return array_map(function($array) use ($field_ids) {return array_diff_key($array,$field_ids);},$ents);
+    }
     $result = array();
     foreach ($entity_ids as $entity_id) {
       $ent = $this->load($entity_id);
       if (!is_null($field_ids)) {
-        $ent = array_diff_keys($ent,array_flip($field_ids));
+        $ent = array_diff_key($ent,array_flip($field_ids));
       }
       $result[$entity_id] = $ent;
     }
@@ -73,6 +78,10 @@ class YamlAdapterEngine extends YamlAdapterBase  {
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
     
     
+    $main_property = \Drupal\field\Entity\FieldStorageConfig::loadByName($entity_type, $field_name)->getItemDefinition()->mainPropertyName();
+    if (in_array($main_property,$property_ids)) {
+      return $this->loadFieldValues($entity_ids,array($field_id),$language);
+    }
     return array();
   }
 }
