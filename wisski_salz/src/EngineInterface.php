@@ -26,11 +26,12 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
   public function hasEntity($entity_id);
 
 
-  /* Loads all field data for multiple entities.
+  /**
+   * Loads all field data for multiple entities.
    *
    * Note that this function gets passed Drupal entity IDs.
    * The engine is responsible for doing whatever ID handling/mapping/managing
-   * is necessary to garantee stable, persistent Drupal IDs if the storage
+   * is necessary to guarantee stable, persistent Drupal IDs if the storage
    * type does not use Drupal IDs.
    * 
    * @param $entity_ids an array of the entity IDs.
@@ -41,11 +42,12 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
   public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
 
   
-  /* Loads property data for a given field for multiple entities.
+  /**
+   * Loads property data for a given field for multiple entities.
    *
    * Note that this function gets passed Drupal entity IDs.
    * The engine is responsible for doing whatever ID handling/mapping/managing
-   * is necessary to garantee stable, persistent Drupal IDs if the storage
+   * is necessary to guarantee stable, persistent Drupal IDs if the storage
    * type does not use Drupal IDs.
    * 
    * retrieves the field data for the given entity IDs and field name

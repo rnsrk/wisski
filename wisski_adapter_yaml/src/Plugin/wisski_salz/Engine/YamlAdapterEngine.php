@@ -36,6 +36,43 @@ class YamlAdapterEngine extends YamlAdapterBase  {
     foreach($ids as $id) {
       $entities[$id] = $this->load($id);
     }
-    return $entites;
+    return $entities;
+  }
+    
+  /**
+   * @inheritdoc
+   */
+  public function hasEntity($entity_id) {
+  
+    $ent = $this->load($entity_id);
+    return empty($ent);
+  }
+
+
+  /**
+   * @inheritdoc
+   */
+  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+
+    if (is_null($entity_ids)) return $this->loadMultiple();
+    $result = array();
+    foreach ($entity_ids as $entity_id) {
+      $ent = $this->load($entity_id);
+      if (!is_null($field_ids)) {
+        $ent = array_diff_keys($ent,array_flip($field_ids));
+      }
+      $result[$entity_id] = $ent;
+    }
+    return $result;
+  }
+
+  /**
+   * @inheritdoc
+   * The Yaml-Adapter cannot handle field properties, we insist on field values being the main property
+   */
+  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+    
+    
+    return array();
   }
 }
