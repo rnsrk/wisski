@@ -164,7 +164,9 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
     return $this->engine_id;
   }
 
-
+  public function getQueryObject($entity_type,$condition,array $namespaces) {
+    return $this->getEngine()->getQueryObject($entity_type,$condition,$namespaces);
+  }
 
   /**
    * {@inheritdoc}

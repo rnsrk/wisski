@@ -85,5 +85,9 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
    */
   public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
 
+  /**
+   * @return \Drupal\wisski_salz\WisskiQuery
+   */
+  public function getQueryObject($entity_type, $condition,array $namespaces);
   
 }

@@ -26,14 +26,20 @@ class QueryFactory implements QueryFactoryInterface {
    * {@inheritdoc}
    */
   public function get(EntityTypeInterface $entity_type, $conjunction) {
-    return new Query($entity_type, $conjunction, $this->namespaces);
+//    dpm(func_get_args(),__METHOD__);
+    //
+    // WATCH OUT - nasty assumption of first one being main store
+    // @TODO change that
+    //
+    $adapter = current(entity_load_multiple('wisski_salz_adapter'));
+    return $adapter->getQueryObject($entity_type,$conjunction,$this->namespaces);  
   }
 
   /**
    * {@inheritdoc}
    */
   public function getAggregate(EntityTypeInterface $entity_type, $conjunction) {
-    return new Query($entity_type, $conjunction, $this->namespaces);
+    return $this->get($entity_type,$conjunction);
   }
 
 }

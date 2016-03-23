@@ -93,5 +93,8 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     return [];
   }
   
+  public function getQueryObject($entity_type,$condition, array $namespaces) {
+    return new Query\Query($entity_type,$condition,$namespaces);
+  }
 
 }

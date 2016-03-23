@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\wisski_core\Query;
+namespace Drupal\wisski_salz\Query;
 
 use Drupal\Core\Entity\Query\ConditionAggregateBase;
 
