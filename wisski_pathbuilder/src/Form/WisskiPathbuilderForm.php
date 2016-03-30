@@ -113,12 +113,14 @@ class WisskiPathbuilderForm extends EntityForm {
 
     $pathforms = array();
 #    while(false) {
+    // get all paths belonging to the respective pathbuilder
     foreach($pathbuilder->getPathTree() as $grouparray) {
-      // $grouparray has structure: (ID, weight, children) 
+      // $grouparray has structure: (ID, weight, enabled, children)
+     # drupal_set_message('GROUP: ' . serialize($grouparray)); 
       $pathforms = array_merge($pathforms, $this->recursive_render_tree($grouparray));
     }
     
-#    drupal_set_message(serialize($pathforms));
+    #drupal_set_message('PATHFORMS: ' . serialize($pathforms));
     
 #    return $form;
 
@@ -157,11 +159,33 @@ class WisskiPathbuilderForm extends EntityForm {
       $form['pathbuilder_table'][$path->id()]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
 
       $form['pathbuilder_table'][$path->id()]['weight'] = $pathform['weight'];
-
-        // Operations (dropbutton) column.
+      
+      // an array of links that can be selected in the dropdown operations list
+      $links = array();
+      $links['edit'] = array(
+        'title' => $this->t('Edit'),
+       # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->getID())),
+        'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.edit_form')
+                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->getID(), 'wisski_path' => $path->getID())),
+      );
+      $links['delete'] = array(
+        'title' => $this->t('Delete'),
+        'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.delete_form')
+                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->getID(), 'wisski_path' => $path->getID())),
+      );  
+                                                             
+      // Operations (dropbutton) column.
     #  $operations = parent::getDefaultOperations($pathbuilder);
-      $form['pathbuilder_table'][$path->id()]['operations'] = $pathform['operations'];       
-     # $form['pathbuilder_table'][$path->id()]['operations'] = $operations;
+      $operations = array(
+        '#type' => 'operations',
+        '#links' => $links,
+      );
+     # drupal_set_message('PATH ID: ' . $path->getID());
+      drupal_set_message('OPS: ' . serialize($operations));
+     # drupal_set_message('ITEM: ' . serialize($pathform['#item']));
+     # drupal_set_message('Link: ' . serialize($links['edit']));
+     # $form['pathbuilder_table'][$path->id()]['operations'] = $pathform['operations'];       
+      $form['pathbuilder_table'][$path->id()]['operations'] = $operations;
 
       $form['pathbuilder_table'][$path->id()]['id'] = $pathform['id'];
       $form['pathbuilder_table'][$path->id()]['parent'] = $pathform['parent'];

@@ -175,6 +175,7 @@ class WisskiPathbuilderController extends ControllerBase {
        '#default_value' => 'Here is the pathbuilder description',
      );
 
+
      // Add menu links administration form for existing menus.
     # if (!$menu->isNew() || $menu->isLocked()) {
      // Form API supports constructing and validating self-contained sections
@@ -238,7 +239,8 @@ class WisskiPathbuilderController extends ControllerBase {
     $pathform['weight'] = array(
       '#type' => 'weight',
       '#delta' => 100, # Do something more cute here $delta,
-      '#default_value' => $path->getWeight(),
+      #'#default_value' => $path->getWeight(),
+      '#default_value' => 100,       
       '#title' => $this->t('Weight for @title', array('@title' => $path->getName())),
       '#title_display' => 'invisible',
     );

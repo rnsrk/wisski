@@ -15,7 +15,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Form that handles the removal of Wisski Path entities
  */
 class WisskiPathDeleteForm extends EntityConfirmFormBase {
-  
+                                  
   /**
    * {@inheritdoc}
    */
@@ -32,10 +32,10 @@ class WisskiPathDeleteForm extends EntityConfirmFormBase {
     # drupal_set_message(htmlentities(new Url('entity.wisski_pathbuilder.overview')));
     # return new Url('entity.wisski_pathbuilder.overview');
     #$pb_entities = entity_load_multiple('wisski_pathbuilder');
-    $wisski_pathbuilder = 'pb';
-    drupal_set_message($wisski_pathbuilder);                                     
-    $url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.overview')
-                        ->setRouteParameters(array('wisski_pathbuilder'=>$wisski_pathbuilder));
+   # $pb = 'pb';                                     
+   # $url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.edit_form')
+    #                    ->setRouteParameters(array('wisski_pathbuilder'=>$this->pb));
+    $url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.collection');
     return $url;                       
   }
   
@@ -54,7 +54,7 @@ class WisskiPathDeleteForm extends EntityConfirmFormBase {
     // Delete and set message
     $path->delete();
     drupal_set_message($this->t('The path @id has been deleted.',
-    array('@id' => $path->getID())));
+    array('@id' => $path->getID())));     
     $form_state->setRedirectUrl($this->getCancelUrl());
   }
 
