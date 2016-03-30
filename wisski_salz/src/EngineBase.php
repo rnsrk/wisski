@@ -9,6 +9,7 @@ namespace Drupal\wisski_salz;
 
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 
 /**
  * Base class for external entity storage clients.
@@ -50,6 +51,10 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
    * {@inheritdoc}
    */
   public function setConfiguration(array $configuration) {
+    if (is_null($configuration)) {
+      $configuration = array();
+      drupal_set_message(__METHOD__.' $configuration === NULL','error');
+    }
     $this->configuration = $configuration + $this->defaultConfiguration();
   }
 
@@ -93,7 +98,8 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     return [];
   }
   
-  public function getQueryObject($entity_type,$condition, array $namespaces) {
+  public function getQueryObject(EntityTypeInterface $entity_type,$condition, array $namespaces) {
+    dpm($namespaces);
     return new Query\Query($entity_type,$condition,$namespaces);
   }
 

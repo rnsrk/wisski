@@ -9,6 +9,7 @@ namespace Drupal\wisski_salz\Plugin\wisski_salz\Engine;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\wisski_salz\EngineBase;
+use Drupal\Core\Language\LanguageInterface;
 
 /**
  * Wiki implementation of an external entity storage client.

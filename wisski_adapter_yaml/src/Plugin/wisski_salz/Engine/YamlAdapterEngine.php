@@ -7,8 +7,12 @@
 
 namespace Drupal\wisski_adapter_yaml\Plugin\wisski_salz\Engine;
 
+use Drupal\wisski_adapter_yaml\Query\Query;
+
 use Drupal\wisski_adapter_yaml\YamlAdapterBase;
 use Symfony\Component\Yaml\Yaml;
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Language\LanguageInterface;
 
 /**
  * @Engine(
@@ -31,12 +35,9 @@ class YamlAdapterEngine extends YamlAdapterBase  {
   
   public function loadMultiple($ids = NULL) {
     $this->entity_info = Yaml::parse($this->entity_string);
+//    dpm($this->entity_info,__METHOD__);
     if (is_null($ids)) return $this->entity_info;
-    $entities = array();
-    foreach($ids as $id) {
-      $entities[$id] = $this->load($id);
-    }
-    return $entities;
+    return array_intersect_key($this->entity_info,array_flip($ids));
   }
     
   /**
@@ -58,13 +59,13 @@ class YamlAdapterEngine extends YamlAdapterBase  {
       $ents = $this->loadMultiple();
       if (is_null($field_ids)) return $ents;
       $field_ids = array_flip($field_ids);
-      return array_map(function($array) use ($field_ids) {return array_diff_key($array,$field_ids);},$ents);
+      return array_map(function($array) use ($field_ids) {return array_intersect_key($array,$field_ids);},$ents);
     }
     $result = array();
     foreach ($entity_ids as $entity_id) {
       $ent = $this->load($entity_id);
       if (!is_null($field_ids)) {
-        $ent = array_diff_key($ent,array_flip($field_ids));
+        $ent = array_intersect_key($ent,array_flip($field_ids));
       }
       $result[$entity_id] = $ent;
     }
@@ -83,5 +84,10 @@ class YamlAdapterEngine extends YamlAdapterBase  {
       return $this->loadFieldValues($entity_ids,array($field_id),$language);
     }
     return array();
+  }
+  
+  public function getQueryObject(EntityTypeInterface $entity_type,$condition,array $namespaces) {
+  
+    return new Query($entity_type,$condition,$namespaces);
   }
 }
