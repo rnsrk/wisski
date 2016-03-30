@@ -55,6 +55,13 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
     protected $name;
 
     /**
+     * The machine-name of the adapter this pathbuilder belongs to
+     *
+     * @var string
+     */
+    protected $adapter;
+
+    /**
      * The hierarchical tree of paths consisting of three values:
      * (id, weight, children) and children pointing to other triples.
      *
@@ -74,6 +81,16 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
                            
     public function setName($name){
       $this->name = $name;
+    }
+    
+    public function getAdapter(){
+      if(empty($this->adapter))
+        return "Pathbuilder";
+      return $this->adapter;
+    }
+                           
+    public function setAdapter($adapter){
+      $this->adapter = $adapter;
     }
                                     
     public function getPathTree(){

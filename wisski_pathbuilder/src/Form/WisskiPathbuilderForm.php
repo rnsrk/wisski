@@ -65,6 +65,24 @@ class WisskiPathbuilderForm extends EntityForm {
       ],
     );
 
+#    $adapters = entity_load_multiple('wisski_salz_adapter');
+    
+    $adapters = \Drupal\wisski_salz\Entity\Adapter::loadMultiple();
+    
+    $adapterlist = array();
+
+    foreach($adapters as $adapter) {
+      $adapterlist[$adapter->id()] = $adapter->label();#      drupal_set_message(serialize($adapters));
+    }
+        
+    $form['adapter'] = array(
+      '#type' => 'select',
+      '#description' => $this->t('Which adapter does this Pathbuilder belong to?'),
+#      '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
+      '#default_value' => $pathbuilder->getAdapter(),
+      '#options' => $adapterlist, #array(0 => "Pathbuilder"),
+    );
+
     
   // Ensure that menu_overview_form_submit() knows the parents of this form
   // section.
@@ -363,6 +381,8 @@ class WisskiPathbuilderForm extends EntityForm {
 
 #    drupal_set_message(serialize($pathtree));    
     $pathbuilder->setPathTree($pathtree);
+
+#    drupal_set_message(serialize($pathbuilder));
     
     $status = $pathbuilder->save();
     
