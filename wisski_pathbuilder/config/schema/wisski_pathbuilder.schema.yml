@@ -40,8 +40,17 @@ wisski_pathbuilder.wisski_path.*:
       type: string
       label: 'uuid'
     path_array:
-      type: string
-      label: 'Path Array'
+      type: sequence
+      'label': 'Store an array of concept-property pairs as path' 
+      sequence:
+        type: mapping
+        mapping:
+          key:
+            type: string
+            label: the key
+          value:
+            type: string
+            label: the value
     datatype_property:
       type: string
       label: 'Datatype Property'
