@@ -23,7 +23,7 @@ use Drupal\Core\Language\LanguageInterface;
  */
 class YamlAdapterEngine extends YamlAdapterBase  {
 
-  private static $entity_info;
+  private $entity_info;
 
   public function load($id) {
     $entity_info = &$this->entity_info;
@@ -34,8 +34,9 @@ class YamlAdapterEngine extends YamlAdapterBase  {
   }
   
   public function loadMultiple($ids = NULL) {
+    dpm($this->getConfiguration());
     $this->entity_info = Yaml::parse($this->entity_string);
-//    dpm($this->entity_info,__METHOD__);
+    dpm($this->entity_info,__METHOD__);
     if (is_null($ids)) return $this->entity_info;
     return array_intersect_key($this->entity_info,array_flip($ids));
   }
@@ -88,6 +89,6 @@ class YamlAdapterEngine extends YamlAdapterBase  {
   
   public function getQueryObject(EntityTypeInterface $entity_type,$condition,array $namespaces) {
   
-    return new Query($entity_type,$condition,$namespaces);
+    return new Query($entity_type,$condition,$namespaces,$this);
   }
 }
