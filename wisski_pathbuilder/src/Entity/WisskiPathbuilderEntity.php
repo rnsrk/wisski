@@ -29,7 +29,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
    *   admin_permission = "administer site configuration",
    *   entity_keys = {
    *     "id" = "id",
-   *     "label" = "label"
+   *     "name" = "name"
    *   },
    *   links = {
    *     "edit-form" = "/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/edit",
@@ -48,11 +48,11 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
     protected $id;
 
     /**
-     * The label of the PB
+     * The name of the PB
      *
      * @var string
      */
-    protected $label;
+    protected $name;
 
     /**
      * The hierarchical tree of paths consisting of three values:
@@ -62,14 +62,18 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      */    
     protected $pathtree;
     
+    public function getID() {
+      return $this->id;
+    }
+    
     public function getName(){
-      if(empty($this->label))
+      if(empty($this->name))
         return "Pathbuilder";
-      return $this->label;
+      return $this->name;
     }
                            
     public function setName($name){
-      $this->label = $name;
+      $this->name = $name;
     }
                                     
     public function getPathTree(){

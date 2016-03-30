@@ -159,7 +159,9 @@ class WisskiPathbuilderForm extends EntityForm {
       $form['pathbuilder_table'][$path->id()]['weight'] = $pathform['weight'];
 
         // Operations (dropbutton) column.
-      $form['pathbuilder_table'][$path->id()]['operations'] = $pathform['operations'];
+    #  $operations = parent::getDefaultOperations($pathbuilder);
+      $form['pathbuilder_table'][$path->id()]['operations'] = $pathform['operations'];       
+     # $form['pathbuilder_table'][$path->id()]['operations'] = $operations;
 
       $form['pathbuilder_table'][$path->id()]['id'] = $pathform['id'];
       $form['pathbuilder_table'][$path->id()]['parent'] = $pathform['parent'];
