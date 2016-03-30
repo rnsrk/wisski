@@ -65,47 +65,55 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   protected function doLoadMultiple(array $ids = NULL) {
 //  dpm($ids,__METHOD__);
     $field_definitions = $this->entityManager->getFieldStorageDefinitions('wisski_individual');
+//  dpm($field_definitions,'field_storage_definitions');
     $entities = array();
+    $values = $this->getEntityInfo($ids,array_keys($field_definitions));
+//  dpm($values,'values');    
     foreach ($ids as $id) {
-      $values = $this->getEntityInfo($id);
-//      if (!isset($values['id'])) $values['id'] = $id;
-      if (is_array($values['bundle'])) $values['bundle'] = current($values['bundle']);
+      if (is_array($values[$id]['bundle'])) $values[$id]['bundle'] = current($values[$id]['bundle']);
       //dummy fallback
-      if (empty($values) && $id === 42) {
-        $values = array(
+      if (empty($values[$id]) && $id === 42) {
+        $values[$id] = array(
           'bundle' => 'e21_person',
           'eid' => 42,
           'name' =>'There was nothing',
           'vid' => 42,
         );
       }
-      if (!empty($values)) $entities[$id] = $this->create($values);
+      if (!empty($values[$id])) $entities[$id] = $this->create($values[$id]);
     }
     return $entities;
   }
 
   /**
-   * gets the adapter classes and bundles the entity is handled by
+   * gathers entity field info from all available adapters
    * @param $id entity ID
    * @param $cached TRUE for static caching, FALSE for forced update
-   * @return array keyed by adapter name containing bundle names
+   * @return array keyed by entity id containing entity field info
    */
-  protected function getEntityInfo($id,$cached = TRUE) {
+  protected function getEntityInfo(array $ids,array $fields,$cached = FALSE) {
     
     $entity_info = &$this->entity_info;
-    if ($cached && isset($entity_info[$id])) return $entity_info[$id];
-    $info = array();
+    if ($cached) {
+      $ids = array_diff_key($ids,$ntity_info);
+      if (empty($ids)) return $entity_info;
+    }
     $adapters = entity_load_multiple('wisski_salz_adapter');
-//    dpm($adapters);
+//    dpm(serialize($adapters));
+    $info = array();
     foreach ($adapters as $adapter) {
-      $info = array();
       try {
-        $info = $adapter->getEngine()->load($id);
+        $adapter_info = $adapter->getEngine()->loadFieldValues($ids,$fields);
+        foreach($adapter_info as $entity_id => $entity_values) {
+          if (!isset($info[$entity_id])) $info[$entity_id] = $entity_values;
+          else $info[$entity_id] = array_merge($info[$entity_id],$entity_values);
+        }
       } catch (\Exception $e) {
-        drupal_set_message('Could not load entity '.$id);
+        drupal_set_message('Could not load entities in adapter '.$adapter->id());
       }
     }
-    $entity_info[$id] = $info;
+    $entity_info = array_merge($entity_info,$info);
+    //dpm(func_get_args()+array('result'=>$info),__METHOD__);
     return $info;
   }
 

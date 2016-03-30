@@ -2,7 +2,8 @@
 
 namespace Drupal\wisski_adapter_yaml\Query;
 
-use Drupal\wisski_core\Query\Query as QueryBase;
+use Drupal\wisski_salz\Query\Query as QueryBase;
+use Drupal\wisski_salz\Query\ConditionAggregate;
 use Drupal\wisski_adapter_yaml\Plugin\wisski_salz\Engine\YamlAdapterEngine;
 
 class Query extends QueryBase {

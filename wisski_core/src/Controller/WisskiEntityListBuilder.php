@@ -47,9 +47,9 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    */
   public function buildRow(EntityInterface $entity) {
 
-    dpm($entity->tellMe('id','bundle'));
+//    dpm($entity->tellMe('id','bundle'));
     $row['id'] = $id = $entity->id();
-    echo "Hello ".$id;
+//    echo "Hello ".$id;
     $row['name'] = Link::createFromRoute($entity->name->value,'entity.wisski_individual.view',array('wisski_individual'=>$id));
     $row['bundle'] = $entity->bundle();
     

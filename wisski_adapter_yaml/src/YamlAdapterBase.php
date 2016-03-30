@@ -17,9 +17,12 @@ abstract class YamlAdapterBase extends EngineBase {
 
   protected $entity_string;
   
+  /**
+   * {@inheritdoc}
+   */
   public function defaultConfiguration() {
     return parent::defaultConfiguration() + array(
-      'entity_string' => "4711:\n - eid: 4711\n - bundle: e21_person\n - name: Sonic the Hedgehog\n - birth_day: 2016-03-22",
+      'entity_string' => "4711:\n eid: 4711\n bundle: e21_person\n name: Sonic the Hedgehog\n birth_day: 2016-03-22",
     );
   }
 

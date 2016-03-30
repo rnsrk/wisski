@@ -11,6 +11,7 @@ use Drupal\Component\Plugin\PluginInspectionInterface;
 use Drupal\wisski_salz\ExternalEntityInterface;
 use Drupal\Component\Plugin\ConfigurablePluginInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 
 /**
  * Defines an interface for external entity storage client plugins.
@@ -28,6 +29,9 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
 
   /**
    * Loads all field data for multiple entities.
+   *
+   * If there is no entity with a given ID handled by this adapter i.e. we got no information about it
+   * there MUST NOT be an entry with that ID in the result array.
    *
    * Note that this function gets passed Drupal entity IDs.
    * The engine is responsible for doing whatever ID handling/mapping/managing
@@ -65,5 +69,5 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * @param $conjunction thetype of condition conjunction used i.e. AND or OR
    * @return \drupal\wisski_salz\WisskiQueryInterface
    */
-   public function getQueryObject($entity_type,$conjunction,array $namespaces);
+   public function getQueryObject(EntityTypeInterface $entity_type,$conjunction,array $namespaces);
 }
