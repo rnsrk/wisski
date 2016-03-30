@@ -24,42 +24,6 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   private $entity_info = array();
 
   /**
-   * Dummy Construcor for Testing purposes
-   * @TODO override
-   */
-   public function __construct(EntityTypeInterface $entity_type, EntityManagerInterface $entity_manager, CacheBackendInterface $cache) {
-     parent::__construct($entity_type,$entity_manager,$cache);
-   }
-
-  /**
-   * !!! inherited from SqlContentEntityStorage. This should NEVER be called
-   * since our class does not inherit from there.
-   * This function is actually called by the Views module. 
-   */
-/*  public function getTableMapping(array $storage_definitions = NULL) {
-  
-    $definitions = $storage_definitions ? : \Drupal::getContainer()->get('entity.manager')->getFieldStorageDefinitions($this->entityTypeId);
-    if (!empty($definitions)) {
-      if (\Drupal::moduleHandler()->moduleExists('devel')) {
-        dpm($definitions,__METHOD__);
-      } else drupal_set_message('Non-empty call to '.__METHOD__);
-    }
-    return NULL;
-  }
-  */
-  /**
-   * {@inheritdoc}
-   */
-/*  public function loadMultiple(array $ids = NULL) {
-    $ents = array();
-    foreach ($ids as $id) {
-      $ents[$id] = $this->load($id);
-    }
-    return $ents;
-  }
-*/
-
-  /**
    * {@inheritdoc}
    */
   protected function doLoadMultiple(array $ids = NULL) {

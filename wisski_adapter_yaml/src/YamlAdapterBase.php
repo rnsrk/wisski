@@ -30,6 +30,7 @@ abstract class YamlAdapterBase extends EngineBase {
    * {@inheritdoc}
    */
   public function setConfiguration(array $configuration) {
+  dpm(func_get_args(),__METHOD__);
     parent::setConfiguration($configuration);
     $this->entity_string = $this->configuration['entity_string'];
   }
@@ -62,8 +63,10 @@ abstract class YamlAdapterBase extends EngineBase {
    * {@inheritdoc}
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
+
     parent::buildConfigurationForm($form, $form_state);
     $this->entity_string = $form_state->getValue('entity_string');
+    $this->id = $form_state->getValue('id');
   }
   
 }
