@@ -35,7 +35,6 @@ class WisskiPathForm extends EntityForm {
     // the form() function will not accept additional args,
     // but this function does
     // so we have to override this one to get hold of the pb id
-
     $this->pb = $wisski_pathbuilder;
     return parent::buildForm($form, $form_state, $wisski_pathbuilder);
   }
@@ -45,45 +44,36 @@ class WisskiPathForm extends EntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {    
- 
+     
     $form = parent::form($form, $form_state);
-        
+    
+    // get the entity    
     $path = $this->entity;
 
+    // do we have an engine for queries?
     $got_engine = FALSE;
 
+    // load the pb entity this path currently is attached to 
+    // we found this out by the url we're coming from!
     $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($this->pb);
 
-#    drupal_set_message(serialize($pb));
-#    return;
-    
+    // load the adapter of the pb
     $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapter());
-#    drupal_set_message($this->pb);
-   # return;
-   # drupal_set_message(serialize($adapter));
+
+    // if there was an adapter
     if ($adapter) {
-      // this is the engine that must implement the PathbuilderEngineInterface
-      // currently the adapter must have the same machine name as the pb
+      // then we can get the engine
       $engine = $adapter->getEngine();    
-     # drupal_set_message('engine: ' . serialize($engine));
+
       if ($engine) $got_engine = TRUE;
-    }
+    } // else we should fail here I think.
 
     // Change page title for the edit operation
     if($this->operation == 'edit') {
       $form['#title'] = $this->t('Edit Path: @id', array('@id' => $path->getID()));
     }
                                                                                                             
-/**    
-    $form['item'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Add Item'),
-      '#collapsible' => FALSE,
-      '#tree' => TRUE,
-      '#weight' => -2,
-    );
-                                            
- */   
+    // the name for this path
     $form['name'] = array(
       '#type' => 'textfield',
       '#maxlength' => 255,
@@ -93,10 +83,10 @@ class WisskiPathForm extends EntityForm {
       '#required' => true,
     );
     
+    // automatically calculate a machine name based on the name field
     $form['id'] = array(
       '#type' => 'machine_name',
       '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
-     # '#default_value' => !empty($path->getID()) ? $path->getID() : 'path',
       '#default_value' => $path->getID(),
       '#disabled' => !$path->isNew(),
       '#machine_name' => array(
@@ -105,243 +95,75 @@ class WisskiPathForm extends EntityForm {
       ),
     );
     
-    
- /*   $path_options_first = array(
-      '0' => $this->t('Select one'),
-      'x0' =>  $this->t('ecrm:E1_CRM_Entity'),
-      'x1' => $this->t('ecrm:E39_Actor'),
-      'x2' => $this->t('ecrm:E82_Actor_Appellation'),
+    // the name for this path
+    $form['type'] = array(
+      '#type' => 'select',
+      '#title' => $this->t('Path Type'),
+      '#options' => array("Path" => "Path", "Group" => "Group", "SmartGroup" => "SmartGroup"),
+      '#default_value' => $path->getType(),
+      '#description' => $this->t("Is this Path a group?"),
     );
- */   
+    
+    // only ask for alternatives if there is an engine.
     if ($got_engine) {
       // you must set the options like this:
       $path_options = $engine->getPathAlternatives();
-  /*    if ($form_state->getValue('path_array')) {
-        $path_options = $engine->getPathAlternatives($form_state->getValue('path_array'));
-       # $path_options_first = $engine->getPathAlternatives($form_state->getValue('path_array'));
-        drupal_set_message('path options: ' . serialize($path_options));
-        drupal_set_message('path options first: ' . serialize($path_options_first));    
-      }*/
     }
-                                                             
-  /**  
+
     $form['path_array'] = array(
-      '#type' => 'select',
-      '#title' => $this->t('Path'),
-      #'#default_value' => $path->getPathArray(),
-   #   '#default_value' => $selected,
-      '#description' => $this->t("Select the next step of the path."),
-       // The prefix/suffix provide the div that we're replacing, named by
-       // #ajax['wrapper'] above.
-      '#prefix' => '<div id="path_array_div">',
-      '#suffix' => '</div>',                      
-      '#options' => $path_options_first,  
-      #'#required' => true,
-      '#ajax' => array(
-        'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
-        'wrapper' => 'path_array_div',
-        'effect' => 'slide',
-        #'event' => 'keyup',
-        #'progress' => array(
-         # 'type' => 'throbber', 
-          #'message' => NULL
-        #),
-      ),     
-    );
-  */  
-   $form['path_array'] = array(
       '#type' => 'markup',
       '#tree' => TRUE,
-     # '#title' => $this->t('Path'),
-      #'#default_value' => $path->getPathArray(),
-      #   '#default_value' => $selected,
-    # '#description' => $this->t("Select the next step of the path."),
      // The prefix/suffix provide the div that we're replacing, named by
-     // #ajax['wrapper'] above.
+     // #ajax['wrapper'] below.
      '#prefix' => '<div id="path_array_div">',
      '#suffix' => '</div>',
      '#value' => "",
       
-    # '#options' => $path_options_first,
-    # '#ajax' => array(
-    #   'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
-    #   'wrapper' => 'path_array_div',
-    #   'effect' => 'slide',
-    # ),
-   );
-                                                                                              
-#  drupal_set_message('form_state: ' . serialize($form_state));
+    );
 
-  $input = $form_state->getUserInput();#
-#  drupal_set_message('INPUT: ' . serialize($input));
-  
- # $path = $form_state->getValue('item')['hidden_path'];
-  if(empty($form_state->getValue('path_array')))
-    $existing_paths = $path->getPathArray();
-  else
-    $existing_paths = $form_state->getValue('path_array');
+    // read the userinput
+    #$input = $form_state->getUserInput();#
 
-#  drupal_set_message(serialize($existing_paths));
-#
-#  drupal_set_message(serialize($form_state));
+    // if there was something in form_state - use that because it is likely more accurate
+    if(empty($form_state->getValue('path_array')))
+      $existing_paths = $path->getPathArray();
+    else
+      $existing_paths = $form_state->getValue('path_array');
 
-#  if(!empty($input)) {
-/*
-  if(!empty($form_state->getTriggeringElement())) {
-    $input_path = $input[$input['_triggering_element_name']];
-
-    drupal_set_message("my ep is: " . serialize($existing_paths));  
-#    drupal_set_message("ip: " . serialize($input_path));
-#    drupal_set_message(serialize($form_state));
-
-    drupal_set_message("as: " . serialize((array_search("0", $existing_paths))));
-    
-#    if(!empty($input)) {
+    // if there is no new field create one
     if(array_search("0", $existing_paths) === FALSE)
       $existing_paths[] = "0";
-#    }
-  }
- */   
-#  drupal_set_message("ep: " . serialize($existing_paths));
 
-/*  
-  $form['hidden_path'] = array(
-    '#type' => 'hidden',
-    '#value' => $existing_paths,
-  );
- */
- /* 
-  if(count($existing_paths) == 0)
-    $existing_paths[0] = 0;
-  */  
-  if(array_search("0", $existing_paths) === FALSE)
-    $existing_paths[] = "0";
-    
-#  drupal_set_message("eptosave: " . serialize($existing_paths));
-
-/*
-  $form['hidden_path'] = array(
-    '#type' => 'hidden',
-    '#value' => $existing_paths,
-  );
- */ 
-  $curvalues = $existing_paths;#$form_state->getValue('path_array');
-
-  #$curvalues[] = 0;
-
-#  drupal_set_message('curvalues is: ' . serialize($curvalues));
+    $curvalues = $existing_paths;
   
-  foreach($curvalues as $key => $element) {
-
-#    drupal_set_message('curvalues: ' . serialize($curvalues));
-#    drupal_set_message("key is: " . $key);
-#    drupal_set_message("key - 1 is: " . ($key-1));
-#    drupal_set_message("element is: " . $element);
-#    drupal_set_message('TEST ' . serialize($curvalues[($key-1)]));
+    // go through all values and create fields for them
+    foreach($curvalues as $key => $element) {
    
-   if(!empty($curvalues[($key-1)])) {
-#     drupal_set_message("asking for: " . serialize($curvalues[($key-1)]));
-     // function getPathAlternatives takes as paramter an array of the previous steps 
-     // or an empty array if this is the beginning of the path.        
-     $path_options = $engine->getPathAlternatives(array($curvalues[($key-1)]));
-   } else {
-     $path_options = $engine->getPathAlternatives();
-   }    
+      if(!empty($curvalues[($key-1)])) {
+
+       // function getPathAlternatives takes as paramter an array of the previous steps 
+       // or an empty array if this is the beginning of the path.        
+        $path_options = $engine->getPathAlternatives(array($curvalues[($key-1)]));
+      } else {
+        $path_options = $engine->getPathAlternatives();
+      }    
                   
-    $form['path_array'][$key] = array(
-      '#default_value' => $element,
+      $form['path_array'][$key] = array(
+        '#default_value' => $element,
    # '#key_type' => 'associative',
    # '#multiple_toggle' => '1',
-      '#type' => 'select',
-      '#options' => array_merge(array("0" => 'Please select.'), $path_options),
-      '#title' => t('Step ' . $key . ': Select the next step of the path'),
-      '#ajax' => array(
-        'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
-        'wrapper' => 'path_array_div',
-        'effect' => 'slide',        
-        'event' => 'change', 
-      ),
-    );    
-  }
- 
- 
- # if (!empty($form_state->getValue('path_array'))) {
-  #   $form['path_array']['#description'] = t("Hello '@value'", array('@value' => $form_state->getValue('path_array')));
-  #}
-     
- #  if ($form_state->getValue('path_array')!='0') {
-   #   drupal_set_message(t("The value of path is not empty: '@value'", array('@value' => $form_state->getValue('path_array'))));
-   // This entire form element will be replaced whenever 'changethis' is updated.
-  /** $form['new_select'] = array(
-     '#type' => 'select',
-     '#title' => t("Select step 2 of the path"),
-     // The prefix/suffix provide the div that we're replacing, named by
-     // #ajax['wrapper'] above.
-     '#prefix' => '<div id="new_select_div">',
-     '#suffix' => '</div>',
-     '#options' => $path_options,
-   );
-   */
-#  } 
-    // In d8 the newly added FormStateInterface is used instead of an array for $form_state,
-    // use the appropriate function instead, in this case $form_state->getValue().
-    // Look at https://www.drupal.org/node/2310411 for more details
-     # $wisski_core_config->set('wisski_core_lod_uri_templates', array('' => $base_url .  '/' . $form_state->getValue('template')));
-     
-                    
-   // An AJAX request calls the form builder function for every change.
-   // We can change how we build the form based on $form_state.
-   #if (!empty($form_state['values']['path_array'])) {   
-  # if (!empty($form_state->getValue('path_array'))) {
-   #  $form['replace_textfield']['#description'] = t("Say why you chose '@value'", array('@value' => $form_state->getValue('path_array')));
-   #} 
-  /**  
-    $form['datatype_property'] = array(
-      '#type' => 'select',
-      '#title' => $this->t('Available datatype properties'),
-      '#default_value' => $path->getDatatypeProperty(),
-      #'#description' => $this->t("Available datatype properties."),
-      '#options' => [
-        '0' => $this->t('Select one'),
-        '1' => $this->t('ecrm:P3_has_note'),
-        '2' => $this->t('test:T1_has_testdatatype'),
-      ],
-       #'#required' => true,
-      );
-                                                                                                                                          
-    $form['short_name'] = array(
-      '#type' => 'textfield',
-      '#maxlength' => 255,
-      '#title' => $this->t('Short Name'),
-      '#default_value' => $path->getShortName(),
-      '#description' => $this->t("The short name of the path."),
-      #'#required' => true,
-    );
+        '#type' => 'select',
+        '#options' => array_merge(array("0" => 'Please select.'), $path_options),
+        '#title' => t('Step ' . $key . ': Select the next step of the path'),
+        '#ajax' => array(
+          'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
+          'wrapper' => 'path_array_div',
+#          'effect' => 'slide',        
+          'event' => 'change', 
+        ),
+      );    
+    }
     
-    $form['description'] = array(
-      '#type' => 'textfield',
-      '#maxlength' => 255,
-      '#title' => $this->t('Description'),
-      '#default_value' => $path->getDescription(),
-      '#description' => $this->t("Description of this group or path."),
-       #'#required' => true,
-     );
-     
-    $form['disamb'] = array(
-      '#type' => 'select',
-      #'#description' => $this->t("Available datatype properties."),
-      '#options' => [
-        '0' => $this->t('no disambiguation'),
-        '1' => $this->t('user disambiguation'),
-        '2' => $this->t('ecrm:E35_Title'),
-      ],                                      
-      '#title' => $this->t('Disambiguation'),
-      '#default_value' => $path->getDisamb(),
-      '#description' => $this->t("Select the option for disambiguation."),
-      #'#required' => true,
-      
-    );
-  **/                                                                                          
     return $form;
   }
   

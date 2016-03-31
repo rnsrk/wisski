@@ -108,6 +108,21 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       
       return true;      
     }
+    
+    public function getMainGroups() {
+      $maingroups = array();
+      foreach($this->getPathTree() as $potmainpath) {
+        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potmainpath["id"]);
+        
+#        drupal_set_message(serialize($potmainpath["id"]));
+        
+        if($path->isGroup())
+          $maingroups[] = $path->id();
+      }
+      
+      return $maingroups;
+      #drupal_set_message(serialize($this->getPathTree()));
+    }
               
   } 
               

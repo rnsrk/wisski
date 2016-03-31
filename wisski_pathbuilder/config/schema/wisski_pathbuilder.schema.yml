@@ -69,6 +69,6 @@ wisski_pathbuilder.wisski_path.*:
     description:
       type: string
       label: 'Description'
-    group:
-      type: boolean
-      label: 'Group'
+    type:
+      type: string
+      label: 'Type of the Path'

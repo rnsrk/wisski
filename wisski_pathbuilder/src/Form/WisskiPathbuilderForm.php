@@ -31,7 +31,8 @@ class WisskiPathbuilderForm extends EntityForm {
     
     // what entity do we work on?
     $pathbuilder = $this->entity;
-    
+
+#    drupal_set_message(serialize($pathbuilder->getMainGroups()));    
     // Change page title for the edit operation
     if($this->operation == 'edit') {
       $form['#title'] = $this->t('Edit Pathbuilder: @id', array('@id' => $pathbuilder->id()));
@@ -44,11 +45,6 @@ class WisskiPathbuilderForm extends EntityForm {
       '#default_value' => $pathbuilder->getName(),
       '#description' => $this->t("Name of the Pathbuilder-Tree."),
       '#required' => true,
-#      '#disabled' => !$pathbuilder->isNew(),
-#      '#machine_name' => array(
-#        'source' => array('name'),
-#        'exists' => 'wisski_pathbuilder_load',
-#      ),
     );
     
     // we need an id
@@ -199,7 +195,7 @@ class WisskiPathbuilderForm extends EntityForm {
         '#links' => $links,
       );
      # drupal_set_message('PATH ID: ' . $path->getID());
-      drupal_set_message('OPS: ' . serialize($operations));
+#      drupal_set_message('OPS: ' . serialize($operations));
      # drupal_set_message('ITEM: ' . serialize($pathform['#item']));
      # drupal_set_message('Link: ' . serialize($links['edit']));
      # $form['pathbuilder_table'][$path->id()]['operations'] = $pathform['operations'];       
@@ -289,14 +285,21 @@ class WisskiPathbuilderForm extends EntityForm {
   #  $pathform['title'] = '<a href="/dev/contact" data-drupal-selector="edit-links-menu-plugin-idcontactsite-page-title-1" id="edit-links-menu-plugin-idcontactsite-page-title-1" class="menu-item__link">Contact</a>';
     #$path->name;
     $pathform['title'] = array('#type' => 'label', '#title' =>  $path->getName());   
+
     if (!$enabled) {
       $pathform['title']['#suffix'] = ' (' . $this->t('disabled') . ')';
     }
     
     $pathform['path'] = array(
-      '#type' => 'label',
-      '#title' => $path->printPath(),
+      '#type' => 'item',
+      '#markup' => $path->printPath(),
      );
+     
+     // if it is a group, mark it as such.
+     if($path->isGroup()) {
+       $pathform['path']['#markup']  = 'Group [' . $pathform['path']['#markup'];
+       $pathform['path']['#markup'] .= ']';
+     }
       
     $pathform['enabled'] = array(
       '#type' => 'checkbox',

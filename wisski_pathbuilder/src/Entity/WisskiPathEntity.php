@@ -110,11 +110,13 @@ class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
   protected $weight;
   
    /**
-    * True if this path is a group, false otherwise.
+    * "Group" if this path is a group
+    " "SmartGroup" if this path is a SmartGroup
+    * "Path" if this path is a regular path
     *
-    * @var boolean
+    * @var string
     */
-  protected $group;
+  protected $type;
   
   /**
     * True if this path is a enabled, false otherwise.
@@ -187,15 +189,22 @@ class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
     $this->description = $description;
   }
                
-  public function getGroup(){
-    return $this->group;
+  public function isGroup(){
+    if($this->type == "Group" || $this->type == "SmartGroup")
+      return true;
+    else
+      return false;
   }
   
-  public function setGroup($group){
-    $this->group = $group;
+  public function getType(){
+    return $this->type;
+  }
+  
+  public function setType($type){
+    $this->type = $type;
   }
          
-  public function getEnabled(){
+  public function isEnabled(){
     return $this->enabled;
   }
   
@@ -209,10 +218,11 @@ class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
   
   public function printPath(){
     $out = "";
+      
     foreach($this->getPathArray() as $step) {
       $out .= empty($out) ? $step : ' -> ' . $step;
     }
-    
+        
     return $out;
   }
                                        
