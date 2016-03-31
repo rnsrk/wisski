@@ -29,15 +29,14 @@ class QueryFactory implements QueryFactoryInterface {
 
 
 //    dpm(func_get_args(),__METHOD__);
-    $adapters = entity_load_multiple('wisski_salz_adapter');
+    $adapter = entity_load('wisski_salz_adapter', 'sp11wpb');
 
     // iterate through all adapters and go for it.
     // Nasty assumption - this might break due to stupidity of the programmers.
     // Enable super magic main query as master thing whatever something...
-    foreach($adapters as $adapter) {    
-      $query = $adapter->getQueryObject($entity_type,$conjunction,$this->namespaces);
-    }
-//    dpm($query);
+    $query = $adapter->getQueryObject($entity_type,$conjunction,$this->namespaces);
+
+#    dpm($adapter);
     return $query;
   }
 

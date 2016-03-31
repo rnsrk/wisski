@@ -24,7 +24,7 @@ class WisskiEntityForm extends ContentEntityForm {
     //dpm($entity);
     $entity->save();
     $bundle = $entity->get('bundle');
-    dpm($bundle,__METHOD__);
+#    dpm($bundle,__METHOD__);
     $form_state->setRedirect('<front>');
   }
   

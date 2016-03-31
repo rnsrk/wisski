@@ -47,6 +47,15 @@ entity.wisski_path.add_form:
   requirements:
     _permission: 'administer site configuration'
 
+entity.wisski_pathbuilder.configure_field_form:
+  path: '/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/field_config/{wisski_path}'
+ # path: '/admin/config/wisski/path/{wisski_path}'
+  defaults:
+    _entity_form: 'wisski_pathbuilder.configure_field_form'
+    _title: 'Edit Path'
+  requirements:
+    _permission: 'administer site configuration'
+
 entity.wisski_pathbuilder.add_existing_form:
   path: '/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/add_existing'
   defaults:
