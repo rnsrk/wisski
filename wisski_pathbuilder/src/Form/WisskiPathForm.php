@@ -51,9 +51,15 @@ class WisskiPathForm extends EntityForm {
     $path = $this->entity;
 
     $got_engine = FALSE;
+
+    $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($this->pb);
+
+#    drupal_set_message(serialize($pb));
+#    return;
     
-    $adapter = entity_load('wisski_salz_adapter', $this->pb);
-   # drupal_set_message($this->pb);
+    $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapter());
+#    drupal_set_message($this->pb);
+   # return;
    # drupal_set_message(serialize($adapter));
     if ($adapter) {
       // this is the engine that must implement the PathbuilderEngineInterface
@@ -67,34 +73,7 @@ class WisskiPathForm extends EntityForm {
     if($this->operation == 'edit') {
       $form['#title'] = $this->t('Edit Path: @id', array('@id' => $path->getID()));
     }
-    
-
-/**
-    $form['id'] = array(
-      '#type' => 'machine_name',
-      '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
-      '#default_value' => $path->getID(),
-      '#disabled' => !$path->isNew(),
-      '#machine_name' => array(
-      'source' => array('name'),
-      'exists' => 'wisski_path_load',
-      ),
-    );
-                                                         
-    $form['name'] = array(
-      '#type' => 'textfield',
-      '#maxlength' => 255,
-      '#title' => $this->t('Name'),
-      '#default_value' => $path->getName(),
-      '#description' => $this->t("Name of the path."),
-      '#required' => true,
-    #      '#disabled' => !$pathbuilder->isNew(),
-    #      '#machine_name' => array(
-    #        'source' => array('name'),
-    #        'exists' => 'wisski_pathbuilder_load',
-    #      ),
-    );
- */                                                                                                        
+                                                                                                            
 /**    
     $form['item'] = array(
       '#type' => 'fieldset',
@@ -109,7 +88,7 @@ class WisskiPathForm extends EntityForm {
       '#type' => 'textfield',
       '#maxlength' => 255,
       '#title' => $this->t('Name'),
-      '#default_value' => $path->getName(),
+      '#default_value' => empty($path->getName()) ? $this->t('Name for the path') : $path->getName(),
       '#description' => $this->t("Name of the path."),
       '#required' => true,
     );
@@ -191,55 +170,74 @@ class WisskiPathForm extends EntityForm {
     # ),
    );
                                                                                               
-  drupal_set_message('form_state: ' . serialize($form_state));
+#  drupal_set_message('form_state: ' . serialize($form_state));
 
-  $input = $form_state->getUserInput();
-  drupal_set_message('INPUT: ' . serialize($input));
+  $input = $form_state->getUserInput();#
+#  drupal_set_message('INPUT: ' . serialize($input));
   
  # $path = $form_state->getValue('item')['hidden_path'];
-  $existing_paths = $form_state->getValue('hidden_path');
+  if(empty($form_state->getValue('path_array')))
+    $existing_paths = $path->getPathArray();
+  else
+    $existing_paths = $form_state->getValue('path_array');
+
+#  drupal_set_message(serialize($existing_paths));
+#
+#  drupal_set_message(serialize($form_state));
 
 #  if(!empty($input)) {
+/*
   if(!empty($form_state->getTriggeringElement())) {
     $input_path = $input[$input['_triggering_element_name']];
-  
-    drupal_set_message("ip: " . serialize($input_path));
+
+    drupal_set_message("my ep is: " . serialize($existing_paths));  
+#    drupal_set_message("ip: " . serialize($input_path));
 #    drupal_set_message(serialize($form_state));
+
+    drupal_set_message("as: " . serialize((array_search("0", $existing_paths))));
     
 #    if(!empty($input)) {
-      $existing_paths[] = 0;
+    if(array_search("0", $existing_paths) === FALSE)
+      $existing_paths[] = "0";
 #    }
   }
-    
-  drupal_set_message("ep: " . serialize($existing_paths));
+ */   
+#  drupal_set_message("ep: " . serialize($existing_paths));
 
 /*  
   $form['hidden_path'] = array(
     '#type' => 'hidden',
     '#value' => $existing_paths,
   );
- */ 
+ */
+ /* 
   if(count($existing_paths) == 0)
     $existing_paths[0] = 0;
+  */  
+  if(array_search("0", $existing_paths) === FALSE)
+    $existing_paths[] = "0";
     
-  drupal_set_message("eptosave: " . serialize($existing_paths));
+#  drupal_set_message("eptosave: " . serialize($existing_paths));
 
+/*
   $form['hidden_path'] = array(
     '#type' => 'hidden',
     '#value' => $existing_paths,
   );
-  
-  $curvalues = $form_state->getValue('path_array');
+ */ 
+  $curvalues = $existing_paths;#$form_state->getValue('path_array');
 
-  $curvalues[] = 0;
+  #$curvalues[] = 0;
+
+#  drupal_set_message('curvalues is: ' . serialize($curvalues));
   
   foreach($curvalues as $key => $element) {
 
-    drupal_set_message('curvalues: ' . serialize($curvalues));
-    drupal_set_message("key is: " . $key);
-    drupal_set_message("key - 1 is: " . ($key-1));
-    drupal_set_message("element is: " . $element);
-    drupal_set_message('TEST ' . serialize($curvalues[($key-1)]));
+#    drupal_set_message('curvalues: ' . serialize($curvalues));
+#    drupal_set_message("key is: " . $key);
+#    drupal_set_message("key - 1 is: " . ($key-1));
+#    drupal_set_message("element is: " . $element);
+#    drupal_set_message('TEST ' . serialize($curvalues[($key-1)]));
    
    if(!empty($curvalues[($key-1)])) {
 #     drupal_set_message("asking for: " . serialize($curvalues[($key-1)]));
@@ -255,7 +253,7 @@ class WisskiPathForm extends EntityForm {
    # '#key_type' => 'associative',
    # '#multiple_toggle' => '1',
       '#type' => 'select',
-      '#options' => array_merge(array(0 => 'Please select.'), $path_options),
+      '#options' => array_merge(array("0" => 'Please select.'), $path_options),
       '#title' => t('Step ' . $key . ': Select the next step of the path'),
       '#ajax' => array(
         'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
@@ -391,6 +389,13 @@ class WisskiPathForm extends EntityForm {
     
     $path = $this->entity;
     
+    $patharray = $path->getPathArray();
+        
+    if($patharray[count($patharray) -1] == "0") {
+      unset($patharray[count($patharray) -1]);
+      $path->setPathArray($patharray);
+    }
+    
     $status = $path->save();
     
     if($status) {
@@ -413,7 +418,8 @@ class WisskiPathForm extends EntityForm {
       $store_name = $args[1];
       // args[0] is the store type name
       $wisski_pathbuilder = $args[0];
-   */                      
+   */
+   /*                      
     $wisski_pathbuilder = '';
     // get the current internal path to search for the pathbuilder id component
     $url = Url::fromRoute('<current>');
@@ -446,13 +452,16 @@ class WisskiPathForm extends EntityForm {
       }  
     } 
     
- 
+    */
     # $wisski_pathbuilder = 'pb';
     // in d8 you have to redirect like this, if you have a slug like {wisski_pathbuilder} in the routing.yml file:
     #$url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.overview')
     #                 ->setRouteParameters(array('wisski_pathbuilder'=>$wisski_pathbuilder));
-    $redirect_url = \Drupal\Core\Url::fromRoute('entity.wisski_path.edit_form')
-                         ->setRouteParameters(array('wisski_pathbuilder'=>$wisski_pathbuilder, 'wisski_path'=>$path->getID()));
+    #$redirect_url = \Drupal\Core\Url::fromRoute('entity.wisski_path.edit_form')
+    #                     ->setRouteParameters(array('wisski_pathbuilder'=>$wisski_pathbuilder, 'wisski_path'=>$path->getID()));
+    $redirect_url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.edit_form')
+                          ->setRouteParameters(array('wisski_pathbuilder'=>$this->pb));
+        
                          
     $form_state->setRedirectUrl($redirect_url);             
  }
