@@ -83,7 +83,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     );
 
     
-    drupal_set_message(serialize($this->pathbuilder->getPathTree()));
+#    drupal_set_message(serialize($this->pathbuilder->getPathTree()));
     
     $tree = $this->pathbuilder->getPathTree();
 
@@ -116,7 +116,35 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-    drupal_set_message(serialize($form_state));    
+
+    $field_storage_values = [
+      'field_name' => $form_state->getValue('field'),#$values['field_name'],
+      'entity_type' => 'wisski_individual',
+      'type' => 'text',
+      'translatable' => TRUE,
+    ];
+    
+    $field_values = [
+      'field_name' => $form_state->getValue('field'),
+      'entity_type' => 'wisski_individual',
+      'bundle' => $form_state->getValue('bundle'),
+      'label' => $form_state->getValue('field'),
+      // Field translatability should be explicitly enabled by the users.
+      'translatable' => FALSE,
+    ];
+    
+#    $field_storage_values = array();
+
+    // there this stands that in field_create_field was
+ #   $field_values = array();
+
+# drupal_set_message("bla: " . serialize($form_state->getValue('field')));
+
+    $this->entityManager->getStorage('field_storage_config')->create($field_storage_values)->save();
+    $field = $this->entityManager->getStorage('field_config')->create($field_values);
+    $field->save();
+    
+#    drupal_set_message(serialize($form_state));    
   }
 
 }
