@@ -15,7 +15,7 @@ class WisskiEntityForm extends ContentEntityForm {
     //dpm($this->getEntity());
     return $form;
   }
- 
+
   public function save(array $form, FormStateInterface $form_state) {
     
     $entity = $this->getEntity();
