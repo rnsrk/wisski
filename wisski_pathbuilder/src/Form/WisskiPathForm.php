@@ -123,12 +123,17 @@ class WisskiPathForm extends EntityForm {
 
     // read the userinput
     #$input = $form_state->getUserInput();#
+    
+    $existing_paths = array();
 
     // if there was something in form_state - use that because it is likely more accurate
-    if(empty($form_state->getValue('path_array')))
-      $existing_paths = $path->getPathArray();
-    else
+    if(empty($form_state->getValue('path_array'))) {
+      if(!empty( $path->getPathArray() ))
+        $existing_paths = $path->getPathArray();
+    } else 
       $existing_paths = $form_state->getValue('path_array');
+
+    
 
     // if there is no new field create one
     if(array_search("0", $existing_paths) === FALSE)

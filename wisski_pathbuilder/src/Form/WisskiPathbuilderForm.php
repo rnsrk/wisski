@@ -32,6 +32,7 @@ class WisskiPathbuilderForm extends EntityForm {
     // what entity do we work on?
     $pathbuilder = $this->entity;
 
+
 #    drupal_set_message(serialize($pathbuilder->getMainGroups()));    
     // Change page title for the edit operation
     if($this->operation == 'edit') {
@@ -182,6 +183,14 @@ class WisskiPathbuilderForm extends EntityForm {
         'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.edit_form')
                    ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->getID(), 'wisski_path' => $path->getID())),
       );
+      
+      $links['fieldconfig'] = array(
+        'title' => $this->t('Configure Field'),
+       # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->getID())),
+        'url' => \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.configure_field_form')
+                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->getID(), 'wisski_path' => $path->getID())),
+      );
+
       $links['delete'] = array(
         'title' => $this->t('Delete'),
         'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.delete_form')
@@ -203,59 +212,17 @@ class WisskiPathbuilderForm extends EntityForm {
 
       $form['pathbuilder_table'][$path->id()]['id'] = $pathform['id'];
       $form['pathbuilder_table'][$path->id()]['parent'] = $pathform['parent'];
-    
+      
+      $form['pathbuilder_table'][$path->id()]['bundle'] = $pathform['bundle'];
+      $form['pathbuilder_table'][$path->id()]['field'] = $pathform['field'];
 #      drupal_set_message(serialize($form['pathbuilder_table'][$path->id()]));
     }
-
-/*    
-    foreach($path_entities as $path) {
-      
-      $pathform = $this->pb_render_path($path);
-
-      $form['pathbuilder_table'][$path->id()]['#item'] = $pathform['#item'];
-      
-      // TableDrag: Mark the table row as draggable.
-      $form['pathbuilder_table'][$path->id()]['#attributes'] = $pathform['#attributes'];
-      $form['pathbuilder_table'][$path->id()]['#attributes']['class'][] = 'draggable';
-
-
-      // TableDrag: Sort the table row according to its existing/configured weight.
-      $form['pathbuilder_table'][$path->id()]['#weight'] = $path->getWeight();
-
-      // Add special classes to be used for tabledrag.js.
-      $pathform['parent']['#attributes']['class'] = array('menu-parent');
-      $pathform['weight']['#attributes']['class'] = array('menu-weight');
-      $pathform['id']['#attributes']['class'] = array('menu-id');
-
-      $form['pathbuilder_table'][$path->id()]['title'] = array(
-          array(
-            '#theme' => 'indentation',
-            '#size' => 0, //$pathform['#item']->depth - 1,
-          ),
-          $pathform['title'],
-      );
-      
-      #$form['pathbuilder_table'][$path->id()]['path'] = array('#type' => 'label', '#title' => 'Mu -> ha -> ha');
-      $form['pathbuilder_table'][$path->id()]['path'] = $pathform['path'];
-      $form['pathbuilder_table'][$path->id()]['enabled'] = $pathform['enabled'];
-      $form['pathbuilder_table'][$path->id()]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
-
-      $form['pathbuilder_table'][$path->id()]['weight'] = $pathform['weight'];
-
-        // Operations (dropbutton) column.
-      $form['pathbuilder_table'][$path->id()]['operations'] = $pathform['operations'];
-
-      $form['pathbuilder_table'][$path->id()]['id'] = $pathform['id'];
-      $form['pathbuilder_table'][$path->id()]['parent'] = $pathform['parent'];
-      drupal_set_message(serialize($form['pathbuilder_table'][$path->id()]));
-    }
- */
     
     return $form;
   }
   
   private function recursive_render_tree($grouparray, $parent = 0, $delta = 0, $depth = 0) {
-    $pathform[$grouparray['id']] = $this->pb_render_path($grouparray['id'], $grouparray['enabled'], $grouparray['weight'], $depth, $parent);
+    $pathform[$grouparray['id']] = $this->pb_render_path($grouparray['id'], $grouparray['enabled'], $grouparray['weight'], $depth, $parent, $grouparray['bundle'], $grouparray['field']);
     
     foreach($grouparray['children'] as $childpath) {
       $subform = $this->recursive_render_tree($childpath, $grouparray['id'], $delta, $depth +1);
@@ -266,7 +233,7 @@ class WisskiPathbuilderForm extends EntityForm {
     
   }
   
-  private function pb_render_path($pathid, $enabled, $weight, $depth, $parent) {
+  private function pb_render_path($pathid, $enabled, $weight, $depth, $parent, $bundle, $field) {
     $path = entity_load('wisski_path', $pathid);
     
     $pathform = array();
@@ -327,12 +294,21 @@ class WisskiPathbuilderForm extends EntityForm {
       '#value' => $parent,
     );
     
+    $pathform['bundle'] = array(
+      '#type' => 'hidden',
+      '#value' => $bundle,
+    );
+
+    $pathform['field'] = array(
+      '#type' => 'hidden',
+      '#value' => $field,
+    );
+    
  #   $pathform['path'] = array(
   #    '#type' => 'label',
    #   '#title' => $path->getPathArray(),
       #'#default_value' => $path->getEnabled(),
    # );
-                                 
 
     return $pathform;
   }
@@ -368,15 +344,14 @@ class WisskiPathbuilderForm extends EntityForm {
     $map = array();
     
     foreach($paths as $key => $path) {
-#      drupal_set_message("path: " . serialize($path));
 #      $pathtree = array_merge($pathtree, $this->recursive_build_tree(array($key => $path)));
 
       
       if(!empty($path['parent'])) { // it has parents... we have to add it somewhere
-        $map[$path['parent']]['children'][$path['id']] = array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array());
+        $map[$path['parent']]['children'][$path['id']] = array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array(), 'bundle' => $path['bundle'], 'field' => $path['field']);
         $map[$path['id']] = &$map[$path['parent']]['children'][$path['id']];
       } else { // it has no parent - so it is a main thing
-        $pathtree[$path['id']] = array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array());
+        $pathtree[$path['id']] = array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array(), 'bundle' => $path['bundle'], 'field' => $path['field']);
         $map[$path['id']] = &$pathtree[$path['id']];
       }
 

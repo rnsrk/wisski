@@ -21,7 +21,7 @@ class WisskiPathbuilderDeleteForm extends EntityConfirmFormBase {
    */
   public function getQuestion() {
     return $this->t('Are you sure you want to delete this pathbuilder: @id?',
-    array('@id' => $this->entity->id));
+    array('@id' => $this->entity->id()));
   }
   
   /**
@@ -47,7 +47,7 @@ class WisskiPathbuilderDeleteForm extends EntityConfirmFormBase {
     // Delete and set message
     $this->entity->delete();
     drupal_set_message($this->t('The pathbuilder @id has been deleted.',
-    array('@id' => $this->entity->id)));
+    array('@id' => $this->entity->id())));
     $form_state->setRedirectUrl($this->getCancelUrl());
   }
 

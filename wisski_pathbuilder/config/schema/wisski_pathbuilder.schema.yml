@@ -15,7 +15,7 @@ wisski_pathbuilder.wisski_pathbuilder.*:
       label: 'The adapter this pathbuilder belongs to.'
     pathtree:
       type: sequence
-      'label': 'Store an array of paths as quadrupel (ID, weight, enabled, children)'
+      'label': 'Store an array of paths as sextupel (ID, weight, enabled, children, bundle, field)'
       sequence:
         type: mapping
         mapping:

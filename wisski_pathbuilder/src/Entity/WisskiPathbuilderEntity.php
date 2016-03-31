@@ -23,6 +23,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
    *       "add_existing" = "Drupal\wisski_pathbuilder\Form\WisskiPathbuilderAddExistingForm",
    *       "edit" = "Drupal\wisski_pathbuilder\Form\WisskiPathbuilderForm",
    *       "delete" = "Drupal\wisski_pathbuilder\Form\WisskiPathbuilderDeleteForm",
+   *       "configure_field_form" = "Drupal\wisski_pathbuilder\Form\WisskiPathbuilderConfigureFieldForm",
    *     }
    *   },
    *   config_prefix = "wisski_pathbuilder",
@@ -63,7 +64,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
 
     /**
      * The hierarchical tree of paths consisting of three values:
-     * (id, weight, children) and children pointing to other triples.
+     * (id, weight, enabled, children, bundle, field) and children pointing to other triples.
      *
      * @var array
      */    
@@ -103,7 +104,13 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
     
     public function addPathToPathTree($pathid) {
       $pathtree = $this->getPathTree();
-      $pathtree[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'children' => array());
+      
+      #$pathtree[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'children' => array(), 'bundle' => 0, 'field' => 0);
+      // this is provisorical
+      // the bundle and the field should be filled
+      // in a separate form which is to be created by kerstin.
+      $pathtree[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'children' => array(), 'bundle' => 'e21_person', 'field' => $pathid);
+      
       $this->setPathTree($pathtree);
       
       return true;      

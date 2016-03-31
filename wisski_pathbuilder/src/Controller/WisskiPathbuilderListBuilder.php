@@ -47,13 +47,13 @@ class WisskiPathbuilderListBuilder extends ConfigEntityListBuilder {
   public function getDefaultOperations(EntityInterface $entity) {
     $operations = parent::getDefaultOperations($entity);
     
-    $url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.overview', ['wisski_pathbuilder' => $entity->id()]);
+#    $url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.overview', ['wisski_pathbuilder' => $entity->id()]);
                            
-    $operations['view_paths'] = array(
-      'title' => $this->t('View Paths'),
-      'weight' => 10,
-      'url' => $url, 
-    );
+#    $operations['view_paths'] = array(
+#      'title' => $this->t('View Paths'),
+#      'weight' => 10,
+#      'url' => $url, 
+#    );
                         
     return $operations;
   } 
