@@ -181,19 +181,26 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    if (isset($entity_info[$id])) return $entity_info[$id];
 #    return array();
     
-    $query = "SELECT ?s WHERE { ?s ?p ?o } LIMIT 10";
+    $query = "SELECT ?s WHERE { ?s a owl:Class } LIMIT 10";
     
     $result = $this->directQuery($query);
     
 #    drupal_set_message(serialize($result));
     
     $out = array();
+    $i = 999;
     
     foreach($result as $thing) {
-      $out[$thing->s->dumpValue("text")] = array('eid' => $thing->s->dumpValue("text"), 'bundle' => 'e21_person', 'name' => 'frizt');
+      $uri = $thing->s->dumpValue("text");
+      $uri = str_replace('/','\\',$uri);
+    
+      $out[$uri] = array('eid' => $uri, 'bundle' => 'e21_person', 'name' => 'frizt');#$thing->s->dumpValue("text"), 'bundle' => 'e21_person', 'name' => 'frizt');
+      $i++;
     }
     
-    return $out;
+    drupal_set_message("load single");
+    
+    return $out[$id];
   }
   
   public function loadMultiple($ids = NULL) {
@@ -201,17 +208,26 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    $this->entity_info = Yaml::parse($this->entity_string);
 #    dpm($this->entity_info,__METHOD__);
 #    if (is_null($ids)) return $this->entity_info;
-    $query = "SELECT ?s WHERE { ?s ?p ?o } LIMIT 10";
+    $query = "SELECT ?s WHERE { ?s a owl:Class } LIMIT 10";
     
     $result = $this->directQuery($query);
     
 #    drupal_set_message(serialize($result));
     
     $out = array();
-    
+    $i = 999;
     foreach($result as $thing) {
-      $out[$thing->s->dumpValue("text")] = array('eid' => $thing->s->dumpValue("text"), 'bundle' => 'e21_person', 'name' => 'frizt');
+      
+      $uri = $thing->s->dumpValue("text");
+      $uri = str_replace('/','\\',$uri);
+      
+      drupal_set_message("my uri is: " . htmlentities($uri));
+      
+      $out[$uri] = array('eid' => $uri, 'bundle' => 'e21_person', 'name' => 'frizt');
+      $i++;
     }
+    
+    drupal_set_message("load Mult...");
     
     return $out;
     
@@ -232,6 +248,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @inheritdoc
    */
   public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+    drupal_set_message("1");
 
     if (is_null($entity_ids)) {
       $ents = $this->loadMultiple();
@@ -242,9 +259,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $result = array();
     foreach ($entity_ids as $entity_id) {
       $ent = $this->load($entity_id);
+      drupal_set_message('miau ' . serialize($ent));
       if (!is_null($field_ids)) {
         $ent = array_intersect_key($ent,array_flip($field_ids));
       }
+      drupal_set_message('miau2 ' . serialize($ent));
+      
       $result[$entity_id] = $ent;
     }
     return $result;
@@ -255,7 +275,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * The Yaml-Adapter cannot handle field properties, we insist on field values being the main property
    */
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
-    
+    drupal_set_message("2");
     
     $main_property = \Drupal\field\Entity\FieldStorageConfig::loadByName($entity_type, $field_name)->getItemDefinition()->mainPropertyName();
     if (in_array($main_property,$property_ids)) {
