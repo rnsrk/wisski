@@ -67,7 +67,7 @@ entity.wisski_individual.canonical:
     _title: 'WissKI Entity Content'
   requirements:
   # Calls the access controller of the entity, $operation 'view'
-    _entity_access: 'wisski_core.view'
+    _entity_access: 'wisski_individual.view'
 
 entity.wisski_individual.view:
   path: '/wisski_core/{wisski_individual}/view'
@@ -75,7 +75,7 @@ entity.wisski_individual.view:
     _entity_view: 'wisski_individual'
     _title: 'WissKI Entity Content'
   requirements:
-    _entity_access: 'wisski_core.view'
+    _entity_access: 'wisski_individual.view'
 
 
 entity.wisski_individual.edit_form:
@@ -84,7 +84,7 @@ entity.wisski_individual.edit_form:
     _entity_form: 'wisski_individual.edit'
     _title: 'Edit entity'
   requirements:
-    _entity_access: 'wisski_core.edit'
+    _entity_access: 'wisski_individual.edit'
 
 entity.wisski_individual.delete_form:
   path: '/wisski_core/{wisski_individual}/delete'
