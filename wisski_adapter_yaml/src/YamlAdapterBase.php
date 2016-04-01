@@ -30,7 +30,7 @@ abstract class YamlAdapterBase extends EngineBase {
    * {@inheritdoc}
    */
   public function setConfiguration(array $configuration) {
-  dpm(func_get_args(),__METHOD__);
+//  dpm(func_get_args(),__METHOD__);
     parent::setConfiguration($configuration);
     $this->entity_string = $this->configuration['entity_string'];
   }

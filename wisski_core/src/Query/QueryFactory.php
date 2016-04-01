@@ -6,6 +6,8 @@ use Drupal\Core\Entity\Query\QueryBase;
 use Drupal\Core\Entity\Query\QueryFactoryInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 
+use Drupal\wisski_salz\Query\WisskiQueryDelegator;
+
 class QueryFactory implements QueryFactoryInterface {
 
   /**
@@ -24,32 +26,19 @@ class QueryFactory implements QueryFactoryInterface {
 
   /**
    * {@inheritdoc}
+   * returns a WisskiQueryDelegator Object, that can dispatch the conditions to the respective adapter query objects
    */
   public function get(EntityTypeInterface $entity_type, $conjunction) {
-
-
-//    dpm(func_get_args(),__METHOD__);
-    $adapter = entity_load('wisski_salz_adapter', 'sp11wpb');
-
-    // iterate through all adapters and go for it.
-    // Nasty assumption - this might break due to stupidity of the programmers.
-    // Enable super magic main query as master thing whatever something...
-    $query = $adapter->getQueryObject($entity_type,$conjunction,$this->namespaces);
-
-#    dpm($adapter);
-    return $query;
+    
+    return new WisskiQueryDelegator($entity_type,$conjuction,$this->namespaces);
   }
 
   /**
    * {@inheritdoc}
    */
   public function getAggregate(EntityTypeInterface $entity_type, $conjunction) {
-    //
-    // WATCH OUT - nasty assumption of first one being main store
-    // @TODO change that
-    //
-    $adapter = current(entity_load_multiple('wisski_salz_adapter'));
-    return $adapter->getQueryObject($entity_type,$conjunction,$this->namespaces);  
+  
+    return new WisskiQueryDelegator($entity_type,$conjuction,$this->namespaces);
   }
 
 }

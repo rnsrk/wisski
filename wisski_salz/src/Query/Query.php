@@ -2,9 +2,7 @@
 
 namespace Drupal\wisski_salz\Query;
 
-use Drupal\wisski_salz\WisskiQuery;
-
-class Query extends WisskiQuery {
+class Query extends WisskiQueryBase {
 
   public function execute() {
     return array();

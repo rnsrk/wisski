@@ -34,9 +34,9 @@ class YamlAdapterEngine extends YamlAdapterBase  {
   }
   
   public function loadMultiple($ids = NULL) {
-    dpm($this->getConfiguration());
+//    dpm($this->getConfiguration());
     $this->entity_info = Yaml::parse($this->entity_string);
-    dpm($this->entity_info,__METHOD__);
+//    dpm($this->entity_info,__METHOD__);
     if (is_null($ids)) return $this->entity_info;
     return array_intersect_key($this->entity_info,array_flip($ids));
   }
@@ -88,7 +88,7 @@ class YamlAdapterEngine extends YamlAdapterBase  {
   }
   
   public function getQueryObject(EntityTypeInterface $entity_type,$condition,array $namespaces) {
-  
+//    dpm(func_get_args(),__METHOD__);
     return new Query($entity_type,$condition,$namespaces,$this);
   }
 }
