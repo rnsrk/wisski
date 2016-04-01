@@ -180,27 +180,40 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    $entity_info = Yaml::parse($this->entity_string);
 #    if (isset($entity_info[$id])) return $entity_info[$id];
 #    return array();
+
+    // do something here    
+    #$query = "SELECT ?s WHERE { ?s a/a owl:Class } LIMIT 10";
     
-    $query = "SELECT ?s WHERE { ?s a/a owl:Class } LIMIT 10";
+    $out = array();
+    $uri = str_replace('\\', '/', $id);
+
+    drupal_set_message("parse url: " . serialize(parse_url($uri)));
+
+    $url = parse_url($uri);
+
+    if(!empty($url["scheme"]))    
+      $query = "SELECT * WHERE { { <$uri> ?p ?o } UNION { ?s ?p <$uri> } }"; 
+    else
+      $query = 'SELECT * WHERE { ?s ?p "' . $id . '" }';  
     
     $result = $this->directQuery($query);
     
 #    drupal_set_message(serialize($result));
     
-    $out = array();
-    $i = 999;
+#    $out = array();
+#    $i = 999;
     
     foreach($result as $thing) {
-      $uri = $thing->s->dumpValue("text");
-      $uri = str_replace('/','\\',$uri);
-    
-      $out[$uri] = array('eid' => $uri, 'bundle' => 'e21_person', 'name' => 'frizt');#$thing->s->dumpValue("text"), 'bundle' => 'e21_person', 'name' => 'frizt');
-      $i++;
+#      $uri = $thing->s->dumpValue("text");
+#      $uri = str_replace('/','\\',$uri);
+      $out = array('eid' => $id, 'bundle' => 'e21_person', 'name' => 'frizt');
+#      $out[$uri] = array('eid' => $uri, 'bundle' => 'e21_person', 'name' => 'frizt');#$thing->s->dumpValue("text"), 'bundle' => 'e21_person', 'name' => 'frizt');
+#      $i++;
     }
     
     drupal_set_message("load single");
     
-    return $out[$id];
+    return $out;
   }
   
   public function loadMultiple($ids = NULL) {
