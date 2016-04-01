@@ -32,7 +32,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     } else {
       $result = array();
       foreach ($this->dependent_queries as $query) {
-        $result += $query->execute();
+        $sub_result = $query->execute();
+        $result = array_merge($result,$sub_result);
       }
       return $result;
     }

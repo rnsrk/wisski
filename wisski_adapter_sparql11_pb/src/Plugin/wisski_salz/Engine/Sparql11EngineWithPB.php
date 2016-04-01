@@ -181,7 +181,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    if (isset($entity_info[$id])) return $entity_info[$id];
 #    return array();
     
-    $query = "SELECT ?s WHERE { ?s a owl:Class } LIMIT 10";
+    $query = "SELECT ?s WHERE { ?s a/a owl:Class } LIMIT 10";
     
     $result = $this->directQuery($query);
     
@@ -208,7 +208,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    $this->entity_info = Yaml::parse($this->entity_string);
 #    dpm($this->entity_info,__METHOD__);
 #    if (is_null($ids)) return $this->entity_info;
-    $query = "SELECT ?s WHERE { ?s a owl:Class } LIMIT 10";
+    $query = "SELECT ?s WHERE { ?s a/a owl:Class} LIMIT 10";
     
     $result = $this->directQuery($query);
     
