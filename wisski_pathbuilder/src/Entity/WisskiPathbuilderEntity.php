@@ -124,12 +124,70 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
 #        drupal_set_message(serialize($potmainpath["id"]));
         
         if($path->isGroup())
-          $maingroups[] = $path->id();
+          $maingroups[] = $path;
       }
       
       return $maingroups;
       #drupal_set_message(serialize($this->getPathTree()));
     }
-              
+    
+    public function getAllGroups($treepart = NULL) {
+      if($treepart == NULL)
+        $treepart = $this->getPathTree();
+      
+      $groups = array();
+      
+      foreach($treepart as $potpath) {
+        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potmainpath["id"]);
+        
+        if($path->isGroup())
+          $groups = $path;
+          
+        if(!empty($treepart['children']))
+          $groups = array_merge($groups, $this->getAllGroups($treepart['children']));
+      }
+      
+      return $groups;
+      
+    }
+    
+    public function getGroupsForBundle($bundleid) {
+      $groups = $this->getAllGroups();
+      
+      $outgroups = array();
+      
+      foreach($groups as $group) {
+        if($group['bundle'] == $bundleid)
+          $outgroups[] = $group;
+      }
+      
+      return $outgroups;
+      
+    }
+    
+    public function getPathForFid($fieldid, $treepart = NULL) {
+      $return = NULL;
+      if($treepart == NULL)
+        $treepart = $this->getPathTree();
+      
+      foreach($treepart as $potpath) {
+        
+#        drupal_set_message(serialize($fieldid) . " = " . serialize($potpath['field']));
+        if($fieldid == $potpath['field']) {
+          $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potpath["id"]);
+          return $path;
+        }
+        
+        if(!empty($potpath['children']))
+          $return = $this->getPathForFid($fieldid, $potpath['children']);
+
+#        drupal_set_message("got from subtree: " . $return);
+          
+        if(!empty($return))
+          return $return;
+      }
+      return NULL;
+    }
+                  
   } 
               

@@ -187,7 +187,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $out = array();
     $uri = str_replace('\\', '/', $id);
 
-    drupal_set_message("parse url: " . serialize(parse_url($uri)));
+#    drupal_set_message("parse url: " . serialize(parse_url($uri)));
 
     $url = parse_url($uri);
 
@@ -211,7 +211,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #      $i++;
     }
     
-    drupal_set_message("load single");
+#    drupal_set_message("load single");
     
     return $out;
   }
@@ -234,13 +234,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $uri = $thing->s->dumpValue("text");
       $uri = str_replace('/','\\',$uri);
       
-      drupal_set_message("my uri is: " . htmlentities($uri));
+#      drupal_set_message("my uri is: " . htmlentities($uri));
       
       $out[$uri] = array('eid' => $uri, 'bundle' => 'e21_person', 'name' => 'frizt');
       $i++;
     }
     
-    drupal_set_message("load Mult...");
+#    drupal_set_message("load Mult...");
     
     return $out;
     
@@ -256,12 +256,115 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return empty($ent);
   }
 
+  public function pathToReturnValue($patharray, $eid = NULL) {
+    $sparql = "SELECT DISTINCT * WHERE { ";
+    foreach($patharray as $key => $step) {
+      if($key % 2 == 0) 
+        $sparql .= "?x$key a <$step> . ";
+      else
+        $sparql .= '?x' . ($key-1) . " <$step> ?x" . ($key+1) . " . ";    
+    }
+    
+    if(!empty($eid)) {
+      $eid = str_replace("\\", "/", $eid);
+      $url = parse_url($eid);
+      
+      if(!empty($url["scheme"]))
+        $sparql .= " FILTER (?x0 = <$eid> ) . ";
+      else
+        $sparql .= " FILTER (?x0 = \"$eid\" ) . ";
+    }
+    
+    $sparql .= " } ";
+
+    
+#    drupal_set_message("spq: " . serialize($sparql));
+#    drupal_set_message(serialize($this));
+    
+    $result = $this->directQuery($sparql);
+    
+#    drupal_set_message(serialize($result));
+    
+    $out = array();
+    foreach($result as $thing) {
+ #     drupal_set_message("we got something!");
+      $name = 'x' . (count($patharray)-1);
+      $out[] = $thing->$name->dumpValue("text");
+    }
+    
+    return $out;
+    
+  }
 
   /**
    * @inheritdoc
    */
   public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
-    drupal_set_message("1");
+    // tricky thing here is that the entity_ids that are coming in typically
+    // are somewhere from a store. In case of rdf it is easy - they are uris.
+    // In case of csv or something it is more tricky. So I don't wan't to 
+    // simply go to the store and tell it "give me the bundle of this".
+    // The field ids come in handy here - fields are typically attached
+    // to a bundle anyway. so I just get the bundle from there. I think it is
+    // rather stupid that this function does not load the field values per 
+    // bundle - it is implicitely anyway like that.
+    // 
+    // so I ignore everything and just target the field_ids that are mapped to
+    // paths in the pathbuilder.
+    
+#    drupal_set_message("beginning the call");
+
+    // this approach will be not fast enough in the future...
+    // the pbs have to have a better mapping of where and how to find fields
+    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    
+ #   drupal_set_message("eid: " . serialize($entity_ids));
+ #   drupal_set_message("fid: " . serialize($field_ids));
+    
+#    drupal_set_message("my pbs: " . serialize($pbs));
+
+    $out = array();
+    
+    foreach($pbs as $pb) {
+      foreach($field_ids as $key => $fieldid) {
+        foreach($entity_ids as $eid) {
+         
+          if($fieldid == "eid") {
+            $out[$eid][$fieldid] = $eid;
+            continue;
+          }
+
+          $path = $pb->getPathForFid($fieldid);
+          
+          if($fieldid == "bundle") {
+            // tempo hack
+            $out[$eid][$fieldid] = "e21_person";
+            continue;
+          }
+          
+          if($fieldid == "name") {
+            // tempo hack
+            $out[$eid][$fieldid] = $eid;
+            continue;
+          }
+          
+          if(!isset($out[$eid][$fieldid]))
+            $out[$eid][$fieldid] = array();
+
+#        if(!empty($path))
+#        drupal_set_message("PA: " . serialize($path->getPathArray()));
+
+          if(!empty($path)) {
+            $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($path->getPathArray(), $eid));
+          }       
+        }
+     #   drupal_set_message('we got: ' . serialize($out));
+      }
+    }
+    
+#    drupal_set_message("my return out is: " . serialize($out));
+
+    return $out;
 
     if (is_null($entity_ids)) {
       $ents = $this->loadMultiple();
@@ -280,6 +383,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
       $result[$entity_id] = $ent;
     }
+    drupal_set_message("result is: " . serialize($result));
     return $result;
   }
 
