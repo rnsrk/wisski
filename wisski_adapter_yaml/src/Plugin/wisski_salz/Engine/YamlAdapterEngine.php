@@ -8,9 +8,12 @@
 namespace Drupal\wisski_adapter_yaml\Plugin\wisski_salz\Engine;
 
 use Drupal\wisski_adapter_yaml\Query\Query;
-
 use Drupal\wisski_adapter_yaml\YamlAdapterBase;
+
+use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
+
 use Symfony\Component\Yaml\Yaml;
+
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Language\LanguageInterface;
 
@@ -21,24 +24,28 @@ use Drupal\Core\Language\LanguageInterface;
  *   description = @Translation("A WissKI adapter that parses a YAML-string for entity info")
  * )
  */
-class YamlAdapterEngine extends YamlAdapterBase  {
+class YamlAdapterEngine extends YamlAdapterBase implements PathbuilderEngineInterface {
 
   private $entity_info;
 
+  private function getEntityInfo($forID=NULL,$cached = TRUE) {
+
+    if (!$cached || !isset($this->entity_info) || (isset($forID) && !isset($this->entity_info[$forID]))) {
+      $this->entity_info = Yaml::parse($this->entity_string);
+    }
+    return $this->entity_info;
+  }
+
   public function load($id) {
-    $entity_info = &$this->entity_info;
-    if (isset($entity_info[$id])) return $entity_info[$id];
-    $entity_info = Yaml::parse($this->entity_string);
+    $entity_info = $this->getEntityInfo($id);
     if (isset($entity_info[$id])) return $entity_info[$id];
     return array();
   }
   
   public function loadMultiple($ids = NULL) {
-//    dpm($this->getConfiguration());
-    $this->entity_info = Yaml::parse($this->entity_string);
-//    dpm($this->entity_info,__METHOD__);
-    if (is_null($ids)) return $this->entity_info;
-    return array_intersect_key($this->entity_info,array_flip($ids));
+    $entity_info = $this->getEntityInfo(NULL,FALSE);
+    if (is_null($ids)) return $entity_info;
+    return array_intersect_key($entity_info,array_flip($ids));
   }
     
   /**
@@ -91,4 +98,48 @@ class YamlAdapterEngine extends YamlAdapterBase  {
 //    dpm(func_get_args(),__METHOD__);
     return new Query($entity_type,$condition,$namespaces,$this);
   }
+  
+  /**
+   * Returns a list of possible steps between history of steps and future of
+   * steps.
+   *
+   * @param history An array of the previous steps or an empty array if this is
+   *  the beginning of the path.
+   * @param future An array of the following steps or an empty array if this is 
+   *  (currently!) the last step.
+   *
+   * @return array
+   *  A list of steps
+   *
+   */
+  public function getPathAlternatives($history = [], $future = []) {
+  
+    $entity_info = $this->getEntityInfo();
+    $keys = array();
+    foreach ($entity_info as $array) {
+      foreach($history as $step) {
+        if (is_array($array) && isset($array[$step])) $array = $array[$step];
+      }
+      if (is_array($array)) {
+        foreach ($array as $key => $value) $keys[$key] = $key;
+      }
+    }
+    dpm(func_get_args()+array('alternatives'=>$keys),__METHOD__);
+    return $keys;
+  }
+  
+  /**
+   * Returns human readable information for a step.
+   *
+   * @param step the step
+   *
+   * @return an array with following keys
+   *  label : a human readable label, translatable, one line
+   *  description : a description of the step, translatable, multiline
+   */
+  public function getStepInfo($step, $history = [], $future = []) {
+    dpm(func_get_args(),__METHOD__);
+    return array();
+  }
+
 }
