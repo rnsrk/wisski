@@ -284,13 +284,17 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return empty($ent);
   }
 
-  public function pathToReturnValue($patharray, $eid = NULL) {
+  public function pathToReturnValue($patharray, $primitive = NULL, $eid = NULL) {
     $sparql = "SELECT DISTINCT * WHERE { ";
     foreach($patharray as $key => $step) {
       if($key % 2 == 0) 
         $sparql .= "?x$key a <$step> . ";
       else
         $sparql .= '?x' . ($key-1) . " <$step> ?x" . ($key+1) . " . ";    
+    }
+    
+    if(!empty($primitive)) {
+      $sparql .= "?x$key <$primitive> ?out . ";
     }
     
     if(!empty($eid)) {
@@ -317,7 +321,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     foreach($result as $thing) {
  #     drupal_set_message("we got something!");
       $name = 'x' . (count($patharray)-1);
-      $out[] = $thing->$name->dumpValue("text");
+      if(!empty($primitive))
+        $out[] = $thing->out->getValue();
+      else
+        $out[] = $thing->$name->dumpValue("text");
     }
     
     return $out;
@@ -383,7 +390,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #        drupal_set_message("PA: " . serialize($path->getPathArray()));
 
           if(!empty($path)) {
-            $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($path->getPathArray(), $eid));
+            $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $eid));
           }       
         }
      #   drupal_set_message('we got: ' . serialize($out));
