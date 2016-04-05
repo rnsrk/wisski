@@ -52,7 +52,35 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     
   }
+  
+  /**
+   * @{inheritdoc}
+   */
+  public function getPrimitiveMapping($step) {
+    
+    $info = [];
 
+    // this might need to be adjusted for other standards than rdf/owl
+    $query = 
+      "SELECT DISTINCT ?property "
+      ."WHERE { "
+        ."?property a owl:DatatypeProperty. "
+        ."?property rdfs:domain ?d_superclass. "
+        ."<$step> rdfs:subClassOf* ?d_superclass. }"
+      ;
+
+    $result = $this->directQuery($query);
+
+    if (count($result) == 0) return array();
+    
+    $output = array();
+    foreach ($result as $obj) {
+      $prop = $obj->property->getUri();
+      $output[$prop] = $prop;
+    }
+    uksort($output,'strnatcasecmp');
+    return $output;
+  } 
 
   public function getStepInfo($step, $history = [], $future = []) {
     

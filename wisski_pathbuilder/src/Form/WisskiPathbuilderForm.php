@@ -224,6 +224,11 @@ class WisskiPathbuilderForm extends EntityForm {
   private function recursive_render_tree($grouparray, $parent = 0, $delta = 0, $depth = 0) {
     $pathform[$grouparray['id']] = $this->pb_render_path($grouparray['id'], $grouparray['enabled'], $grouparray['weight'], $depth, $parent, $grouparray['bundle'], $grouparray['field']);
     
+    if(is_null($pathform[$grouparray['id']])) {
+      unset($pathform[$grouparray['id']]);
+      return array();
+    }
+    
     foreach($grouparray['children'] as $childpath) {
       $subform = $this->recursive_render_tree($childpath, $grouparray['id'], $delta, $depth +1);
       $pathform = array_merge($pathform, $subform);
@@ -235,6 +240,9 @@ class WisskiPathbuilderForm extends EntityForm {
   
   private function pb_render_path($pathid, $enabled, $weight, $depth, $parent, $bundle, $field) {
     $path = entity_load('wisski_path', $pathid);
+
+    if(is_null($path))
+      return NULL;
     
     $pathform = array();
 
