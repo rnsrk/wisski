@@ -366,6 +366,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     //$adapterid = $this->getConfiguration()['id'];
         
     foreach($pbs as $pb) {
+      
+      // if we have no adapter for this pb it may go home.
+      if(empty($pb->getAdapter()))
+        continue;
         
       $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapter());
       
