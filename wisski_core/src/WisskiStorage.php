@@ -68,7 +68,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     $info = array();
     foreach ($adapters as $adapter) {
       try {
-        $adapter_info = $adapter->getEngine()->loadFieldValues($ids,$fields);
+
+        $adapter_info = $adapter->loadFieldValues($ids,$fields);
 
         foreach($adapter_info as $entity_id => $entity_values) {
 
