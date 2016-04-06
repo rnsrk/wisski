@@ -117,18 +117,21 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
    */
   public function save(array $form, FormStateInterface $form_state) {
 
+    $field_name = $form_state->getValue('field');
+    $bundle = $form_state->getValue('bundle');
+
     $field_storage_values = [
-      'field_name' => $form_state->getValue('field'),#$values['field_name'],
+      'field_name' => $field_name,#$values['field_name'],
       'entity_type' => 'wisski_individual',
-      'type' => 'text',
+      'type' => 'text',//has to fit the field component type, see below
       'translatable' => TRUE,
     ];
     
     $field_values = [
-      'field_name' => $form_state->getValue('field'),
+      'field_name' => $field_name,
       'entity_type' => 'wisski_individual',
-      'bundle' => $form_state->getValue('bundle'),
-      'label' => $form_state->getValue('field'),
+      'bundle' => $bundle,
+      'label' => $field_name,
       // Field translatability should be explicitly enabled by the users.
       'translatable' => FALSE,
       'disabled' => FALSE,
@@ -141,13 +144,15 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 
 # drupal_set_message("bla: " . serialize($form_state->getValue('field')));
 
-    $storage = $this->entityManager->getStorage('field_storage_config')->create($field_storage_values);
-    $storage->enable();
-    $storage->save();
-    $field = $this->entityManager->getStorage('field_config')->create($field_values);
-    $field->save();
-    dpm($field,__METHOD__.'  field[\'settings\']');
-#    drupal_set_message(serialize($form_state));    
+    $this->entityManager->getStorage('field_storage_config')->create($field_storage_values)->enable()->save();
+    $this->entityManager->getStorage('field_config')->create($field_values)->save();
+    entity_get_display('wisski_individual', $bundle, 'default')->setComponent($field_name, array(
+        'type' => 'text_summary_or_trimmed',//has to fit the field type, see above
+        'settings' => array('trim_length' => '200'),
+        'weight' => 1,//@TODO specify a "real" weight
+    ))->save();
+    drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
+    $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->pathbuilder->id()));
   }
 
 }
