@@ -131,6 +131,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
       'label' => $form_state->getValue('field'),
       // Field translatability should be explicitly enabled by the users.
       'translatable' => FALSE,
+      'disabled' => FALSE,
     ];
     
 #    $field_storage_values = array();
@@ -140,10 +141,12 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 
 # drupal_set_message("bla: " . serialize($form_state->getValue('field')));
 
-    $this->entityManager->getStorage('field_storage_config')->create($field_storage_values)->save();
+    $storage = $this->entityManager->getStorage('field_storage_config')->create($field_storage_values);
+    $storage->enable();
+    $storage->save();
     $field = $this->entityManager->getStorage('field_config')->create($field_values);
     $field->save();
-    
+    dpm($field,__METHOD__.'  field[\'settings\']');
 #    drupal_set_message(serialize($form_state));    
   }
 

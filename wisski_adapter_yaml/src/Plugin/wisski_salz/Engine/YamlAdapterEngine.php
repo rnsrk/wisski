@@ -17,6 +17,8 @@ use Symfony\Component\Yaml\Yaml;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Language\LanguageInterface;
 
+use Drupal\Component\Utility\NestedArray;
+
 /**
  * @Engine(
  *   id = "wisski_adapter_dummy",
@@ -85,8 +87,7 @@ class YamlAdapterEngine extends YamlAdapterBase implements PathbuilderEngineInte
    * The Yaml-Adapter cannot handle field properties, we insist on field values being the main property
    */
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
-    
-    
+        
     $main_property = \Drupal\field\Entity\FieldStorageConfig::loadByName($entity_type, $field_name)->getItemDefinition()->mainPropertyName();
     if (in_array($main_property,$property_ids)) {
       return $this->loadFieldValues($entity_ids,array($field_id),$language);
@@ -117,14 +118,18 @@ class YamlAdapterEngine extends YamlAdapterBase implements PathbuilderEngineInte
     $entity_info = $this->getEntityInfo();
     $keys = array();
     foreach ($entity_info as $array) {
-      foreach($history as $step) {
-        if (is_array($array) && isset($array[$step])) $array = $array[$step];
-      }
-      if (is_array($array)) {
-        foreach ($array as $key => $value) $keys[$key] = $key;
+      $sub_array = NestedArray::getValue($array,$history);
+      if (is_array($sub_array)) {
+        $sub_keys = array();
+        foreach($sub_array as $sub_key => $sub_sub) {
+          if (empty($future) || NestedArray::keyExists($sub_sub,$future)) {
+            $sub_keys[$sub_key] = $sub_key;
+          }
+        }
+        $keys = array_merge($keys,$sub_keys);
       }
     }
-    dpm(func_get_args()+array('alternatives'=>$keys),__METHOD__);
+//    dpm(func_get_args()+array('alternatives'=>$keys),__METHOD__);
     return $keys;
   }
   
