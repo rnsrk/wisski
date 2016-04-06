@@ -71,7 +71,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         #drupal_set_message("adapter: " . serialize($adapter));
         #drupal_set_message("ids: " . serialize($ids));
         #drupal_set_message("fields: " . serialize($fields));
-        $adapter_info = $adapter->getEngine()->loadFieldValues($ids,$fields);
+        $adapter_info = $adapter->loadFieldValues($ids,$fields);
 #        drupal_set_message("adapterinfo: " . serialize($adapter_info));
         foreach($adapter_info as $entity_id => $entity_values) {
 #          drupal_set_message("id: " . $entity_id . " values: " . serialize($entity_values));
