@@ -68,34 +68,30 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     $info = array();
     foreach ($adapters as $adapter) {
       try {
-        #drupal_set_message("adapter: " . serialize($adapter));
-        #drupal_set_message("ids: " . serialize($ids));
-        #drupal_set_message("fields: " . serialize($fields));
         $adapter_info = $adapter->getEngine()->loadFieldValues($ids,$fields);
-#        drupal_set_message("adapterinfo: " . serialize($adapter_info));
+
         foreach($adapter_info as $entity_id => $entity_values) {
-#          drupal_set_message("id: " . $entity_id . " values: " . serialize($entity_values));
+
           if (!isset($info[$entity_id])) $info[$entity_id] = $entity_values;
           else {
             foreach($entity_values as $key => $value) {
               // if we already have that - continue
-              if($value == $entity_values[$key])
+              if($value == $info[$entity_id][$key])
                 continue; 
-              // in all else cases - merge
+
               // it might be that we could need array_merge_recursive here in case
               // of more complex data than just an array
               // @TODO: Check.
               else 
-                $info[$entity_id][$key] = array_merge($info[$entity_id][$key],$entity_values[$key]);
+                if(!empty($entity_values[$key]))
+                  $info[$entity_id][$key] = array_merge($info[$entity_id][$key],$entity_values[$key]);
             }
           }
- #         drupal_set_message("after: " . serialize($info));
         }
       } catch (\Exception $e) {
         drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
       }
     }
-#    drupal_set_message("current: " . serialize($info));
     $entity_info = array_merge($entity_info,$info);
 #    dpm(func_get_args()+array('result'=>$entity_info),__METHOD__);
     return $entity_info;

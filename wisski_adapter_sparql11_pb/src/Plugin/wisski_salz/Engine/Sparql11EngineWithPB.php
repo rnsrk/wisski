@@ -335,6 +335,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @inheritdoc
    */
   public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+
     // tricky thing here is that the entity_ids that are coming in typically
     // are somewhere from a store. In case of rdf it is easy - they are uris.
     // In case of csv or something it is more tricky. So I don't wan't to 
@@ -359,23 +360,31 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    drupal_set_message("my pbs: " . serialize($pbs));
 
     $out = array();
-    
+        
+    // get the adapterid that was loaded
+    // haha, this is the engine-id...
+    //$adapterid = $this->getConfiguration()['id'];
+        
     foreach($pbs as $pb) {
-      foreach($field_ids as $key => $fieldid) {
-        foreach($entity_ids as $eid) {
-         
+        
+      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapter());
+      
+      // if he didn't ask for us...    
+      if($this->getConfiguration()['id'] != $adapter->getEngine()->getConfiguration()['id'])
+        continue;
+              
+      foreach($entity_ids as $eid) {
+      
+        // here we should check if we really know the entity by asking the TS for it.
+        // this would speed everything up largely, I think.
+
+        foreach($field_ids as $key => $fieldid) {
+        
           if($fieldid == "eid") {
             $out[$eid][$fieldid] = $eid;
             continue;
           }
-
-          $path = $pb->getPathForFid($fieldid);
           
-          if($fieldid == "bundle") {
-            // tempo hack
-            $out[$eid][$fieldid] = "e21_person";
-            continue;
-          }
           
           if($fieldid == "name") {
             // tempo hack
@@ -386,21 +395,24 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           if(!isset($out[$eid][$fieldid]))
             $out[$eid][$fieldid] = array();
 
-#        if(!empty($path))
-#        drupal_set_message("PA: " . serialize($path->getPathArray()));
-
+          // set the bundle
+          // @TODO: This is a hack and might break for multi-federalistic stores
+          $pbarray = $pb->getPbEntriesForFid($fieldid);
+          if(empty($pbarray["id"]))
+            continue;
+          $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["id"]);
+          
+           
           if(!empty($path)) {
+            $out[$eid]['bundle'] = $pbarray['bundle'];
             $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $eid));
-          }       
+          }
         }
-     #   drupal_set_message('we got: ' . serialize($out));
       }
     }
-    
-#    drupal_set_message("my return out is: " . serialize($out));
 
     return $out;
-
+/*
     if (is_null($entity_ids)) {
       $ents = $this->loadMultiple();
       if (is_null($field_ids)) return $ents;
@@ -420,6 +432,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
     drupal_set_message("result is: " . serialize($result));
     return $result;
+  */
   }
 
   /**
