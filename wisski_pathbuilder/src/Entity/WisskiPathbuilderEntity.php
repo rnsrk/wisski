@@ -188,6 +188,40 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       }
       return NULL;
     }
+    
+    /**
+     * If you want the array from the tree e.g. for the bundle etc. (what is pb-specific)
+     * you have to use this one here. - If you just want the path you can use getPathForFid
+     * 
+     * @return an array consisting of the tree elements
+     */    
+    public function getPbEntriesForFid($fieldid, $treepart = NULL) {
+      $return = NULL;
+      if($treepart == NULL)
+        $treepart = $this->getPathTree();
+      
+      foreach($treepart as $potpath) {
+        
+#        drupal_set_message(serialize($fieldid) . " = " . serialize($potpath['field']));
+        if($fieldid == $potpath['field']) {
+#          $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potpath["id"]);
+          
+#          $path->bundle = $potpath['bundle'];
+#          $path->enabled = $potpath['enabled'];
+          return $potpath;
+#          return $path;
+        }
+        
+        if(!empty($potpath['children']))
+          $return = $this->getPbEntriesForFid($fieldid, $potpath['children']);
+
+#        drupal_set_message("got from subtree: " . $return);
+          
+        if(!empty($return))
+          return $return;
+      }
+      return NULL;
+    }
                   
   } 
               
