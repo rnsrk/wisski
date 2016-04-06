@@ -191,7 +191,7 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
    * {@inheritdoc}
    */
   public function hasEntity($entity_id) {
-    $this->getEngine()->hasEntity($entity_id);
+    return $this->getEngine()->hasEntity($entity_id);
   }
 
   
@@ -199,12 +199,12 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
    * {@inheritdoc}
    */
   public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
-    $this->getEngine()->loadFieldValues($entity_ids, $field_ids, $language);
+    return $this->getEngine()->loadFieldValues($entity_ids, $field_ids, $language);
   }
 
 
   public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
-    $this->getEngine()->loadPropertyValuesForField($field_id, $property_ids, $entity_ids, $language);
+    return $this->getEngine()->loadPropertyValuesForField($field_id, $property_ids, $entity_ids, $language);
   }
   
 }
