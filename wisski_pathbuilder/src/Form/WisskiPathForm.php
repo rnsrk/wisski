@@ -236,6 +236,15 @@ class WisskiPathForm extends EntityForm {
       )));
     }
     
+    // load the pb
+    $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($this->pb);
+    
+    // add the path to its tree
+    $pb->addPathToPathTree($path->id());
+    
+    // save the pb
+    $status = $pb->save();
+    
    /**
      $buildinfo = $form_state->getBuildInfo();
     # drupal_set_message(serialize($buildinfo));

@@ -58,6 +58,10 @@ class YamlAdapterEngine extends YamlAdapterBase implements PathbuilderEngineInte
     $ent = $this->load($entity_id);
     return empty($ent);
   }
+  
+  public function getPrimitiveMapping($step) {
+    return "";
+  }
 
 
   /**

@@ -30,6 +30,18 @@ interface PathbuilderEngineInterface extends EngineInterface {
   
   
   /**
+   * Get the primitive mapping from a certain step in the semantics
+   * usually used for primitive datatypes in rdf - like P3 has note in
+   * cidoc crm. But can contain a mapping like "the nth column of the table"
+   *
+   * @param step the step
+   *
+   * @return array
+   *  A list of valid primitive datatypes.
+   */
+  public function getPrimitiveMapping($step);
+  
+  /**
    * Returns human readable information for a step.
    *
    * @param step the step
