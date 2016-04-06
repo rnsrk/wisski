@@ -146,11 +146,17 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 
     $this->entityManager->getStorage('field_storage_config')->create($field_storage_values)->enable()->save();
     $this->entityManager->getStorage('field_config')->create($field_values)->save();
-    entity_get_display('wisski_individual', $bundle, 'default')->setComponent($field_name, array(
-        'type' => 'text_summary_or_trimmed',//has to fit the field type, see above
-        'settings' => array('trim_length' => '200'),
-        'weight' => 1,//@TODO specify a "real" weight
-    ))->save();
+    $display = $this->entityManager->getStorage('entity_view_display')
+      ->load('wisski_individual.'.$bundle.'.default')
+      ->setComponent(
+          $field_name,
+          array(
+            'type' => 'text_summary_or_trimmed',//has to fit the field type, see above
+            'settings' => array('trim_length' => '200'),
+            'weight' => 1,//@TODO specify a "real" weight
+          )
+        )
+      ->save();
     drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
     $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->pathbuilder->id()));
   }
