@@ -7,6 +7,8 @@
 
 namespace Drupal\wisski_adapter_yaml;
 
+use Drupal\wisski_adapter_yaml\Query\Query;
+
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\wisski_salz\EngineBase;
 
@@ -69,4 +71,8 @@ abstract class YamlAdapterBase extends EngineBase {
     $this->id = $form_state->getValue('id');
   }
   
+  public function getQueryObject(EntityTypeInterface $entity_type,$condition,array $namespaces) {
+//    dpm(func_get_args(),__METHOD__);
+    return new Query($entity_type,$condition,$namespaces,$this);
+  }  
 }

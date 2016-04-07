@@ -86,7 +86,9 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
   public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
 
   /**
-   * @return \Drupal\wisski_salz\WisskiQuery
+   * returns an instance of this Adapter's Query Class
+   * @param $conjunction thetype of condition conjunction used i.e. AND or OR
+   * @return \drupal\wisski_salz\WisskiQueryInterface
    */
   public function getQueryObject($entity_type, $condition,array $namespaces);
   

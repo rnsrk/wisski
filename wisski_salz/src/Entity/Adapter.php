@@ -165,10 +165,6 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
     return $this->engine_id;
   }
 
-  public function getQueryObject($entity_type,$condition,array $namespaces) {
-    return $this->getEngine()->getQueryObject($entity_type,$condition,$namespaces);
-  }
-
   /**
    * {@inheritdoc}
    */
@@ -205,6 +201,13 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
 
   public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
     return $this->getEngine()->loadPropertyValuesForField($field_id, $property_ids, $entity_ids, $language);
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function getQueryObject($entity_type, $condition,array $namespaces) {
+    return new \Drupal\wisski_salz\Query\WisskiQueryDelegator($entity_type,$condition,$namespace);
   }
   
 }

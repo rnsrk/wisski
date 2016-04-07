@@ -7,7 +7,6 @@
 
 namespace Drupal\wisski_adapter_yaml\Plugin\wisski_salz\Engine;
 
-use Drupal\wisski_adapter_yaml\Query\Query;
 use Drupal\wisski_adapter_yaml\YamlAdapterBase;
 
 use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
@@ -97,11 +96,6 @@ class YamlAdapterEngine extends YamlAdapterBase implements PathbuilderEngineInte
       return $this->loadFieldValues($entity_ids,array($field_id),$language);
     }
     return array();
-  }
-  
-  public function getQueryObject(EntityTypeInterface $entity_type,$condition,array $namespaces) {
-//    dpm(func_get_args(),__METHOD__);
-    return new Query($entity_type,$condition,$namespaces,$this);
   }
   
   /**
