@@ -2,11 +2,11 @@
 
 namespace Drupal\wisski_adapter_yaml\Query;
 
-use Drupal\wisski_salz\Query\Query as QueryBase;
+use Drupal\wisski_salz\Query\WisskiQueryBase;
 use Drupal\wisski_salz\Query\ConditionAggregate;
 use Drupal\Core\Entity\EntityTypeInterface;
 
-class Query extends QueryBase {
+class Query extends WisskiQueryBase {
 
   /**
    * {@inheritdoc}
