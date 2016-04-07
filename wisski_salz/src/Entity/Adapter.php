@@ -123,6 +123,7 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
     if (!$this->engineCollection) {
       // DefaultSingleLazyPluginCollection expects the plugin instance id
       // to be identical to the plugin id.
+      $this->engine['adapterId'] = $this->id();
       $this->engineCollection = new EngineCollection($this->getEngineManager(), $this->engine_id, $this->engine);
     }
     return $this->engineCollection;

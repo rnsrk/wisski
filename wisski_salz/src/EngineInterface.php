@@ -20,6 +20,13 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
   
   
   /**
+   * returns the ID of the adapter that this engine instance belongs to
+   * @return the adapter ID
+   */
+  public function adapterId();
+
+  
+  /**
    * determines whether an entity with this ID exists in the storage
    * @param $entity_id the ID of the given entity
    * @return TRUE if the storage handles this entity, FALSE otherwise
@@ -63,4 +70,10 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    */
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
   
+  /**
+   * returns an instance of this Adapter's Query Class
+   * @param $conjunction thetype of condition conjunction used i.e. AND or OR
+   * @return \drupal\wisski_salz\WisskiQueryInterface
+   */
+   public function getQueryObject(EntityTypeInterface $entity_type,$conjunction,array $namespaces);
 }

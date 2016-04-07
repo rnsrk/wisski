@@ -16,7 +16,6 @@ use Drupal\Core\Entity\EntityTypeInterface;
  */
 abstract class EngineBase extends PluginBase implements EngineInterface {
 
-
   /**
    * {@inheritdoc}
    */
@@ -39,6 +38,14 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
    */
   public function getDescription() {
     return $this->pluginDefinition['description'];
+  }
+  
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function adapterId() {
+    return $this->configuration['adapterId'];
   }
 
 
