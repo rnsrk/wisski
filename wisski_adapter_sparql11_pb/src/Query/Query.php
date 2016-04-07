@@ -25,10 +25,18 @@ class Query extends WisskiQueryBase {
     dpm($this);
     
     // get the adapter
-    $adapter = $this->getAdapter();
+    $engine = $this->getEngine();
+
+    if(empty($engine))
+      return;
+    
+    // get the adapter id
+    $adapterid = $engine->adapterId();
+    
+#    $adapter = \Drupal\wisski_salz\Entity\Adapter::load($adapterid);
     
     // if we have not adapter, we may go home, too
-    if(empty($adapter))
+    if(empty($adapterid))
       continue;
     
     // get all pbs
@@ -36,6 +44,7 @@ class Query extends WisskiQueryBase {
     
     // iterate through all pbs
     foreach($pbs as $pb) {
+
       // if we have no adapter for this pb it may go home.
       if(empty($pb->getAdapter()))
         continue;
@@ -44,11 +53,11 @@ class Query extends WisskiQueryBase {
       $pbadapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapter());
       
       // check if the queries adapter is the adapter of the pb we currently use.
-      if($pbadapter->id() != $adapter->id())
+      if($pbadapter->id() != $adapterid)
         continue;
     }
     
-    $ents = $this->parent_engine->loadMultiple();
+#    $ents = $this->parent_engine->loadMultiple();
     drupal_set_message(serialize($ents));
     return array_keys($ents);
   }
