@@ -17,7 +17,7 @@ abstract class WisskiQueryBase extends QueryBase implements QueryInterface, Quer
   public function __construct(EntityTypeInterface $entity_type,$condition,array $namespaces,EngineInterface $parent_engine) {
     $namespaces = array_merge($namespaces,QueryBase::getNamespaces($this));
     parent::__construct($entity_type,$condition,$namespaces);
-    $this->parent_adapter = $parent_adapter;
+    $this->parent_engine = $parent_engine;
   }
   
   public function getEngine() {
