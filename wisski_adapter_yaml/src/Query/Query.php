@@ -12,7 +12,7 @@ class Query extends WisskiQueryBase {
    * {@inheritdoc}
    */
   public function execute() {
-    $ents = $this->getAdapter()->loadMultiple();
+    $ents = $this->getEngine()->loadMultiple();
     return array_keys($ents);
   }
 
