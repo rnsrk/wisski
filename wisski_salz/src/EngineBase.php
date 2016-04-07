@@ -46,7 +46,6 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     return [];
   }
 
-
   /**
    * {@inheritdoc}
    */
