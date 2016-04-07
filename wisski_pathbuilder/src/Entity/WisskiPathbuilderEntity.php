@@ -63,17 +63,29 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
     protected $adapter;
 
     /**
-     * The hierarchical tree of paths consisting of three values:
-     * (id, weight, enabled, children, bundle, field) and children pointing to other triples.
+     * The hierarchical tree of paths consisting of two values:
+     * (id, children) and children being an array pointing to other values.
      *
      * @var array
      */    
     protected $pathtree;
     
+    /**
+     * An array of Pathbuilderpaths. Typical Format is
+     * (id, weight, enabled, parent, bundle, field)
+     * where id is unique, parent is an id, bundle and field
+     * are bundle and field ids.
+     * The key in this array is the id.
+     *
+     * @var array
+     */    
+    protected $pbpaths;
+
+/*    
     public function getID() {
       return $this->id;
     }
-    
+*/    
     public function getName(){
       if(empty($this->name))
         return "Pathbuilder";
@@ -84,34 +96,71 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       $this->name = $name;
     }
     
-    public function getAdapter(){
+    public function getAdapterId(){
       if(empty($this->adapter))
         return "Pathbuilder";
       return $this->adapter;
     }
                            
-    public function setAdapter($adapter){
+    public function setAdapterId($adapter){
       $this->adapter = $adapter;
     }
                                     
     public function getPathTree(){
       return $this->pathtree;
     }
-                                            
+    
+    public function getPbPaths($pathid){
+      return $this->pbpaths;
+    }
+    
+    public function getPbPath($pathid){
+      return $this->pbpaths[$pathid];
+    }
+    
+    public function setPbPaths($paths){
+      $this->pbpaths = $paths;
+    }
+                                                
     public function setPathTree($pathtree){
       $this->pathtree = $pathtree;
     }
     
+    public function getBundle($pathid) {
+      // get the pb-path
+      $pbpath = $this->getPbPath($pathid);
+      
+      // if it is empty it is bad.
+      if(empty($pbpath)) {
+        drupal_set_message("No PB-Path found for $pathid.");
+        return NULL;
+      }
+      
+      // get the parent of this path which probably is a group     
+      $parentpbpath = $this->getPbPath($pbpath['parent']);
+      
+      // if it is empty it is bad.
+      if(empty($parentpbpath)) {
+        drupal_set_message("No Parent-PB-Path found for $pathid.");
+        return NULL;
+      }
+      
+      return $parentpbpath['bundle'];
+      
+    }
+    
     public function addPathToPathTree($pathid) {
       $pathtree = $this->getPathTree();
+      $pbpaths = $this->getPbPaths();
       
       #$pathtree[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'children' => array(), 'bundle' => 0, 'field' => 0);
-      // this is provisorical
-      // the bundle and the field should be filled
-      // in a separate form which is to be created by kerstin.
-      $pathtree[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'children' => array(), 'bundle' => 'e21_person', 'field' => $pathid);
+      #$pathtree[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'children' => array(), 'bundle' => 'e21_person', 'field' => $pathid);
+      
+      $pathtree[$pathid] = array('id' => $pathid, 'children' => array());
+      $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => '');
       
       $this->setPathTree($pathtree);
+      $this->setPbPaths($pbpaths);
       
       return true;      
     }
@@ -138,7 +187,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       $groups = array();
       
       foreach($treepart as $potpath) {
-        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potmainpath["id"]);
+        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potpath["id"]);
         
         if($path->isGroup())
           $groups = $path;
@@ -166,11 +215,15 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
     }
     
     public function getPathForFid($fieldid, $treepart = NULL) {
+      /*
       $return = NULL;
       if($treepart == NULL)
         $treepart = $this->getPathTree();
+      */
       
-      foreach($treepart as $potpath) {
+      $pbpaths = $this->getPbPaths();
+      
+      foreach($pbpaths as $potpath) {
         
 #        drupal_set_message(serialize($fieldid) . " = " . serialize($potpath['field']));
         if($fieldid == $potpath['field']) {
@@ -178,14 +231,9 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
           return $path;
         }
         
-        if(!empty($potpath['children']))
-          $return = $this->getPathForFid($fieldid, $potpath['children']);
-
-#        drupal_set_message("got from subtree: " . $return);
-          
-        if(!empty($return))
-          return $return;
       }
+      
+      // nothing found?
       return NULL;
     }
     
@@ -196,11 +244,12 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      * @return an array consisting of the tree elements
      */    
     public function getPbEntriesForFid($fieldid, $treepart = NULL) {
-      $return = NULL;
-      if($treepart == NULL)
-        $treepart = $this->getPathTree();
+#      $return = NULL;
+#      if($treepart == NULL)
+#        $treepart = $this->getPathTree();
+      $pbpaths = $this->getPbPaths();
       
-      foreach($treepart as $potpath) {
+      foreach($pbpaths as $potpath) {
         
 #        drupal_set_message(serialize($fieldid) . " = " . serialize($potpath['field']));
         if($fieldid == $potpath['field']) {
@@ -211,14 +260,6 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
           return $potpath;
 #          return $path;
         }
-        
-        if(!empty($potpath['children']))
-          $return = $this->getPbEntriesForFid($fieldid, $potpath['children']);
-
-#        drupal_set_message("got from subtree: " . $return);
-          
-        if(!empty($return))
-          return $return;
       }
       return NULL;
     }

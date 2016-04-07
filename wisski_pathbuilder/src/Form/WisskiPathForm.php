@@ -58,7 +58,7 @@ class WisskiPathForm extends EntityForm {
     $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($this->pb);
 
     // load the adapter of the pb
-    $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapter());
+    $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
 
     // if there was an adapter
     if ($adapter) {
@@ -110,15 +110,22 @@ class WisskiPathForm extends EntityForm {
       $path_options = $engine->getPathAlternatives();
     }
 
-    $form['path_array'] = array(
+    $form['path_data'] = array(
       '#type' => 'markup',
-      '#tree' => TRUE,
+#      '#tree' => TRUE,
      // The prefix/suffix provide the div that we're replacing, named by
      // #ajax['wrapper'] below.
      '#prefix' => '<div id="path_array_div">',
      '#suffix' => '</div>',
      '#value' => "",
       
+    );
+    
+    // preserve tree
+    $form['path_data']['path_array'] = array(
+      '#type' => 'markup',
+      '#tree' => TRUE,
+      '#value' => "",
     );
 
     // read the userinput
@@ -127,13 +134,17 @@ class WisskiPathForm extends EntityForm {
     $existing_paths = array();
 
     // if there was something in form_state - use that because it is likely more accurate
-    if(empty($form_state->getValue('path_array'))) {
+    if(empty($form_state->getValue('path_data'))) {
       if(!empty( $path->getPathArray() ))
         $existing_paths = $path->getPathArray();
-    } else 
-      $existing_paths = $form_state->getValue('path_array');
-
+    } else {
+      $pd = $form_state->getValue('path_data');
+      $pa = $pd['path_array'];
+      
+      $existing_paths = $pa;
+    }
     
+#    drupal_set_message(serialize($existing_paths));
 
     // if there is no new field create one
     if(array_search("0", $existing_paths) === FALSE)
@@ -153,21 +164,32 @@ class WisskiPathForm extends EntityForm {
         $path_options = $engine->getPathAlternatives();
       }    
                   
-      $form['path_array'][$key] = array(
+      $form['path_data']['path_array'][$key] = array(
         '#default_value' => $element,
-   # '#key_type' => 'associative',
-   # '#multiple_toggle' => '1',
         '#type' => 'select',
         '#options' => array_merge(array("0" => 'Please select.'), $path_options),
-        '#title' => t('Step ' . $key . ': Select the next step of the path'),
+        '#title' => $this->t('Step ' . $key . ': Select the next step of the path'),
         '#ajax' => array(
           'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
           'wrapper' => 'path_array_div',
-#          'effect' => 'slide',        
           'event' => 'change', 
         ),
       );    
     }
+    
+    $primitive = array();
+
+    // only act if there is more than the dummy entry
+    // and if it is not a property -> path length odd +1 for dummy -> even
+    if(count($curvalues) > 1 && count($curvalues) % 2 == 0)
+      $primitive = $engine->getPrimitiveMapping($curvalues[(count($curvalues)-2)]);
+    
+    $form['path_data']['datatype_property'] = array(
+      '#default_value' => $path->getDatatypeProperty(), #$this->t('Please select.'),
+      '#type' => 'select',
+      '#options' => array_merge(array("0" => 'Please select.'), $primitive),
+      '#title' => t('Please select the datatype property for the Path.'),
+    );
     
     return $form;
   }
@@ -205,7 +227,7 @@ class WisskiPathForm extends EntityForm {
      # return array('#type' => 'ajax', '#commands' => $commands);
     #  return $form['item']['path_array']['pathbuilder_add_select'];        
     #  drupal_set_message("ajax: " . serialize($form_state));
-      return $form['path_array'];
+      return $form['path_data'];
    # }
   }
   
@@ -217,7 +239,8 @@ class WisskiPathForm extends EntityForm {
     $path = $this->entity;
     
     $patharray = $path->getPathArray();
-        
+
+    // unset the last step because this usually is an empty field for selection        
     if($patharray[count($patharray) -1] == "0") {
       unset($patharray[count($patharray) -1]);
       $path->setPathArray($patharray);
@@ -239,62 +262,13 @@ class WisskiPathForm extends EntityForm {
     // load the pb
     $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($this->pb);
     
-    // add the path to its tree
-    $pb->addPathToPathTree($path->id());
+    // add the path to its tree if it was not there already
+    if(is_null($pb->getPbPath($path->id())))
+      $pb->addPathToPathTree($path->id());
     
     // save the pb
     $status = $pb->save();
-    
-   /**
-     $buildinfo = $form_state->getBuildInfo();
-    # drupal_set_message(serialize($buildinfo));
-      $args = $buildinfo['args'];
-      drupal_set_message($args);
-      // args[1] is the store name
-      $store_name = $args[1];
-      // args[0] is the store type name
-      $wisski_pathbuilder = $args[0];
-   */
-   /*                      
-    $wisski_pathbuilder = '';
-    // get the current internal path to search for the pathbuilder id component
-    $url = Url::fromRoute('<current>');
-    $internal_path = $url->getInternalPath();
-    #drupal_set_message('Internal Path: ' . $internal_path);
-    #$current_uri = \Drupal::request()->getRequestUri();
-    #drupal_set_message('Current Uri: ' . $current_uri); 
-    #$current_path = \Drupal::service('path.current')->getPath();
-    #drupal_set_message('Current Path: ' . $current_path);
-    
-    // divide the path into its components (parts between slashes)
-    $path_parts = explode('/', $internal_path);
-    #drupal_set_message('Path parts: ' . serialize($path_parts));
- 
-    // iterate through the path parts array
-    for($i = 0, $size = count($path_parts); $i < $size; ++$i) {
-      // search for the component
-      // that is two positions before the current component
-      // and has the value 'wisski' 
-      // and the component
-      // that is one position before the current component
-      // and has the value 'pathbuilder'
-      if($path_parts[$i-2]=='wisski' && $path_parts[$i-1]=='pathbuilder'){
-        // the current component that is one position after 'pathbuilder' 
-        // equates to the pathbuilder id
-        // so save the value as $wisski_pathbuilder 
-        #drupal_set_message('pathbuilder is on pos ' . ($i-1));
-        drupal_set_message('wisski pathbuilder id: ' . $path_parts[$i]);
-        $wisski_pathbuilder = $path_parts[$i];
-      }  
-    } 
-    
-    */
-    # $wisski_pathbuilder = 'pb';
-    // in d8 you have to redirect like this, if you have a slug like {wisski_pathbuilder} in the routing.yml file:
-    #$url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.overview')
-    #                 ->setRouteParameters(array('wisski_pathbuilder'=>$wisski_pathbuilder));
-    #$redirect_url = \Drupal\Core\Url::fromRoute('entity.wisski_path.edit_form')
-    #                     ->setRouteParameters(array('wisski_pathbuilder'=>$wisski_pathbuilder, 'wisski_path'=>$path->getID()));
+
     $redirect_url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.edit_form')
                           ->setRouteParameters(array('wisski_pathbuilder'=>$this->pb));
         

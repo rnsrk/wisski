@@ -107,7 +107,7 @@ class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
     *
     * @var int
     */
-  protected $weight;
+#  protected $weight;
   
    /**
     * "Group" if this path is a group
@@ -123,7 +123,7 @@ class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
     *
     * @var boolean
     */
-  protected $enabled;
+#  protected $enabled;
 
   public function getID(){
     return $this->id;
@@ -204,13 +204,13 @@ class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
     $this->type = $type;
   }
          
-  public function isEnabled(){
-    return $this->enabled;
-  }
+#  public function isEnabled(){
+#    return $this->enabled;
+#  }
   
-  public function setEnabled($enabled){
-    $this->enabled = $enabled;
-  }
+#  public function setEnabled($enabled){
+#    $this->enabled = $enabled;
+#  }
  
 #  public function getWeight(){
 #    return $this->weight;

@@ -35,24 +35,9 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     // but this function does
     // so we have to override this one to get hold of the pb id
     $this->pathbuilder = $wisski_pathbuilder;
-    drupal_set_message(serialize($wisski_path));
+#    drupal_set_message(serialize($wisski_path));
     $this->path = $wisski_path;
     return parent::buildForm($form, $form_state, $wisski_pathbuilder, $wisski_path);
-  }
-  
-  private function recursive_find_element($pathtree, $element) {
-    $found = NULL;
-    foreach($pathtree as $path) {
-      if($path['id'] == $element) {
-        $found = $path;
-        break;
-      } else if(!empty($path['children'])) {
-        $found = $this->recursive_find_element($path['children'], $element);
-        if($found != NULL) 
-          break;
-      }
-    }
-    return $found;
   }
 
    /**
@@ -85,29 +70,35 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     
 #    drupal_set_message(serialize($this->pathbuilder->getPathTree()));
     
-    $tree = $this->pathbuilder->getPathTree();
+#    $tree = $this->pathbuilder->getPathTree();
 
-    $element = $this->recursive_find_element($tree, $this->path);
-    
-    $form['bundle'] = array(
-      '#type' => 'textfield',
-      '#maxlength' => 255,
-      '#title' => $this->t('bundle'),
-      '#default_value' => empty($element['bundle']) ? $this->t('Something') : $element['bundle'],
+#    $element = $this->recursive_find_element($tree, $this->path);
+    $pbpath = $this->pathbuilder->getPbPath($this->path);
+    $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($this->path);
+
+    if($path->getType() != "Path") {
+      $form['bundle'] = array(
+        '#type' => 'textfield',
+        '#maxlength' => 255,
+        '#title' => $this->t('bundle'),
+        '#default_value' => empty($pbpath['bundle']) ? '' : $pbpath['bundle'],
 #      '#disabled' => true,
-      '#description' => $this->t("Name of the bundle."),
-      '#required' => true,
-    );
+        '#description' => $this->t("Name of the bundle."),
+        '#required' => true,
+      );
+    }
     
-    $form['field'] = array(
-      '#type' => 'textfield',
-      '#maxlength' => 255,
-      '#title' => $this->t('Field'),
-      '#default_value' => empty($element['field']) ? $this->t('Something2') : $element['field'],
+    if($path->getType() == "Path") {
+      $form['field'] = array(
+        '#type' => 'textfield',
+        '#maxlength' => 255,
+        '#title' => $this->t('Field'),
+        '#default_value' => empty($pbpath['field']) ? '' : $pbpath['field'],
 #      '#disabled' => true,
-      '#description' => $this->t("Name of the Field."),
-      '#required' => true,
-    );
+        '#description' => $this->t("Name of the mapped Field."),
+        '#required' => true,
+      );
+    }
     
     return $form;
   }
@@ -144,7 +135,25 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 
 # drupal_set_message("bla: " . serialize($form_state->getValue('field')));
 
+    // get the pbpaths
+    $pbpaths = $this->pathbuilder->getPbPaths();
+    // set the path and the bundle - beware: one is empty!
+    $pbpaths[$this->path]['field'] = $field_name;
+    $pbpaths[$this->path]['bundle'] = $bundle;
+    // save it
+    $this->pathbuilder->setPbPaths($pbpaths);
+    $this->pathbuilder->save();
+    
+    // if the field is already there...
+    if(empty($field_name) || !empty(\Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $field_name)))) {
+      $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->pathbuilder->id()));
+      return;
+    }
+
+    // bundle?
     $this->entityManager->getStorage('field_storage_config')->create($field_storage_values)->enable()->save();
+
+    // path?
     $this->entityManager->getStorage('field_config')->create($field_values)->save();
 
     $view_options = array(

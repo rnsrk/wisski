@@ -32,8 +32,6 @@ class WisskiPathbuilderForm extends EntityForm {
     // what entity do we work on?
     $pathbuilder = $this->entity;
 
-
-#    drupal_set_message(serialize($pathbuilder->getMainGroups()));    
     // Change page title for the edit operation
     if($this->operation == 'edit') {
       $form['#title'] = $this->t('Edit Pathbuilder: @id', array('@id' => $pathbuilder->id()));
@@ -41,7 +39,6 @@ class WisskiPathbuilderForm extends EntityForm {
     
     $form['name'] = array(
       '#type' => 'textfield',
-#      '#maxlength' => 255,
       '#title' => $this->t('Name'),
       '#default_value' => $pathbuilder->getName(),
       '#description' => $this->t("Name of the Pathbuilder-Tree."),
@@ -51,18 +48,13 @@ class WisskiPathbuilderForm extends EntityForm {
     // we need an id
     $form['id'] = array(
       '#type' => 'machine_name',
-#      '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
       '#default_value' => $pathbuilder->id(),
       '#disabled' => !$pathbuilder->isNew(),
       '#machine_name' => [
         'source' => array('name'),
         'exists' => ['\Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity.', 'load']
-#        'source' => array('name'),
-#        'exists' => 'wisski_pathbuilder_load',
       ],
     );
-
-#    $adapters = entity_load_multiple('wisski_salz_adapter');
     
     $adapters = \Drupal\wisski_salz\Entity\Adapter::loadMultiple();
     
@@ -76,24 +68,9 @@ class WisskiPathbuilderForm extends EntityForm {
       '#type' => 'select',
       '#description' => $this->t('Which adapter does this Pathbuilder belong to?'),
 #      '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
-      '#default_value' => $pathbuilder->getAdapter(),
+      '#default_value' => $pathbuilder->getAdapterId(),
       '#options' => $adapterlist, #array(0 => "Pathbuilder"),
     );
-
-    
-  // Ensure that menu_overview_form_submit() knows the parents of this form
-  // section.
-#  if (!$form_state->has('pathbuilder_overview_form_parents')) {
-#   $form_state->set('pathbuilder_overview_form_parents', []);
-#  }
-
-    // load the pathbuilder entity that is used - given by the parameter
-    // in the url.                        
-#    $pathbuilder_entity = entity_load('wisski_pathbuilder', $wisski_pathbuilder);
-    
-    // load all paths - here we should load just the ones of this pathbuilder
-#    $path_entities = entity_load_multiple('wisski_path');
-    #drupal_set_message('wisski pathbuilder id: ' . serialize($wisski_pathbuilder));    
 
     
     $header = array("title", "Path", array('data' => $this->t("Enabled"), 'class' => array('checkbox')), "Weight", array('data' => $this->t('Operations'), 'colspan' => 3));
@@ -102,7 +79,7 @@ class WisskiPathbuilderForm extends EntityForm {
       '#type' => 'table',
       '#theme' => 'table__menu_overview',
       '#header' => $header,
-      '#rows' => $rows,
+#      '#rows' => $rows,
       '#attributes' => array(
         'id' => 'my-module-table',
       ),
@@ -124,25 +101,16 @@ class WisskiPathbuilderForm extends EntityForm {
       ),
     );
 
-#    drupal_set_message(serialize($this));
-
     $pathforms = array();
-#    while(false) {
+
     // get all paths belonging to the respective pathbuilder
     foreach($pathbuilder->getPathTree() as $grouparray) {
-      // $grouparray has structure: (ID, weight, enabled, children)
-     # drupal_set_message('GROUP: ' . serialize($grouparray)); 
       $pathforms = array_merge($pathforms, $this->recursive_render_tree($grouparray));
     }
     
-    #drupal_set_message('PATHFORMS: ' . serialize($pathforms));
-    
-#    return $form;
 
     foreach($pathforms as $pathform) {    
     
-#      $pathform = $this->pb_render_path($path);
-
       $path = $pathform['#item'];
 
       $form['pathbuilder_table'][$path->id()]['#item'] = $pathform['#item'];
@@ -153,7 +121,7 @@ class WisskiPathbuilderForm extends EntityForm {
 
 
       // TableDrag: Sort the table row according to its existing/configured weight.
-#      $form['pathbuilder_table'][$path->id()]['#weight'] = $path->getWeight();
+      $form['pathbuilder_table'][$path->id()]['#weight'] = $path->weight;
 
       // Add special classes to be used for tabledrag.js.
       $pathform['parent']['#attributes']['class'] = array('menu-parent');
@@ -181,20 +149,20 @@ class WisskiPathbuilderForm extends EntityForm {
         'title' => $this->t('Edit'),
        # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->getID())),
         'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.edit_form')
-                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->getID(), 'wisski_path' => $path->getID())),
+                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
       );
       
       $links['fieldconfig'] = array(
         'title' => $this->t('Configure Field'),
-       # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->getID())),
+       # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
         'url' => \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.configure_field_form')
-                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->getID(), 'wisski_path' => $path->getID())),
+                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
       );
 
       $links['delete'] = array(
         'title' => $this->t('Delete'),
         'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.delete_form')
-                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->getID(), 'wisski_path' => $path->getID())),
+                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
       );  
                                                              
       // Operations (dropbutton) column.
@@ -203,11 +171,7 @@ class WisskiPathbuilderForm extends EntityForm {
         '#type' => 'operations',
         '#links' => $links,
       );
-     # drupal_set_message('PATH ID: ' . $path->getID());
-#      drupal_set_message('OPS: ' . serialize($operations));
-     # drupal_set_message('ITEM: ' . serialize($pathform['#item']));
-     # drupal_set_message('Link: ' . serialize($links['edit']));
-     # $form['pathbuilder_table'][$path->id()]['operations'] = $pathform['operations'];       
+
       $form['pathbuilder_table'][$path->id()]['operations'] = $operations;
 
       $form['pathbuilder_table'][$path->id()]['id'] = $pathform['id'];
@@ -222,6 +186,17 @@ class WisskiPathbuilderForm extends EntityForm {
   }
   
   private function recursive_render_tree($grouparray, $parent = 0, $delta = 0, $depth = 0) {
+    // first we have to get any additional fields because we just got the tree-part
+    // and not the real data-fields
+    $pbpath = $this->entity->getPbPath($grouparray['id']);
+        
+    // if we did not get something, stop.
+    if(empty($pbpath))
+      continue;
+
+    // merge it into the grouparray    
+    $grouparray = array_merge($grouparray, $pbpath);
+    
     $pathform[$grouparray['id']] = $this->pb_render_path($grouparray['id'], $grouparray['enabled'], $grouparray['weight'], $depth, $parent, $grouparray['bundle'], $grouparray['field']);
     
     if(is_null($pathform[$grouparray['id']])) {
@@ -312,41 +287,19 @@ class WisskiPathbuilderForm extends EntityForm {
       '#value' => $field,
     );
     
- #   $pathform['path'] = array(
-  #    '#type' => 'label',
-   #   '#title' => $path->getPathArray(),
-      #'#default_value' => $path->getEnabled(),
-   # );
-
     return $pathform;
   }
-  
-#  private function recursive_build_tree($pathdata) {
-#    $pathtree = array();
-#    foreach($pathdata as $path) {
-##      drupal_set_message(serialize($path));
-#      $pathtree[] = array('id' => $path['id'], 'weight' => $path['weight'], 'children' => array());
-#    }
-#    
-#    return $pathtree;
-#  }
-  
+    
   /**
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-    
+
+    // get the pathbuilder    
     $pathbuilder = $this->entity;
  
-#    drupal_set_message(serialize($form_state));
-
+    // fetch the paths
     $paths = $form_state->getValue('pathbuilder_table');
-
-#    $pathtree = $pathbuilder->getPathTree();
-
-#    drupal_set_message(serialize($pathtree));
-    
-    #drupal_set_message(serialize($paths));
     
     $pathtree = array();
     $map = array();
@@ -356,20 +309,24 @@ class WisskiPathbuilderForm extends EntityForm {
 
       
       if(!empty($path['parent'])) { // it has parents... we have to add it somewhere
-        $map[$path['parent']]['children'][$path['id']] = array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array(), 'bundle' => $path['bundle'], 'field' => $path['field']);
+        $map[$path['parent']]['children'][$path['id']] = array('id' => $path['id'], 'children' => array());
         $map[$path['id']] = &$map[$path['parent']]['children'][$path['id']];
       } else { // it has no parent - so it is a main thing
-        $pathtree[$path['id']] = array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array(), 'bundle' => $path['bundle'], 'field' => $path['field']);
+        $pathtree[$path['id']] = array('id' => $path['id'], 'children' => array());
         $map[$path['id']] = &$pathtree[$path['id']];
       }
+            
+      // regardless of what it is - we have to save it properly to the pbpaths
+      $pbpaths = $pathbuilder->getPbPaths();
+      $pbpaths[$path['id']] = $path; #array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array(), 'bundle' => $path['bundle'], 'field' => $path['field']);
+      // save the path
+      $pbpaths = $pathbuilder->setPbPaths($pbpaths);
 
     }
 
-#    drupal_set_message(serialize($pathtree));    
+    // save the tree
     $pathbuilder->setPathTree($pathtree);
 
-#    drupal_set_message(serialize($pathbuilder));
-    
     $status = $pathbuilder->save();
     
     if($status) {

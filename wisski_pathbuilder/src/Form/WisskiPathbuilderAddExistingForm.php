@@ -61,8 +61,9 @@ class WisskiPathbuilderAddExistingForm extends EntityForm {
     // get the pb it should be added to    
     $pb = $this->entity;
 
-    // do it    
-    $pb->addPathToPathTree($value);   
+    // do it if it is not already there    
+    if($pb->getPbPath($value['id']))
+      $pb->addPathToPathTree($value);   
     
     // save it    
     $status = $pb->save();
@@ -70,7 +71,7 @@ class WisskiPathbuilderAddExistingForm extends EntityForm {
     
    # $form_state->setRedirect('entity.wisski_pathbuilder.edit_form');
     $redirect_url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.edit_form')
-                             ->setRouteParameters(array('wisski_pathbuilder'=>$pb->getID()));
+                             ->setRouteParameters(array('wisski_pathbuilder'=>$pb->id()));
                              
     $form_state->setRedirectUrl($redirect_url);
                                  

@@ -22,13 +22,13 @@ class Query extends WisskiQueryBase {
    */
   public function execute() {
 #    drupal_set_message("Yeah: " . ($this->condition));
-    dpm($this);
+#    dpm($this);
     
     // get the adapter
     $engine = $this->getEngine();
 
     if(empty($engine))
-      return;
+      return array();
     
     // get the adapter id
     $adapterid = $engine->adapterId();
@@ -42,6 +42,7 @@ class Query extends WisskiQueryBase {
     // get all pbs
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
     
+    $ents = array();
     // iterate through all pbs
     foreach($pbs as $pb) {
 
@@ -55,10 +56,11 @@ class Query extends WisskiQueryBase {
       // check if the queries adapter is the adapter of the pb we currently use.
       if($pbadapter->id() != $adapterid)
         continue;
+        
+      // do something with conditions ... but for now we just load everything.
+      $ents = array_merge($ents, $this->parent_engine->loadMultiple());
     }
     
-#    $ents = $this->parent_engine->loadMultiple();
-    drupal_set_message(serialize($ents));
     return array_keys($ents);
   }
 

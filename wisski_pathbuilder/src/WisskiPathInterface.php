@@ -21,7 +21,6 @@ interface WisskiPathInterface extends ConfigEntityInterface {
   public function getLength();
   public function getDescription(); 
   public function isGroup();
-  public function isEnabled();
   public function getType();
 #  public function getWeight();  
 }
