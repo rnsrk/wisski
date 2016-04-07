@@ -10,6 +10,8 @@ namespace Drupal\wisski_salz;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\Core\Entity\EntityWithPluginCollectionInterface;
 
+use Drupal\Core\Entity\EntityTypeInterface;
+
 /**
  * Provides an interface for defining WissKI Salz Adapter entities.
  *
@@ -90,6 +92,6 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
    * @param $conjunction thetype of condition conjunction used i.e. AND or OR
    * @return \drupal\wisski_salz\WisskiQueryInterface
    */
-  public function getQueryObject($entity_type, $condition,array $namespaces);
+  public function getQueryObject(EntityTypeInterface $entity_type, $condition,array $namespaces);
   
 }

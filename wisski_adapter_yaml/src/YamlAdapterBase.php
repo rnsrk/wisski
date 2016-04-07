@@ -12,6 +12,9 @@ use Drupal\wisski_adapter_yaml\Query\Query;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\wisski_salz\EngineBase;
 
+use Drupal\Core\Entity\EntityTypeInterface;
+
+
 /**
  * Configuration Base for the Wisski YAML Adapter Engine
  */

@@ -62,5 +62,12 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * @return an array describing the values TODO: describe structure
    */
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
-  
+ 
+  /**
+   * returns an instance of this Adapter's Query Class
+   * @param $conjunction thetype of condition conjunction used i.e. AND or OR
+   * @return \drupal\wisski_salz\WisskiQueryInterface
+   */
+  public function getQueryObject(EntityTypeInterface $entity_type, $condition,array $namespaces);
+ 
 }

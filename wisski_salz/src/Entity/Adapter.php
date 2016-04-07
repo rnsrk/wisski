@@ -13,7 +13,7 @@ use Drupal\Core\Entity\EntityWithPluginCollectionInterface;
 use Drupal\wisski_salz\EngineCollection;
 use Psr\Log\LoggerInterface;
 use Drupal\Core\Language\LanguageInterface;
-
+use Drupal\Core\Entity\EntityTypeInterface;
 
 /**
  * Defines the WissKI Salz Adapter entity.
@@ -202,12 +202,12 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
   public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
     return $this->getEngine()->loadPropertyValuesForField($field_id, $property_ids, $entity_ids, $language);
   }
-  
+
   /**
    * {@inheritdoc}
    */
-  public function getQueryObject($entity_type, $condition,array $namespaces) {
-    return new \Drupal\wisski_salz\Query\WisskiQueryDelegator($entity_type,$condition,$namespace);
+  public function getQueryObject(EntityTypeInterface $entity_type, $condition,array $namespaces) {
+    return $this->getEngine()->getQueryObject($entity_type,$condition,$namespaces);
   }
   
 }

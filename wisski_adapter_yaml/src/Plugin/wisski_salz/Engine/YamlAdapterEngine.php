@@ -13,7 +13,6 @@ use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
 
 use Symfony\Component\Yaml\Yaml;
 
-use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Language\LanguageInterface;
 
 use Drupal\Component\Utility\NestedArray;
