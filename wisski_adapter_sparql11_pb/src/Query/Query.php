@@ -47,11 +47,11 @@ class Query extends WisskiQueryBase {
     foreach($pbs as $pb) {
 
       // if we have no adapter for this pb it may go home.
-      if(empty($pb->getAdapter()))
+      if(empty($pb->getAdapterId()))
         continue;
       
       // load the adapter of the pb
-      $pbadapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapter());
+      $pbadapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
       
       // check if the queries adapter is the adapter of the pb we currently use.
       if($pbadapter->id() != $adapterid)

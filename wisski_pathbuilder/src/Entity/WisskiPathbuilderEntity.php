@@ -110,7 +110,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       return $this->pathtree;
     }
     
-    public function getPbPaths($pathid){
+    public function getPbPaths(){
       return $this->pbpaths;
     }
     
@@ -234,7 +234,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       }
       
       // nothing found?
-      return NULL;
+      return array();
     }
     
     /**
@@ -243,11 +243,16 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      * 
      * @return an array consisting of the tree elements
      */    
-    public function getPbEntriesForFid($fieldid, $treepart = NULL) {
+    public function getPbEntriesForFid($fieldid) {
 #      $return = NULL;
 #      if($treepart == NULL)
 #        $treepart = $this->getPathTree();
       $pbpaths = $this->getPbPaths();
+      
+      if(empty($pbpaths))
+        return array();
+      
+      drupal_set_message(serialize($pbpaths));
       
       foreach($pbpaths as $potpath) {
         
@@ -261,7 +266,8 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
 #          return $path;
         }
       }
-      return NULL;
+      // nothing found?
+      return array();;
     }
                   
   } 

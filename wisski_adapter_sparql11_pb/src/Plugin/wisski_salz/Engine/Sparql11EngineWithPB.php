@@ -368,10 +368,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     foreach($pbs as $pb) {
       
       // if we have no adapter for this pb it may go home.
-      if(empty($pb->getAdapter()))
+      if(empty($pb->getAdapterId()))
         continue;
         
-      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapter());
+      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
 
       // if we have not adapter, we may go home, too
       if(empty($adapter))
@@ -406,13 +406,18 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           // set the bundle
           // @TODO: This is a hack and might break for multi-federalistic stores
           $pbarray = $pb->getPbEntriesForFid($fieldid);
+          
+#          drupal_set_message($fieldid . " - " . serialize($pbarray));
+
           if(empty($pbarray["id"]))
             continue;
+
           $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["id"]);
-          
+
+          $bundle = $pb->getBundle($pbarray["id"]);
            
           if(!empty($path)) {
-            $out[$eid]['bundle'] = $pbarray['bundle'];
+            $out[$eid]['bundle'] = $bundle;
             $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $eid));
           }
         }
