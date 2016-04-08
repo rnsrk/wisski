@@ -110,7 +110,9 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 
     $field_name = $form_state->getValue('field');
     $bundle = $this->pathbuilder->getBundle($form_state->getValue('path')); #$form_state->getValue('bundle');
-
+    
+# --- if it's a field ------------------
+    
     $field_storage_values = [
       'field_name' => $field_name,#$values['field_name'],
       'entity_type' => 'wisski_individual',
@@ -177,7 +179,18 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     $form_display->setComponent($field_name)->save();
 
     drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
+    
+# --- END if its a field -------------------
+# --- if it's a bundle ----------------------
+    
+    $bundle = $this->entityManager->getStorage('wisski_bundle')->create(array('id'=>$bundle,'label'=>$bundle));
+    $bundle->save();
+    drupal_set_message(t('Created new bundle %bundle for this group',array('%field'=>$field_name,'%bundle'=>$bundle)));
+    
+# --- END if it's a bundle ----------------
+    
     $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->pathbuilder->id()));
+    
   }
 
 }
