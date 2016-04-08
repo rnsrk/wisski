@@ -164,34 +164,48 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       
       return true;      
     }
-    
+
+    /**
+     * Gets the main groups of the pathbuilder - usually what we are talking about.
+     * @return An array of path objects that are groups
+     */    
     public function getMainGroups() {
       $maingroups = array();
+      
+      // iterate through the path tree on the first level
       foreach($this->getPathTree() as $potmainpath) {
+        // load the path
         $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potmainpath["id"]);
         
-#        drupal_set_message(serialize($potmainpath["id"]));
-        
+        // if it is a group we want it.
         if($path->isGroup())
           $maingroups[] = $path;
       }
       
       return $maingroups;
-      #drupal_set_message(serialize($this->getPathTree()));
     }
     
+    /**
+     *
+     * Returns all groups that are used in the pathbuilder
+     * @return An array of path objects that are groups
+     */
     public function getAllGroups($treepart = NULL) {
+      // if there is no treepart parameter we take the whole tree
       if($treepart == NULL)
         $treepart = $this->getPathTree();
       
       $groups = array();
       
+      // iterate through the treepart
       foreach($treepart as $potpath) {
         $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potpath["id"]);
         
+        // if it is a group - we want it
         if($path->isGroup())
           $groups = $path;
-          
+        
+        // if there are children - go down the tree
         if(!empty($treepart['children']))
           $groups = array_merge($groups, $this->getAllGroups($treepart['children']));
       }
@@ -251,9 +265,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       
       if(empty($pbpaths))
         return array();
-      
-      drupal_set_message(serialize($pbpaths));
-      
+            
       foreach($pbpaths as $potpath) {
         
 #        drupal_set_message(serialize($fieldid) . " = " . serialize($potpath['field']));
