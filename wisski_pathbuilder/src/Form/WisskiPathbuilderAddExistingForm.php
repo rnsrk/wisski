@@ -62,7 +62,7 @@ class WisskiPathbuilderAddExistingForm extends EntityForm {
     $pb = $this->entity;
 
     // do it if it is not already there    
-    if($pb->getPbPath($value['id']))
+    if(is_null($pb->getPbPath($value['id'])))
       $pb->addPathToPathTree($value);   
     
     // save it    
