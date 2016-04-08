@@ -191,21 +191,20 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     } else {
 # --- END if its a field -------------------
 # --- if it's a bundle ----------------------
-    $bundlename = $form_state->getValue('bundle');
+      $bundle_name = $form_state->getValue('bundle');
 
-    // get the pbpaths
-    $pbpaths = $this->pathbuilder->getPbPaths();
-    // set the path and the bundle - beware: one is empty!
-    $pbpaths[$this->path]['field'] = $field_name;
-    $pbpaths[$this->path]['bundle'] = $bundlename;
-    // save it
-    $this->pathbuilder->setPbPaths($pbpaths);
-    $this->pathbuilder->save();
+      // get the pbpaths
+      $pbpaths = $this->pathbuilder->getPbPaths();
+      // set the the bundle_name to the path
+      $pbpaths[$this->path]['bundle'] = $bundle_name;
+      // save it
+      $this->pathbuilder->setPbPaths($pbpaths);
+      $this->pathbuilder->save();
 
-    $bundle = $this->entityManager->getStorage('wisski_bundle')->create(array('id'=>$bundlename,'label'=>$bundlename));
-    $bundle->save();
-    drupal_set_message(t('Created new bundle %bundle for this group',array('%bundle'=>$bundlename)));
-  }
+      $bundle = $this->entityManager->getStorage('wisski_bundle')->create(array('id'=>$bundle_name,'label'=>$bundle_name));
+      $bundle->save();
+      drupal_set_message(t('Created new bundle %bundle for this group',array('%bundle'=>$bundle_name)));
+    }
 # --- END if it's a bundle ----------------
     
     $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->pathbuilder->id()));
