@@ -192,7 +192,7 @@ class WisskiPathbuilderForm extends EntityForm {
         
     // if we did not get something, stop.
     if(empty($pbpath))
-      continue;
+      return array();
 
     // merge it into the grouparray    
     $grouparray = array_merge($grouparray, $pbpath);
