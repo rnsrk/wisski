@@ -15,7 +15,19 @@ wisski_pathbuilder.wisski_pathbuilder.*:
       label: 'The adapter this pathbuilder belongs to.'
     pathtree:
       type: sequence
-      'label': 'Store an array of paths as sextupel (ID, weight, enabled, children, bundle, field)'
+      'label': 'Store an array of paths as duo (ID, children)'
+      sequence:
+        type: mapping
+        mapping:
+          key: 
+            type: string
+            label: the key
+          value:
+            type: string
+            label: the value
+    pbpaths:
+      type: sequence
+      'label': 'Store an array of paths as sextupel (ID, weight, enabled, parent, bundle, field)'
       sequence:
         type: mapping
         mapping:
@@ -36,9 +48,6 @@ wisski_pathbuilder.wisski_path.*:
     name:
       type: label
       label: 'Label'
-    weight:
-      type: integer
-      label: 'Weight'
     uuid:
       type: string
       label: 'uuid'
