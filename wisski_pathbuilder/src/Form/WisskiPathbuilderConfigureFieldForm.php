@@ -109,7 +109,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
   public function save(array $form, FormStateInterface $form_state) {
 
     $field_name = $form_state->getValue('field');
-    $bundle = $form_state->getValue('bundle');
+    $bundle = $this->pathbuilder->getBundle($form_state->getValue('path')); #$form_state->getValue('bundle');
 
     $field_storage_values = [
       'field_name' => $field_name,#$values['field_name'],
