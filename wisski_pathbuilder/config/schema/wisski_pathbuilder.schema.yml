@@ -13,6 +13,9 @@ wisski_pathbuilder.wisski_pathbuilder.*:
     adapter:
       type: string
       label: 'The adapter this pathbuilder belongs to.'
+    create_mode:
+      type: string
+      label: 'The creation mode of this pathbuilder.'
     pathtree:
       type: sequence
       'label': 'Store an array of paths as duo (ID, children)'
