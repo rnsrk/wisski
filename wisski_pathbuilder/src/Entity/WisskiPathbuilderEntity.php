@@ -160,6 +160,48 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       
     }
     
+    /**
+     * Generates the id for the bundle
+     *
+     */
+    public function generateIdForBundle($bundle_name) {
+      return md5('b_' . $this->id() . '_' . $bundle_name);
+    }
+    
+    /**
+     * Generates a bundle for a given group if there was not already
+     * one existing.
+     *
+     */
+    public function generateBundleForGroup($groupid) {
+      $pbpaths = $this->getPbPaths();
+      
+      $my_group = $pbpaths[$groupid];
+      
+      if(empty($my_group))
+        return NULL;
+              
+      $bundle_name = $my_group['id'];
+
+      $bundleid = $this->generateIdForBundle($bundle_name);
+
+      // if the field is already there...
+      if(empty($field_name) || !empty(\Drupal::entityManager()->getStorage('wisski_bundle')->loadByProperties(array('id' => $bundleid)))) {
+        drupal_set_message(t('Bundle %bundle with id %id was already there.',array('%bundle'=>$bundle_name, '%id' => $bundleid)));
+        return;
+      }
+
+      // set the the bundle_name to the path
+      $pbpaths[$groupid]['bundle'] = $bundleid;
+      // save it
+      $this->setPbPaths($pbpaths);
+      $this->save();
+
+      $bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->create(array('id'=>$bundleid, 'label'=>$bundle_name));
+      $bundle->save();
+      drupal_set_message(t('Created new bundle %bundle for this group.',array('%bundle'=>$bundle_name)));
+    }
+    
     public function addPathToPathTree($pathid) {
       $pathtree = $this->getPathTree();
       $pbpaths = $this->getPbPaths();
@@ -201,24 +243,24 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      * Returns all groups that are used in the pathbuilder
      * @return An array of path objects that are groups
      */
-    public function getAllGroups($treepart = NULL) {
-      // if there is no treepart parameter we take the whole tree
-      if($treepart == NULL)
-        $treepart = $this->getPathTree();
+    public function getAllGroups() {
+#      // if there is no treepart parameter we take the whole tree
+#      if($treepart == NULL)
+#        $treepart = $this->getPathTree();
       
       $groups = array();
       
       // iterate through the treepart
-      foreach($treepart as $potpath) {
+      foreach($this->getPbPaths() as $potpath) {
         $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potpath["id"]);
         
         // if it is a group - we want it
         if($path->isGroup())
-          $groups = $path;
+          $groups[] = $path;
         
-        // if there are children - go down the tree
-        if(!empty($treepart['children']))
-          $groups = array_merge($groups, $this->getAllGroups($treepart['children']));
+#        // if there are children - go down the tree
+#        if(!empty($treepart['children']))
+#          $groups = array_merge($groups, $this->getAllGroups($treepart['children']));
       }
       
       return $groups;
@@ -238,8 +280,13 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       return $outgroups;
       
     }
-    
-    public function getPathForFid($fieldid, $treepart = NULL) {
+
+    /**
+     * Gets the real path-object for a given fieldid
+     *
+     * @return a path object
+     */
+    public function getPathForFid($fieldid) {
       /*
       $return = NULL;
       if($treepart == NULL)

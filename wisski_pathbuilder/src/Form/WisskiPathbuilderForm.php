@@ -54,7 +54,7 @@ class WisskiPathbuilderForm extends EntityForm {
         '#disabled' => !$pathbuilder->isNew(),
         '#machine_name' => [
           'source' => array('name'),
-          'exists' => ['\Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::', 'load']
+          'exists' => '\Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load',
         ],
       );
     }
@@ -202,7 +202,7 @@ class WisskiPathbuilderForm extends EntityForm {
         '#disabled' => !$pathbuilder->isNew(),
         '#machine_name' => [
           'source' => array('additional', 'name'),
-          'exists' => ['\Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity.', 'load']
+          'exists' => '\Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load',
         ],
       );
     }
@@ -363,6 +363,16 @@ class WisskiPathbuilderForm extends EntityForm {
       // save the path
       $pbpaths = $pathbuilder->setPbPaths($pbpaths);
 
+    }
+    
+    // create mode is bundle if 0
+    if($form_state->getValue('create_mode') == "0") {
+
+      $allGroups = $pathbuilder->getAllGroups();
+      drupal_set_message("ag: " . serialize($allGroups));
+      foreach($allGroups as $group) {
+        $pathbuilder->generateBundleForGroup($group->id());
+      }
     }
 
     // save the tree
