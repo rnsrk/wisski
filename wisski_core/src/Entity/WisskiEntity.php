@@ -9,7 +9,7 @@ use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Language\LanguageInterface;
 
 use Drupal\wisski_core\WisskiEntityInterface;
-
+ // * 		 "views_data" = "Drupal\views\EntityViewsData",
 /**
  * Defines the entity class.
  *
@@ -21,12 +21,14 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *		 "storage" = "Drupal\wisski_core\WisskiStorage",
  *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
  *     "list_builder" = "Drupal\wisski_core\Controller\WisskiEntityListBuilder",
+ *     "list_controller" = "Drupal\wisski_core\Controller\WisskiEntityListController",
  *     "form" = {
  *       "default" = "Drupal\wisski_core\Form\WisskiEntityForm",
  *       "edit" = "Drupal\wisski_core\Form\WisskiEntityForm",
  *			 "add" = "Drupal\wisski_core\Form\WisskiEntityForm",
  *			 "delete" = "Drupal\wisski_core\Form\WisskiEntityDeleteForm",
  *     },
+
  *     "access" = "Drupal\wisski_core\Controller\WisskiEntityAccessHandler",
  *   },
  *   render_cache = TRUE,

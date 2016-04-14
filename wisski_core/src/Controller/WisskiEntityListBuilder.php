@@ -12,6 +12,8 @@ use Drupal\Core\Link;
  */
 class WisskiEntityListBuilder extends EntityListBuilder {
 
+  private $bundle;
+  
   /**
    * {@inheritdoc}
    *
@@ -19,12 +21,29 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * parent::render() is where EntityListBuilder creates the table using our
    * buildHeader() and buildRow() implementations.
    */
-  public function render() {
-    $build['description'] = array(
-      '#markup' => $this->t('Let\'s talk about test entities'),
-    );
+  public function render($bundle = '') {
+
+    $this->bundle = $bundle;
     $build['table'] = parent::render();
     return $build;
+  }
+
+  /**
+   * {@inheritdoc}
+   * We only load entities form the specified bundle
+   */
+  protected function getEntityIds() {
+    $query = $this->getStorage()->getQuery()
+      ->sort($this->entityType->getKey('id'));
+
+    // Only add the pager if a limit is specified.
+    if ($this->limit) {
+      $query->pager($this->limit);
+    }
+    if (!empty($this->bundle)) {
+      $query->condition('bundle',$this->bundle);
+    }
+    return $query->execute();
   }
 
   /**
@@ -46,7 +65,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-
+dpm($this);
 //    dpm($entity->tellMe('id','bundle'));
     $row['id'] = $id = $entity->id();
 //    echo "Hello ".$id;

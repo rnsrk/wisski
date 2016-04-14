@@ -98,6 +98,20 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     return $entity_info;
   }
 
+#  /**
+#   * This function is called by the Views module.
+#   */
+#  public function getTableMapping(array $storage_definitions = NULL) {
+#
+#    $definitions = $storage_definitions ? : \Drupal::getContainer()->get('entity.manager')->getFieldStorageDefinitions($this->entityTypeId);
+#    if (!empty($definitions)) {
+#      if (\Drupal::moduleHandler()->moduleExists('devel')) {
+#        dpm($definitions,__METHOD__);
+#      } else drupal_set_message('Non-empty call to '.__METHOD__);
+#    }
+#    return NULL;
+#  }
+
   /**
    * {@inheritdoc}
    */
