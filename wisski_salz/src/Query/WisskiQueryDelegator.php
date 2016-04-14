@@ -22,7 +22,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   }
   
   public function execute() {
-    
+dpm($this,__METHOD__);
     if ($this->count) {
       $result = 0;
       foreach ($this->dependent_queries as $query) {
@@ -43,6 +43,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    * {@inheritdoc}
    */
   public function condition($field, $value = NULL, $operator = NULL, $langcode = NULL) {
+    parent::condition($field,$value,$operator,$langcode);
     foreach ($this->dependent_queries as $query) $query->condition($field,$value,$operator.$langcode);
     return $this;
   }
@@ -51,6 +52,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    * {@inheritdoc}
    */
   public function exists($field, $langcode = NULL) {
+    parent::exists($field,$langcode);
     foreach ($this->dependent_queries as $query) $query->exists($field,$langcode);
     return $this;
   }
@@ -59,6 +61,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    * {@inheritdoc}
    */
   public function notExists($field, $langcode = NULL) {
+    parent::notExists($field,$langcode);
     foreach ($this->dependent_queries as $query) $query->notExists($field,$langcode);
     return $this;
   }
@@ -67,6 +70,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    * {@inheritdoc}
    */
   public function pager($limit = 10, $element = NULL) {
+    parent::pager($limit,$element);
     foreach ($this->dependent_queries as $query) $query->pager($limit,$element);
     return $this;
   }
@@ -75,6 +79,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    * {@inheritdoc}
    */
   public function range($start = NULL, $length = NULL) {
+    parent::range($start,$length);
     foreach ($this->dependent_queries as $query) $query->range($start,$length);
     return $this;
   }
@@ -83,6 +88,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    * {@inheritdoc}
    */
   public function sort($field, $direction = 'ASC', $langcode = NULL) {
+    parent::sort($field,$direction,$langcode);
     foreach ($this->dependent_queries as $query) $query->sort($field,$direction,$langcode);
     return $this;
   }
@@ -91,6 +97,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    * {@inheritdoc}
    */
   public function count() {
+    parent::count();
     foreach ($this->dependent_queries as $query) $query->count();
     return $this;
   }

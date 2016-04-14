@@ -53,6 +53,9 @@ entity.wisski_individual.list:
   defaults:
     _entity_list: 'wisski_individual'
     _title: 'WissKI Entities'
+  options:
+    parameters:
+      bundle: wisski_bundle
   requirements:
     _entity_access: 'wisski_individual.view'
 
@@ -153,7 +156,7 @@ entity.wisski_bundle.delete_form:
 entity.wisski_bundle.entity_list:
   path: '/admin/structure/wisski_core/{wisski_bundle}/list'
   defaults:
-    _entity_list: wisski_individual
+    _controller: '\Drupal\wisski_core\Controller\WisskiEntityListController::listing'
     _title: 'Entities in Bundle'
   options:
     parameters:

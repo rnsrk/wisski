@@ -13,6 +13,11 @@ class Query extends WisskiQueryBase {
    */
   public function execute() {
     $ents = $this->getEngine()->loadMultiple();
+    foreach($this->condition->conditions() as $condition) {
+      $field = $condition['field'];
+      $value = $condition['value'];
+      $ents = array_filter($ents,function($ent) use ($field,$value) {return $ent[$field] === $value;});
+    }
     return array_keys($ents);
   }
 

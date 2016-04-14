@@ -34,7 +34,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     $values = $this->getEntityInfo($ids,array_keys($field_definitions));
 //  dpm($values,'values');    
     foreach ($ids as $id) {
-      if (is_array($values[$id]['bundle'])) $values[$id]['bundle'] = current($values[$id]['bundle']);
+//      if (is_array($values[$id]['bundle'])) $values[$id]['bundle'] = current($values[$id]['bundle']);
       //dummy fallback
       if (empty($values[$id]) && $id === 42) {
         $values[$id] = array(
@@ -44,6 +44,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           'vid' => 42,
         );
       }
+//      dpm($values[$id],__METHOD__."($id)");
       if (!empty($values[$id])) $entities[$id] = $this->create($values[$id]);
     }
     return $entities;
@@ -66,11 +67,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #    dpm(serialize($adapters));
 #    drupal_set_message("hallo welt");
     $info = array();
-    foreach ($adapters as $adapter) {
+    foreach ($adapters as $aid => $adapter) {
+      if ($adapter->getEngineId() === 'sparql11_with_pb') continue;
       try {
-
         $adapter_info = $adapter->loadFieldValues($ids,$fields);
-
         foreach($adapter_info as $entity_id => $entity_values) {
 
           if (!isset($info[$entity_id])) $info[$entity_id] = $entity_values;
@@ -85,18 +85,33 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               // @TODO: Check.
               else 
                 if(!empty($entity_values[$key]))
-                  $info[$entity_id][$key] = array_merge($info[$entity_id][$key],$entity_values[$key]);
+                  $info[$entity_id][$key] = WisskiHelper::array_merge_nonempty($info[$entity_id][$key],$entity_values[$key]);
             }
           }
         }
+        //dpm(array('adapter_info'=>$adapter_info,'entity_info_after'=>$info),$aid);
       } catch (\Exception $e) {
         drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
       }
     }
-    $entity_info = array_merge($entity_info,$info);
+    $entity_info = WisskiHelper::array_merge_nonempty($entity_info,$info);
 #    dpm(func_get_args()+array('result'=>$entity_info),__METHOD__);
     return $entity_info;
   }
+
+#  /**
+#   * This function is called by the Views module.
+#   */
+#  public function getTableMapping(array $storage_definitions = NULL) {
+#
+#    $definitions = $storage_definitions ? : \Drupal::getContainer()->get('entity.manager')->getFieldStorageDefinitions($this->entityTypeId);
+#    if (!empty($definitions)) {
+#      if (\Drupal::moduleHandler()->moduleExists('devel')) {
+#        dpm($definitions,__METHOD__);
+#      } else drupal_set_message('Non-empty call to '.__METHOD__);
+#    }
+#    return NULL;
+#  }
 
   /**
    * {@inheritdoc}
