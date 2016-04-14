@@ -10,7 +10,6 @@ use Drupal\Core\Entity\Controller\EntityListController;
 class WisskiEntityListController extends EntityListController {
 
   public function listing($wisski_bundle) {
-  dpm($this);
     return $this->entityManager()->getListBuilder('wisski_individual')->render($wisski_bundle);
   }
 }
