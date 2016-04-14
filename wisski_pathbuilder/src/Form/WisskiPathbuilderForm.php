@@ -37,24 +37,27 @@ class WisskiPathbuilderForm extends EntityForm {
       $form['#title'] = $this->t('Edit Pathbuilder: @id', array('@id' => $pathbuilder->id()));
     }
     
-    $form['name'] = array(
-      '#type' => 'textfield',
-      '#title' => $this->t('Name'),
-      '#default_value' => $pathbuilder->getName(),
-      '#description' => $this->t("Name of the Pathbuilder-Tree."),
-      '#required' => true,
-    );
+    // only show this in create mode
+    if($this->operation == 'add') {
+      $form['name'] = array(
+        '#type' => 'textfield',
+        '#title' => $this->t('Name'),
+        '#default_value' => $pathbuilder->getName(),
+        '#description' => $this->t("Name of the Pathbuilder-Tree."),
+        '#required' => true,
+      );
     
-    // we need an id
-    $form['id'] = array(
-      '#type' => 'machine_name',
-      '#default_value' => $pathbuilder->id(),
-      '#disabled' => !$pathbuilder->isNew(),
-      '#machine_name' => [
-        'source' => array('name'),
-        'exists' => ['\Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity.', 'load']
-      ],
-    );
+      // we need an id
+      $form['id'] = array(
+        '#type' => 'machine_name',
+        '#default_value' => $pathbuilder->id(),
+        '#disabled' => !$pathbuilder->isNew(),
+        '#machine_name' => [
+          'source' => array('name'),
+          'exists' => ['\Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::', 'load']
+        ],
+      );
+    }
     
     $adapters = \Drupal\wisski_salz\Entity\Adapter::loadMultiple();
     
@@ -63,124 +66,162 @@ class WisskiPathbuilderForm extends EntityForm {
     foreach($adapters as $adapter) {
       $adapterlist[$adapter->id()] = $adapter->label();#      drupal_set_message(serialize($adapters));
     }
+    
+    if($this->operation == 'edit') { 	   
+      $header = array("title", "Path", array('data' => $this->t("Enabled"), 'class' => array('checkbox')), "Weight", array('data' => $this->t('Operations'), 'colspan' => 3));
+     
+      $form['pathbuilder_table'] = array(
+        '#type' => 'table',
+        '#theme' => 'table__menu_overview',
+        '#header' => $header,
+#      '#rows' => $rows,
+        '#attributes' => array(
+          'id' => 'my-module-table',
+        ),
+        '#tabledrag' => array(
+          array(
+            'action' => 'match',
+            'relationship' => 'parent',
+            'group' => 'menu-parent',
+            'subgroup' => 'menu-parent',
+            'source' => 'menu-id',
+            'hidden' => TRUE,
+            'limit' => 9,
+          ),
+          array(
+            'action' => 'order',
+            'relationship' => 'sibling',
+            'group' => 'menu-weight',
+          ),
+        ),
+      );	
+
+      $pathforms = array();
+
+      // get all paths belonging to the respective pathbuilder
+      foreach($pathbuilder->getPathTree() as $grouparray) {
+        $pathforms = array_merge($pathforms, $this->recursive_render_tree($grouparray));
+      }
+    
+
+      foreach($pathforms as $pathform) {    
+    
+        $path = $pathform['#item'];
         
-    $form['adapter'] = array(
+        $form['pathbuilder_table'][$path->id()]['#item'] = $pathform['#item'];
+      
+        // TableDrag: Mark the table row as draggable.
+        $form['pathbuilder_table'][$path->id()]['#attributes'] = $pathform['#attributes'];
+        $form['pathbuilder_table'][$path->id()]['#attributes']['class'][] = 'draggable';
+
+
+        // TableDrag: Sort the table row according to its existing/configured weight.
+        $form['pathbuilder_table'][$path->id()]['#weight'] = $path->weight;
+
+        // Add special classes to be used for tabledrag.js.
+        $pathform['parent']['#attributes']['class'] = array('menu-parent');
+        $pathform['weight']['#attributes']['class'] = array('menu-weight');
+        $pathform['id']['#attributes']['class'] = array('menu-id');
+
+        $form['pathbuilder_table'][$path->id()]['title'] = array(
+          array(
+            '#theme' => 'indentation',
+            '#size' => $pathform['#item']->depth,
+          ),
+          $pathform['title'],
+        );
+      
+        #$form['pathbuilder_table'][$path->id()]['path'] = array('#type' => 'label', '#title' => 'Mu -> ha -> ha');
+        $form['pathbuilder_table'][$path->id()]['path'] = $pathform['path'];
+        $form['pathbuilder_table'][$path->id()]['enabled'] = $pathform['enabled'];
+        $form['pathbuilder_table'][$path->id()]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
+
+        $form['pathbuilder_table'][$path->id()]['weight'] = $pathform['weight'];
+      
+        // an array of links that can be selected in the dropdown operations list
+        $links = array();
+        $links['edit'] = array(
+          'title' => $this->t('Edit'),
+       # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->getID())),
+          'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.edit_form')
+                     ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
+        );
+      
+        $links['fieldconfig'] = array(
+          'title' => $this->t('Configure Field'),
+         # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
+          'url' => \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.configure_field_form')
+                     ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
+        );
+
+        $links['delete'] = array(
+          'title' => $this->t('Delete'),
+          'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.delete_form')
+                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
+        );  
+                                                             
+        // Operations (dropbutton) column.
+      #  $operations = parent::getDefaultOperations($pathbuilder);
+        $operations = array(
+          '#type' => 'operations',
+          '#links' => $links,
+        );
+
+        $form['pathbuilder_table'][$path->id()]['operations'] = $operations;
+
+        $form['pathbuilder_table'][$path->id()]['id'] = $pathform['id'];
+        $form['pathbuilder_table'][$path->id()]['parent'] = $pathform['parent'];
+      
+        $form['pathbuilder_table'][$path->id()]['bundle'] = $pathform['bundle'];
+        $form['pathbuilder_table'][$path->id()]['field'] = $pathform['field'];
+#      drupal_set_message(serialize($form['pathbuilder_table'][$path->id()]));
+      }
+    }
+    
+       
+    $form['additional'] = array(
+      '#type' => 'fieldset',
+      '#tree' => FALSE,
+      '#title' => $this->t('Additional Settings'),
+    );
+    
+    // only show this in edit mode
+    if($this->operation == 'edit') {
+      $form['additional']['name'] = array(
+        '#type' => 'textfield',
+        '#title' => $this->t('Name'),
+        '#default_value' => $pathbuilder->getName(),
+        '#description' => $this->t("Name of the Pathbuilder-Tree."),
+        '#required' => true,
+      );
+    
+      // we need an id
+      $form['additional']['id'] = array(
+        '#type' => 'machine_name',
+        '#default_value' => $pathbuilder->id(),
+        '#disabled' => !$pathbuilder->isNew(),
+        '#machine_name' => [
+          'source' => array('additional', 'name'),
+          'exists' => ['\Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity.', 'load']
+        ],
+      );
+    }
+    
+    $form['additional']['adapter'] = array(
       '#type' => 'select',
       '#description' => $this->t('Which adapter does this Pathbuilder belong to?'),
 #      '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
       '#default_value' => $pathbuilder->getAdapterId(),
       '#options' => $adapterlist, #array(0 => "Pathbuilder"),
     );
-
     
-    $header = array("title", "Path", array('data' => $this->t("Enabled"), 'class' => array('checkbox')), "Weight", array('data' => $this->t('Operations'), 'colspan' => 3));
-     
-    $form['pathbuilder_table'] = array(
-      '#type' => 'table',
-      '#theme' => 'table__menu_overview',
-      '#header' => $header,
-#      '#rows' => $rows,
-      '#attributes' => array(
-        'id' => 'my-module-table',
-      ),
-      '#tabledrag' => array(
-        array(
-          'action' => 'match',
-          'relationship' => 'parent',
-          'group' => 'menu-parent',
-          'subgroup' => 'menu-parent',
-          'source' => 'menu-id',
-          'hidden' => TRUE,
-          'limit' => 9,
-        ),
-        array(
-          'action' => 'order',
-          'relationship' => 'sibling',
-          'group' => 'menu-weight',
-        ),
-      ),
+    $form['additional']['create_mode'] = array(
+      '#type' => 'select',
+      '#description' => $this->t('Which adapter does this Pathbuilder belong to?'),
+#      '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
+      '#default_value' => $pathbuilder->getCreateMode(),
+      '#options' => array('bundle', 'subgroup'),
     );
-
-    $pathforms = array();
-
-    // get all paths belonging to the respective pathbuilder
-    foreach($pathbuilder->getPathTree() as $grouparray) {
-      $pathforms = array_merge($pathforms, $this->recursive_render_tree($grouparray));
-    }
-    
-
-    foreach($pathforms as $pathform) {    
-    
-      $path = $pathform['#item'];
-
-      $form['pathbuilder_table'][$path->id()]['#item'] = $pathform['#item'];
-      
-      // TableDrag: Mark the table row as draggable.
-      $form['pathbuilder_table'][$path->id()]['#attributes'] = $pathform['#attributes'];
-      $form['pathbuilder_table'][$path->id()]['#attributes']['class'][] = 'draggable';
-
-
-      // TableDrag: Sort the table row according to its existing/configured weight.
-      $form['pathbuilder_table'][$path->id()]['#weight'] = $path->weight;
-
-      // Add special classes to be used for tabledrag.js.
-      $pathform['parent']['#attributes']['class'] = array('menu-parent');
-      $pathform['weight']['#attributes']['class'] = array('menu-weight');
-      $pathform['id']['#attributes']['class'] = array('menu-id');
-
-      $form['pathbuilder_table'][$path->id()]['title'] = array(
-          array(
-            '#theme' => 'indentation',
-            '#size' => $pathform['#item']->depth,
-          ),
-          $pathform['title'],
-      );
-      
-      #$form['pathbuilder_table'][$path->id()]['path'] = array('#type' => 'label', '#title' => 'Mu -> ha -> ha');
-      $form['pathbuilder_table'][$path->id()]['path'] = $pathform['path'];
-      $form['pathbuilder_table'][$path->id()]['enabled'] = $pathform['enabled'];
-      $form['pathbuilder_table'][$path->id()]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
-
-      $form['pathbuilder_table'][$path->id()]['weight'] = $pathform['weight'];
-      
-      // an array of links that can be selected in the dropdown operations list
-      $links = array();
-      $links['edit'] = array(
-        'title' => $this->t('Edit'),
-       # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->getID())),
-        'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.edit_form')
-                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
-      );
-      
-      $links['fieldconfig'] = array(
-        'title' => $this->t('Configure Field'),
-       # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
-        'url' => \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.configure_field_form')
-                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
-      );
-
-      $links['delete'] = array(
-        'title' => $this->t('Delete'),
-        'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.delete_form')
-                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
-      );  
-                                                             
-      // Operations (dropbutton) column.
-    #  $operations = parent::getDefaultOperations($pathbuilder);
-      $operations = array(
-        '#type' => 'operations',
-        '#links' => $links,
-      );
-
-      $form['pathbuilder_table'][$path->id()]['operations'] = $operations;
-
-      $form['pathbuilder_table'][$path->id()]['id'] = $pathform['id'];
-      $form['pathbuilder_table'][$path->id()]['parent'] = $pathform['parent'];
-      
-      $form['pathbuilder_table'][$path->id()]['bundle'] = $pathform['bundle'];
-      $form['pathbuilder_table'][$path->id()]['field'] = $pathform['field'];
-#      drupal_set_message(serialize($form['pathbuilder_table'][$path->id()]));
-    }
     
     return $form;
   }

@@ -61,6 +61,13 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      * @var string
      */
     protected $adapter;
+    
+    /**
+     * The create mode for the pathbuilder
+     *
+     * @var string
+     */
+    protected $create_mode;
 
     /**
      * The hierarchical tree of paths consisting of two values:
@@ -87,8 +94,6 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
     }
 */    
     public function getName(){
-      if(empty($this->name))
-        return "Pathbuilder";
       return $this->name;
     }
                            
@@ -97,8 +102,6 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
     }
     
     public function getAdapterId(){
-      if(empty($this->adapter))
-        return "Pathbuilder";
       return $this->adapter;
     }
                            
@@ -124,6 +127,14 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
                                                 
     public function setPathTree($pathtree){
       $this->pathtree = $pathtree;
+    }
+    
+    public function setCreateMode($create_mode) {
+      $this->create_mode = $create_mode;
+    }
+    
+    public function getCreateMode() {
+      return $this->create_mode;
     }
     
     public function getBundle($pathid) {
