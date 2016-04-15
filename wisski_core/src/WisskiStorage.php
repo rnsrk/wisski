@@ -5,6 +5,7 @@ namespace Drupal\wisski_core;
 use Drupal\Core\Entity\ContentEntityStorageBase;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityFieldManager;
 
 use Drupal\Core\Field\FieldDefinitionInterface;
 
@@ -58,8 +59,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   protected function getEntityInfo(array $ids,$cached = FALSE) {
     
-    $field_definitions = $this->entityManager->getFieldStorageDefinitions('wisski_individual');
-//    dpm($field_definitions,'field_storage_definitions');return array();
+    $bundles = $this->entityManager->getBundleInfo('wisski_individual');
+//    dpm($bundles);
     $entity_info = &$this->entity_info;
     if ($cached) {
       $ids = array_diff_key($ids,$ntity_info);
@@ -69,63 +70,67 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #    dpm(serialize($adapters));
 #    drupal_set_message("hallo welt");
     $info = array();
-    foreach ($adapters as $aid => $adapter) {
-//      if ($adapter->getEngineId() === 'sparql11_with_pb') continue;
-      try {
-        $adapter_info = $adapter->loadFieldValues($ids,array_keys($field_definitions));
-//        dpm($adapter_info,"info from $aid");return array();
-        foreach($adapter_info as $entity_id => $entity_values) {
-          //if we don't know about that entity yet, this adapter's info can be used without a change
-          if (!isset($info[$entity_id])) $info[$entity_id] = $entity_values;
-          else {
-            //integrate additional values on existing entities
-            foreach($entity_values as $field_name => $value) {
-              if (empty($value)) continue;
-              $actual_field_info = $info[$entity_id][$field_name];
-              if ($field_definitions[$field_name] instanceof BaseFieldDefinition) {
-                //this is a base field and cannot have multiple values
-                //@TODO make sure, we load the RIGHT value
-                if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
-                  $this->t('Multiple values for %field_name in entity %id: %val1, %val2',array(
-                    '%field_name'=>$field_name,
-                    '%id'=>$entity_id,
-                    '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
-                    '%val2'=>$value,
-                  )),'error');
-                else $info[$entity_id][$field_name] = $value;
-                continue;
+    foreach ($bundles as $bundle_name => $bundle_label) {
+      $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundle_name);
+//      dpm($field_definitions,$bundle_name);
+      foreach ($adapters as $aid => $adapter) {
+  //      if ($adapter->getEngineId() === 'sparql11_with_pb') continue;
+        try {
+          $adapter_info = $adapter->loadFieldValues($ids,array_keys($field_definitions));
+  //        dpm($adapter_info,"info from $aid");return array();
+          foreach($adapter_info as $entity_id => $entity_values) {
+            //if we don't know about that entity yet, this adapter's info can be used without a change
+            if (!isset($info[$entity_id])) $info[$entity_id] = $entity_values;
+            else {
+              //integrate additional values on existing entities
+              foreach($entity_values as $field_name => $value) {
+                if (empty($value)) continue;
+                $actual_field_info = $info[$entity_id][$field_name];
+                if ($field_definitions[$field_name] instanceof BaseFieldDefinition) {
+                  //this is a base field and cannot have multiple values
+                  //@TODO make sure, we load the RIGHT value
+                  if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
+                    $this->t('Multiple values for %field_name in entity %id: %val1, %val2',array(
+                      '%field_name'=>$field_name,
+                      '%id'=>$entity_id,
+                      '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
+                      '%val2'=>$value,
+                    )),'error');
+                  else $info[$entity_id][$field_name] = $value;
+                  continue;
+                }
+                //rest is a field
+                $cardinality = $field_definitions[$field_name]->getCardinality();
+                if ($cardinality === 1) {
+                  //this field cannot have multiple values
+                  //@TODO make sure, we load the RIGHT value
+                  if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
+                    $this->t('Multiple values for field %field_name in entity %id: %val1, %val2',array(
+                      '%field_name'=>$field_name,
+                      '%id'=>$entity_id,
+                      '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
+                      '%val2'=>$value,
+                    )),'error');
+                  else $info[$entity_id][$field_name] = $value;
+                  continue;
+                }
+                if (!is_array($actual_field_info)) $actual_field_info = array($actual_field_info);
+                if ($cardinality > 0 && count($actual_field_info) >= $cardinality) {
+                  drupal_set_message(
+                    $this->t('Too many values for field %field_name in entity %id. %card allowed. Tried to add %val2',array(
+                      '%field_name'=>$field_name,
+                      '%id'=>$entity_id,
+                      '%card'=>$cardinality,
+                      '%val1'=>$value, )),'error');
+                } else $actual_field_info[] = $value;
+                $info[$entity_id][$field_name] = $actual_field_info;
               }
-              //rest is a field
-              $cardinality = $field_definitions[$field_name]->getCardinality();
-              if ($cardinality === 1) {
-                //this is a base field and cannot have multiple values
-                //@TODO make sure, we load the RIGHT value
-                if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
-                  $this->t('Multiple values for field %field_name in entity %id: %val1, %val2',array(
-                    '%field_name'=>$field_name,
-                    '%id'=>$entity_id,
-                    '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
-                    '%val2'=>$value,
-                  )),'error');
-                else $info[$entity_id][$field_name] = $value;
-                continue;
-              }
-              if (!is_array($actual_field_info)) $actual_field_info = array($actual_field_info);
-              if ($cardinality > 0 && count($actual_field_info) >= $cardinality) {
-                drupal_set_message(
-                  $this->t('Too many values for field %field_name in entity %id. %card allowed. Tried to add %val2',array(
-                    '%field_name'=>$field_name,
-                    '%id'=>$entity_id,
-                    '%card'=>$cardinality,
-                    '%val1'=>$value, )),'error');
-              } else $actual_field_info[] = $value;
-              $info[$entity_id][$field_name] = $actual_field_info;
             }
           }
+          //dpm(array('adapter_info'=>$adapter_info,'entity_info_after'=>$info),$aid);
+        } catch (\Exception $e) {
+          drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
         }
-        //dpm(array('adapter_info'=>$adapter_info,'entity_info_after'=>$info),$aid);
-      } catch (\Exception $e) {
-        drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
       }
     }
     $entity_info = WisskiHelper::array_merge_nonempty($entity_info,$info);
