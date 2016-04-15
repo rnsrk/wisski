@@ -110,7 +110,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 continue;
               }
               if (!is_array($actual_field_info)) $actual_field_info = array($actual_field_info);
-              if (count($actual_field_info) >= $cardinality) {
+              if ($cardinality > 0 && count($actual_field_info) >= $cardinality) {
                 drupal_set_message(
                   t('Too many values for field %field_name in entity %id. %card allowed. Tried to add %val2',array(
                     '%field_name'=>$field_name,
