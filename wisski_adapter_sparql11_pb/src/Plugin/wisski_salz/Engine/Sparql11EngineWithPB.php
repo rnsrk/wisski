@@ -203,6 +203,41 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   private $entity_info;
 
   /**
+   *
+   *
+   *
+   */
+  public function getBundleIdForEntityId($entityid) {
+    $pb = $this->getPbForThis();
+
+    $query = "SELECT ?class WHERE { <" . $entityid . "> a ?class }";
+    
+    $result = $this->directQuery($query);
+    
+#    drupal_set_message(serialize($result));
+    
+#    $out = array();
+    foreach($result as $thing) {
+    
+      // ask for a bundle from the pb that has this class thing in it
+      $groups = $pb->getAllGroups();
+      
+      foreach($groups as $group) {
+        $path_array = $group->getPathArray();
+        if($path_array['x' . count($path_array)-1] == $thing->class->dumpValue("text")) {
+          $pbpaths = $pb->getPbPaths();
+          
+          if(!empty($pbpaths[$group->id()]))
+            return $pbpaths[$group->id()];
+        }
+      }
+    }
+
+    return FALSE;    
+    
+  }
+
+  /**
    * Gets the bundle and loads every individual in the TS
    * and returns an array of ids if there is something...
    *
@@ -269,12 +304,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $query = 'SELECT * WHERE { ?s ?p "' . $id . '" }';  
     
     $result = $this->directQuery($query);
-    
-#    drupal_set_message(serialize($result));
-    
-#    $out = array();
-#    $i = 999;
-    
+        
     foreach($result as $thing) {
 #      $uri = $thing->s->dumpValue("text");
 #      $uri = str_replace('/','\\',$uri);
@@ -372,6 +402,34 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return $out;
     
   }
+  
+  /**
+   * Gets the PB object for a given adapter id
+   * @return a pb object
+   */
+  public function getPbForThis() {
+    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    
+    foreach($pbs as $pb) {
+      // if there is no adapter set for this pb  
+      if(empty($pb->getAdapterId()))
+        continue;
+        
+      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
+
+      // if we have not adapter, we may go home, too
+      if(empty($adapter))
+        continue;
+      
+      // if he didn't ask for us...    
+      if($this->getConfiguration()['id'] != $adapter->getEngine()->getConfiguration()['id'])
+        continue;
+        
+      // if we get here we have our pathbuilder
+      return $pb;
+      
+    }
+  }
 
   /**
    * @inheritdoc
@@ -424,7 +482,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         continue;
               
       foreach($entity_ids as $eid) {
-      
+        
         // here we should check if we really know the entity by asking the TS for it.
         // this would speed everything up largely, I think.
         $entity = $this->load($eid);
@@ -434,7 +492,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           continue;
 
         foreach($field_ids as $key => $fieldid) {
-        
+          drupal_set_message("bla: " . serialize($field_ids));
           if($fieldid == "eid") {
             $out[$eid][$fieldid] = $eid;
             continue;
@@ -462,7 +520,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["id"]);
 
           $bundle = $pb->getBundle($pbarray["id"]);
-           
+          
+          // if the field is not in a bundle it is not relevant for us!
+          if(empty($bundle))
+            continue;
+          drupal_set_message("bundle: " . serialize($bundle)); 
+          
           if(!empty($path)) {
             $out[$eid]['bundle'] = $bundle;
             $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $eid));
@@ -470,6 +533,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
       }
     }
+
+    drupal_set_message("out: " . serialize($out));
 
     return $out;
 /*
