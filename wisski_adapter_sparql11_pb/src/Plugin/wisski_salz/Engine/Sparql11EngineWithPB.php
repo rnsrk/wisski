@@ -427,6 +427,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
         // here we should check if we really know the entity by asking the TS for it.
         // this would speed everything up largely, I think.
+        $entity = $this->load($eid);
+        
+        // if there is nothing, continue.
+        if(empty($entity))
+          continue;
 
         foreach($field_ids as $key => $fieldid) {
         
