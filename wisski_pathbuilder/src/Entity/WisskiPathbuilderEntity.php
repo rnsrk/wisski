@@ -147,6 +147,9 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         return NULL;
       }
       
+      if(empty($pbpath['parent']))
+        return NULL;
+      
       // get the parent of this path which probably is a group     
       $parentpbpath = $this->getPbPath($pbpath['parent']);
       
