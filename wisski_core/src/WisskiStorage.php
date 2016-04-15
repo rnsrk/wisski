@@ -88,7 +88,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   $this->t('Multiple values for %field_name in entity %id: %val1, %val2',array(
                     '%field_name'=>$field_name,
                     '%id'=>$entity_id,
-                    '%val1'=>$actual_field_info,
+                    '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
                     '%val2'=>$value,
                   )),'error');
                 else $actual_field_info = $value;
@@ -103,7 +103,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   $this->t('Multiple values for field %field_name in entity %id: %val1, %val2',array(
                     '%field_name'=>$field_name,
                     '%id'=>$entity_id,
-                    '%val1'=>$actual_field_info,
+                    '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
                     '%val2'=>$value,
                   )),'error');
                 else $actual_field_info = $value;
@@ -116,8 +116,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     '%field_name'=>$field_name,
                     '%id'=>$entity_id,
                     '%card'=>$cardinality,
-                    '%val1'=>$value,
-                  )),'error');
+                    '%val1'=>$value, )),'error');
               } else $actual_field_info[] = $value;
               $info[$entity_id][$field_name] = $actual_field_info;
             }
