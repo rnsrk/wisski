@@ -113,7 +113,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     // get the input for the path
     $pathid = $form_state->getValue('path');
     
-    $bundle = $this->pathbuilder->getBundle($pathid); #$form_state->getValue('bundle');
+    #$bundle = $this->pathbuilder->getBundle($pathid); #$form_state->getValue('bundle');
 
     // load the path
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
@@ -121,7 +121,8 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     // it is a field
     if(!$path->isGroup()) {
     # --- if it's a field ------------------
-      
+      $this->pathbuilder->generateFieldForPath($pathid, $field_name);
+/*      
       // get the bundle for this pathid
       $bundle = $this->pathbuilder->getBundle($pathid); #$form_state->getValue('bundle');
       
@@ -188,6 +189,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
       $form_display->setComponent($field_name)->save();
 
       drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
+      */
     } else {
 # --- END if its a field -------------------
 # --- if it's a bundle ----------------------

@@ -368,11 +368,15 @@ class WisskiPathbuilderForm extends EntityForm {
     // create mode is bundle if 0
     if($form_state->getValue('create_mode') == "0") {
 
-      $allGroups = $pathbuilder->getAllGroups();
-      drupal_set_message("ag: " . serialize($allGroups));
-      foreach($allGroups as $group) {
-        $pathbuilder->generateBundleForGroup($group->id());
+      $allgroupsandpaths = $pathbuilder->getAllGroupsAndPaths();
+
+      foreach($allgroupsandpaths as $path) {
+        if($path->isGroup())
+          $pathbuilder->generateBundleForGroup($path->id());
+        else
+          $pathbuilder->generateFieldForPath($path->id(), $path->getName());
       }
+      
     }
 
     // save the tree

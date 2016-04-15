@@ -169,30 +169,128 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
     }
     
     /**
+     * Generates the id for the bundle
+     *
+     */
+    public function generateIdForField($field_name) {
+      return 'field_' . substr(md5('b_' . $this->id() . '_' . $field_name), 6);
+    }
+    
+    /**
+     * Generates the field for a given path in a given bundle if it
+     * was not already there.
+     *
+     */
+    public function generateFieldForPath($pathid, $field_name) {
+
+      drupal_set_message("I am generating Fields for path " . $pathid . " and got " . $field_name . ". ");
+      // get the bundle for this pathid
+      $bundle = $this->getBundle($pathid); #$form_state->getValue('bundle');
+
+      if(empty($bundle)) {
+        return FALSE;
+      }
+      
+      $fieldid = $this->generateIdForField($field_name);
+      
+      // this was called field?
+      $field_storage_values = [
+        'field_name' => $fieldid,#$values['field_name'],
+        'entity_type' => 'wisski_individual',
+        'type' => 'text',//has to fit the field component type, see below
+        'translatable' => TRUE,
+      ];
+    
+      // this was called instance?
+      $field_values = [
+        'field_name' => $fieldid,
+        'entity_type' => 'wisski_individual',
+        'bundle' => $bundle,
+        'label' => $field_name,
+        // Field translatability should be explicitly enabled by the users.
+        'translatable' => FALSE,
+        'disabled' => FALSE,
+      ];
+    
+
+      // get the pbpaths
+      $pbpaths = $this->getPbPaths();
+      // set the path and the bundle - beware: one is empty!
+      $pbpaths[$pathid]['field'] = $fieldid;
+      $pbpaths[$pathid]['bundle'] = $bundle;
+      // save it
+      $this->setPbPaths($pbpaths);
+      
+      $this->save();
+    
+      // if the field is already there...
+      if(empty($field_name) || !empty(\Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $fieldid)))) {
+        drupal_set_message(t('Field %bundle with id %id was already there.',array('%bundle'=>$field_name, '%id' => $fieldid)));
+  #      $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->id()));
+        return;
+      }
+
+      // bundle?
+      \Drupal::entityManager()->getStorage('field_storage_config')->create($field_storage_values)->enable()->save();
+
+      // path?
+      \Drupal::entityManager()->getStorage('field_config')->create($field_values)->save();
+
+      $view_options = array(
+        'type' => 'text_summary_or_trimmed',//has to fit the field type, see above
+        'settings' => array('trim_length' => '200'),
+        'weight' => 1,//@TODO specify a "real" weight
+      );
+    
+      $view_entity_values = array(
+        'targetEntityType' => 'wisski_individual',
+        'bundle' => $bundle,
+        'mode' => 'default',
+        'status' => TRUE,
+      );
+
+      $display = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual.'.$bundle.'.default');
+      if (is_null($display)) $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
+      $display->setComponent($field_id,$view_options)->save();
+
+      $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual.'.$bundle.'.default');
+      if (is_null($form_display)) $form_display = $display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
+      $form_display->setComponent($field_id)->save();
+
+      drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
+    }
+    
+    /**
      * Generates a bundle for a given group if there was not already
      * one existing.
      *
      */
     public function generateBundleForGroup($groupid) {
+      // get all the pbpaths
       $pbpaths = $this->getPbPaths();
       
+      // which group should I handle?
       $my_group = $pbpaths[$groupid];
       
+      // if there is nothing we don't generate anything.
       if(empty($my_group))
-        return NULL;
+        return FALSE;
               
+      // the name for the bundle is the id of the group
       $bundle_name = $my_group['id'];
 
+      // generate a 32 char name
       $bundleid = $this->generateIdForBundle($bundle_name);
 
-      // if the field is already there...
-      if(empty($field_name) || !empty(\Drupal::entityManager()->getStorage('wisski_bundle')->loadByProperties(array('id' => $bundleid)))) {
+      // if the bundle is already there...
+      if(empty($bundle_name) || !empty(\Drupal::entityManager()->getStorage('wisski_bundle')->loadByProperties(array('id' => $bundleid)))) {
         drupal_set_message(t('Bundle %bundle with id %id was already there.',array('%bundle'=>$bundle_name, '%id' => $bundleid)));
         return;
       }
 
       // set the the bundle_name to the path
       $pbpaths[$groupid]['bundle'] = $bundleid;
+
       // save it
       $this->setPbPaths($pbpaths);
       $this->save();
@@ -202,6 +300,12 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       drupal_set_message(t('Created new bundle %bundle for this group.',array('%bundle'=>$bundle_name)));
     }
     
+    /**
+     * Add a Pathid to the Pathtree
+     * @TODO rename this to addPathIdToPathTree...
+     * @param $pathid the id of the path to add
+     *
+     */    
     public function addPathToPathTree($pathid) {
       $pathtree = $this->getPathTree();
       $pbpaths = $this->getPbPaths();
@@ -244,27 +348,56 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      * @return An array of path objects that are groups
      */
     public function getAllGroups() {
-#      // if there is no treepart parameter we take the whole tree
-#      if($treepart == NULL)
-#        $treepart = $this->getPathTree();
-      
       $groups = array();
       
-      // iterate through the treepart
+      // iterate through the paths array
       foreach($this->getPbPaths() as $potpath) {
         $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potpath["id"]);
         
         // if it is a group - we want it
         if($path->isGroup())
           $groups[] = $path;
-        
-#        // if there are children - go down the tree
-#        if(!empty($treepart['children']))
-#          $groups = array_merge($groups, $this->getAllGroups($treepart['children']));
       }
       
-      return $groups;
+      return $groups; 
+    }
+    
+    /**
+     *
+     * Returns all paths that are used in the pathbuilder
+     * @return An array of path objects that are paths
+     */
+    public function getAllPaths() {
+      $paths = array();
       
+      // iterate through the paths array
+      foreach($this->getPbPaths() as $potpath) {
+        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potpath["id"]);
+        
+        // if it is a group - we want it
+        if(!$path->isGroup())
+          $paths[] = $path;
+      }
+      
+      return $paths; 
+    }
+    
+    /**
+     *
+     * Returns all groups and paths that are used in the pathbuilder
+     * @return An array of path objects that are paths or groups
+     */
+    public function getAllGroupsAndPaths() {
+      $paths = array();
+      
+      // iterate through the paths array
+      foreach($this->getPbPaths() as $potpath) {
+        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potpath["id"]);
+        
+        $paths[] = $path;
+      }
+      
+      return $paths; 
     }
     
     public function getGroupsForBundle($bundleid) {
@@ -287,13 +420,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      *
      * @return a path object
      */
-    public function getPathForFid($fieldid) {
-      /*
-      $return = NULL;
-      if($treepart == NULL)
-        $treepart = $this->getPathTree();
-      */
-      
+    public function getPathForFid($fieldid) {      
       $pbpaths = $this->getPbPaths();
       
       foreach($pbpaths as $potpath) {
