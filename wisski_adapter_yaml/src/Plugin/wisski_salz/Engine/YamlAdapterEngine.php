@@ -36,6 +36,12 @@ class YamlAdapterEngine extends YamlAdapterBase implements PathbuilderEngineInte
     return $this->entity_info;
   }
 
+  public function getBundleIdForEntityId($entity_id) {
+    $entity_info = $this->load($entity_id);
+    if (isset($entity_info['bundle'])) return $entity_info['bundle'];
+    return FALSE;
+  }
+
   public function load($id) {
     $entity_info = $this->getEntityInfo($id);
     if (isset($entity_info[$id])) return $entity_info[$id];
