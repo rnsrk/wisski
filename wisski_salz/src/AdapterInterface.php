@@ -94,4 +94,8 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
    */
   public function getQueryObject(EntityTypeInterface $entity_type, $condition,array $namespaces);
   
+  /**
+   * @see EngineInterface::getBundleIdForEntityId
+   */
+  public function getBundleIdForEntityId($entity_id);
 }
