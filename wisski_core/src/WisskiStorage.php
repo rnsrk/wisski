@@ -80,6 +80,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           else {
             //integrate additional values on existing entities
             foreach($entity_values as $field_name => $value) {
+              if (empty($value)) continue;
               $actual_field_info = $info[$entity_id][$field_name];
               if ($field_definitions[$field_name] instanceof BaseFieldDefinition) {
                 //this is a base field and cannot have multiple values
