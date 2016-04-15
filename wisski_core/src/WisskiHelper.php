@@ -19,5 +19,5 @@ class WisskiHelper {
     }
     return $return;
   }
-  
+    
 }

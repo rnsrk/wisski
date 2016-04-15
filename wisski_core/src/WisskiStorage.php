@@ -12,6 +12,8 @@ use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\wisski_core\Query\WisskiQueryInterface;
 //use Drupal\wisski_core\WisskiInvalidArgumentException;
 
+use Drupal\Core\Field\BaseFieldDefinition;
+
 /**
  * Test Storage that returns a Singleton Entity, so we can see what the FieldItemInterface does
  */
@@ -28,10 +30,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   protected function doLoadMultiple(array $ids = NULL) {
 //  dpm($ids,__METHOD__);
-    $field_definitions = $this->entityManager->getFieldStorageDefinitions('wisski_individual');
-//  dpm($field_definitions,'field_storage_definitions');
     $entities = array();
-    $values = $this->getEntityInfo($ids,array_keys($field_definitions));
+    $values = $this->getEntityInfo($ids);
 //  dpm($values,'values');    
     foreach ($ids as $id) {
 //      if (is_array($values[$id]['bundle'])) $values[$id]['bundle'] = current($values[$id]['bundle']);
@@ -56,8 +56,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * @param $cached TRUE for static caching, FALSE for forced update
    * @return array keyed by entity id containing entity field info
    */
-  protected function getEntityInfo(array $ids,array $fields,$cached = FALSE) {
+  protected function getEntityInfo(array $ids,$cached = FALSE) {
     
+    $field_definitions = $this->entityManager->getFieldStorageDefinitions('wisski_individual');
+//    dpm($field_definitions,'field_storage_definitions');return array();
     $entity_info = &$this->entity_info;
     if ($cached) {
       $ids = array_diff_key($ids,$ntity_info);
@@ -68,24 +70,56 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #    drupal_set_message("hallo welt");
     $info = array();
     foreach ($adapters as $aid => $adapter) {
-      if ($adapter->getEngineId() === 'sparql11_with_pb') continue;
+//      if ($adapter->getEngineId() === 'sparql11_with_pb') continue;
       try {
-        $adapter_info = $adapter->loadFieldValues($ids,$fields);
+        $adapter_info = $adapter->loadFieldValues($ids,array_keys($field_definitions));
+//        dpm($adapter_info,"info from $aid");return array();
         foreach($adapter_info as $entity_id => $entity_values) {
-
+          //if we don't know about that entity yet, this adapter's info can be used without a change
           if (!isset($info[$entity_id])) $info[$entity_id] = $entity_values;
           else {
-            foreach($entity_values as $key => $value) {
-              // if we already have that - continue
-              if($value == $info[$entity_id][$key])
-                continue; 
-
-              // it might be that we could need array_merge_recursive here in case
-              // of more complex data than just an array
-              // @TODO: Check.
-              else 
-                if(!empty($entity_values[$key]))
-                  $info[$entity_id][$key] = WisskiHelper::array_merge_nonempty($info[$entity_id][$key],$entity_values[$key]);
+            //integrate additional values on existing entities
+            foreach($entity_values as $field_name => $value) {
+              $actual_field_info = $info[$entity_id][$field_name];
+              if ($field_definitions[$field_name] instanceof BaseFieldDefinition) {
+                //this is a base field and cannot have multiple values
+                //@TODO make sure, we load the RIGHT value
+                if (isset($actual_field_info) && $actual_field_info != $value) drupal_set_message(
+                  t('Multiple values for %field_name in entity %id: %val1, %val2',array(
+                    '%field_name'=>$field_name,
+                    '%id'=>$entity_id,
+                    '%val1'=>$actual_field_info,
+                    '%val2'=>$value,
+                  )),'error');
+                else $actual_field_info = $value;
+                continue;
+              }
+              //rest is a field
+              $cardinality = $field_defintions[$field_name]->getCardinality();
+              if ($cardinality === 1) {
+                //this is a base field and cannot have multiple values
+                //@TODO make sure, we load the RIGHT value
+                if (isset($actual_field_info) && $actual_field_info != $value) drupal_set_message(
+                  t('Multiple values for field %field_name in entity %id: %val1, %val2',array(
+                    '%field_name'=>$field_name,
+                    '%id'=>$entity_id,
+                    '%val1'=>$actual_field_info,
+                    '%val2'=>$value,
+                  )),'error');
+                else $actual_field_info = $value;
+                continue;
+              }
+              if (!is_array($actual_field_info)) $actual_field_info = array($actual_field_info);
+              if (count($actual_field_info) >= $cardinality) {
+                drupal_set_message(
+                  t('Too many values for field %field_name in entity %id. %card allowed. Tried to add %val2',array(
+                    '%field_name'=>$field_name,
+                    '%id'=>$entity_id,
+                    '%card'=>$cardinality,
+                    '%val1'=>$value,
+                  )),'error');
+              } else $actual_field_info[] = $value;
+              $info[$entity_id][$field_name] = $actual_field_info;
             }
           }
         }
@@ -95,7 +129,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
     }
     $entity_info = WisskiHelper::array_merge_nonempty($entity_info,$info);
-#    dpm(func_get_args()+array('result'=>$entity_info),__METHOD__);
+    dpm(func_get_args()+array('result'=>$entity_info),__METHOD__);
     return $entity_info;
   }
 
