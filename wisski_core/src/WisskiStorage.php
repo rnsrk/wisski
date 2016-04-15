@@ -84,7 +84,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               if ($field_definitions[$field_name] instanceof BaseFieldDefinition) {
                 //this is a base field and cannot have multiple values
                 //@TODO make sure, we load the RIGHT value
-                if (isset($actual_field_info) && $actual_field_info != $value) drupal_set_message(
+                if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
                   $this->t('Multiple values for %field_name in entity %id: %val1, %val2',array(
                     '%field_name'=>$field_name,
                     '%id'=>$entity_id,
@@ -99,7 +99,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               if ($cardinality === 1) {
                 //this is a base field and cannot have multiple values
                 //@TODO make sure, we load the RIGHT value
-                if (isset($actual_field_info) && $actual_field_info != $value) drupal_set_message(
+                if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
                   $this->t('Multiple values for field %field_name in entity %id: %val1, %val2',array(
                     '%field_name'=>$field_name,
                     '%id'=>$entity_id,
