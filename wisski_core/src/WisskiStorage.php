@@ -95,7 +95,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 continue;
               }
               //rest is a field
-              $cardinality = $field_defintions[$field_name]->getCardinality();
+              $cardinality = $field_definitions[$field_name]->getCardinality();
               if ($cardinality === 1) {
                 //this is a base field and cannot have multiple values
                 //@TODO make sure, we load the RIGHT value
