@@ -108,4 +108,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     return new Query\Query($entity_type,$condition,$namespaces);
   }
 
+  public function getBundleIdForEntityId($entity_id) {
+    return NULL;
+  }
 }
