@@ -85,7 +85,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 //this is a base field and cannot have multiple values
                 //@TODO make sure, we load the RIGHT value
                 if (isset($actual_field_info) && $actual_field_info != $value) drupal_set_message(
-                  t('Multiple values for %field_name in entity %id: %val1, %val2',array(
+                  $this->t('Multiple values for %field_name in entity %id: %val1, %val2',array(
                     '%field_name'=>$field_name,
                     '%id'=>$entity_id,
                     '%val1'=>$actual_field_info,
@@ -100,7 +100,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 //this is a base field and cannot have multiple values
                 //@TODO make sure, we load the RIGHT value
                 if (isset($actual_field_info) && $actual_field_info != $value) drupal_set_message(
-                  t('Multiple values for field %field_name in entity %id: %val1, %val2',array(
+                  $this->t('Multiple values for field %field_name in entity %id: %val1, %val2',array(
                     '%field_name'=>$field_name,
                     '%id'=>$entity_id,
                     '%val1'=>$actual_field_info,
@@ -112,7 +112,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               if (!is_array($actual_field_info)) $actual_field_info = array($actual_field_info);
               if ($cardinality > 0 && count($actual_field_info) >= $cardinality) {
                 drupal_set_message(
-                  t('Too many values for field %field_name in entity %id. %card allowed. Tried to add %val2',array(
+                  $this->t('Too many values for field %field_name in entity %id. %card allowed. Tried to add %val2',array(
                     '%field_name'=>$field_name,
                     '%id'=>$entity_id,
                     '%card'=>$cardinality,

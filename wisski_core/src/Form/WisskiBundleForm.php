@@ -52,7 +52,7 @@ class WisskiBundleForm extends EntityForm {
       '#title' => t('Description'),
       '#type' => 'textarea',
       '#default_value' => $bundle->get('description'),
-      '#description' => t('Describe this bundle. The text will be displayed on the <em>Add new DM Entity</em> page.'),
+      '#description' => t('Describe this bundle. The text will be displayed on the <em>Add new WisskiEntity</em> page.'),
     );
     dpm($bundle,__METHOD__);
     return $form;
