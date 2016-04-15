@@ -92,7 +92,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
                     '%val2'=>$value,
                   )),'error');
-                else $actual_field_info = $value;
+                else $info[$entity_id][$field_name] = $value;
                 continue;
               }
               //rest is a field
@@ -107,7 +107,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
                     '%val2'=>$value,
                   )),'error');
-                else $actual_field_info = $value;
+                else $info[$entity_id][$field_name] = $value;
                 continue;
               }
               if (!is_array($actual_field_info)) $actual_field_info = array($actual_field_info);
