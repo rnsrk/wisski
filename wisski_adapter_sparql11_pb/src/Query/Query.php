@@ -21,8 +21,6 @@ class Query extends WisskiQueryBase {
    * {@inheritdoc}
    */
   public function execute() {
-#    drupal_set_message("Yeah: " . ($this->condition));
-#    dpm($this);
     
     // get the adapter
     $engine = $this->getEngine();
@@ -56,9 +54,20 @@ class Query extends WisskiQueryBase {
       // check if the queries adapter is the adapter of the pb we currently use.
       if($pbadapter->id() != $adapterid)
         continue;
+
+      // care about everything...
+      foreach($this->condition->conditions() as $condition) {
+        $field = $condition['field'];
+        $value = $condition['value'];
+
+        // just return something if it is a bundle-condition
+        if($field == 'bundle')
+          return array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb));
+
+      }
         
-      // do something with conditions ... but for now we just load everything.
-      $ents = array_merge($ents, $this->parent_engine->loadMultiple());
+      // do something with conditions ... but for now we just load everything.   
+#      $ents = array_merge($ents, $this->parent_engine->loadMultiple());
     }
     
     return array_keys($ents);

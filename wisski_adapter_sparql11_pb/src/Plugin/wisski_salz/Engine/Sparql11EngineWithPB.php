@@ -200,18 +200,62 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
   // copy from yaml-adapter - likes camels.
   
-    private $entity_info;
+  private $entity_info;
+
+  /**
+   * Gets the bundle and loads every individual in the TS
+   * and returns an array of ids if there is something...
+   *
+   */ 
+  public function loadIndividualsForBundle($bundleid, $pathbuilder) {
+    
+    // there should be someone asking for more than one...
+    $groups = $pathbuilder->getGroupsForBundle($bundleid);
+     
+    // no group defined in this pb - return   
+    if(empty($groups)) {
+      return array();
+    }
+
+    // for now simply take the first one
+    // in future: iterate here!
+    // @TODO!
+    $group = $groups[0];
+    
+    // get the group 
+    $grouppath = $group->getPathArray();    
+   
+    // build the query
+    $query = "SELECT ?x0 WHERE {";
+       
+    foreach($grouppath as $key => $pathpart) {
+      if($key % 2 == 0)
+        $query .= " ?x" . $key . " a <". $pathpart . "> . ";
+      else
+        $query .= " ?x" . ($key-1) . " <" . $pathpart . "> ?x" . ($key+1) . " . "; 
+    }
+    
+    $query .= "}";
+
+    // ask for the query
+    $result = $this->directQuery($query);
+
+    $outarr = array();
+
+    // for now simply take the first element
+    // later on we need names here!
+    foreach($result as $thing) {
+      $uri = $thing->x0->dumpValue("text");
+      $uri = str_replace('/','\\',$uri);
+      
+      $outarr[$uri] = array('eid' => $uri, 'bundle' => $bundleid, 'name' => $uri);
+    }
+
+    return $outarr;
+  }
 
   public function load($id) {
-#    $entity_info = &$this->entity_info;
-#    if (isset($entity_info[$id])) return $entity_info[$id];
-#    $entity_info = Yaml::parse($this->entity_string);
-#    if (isset($entity_info[$id])) return $entity_info[$id];
-#    return array();
-
-    // do something here    
-    #$query = "SELECT ?s WHERE { ?s a/a owl:Class } LIMIT 10";
-    
+        
     $out = array();
     $uri = str_replace('\\', '/', $id);
 
@@ -249,14 +293,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    $this->entity_info = Yaml::parse($this->entity_string);
 #    dpm($this->entity_info,__METHOD__);
 #    if (is_null($ids)) return $this->entity_info;
-    $query = "SELECT ?s WHERE { ?s a/a owl:Class} LIMIT 10";
+    $query = "SELECT ?s WHERE { ?s a/a owl:Class}";
     
     $result = $this->directQuery($query);
     
 #    drupal_set_message(serialize($result));
     
     $out = array();
-    $i = 999;
     foreach($result as $thing) {
       
       $uri = $thing->s->dumpValue("text");
@@ -265,7 +308,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #      drupal_set_message("my uri is: " . htmlentities($uri));
       
       $out[$uri] = array('eid' => $uri, 'bundle' => 'e21_person', 'name' => 'frizt');
-      $i++;
     }
     
 #    drupal_set_message("load Mult...");
