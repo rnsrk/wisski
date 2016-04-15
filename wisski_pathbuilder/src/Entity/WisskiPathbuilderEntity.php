@@ -269,11 +269,12 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
     
     public function getGroupsForBundle($bundleid) {
       $groups = $this->getAllGroups();
+      $pbpaths = $this->getPbPaths();
       
       $outgroups = array();
       
       foreach($groups as $group) {
-        if($group['bundle'] == $bundleid)
+        if($pbpaths[$group->id()]['bundle'] == $bundleid)
           $outgroups[] = $group;
       }
       
