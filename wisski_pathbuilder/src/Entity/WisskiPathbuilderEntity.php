@@ -137,6 +137,44 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       return $this->create_mode;
     }
     
+    public function generateCid($eid) {
+      return 'wisski_pathbuilder:' . $eid;
+    }
+    
+    /**
+     * Get the Bundle Id for a given entity id.
+     * If possible get it from cache, if not it is complicated.
+     * For now we return NULL in this case.
+     */    
+    public function getBundleIdForEntityId($eid) {
+    
+      $cid = $this->generateCid($eid);
+      
+      $data = NULL;
+      if ($cache = \Drupal::cache()->get($cid)) {
+        $data = $cache->data;
+        return $data;
+      }
+      else {
+        return NULL;
+#        $data = my_module_complicated_calculation();
+#        \Drupal::cache()->set($cid, $data);
+      }
+    }
+    
+    /**
+     * Set the Bundle id for a given entity
+     */
+    public function setBundleIdForEntityId($eid, $bundleid) {
+      
+      $cid = $this->generateCid($eid);
+      
+      \Drupal::cache()->set($cid, $bundleid);
+      
+      return TRUE;
+      
+    }
+    
     public function getBundle($pathid) {
       // get the pb-path
       $pbpath = $this->getPbPath($pathid);

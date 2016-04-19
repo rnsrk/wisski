@@ -492,7 +492,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           continue;
 
         foreach($field_ids as $key => $fieldid) {
-          drupal_set_message("bla: " . serialize($field_ids));
+#          drupal_set_message("bla: " . serialize($field_ids));
           if($fieldid == "eid") {
             $out[$eid][$fieldid] = $eid;
             continue;
@@ -505,6 +505,28 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             continue;
           }
           
+          // Bundle is a special case.
+          // If we are asked for a bundle, we first look in the pb cache for the bundle
+          // because it could have been set by 
+          // measures like navigate or something - so the entity is always displayed in 
+          // a correct manor.
+          // If this is not set we just select the first bundle that might be appropriate.
+          // We select this with the first field that is there. @TODO:
+          // There might be a better solution to this.
+          // e.g. knowing what bundle was used for this id etc...
+          // however this would need more tables with mappings that will be slow in case
+          // of a lot of data...
+          if($fieldid == "bundle") {
+            $bundle = $pb->getBundleIdForEntityId($eid);
+                        
+            if(!empty($bundle)) {
+              $out[$eid]['bundle'] = $bundle;
+              continue;
+            }
+          }
+
+          // every other field is an array, we guess
+          // this might be wrong... cardinality?          
           if(!isset($out[$eid][$fieldid]))
             $out[$eid][$fieldid] = array();
 
@@ -514,27 +536,56 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           
 #          drupal_set_message($fieldid . " - " . serialize($pbarray));
 
+          // if there is no data about this path - how did we get here in the first place?
+          // fields not in sync with pb?
           if(empty($pbarray["id"]))
             continue;
 
           $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["id"]);
 
+          // if there is no path we can skip that
+          if(empty($path))
+            continue;
+
+          // the easy assumption - there already is a bundle.
+          $bundle = $out[$eid]['bundle'];
+
+          // if there is no bundle we have to ask the system for the typical bundle
+          if(empty($bundle)) {
+            
+            // we try to get it from cache
+            $bundle = $pb->getBundleIdForEntityId($eid);
+            
+            // nothing was set up to now - so we use the field and ask the field for the typical bundle
+            if(empty($bundle)) {
+              $bundle = $pb->getBundle($pbarray["id"]);
+              // and store it to the entity.
+              $out[$eid]['bundle'] = $bundle;
+
+              $pb->setBundleIdForEntityId($eid, $bundle);
+
+            }
+          }
+
+          // we ask for the bundle
           $bundle = $pb->getBundle($pbarray["id"]);
           
-          // if the field is not in a bundle it is not relevant for us!
-          if(empty($bundle))
+          // and compare it to the bundle of the entity - if this is not the same, 
+          // we don't have to ask for data.
+          // @TODO: this is a hack - when the engine asks for the correct 
+          // things right away we can remove that here
+          if($bundle != $out[$eid]['bundle']) {
             continue;
-          drupal_set_message("bundle: " . serialize($bundle)); 
-          
+          }
+
           if(!empty($path)) {
-            $out[$eid]['bundle'] = $bundle;
             $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $eid));
           }
         }
       }
     }
 
-    drupal_set_message("out: " . serialize($out));
+#    drupal_set_message("out: " . serialize($out));
 
     return $out;
 /*

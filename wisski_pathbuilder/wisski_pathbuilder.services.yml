@@ -1,0 +1,7 @@
+services:
+  cache.wisski_pathbuilder_eid_to_bundle:
+    class: Drupal\Core\Cache\CacheBackendInterface
+    tags:
+      - { name: cache.bin }
+    factory: cache_factory:get
+    arguments: [wisski_pathbuilder_eid_to_bundle]
