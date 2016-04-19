@@ -86,6 +86,13 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               foreach($entity_values as $field_name => $value) {
                 if (empty($value)) continue;
                 $actual_field_info = $info[$entity_id][$field_name];
+                
+                // if there is no field definition throw an error.
+                if(empty($field_definitions[$field_name])) {
+                  drupal_set_message("Asked for field definition of field " . $field_name . " on WissKI Individual but there was nothing.", 'error');
+                  continue;
+                }
+                
                 if ($field_definitions[$field_name] instanceof BaseFieldDefinition) {
                   //this is a base field and cannot have multiple values
                   //@TODO make sure, we load the RIGHT value
@@ -99,8 +106,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   else $info[$entity_id][$field_name] = $value;
                   continue;
                 }
+                
                 //rest is a field
                 $cardinality = $field_definitions[$field_name]->getCardinality();
+                
                 if ($cardinality === 1) {
                   //this field cannot have multiple values
                   //@TODO make sure, we load the RIGHT value
