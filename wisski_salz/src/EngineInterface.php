@@ -82,7 +82,7 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * @param $entity_id
    * @return the bundle's machine name
    */
-  public function getBundleIdForEntityId($entity_id);
+  public function getBundleIdsForEntityId($entity_id);
   
   /**
    * Asks the engine if it knows the entity id

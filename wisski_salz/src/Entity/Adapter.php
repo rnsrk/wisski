@@ -211,7 +211,7 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
     return $this->getEngine()->getQueryObject($entity_type,$condition,$namespaces);
   }
   
-  public function getBundleIdForEntityId($entity_id) {
+  public function getBundleIdsForEntityId($entity_id) {
     return $this->getEngine()->getBundleIdForEntityId($entity_id);
   }
   
