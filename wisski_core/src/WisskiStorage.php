@@ -30,7 +30,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * {@inheritdoc}
    */
   protected function doLoadMultiple(array $ids = NULL) {
-  dpm($ids,__METHOD__);
+#  dpm($ids,__METHOD__);
     $entities = array();
     $values = $this->getEntityInfo($ids);
 //  dpm($values,'values');    
@@ -79,14 +79,15 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         if($adapter->hasEntity($id)) {
           // if so - ask for the bundles for that id
           $bundles = $adapter->getBundleIdsForEntityId($id);
-#          drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundles) . ".");
+          drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundles) . ".");
           
           foreach($bundles as $bundleid) {
-            $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundle_name);
+            $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
+            drupal_set_message("asking for: " . serialize(array_keys($field_definitions)));
             try {
               $adapter_info = $adapter->loadFieldValues(array($id),array_keys($field_definitions));
 
-#              drupal_set_message('ive got: ' . serialize($adapter_info));
+              drupal_set_message('ive got: ' . serialize($adapter_info));
                             
               foreach($adapter_info as $entity_id => $entity_values) {
                 //if we don't know about that entity yet, this adapter's info can be used without a change
@@ -95,6 +96,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   //integrate additional values on existing entities
                   foreach($entity_values as $field_name => $value) {
                     if (empty($value)) continue;
+                    drupal_set_message("looking for $entity_id in " . serialize($info));
                     $actual_field_info = $info[$entity_id][$field_name];
                 
                     // if there is no field definition throw an error.
@@ -117,7 +119,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                       continue;
                     }
                 
- #                   drupal_set_message("what do we have here: " . serialize($field_definitions[$field_name]));
+                    drupal_set_message("what do we have here: " . serialize($field_definitions[$field_name]));
                 
                     //rest is a field
                     $cardinality = $field_definitions[$field_name]->getCardinality();

@@ -225,7 +225,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
 #    drupal_set_message(serialize($result));
     
-#    $out = array();
+   $out = array();
     foreach($result as $thing) {
     
       // ask for a bundle from the pb that has this class thing in it
@@ -236,13 +236,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         if($path_array[ count($path_array)-1] == $thing->class->dumpValue("text")) {
           $pbpaths = $pb->getPbPaths();
           
+#          drupal_set_message(serialize($pbpaths[$group->id()]));
+          
           if(!empty($pbpaths[$group->id()]))
-            return $pbpaths[$group->id()];
+            $out[$pbpaths[$group->id()]['bundle']] = $pbpaths[$group->id()]['bundle'];
         }
       }
     }
 
-    return FALSE;    
+    return $out;    
     
   }
 
