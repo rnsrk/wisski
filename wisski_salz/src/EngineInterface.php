@@ -84,11 +84,5 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    */
   public function getBundleIdsForEntityId($entity_id);
   
-  /**
-   * Asks the engine if it knows the entity id
-   * @param $entity_id
-   * @return TRUE if the engine knows the entity id, FALSE if not.
-   */
-  public function doYouKnowEntityId($entity_id);
   
 }

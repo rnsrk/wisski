@@ -112,7 +112,4 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     return NULL;
   }
   
-  public function doYouKnowEntityId($entity_id) {
-    return FALSE;
-  }
 }

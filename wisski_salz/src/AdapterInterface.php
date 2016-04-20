@@ -99,9 +99,5 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
    */
   public function getBundleIdsForEntityId($entity_id);
 
-  /**
-   * @see EngineInterface::doYouKnowEntityId
-   */
-  public function doYouKnowEntityId($entity_id);
 
 }
