@@ -30,7 +30,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * {@inheritdoc}
    */
   protected function doLoadMultiple(array $ids = NULL) {
-//  dpm($ids,__METHOD__);
+  dpm($ids,__METHOD__);
     $entities = array();
     $values = $this->getEntityInfo($ids);
 //  dpm($values,'values');    
@@ -59,7 +59,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   protected function getEntityInfo(array $ids,$cached = FALSE) {
     
-    $bundles = $this->entityManager->getBundleInfo('wisski_individual');
+#    $bundles = $this->entityManager->getBundleInfo('wisski_individual');
 //    dpm($bundles);
     $entity_info = &$this->entity_info;
     if ($cached) {
@@ -70,14 +70,104 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #    dpm(serialize($adapters));
 #    drupal_set_message("hallo welt");
     $info = array();
+
+    // for every id
+    foreach($ids as $id) {
+      // ask all adapters
+      foreach($adapters as $aid => $adapter) {
+        // if they know that id
+        if($adapter->hasEntity($id)) {
+          // if so - ask for the bundles for that id
+          $bundles = $adapter->getBundleIdsForEntityId($id);
+#          drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundles) . ".");
+          
+          foreach($bundles as $bundleid) {
+            $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundle_name);
+            try {
+              $adapter_info = $adapter->loadFieldValues(array($id),array_keys($field_definitions));
+
+#              drupal_set_message('ive got: ' . serialize($adapter_info));
+                            
+              foreach($adapter_info as $entity_id => $entity_values) {
+                //if we don't know about that entity yet, this adapter's info can be used without a change
+                if (!isset($info[$entity_id])) $info[$entity_id] = $entity_values;
+                else {
+                  //integrate additional values on existing entities
+                  foreach($entity_values as $field_name => $value) {
+                    if (empty($value)) continue;
+                    $actual_field_info = $info[$entity_id][$field_name];
+                
+                    // if there is no field definition throw an error.
+                    if(empty($field_definitions[$field_name])) {
+                      drupal_set_message("Asked for field definition of field " . $field_name . " on WissKI Individual but there was nothing.", 'error');
+                      continue;
+                    }
+                
+                    if ($field_definitions[$field_name] instanceof BaseFieldDefinition) {
+                      //this is a base field and cannot have multiple values
+                      //@TODO make sure, we load the RIGHT value
+                      if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
+                        $this->t('1Multiple values for %field_name in entity %id: %val1, %val2',array(
+                          '%field_name'=>$field_name,
+                          '%id'=>$entity_id,
+                          '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
+                          '%val2'=>$value,
+                        )),'error');
+                      else $info[$entity_id][$field_name] = $value;
+                      continue;
+                    }
+                
+ #                   drupal_set_message("what do we have here: " . serialize($field_definitions[$field_name]));
+                
+                    //rest is a field
+                    $cardinality = $field_definitions[$field_name]->getCardinality();
+                
+                    if ($cardinality === 1) {
+                      //this field cannot have multiple values
+                      //@TODO make sure, we load the RIGHT value
+                      if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
+                        $this->t('Multiple values for field %field_name in entity %id: %val1, %val2',array(
+                          '%field_name'=>$field_name,
+                          '%id'=>$entity_id,
+                          '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
+                          '%val2'=>$value,
+                        )),'error');
+                      else $info[$entity_id][$field_name] = $value;
+                      continue;
+                    }
+                    if (!is_array($actual_field_info)) $actual_field_info = array($actual_field_info);
+                    if ($cardinality > 0 && count($actual_field_info) >= $cardinality) {
+                      drupal_set_message(
+                        $this->t('Too many values for field %field_name in entity %id. %card allowed. Tried to add %val2',array(
+                          '%field_name'=>$field_name,
+                          '%id'=>$entity_id,
+                          '%card'=>$cardinality,
+                          '%val1'=>$value, )),'error');
+                    } else $actual_field_info[] = $value;
+                    $info[$entity_id][$field_name] = $actual_field_info;
+                  }
+                }  
+              }
+            } catch (\Exception $e) {
+              drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
+            }              
+          }     
+          
+        } else {
+#          drupal_set_message("No, I don't know " . $id . " and I am " . $aid . ".");
+        }
+      }
+    }
+/*
+
     foreach ($bundles as $bundle_name => $bundle_label) {
       $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundle_name);
-//      dpm($field_definitions,$bundle_name);
+      dpm($field_definitions,$bundle_name);
       foreach ($adapters as $aid => $adapter) {
   //      if ($adapter->getEngineId() === 'sparql11_with_pb') continue;
         try {
           $adapter_info = $adapter->loadFieldValues($ids,array_keys($field_definitions));
-  //        dpm($adapter_info,"info from $aid");return array();
+          dpm($adapter_info,"info from $aid");#return array();
           foreach($adapter_info as $entity_id => $entity_values) {
             //if we don't know about that entity yet, this adapter's info can be used without a change
             if (!isset($info[$entity_id])) $info[$entity_id] = $entity_values;
@@ -97,7 +187,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   //this is a base field and cannot have multiple values
                   //@TODO make sure, we load the RIGHT value
                   if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
-                    $this->t('Multiple values for %field_name in entity %id: %val1, %val2',array(
+                    $this->t('1Multiple values for %field_name in entity %id: %val1, %val2',array(
                       '%field_name'=>$field_name,
                       '%id'=>$entity_id,
                       '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
@@ -106,6 +196,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   else $info[$entity_id][$field_name] = $value;
                   continue;
                 }
+                
+                drupal_set_message("what do we have here: " . serialize($field_definitions[$field_name]));
                 
                 //rest is a field
                 $cardinality = $field_definitions[$field_name]->getCardinality();
@@ -141,9 +233,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
         }
       }
-    }
+    }*/
     $entity_info = WisskiHelper::array_merge_nonempty($entity_info,$info);
-    dpm(func_get_args()+array('result'=>$entity_info),__METHOD__);
+#    dpm(func_get_args()+array('result'=>$entity_info),__METHOD__);
     return $entity_info;
   }
 

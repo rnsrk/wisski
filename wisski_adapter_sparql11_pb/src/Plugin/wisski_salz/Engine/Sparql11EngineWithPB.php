@@ -217,7 +217,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $url = parse_url($uri);
 
     if(!empty($url["scheme"]))
-      $query = "SELECT ?class WHERE { <" . $entityid . "> a ?class }";
+      $query = "SELECT ?class WHERE { <" . $uri . "> a ?class }";
     else
       $query = "SELECT ?class WHERE { " . $entityid . " a ?class }";
     
@@ -233,7 +233,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
       foreach($groups as $group) {
         $path_array = $group->getPathArray();
-        if($path_array['x' . count($path_array)-1] == $thing->class->dumpValue("text")) {
+        if($path_array[ count($path_array)-1] == $thing->class->dumpValue("text")) {
           $pbpaths = $pb->getPbPaths();
           
           if(!empty($pbpaths[$group->id()]))
