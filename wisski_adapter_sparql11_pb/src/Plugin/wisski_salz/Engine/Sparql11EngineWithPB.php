@@ -207,10 +207,19 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    *
    */
-  public function getBundleIdForEntityId($entityid) {
+  public function getBundleIdsForEntityId($entityid) {
     $pb = $this->getPbForThis();
+    
+    $uri = str_replace('\\', '/', $entityid);
 
-    $query = "SELECT ?class WHERE { <" . $entityid . "> a ?class }";
+#    drupal_set_message("parse url: " . serialize(parse_url($uri)));
+
+    $url = parse_url($uri);
+
+    if(!empty($url["scheme"]))
+      $query = "SELECT ?class WHERE { <" . $entityid . "> a ?class }";
+    else
+      $query = "SELECT ?class WHERE { " . $entityid . " a ?class }";
     
     $result = $this->directQuery($query);
     
@@ -283,6 +292,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $uri = $thing->x0->dumpValue("text");
       $uri = str_replace('/','\\',$uri);
       
+      // store the bundleid to the bundle-cache as it might be important
+      // for subsequent queries.
+      
+      $pathbuilder->setBundleIdForEntityId($uri, $bundleid);
+      
       $outarr[$uri] = array('eid' => $uri, 'bundle' => $bundleid, 'name' => $uri);
     }
 
@@ -298,7 +312,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     $url = parse_url($uri);
 
-    if(!empty($url["scheme"]))    
+    if(!empty($url["scheme"]))
       $query = "SELECT * WHERE { { <$uri> ?p ?o } UNION { ?s ?p <$uri> } }"; 
     else
       $query = 'SELECT * WHERE { ?s ?p "' . $id . '" }';  
@@ -309,6 +323,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #      $uri = $thing->s->dumpValue("text");
 #      $uri = str_replace('/','\\',$uri);
       $out = array('eid' => $id, 'bundle' => 'e21_person', 'name' => 'frizt');
+
 #      $out[$uri] = array('eid' => $uri, 'bundle' => 'e21_person', 'name' => 'frizt');#$thing->s->dumpValue("text"), 'bundle' => 'e21_person', 'name' => 'frizt');
 #      $i++;
     }
@@ -351,9 +366,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @inheritdoc
    */
   public function hasEntity($entity_id) {
-  
+    
     $ent = $this->load($entity_id);
-    return empty($ent);
+    return !empty($ent);
   }
 
   public function pathToReturnValue($patharray, $primitive = NULL, $eid = NULL) {

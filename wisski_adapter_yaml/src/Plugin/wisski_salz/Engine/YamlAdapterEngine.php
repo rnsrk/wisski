@@ -36,13 +36,9 @@ class YamlAdapterEngine extends YamlAdapterBase implements PathbuilderEngineInte
     return $this->entity_info;
   }
   
-  public function doYouKnowEntityId($entity_id) {
-    return $this->load($entity_id);
-  }
-
-  public function getBundleIdForEntityId($entity_id) {
+  public function getBundleIdsForEntityId($entity_id) {
     $entity_info = $this->load($entity_id);
-    if (isset($entity_info['bundle'])) return $entity_info['bundle'];
+    if (isset($entity_info['bundle'])) return array($entity_info['bundle']);
     return FALSE;
   }
 
@@ -64,7 +60,7 @@ class YamlAdapterEngine extends YamlAdapterBase implements PathbuilderEngineInte
   public function hasEntity($entity_id) {
   
     $ent = $this->load($entity_id);
-    return empty($ent);
+    return !empty($ent);
   }
   
   public function getPrimitiveMapping($step) {
