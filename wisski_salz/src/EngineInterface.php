@@ -78,10 +78,17 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
   public function getQueryObject(EntityTypeInterface $entity_type, $condition,array $namespaces);
   
   /**
-   * queries for the bundle, that entity is in
+   * queries the bundle for a given entity id
    * @param $entity_id
    * @return the bundle's machine name
    */
   public function getBundleIdForEntityId($entity_id);
+  
+  /**
+   * Asks the engine if it knows the entity id
+   * @param $entity_id
+   * @return TRUE if the engine knows the entity id, FALSE if not.
+   */
+  public function doYouKnowEntityId($entity_id);
   
 }
