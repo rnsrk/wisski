@@ -217,10 +217,10 @@ class WisskiPathbuilderForm extends EntityForm {
     
     $form['additional']['create_mode'] = array(
       '#type' => 'select',
-      '#description' => $this->t('Which adapter does this Pathbuilder belong to?'),
+      '#description' => $this->t('What should be generated on save?'),
 #      '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
       '#default_value' => $pathbuilder->getCreateMode(),
-      '#options' => array('bundle', 'subgroup'),
+      '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
     );
     
     return $form;
@@ -365,8 +365,8 @@ class WisskiPathbuilderForm extends EntityForm {
 
     }
     
-    // create mode is bundle if 0
-    if($form_state->getValue('create_mode') == "0") {
+    // for now it is equal which create mode is called.
+#    if($form_state->getValue('create_mode') == "0") {
 
       $allgroupsandpaths = $pathbuilder->getAllGroupsAndPaths();
 
@@ -377,7 +377,7 @@ class WisskiPathbuilderForm extends EntityForm {
           $pathbuilder->generateFieldForPath($path->id(), $path->getName());
       }
       
-    }
+#    }
 
     // save the tree
     $pathbuilder->setPathTree($pathtree);
