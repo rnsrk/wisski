@@ -191,6 +191,8 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       // get the parent of this path which probably is a group     
       $parentpbpath = $this->getPbPath($pbpath['parent']);
       
+#      drupal_set_message(serialize($parentpbpath));
+      
       // if it is empty it is bad.
       if(empty($parentpbpath)) {
         drupal_set_message("No Parent-PB-Path found for $pathid.");
@@ -218,12 +220,11 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
     }
     
     /**
-     * Generates the field for a given path in a given bundle if it
-     * was not already there.
+     * Generates the field in the bundle to link to a field collection as a
+     * sub group if it was not already there. 
      *
      */
-    public function generateFieldForPath($pathid, $field_name) {
-
+    public function generateFieldForSubGroup($pathid, $field_name) {
       drupal_set_message("I am generating Fields for path " . $pathid . " and got " . $field_name . ". ");
 
       // get the bundle for this pathid
@@ -233,6 +234,113 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         return FALSE;
       }
       
+      // if the field is already there...
+      if(empty($field_name) || 
+         !empty(\Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $field_name)))) {
+        drupal_set_message(t('Field %bundle with id %id was already there.',array('%bundle'=>$field_name, '%id' => $field_name)));
+  #      $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->id()));
+        // get the pbpaths
+#        $pbpaths = $this->getPbPaths();
+        // set the path and the bundle - beware: one is empty!
+#        $pbpaths[$pathid]['field'] = $field_name;
+#        $pbpaths[$pathid]['bundle'] = $bundle;
+#        // save it
+#        $this->setPbPaths($pbpaths);
+#      
+#        $this->save();
+        return;
+      }
+      
+      
+      $fieldid = 'hanskarl' . time();#$this->generateIdForField($field_name);
+      
+      // this was called field?
+      $field_storage_values = [
+        'field_name' => $fieldid,#$values['field_name'],
+        'entity_type' =>  'wisski_individual',
+        'type' => 'field_collection',//has to fit the field component type, see below
+        'translatable' => TRUE,
+      ];
+    
+      // this was called instance?
+      $field_values = [
+        'field_name' => $fieldid,
+        'entity_type' => 'wisski_individual',
+        'bundle' => $bundle,
+        'label' => $field_name,
+        // Field translatability should be explicitly enabled by the users.
+        'translatable' => FALSE,
+        'disabled' => FALSE,
+      ];
+    
+
+#      // get the pbpaths
+#      $pbpaths = $this->getPbPaths();
+#      // set the path and the bundle - beware: one is empty!
+#      $pbpaths[$pathid]['field'] = $fieldid;
+#      $pbpaths[$pathid]['bundle'] = $bundle;
+#      // save it
+#      $this->setPbPaths($pbpaths);
+#      
+#      $this->save();
+    
+      // if the field is already there...
+      if(empty($field_name) || 
+         !empty(\Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $fieldid)))) {
+        drupal_set_message(t('Field %bundle with id %id was already there.',array('%bundle'=>$field_name, '%id' => $fieldid)));
+  #      $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->id()));
+        return;
+      }
+
+      \Drupal::entityManager()->getStorage('field_storage_config')->create($field_storage_values)->enable()->save();
+
+      \Drupal::entityManager()->getStorage('field_config')->create($field_values)->save();
+
+      $view_options = array(
+        'type' => 'text_summary_or_trimmed',//has to fit the field type, see above
+        'settings' => array('trim_length' => '200'),
+        'weight' => 1,//@TODO specify a "real" weight
+      );
+    
+      $view_entity_values = array(
+        'targetEntityType' => 'wisski_individual',
+        'bundle' => $bundle,
+        'mode' => 'default',
+        'status' => TRUE,
+      );
+
+      $display = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual' . '.'.$bundle.'.default');
+      if (is_null($display)) $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
+      $display->setComponent($field_id,$view_options)->save();
+
+      $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual' . '.'.$bundle.'.default');
+      if (is_null($form_display)) $form_display = $display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
+      $form_display->setComponent($field_id)->save();
+
+      drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
+    
+    }
+
+    
+    /**
+     * Generates the field for a given path in a given bundle if it
+     * was not already there.
+     *
+     */
+    public function generateFieldForPath($pathid, $field_name) {
+
+      // get the bundle for this pathid
+      $bundle = $this->getBundle($pathid); #$form_state->getValue('bundle');
+
+#      drupal_set_message("I am generating Fields for path " . $pathid . " and got " . $field_name . " bundle " . serialize($bundle) . ". ");
+
+      if(empty($bundle)) {
+        return FALSE;
+      }
+ 
+     // if the create mode is field collection
+     // create main groups as wisski bundle dingens
+     // all other as field collections     
       if($this->getCreateMode() == 'field_collection') {
         $pbpaths = $this->getPbPaths();
         
@@ -240,7 +348,10 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
           $mode = 'wisski_individual';
         else
           $mode = 'field_collection_item';
+      } else { # create everything as wisski individual things
+        $mode = 'wisski_individual';
       }
+      
       
       // if the field is already there...
       if(empty($field_name) || 
@@ -265,7 +376,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       // this was called field?
       $field_storage_values = [
         'field_name' => $fieldid,#$values['field_name'],
-        'entity_type' => $mode,
+        'entity_type' =>  $mode,
         'type' => 'text',//has to fit the field component type, see below
         'translatable' => TRUE,
       ];
@@ -300,10 +411,8 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         return;
       }
 
-      // bundle?
       \Drupal::entityManager()->getStorage('field_storage_config')->create($field_storage_values)->enable()->save();
 
-      // path?
       \Drupal::entityManager()->getStorage('field_config')->create($field_values)->save();
 
       $view_options = array(
