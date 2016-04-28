@@ -141,7 +141,7 @@ class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
     $this->name = $name;
   }
          
-  public function getPathArray(){
+  public function getPathArray(){    
     return $this->path_array;  
   }
   

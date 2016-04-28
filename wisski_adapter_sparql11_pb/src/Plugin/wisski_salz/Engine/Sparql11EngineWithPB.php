@@ -232,7 +232,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $groups = $pb->getAllGroups();
       
       foreach($groups as $group) {
-        $path_array = $group->getPathArray();
+        // this does not work for subgroups
+        #$path_array = $group->getPathArray();
+                
+        $path_array = $this->getClearPathArray($group, $pb);
+        
+        if(empty($group) || empty($path_array))
+          continue;
+        
         if($path_array[ count($path_array)-1] == $thing->class->dumpValue("text")) {
           $pbpaths = $pb->getPbPaths();
           
@@ -246,6 +253,134 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     return $out;    
     
+  }
+  
+  /**
+   * Gets the array part to get from one subgroup to another
+   *
+   */
+  public function getClearGroupArray($group, $pb) {
+    // we have to modify the group-array in case of jumps
+    // from one subgroup to another
+    // if you have a groups with grouppaths:
+    // g1: x0
+    // g2: x0 y0 x1
+    // g3: x0 y0 x1 y1 x2 y2 x3
+    // then the way from g2 to g3 is x1 y1 x2 y2 x3
+    // this should be calculated here.
+    $patharraytoget = $group->getPathArray();
+    $allpbpaths = $pb->getPbPaths();
+    $pbarray = $allpbpaths[$group->id()];
+
+    // do some error handling    
+    if(!$group->isGroup()) {
+      drupal_set_message("getClearGroupArray called with something that is not a group: " . serialize($group), "error");
+      return;
+    }
+        
+    // if we are a top group, won't do anything.
+    if($pbarray['parent'] > 0) {
+        
+      // first we have to calculate our own ClearPathArray
+      $clearGroupArray = $this->getClearPathArray($group, $pb);
+    
+      // then we have to get our parents array
+      $pbparentarray = $allpbpaths[$pbarray['parent']];
+      
+      $parentpath = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["parent"]);
+      
+      // if there is nothing, do nothing!
+      // I am unsure if that ever could occur
+      if(empty($parentpath))
+        continue;
+      
+      // -1 because we don't want to cut our own concept
+      $parentcnt = count($parentpath->getPathArray())-1;
+      
+      for($i=0; $i<$parentcnt; $i++) {
+        unset($patharraytoget[$i]);
+      }
+      
+      $patharraytoget = array_values($patharraytoget);
+      
+      // we have to cut away everything that is in $cleargrouparray
+      // so we take the whole length and subtract that as a starting point
+      // and go up from there
+      for($i=(count($patharraytoget)-count($clearGroupArray)+1);$i<count($patharraytoget);$i++)
+        unset($patharraytoget[$i]);
+      
+      $patharraytoget = array_values($patharraytoget);      
+      
+    }
+    return $patharraytoget;    
+  }
+  
+  /**
+   * Gets the common part of a group or path
+   * that is clean from subgroup-fragments
+   */
+  public function getClearPathArray($path, $pb) {
+    // We have to modify the path-array in case of subgroups.
+    // Usually if we have a subgroup path x0 y0 x1 we have to skip x0 y0 in
+    // the paths of the group.
+     
+    $patharraytoget = $path->getPathArray();
+    $allpbpaths = $pb->getPbPaths();
+    $pbarray = $allpbpaths[$path->id()];
+    
+    // first we detect if the field is in a subgroup
+    // is it in a group?
+    if($pbarray['parent'] > 0) {
+
+      $pbparentarray = $allpbpaths[$pbarray['parent']];
+      
+      // how many path-parts are in the pb-parent?
+      $parentpath = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["parent"]);
+      
+      // if there is nothing, do nothing!
+      // I am unsure if that ever could occur
+      if(empty($parentpath))
+        continue;
+      
+      
+
+      // we have to handle groups other than paths
+      
+      if($path->isGroup()) {
+        // so this is a subgroup?
+        // in this case we have to strip the path of the parent and
+        // one object property from our path
+        $pathcnt = count($parentpath->getPathArray()) +1;
+
+        // strip exactly that.
+        for($i=0; $i< $pathcnt; $i++) {
+          unset($patharraytoget[$i]);
+        }        
+      
+      } else {
+        // this is no subgroup, it is a path
+        
+        if($pbparentarray['parent'] > 0) {
+          // only do something if it is a path in a subgroup, not in a main group  
+          
+          // in that case we have to remove the subgroup-part, however minus one, as it is the       
+          $pathcnt = count($parentpath->getPathArray()) - count($this->getClearPathArray($parentpath, $pb));
+        
+        
+          for($i=0; $i< $pathcnt; $i++) {
+            unset($patharraytoget[$i]);
+          }
+        }
+      }
+    }
+          
+#          drupal_set_message("parent is: " . serialize($pbparentarray));
+          
+#          drupal_set_message("I am getting: " . serialize($patharraytoget));
+          
+    $patharraytoget = array_values($patharraytoget);
+    
+    return $patharraytoget;
   }
 
   /**
@@ -269,8 +404,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $group = $groups[0];
     
     // get the group 
-    $grouppath = $group->getPathArray();    
-   
+    // this does not work for subgroups! do it otherwise!
+    #$grouppath = $group->getPathArray();    
+    $grouppath = $this->getClearPathArray($group, $pathbuilder);
+      
     // build the query
     $query = "SELECT ?x0 WHERE {";
        
@@ -373,6 +510,53 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return !empty($ent);
   }
 
+  public function groupToReturnValue($patharray, $primitive = NULL, $eid = NULL) {
+    $sparql = "SELECT DISTINCT * WHERE { ";
+    foreach($patharray as $key => $step) {
+      if($key % 2 == 0) 
+        $sparql .= "?x$key a <$step> . ";
+      else
+        $sparql .= '?x' . ($key-1) . " <$step> ?x" . ($key+1) . " . ";    
+    }
+    
+    if(!empty($primitive)) {
+      $sparql .= "?x$key <$primitive> ?out . ";
+    }
+    
+    if(!empty($eid)) {
+      $eid = str_replace("\\", "/", $eid);
+      $url = parse_url($eid);
+      
+      if(!empty($url["scheme"]))
+        $sparql .= " FILTER (?x0 = <$eid> ) . ";
+      else
+        $sparql .= " FILTER (?x0 = \"$eid\" ) . ";
+    }
+    
+    $sparql .= " } ";
+
+    
+#    drupal_set_message("spq: " . serialize($sparql));
+#    drupal_set_message(serialize($this));
+    
+    $result = $this->directQuery($sparql);
+    
+#    drupal_set_message(serialize($result));
+    
+    $out = array();
+    foreach($result as $thing) {
+ #     drupal_set_message("we got something!");
+      $name = 'x' . (count($patharray)-1);
+      if(!empty($primitive))
+        $out[] = $thing->out->getValue();
+      else
+        $out[] = $thing->$name->dumpValue("text");
+    }
+    
+    return $out;
+  
+  }
+
   public function pathToReturnValue($patharray, $primitive = NULL, $eid = NULL) {
     $sparql = "SELECT DISTINCT * WHERE { ";
     foreach($patharray as $key => $step) {
@@ -465,17 +649,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // so I ignore everything and just target the field_ids that are mapped to
     // paths in the pathbuilder.
     
-#    drupal_set_message("beginning the call");
 
     // this approach will be not fast enough in the future...
     // the pbs have to have a better mapping of where and how to find fields
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
     
- #   drupal_set_message("eid: " . serialize($entity_ids));
- #   drupal_set_message("fid: " . serialize($field_ids));
-    
-#    drupal_set_message("my pbs: " . serialize($pbs));
-
     $out = array();
         
     // get the adapterid that was loaded
@@ -509,7 +687,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           continue;
 
         foreach($field_ids as $key => $fieldid) {
-#          drupal_set_message("bla: " . serialize($field_ids));
+  
           if($fieldid == "eid") {
             $out[$eid][$fieldid] = $eid;
             continue;
@@ -534,10 +712,17 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           // however this would need more tables with mappings that will be slow in case
           // of a lot of data...
           if($fieldid == "bundle") {
-            $bundle = $pb->getBundleIdForEntityId($eid);
+            // get all the bundles for the eid from us
+            $bundles = $this->getBundleIdsForEntityId($eid);
                         
-            if(!empty($bundle)) {
-              $out[$eid]['bundle'] = $bundle;
+            if(!empty($bundles)) {
+              // for now we simply take the first one
+              // that might be not so smart
+              // who knows @TODO:
+              foreach($bundles as $bundle) {
+                $out[$eid]['bundle'] = $bundle;
+                break;
+              }
               continue;
             }
           }
@@ -550,9 +735,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           // set the bundle
           // @TODO: This is a hack and might break for multi-federalistic stores
           $pbarray = $pb->getPbEntriesForFid($fieldid);
-          
-#          drupal_set_message($fieldid . " - " . serialize($pbarray));
-
+            
           // if there is no data about this path - how did we get here in the first place?
           // fields not in sync with pb?
           if(empty($pbarray["id"]))
@@ -594,9 +777,17 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           if($bundle != $out[$eid]['bundle']) {
             continue;
           }
-
+          
+          $clearPathArray = $this->getClearPathArray($path, $pb);
+          
           if(!empty($path)) {
-            $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $eid));
+            // if this is question for a subgroup - handle it otherwise
+            if($pbarray['parent'] > 0 && $path->isGroup()) {
+#              drupal_set_message("I am asking for: " . serialize($this->getClearGroupArray($path, $pb)));
+              $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid));
+               
+            } else // it is a field?
+              $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($clearPathArray, $path->getDatatypeProperty(), $eid));
           }
         }
       }

@@ -40,17 +40,62 @@ class wisski_core_ontology_overviewForm extends FormBase {
  */ 
   
     $form = array();
-        
-    $local_store = wisski_salz_invoke_local_store();
-          
+    // in wisski d8 there will be no local stores anymore, 
+    // we assume that every store could load an ontology
+    // we load all store entities and 
+    // have to choose for which store we want to load an ontology     
+    #$local_store = wisski_salz_invoke_local_store();
+    $adapters = \Drupal\wisski_salz\Entity\Adapter::loadMultiple();      
+    drupal_set_message(serialize($adapters));
+    
+    $adapterlist = array();
+     
+    // create a list of all adapters to choose from
+    foreach($adapters as $adapter) {
+      $adapterlist[$adapter->id()] = $adapter->label();
+    }
+                       
+    // we have to rewrite the functions of local_store, 
+    // look at wisski d7 wisski_salz/adapters/sparql11/SPARQL11Adapter.php for more details
+    // old d7 form can be found in wisski_core/wisski_core.admin.inc   
+    
     // check if there is a local store
+    $local_store = "";
     if(empty($local_store)) {
       // give out a message that there is no local store currently - the user should select one
       $form['nothing_here'] = array(
         '#type' => 'item',
-        '#markup' => '<b>No local store is specified currently.</b><br/> Please select a local store <a href="salz">here</a>',
+        '#markup' => '<b>No store is specified currently.</b><br/> Please select a store below.',
       );
-                                      
+      
+      $form['stores'] = array(
+        '#type' => 'markup',
+        // The prefix/suffix provide the div that we're replacing, named by
+        // #ajax['wrapper'] below.
+        '#prefix' => '<div id="selected_store_div">',
+        '#suffix' => '</div>',
+        '#value' => "",                      
+      );
+                                          
+      $form['selected_store'] = array(
+        '#type' => 'select',
+        '#title' => $this->t('Select the store for which you want to load an ontology.'),
+      #  '#default_value' => $pathbuilder->getAdapterId(),
+        '#options' => $adapterlist,
+        '#ajax' => array(
+          'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxStores',
+          'wrapper' => 'selected_store_div',
+          'event' => 'change',
+        ),
+                                               
+      );
+      
+   #   $form['actions']['submit'] = array(
+    #    '#type' => 'submit',
+    #    '#value' => t('Save'),
+    #  );
+                             
+                                                                    
       // stop here
       return $form;
     }
@@ -123,6 +168,10 @@ class wisski_core_ontology_overviewForm extends FormBase {
    
   }
   
+  public function ajaxStores(array $form, array $form_state) {
+    return $form['selected_store'];
+  }
+   
 
   public function validateForm(array &$form, FormStateInterface $form_state) {
  

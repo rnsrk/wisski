@@ -58,15 +58,20 @@ class WisskiPathbuilderForm extends EntityForm {
         ],
       );
     }
-    
+
+    // load all adapters    
     $adapters = \Drupal\wisski_salz\Entity\Adapter::loadMultiple();
     
     $adapterlist = array();
 
+    // generate a list of all adapters
     foreach($adapters as $adapter) {
       $adapterlist[$adapter->id()] = $adapter->label();#      drupal_set_message(serialize($adapters));
     }
     
+    // if we are in edit mode, the options are below so the table
+    // is set more directly at the top. Furthermore in the create mode
+    // the table is unnecessary.
     if($this->operation == 'edit') { 	   
       $header = array("title", "Path", array('data' => $this->t("Enabled"), 'class' => array('checkbox')), "Weight", array('data' => $this->t('Operations'), 'colspan' => 3));
      
@@ -103,7 +108,7 @@ class WisskiPathbuilderForm extends EntityForm {
         $pathforms = array_merge($pathforms, $this->recursive_render_tree($grouparray));
       }
     
-
+      // iterate through all the pathforms and bring the forms in a tree together
       foreach($pathforms as $pathform) {    
     
         $path = $pathform['#item'];
@@ -178,7 +183,7 @@ class WisskiPathbuilderForm extends EntityForm {
       }
     }
     
-       
+    // additional information stored in a field set below       
     $form['additional'] = array(
       '#type' => 'fieldset',
       '#tree' => FALSE,
@@ -207,23 +212,110 @@ class WisskiPathbuilderForm extends EntityForm {
       );
     }
     
+    // change the adapter this pb belongs to?    
     $form['additional']['adapter'] = array(
       '#type' => 'select',
       '#description' => $this->t('Which adapter does this Pathbuilder belong to?'),
-#      '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
       '#default_value' => $pathbuilder->getAdapterId(),
       '#options' => $adapterlist, #array(0 => "Pathbuilder"),
     );
-    
+
+    // what is the create mode?    
     $form['additional']['create_mode'] = array(
       '#type' => 'select',
       '#description' => $this->t('What should be generated on save?'),
-#      '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
       '#default_value' => $pathbuilder->getCreateMode(),
       '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
     );
     
+    $form['additional']['import'] = array(
+      '#type' => 'fieldset',
+      '#tree' => FALSE,
+      '#title' => $this->t('Import Templates'),
+    );
+    
+    $form['additional']['import']['import'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Pathbuilder Definition Import',
+      '#description' => $this->t('Path to a pathbuilder definition file.'),
+#      '#default_value' => $pathbuilder->getCreateMode(),
+#      '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
+    );
+    
+    $form['additional']['import']['importbutton'] = array(
+      '#type' => 'submit',
+      '#value' => 'Import',
+      '#submit' => array('::import'),
+#      '#description' => $this->t('Path to a pathbuilder definition file.'),
+#      '#default_value' => $pathbuilder->getCreateMode(),
+#      '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
+    );
+    
+    
+    
     return $form;
+  }
+  
+  public function import(array &$form, FormStateInterface $form_state) {
+    
+    $importfile = $form_state->getValue('import');
+
+    $xmldoc = new \Symfony\Component\DependencyInjection\SimpleXMLElement($importfile, 0, TRUE);
+    
+    $pb = $this->entity;
+    
+    foreach($xmldoc->path as $path) {
+      $parentid = html_entity_decode((int)$path->group_id);
+      
+#      if($parentid != 0)
+#        $parentid = wisski_pathbuilder_check_parent($parentid, $xmldoc);
+      
+      $uuid = html_entity_decode((string)$path->uuid);
+      
+      #if(empty($uuid))
+      
+      // check if path already exists
+      $path_in_wisski = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load((int)$path->id);
+      
+      // it exists, skip this...
+      if(!empty($path_in_wisski)) {
+        drupal_set_message("Path with id " . $uuid . " was already existing - skipping.");
+        
+        $pb->addPathToPathTree($path_in_wisski->id());
+
+        continue;
+      }
+      
+      $path_array = array();
+      $count = 0;
+      foreach ($path->path_array->children() as $n) {
+        $path_array[$count] = html_entity_decode((string) $n);
+        $count++;
+      }
+      
+      // it does not exist, create one!
+      $pathdata = array(
+        'id' => html_entity_decode((string)$path->id),
+        'name' => html_entity_decode((string)$path->name),
+        'path_array' => $path_array,
+        'datatype_property' => html_entity_decode((string)$path->datatype_property),
+        'short_name' => html_entity_decode((string)$path->short_name),
+        'length' => html_entity_decode((string)$path->length),
+        'disamb' => html_entity_decode((string)$path->disamb),
+        'description' => html_entity_decode((string)$path->description),
+        'type' => (((int)$path->is_group) === 1) ? 'Group' : 'Path', 
+      );
+      
+      $path_in_wisski = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::create($pathdata);
+      
+      $path_in_wisski->save();
+      
+      $pb->addPathToPathTree($path_in_wisski->id(), (int)$path->group_id);
+      
+    }
+    
+    $pb->save();
+    
   }
   
   private function recursive_render_tree($grouparray, $parent = 0, $delta = 0, $depth = 0) {
@@ -371,9 +463,12 @@ class WisskiPathbuilderForm extends EntityForm {
       $allgroupsandpaths = $pathbuilder->getAllGroupsAndPaths();
 
       foreach($allgroupsandpaths as $path) {
-        if($path->isGroup())
+        if($path->isGroup()) {
           $pathbuilder->generateBundleForGroup($path->id());
-        else
+                    
+          if(!in_array($path->id(), array_keys($pathbuilder->getMainGroups())))
+            $pathbuilder->generateFieldForSubGroup($path->id(), $path->getName());  
+        } else
           $pathbuilder->generateFieldForPath($path->id(), $path->getName());
       }
       

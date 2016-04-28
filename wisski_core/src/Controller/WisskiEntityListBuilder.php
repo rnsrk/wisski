@@ -65,7 +65,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-dpm($this);
+#dpm($this);
 //    dpm($entity->tellMe('id','bundle'));
     $row['id'] = $id = $entity->id();
 //    echo "Hello ".$id;

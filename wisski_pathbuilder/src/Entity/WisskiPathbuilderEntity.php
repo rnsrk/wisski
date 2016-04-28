@@ -207,16 +207,16 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      * Generates the id for the bundle
      *
      */
-    public function generateIdForBundle($bundle_name) {
-      return md5('b_' . $this->id() . '_' . $bundle_name . '_' . $this->getCreateMode() );
+    public function generateIdForBundle($group_id) {
+      return md5('b_' . $this->id() . '_' . $parent_bundle . '_' . $group_id . '_' . $this->getCreateMode() );
     }
     
     /**
      * Generates the id for the bundle
      *
      */
-    public function generateIdForField($field_name) {
-      return 'field_' . substr(md5('b_' . $this->id() . '_' . $field_name . '_' . $this->getCreateMode() ), 6);
+    public function generateIdForField($path_id) {
+      return 'field_' . substr(md5('b_' . $this->id() . '_' . $path_id . '_' . $this->getCreateMode() ), 6);
     }
     
     /**
@@ -252,15 +252,20 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       }
       
       
-      $fieldid = 'hanskarl' . time();#$this->generateIdForField($field_name);
+      $fieldid = $this->generateIdForField($pathid);
+      
+      $type = $this->getCreateMode(); //'field_collection'
       
       // this was called field?
       $field_storage_values = [
         'field_name' => $fieldid,#$values['field_name'],
         'entity_type' =>  'wisski_individual',
-        'type' => 'field_collection',//has to fit the field component type, see below
+        'type' => ($type == 'wisski_bundle') ? 'entity_reference' : 'field_collection',//has to fit the field component type, see below
         'translatable' => TRUE,
       ];
+      
+      if($type == 'wisski_bundle')
+        $field_storage_values['settings']['target_type'] = 'wisski_individual';
     
       // this was called instance?
       $field_values = [
@@ -272,17 +277,22 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         'translatable' => FALSE,
         'disabled' => FALSE,
       ];
-    
+      
+      if($type == 'wisski_bundle') {
+        $field_values['settings']['handler'] = "default:wisski_individual";
+        $field_values['settings']['handler_settings']['target_bundles'][$this->generateIdForBundle($pathid)] = $this->generateIdForBundle($pathid);
+        $field_values['field_type'] = "entity_reference";
+      }
 
-#      // get the pbpaths
-#      $pbpaths = $this->getPbPaths();
-#      // set the path and the bundle - beware: one is empty!
-#      $pbpaths[$pathid]['field'] = $fieldid;
-#      $pbpaths[$pathid]['bundle'] = $bundle;
-#      // save it
-#      $this->setPbPaths($pbpaths);
-#      
-#      $this->save();
+      // get the pbpaths
+      $pbpaths = $this->getPbPaths();
+      // set the path and the bundle - beware: one is empty!
+      $pbpaths[$pathid]['field'] = $fieldid;
+      #$pbpaths[$pathid]['bundle'] = $bundle;
+      // save it
+      $this->setPbPaths($pbpaths);
+      
+      $this->save();
     
       // if the field is already there...
       if(empty($field_name) || 
@@ -311,11 +321,11 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
 
       $display = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual' . '.'.$bundle.'.default');
       if (is_null($display)) $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
-      $display->setComponent($field_id,$view_options)->save();
+      $display->setComponent($fieldid,$view_options)->save();
 
       $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual' . '.'.$bundle.'.default');
-      if (is_null($form_display)) $form_display = $display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
-      $form_display->setComponent($field_id)->save();
+      if (is_null($form_display)) $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
+      $form_display->setComponent($fieldid)->save();
 
       drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
     
@@ -371,7 +381,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       }
       
       
-      $fieldid = $this->generateIdForField($field_name);
+      $fieldid = $this->generateIdForField($pathid);
       
       // this was called field?
       $field_storage_values = [
@@ -428,13 +438,17 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         'status' => TRUE,
       );
 
+      // find the current display elements
       $display = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual' . '.'.$bundle.'.default');
       if (is_null($display)) $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
-      $display->setComponent($field_id,$view_options)->save();
+      // setComponent enables them
+      $display->setComponent($fieldid,$view_options)->save();
 
+      // find the current form display elements
       $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual' . '.'.$bundle.'.default');
       if (is_null($form_display)) $form_display = $display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
-      $form_display->setComponent($field_id)->save();
+      // setComponent enables them
+      $form_display->setComponent($fieldid)->save();
 
       drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
     }
@@ -465,7 +479,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       $bundle_name = $my_group['id'];
 
       // generate a 32 char name
-      $bundleid = $this->generateIdForBundle($bundle_name);
+      $bundleid = $this->generateIdForBundle($groupid);
 
       // if the bundle is already there...
       if(empty($bundle_name) || !empty(\Drupal::entityManager()->getStorage($mode)->loadByProperties(array('id' => $bundleid)))) {
@@ -485,20 +499,43 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       drupal_set_message(t('Created new bundle %bundle for this group.',array('%bundle'=>$bundle_name)));
     }
     
+    private function addDataToParentInTree($parentid, $data, $tree) {
+      foreach($tree as $key => $branch) {
+        // if there are children, search in them
+        if(!empty($tree[$key]))
+          $tree[$key]['children'] = $this->addDataToParentInTree($parentid, $data, $tree[$key]['children']);
+        
+        // we have the correct location, add the data!
+        if($parentid == $key) {
+          $tree[$key]['children'][$data['id']] = $data;
+        }        
+      }
+      
+      // return the tree!
+      return $tree;
+    }
+    
     /**
      * Add a Pathid to the Pathtree
      * @TODO rename this to addPathIdToPathTree...
      * @param $pathid the id of the path to add
      *
      */    
-    public function addPathToPathTree($pathid) {
+    public function addPathToPathTree($pathid, $parentid = 0) {
       $pathtree = $this->getPathTree();
       $pbpaths = $this->getPbPaths();
       
       #$pathtree[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'children' => array(), 'bundle' => 0, 'field' => 0);
       #$pathtree[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'children' => array(), 'bundle' => 'e21_person', 'field' => $pathid);
+
+      if(empty($parentid))      
+        $pathtree[$pathid] = array('id' => $pathid, 'children' => array());   
+      else {
+        // find the location in the pathtree
+        // and add it there
+        $pathtree = $this->addDataToParentInTree($parentid, array('id' => $pathid, 'children' => array()), $pathtree);
       
-      $pathtree[$pathid] = array('id' => $pathid, 'children' => array());
+      }
       $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => '');
       
       $this->setPathTree($pathtree);
