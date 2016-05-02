@@ -208,7 +208,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      *
      */
     public function generateIdForBundle($group_id) {
-      return md5('b_' . $this->id() . '_' . $parent_bundle . '_' . $group_id . '_' . $this->getCreateMode() );
+      return 'b' . substr(md5($this->id() . '_' . $parent_bundle . '_' . $group_id . '_' . $this->getCreateMode()), 0, -1 );
     }
     
     /**
@@ -216,7 +216,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      *
      */
     public function generateIdForField($path_id) {
-      return 'field_' . substr(md5('b_' . $this->id() . '_' . $path_id . '_' . $this->getCreateMode() ), 6);
+      return 'f' . substr(md5($this->id() . '_' . $path_id . '_' . $this->getCreateMode() ), 0, -1);
     }
     
     /**
@@ -470,13 +470,14 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       
       // which group should I handle?
       $my_group = $pbpaths[$groupid];
+      $my_real_group = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($groupid);
       
       // if there is nothing we don't generate anything.
       if(empty($my_group))
         return FALSE;
               
       // the name for the bundle is the id of the group
-      $bundle_name = $my_group['id'];
+      $bundle_name = $my_real_group->getName();
 
       // generate a 32 char name
       $bundleid = $this->generateIdForBundle($groupid);
@@ -496,7 +497,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
 
       $bundle = \Drupal::entityManager()->getStorage($mode)->create(array('id'=>$bundleid, 'label'=>$bundle_name));
       $bundle->save();
-      drupal_set_message(t('Created new bundle %bundle for this group.',array('%bundle'=>$bundle_name)));
+      drupal_set_message(t('Created new bundle %bundle for group with id %groupid.',array('%bundle'=>$bundle_name, '%groupid'=>$groupid)));
     }
     
     private function addDataToParentInTree($parentid, $data, $tree) {
