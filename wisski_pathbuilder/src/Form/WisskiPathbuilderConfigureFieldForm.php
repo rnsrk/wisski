@@ -95,7 +95,43 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         '#title' => $this->t('Field'),
         '#default_value' => empty($pbpath['field']) ? '' : $pbpath['field'],
 #      '#disabled' => true,
-        '#description' => $this->t("Name of the mapped Field."),
+        '#description' => $this->t("ID of the mapped Field."),
+        '#required' => true,
+      );
+      
+      $formatter_types = \Drupal::service('plugin.manager.field.formatter')->getDefinitions();
+      $widget_types = \Drupal::service('plugin.manager.field.widget')->getDefinitions();
+      
+#      drupal_set_message(serialize($formatter_types));
+      $listdisplay = array();
+      foreach($widget_types as $wt) {
+        $listdisplay[$wt['id']] = $wt['label'];
+      }
+      
+      $listform = array();
+      foreach($formatter_types as $wt) {
+        $listform[$wt['id']] = $wt['label'];
+      }
+        
+      $form['displaytype'] = array(
+        '#type' => 'select',
+        '#maxlength' => 255,
+        '#title' => $this->t('Type of display for field'),
+        '#default_value' => empty($pbpath['field']) ? '' : $pbpath['field'],
+#      '#disabled' => true,
+        '#options' => $listdisplay,
+        '#description' => $this->t("Type for the Field (Textfield, Image, ...)"),
+        '#required' => true,
+      );
+       
+      $form['formtype'] = array(
+        '#type' => 'select',
+        '#maxlength' => 255,
+        '#title' => $this->t('Type of form display for field'),
+        '#default_value' => empty($pbpath['field']) ? '' : $pbpath['field'],
+#      '#disabled' => true,
+        '#options' => $listform,
+        '#description' => $this->t("Type for the Field (Textfield, Image, ...)"),
         '#required' => true,
       );
     }
