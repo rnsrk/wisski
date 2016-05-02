@@ -112,4 +112,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     return NULL;
   }
   
+  public function writeFieldValues($entity_id,array $field_values) {
+    return EngineInterface::NULL_WRITE;
+  }
 }

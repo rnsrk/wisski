@@ -18,6 +18,9 @@ use Drupal\Core\Entity\EntityTypeInterface;
  */
 interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginInterface, PluginFormInterface  {
   
+  constant SUCCESSFUL_WRITE = 1;
+  constant ERROR_ON_WRITE = 0;
+  constant NULL_WRITE = 2;
   
   /**
    * returns the ID of the adapter that this engine instance belongs to
@@ -84,5 +87,35 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    */
   public function getBundleIdsForEntityId($entity_id);
   
-  
+  /**
+   * saves entity field information to the store permanently
+   * in order to be loaded later-on
+   * @param $entity_id the entity's drupal-internal ID
+   * @param $field_values an array of field values keyed by the field_id. The second level arrays contain 
+   * contain the main property name keyed 'main_property' and the numbered set of field items, each an array of 
+   * field properties keyed by property name e.g.:
+   * [
+   *   'field_given_name' => [
+   *		 'main_property' => 'value',
+   *     0 => [
+   *       'value' => 'Gotthold',
+   *       'format' => 'basic_html',
+   *     ],
+   *     1 => [
+   *       'value' => 'Ephraim',
+   *       'format' => 'basic_html',
+   *     ],
+   *   ],
+   *   'field_family_name' => [
+   *		 'main_property' => 'value',
+   *     0 => [
+   *       'value' => 'Lessing',
+   *       'format' => 'basic_html',
+   *     ],
+   *   ],
+   * ]
+   * @TODO check how to include quantitive restrictions on field values
+   * @return TRUE if the entity was successfully saved, FALSE or an error_string otherwise
+   */
+   public function writeFieldValues($entity_id,array $field_values);
 }
