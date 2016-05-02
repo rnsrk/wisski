@@ -35,17 +35,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     $values = $this->getEntityInfo($ids);
 //  dpm($values,'values');    
     foreach ($ids as $id) {
-//      if (is_array($values[$id]['bundle'])) $values[$id]['bundle'] = current($values[$id]['bundle']);
-      //dummy fallback
-      if (empty($values[$id]) && $id === 42) {
-        $values[$id] = array(
-          'bundle' => 'e21_person',
-          'eid' => 42,
-          'name' =>'There was nothing',
-          'vid' => 42,
-        );
-      }
-//      dpm($values[$id],__METHOD__."($id)");
+      //@TODO combine this with getEntityInfo
       if (!empty($values[$id])) $entities[$id] = $this->create($values[$id]);
     }
     return $entities;
@@ -322,6 +312,34 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * @TODO must be implemented
    */
   protected function doSaveFieldItems(ContentEntityInterface $entity, array $names = []) {
+//    dpm(func_get_args(),__METHOD__);
+    
+//    $adapters = entity_load_multiple('wisski_salz_adapter');
+#    dpm(serialize($adapters));
+      // ask all adapters
+    $values = $this->extractFieldData($entity);
+    dpm(func_get_args()+array('values'=>$values),__METHOD__);
+//    foreach($adapters as $aid => $adapter) {
+      
+//    }
+  }
+
+  private function extractFieldData(ContentEntityInterface $entity) {
+    
+    $out = array();
+    //$entity is iterable itself, iterates over field list
+    foreach ($entity as $field_name => $field_item_list) {
+      $out[$field_name] = array();
+      
+      foreach($field_item_list as $field_item) {
+        //we transfer the main property name to the adapters
+        $out[$field_name]['main_property'] = $field_item->mainPropertyName();
+        //gathers the ARRAY of field properties for each field list item
+        //e.g. $out[$field_name][] = array(value => 'Hans Wurst', 'format' => 'basic_html');
+        $out[$field_name][] = $field_item->getValue();
+      }
+    }
+    return $out;
   }
 
   /**
