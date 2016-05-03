@@ -179,6 +179,9 @@ class WisskiPathbuilderForm extends EntityForm {
       
         $form['pathbuilder_table'][$path->id()]['bundle'] = $pathform['bundle'];
         $form['pathbuilder_table'][$path->id()]['field'] = $pathform['field'];
+        $form['pathbuilder_table'][$path->id()]['fieldtype'] = $pathform['fieldtype'];
+        $form['pathbuilder_table'][$path->id()]['displaywidget'] = $pathform['displaywidget'];
+        $form['pathbuilder_table'][$path->id()]['formatterwidget'] = $pathform['formatterwidget'];
 #      drupal_set_message(serialize($form['pathbuilder_table'][$path->id()]));
       }
     }
@@ -224,7 +227,7 @@ class WisskiPathbuilderForm extends EntityForm {
     $form['additional']['create_mode'] = array(
       '#type' => 'select',
       '#description' => $this->t('What should be generated on save?'),
-      '#default_value' => $pathbuilder->getCreateMode(),
+      '#default_value' => empty($pathbuilder->getCreateMode()) ? 'wisski_bundle' : $pathbuilder->getCreateMode(),
       '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
     );
     
@@ -281,7 +284,7 @@ class WisskiPathbuilderForm extends EntityForm {
       if(!empty($path_in_wisski)) {
         drupal_set_message("Path with id " . $uuid . " was already existing - skipping.");
         
-        $pb->addPathToPathTree($path_in_wisski->id());
+        $pb->addPathToPathTree($path_in_wisski->id(), (int)$path->group_id, $path_in_wisski->isGroup());
 
         continue;
       }
@@ -310,11 +313,13 @@ class WisskiPathbuilderForm extends EntityForm {
       
       $path_in_wisski->save();
       
-      $pb->addPathToPathTree($path_in_wisski->id(), (int)$path->group_id);
+      $pb->addPathToPathTree($path_in_wisski->id(), (int)$path->group_id, $path_in_wisski->isGroup());
       
     }
     
     $pb->save();
+
+#      drupal_set_message(serialize($pb->getPbPaths()));
     
   }
   
@@ -322,7 +327,7 @@ class WisskiPathbuilderForm extends EntityForm {
     // first we have to get any additional fields because we just got the tree-part
     // and not the real data-fields
     $pbpath = $this->entity->getPbPath($grouparray['id']);
-        
+#   drupal_set_message(serialize($pbpath));       
     // if we did not get something, stop.
     if(empty($pbpath))
       return array();
@@ -330,7 +335,7 @@ class WisskiPathbuilderForm extends EntityForm {
     // merge it into the grouparray    
     $grouparray = array_merge($grouparray, $pbpath);
     
-    $pathform[$grouparray['id']] = $this->pb_render_path($grouparray['id'], $grouparray['enabled'], $grouparray['weight'], $depth, $parent, $grouparray['bundle'], $grouparray['field']);
+    $pathform[$grouparray['id']] = $this->pb_render_path($grouparray['id'], $grouparray['enabled'], $grouparray['weight'], $depth, $parent, $grouparray['bundle'], $grouparray['field'], $grouparray['fieldtype'], $grouparray['displaywidget'], $grouparray['formatterwidget']);
     
     if(is_null($pathform[$grouparray['id']])) {
       unset($pathform[$grouparray['id']]);
@@ -346,7 +351,7 @@ class WisskiPathbuilderForm extends EntityForm {
     
   }
   
-  private function pb_render_path($pathid, $enabled, $weight, $depth, $parent, $bundle, $field) {
+  private function pb_render_path($pathid, $enabled, $weight, $depth, $parent, $bundle, $field, $fieldtype, $displaywidget, $formatterwidget) {
     $path = entity_load('wisski_path', $pathid);
 
     if(is_null($path))
@@ -420,6 +425,21 @@ class WisskiPathbuilderForm extends EntityForm {
       '#value' => $field,
     );
     
+    $pathform['fieldtype'] = array(
+      '#type' => 'hidden',
+      '#value' => $fieldtype,
+    );
+
+    $pathform['displaywidget'] = array(
+      '#type' => 'hidden',
+      '#value' => $displaywidget,
+    );
+
+    $pathform['formatterwidget'] = array(
+      '#type' => 'hidden',
+      '#value' => $formatterwidget,
+    );
+    
     return $pathform;
   }
     
@@ -451,9 +471,10 @@ class WisskiPathbuilderForm extends EntityForm {
             
       // regardless of what it is - we have to save it properly to the pbpaths
       $pbpaths = $pathbuilder->getPbPaths();
+      
       $pbpaths[$path['id']] = $path; #array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array(), 'bundle' => $path['bundle'], 'field' => $path['field']);
       // save the path
-      $pbpaths = $pathbuilder->setPbPaths($pbpaths);
+      $pathbuilder->setPbPaths($pbpaths);
 
     }
     
@@ -463,6 +484,7 @@ class WisskiPathbuilderForm extends EntityForm {
       $allgroupsandpaths = $pathbuilder->getAllGroupsAndPaths();
 
       foreach($allgroupsandpaths as $path) {
+
         if($path->isGroup()) {
           $pathbuilder->generateBundleForGroup($path->id());
                     

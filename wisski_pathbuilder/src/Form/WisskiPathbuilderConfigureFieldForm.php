@@ -101,42 +101,100 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
       
       $formatter_types = \Drupal::service('plugin.manager.field.formatter')->getDefinitions();
       $widget_types = \Drupal::service('plugin.manager.field.widget')->getDefinitions();
+      $field_types = \Drupal::service('plugin.manager.field.field_type')->getDefinitions();
       
-#      drupal_set_message(serialize($formatter_types));
+      #drupal_set_message(serialize($widget_types));
+      #drupal_set_message(serialize($formatter_types));
+      
+      #drupal_set_message(serialize($field_types));
+      
+      $listft = array();
+      
+      foreach($field_types as $key => $ft) {
+        $listft[$key] = $ft['label'];
+      }    
+      
+      $ftvalue = NULL;
+      // check if we are in ajax-mode, then there is something in form-state
+      $ftvalue = $form_state->getValue('fieldtype');
+            
+      // what is the current (default) value for the display of this field from
+      // the database if there is nothing in form_state?
+      if(empty($ftvalue))
+        $ftvalue = empty($pbpath['fieldtype']) ? 'string' : $pbpath['fieldtype'];     
+
+      // generate the displays depending on the selected fieldtype
       $listdisplay = array();
       foreach($widget_types as $wt) {
-        $listdisplay[$wt['id']] = $wt['label'];
+        if(in_array($ftvalue, $wt['field_types']))
+          $listdisplay[$wt['id']] = $wt['label'];
       }
-      
+
+      // generate the formatters depending on the selected fieldtype
       $listform = array();
       foreach($formatter_types as $wt) {
-        $listform[$wt['id']] = $wt['label'];
+        if(in_array($ftvalue, $wt['field_types'])) 
+          $listform[$wt['id']] = $wt['label'];
       }
-        
-      $form['displaytype'] = array(
+      
+      // do something for ajax      
+      $form['display'] = array(
+        '#type' => 'markup',
+        '#prefix' => '<div id="wisski_display">',
+        '#suffix' => '</div>',
+        '#value' => '',
+        '#tree' => FALSE,
+      );
+      
+      $form['display']['fieldtype'] = array(
         '#type' => 'select',
         '#maxlength' => 255,
-        '#title' => $this->t('Type of display for field'),
-        '#default_value' => empty($pbpath['field']) ? '' : $pbpath['field'],
+        '#title' => $this->t('Type of the field that should be generated.'),
+        '#default_value' => $ftvalue,
 #      '#disabled' => true,
-        '#options' => $listdisplay,
+        '#options' => $listft,
         '#description' => $this->t("Type for the Field (Textfield, Image, ...)"),
         '#required' => true,
+        '#ajax' => array(
+          'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathbuilderConfigureFieldForm::ajaxPathData',
+          'wrapper' => 'wisski_display',
+          'event' => 'change',
+        ),
       );
-       
-      $form['formtype'] = array(
+        
+      $form['display']['displaywidget'] = array(
         '#type' => 'select',
         '#maxlength' => 255,
         '#title' => $this->t('Type of form display for field'),
-        '#default_value' => empty($pbpath['field']) ? '' : $pbpath['field'],
+        '#default_value' => empty($pbpath['displaywidget']) ? '' : $pbpath['displaywidget'],
+#      '#disabled' => true,
+        '#options' => $listdisplay,
+        '#description' => $this->t("Widget for the Field - If there is any."),
+#        '#required' => true,
+      );
+       
+      $form['display']['formatterwidget'] = array(
+        '#type' => 'select',
+        '#maxlength' => 255,
+        '#title' => $this->t('Type of formatter for field'),
+        '#default_value' => empty($pbpath['formatterwidget']) ? '' : $pbpath['formatterwidget'],
 #      '#disabled' => true,
         '#options' => $listform,
-        '#description' => $this->t("Type for the Field (Textfield, Image, ...)"),
-        '#required' => true,
+        '#description' => $this->t("Formatter for the field - If there is any."),
+#        '#required' => true,
       );
     }
     
+#    drupal_set_message("ft: " . serialize($ftvalue) . " dis " . serialize($listdisplay) . " for " . serialize($listform));
+    
     return $form;
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function ajaxPathData(array $form, array $form_state) {
+    return $form['display'];
   }
 
   /**
@@ -154,9 +212,26 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     // load the path
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
     
+    // get the pbpaths
+    $pbpaths = $this->pathbuilder->getPbPaths();
+    // set the path and the bundle - beware: one is empty!
+    $pbpaths[$pathid]['fieldtype'] = $form_state->getValue('fieldtype');
+    $pbpaths[$pathid]['displaywidget'] = $form_state->getValue('displaywidget');
+    $pbpaths[$pathid]['formatterwidget'] = $form_state->getValue('formatterwidget');
+    
+    // save it
+    $this->pathbuilder->setPbPaths($pbpaths);
+    $this->pathbuilder->save();
+    
+    drupal_set_message(serialize($pbpaths[$pathid]));
+    
+    drupal_set_message(serialize($this->pathbuilder->getPbPaths()));
+    
+    return;    
     // it is a field
     if(!$path->isGroup()) {
     # --- if it's a field ------------------
+
       $this->pathbuilder->generateFieldForPath($pathid, $field_name);
 /*      
       // get the bundle for this pathid

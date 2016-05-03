@@ -225,7 +225,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      *
      */
     public function generateFieldForSubGroup($pathid, $field_name) {
-      drupal_set_message("I am generating Fields for path " . $pathid . " and got " . $field_name . ". ");
+#      drupal_set_message("I am generating Fields for path " . $pathid . " and got " . $field_name . ". ");
 
       // get the bundle for this pathid
       $bundle = $this->getBundle($pathid); #$form_state->getValue('bundle');
@@ -307,9 +307,15 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       \Drupal::entityManager()->getStorage('field_config')->create($field_values)->save();
 
       $view_options = array(
-        'type' => 'text_summary_or_trimmed',//has to fit the field type, see above
-        'settings' => array('trim_length' => '200'),
-        'weight' => 1,//@TODO specify a "real" weight
+        'type' => 'inline_entity_form_complex', #'entity_reference_autocomplete_tags',
+        'settings' => array(
+          'match_operator' => 'CONTAINS',
+          'size' => '60',
+          'placeholder' => '',
+        ),
+#        'type' => 'entity_reference_entity_view',//has to fit the field type, see above
+#        'settings' => array('trim_length' => '200'),
+#        'weight' => 1,//@TODO specify a "real" weight
       );
     
       $view_entity_values = array(
@@ -318,14 +324,18 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         'mode' => 'default',
         'status' => TRUE,
       );
+      
+      $display_options = array(
+        'type' => 'entity_reference_entity_view',
+      );
 
       $display = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual' . '.'.$bundle.'.default');
       if (is_null($display)) $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
-      $display->setComponent($fieldid,$view_options)->save();
+      $display->setComponent($fieldid,$display_options)->save();
 
       $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual' . '.'.$bundle.'.default');
       if (is_null($form_display)) $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
-      $form_display->setComponent($fieldid)->save();
+      $form_display->setComponent($fieldid, $view_options)->save();
 
       drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
     
@@ -382,12 +392,14 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       
       
       $fieldid = $this->generateIdForField($pathid);
-      
+      // get the pbpaths
+      $pbpaths = $this->getPbPaths();
+
       // this was called field?
       $field_storage_values = [
         'field_name' => $fieldid,#$values['field_name'],
         'entity_type' =>  $mode,
-        'type' => 'text',//has to fit the field component type, see below
+        'type' => $pbpaths[$pathid]['fieldtype'], #'type' => 'text',//has to fit the field component type, see below
         'translatable' => TRUE,
       ];
     
@@ -403,8 +415,6 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       ];
     
 
-      // get the pbpaths
-      $pbpaths = $this->getPbPaths();
       // set the path and the bundle - beware: one is empty!
       $pbpaths[$pathid]['field'] = $fieldid;
       $pbpaths[$pathid]['bundle'] = $bundle;
@@ -426,8 +436,9 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       \Drupal::entityManager()->getStorage('field_config')->create($field_values)->save();
 
       $view_options = array(
-        'type' => 'text_summary_or_trimmed',//has to fit the field type, see above
-        'settings' => array('trim_length' => '200'),
+        // this might also be formatterwidget - I am unsure here. @TODO
+        'type' => $pbpaths[$pathid]['fieldtype'], #'text_summary_or_trimmed',//has to fit the field type, see above
+        'settings' => array(), #array('trim_length' => '200'),
         'weight' => 1,//@TODO specify a "real" weight
       );
     
@@ -522,7 +533,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      * @param $pathid the id of the path to add
      *
      */    
-    public function addPathToPathTree($pathid, $parentid = 0) {
+    public function addPathToPathTree($pathid, $parentid = 0, $is_group = FALSE) {
       $pathtree = $this->getPathTree();
       $pbpaths = $this->getPbPaths();
       
@@ -537,7 +548,25 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         $pathtree = $this->addDataToParentInTree($parentid, array('id' => $pathid, 'children' => array()), $pathtree);
       
       }
-      $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => '');
+      
+      // if it is a group - we usually want to do entity reference if we are in wisski_bundle-mode
+#      if($field_type == "group") {
+#        if($this->getCreateMode() == 'wisski_bundle') 
+#          $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => '', 'fieldtype' => '', 'displaywidget' => '', 'formatterwidget' => '');
+#        else // we might need that later
+#          $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => '', 'fieldtype' => '', 'displaywidget' => '', 'formatterwidget' => '');
+#      } else if($field_type == "field_reference") {
+#        // in any other case, we stick to string for the beginning
+#        $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => '', 'fieldtype' => 'entity_reference', 'displaywidget' => 'inline_entity_form_complex', 'formatterwidget' => 'entity_reference_entity_view');
+#      } else {
+#        $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => '', 'fieldtype' => 'string', 'displaywidget' => 'string_textfield', 'formatterwidget' => 'string');
+#      }
+
+      if($is_group) {
+        $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => '', 'fieldtype' => '', 'displaywidget' => '', 'formatterwidget' => '');
+      } else {
+        $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => '', 'fieldtype' => 'string', 'displaywidget' => 'string_textfield', 'formatterwidget' => 'string');
+      }
       
       $this->setPathTree($pathtree);
       $this->setPbPaths($pbpaths);
