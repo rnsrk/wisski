@@ -16,6 +16,15 @@ use Drupal\Core\Entity\EntityTypeInterface;
  */
 abstract class EngineBase extends PluginBase implements EngineInterface {
 
+  //store is read only
+  const READ_ONLY = 0;
+  //store is readably and writable
+  const READ_WRITE = 1;
+  //store is readable and the preferred writable
+  const PREFERRED_LOCAL_STORE;
+
+  private $status = self::READ_WRITE;
+
   /**
    * {@inheritdoc}
    */
@@ -112,7 +121,41 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     return NULL;
   }
   
+  //@TODO overwrite
   public function writeFieldValues($entity_id,array $field_values) {
     return EngineInterface::NULL_WRITE;
+  }
+  
+  public function isWritable() {
+    //returns non-zero for writable stores and zero for read_only
+    return $this->status;
+  }
+  
+  public function isReadOnly() {
+    return $this->status === self::READ_ONLY;
+  }
+  
+  public function isPreferredLocalStore() {
+    return $tihs->status === self::PREFERRED_LOCAL_STORE;
+  }
+  
+  public function setReadOnly() {
+    $this->status = self::READ_ONLY;
+  }
+  
+  public function setWritable() {
+    $this->status = self::READ_WRITE;
+  }
+  
+  public setPreferredLocalStore() {
+    $this->status = self::PREFERRED_LOCAL_STORE;
+  }
+  
+  public function setWritabilityStatus($status=self::READ_WRITE) {
+    $this->status = $status;
+  }
+  
+  public function getWritabilityStatus() {
+    return $this->status;
   }
 }
