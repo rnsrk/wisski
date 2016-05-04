@@ -2444,7 +2444,8 @@ echo ($e->getTraceAsString());
         drupal_set_message(t('Error getting imports of ontology %iri: @e', array('%ont' => $o, '@e' => $err)), 'error');
       }
     }
-    
+    drupal_set_message("RES:");
+    dvm($results);
     return $results;   
   }
   

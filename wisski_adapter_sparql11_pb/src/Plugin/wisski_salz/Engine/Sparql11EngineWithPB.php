@@ -838,5 +838,183 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return new Query($entity_type,$condition,$namespaces,$this);
   }
   
+  public function writeFieldValues($entity_id,array $field_values) {
+    drupal_set_message(serialize("Hallo welt!"));
+  }
+  
+  // -------------------------------- Ontologie thingies ----------------------
+
+  public function addOntologies($iri = NULL) {
+    drupal_set_message('iri: ' . $iri);
+    if (empty($iri)) {
+      //load all ontologies
+      $query = "SELECT ?ont WHERE {?ont a owl:Ontology}";
+      $result = $this->directQuery($query);
+     # if ($ok) {
+        foreach ($result as $obj) {
+          $this->addOntologies(strval($obj->ont));
+        }
+     /* } else {
+        foreach ($result as $err) {
+          drupal_set_message(t('Error getting imports of ontology %iri: @e', array('%ont' => $o, '@e' => $err)), 'error');
+        }
+      }
+      */
+      return;
+    }
+
+    // check if the Ontology is already there
+    $result = $this->directQuery("ASK {<$iri> a owl:Ontology}");
+    
+   /* if (!$ok) { // we've got something weired.
+      drupal_set_message("Store is not requestable.", 'error');
+      return;
+   */
+    
+  /*
+     // this case will not work, result will never be empty because it always contains the 
+     if(!empty($result)){ // if it is not false it is already there   
+      drupal_set_message("$iri is already loaded.", 'error');
+      return;
+    }
+*/
+
+    // if we get here we may load the ontology
+    $query = "LOAD <$iri> INTO GRAPH <$iri>";
+    $result = $this->directUpdate($query);
+
+    // everything worked?  
+/*    if (!$ok) {
+      foreach ($result as $err) {
+        drupal_set_message(t('An error occured while loading the Ontology: ' . serialize($err)),'error');
+      }
+    } else { // or it worked
+ */     
+      drupal_set_message("Successfully loaded $iri into the Triplestore.");
+   # }
+  
+    // look for imported ontologies
+    $query = "SELECT DISTINCT ?ont FROM <$iri> WHERE { ?s a owl:Ontology . ?s owl:imports ?ont . }";
+    list($ok, $results) = $this->directQuery($query);
+
+    // if there was nothing something is weired again.
+    if (!$ok) {
+      foreach ($results as $err) {
+        drupal_set_message(t('Error getting imports of ontology %iri: @e', array('%ont' => $o, '@e' => $err)), 'error');
+      }
+    } else { // if there are some we have to load them
+      foreach ($results as $to_load) {
+        $this->addOntologies(strval($to_load->ont));
+      }
+    }
+
+    // load the ontology info in internal parameters    
+    // $this->loadOntologyInfo();
+    
+    // add namespaces to table
+ /* 
+    $file = file_get_contents($iri);
+    $format = EasyRdf_Format::guessFormat($file, $iri);
+
+    if(empty($format)) {
+      drupal_set_message("Could not initialize namespaces.", 'error');
+    } else {
+      if(stripos($format->getName(), 'xml') !== FALSE) {
+        preg_match('/RDF[^>]*>/i', $file, $nse);
+        
+        preg_match_all('/xmlns:[^=]*="[^"]*"/i', $nse[0], $nsarray);
+        
+        $ns = array();
+        $toStore = array();
+        foreach($nsarray[0] as $newns) {
+          preg_match('/xmlns:[^=]*=/', $newns, $front);
+          $front = substr($front[0], 6, strlen($front[0])-7);
+          preg_match('/"[^"]*"/', $newns, $end);
+          $end = substr($end[0], 1, strlen($end[0])-2);
+          $ns[$front] = $end;
+        }
+                
+	preg_match_all('/xmlns="[^"]*"/i', $nse[0], $toStore);
+	
+	foreach($toStore[0] as $itemGot) {
+          $i=0;
+	  $key = 'base';
+	
+	  preg_match('/"[^"]*"/', $itemGot, $item);
+	  $item	= substr($item[0], 1, strlen($item[0])-2);
+	  
+	  if(!array_key_exists($key, $ns)) {
+	    if(substr($item, strlen($item)-1, 1) != '#')
+	      $ns[$key] = $item . '#';
+	    else
+	      $ns[$key] = $item;
+          } else {
+	      $newkey = $key . $i;
+	      while(array_key_exists($newkey, $ns)) {
+		$i++;
+		$newkey = $key . $i;
+	      }
+	      if(substr($item, strlen($item)-1, 1) != '#')
+	 	$ns[$newkey] = $item . '#';
+	      else
+		$ns[$newkey] = $item;
+          }
+	}
+	
+	foreach($ns as $key => $value) {
+  	  $this->putNamespace($key, $value);
+  	} 
+  	
+  	global $base_url;
+  	// @TODO: check if it is already in the ontology.
+  	$this->putNamespace("local", $base_url . '/');
+  	$this->putNamespace("data", $base_url . '/inst/');
+      }
+      
+      
+    }    
+   */ 
+    // return the result
+    return $result;   
+
+ }  
+
+  public function getOntologies($graph = NULL) {
+    // get ontology and version uri
+    if(!empty($graph)) {
+      $query = "SELECT DISTINCT ?ont ?iri ?ver FROM $graph WHERE { ?ont a owl:Ontology . OPTIONAL { ?ont owl:ontologyIRI ?iri. ?ont owl:versionIRI ?ver . } }";
+    } else
+      $query = "SELECT DISTINCT ?ont (COALESCE(?niri, 'none') as ?iri) (COALESCE(?nver, 'none') as ?ver) (COALESCE(?ngraph, 'default') as ?graph) WHERE { ?ont a owl:Ontology . OPTIONAL { GRAPH ?ngraph { ?ont a owl:Ontology } } . OPTIONAL { ?ont owl:ontologyIRI ?niri. ?ont owl:versionIRI ?nver . } }";
+     
+    $results = $this->directQuery($query);
+    drupal_set_message('results?' . serialize($results)); 
+  /*
+  if (!$ok) {
+    foreach ($results as $err) {
+      drupal_set_message(t('Error getting imports of ontology %iri: @e', array('%ont' => $o, '@e' => $err)), 'error');
+    }
+  }
+ */                              
+    return $results;
+}
+     
+  public function deleteOntology($graph, $type = "graph") {
+ 
+    // get ontology and version uri
+    if($type == "graph") {
+      $query = "WITH <$graph> DELETE { ?s ?p ?o } WHERE { ?s ?p ?o }";
+    } else
+      $query = "DELETE { ?s ?p ?o } WHERE { ?s ?p ?o . FILTER ( STRSTARTS(STR(?s), '$graph')) }";
+                         
+    $results = $this->directUpdate($query);
+                             
+   /* if (!$ok) {
+    // some useful error message :P~
+      drupal_set_message('some error encountered:' . serialize($results), 'error');
+    }
+   */                                              
+    return $results;
+  }
+                                                                                                                                                         
 
 }

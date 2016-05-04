@@ -50,7 +50,29 @@ class FormBase extends EntityForm {
       '#default_value' => $adapter->getDescription(),
       '#description' => $this->t('The text will be displayed on the <em>adapter collection</em> page.'),
     ];
-
+    /*
+    $form['isWritable'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Writable'),
+      '#default_value' => $adapter->getEngine()->isWritable(),
+      '#description' => $this->t('Is this Adapter writable?'),
+    ];
+    
+#    $form['isReadable'] = [
+#      '#type' => 'checkbox',
+#      '#title' => $this->t('Readable'),
+#      '#default_value' => $adapter->getEngine()->isReadable(),
+#      '#description' => $this->t('Is this Adapter readable?'),
+#    ];
+    
+    
+    $form['isPreferredLocalStore'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Preferred Local Store'),
+      '#default_value' => $adapter->getEngine()->isPreferredLocalStore(),
+      '#description' => $this->t('Is this Adapter the preferred local store?'),
+    ];*/
+    
     $form['engine_id'] = [
       '#type' => 'value',
       '#value' => $adapter->getEngineId(),
@@ -80,6 +102,7 @@ class FormBase extends EntityForm {
     // let the engine do its config stuff
     $values = $form_state->getValues();
     $engine_data = (new FormState())->setValues($values);
+
     $adapter->getEngine()->submitConfigurationForm($form, $engine_data);
     
     // the entity must be saved. the engine config bubbles up to the config entity
