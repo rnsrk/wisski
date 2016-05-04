@@ -133,7 +133,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   }
   
   public function setReadOnly() {
-    $this->is_writable = FALSE;;
+    $this->is_writable = FALSE;
   }
   
   public function setWritable() {
