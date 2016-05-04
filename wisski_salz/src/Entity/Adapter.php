@@ -173,7 +173,6 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
     return $this->description;
   }
 
-
   /**
    * {@inheritdoc}
    */
@@ -181,9 +180,6 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
     $this->description = trim($d);
   }
 
-
-    
-  
   /**
    * {@inheritdoc}
    */
@@ -191,7 +187,6 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
     return $this->getEngine()->hasEntity($entity_id);
   }
 
-  
   /**
    * {@inheritdoc}
    */
@@ -199,7 +194,9 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
     return $this->getEngine()->loadFieldValues($entity_ids, $field_ids, $language);
   }
 
-
+  /**
+   * {@inheritdoc}
+   */
   public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
     return $this->getEngine()->loadPropertyValuesForField($field_id, $property_ids, $entity_ids, $language);
   }
@@ -210,9 +207,18 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
   public function getQueryObject(EntityTypeInterface $entity_type, $condition,array $namespaces) {
     return $this->getEngine()->getQueryObject($entity_type,$condition,$namespaces);
   }
-  
+
+  /**
+   * {@inheritdoc}
+   */  
   public function getBundleIdsForEntityId($entity_id) {
     return $this->getEngine()->getBundleIdsForEntityId($entity_id);
   }
-  
+
+  /**
+   * {@inheritdoc}
+   */  
+   public function writeFieldValues($entity_id, array $field_values) {
+     return $this->getEngine()->writeFieldValues($entity_id, $field_values);
+   }
 }

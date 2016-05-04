@@ -99,5 +99,8 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
    */
   public function getBundleIdsForEntityId($entity_id);
 
-
+  /**
+   * @see EngineInterface::writeFieldValues
+   */
+  public function writeFieldValues($entity_id,array $field_values);
 }
