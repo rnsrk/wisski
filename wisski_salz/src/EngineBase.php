@@ -140,11 +140,11 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     $this->is_writable = TRUE;
   }
   
-  public setPreferredLocalStore() {
+  public function setPreferredLocalStore() {
     $this->is_preferred_local_store = TRUE;
   }
   
-  public unsetPreferredLocalStore() {
+  public function unsetPreferredLocalStore() {
     $this->is_preferred_local_store = FALSE;
   }
 }
