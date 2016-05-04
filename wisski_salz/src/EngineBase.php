@@ -21,7 +21,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   //store is readably and writable
   const READ_WRITE = 1;
   //store is readable and the preferred writable
-  const PREFERRED_LOCAL_STORE;
+  const PREFERRED_LOCAL_STORE = 2;
 
   private $status = self::READ_WRITE;
 
@@ -136,7 +136,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   }
   
   public function isPreferredLocalStore() {
-    return $tihs->status === self::PREFERRED_LOCAL_STORE;
+    return $this->status === self::PREFERRED_LOCAL_STORE;
   }
   
   public function setReadOnly() {
