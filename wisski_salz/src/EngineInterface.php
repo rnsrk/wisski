@@ -18,9 +18,10 @@ use Drupal\Core\Entity\EntityTypeInterface;
  */
 interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginInterface, PluginFormInterface  {
   
-  constant SUCCESSFUL_WRITE = 1;
-  constant ERROR_ON_WRITE = 0;
-  constant NULL_WRITE = 2;
+  const SUCCESSFUL_WRITE = 1;
+  const ERROR_ON_WRITE = 0;
+  const NULL_WRITE = 2;
+
   
   /**
    * returns the ID of the adapter that this engine instance belongs to
