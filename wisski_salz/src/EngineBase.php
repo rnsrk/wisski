@@ -16,14 +16,8 @@ use Drupal\Core\Entity\EntityTypeInterface;
  */
 abstract class EngineBase extends PluginBase implements EngineInterface {
 
-  //store is read only
-  const READ_ONLY = 0;
-  //store is readably and writable
-  const READ_WRITE = 1;
-  //store is readable and the preferred writable
-  const PREFERRED_LOCAL_STORE = 2;
-
-  private $status = self::READ_WRITE;
+  private $is_writable = TRUE;
+  private $is_preferred_local_store = FALSE;
 
   /**
    * {@inheritdoc}
@@ -127,35 +121,30 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   }
   
   public function isWritable() {
-    //returns non-zero for writable stores and zero for read_only
-    return $this->status;
+    return $this->is_writable;
   }
   
   public function isReadOnly() {
-    return $this->status === self::READ_ONLY;
+    return !$this->is_writable;
   }
   
   public function isPreferredLocalStore() {
-    return $this->status === self::PREFERRED_LOCAL_STORE;
+    return $this->is_preferred_local_store;
   }
   
   public function setReadOnly() {
-    $this->status = self::READ_ONLY;
+    $this->is_writable = FALSE;;
   }
   
   public function setWritable() {
-    $this->status = self::READ_WRITE;
+    $this->is_writable = TRUE;
   }
   
   public setPreferredLocalStore() {
-    $this->status = self::PREFERRED_LOCAL_STORE;
+    $this->is_preferred_local_store = TRUE;
   }
   
-  public function setWritabilityStatus($status=self::READ_WRITE) {
-    $this->status = $status;
-  }
-  
-  public function getWritabilityStatus() {
-    return $this->status;
+  public unsetPreferredLocalStore() {
+    $this->is_preferred_local_store = FALSE;
   }
 }
