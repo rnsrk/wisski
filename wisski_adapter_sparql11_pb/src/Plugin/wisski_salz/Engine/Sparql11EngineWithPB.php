@@ -796,27 +796,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    drupal_set_message("out: " . serialize($out));
 
     return $out;
-/*
-    if (is_null($entity_ids)) {
-      $ents = $this->loadMultiple();
-      if (is_null($field_ids)) return $ents;
-      $field_ids = array_flip($field_ids);
-      return array_map(function($array) use ($field_ids) {return array_intersect_key($array,$field_ids);},$ents);
-    }
-    $result = array();
-    foreach ($entity_ids as $entity_id) {
-      $ent = $this->load($entity_id);
-      drupal_set_message('miau ' . serialize($ent));
-      if (!is_null($field_ids)) {
-        $ent = array_intersect_key($ent,array_flip($field_ids));
-      }
-      drupal_set_message('miau2 ' . serialize($ent));
-      
-      $result[$entity_id] = $ent;
-    }
-    drupal_set_message("result is: " . serialize($result));
-    return $result;
-  */
+
   }
 
   /**
@@ -839,7 +819,201 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
   
   public function writeFieldValues($entity_id,array $field_values) {
-    drupal_set_message(serialize("Hallo welt!"));
+    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values));
+    
+    // tricky thing here is that the entity_ids that are coming in typically
+    // are somewhere from a store. In case of rdf it is easy - they are uris.
+    // In case of csv or something it is more tricky. So I don't wan't to 
+    // simply go to the store and tell it "give me the bundle of this".
+    // The field ids come in handy here - fields are typically attached
+    // to a bundle anyway. so I just get the bundle from there. I think it is
+    // rather stupid that this function does not load the field values per 
+    // bundle - it is implicitely anyway like that.
+    // 
+    // so I ignore everything and just target the field_ids that are mapped to
+    // paths in the pathbuilder.
+    
+
+    // this approach will be not fast enough in the future...
+    // the pbs have to have a better mapping of where and how to find fields
+    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    
+    $out = array();
+        
+    // get the adapterid that was loaded
+    // haha, this is the engine-id...
+    //$adapterid = $this->getConfiguration()['id'];
+        
+    foreach($pbs as $pb) {
+      
+      // if we have no adapter for this pb it may go home.
+      if(empty($pb->getAdapterId()))
+        continue;
+        
+      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
+
+      // if we have not adapter, we may go home, too
+      if(empty($adapter))
+        continue;
+      
+      // if he didn't ask for us...    
+      if($this->getConfiguration()['id'] != $adapter->getEngine()->getConfiguration()['id'])
+        continue;
+              
+#      foreach($entity_ids as $eid) {
+        
+        // here we should check if we really know the entity by asking the TS for it.
+        // this would speed everything up largely, I think.
+        $entity = $this->load($entity_id);
+        
+        // if there is nothing, continue.
+        if(empty($entity))
+          continue;
+          
+        $old_values = $this->loadFieldValues(array($entity_id), array_keys($field_values));
+
+        if(!empty($old_values))
+          $old_values = $old_values[$entity_id];
+
+        drupal_set_message("the old values were: " . serialize($old_values));
+
+        foreach($field_values as $key => $fieldvalue) {
+          drupal_set_message("key: " . serialize($key) . " fieldvalue is: " . serialize($fieldvalue)); 
+  
+          if($key == "eid") {
+            // we skip this for now
+            continue;
+          }
+          
+          
+          if($key == "name") {
+            // tempo hack
+            continue;
+          }
+          
+          if($key == "bundle") {
+            continue;
+          }
+          
+          $mainprop = $fieldvalue['main_property'];
+          
+          unset($fieldvalue['main_property']);
+          
+          foreach($fieldvalue as $key2 => $val) {
+            // if they are the same - skip
+            if($val[$mainprop] == $old_values[$key]) 
+              continue;
+              
+            // if oldvalues are an array and the value is in there - skip
+            if(is_array($old_values[$key]) && in_array($val[$mainprop], $old_values[$key]))
+              continue;
+              
+            // now write to the database
+            
+            drupal_set_message("I would write " . $val[$mainprop] . " to the db and delete " . $old_values[$key] . " for it.");
+            
+          }
+
+          
+/*          
+          // Bundle is a special case.
+          // If we are asked for a bundle, we first look in the pb cache for the bundle
+          // because it could have been set by 
+          // measures like navigate or something - so the entity is always displayed in 
+          // a correct manor.
+          // If this is not set we just select the first bundle that might be appropriate.
+          // We select this with the first field that is there. @TODO:
+          // There might be a better solution to this.
+          // e.g. knowing what bundle was used for this id etc...
+          // however this would need more tables with mappings that will be slow in case
+          // of a lot of data...
+          if($fieldid == "bundle") {
+            // get all the bundles for the eid from us
+            $bundles = $this->getBundleIdsForEntityId($eid);
+                        
+            if(!empty($bundles)) {
+              // for now we simply take the first one
+              // that might be not so smart
+              // who knows @TODO:
+              foreach($bundles as $bundle) {
+                $out[$eid]['bundle'] = $bundle;
+                break;
+              }
+              continue;
+            }
+          }
+
+          // every other field is an array, we guess
+          // this might be wrong... cardinality?          
+          if(!isset($out[$eid][$fieldid]))
+            $out[$eid][$fieldid] = array();
+
+          // set the bundle
+          // @TODO: This is a hack and might break for multi-federalistic stores
+          $pbarray = $pb->getPbEntriesForFid($fieldid);
+            
+          // if there is no data about this path - how did we get here in the first place?
+          // fields not in sync with pb?
+          if(empty($pbarray["id"]))
+            continue;
+
+          $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["id"]);
+
+          // if there is no path we can skip that
+          if(empty($path))
+            continue;
+
+          // the easy assumption - there already is a bundle.
+          $bundle = $out[$eid]['bundle'];
+
+          // if there is no bundle we have to ask the system for the typical bundle
+          if(empty($bundle)) {
+            
+            // we try to get it from cache
+            $bundle = $pb->getBundleIdForEntityId($eid);
+            
+            // nothing was set up to now - so we use the field and ask the field for the typical bundle
+            if(empty($bundle)) {
+              $bundle = $pb->getBundle($pbarray["id"]);
+              // and store it to the entity.
+              $out[$eid]['bundle'] = $bundle;
+
+              $pb->setBundleIdForEntityId($eid, $bundle);
+
+            }
+          }
+
+          // we ask for the bundle
+          $bundle = $pb->getBundle($pbarray["id"]);
+          
+          // and compare it to the bundle of the entity - if this is not the same, 
+          // we don't have to ask for data.
+          // @TODO: this is a hack - when the engine asks for the correct 
+          // things right away we can remove that here
+          if($bundle != $out[$eid]['bundle']) {
+            continue;
+          }
+          
+          $clearPathArray = $this->getClearPathArray($path, $pb);
+          
+          if(!empty($path)) {
+            // if this is question for a subgroup - handle it otherwise
+            if($pbarray['parent'] > 0 && $path->isGroup()) {
+#              drupal_set_message("I am asking for: " . serialize($this->getClearGroupArray($path, $pb)));
+              $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid));
+               
+            } else // it is a field?
+              $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($clearPathArray, $path->getDatatypeProperty(), $eid));
+          }
+        */
+        }
+      #}
+    }
+
+#    drupal_set_message("out: " . serialize($out));
+
+    return $out;
+
   }
   
   // -------------------------------- Ontologie thingies ----------------------
@@ -895,10 +1069,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
     // look for imported ontologies
     $query = "SELECT DISTINCT ?ont FROM <$iri> WHERE { ?s a owl:Ontology . ?s owl:imports ?ont . }";
-    list($ok, $results) = $this->directQuery($query);
-
+  #  list($ok, $results) = $this->directQuery($query);
+    $results = $this->directQuery($query);
+ 
     // if there was nothing something is weired again.
-    if (!$ok) {
+  /*  if (!$ok) {
       foreach ($results as $err) {
         drupal_set_message(t('Error getting imports of ontology %iri: @e', array('%ont' => $o, '@e' => $err)), 'error');
       }
@@ -906,8 +1081,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       foreach ($results as $to_load) {
         $this->addOntologies(strval($to_load->ont));
       }
+    }*/
+    foreach ($results as $to_load) {
+      $this->addOntologies(strval($to_load->ont));
     }
-
+                
     // load the ontology info in internal parameters    
     // $this->loadOntologyInfo();
     
