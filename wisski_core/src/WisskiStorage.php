@@ -345,11 +345,25 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }      
       
     }
+
+    // if there are local writeable adapters, use them
+    $adapters_to_use = $local_writeable_adapters;
     
-    drupal_set_message("lwa: " . serialize($local_writeable_adapters));
-    drupal_set_message("wa: " . serialize($writeable_adapters));
-/*    
-    foreach($local_writeable_adapters as $aid => $adapter) {
+    // if there were no local adapters, use the writeable
+    if(empty($adapters_to_use))
+      $adapters_to_use = $writeable_adapters;
+      
+    // if there are no adapters by now we die...
+    if(empty($adapters_to_use)) {
+      drupal_set_message("There is no storage backend defined.", "error");
+      return;
+    }      
+      
+    
+#    drupal_set_message("lwa: " . serialize($local_writeable_adapters));
+#    drupal_set_message("wa: " . serialize($writeable_adapters));
+    
+    foreach($adapters_to_use as $aid => $adapter) {
       // if it is a new entity
       if($entity->isNew()) {
         // in this case we have to add the triples for a new entity
@@ -360,16 +374,21 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       // then we locate all local stores in these writeable stores
       // and write to them
       
+#      drupal_set_message("I ask adapter " . serialize($adapter) . " for id " . serialize($entity->id()) . " and get: " . serialize($adapter->hasEntity($id)));
       // if they know that id
-      if($adapter->hasEntity($id)) {
+      if($adapter->hasEntity($entity->id())) {
         // if so - ask for the bundles for that id
-        $bundles = $adapter->getBundleIdsForEntityId($id);
+#        $bundles = $adapter->getBundleIdsForEntityId($id);
         #drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundles) . ".");
           
-          foreach($bundles as $bundleid) {
-            $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
+          // perhaps we have to check for the field definitions - we ignore this for now.
+#          foreach($bundles as $bundleid) {
+#            $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
             #drupal_set_message("asking for: " . serialize(array_keys($field_definitions)));
             try {
+#              drupal_set_message(" I ask adapter: " . serialize($adapter));
+              $adapter_info = $adapter->writeFieldValues($entity->id(), $values);
+              /*
               $adapter_info = $adapter->loadFieldValues(array($id),array_keys($field_definitions));
 
               #drupal_set_message('ive got: ' . serialize($adapter_info));
@@ -434,11 +453,11 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     $info[$entity_id][$field_name] = $actual_field_info;
                   }
                 }  
-              }
+              }*/
             } catch (\Exception $e) {
               drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
             }              
-          }     
+        #  }     
           
         } else {
 #          drupal_set_message("No, I don't know " . $id . " and I am " . $aid . ".");
@@ -446,7 +465,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
     #}
 
-*/
+
 //    foreach($adapters as $aid => $adapter) {
       
 //    }
