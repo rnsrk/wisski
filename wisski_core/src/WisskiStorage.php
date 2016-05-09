@@ -6,8 +6,11 @@ use Drupal\Core\Entity\ContentEntityStorageBase;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityFieldManager;
+use Drupal\Core\Entity\EntityStorageException;
 
 use Drupal\Core\Field\FieldDefinitionInterface;
+
+use Drupal\file\FileStorage;
 
 use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\wisski_core\Query\WisskiQueryInterface;
@@ -97,10 +100,27 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     if ($field_def->getType() === 'image') {
                       drupal_set_message('we got an image to handle');
                       dpm($actual_field_info,'image_info');
-                      $query = Drupal::entityQuery('file');
-                      $query->condition('uri',current($actual_field_info),'LIKE');
+                      $query = \Drupal::entityQuery('file');
+                      // $actual_field_info must be the image uri
+                      $file_uri = current($actual_field_info);
+                      // we now check for an existing 'file managed' with that uri
+                      $query->condition('uri',$file_uri);
                       $ids = $query->execute();
                       dpm(entity_load_multiple('file',$ids));
+                      if (!empty($ids)) {
+                        // if there is one, we must set the field value to the image's FID
+                        $info[$entity_id][$field_name] = current($ids);
+                        //@TODO find out what to do if there is more than one file with that uri
+                      } else {
+                        // if we have no managed file with that uri, we try to generate one
+                        try {
+                          $file = FileStorage::create(array('uri'=>$file_uri));
+                          $file->save();
+                        } catch (EntityStorageException $e) {
+                          drupal_set_message($this->t('Could not create file with uri %uri',array('%uri'=>$file_uri)),'error');
+                          dpm($e);
+                        }
+                      }
                     }
                     if ($field_definitions[$field_name] instanceof BaseFieldDefinition) {
                       //this is a base field and cannot have multiple values
