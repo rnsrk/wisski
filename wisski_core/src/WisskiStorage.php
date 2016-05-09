@@ -11,6 +11,7 @@ use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Core\Field\FieldDefinitionInterface;
 
 use Drupal\file\FileStorage;
+use Drupal\file\Entity\File;
 
 use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\wisski_core\Query\WisskiQueryInterface;
@@ -114,11 +115,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                       } else {
                         // if we have no managed file with that uri, we try to generate one
                         try {
-                          $file = FileStorage::create(array('uri'=>$file_uri));
-                          $file->save();
+                          $file = File::create(array(
+                            'uri'=>$file_uri,
+                          ));
+                          dpm($file,'File Object');
                         } catch (EntityStorageException $e) {
-                          drupal_set_message($this->t('Could not create file with uri %uri',array('%uri'=>$file_uri)),'error');
-                          dpm($e);
+                          drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%mesage'=>$e->getMessage())),'error');
                         }
                       }
                     }
