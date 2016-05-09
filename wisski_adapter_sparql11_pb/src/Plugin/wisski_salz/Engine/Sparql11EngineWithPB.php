@@ -509,7 +509,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $ent = $this->load($entity_id);
     return !empty($ent);
   }
-
+ 
   public function groupToReturnValue($patharray, $primitive = NULL, $eid = NULL) {
     $sparql = "SELECT DISTINCT * WHERE { ";
     foreach($patharray as $key => $step) {
@@ -818,6 +818,80 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return new Query($entity_type,$condition,$namespaces,$this);
   }
   
+  public function deleteOldFieldValue($entity_id, $fieldid, $value, $pb) {
+    // get the pb-entry for the field
+    // this is a hack and will break if there are several for one field
+    $pbarray = $pb->getPbEntriesForFid($fieldid);
+    
+    $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['id']);
+
+    $clearPathArray = $this->getClearPathArray($path, $pb);
+    
+#    $group = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['parent']);
+    
+#    $path_array = $path->getPathArray();
+    
+    $sparql = "SELECT DISTINCT * WHERE { GRAPH ?g {";
+    foreach($clearPathArray as $key => $step) {
+      if($key % 2 == 0) 
+        $sparql .= "?x$key a <$step> . ";
+      else
+        $sparql .= '?x' . ($key-1) . " <$step> ?x" . ($key+1) . " . ";    
+    }
+    
+    if(!empty($primitive)) {
+      $sparql .= "?x$key <$primitive> ?out . ";
+    }
+    
+    if(!empty($eid)) {
+      $eid = str_replace("\\", "/", $eid);
+      $url = parse_url($eid);
+      
+      if(!empty($url["scheme"]))
+        $sparql .= " FILTER (?x0 = <$eid> ) . ";
+      else
+        $sparql .= " FILTER (?x0 = \"$eid\" ) . ";
+    }
+    
+    $sparql .= " } }";
+
+    $result = $this->directQuery($sparql);
+
+    $outarray = array();
+
+    foreach($result as $key => $thing) {
+      $outarray[$key] = array();
+      
+      for($i=0;$i<count($clearPathArray);$i+=2) {
+        $name = "x" . $i; 
+        $outarray[$key][$name] = $thing->$name->getValue();
+      }
+   #     drupal_set_message("we got something!");
+  #    $name = 'x' . (count($clearPathArray)-1);
+      if(!empty($primitive))
+        $outarray[$key]["out"] = $thing->out->getValue();
+     # else
+     #   $out[] = $thing->$name->dumpValue("text");
+    }
+
+    drupal_set_message(serialize($outarray));
+    
+    drupal_set_message("spq: " . serialize($sparql));
+#    drupal_set_message(serialize($this));
+    
+        
+    // add graph handling
+    $sparqldelete = "DELETE WHERE { " ;
+    
+    drupal_set_message(serialize($clearPathArray));
+    
+    drupal_set_message("I delete field $field from entity $entity_id that currently has the value $value");
+  }
+  
+  public function addNewFieldValue($entity_id, $fieldid, $value, $pb) {
+    drupal_set_message("I add field $field from entity $entity_id that currently has the value $value");
+  }
+  
   public function writeFieldValues($entity_id,array $field_values) {
     drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values));
     
@@ -869,7 +943,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // if there is nothing, continue.
         if(empty($entity))
           continue;
-          
+        
+        // it would be better to gather this information from the form and not from the ts
+        // there might have been somebody saving in between...
+        // @TODO !!!
         $old_values = $this->loadFieldValues(array($entity_id), array_keys($field_values));
 
         if(!empty($old_values))
@@ -910,7 +987,16 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
               
             // now write to the database
             
-            drupal_set_message("I would write " . $val[$mainprop] . " to the db and delete " . $old_values[$key] . " for it.");
+            // first delete the old values
+            if(is_array($old_values[$key]))
+              $this->deleteOldFieldValue($entity_id, $key, $old_values[$key][$key2], $pb);
+            else
+              $this->deleteOldFieldValue($entity_id, $key, $old_values[$key], $pb);
+            
+            // add the new ones
+            $this->addNewFieldValue($entity_id, $key, $val[$mainprop], $pb); 
+            
+#            drupal_set_message("I would write " . $val[$mainprop] . " to the db and delete " . serialize($old_values[$key]) . " for it.");
             
           }
 
