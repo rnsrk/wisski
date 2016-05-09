@@ -119,6 +119,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                             'uri'=>$file_uri,
                           ));
                           dpm($file,'File Object');
+                          $file->save();
+                          $info[$entity_id][$field_name] = $file->id();
                         } catch (EntityStorageException $e) {
                           drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%mesage'=>$e->getMessage())),'error');
                         }
