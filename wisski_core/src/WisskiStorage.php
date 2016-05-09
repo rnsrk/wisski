@@ -6,8 +6,12 @@ use Drupal\Core\Entity\ContentEntityStorageBase;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityFieldManager;
+use Drupal\Core\Entity\EntityStorageException;
 
 use Drupal\Core\Field\FieldDefinitionInterface;
+
+use Drupal\file\FileStorage;
+use Drupal\file\Entity\File;
 
 use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\wisski_core\Query\WisskiQueryInterface;
@@ -30,7 +34,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * {@inheritdoc}
    */
   protected function doLoadMultiple(array $ids = NULL) {
-#  dpm($ids,__METHOD__);
+//  dpm($ids,__METHOD__);
     $entities = array();
     $values = $this->getEntityInfo($ids);
 //  dpm($values,'values');    
@@ -82,7 +86,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               foreach($adapter_info as $entity_id => $entity_values) {
                 //if we don't know about that entity yet, this adapter's info can be used without a change
                 if (!isset($info[$entity_id])) $info[$entity_id] = $entity_values;
-                else {
+                //else {
                   //integrate additional values on existing entities
                   foreach($entity_values as $field_name => $value) {
                     if (empty($value)) continue;
@@ -90,11 +94,36 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     $actual_field_info = $info[$entity_id][$field_name];
                 
                     // if there is no field definition throw an error.
-                    if(empty($field_definitions[$field_name])) {
+                    if(empty($field_def = $field_definitions[$field_name])) {
                       drupal_set_message("Asked for field definition of field " . $field_name . " on WissKI Individual but there was nothing.", 'error');
                       continue;
                     }
-                
+                    if ($field_def->getType() === 'image') {
+                      drupal_set_message('we got an image to handle');
+                      dpm($actual_field_info,'image_info');
+                      $query = \Drupal::entityQuery('file');
+                      // $actual_field_info must be the image uri
+                      $file_uri = current($actual_field_info);
+                      // we now check for an existing 'file managed' with that uri
+                      $query->condition('uri',$file_uri);
+                      $ids = $query->execute();
+                      dpm(entity_load_multiple('file',$ids));
+                      if (!empty($ids)) {
+                        // if there is one, we must set the field value to the image's FID
+                        $info[$entity_id][$field_name] = current($ids);
+                        //@TODO find out what to do if there is more than one file with that uri
+                      } else {
+                        // if we have no managed file with that uri, we try to generate one
+                        try {
+                          $file = File::create(array(
+                            'uri'=>$file_uri,
+                          ));
+                          dpm($file,'File Object');
+                        } catch (EntityStorageException $e) {
+                          drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%mesage'=>$e->getMessage())),'error');
+                        }
+                      }
+                    }
                     if ($field_definitions[$field_name] instanceof BaseFieldDefinition) {
                       //this is a base field and cannot have multiple values
                       //@TODO make sure, we load the RIGHT value
@@ -138,7 +167,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     } else $actual_field_info[] = $value;
                     $info[$entity_id][$field_name] = $actual_field_info;
                   }
-                }  
+                //}  
               }
             } catch (\Exception $e) {
               drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
