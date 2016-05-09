@@ -16,8 +16,8 @@ use Drupal\Core\Entity\EntityTypeInterface;
  */
 abstract class EngineBase extends PluginBase implements EngineInterface {
 
-  private $is_writable = TRUE;
-  private $is_preferred_local_store = FALSE;
+  protected $is_writable;
+  protected $is_preferred_local_store;
 
   /**
    * {@inheritdoc}
@@ -53,18 +53,28 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
 
 
   public function defaultConfiguration() {
-    return [];
+    #return parent::defaultConfiguration() + 
+    return [
+      'is_writable' => TRUE,
+      'is_preferred_local_store' => FALSE,
+    ];
   }
 
   /**
    * {@inheritdoc}
    */
   public function setConfiguration(array $configuration) {
+  // this does not exist
+#    parent::setConfiguration($configuration);
     if (is_null($configuration)) {
       $configuration = array();
       drupal_set_message(__METHOD__.' $configuration === NULL','error');
     }
     $this->configuration = $configuration + $this->defaultConfiguration();
+    
+    $this->is_writable = $this->configuration['is_writable'];
+    $this->is_preferred_local_store = $this->configuration['is_preferred_local_store'];
+    
   }
 
 
@@ -72,9 +82,14 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
    * {@inheritdoc}
    */
   public function getConfiguration() {
+
     return [
       'id' => $this->getPluginId(),
+      'is_writable' => $this->isWritable(),
+      'is_preferred_local_store' => $this->isPreferredLocalStore(),
     ] + $this->configuration;
+    // this does not exist
+     #+ parent::getConfiguration();
   }
 
 
@@ -82,7 +97,30 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    return [];
+
+    $form['isWritable'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Writable'),
+      '#default_value' => $this->isWritable(),
+      '#description' => $this->t('Is this Adapter writable?'),
+    ];
+    
+#    $form['isReadable'] = [
+#      '#type' => 'checkbox',
+#      '#title' => $this->t('Readable'),
+#      '#default_value' => $adapter->getEngine()->isReadable(),
+#      '#description' => $this->t('Is this Adapter readable?'),
+#    ];
+    
+    
+    $form['isPreferredLocalStore'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Preferred Local Store'),
+      '#default_value' => $this->isPreferredLocalStore(),
+      '#description' => $this->t('Is this Adapter the preferred local store?'),
+    ];
+
+    return $form;
   }
 
 
@@ -97,6 +135,21 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
    * {@inheritdoc}
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
+    
+    $is_preferred = $form_state->getValue('isPreferredLocalStore');
+    $is_writable = $form_state->getValue('isWritable');
+    
+    if($is_preferred)
+      $this->setPreferredLocalStore();
+    else
+      $this->unsetPreferredLocalStore();
+      
+    if($is_writable)
+      $this->setWritable();
+    else
+      $this->setReadOnly();
+      
+    #return FALSE;
   }
   
 

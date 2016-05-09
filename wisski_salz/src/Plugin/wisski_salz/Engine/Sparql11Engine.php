@@ -34,7 +34,7 @@ class Sparql11Engine extends EngineBase {
    * class provides directQuery() and directUpdate() for sending sparql queries
    * to the store.
    */ 
-	protected $endpoint = NULL;
+  protected $endpoint = NULL;
   
   
   public function defaultConfiguration() {
@@ -49,6 +49,7 @@ class Sparql11Engine extends EngineBase {
    * {@inheritdoc}
    */
   public function setConfiguration(array $configuration) {
+    // this does not exist
     parent::setConfiguration($configuration);
     $this->read_url = $this->configuration['read_url'];
     $this->write_url = $this->configuration['write_url'];
@@ -93,7 +94,7 @@ class Sparql11Engine extends EngineBase {
    * {@inheritdoc}
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
-    parent::buildConfigurationForm($form, $form_state);
+    parent::submitConfigurationForm($form, $form_state);
     $this->read_url = $form_state->getValue('read_url');
     $this->write_url = $form_state->getValue('write_url');
   }
