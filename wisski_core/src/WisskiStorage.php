@@ -92,86 +92,91 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     if (empty($value)) continue;
                     #drupal_set_message("looking for $entity_id in " . serialize($info));
                     $actual_field_info = $info[$entity_id][$field_name];
-                
+                    
+                      
                     // if there is no field definition throw an error.
                     if(empty($field_def = $field_definitions[$field_name])) {
                       drupal_set_message("Asked for field definition of field " . $field_name . " on WissKI Individual but there was nothing.", 'error');
                       continue;
                     }
-                    if ($field_def->getType() === 'image') {
-                      drupal_set_message('we got an image to handle');
-                      dpm($actual_field_info,'image_info');
-                      $query = \Drupal::entityQuery('file');
-                      // $actual_field_info must be the image uri
-                      $file_uri = current($actual_field_info);
-                      // we now check for an existing 'file managed' with that uri
-                      $query->condition('uri',$file_uri);
-                      $ids = $query->execute();
-                      dpm(entity_load_multiple('file',$ids));
-                      if (!empty($ids)) {
-                        // if there is one, we must set the field value to the image's FID
-                        $info[$entity_id][$field_name] = current($ids);
-                        //@TODO find out what to do if there is more than one file with that uri
-                      } else {
-                        // if we have no managed file with that uri, we try to generate one
-                        try {
-                          /*
-                          $file = File::create(array(
-                            'uri'=>$file_uri,
-                          ));
-                          dpm($file,'File Object');
-                          $file->save();
-                          */
-                          $data = file_get_contents($file_uri);
-                          $stripped_filename = substr($file_uri,strrpos($file_uri,'/'));
-                          $file = file_save_data($data, 'public://'.$stripped_filename);
-                          $info[$entity_id][$field_name] = $file->id();
-                        } catch (EntityStorageException $e) {
-                          drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%mesage'=>$e->getMessage())),'error');
-                        }
-                      }
-                    }
-                    if ($field_definitions[$field_name] instanceof BaseFieldDefinition) {
+
+                    $cardinality = 1;
+                    
+#                    $cardinality = $field_def->getCardinality();
+                    if ($field_def instanceof BaseFieldDefinition) {
                       //this is a base field and cannot have multiple values
                       //@TODO make sure, we load the RIGHT value
-                      if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
+                      if (!empty($actual_field_info) && $value != $actual_field_info) drupal_set_message(
                         $this->t('1Multiple values for %field_name in entity %id: %val1, %val2',array(
                           '%field_name'=>$field_name,
                           '%id'=>$entity_id,
                           '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
                           '%val2'=>$value,
                         )),'error');
-                      else $info[$entity_id][$field_name] = $value;
-                      continue;
                     }
-                
-                    #drupal_set_message("what do we have here: " . serialize($field_definitions[$field_name]));
-                
-                    //rest is a field
-                    $cardinality = 1; #cardinality on text fields seems to be evil?#$field_definitions[$field_name]->getCardinality();
-                
-                    if ($cardinality === 1) {
+                    elseif ($cardinality === 1) {
                       //this field cannot have multiple values
                       //@TODO make sure, we load the RIGHT value
-                      if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
+                      if (!empty($actual_field_info) && $value != $actual_field_info) drupal_set_message(
                         $this->t('Multiple values for field %field_name in entity %id: %val1, %val2',array(
                           '%field_name'=>$field_name,
                           '%id'=>$entity_id,
                           '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
                           '%val2'=>$value,
                         )),'error');
-                      else $info[$entity_id][$field_name] = $value;
-                      continue;
                     }
-                    if (!is_array($actual_field_info)) $actual_field_info = array($actual_field_info);
-                    if ($cardinality > 0 && count($actual_field_info) >= $cardinality) {
-                      drupal_set_message(
-                        $this->t('Too many values for field %field_name in entity %id. %card allowed. Tried to add %val2',array(
-                          '%field_name'=>$field_name,
-                          '%id'=>$entity_id,
-                          '%card'=>$cardinality,
-                          '%val1'=>$value, )),'error');
-                    } else $actual_field_info[] = $value;
+                    else {
+                      if (!is_array($actual_field_info)) $actual_field_info = array($actual_field_info);
+                      if ($cardinality > 0 && count($actual_field_info) >= $cardinality && !in_array($value,$actual_field_info)) {
+                        drupal_set_message(
+                          $this->t('Too many values for field %field_name in entity %id. %card allowed. Tried to add %val2',array(
+                            '%field_name'=>$field_name,
+                            '%id'=>$entity_id,
+                            '%card'=>$cardinality,
+                            '%val1'=>$value, )),'error');
+                      }
+                    }
+                    if ($field_def->getType() === 'image') {
+                      // we assume that $value is an image URI which is to be rplaced by a FileID
+                      drupal_set_message('we got an image to handle. Field name:'.$field_name);
+                      dpm($value,'image_info');
+                      // $value must be the image uri
+                      $file_uri = current($value);
+                      // we now check for an existing 'file managed' with that uri
+                      $query = \Drupal::entityQuery('file');
+                      $query->condition('uri',$file_uri);
+                      $ids = $query->execute();
+                      if (!empty($ids)) {
+                        // if there is one, we must set the field value to the image's FID
+                        $value = current($ids);
+                        dpm('replaced with existing file '.current($ids));
+                        //@TODO find out what to do if there is more than one file with that uri
+                      } else {
+                        // if we have no managed file with that uri, we try to generate one
+                        try {
+                          
+                          //$file = File::create(array(
+                          //  'uri'=>$file_uri,
+                          //));
+                          //dpm($file,'File Object');
+                          //$file->save();
+                          
+                          $data = file_get_contents($file_uri);
+                          $stripped_filename = substr($file_uri,strrpos($file_uri,'/'));
+                          $file = file_save_data($data, 'public://'.$stripped_filename);
+                          $value = $file->id();
+                          dpm('replaced with new file '.$file->id());
+                        } catch (EntityStorageException $e) {
+                          drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
+                        }
+                      }
+                    }
+                    if (is_array($actual_field_info)) {
+                      $actual_field_info[] = $value;
+                      //array_unique($actual_field_info);
+                    }
+                    else
+                      $actual_field_info = $value;
                     $info[$entity_id][$field_name] = $actual_field_info;
                   }
                 //}  
@@ -263,7 +268,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
     }*/
     $entity_info = WisskiHelper::array_merge_nonempty($entity_info,$info);
-#    dpm(func_get_args()+array('result'=>$entity_info),__METHOD__);
+    dpm(func_get_args()+array('info'=>$info,'result'=>$entity_info),__METHOD__);
     return $entity_info;
   }
 
