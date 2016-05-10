@@ -77,11 +77,16 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           
           foreach($bundles as $bundleid) {
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
-            #drupal_set_message("asking for: " . serialize(array_keys($field_definitions)));
+            $view_ids = \Drupal::entityQuery('entity_view_display')
+              ->condition('id', 'wisski_individual.' . $bundleid . '.', 'STARTS_WITH')
+              ->execute();
+            $entity_view_displays = \Drupal::entityManager()->getStorage('entity_view_display')->loadMultiple($view_ids);
+                      #drupal_set_message("asking for: " . serialize(array_keys($field_definitions)));
             try {
               $adapter_info = $adapter->loadFieldValues(array($id),array_keys($field_definitions));
 
               #drupal_set_message('ive got: ' . serialize($adapter_info));
+              //dpm($adapter_info,$aid);
                             
               foreach($adapter_info as $entity_id => $entity_values) {
                 //if we don't know about that entity yet, this adapter's info can be used without a change
@@ -136,10 +141,15 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                             '%val1'=>$value, )),'error');
                       }
                     }
+                    //dpm($field_def->getType(),$field_name);
                     if ($field_def->getType() === 'image') {
                       // we assume that $value is an image URI which is to be rplaced by a FileID
                       drupal_set_message('we got an image to handle. Field name:'.$field_name);
                       dpm($value,'image_info');
+                      foreach ($entity_view_displays as $evd) {
+                        $component = $evd->getComponent($field_name);
+                        dpm($component['type'],$field_name);
+                      }
                       // $value must be the image uri
                       $file_uri = current($value);
                       // we now check for an existing 'file managed' with that uri
