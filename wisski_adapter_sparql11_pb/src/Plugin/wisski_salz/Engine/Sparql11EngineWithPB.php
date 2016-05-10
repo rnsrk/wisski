@@ -236,11 +236,16 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         #$path_array = $group->getPathArray();
                 
         $path_array = $this->getClearPathArray($group, $pb);
+ 
+#        drupal_set_message(serialize($path_array));
         
         if(empty($group) || empty($path_array))
           continue;
-        
-        if($path_array[ count($path_array)-1] == $thing->class->dumpValue("text")) {
+
+        // this checks if the last element is the same
+        // however this is evil whenever there are several elements in the path array
+        // typically subgroups ask for the first element part.        
+        if($path_array[ count($path_array)-1] == $thing->class->dumpValue("text") || $path_array[0] == $thing->class->dumpValue("text")) {
           $pbpaths = $pb->getPbPaths();
           
 #          drupal_set_message(serialize($pbpaths[$group->id()]));
@@ -296,18 +301,28 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
       // -1 because we don't want to cut our own concept
       $parentcnt = count($parentpath->getPathArray())-1;
+
+#      drupal_set_message("before cut: " . serialize($patharraytoget));
       
       for($i=0; $i<$parentcnt; $i++) {
         unset($patharraytoget[$i]);
       }
       
+#      drupal_set_message("in between: " . serialize($patharraytoget));
+      
       $patharraytoget = array_values($patharraytoget);
+      
+#      drupal_set_message("cga: " . serialize($clearGroupArray));
+      
+      $max = count($patharraytoget);
       
       // we have to cut away everything that is in $cleargrouparray
       // so we take the whole length and subtract that as a starting point
       // and go up from there
-      for($i=(count($patharraytoget)-count($clearGroupArray)+1);$i<count($patharraytoget);$i++)
+      for($i=(count($patharraytoget)-count($clearGroupArray)+1);$i<$max;$i++)
         unset($patharraytoget[$i]);
+      
+#      drupal_set_message("after cut: " . serialize($patharraytoget));
       
       $patharraytoget = array_values($patharraytoget);      
       
@@ -364,8 +379,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           // only do something if it is a path in a subgroup, not in a main group  
           
           // in that case we have to remove the subgroup-part, however minus one, as it is the       
-          $pathcnt = count($parentpath->getPathArray()) - count($this->getClearPathArray($parentpath, $pb));
-        
+#          $pathcnt = count($parentpath->getPathArray()) - count($this->getClearPathArray($parentpath, $pb));
+          $pathcnt = count($parentpath->getPathArray()) -1;        
         
           for($i=0; $i< $pathcnt; $i++) {
             unset($patharraytoget[$i]);
@@ -557,7 +572,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
   }
 
-  public function pathToReturnValue($patharray, $primitive = NULL, $eid = NULL) {
+  public function pathToReturnValue($patharray, $primitive = NULL, $eid = NULL, $position = 0) {
     $sparql = "SELECT DISTINCT * WHERE { ";
     foreach($patharray as $key => $step) {
       if($key % 2 == 0) 
@@ -575,9 +590,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $url = parse_url($eid);
       
       if(!empty($url["scheme"]))
-        $sparql .= " FILTER (?x0 = <$eid> ) . ";
+        if(!empty($position))
+          $sparql .= " FILTER (?x$position = <$eid> ) . ";
+        else
+          $sparql .= " FILTER (?x0 = <$eid> ) . ";
       else
-        $sparql .= " FILTER (?x0 = \"$eid\" ) . ";
+        if(!empty($position))
+          $sparql .= " FILTER (?x$position = \"$eid\" ) . ";
+        else
+          $sparql .= " FILTER (?x0 = \"$eid\" ) . ";
     }
     
     $sparql .= " } ";
@@ -597,7 +618,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if(!empty($primitive))
         $out[] = $thing->out->getValue();
       else
-        $out[] = $thing->$name->dumpValue("text");
+        $out[] = $thing->{$name}->dumpValue("text");
     }
     
     return $out;
@@ -648,7 +669,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // 
     // so I ignore everything and just target the field_ids that are mapped to
     // paths in the pathbuilder.
-    
+
+#    drupal_set_message("I am asked for " . serialize($entity_ids));    
 
     // this approach will be not fast enough in the future...
     // the pbs have to have a better mapping of where and how to find fields
@@ -675,6 +697,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // if he didn't ask for us...    
       if($this->getConfiguration()['id'] != $adapter->getEngine()->getConfiguration()['id'])
         continue;
+        
+      // if we find any data, we set this to true.
+      $found_any_data = FALSE;
               
       foreach($entity_ids as $eid) {
         
@@ -685,6 +710,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // if there is nothing, continue.
         if(empty($entity))
           continue;
+
+#        drupal_set_message("I am asked for fids: " . serialize($field_ids));
 
         foreach($field_ids as $key => $fieldid) {
   
@@ -714,15 +741,17 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           if($fieldid == "bundle") {
             // get all the bundles for the eid from us
             $bundles = $this->getBundleIdsForEntityId($eid);
-                        
-            if(!empty($bundles)) {
-              // for now we simply take the first one
-              // that might be not so smart
-              // who knows @TODO:
+
+            if(!empty($bundles) && count($bundles) == 1) {
+              // if there is only one, we take that one.
               foreach($bundles as $bundle) {
                 $out[$eid]['bundle'] = $bundle;
                 break;
               }
+              continue;
+            } else {
+              // if there is none or there are several - we let the fields decide.
+              $out[$eid]['bundle'] = NULL;              
               continue;
             }
           }
@@ -753,12 +782,16 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           // if there is no bundle we have to ask the system for the typical bundle
           if(empty($bundle)) {
             
-            // we try to get it from cache
-            $bundle = $pb->getBundleIdForEntityId($eid);
+#            // we try to get it from cache
+#            $bundle = $pb->getBundleIdForEntityId($eid);
+
+            // for now we just don't fetch it.
+            $out[$eid]['bundle'] = NULL;
             
             // nothing was set up to now - so we use the field and ask the field for the typical bundle
             if(empty($bundle)) {
               $bundle = $pb->getBundle($pbarray["id"]);
+
               // and store it to the entity.
               $out[$eid]['bundle'] = $bundle;
 
@@ -779,17 +812,47 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           }
           
           $clearPathArray = $this->getClearPathArray($path, $pb);
-          
+ 
+ #         drupal_set_message("I have: " . serialize($pbarray), "error");
+                    
           if(!empty($path)) {
             // if this is question for a subgroup - handle it otherwise
             if($pbarray['parent'] > 0 && $path->isGroup()) {
-#              drupal_set_message("I am asking for: " . serialize($this->getClearGroupArray($path, $pb)));
+#              drupal_set_message("I am asking for: " . serialize($this->getClearGroupArray($path, $pb)) . "with eid: " . serialize($eid));
               $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid));
-               
-            } else // it is a field?
-              $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($clearPathArray, $path->getDatatypeProperty(), $eid));
+#              drupal_set_message("I've got: " . serialize($out[$eid][$fieldid]));
+            } else {
+              // it is a field?
+#              $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($clearPathArray, $path->getDatatypeProperty(), $eid));
+#              drupal_set_message("pa: " . serialize($path->getPathArray()) . " cpa: " . serialize($clearPathArray));
+
+              // get the parentid
+              $parid = $pbarray["parent"];
+              
+              // get the parent (the group the path belongs to) to get the common group path
+              $par = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($parid);
+
+              // if there is no parent it is a ungrouped path... who asks for this?
+              if(empty($par)) {
+                 drupal_set_message("Path " . $path->getName() . " with id " . $path->id() . " has no parent.", "error");
+                continue;
+              }
+#              drupal_set_message("pa: " . serialize($path->getPathArray()) . " cpa: " . serialize($clearPathArray) . " cga: " . serialize($this->getClearGroupArray($parent, $pb)));
+              $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $eid, (count($this->getClearGroupArray($par, $pb))-1)));
+            }
+#              drupal_set_message("I loaded: " . serialize($out));
           }
+          
+          // if we found any data, we tell the system
+          if(!empty($out[$eid][$fieldid]))
+            $found_any_data = TRUE;
         }
+        
+        // @TODO this is a hack.
+        // if we did not find any data we unset this part so we don't return anything
+        // however this might be evil in cases of edit or something...
+        if(!$found_any_data)
+          unset($out[$eid]);
       }
     }
 
@@ -843,8 +906,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $sparql .= "?x$key <$primitive> ?out . ";
     }
     
-    if(!empty($eid)) {
-      $eid = str_replace("\\", "/", $eid);
+    if(!empty($entity_id)) {
+      $eid = str_replace("\\", "/", $entity_id);
       $url = parse_url($eid);
       
       if(!empty($url["scheme"]))
@@ -862,10 +925,20 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     foreach($result as $key => $thing) {
       $outarray[$key] = array();
       
-      for($i=0;$i<count($clearPathArray);$i+=2) {
-        $name = "x" . $i; 
-        $outarray[$key][$name] = $thing->$name->getValue();
+#      drupal_set_message("thing is: " . serialize($thing));
+      
+      for($i=(count($clearPathArray)-1);$i>= 0; $i--) {
+        $name = "x" . $i;
+        if($i % 2 == 0) {
+#          $name = "x" . $i; 
+#          drupal_set_message("name is: " . $name);
+          $outarray[$key][$i] = $thing->{$name}->dumpValue("text");
+        } else {
+          $outarray[$key][$i] = $clearPathArray[$i];
+        }
       }
+      
+      ksort($outarray);
    #     drupal_set_message("we got something!");
   #    $name = 'x' . (count($clearPathArray)-1);
       if(!empty($primitive))
@@ -873,10 +946,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
      # else
      #   $out[] = $thing->$name->dumpValue("text");
     }
-
-    drupal_set_message(serialize($outarray));
     
-    drupal_set_message("spq: " . serialize($sparql));
+#    drupal_set_message(serialize($outarray));
+    
+#    drupal_set_message("spq: " . serialize($sparql));
 #    drupal_set_message(serialize($this));
     
         
