@@ -656,7 +656,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   /**
    * @inheritdoc
    */
-  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundle=NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
 
     // tricky thing here is that the entity_ids that are coming in typically
     // are somewhere from a store. In case of rdf it is easy - they are uris.
@@ -866,7 +866,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @inheritdoc
    * The Yaml-Adapter cannot handle field properties, we insist on field values being the main property
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundle=NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
     drupal_set_message("2");
     
     $main_property = \Drupal\field\Entity\FieldStorageConfig::loadByName($entity_type, $field_name)->getItemDefinition()->mainPropertyName();
@@ -965,7 +965,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     drupal_set_message("I add field $field from entity $entity_id that currently has the value $value");
   }
   
-  public function writeFieldValues($entity_id,array $field_values) {
+  public function writeFieldValues($entity_id,array $field_values,$bundle=NULL) {
     drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values));
     
     // tricky thing here is that the entity_ids that are coming in typically
