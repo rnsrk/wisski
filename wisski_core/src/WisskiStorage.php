@@ -64,17 +64,20 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #    dpm(serialize($adapters));
 #    drupal_set_message("hallo welt");
     $info = array();
-    $field_definitions = array();
+    $all_field_definitions = array();
+    $all_field_definitions['BASE_FIELDS'] = array();
     $field_storage_definitions = $this->entityManager->getFieldStorageDefinitions('wisski_individual');
     foreach ($field_storage_definitions as $key => $fsd) {
       if ($fd_ids = \Drupal::entityQuery('field_config')->condition('id',$key,'ENDS_WITH')->execute()) {
         $fds = $this->entityManager->getStorage('field_config')->loadMultiple($fd_ids);
         foreach ($fds as $fd) {
-          $field_definitions[$fd->get('bundle')][$key] = $fd;
+          $all_field_definitions[$fd->get('bundle')][$key] = $fd;
         }
+      } else {
+        $all_field_definitions['BASE_FIELDS'][$key] = $fsd;
       }
     }
-    dpm($bundles,'bundles before');
+    dpm($all_field_definitions,'field_definitions before');
     // for every id
     foreach($ids as $id) {
       // ask all adapters
@@ -84,19 +87,23 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           // if so - ask for the bundles for that id
           //$bundles = $adapter->getBundleIdsForEntityId($id);
           #drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundles) . ".");
-          foreach($bundles as $bundleid => $bundle_field_definitions) {
-            //$field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
-            $view_ids = \Drupal::entityQuery('entity_view_display')
-              ->condition('id', 'wisski_individual.' . $bundleid . '.', 'STARTS_WITH')
-              ->execute();
-            $entity_view_displays = \Drupal::entityManager()->getStorage('entity_view_display')->loadMultiple($view_ids);
+          foreach($all_field_definitions as $bundleid => $field_definitions) {
+            dpm($field_definitions,'Field defs for '.$bundleid);
+            if ($bundleid === 'BASE_FIELDS') $bundleid = NULL;
+            else {
+              //$field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
+              $view_ids = \Drupal::entityQuery('entity_view_display')
+                ->condition('id', 'wisski_individual.' . $bundleid . '.', 'STARTS_WITH')
+                ->execute();
+              $entity_view_displays = \Drupal::entityManager()->getStorage('entity_view_display')->loadMultiple($view_ids);
+            }
                       #drupal_set_message("asking for: " . serialize(array_keys($field_definitions)));
             try {
-              $adapter_info = $adapter->loadFieldValues(array($id),array_keys($bundle_field_definitions),$bundleid);
+              $adapter_info = $adapter->loadFieldValues(array($id),array_keys($field_definitions),$bundleid);
 
               #drupal_set_message('ive got: ' . serialize($adapter_info));
               //dpm($adapter_info,$aid);
-                            
+              
               foreach($adapter_info as $entity_id => $entity_values) {
                 //if we don't know about that entity yet, this adapter's info can be used without a change
                 if (!isset($info[$entity_id])) $info[$entity_id] = $entity_values;
@@ -107,11 +114,13 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     #drupal_set_message("looking for $entity_id in " . serialize($info));
                     $actual_field_info = $info[$entity_id][$field_name];
                     
-                      
+                    dpm($field_definitions,$field_name.' short before');  
                     // if there is no field definition throw an error.
                     if(empty($field_def = $field_definitions[$field_name])) {
-                      drupal_set_message("Asked for field definition of field " . $field_name . " on WissKI Individual but there was nothing.", 'error');
-                      continue;
+                      if (!isset($all_field_definitions['BASE_FIELDS'][$field_name])) {
+                        drupal_set_message("Asked for field definition of field " . $field_name . " on WissKI Individual but there was nothing.", 'error');
+                        continue;
+                      } else $field_def = $all_field_definitions['BASE_FIELDS'][$field_name];
                     }
                     
                     $cardinality = 1;
