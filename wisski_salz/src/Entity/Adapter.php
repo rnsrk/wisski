@@ -190,15 +190,15 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
   /**
    * {@inheritdoc}
    */
-  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
-    return $this->getEngine()->loadFieldValues($entity_ids, $field_ids, $language);
+  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
+    return $this->getEngine()->loadFieldValues($entity_ids, $field_ids, $bundle,$language);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
-    return $this->getEngine()->loadPropertyValuesForField($field_id, $property_ids, $entity_ids, $language);
+  public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
+    return $this->getEngine()->loadPropertyValuesForField($field_id, $property_ids, $entity_ids, $bundle,$language);
   }
 
   /**
@@ -218,8 +218,8 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
   /**
    * {@inheritdoc}
    */  
-   public function writeFieldValues($entity_id, array $field_values) {
+   public function writeFieldValues($entity_id, array $field_values,$bundle = NULL) {
 #     drupal_set_message("He called me!");
-     return $this->getEngine()->writeFieldValues($entity_id, $field_values);
+     return $this->getEngine()->writeFieldValues($entity_id, $field_values,$bundle);
    }
 }
