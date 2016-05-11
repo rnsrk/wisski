@@ -169,7 +169,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   }
   
   //@TODO overwrite
-  public function writeFieldValues($entity_id,array $field_values) {
+  public function writeFieldValues($entity_id,array $field_values,$bundle = NULL) {
     return EngineInterface::NULL_WRITE;
   }
   

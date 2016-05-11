@@ -79,13 +79,13 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
   /**
    * @see EngineInterface::loadFieldValues()
    */
-  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
+  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT);
 
   
   /**
    * @see EngineInterface::loadFieldValues()
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
+  public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT);
 
   /**
    * returns an instance of this Adapter's Query Class
@@ -102,5 +102,5 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
   /**
    * @see EngineInterface::writeFieldValues
    */
-  public function writeFieldValues($entity_id,array $field_values);
+  public function writeFieldValues($entity_id,array $field_values,$bundle = NULL);
 }

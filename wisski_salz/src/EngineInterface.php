@@ -21,6 +21,7 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
   const SUCCESSFUL_WRITE = 1;
   const ERROR_ON_WRITE = 0;
   const NULL_WRITE = 2;
+  const IS_READ_ONLY = 3;
 
   
   /**
@@ -54,7 +55,7 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * @param $language language code for the desired translation
    * @return an array describing the values TODO: describe structure
    */
-  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
+  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT);
 
   
   /**
@@ -72,7 +73,7 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * @param $language language code for the desired translation
    * @return an array describing the values TODO: describe structure
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT);
+  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT);
 
   /**
    * returns an instance of this Adapter's Query Class
@@ -115,8 +116,9 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    *     ],
    *   ],
    * ]
+   * @param $bundle the ID of the bundle the entities are in
    * @TODO check how to include quantitive restrictions on field values
    * @return TRUE if the entity was successfully saved, FALSE or an error_string otherwise
    */
-   public function writeFieldValues($entity_id,array $field_values);
+   public function writeFieldValues($entity_id,array $field_values,$bundle = NULL);
 }

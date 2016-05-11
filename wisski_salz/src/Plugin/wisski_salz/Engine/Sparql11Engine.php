@@ -121,7 +121,7 @@ class Sparql11Engine extends EngineBase {
   /**
    * {@inheritdoc}
    */
-  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
     return array(
       "foo" => array(
         'x-default' => array(
@@ -138,7 +138,7 @@ class Sparql11Engine extends EngineBase {
   /**
    * {@inheritdoc}
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
     return array(
       "foo" => array(
         'x-default' => array(
