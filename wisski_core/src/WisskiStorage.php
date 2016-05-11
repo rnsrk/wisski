@@ -57,14 +57,24 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 //    dpm($bundles);
     $entity_info = &$this->entity_info;
     if ($cached) {
-      $ids = array_diff_key($ids,$ntity_info);
+      $ids = array_diff_key($ids,$entity_info);
       if (empty($ids)) return $entity_info;
     }
     $adapters = entity_load_multiple('wisski_salz_adapter');
 #    dpm(serialize($adapters));
 #    drupal_set_message("hallo welt");
     $info = array();
-
+    $field_definitions = array();
+    $field_storage_definitions = $this->entityManager->getFieldStorageDefinitions('wisski_individual');
+    foreach ($field_storage_definitions as $key => $fsd) {
+      if ($fd_ids = \Drupal::entityQuery('field_config')->condition('id',$key,'ENDS_WITH')->execute()) {
+        $fds = $this->entityManager->getStorage('field_config')->loadMultiple($fd_ids);
+        foreach ($fds as $fd) {
+          $field_definitions[$fd->get('bundle')][$key] = $fd;
+        }
+      }
+    }
+    dpm($bundles,'bundles before');
     // for every id
     foreach($ids as $id) {
       // ask all adapters
@@ -72,18 +82,17 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         // if they know that id
         if($adapter->hasEntity($id)) {
           // if so - ask for the bundles for that id
-          $bundles = $adapter->getBundleIdsForEntityId($id);
+          //$bundles = $adapter->getBundleIdsForEntityId($id);
           #drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundles) . ".");
-          
-          foreach($bundles as $bundleid) {
-            $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
+          foreach($bundles as $bundleid => $bundle_field_definitions) {
+            //$field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
             $view_ids = \Drupal::entityQuery('entity_view_display')
               ->condition('id', 'wisski_individual.' . $bundleid . '.', 'STARTS_WITH')
               ->execute();
             $entity_view_displays = \Drupal::entityManager()->getStorage('entity_view_display')->loadMultiple($view_ids);
                       #drupal_set_message("asking for: " . serialize(array_keys($field_definitions)));
             try {
-              $adapter_info = $adapter->loadFieldValues(array($id),array_keys($field_definitions));
+              $adapter_info = $adapter->loadFieldValues(array($id),array_keys($bundle_field_definitions),$bundleid);
 
               #drupal_set_message('ive got: ' . serialize($adapter_info));
               //dpm($adapter_info,$aid);
@@ -104,7 +113,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                       drupal_set_message("Asked for field definition of field " . $field_name . " on WissKI Individual but there was nothing.", 'error');
                       continue;
                     }
-
+                    
                     $cardinality = 1;
                     
 #                    $cardinality = $field_def->getCardinality();
