@@ -1078,13 +1078,16 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
 #    $path_array = $path->getPathArray();
     
-    $sparql = "SELECT DISTINCT * WHERE { GRAPH ?g {";
+#    $sparql = "SELECT DISTINCT * WHERE { GRAPH ?g {";
+    $sparql = "SELECT DISTINCT * WHERE {";
     foreach($clearPathArray as $key => $step) {
       if($key % 2 == 0) 
         $sparql .= "?x$key a <$step> . ";
       else
         $sparql .= '?x' . ($key-1) . " <$step> ?x" . ($key+1) . " . ";    
     }
+    
+    $primitive = $path->getDatatypeProperty();
     
     if(!empty($primitive)) {
       $sparql .= "?x$key <$primitive> ?out . ";
@@ -1100,9 +1103,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $sparql .= " FILTER (?x0 = \"$eid\" ) . ";
     }
     
-    $sparql .= " } }";
-
+#    $sparql .= " } }";
+    $sparql .= " }";
     $result = $this->directQuery($sparql);
+
+#    drupal_set_message("I query: " . $sparql);
+
+#    drupal_set_message(serialize($result));
 
     $outarray = array();
 
@@ -1131,7 +1138,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
      #   $out[] = $thing->$name->dumpValue("text");
 #    }
 
-      drupal_set_message("my outarr is: " . serialize($outarray));
+#      drupal_set_message("my outarr is: " . serialize($outarray));
     
 #    drupal_set_message("spq: " . serialize($sparql));
 #    drupal_set_message(serialize($this));
@@ -1154,23 +1161,71 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
       $sparqldelete .= "}";
 
-      $result = $this->directQuery($sparqldelete);    
+      $result = $this->directUpdate($sparqldelete);    
     
-#    drupal_set_message(htmlentities($sparqldelete));
+#    drupal_set_message("delete query: " . htmlentities($sparqldelete));
     
     }
-    drupal_set_message("I delete field $field from entity $entity_id that currently has the value $value");
+#    drupal_set_message("I delete field $field from entity $entity_id that currently has the value $value");
+  }
+
+  public function getUri($prefix) {
+    return uniqid($prefix);
   }
   
   public function addNewFieldValue($entity_id, $fieldid, $value, $pb) {
+#    drupal_set_message(serialize($this->getUri("smthg")));
+    $datagraphuri = "http://test.me/";
+
+    $pbarray = $pb->getPbEntriesForFid($fieldid);
+    
+    $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['id']);
+
+    if(empty($path))
+      continue;
+
+    $clearPathArray = $this->getClearPathArray($path, $pb);
+
+    $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> {";
+    $olduri = NULL;
+    $prop = NULL;
+    foreach($clearPathArray as $key => $step) {
+      if($key == 0 && !empty($entity_id)) {
+        $eid = str_replace("\\", "/", $entity_id);
+        $url = parse_url($eid);
+
+        $olduri = $eid;
+        continue;
+      }
+        
+      $uri = $this->getUri("http://test.me/");
+      if($key % 2 == 0) {
+        $sparql .= "<$uri> a <$step> . ";
+        if($key > 0) 
+          $sparql .= "<$olduri> <$prop> <$uri> . ";    
+        $olduri = $uri;
+      } else {
+        $prop = $step;
+      }
+    }
+    
+    $primitive = $path->getDatatypeProperty();
+    if(!empty($primitive)) {
+      $sparql .= "<$olduri> <$primitive> '$value' . ";
+    }
+        
+    $sparql .= " } }";
+
+#    drupal_set_message("I do: " . htmlentities($sparql));
+
+    $result = $this->directUpdate($sparql);
     
     
-    
-    drupal_set_message("I add field $field from entity $entity_id that currently has the value $value");
+#    drupal_set_message("I add field $field from entity $entity_id that currently has the value $value");
   }
   
   public function writeFieldValues($entity_id, array $field_values, $bundle=NULL) {
-    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
+#    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
     
     // tricky thing here is that the entity_ids that are coming in typically
     // are somewhere from a store. In case of rdf it is easy - they are uris.
@@ -1289,7 +1344,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             // add the new ones
             $this->addNewFieldValue($entity_id, $key, $val[$mainprop], $pb); 
             
-            drupal_set_message("I would write " . $val[$mainprop] . " to the db and delete " . serialize($old_values[$key]) . " for it.");
+#            drupal_set_message("I would write " . $val[$mainprop] . " to the db and delete " . serialize($old_values[$key]) . " for it.");
             
           }
 
