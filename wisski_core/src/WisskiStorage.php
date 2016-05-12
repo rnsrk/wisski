@@ -64,20 +64,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #    dpm(serialize($adapters));
 #    drupal_set_message("hallo welt");
     $info = array();
-    $all_field_definitions = array();
-    $all_field_definitions['BASE_FIELDS'] = array();
-    $field_storage_definitions = $this->entityManager->getFieldStorageDefinitions('wisski_individual');
-    foreach ($field_storage_definitions as $key => $fsd) {
-      if ($fd_ids = \Drupal::entityQuery('field_config')->condition('id',$key,'ENDS_WITH')->execute()) {
-        $fds = $this->entityManager->getStorage('field_config')->loadMultiple($fd_ids);
-        foreach ($fds as $fd) {
-          $all_field_definitions[$fd->get('bundle')][$key] = $fd;
-        }
-      } else {
-        $all_field_definitions['BASE_FIELDS'][$key] = $fsd;
-      }
-    }
-    dpm($all_field_definitions,'field_definitions before');
+#    dpm($all_field_definitions,'field_definitions before');
     // for every id
     foreach($ids as $id) {
       // ask all adapters
@@ -85,130 +72,97 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         // if they know that id
         if($adapter->hasEntity($id)) {
           // if so - ask for the bundles for that id
-          //$bundles = $adapter->getBundleIdsForEntityId($id);
+          $bundle_ids = $adapter->getBundleIdsForEntityId($id);
           #drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundles) . ".");
-          foreach($all_field_definitions as $bundleid => $field_definitions) {
-            dpm($field_definitions,'Field defs for '.$bundleid);
-            if ($bundleid === 'BASE_FIELDS') $bundleid = NULL;
-            else {
-              //$field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
-              $view_ids = \Drupal::entityQuery('entity_view_display')
-                ->condition('id', 'wisski_individual.' . $bundleid . '.', 'STARTS_WITH')
-                ->execute();
-              $entity_view_displays = \Drupal::entityManager()->getStorage('entity_view_display')->loadMultiple($view_ids);
-            }
-                      #drupal_set_message("asking for: " . serialize(array_keys($field_definitions)));
+          foreach($bundle_ids as $bundleid) {
+#            dpm($field_definitions,'Field defs for '.$bundleid);
+            $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
+#            $view_ids = \Drupal::entityQuery('entity_view_display')
+#              ->condition('id', 'wisski_individual.' . $bundleid . '.', 'STARTS_WITH')
+#              ->execute();
+#            $entity_view_displays = \Drupal::entityManager()->getStorage('entity_view_display')->loadMultiple($view_ids);
+#            drupal_set_message("I am asking for " . $id . " and I am " . $aid. " and I think my bundle is: " . serialize($bundleid));
+            #drupal_set_message("asking for: " . serialize(array_keys($field_definitions)));
             try {
-              $adapter_info = $adapter->loadFieldValues(array($id),array_keys($field_definitions),$bundleid);
-
-              #drupal_set_message('ive got: ' . serialize($adapter_info));
-              //dpm($adapter_info,$aid);
-              
-              foreach($adapter_info as $entity_id => $entity_values) {
-                //if we don't know about that entity yet, this adapter's info can be used without a change
-                if (!isset($info[$entity_id])) $info[$entity_id] = $entity_values;
-                //else {
-                  //integrate additional values on existing entities
-                  foreach($entity_values as $field_name => $value) {
-                    if (empty($value)) continue;
-                    #drupal_set_message("looking for $entity_id in " . serialize($info));
-                    $actual_field_info = $info[$entity_id][$field_name];
-                    
-                    dpm($field_definitions,$field_name.' short before');  
-                    // if there is no field definition throw an error.
-                    if(empty($field_def = $field_definitions[$field_name])) {
-                      if (!isset($all_field_definitions['BASE_FIELDS'][$field_name])) {
-                        drupal_set_message("Asked for field definition of field " . $field_name . " on WissKI Individual but there was nothing.", 'error');
-                        continue;
-                      } else $field_def = $all_field_definitions['BASE_FIELDS'][$field_name];
-                    }
-                    
-                    $cardinality = 1;
-                    
-#                    $cardinality = $field_def->getCardinality();
-                    if ($field_def instanceof BaseFieldDefinition) {
-                      //this is a base field and cannot have multiple values
-                      //@TODO make sure, we load the RIGHT value
-                      if (!empty($actual_field_info) && $value != $actual_field_info) drupal_set_message(
-                        $this->t('1Multiple values for %field_name in entity %id: %val1, %val2',array(
-                          '%field_name'=>$field_name,
-                          '%id'=>$entity_id,
-                          '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
-                          '%val2'=>$value,
-                        )),'error');
-                    }
-                    elseif ($cardinality === 1) {
-                      //this field cannot have multiple values
-                      //@TODO make sure, we load the RIGHT value
-                      if (!empty($actual_field_info) && $value != $actual_field_info) drupal_set_message(
-                        $this->t('Multiple values for field %field_name in entity %id: %val1, %val2',array(
-                          '%field_name'=>$field_name,
-                          '%id'=>$entity_id,
-                          '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
-                          '%val2'=>$value,
-                        )),'error');
-                    }
-                    else {
-                      if (!is_array($actual_field_info)) $actual_field_info = array($actual_field_info);
-                      if ($cardinality > 0 && count($actual_field_info) >= $cardinality && !in_array($value,$actual_field_info)) {
-                        drupal_set_message(
-                          $this->t('Too many values for field %field_name in entity %id. %card allowed. Tried to add %val2',array(
-                            '%field_name'=>$field_name,
-                            '%id'=>$entity_id,
-                            '%card'=>$cardinality,
-                            '%val1'=>$value, )),'error');
+              foreach ($field_definitions as $field_name => $field_def) {
+                if ($field_def instanceof BaseFieldDefinition) {
+                //drupal_set_message("Hello i am a base field ".$field_name);
+                  //this is a base field and cannot have multiple values
+                  //@TODO make sure, we load the RIGHT value
+                  $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
+                  
+                  $new_field_values = $new_field_values[$id][$field_name];
+                  if (isset($info[$id][$field_name])) {
+                    $old_field_value = $info[$id][$field_name];
+                    if (in_array($old_field_value,$new_field_values) && count($new_field_values) > 1) {
+                      //@TODO drupal_set_message('Multiple values for base field '.$field_name,'error');
+                      //FALLLBACK: do nothing, old field value stays the same
+                    } elseif (count($new_field_values) === 1) {
+                      $info[$id][$field_name] = $new_field_values[0];
+                    } else {
+                        //@TODO drupal_set_message('Multiple values for base field '.$field_name,'error');
                       }
-                    }
-                    //dpm($field_def->getType(),$field_name);
-                    if ($field_def->getType() === 'image') {
-                      // we assume that $value is an image URI which is to be rplaced by a FileID
-                      drupal_set_message('we got an image to handle. Field name:'.$field_name);
-                      dpm($value,'image_info');
-                      foreach ($entity_view_displays as $evd) {
-                        $component = $evd->getComponent($field_name);
-                        dpm($component['type'],$field_name);
-                      }
-                      // $value must be the image uri
-                      $file_uri = current($value);
-                      // we now check for an existing 'file managed' with that uri
-                      $query = \Drupal::entityQuery('file');
-                      $query->condition('uri',$file_uri);
-                      $ids = $query->execute();
-                      if (!empty($ids)) {
-                        // if there is one, we must set the field value to the image's FID
-                        $value = current($ids);
-                        dpm('replaced with existing file '.current($ids));
-                        //@TODO find out what to do if there is more than one file with that uri
-                      } else {
-                        // if we have no managed file with that uri, we try to generate one
-                        try {
-                          
-                          //$file = File::create(array(
-                          //  'uri'=>$file_uri,
-                          //));
-                          //dpm($file,'File Object');
-                          //$file->save();
-                          
-                          $data = file_get_contents($file_uri);
-                          $stripped_filename = substr($file_uri,strrpos($file_uri,'/'));
-                          $file = file_save_data($data, 'public://'.$stripped_filename);
-                          $value = $file->id();
-                          dpm('replaced with new file '.$file->id());
-                        } catch (EntityStorageException $e) {
-                          drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
-                        }
-                      }
-                    }
-                    if (is_array($actual_field_info)) {
-                      $actual_field_info[] = $value;
-                      //array_unique($actual_field_info);
-                    }
-                    else
-                      $actual_field_info = $value;
-                    $info[$entity_id][$field_name] = $actual_field_info;
+                  } elseif (!empty($new_field_values)) {
+                    $info[$id][$field_name] = current($new_field_values);
                   }
-                //}  
+                  continue;                 
+                }
+                //here we have a "normal field" so we can assume an array of field values is OK
+                if ($field_def->getType() === 'entity_reference') {
+                  $field_settings = $field_def->getSettings();
+                  $target_bundles = $field_settings['handler_settings']['target_bundles'];
+                }
+                $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
+#                drupal_set_message(serialize($new_field_values));
+                if (empty($new_field_values)) continue;
+                //dpm($field_def->getType(),$field_name);
+                if ($field_def->getType() === 'image') {
+                  $value = $new_field_values[$id][$field_name];
+                  // we assume that $value is an image URI which is to be rplaced by a FileID
+                  #drupal_set_message('we got an image to handle. Field name:'.$field_name);
+                  //dpm($value,'image_info');
+                  #foreach ($entity_view_displays as $evd) {
+                  #  $component = $evd->getComponent($field_name);
+                  #  dpm($component['type'],$field_name);
+                  #}
+                  // $value must be the image uri
+                  $file_uri = current($value);
+                  // we now check for an existing 'file managed' with that uri
+                  $query = \Drupal::entityQuery('file');
+                  $query->condition('uri',$file_uri);
+                  $file_ids = $query->execute();
+                  if (!empty($file_ids)) {
+                    // if there is one, we must set the field value to the image's FID
+                    $value = current($file_ids);
+                    //dpm('replaced with existing file '.current($file_ids));
+                    //@TODO find out what to do if there is more than one file with that uri
+                  } else {
+                    // if we have no managed file with that uri, we try to generate one
+                    try {
+                      
+                      //$file = File::create(array(
+                      //  'uri'=>$file_uri,
+                      //));
+                      //dpm($file,'File Object');
+                      //$file->save();
+                      
+                      $data = file_get_contents($file_uri);
+                      $stripped_filename = substr($file_uri,strrpos($file_uri,'/'));
+                      $file = file_save_data($data, 'public://'.$stripped_filename);
+                      $value = $file->id();
+                      #dpm('replaced with new file '.$file->id());
+                    } catch (EntityStorageException $e) {
+                      drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
+                    }
+                  }
+                  $new_field_values[$id][$field_name] = $value;
+                }
+                if (isset($new_field_values[$id][$field_name])) {
+                  if (!isset($info[$id]) || !isset($info[$id][$field_name])) $info[$id][$field_name] = $new_field_values[$id][$field_name];
+                  else $info[$id][$field_name] = array_merge($info[$id][$field_name],$new_field_values[$id][$field_name]);
+                }
               }
+              //drupal_set_message("Das richtige: ".serialize($info));
             } catch (\Exception $e) {
               drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
             }              
@@ -296,7 +250,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
     }*/
     $entity_info = WisskiHelper::array_merge_nonempty($entity_info,$info);
-    dpm(func_get_args()+array('info'=>$info,'result'=>$entity_info),__METHOD__);
+    //dpm(func_get_args()+array('info'=>$info,'result'=>$entity_info),__METHOD__);
     return $entity_info;
   }
 
@@ -386,8 +340,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 //    $adapters = entity_load_multiple('wisski_salz_adapter');
 #    dpm(serialize($adapters));
       // ask all adapters
-    $values = $this->extractFieldData($entity);
-    dpm(func_get_args()+array('values'=>$values),__METHOD__);
+    list($values,$original_values) = $this->extractFieldData($entity);
+    $bundle = $values['bundle'][0]['target_id'];
+    dpm(func_get_args()+array('values'=>$values,'bundle'=>$bundle),__METHOD__);
 
 
 #    $bundles = $this->entityManager->getBundleInfo('wisski_individual');
@@ -456,7 +411,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             #drupal_set_message("asking for: " . serialize(array_keys($field_definitions)));
             try {
 #              drupal_set_message(" I ask adapter: " . serialize($adapter));
-              $adapter_info = $adapter->writeFieldValues($entity->id(), $values);
+              $adapter_info = $adapter->writeFieldValues($entity->id(), $values, $bundle, $original_values);
               /*
               $adapter_info = $adapter->loadFieldValues(array($id),array_keys($field_definitions));
 
@@ -543,6 +498,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   private function extractFieldData(ContentEntityInterface $entity) {
     
     $out = array();
+    $old_values = $entity->getOriginalValues();
     //$entity is iterable itself, iterates over field list
     foreach ($entity as $field_name => $field_item_list) {
       $out[$field_name] = array();
@@ -555,7 +511,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         $out[$field_name][] = $field_item->getValue();
       }
     }
-    return $out;
+    //dpm($entity,__METHOD__);
+    return array($out,$old_values);
   }
 
   /**

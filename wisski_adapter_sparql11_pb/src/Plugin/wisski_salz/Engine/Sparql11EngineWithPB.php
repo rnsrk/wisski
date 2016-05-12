@@ -656,7 +656,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   /**
    * @inheritdoc
    */
-  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundle=NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
+  public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundleid_in = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
 
     // tricky thing here is that the entity_ids that are coming in typically
     // are somewhere from a store. In case of rdf it is easy - they are uris.
@@ -670,7 +670,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // so I ignore everything and just target the field_ids that are mapped to
     // paths in the pathbuilder.
 
-#    drupal_set_message("I am asked for " . serialize($entity_ids));    
+#    drupal_set_message("I am asked for " . serialize($entity_ids) . " and fields: " . serialize($field_ids));
 
     // this approach will be not fast enough in the future...
     // the pbs have to have a better mapping of where and how to find fields
@@ -700,7 +700,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         
       // if we find any data, we set this to true.
       $found_any_data = FALSE;
-              
+/*              
       foreach($entity_ids as $eid) {
         
         // here we should check if we really know the entity by asking the TS for it.
@@ -711,10 +711,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         if(empty($entity))
           continue;
 
+        if(!empty($bundleid_in))
+          $out[$eid]["bundle"] = $bundleid_in;
+
 #        drupal_set_message("I am asked for fids: " . serialize($field_ids));
 
         foreach($field_ids as $key => $fieldid) {
-  
+          $out[$eid][$fieldid] = array();
+
           if($fieldid == "eid") {
             $out[$eid][$fieldid] = $eid;
             continue;
@@ -842,21 +846,40 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             }
 #              drupal_set_message("I loaded: " . serialize($out));
           }
-          
-          // if we found any data, we tell the system
-          if(!empty($out[$eid][$fieldid]))
-            $found_any_data = TRUE;
+        }
+          */
+        
+      foreach($field_ids as $fkey => $fieldid) {  
+        #drupal_set_message("for field " . $fieldid . " with bundle " . $bundleid_in . " I've got " . serialize($this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in, $language)));
+
+        $got = $this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in, $language);
+
+#        drupal_set_message("I've got: " . serialize($got));
+        
+        if(empty($out))
+          $out = $got;
+        
+        foreach($got as $eid => $value) {
+          if(empty($out[$eid]))
+            $out[$eid] = $got[$eid];
+          else
+            $out[$eid] = array_merge($out[$eid], $got[$eid]);
         }
         
-        // @TODO this is a hack.
-        // if we did not find any data we unset this part so we don't return anything
-        // however this might be evil in cases of edit or something...
-        if(!$found_any_data)
-          unset($out[$eid]);
+#        drupal_set_message("out after got: " . serialize($out));
       }
+      
+#      drupal_set_message("out is empty? " . serialize($out) . serialize(empty($out)));
+      
+      // @TODO this is a hack.
+      // if we did not find any data we unset this part so we don't return anything
+      // however this might be evil in cases of edit or something...
+      if(empty($out))
+        return array();
     }
-
-#    drupal_set_message("out: " . serialize($out));
+    
+#    drupal_set_message("I return: " . serialize($out));
+  
 
     return $out;
 
@@ -866,14 +889,172 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @inheritdoc
    * The Yaml-Adapter cannot handle field properties, we insist on field values being the main property
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundle=NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
-    drupal_set_message("2");
-    
-    $main_property = \Drupal\field\Entity\FieldStorageConfig::loadByName($entity_type, $field_name)->getItemDefinition()->mainPropertyName();
-    if (in_array($main_property,$property_ids)) {
-      return $this->loadFieldValues($entity_ids,array($field_id),$language);
+  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+#    drupal_set_message("fun: " . serialize(func_get_args()));
+#    drupal_set_message("2");
+#    
+#    $main_property = \Drupal\field\Entity\FieldStorageConfig::loadByName($entity_type, $field_name)->getItemDefinition()->mainPropertyName();
+#    if (in_array($main_property,$property_ids)) {
+#      return $this->loadFieldValues($entity_ids,array($field_id),$language);
+#    }
+#    return array();
+
+    if(!empty($field_id) && empty($bundleid_in)) {
+      drupal_set_message("Dorian ist doof, weil $field_id angefragt wurde und bundle aber leer ist.", "error");
+      return;
     }
-    return array();
+    
+    // this approach will be not fast enough in the future...
+    // the pbs have to have a better mapping of where and how to find fields
+    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    
+    $out = array();
+        
+    // get the adapterid that was loaded
+    // haha, this is the engine-id...
+    //$adapterid = $this->getConfiguration()['id'];
+        
+    foreach($pbs as $pb) {
+      
+      // if we have no adapter for this pb it may go home.
+      if(empty($pb->getAdapterId()))
+        continue;
+        
+      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
+
+      // if we have not adapter, we may go home, too
+      if(empty($adapter))
+        continue;
+      
+      // if he didn't ask for us...    
+      if($this->getConfiguration()['id'] != $adapter->getEngine()->getConfiguration()['id'])
+        continue;
+      
+      // if we find any data, we set this to true.
+      $found_any_data = FALSE;
+      
+      foreach($entity_ids as $eid) {
+      
+        // here we should check if we really know the entity by asking the TS for it.
+        // this would speed everything up largely, I think.
+        $entity = $this->load($eid);
+        
+        // if there is nothing, continue.
+        if(empty($entity))
+          continue;
+
+        if($field_id == "bundle" && !empty($bundleid_in))
+          $out[$eid]["bundle"] = array($bundleid_in);
+
+#        drupal_set_message("I am asked for fids: " . serialize($field_ids));
+  
+        if($field_id == "eid") {
+          $out[$eid][$field_id] = array($eid);
+          continue;
+        }
+        
+        if($field_id == "name") {
+          // tempo hack
+          $out[$eid][$field_id] = array($eid);
+          continue;
+        }
+        
+        // Bundle is a special case.
+        // If we are asked for a bundle, we first look in the pb cache for the bundle
+        // because it could have been set by 
+        // measures like navigate or something - so the entity is always displayed in 
+        // a correct manor.
+        // If this is not set we just select the first bundle that might be appropriate.
+        // We select this with the first field that is there. @TODO:
+        // There might be a better solution to this.
+        // e.g. knowing what bundle was used for this id etc...
+        // however this would need more tables with mappings that will be slow in case
+        // of a lot of data...
+        if($field_id == "bundle") {
+          
+          if(!empty($bundleid_in)) {
+            $out[$eid]['bundle'] = array($bundleid_in);
+            continue;
+          }
+          
+          // get all the bundles for the eid from us
+          $bundles = $this->getBundleIdsForEntityId($eid);
+          
+          if(!empty($bundles)) {
+            // if there is only one, we take that one.
+            #foreach($bundles as $bundle) {
+            $out[$eid]['bundle'] = array_values($bundles);
+            #  break;
+            #}
+            continue;
+          } else {
+            // if there is none return NULL
+            $out[$eid]['bundle'] = NULL;              
+            continue;
+          }
+        }
+
+        // every other field is an array, we guess
+        // this might be wrong... cardinality?          
+        if(!isset($out[$eid][$field_id]))
+          $out[$eid][$field_id] = array();
+
+        // set the bundle
+        // @TODO: This is a hack and might break for multi-federalistic stores
+        $pbarray = $pb->getPbEntriesForFid($field_id);
+          
+        // if there is no data about this path - how did we get here in the first place?
+        // fields not in sync with pb?
+        if(empty($pbarray["id"]))
+          continue;
+
+        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["id"]);
+
+        // if there is no path we can skip that
+        if(empty($path))
+          continue;
+
+        $clearPathArray = $this->getClearPathArray($path, $pb);
+ 
+ #         drupal_set_message("I have: " . serialize($pbarray), "error");
+        if(!empty($path)) {
+          // if this is question for a subgroup - handle it otherwise
+          if($pbarray['parent'] > 0 && $path->isGroup()) {
+#              drupal_set_message("I am asking for: " . serialize($this->getClearGroupArray($path, $pb)) . "with eid: " . serialize($eid));
+            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid));
+#              drupal_set_message("I've got: " . serialize($out[$eid][$field_id]));
+          } else {
+              // it is a field?
+#              $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($clearPathArray, $path->getDatatypeProperty(), $eid));
+#              drupal_set_message("pa: " . serialize($path->getPathArray()) . " cpa: " . serialize($clearPathArray));
+
+            // get the parentid
+            $parid = $pbarray["parent"];
+            
+            // get the parent (the group the path belongs to) to get the common group path
+            $par = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($parid);
+
+            // if there is no parent it is a ungrouped path... who asks for this?
+            if(empty($par)) {
+              drupal_set_message("Path " . $path->getName() . " with id " . $path->id() . " has no parent.", "error");
+              continue;
+            }
+#              drupal_set_message("pa: " . serialize($path->getPathArray()) . " cpa: " . serialize($clearPathArray) . " cga: " . serialize($this->getClearGroupArray($parent, $pb)));
+            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $eid, (count($this->getClearGroupArray($par, $pb))-1)));
+          }
+#              drupal_set_message("I loaded: " . serialize($out));
+        }
+        
+        if(empty($out[$eid][$field_id]))
+          unset($out[$eid]);
+      }
+    }
+
+#    drupal_set_message("out: for " . serialize(func_get_args()) . " is: " . serialize($out));
+
+    return $out;
+
+
   }
   
   public function getQueryObject(EntityTypeInterface $entity_type,$condition,array $namespaces) {
@@ -887,6 +1068,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $pbarray = $pb->getPbEntriesForFid($fieldid);
     
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['id']);
+
+    if(empty($path))
+      continue;
 
     $clearPathArray = $this->getClearPathArray($path, $pb);
     
@@ -938,35 +1122,55 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
       }
       
-      ksort($outarray);
+      ksort($outarray[$key]);
    #     drupal_set_message("we got something!");
   #    $name = 'x' . (count($clearPathArray)-1);
       if(!empty($primitive))
         $outarray[$key]["out"] = $thing->out->getValue();
      # else
      #   $out[] = $thing->$name->dumpValue("text");
-    }
-    
-#    drupal_set_message(serialize($outarray));
+#    }
+
+      drupal_set_message("my outarr is: " . serialize($outarray));
     
 #    drupal_set_message("spq: " . serialize($sparql));
 #    drupal_set_message(serialize($this));
     
         
     // add graph handling
-    $sparqldelete = "DELETE WHERE { " ;
+      $sparqldelete = "DELETE DATA { " ;
+ 
+      $arr = $outarray[$key];
+ 
+      $i=0;
+      foreach($arr as $k => $v) {
+      
+       $sparqldelete .= "<" . $v . "> ";
+       $i++;
+       
+       if($i >= 3)
+         break;
+      }
     
-    drupal_set_message(serialize($clearPathArray));
+      $sparqldelete .= "}";
+
+      $result = $this->directQuery($sparqldelete);    
     
+#    drupal_set_message(htmlentities($sparqldelete));
+    
+    }
     drupal_set_message("I delete field $field from entity $entity_id that currently has the value $value");
   }
   
   public function addNewFieldValue($entity_id, $fieldid, $value, $pb) {
+    
+    
+    
     drupal_set_message("I add field $field from entity $entity_id that currently has the value $value");
   }
   
-  public function writeFieldValues($entity_id,array $field_values,$bundle=NULL) {
-    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values));
+  public function writeFieldValues($entity_id, array $field_values, $bundle=NULL) {
+    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
     
     // tricky thing here is that the entity_ids that are coming in typically
     // are somewhere from a store. In case of rdf it is easy - they are uris.
@@ -1020,23 +1224,39 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // it would be better to gather this information from the form and not from the ts
         // there might have been somebody saving in between...
         // @TODO !!!
-        $old_values = $this->loadFieldValues(array($entity_id), array_keys($field_values));
+        $old_values = $this->loadFieldValues(array($entity_id), array_keys($field_values), $bundle);
+
+#        drupal_set_message("the old values were: " . serialize($old_values));
 
         if(!empty($old_values))
           $old_values = $old_values[$entity_id];
 
-        drupal_set_message("the old values were: " . serialize($old_values));
+#        drupal_set_message("the old values were: " . serialize($old_values));
 
         foreach($field_values as $key => $fieldvalue) {
-          drupal_set_message("key: " . serialize($key) . " fieldvalue is: " . serialize($fieldvalue)); 
+#          drupal_set_message("key: " . serialize($key) . " fieldvalue is: " . serialize($fieldvalue)); 
   
           if($key == "eid") {
             // we skip this for now
             continue;
           }
           
-          
+          if($key == "uid") {
+            // we skip this for now
+            continue;
+          }
+                    
           if($key == "name") {
+            // tempo hack
+            continue;
+          }
+
+          if($key == "langcode") {
+            // tempo hack
+            continue;
+          }
+
+          if($key == "uuid") {
             // tempo hack
             continue;
           }
@@ -1069,7 +1289,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             // add the new ones
             $this->addNewFieldValue($entity_id, $key, $val[$mainprop], $pb); 
             
-#            drupal_set_message("I would write " . $val[$mainprop] . " to the db and delete " . serialize($old_values[$key]) . " for it.");
+            drupal_set_message("I would write " . $val[$mainprop] . " to the db and delete " . serialize($old_values[$key]) . " for it.");
             
           }
 

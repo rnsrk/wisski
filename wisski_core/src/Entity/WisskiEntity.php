@@ -165,4 +165,13 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
 #    dpm($this->tellMe('label'));
 #    return 42;//parent::id();
 #  }
+
+  public function getOriginalValues() {
+    
+    $out = array();
+    foreach ($this->values as $field_name => $field_values) {
+      $out[$field_name] = $field_values;
+    }
+    return $out;
+  }
 }
