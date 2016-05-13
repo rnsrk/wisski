@@ -55,6 +55,22 @@ class WisskiBundleForm extends EntityForm {
       '#description' => t('Describe this bundle. The text will be displayed on the <em>Add new WisskiEntity</em> page.'),
     );
     dpm($bundle,__METHOD__);
+    $form['title_pattern'] = array(
+      '#title' => t('Title Pattern'),
+      '#type' => 'textfield',
+      '#description' => t('The pattern to create the entity titles from'),
+      '#default_value' => $bundle->getTitlePattern(),
+    );
+    $options = '<table><tr><td>Field Name</td><td>Label</td></tr>';
+    $field_definitions = \Drupal::entityManager()->getFieldStorageDefinitions('wisski_individual',$this->id);
+//    dpm($field_definitions);
+    foreach ($field_definitions as $field_name => $field_definition) {
+      $options .= '<tr><td>'.$field_name.'</td><td>'.$field_definition->getLabel().'</td></tr>';
+    }
+    $options .= '</table>';
+    $form['available_fields'] = array(
+      '#markup' => 'Available Fields for Title Pattern:<br>'.$options,
+    );
     return $form;
   }
 
@@ -69,16 +85,24 @@ class WisskiBundleForm extends EntityForm {
     return $actions;
   }
 
-//  /**
-//   * {@inheritdoc}
-//   */
+  /**
+   * {@inheritdoc}
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    parent::validateForm($form, $form_state);
+    $pattern = $form_state->getValue('title_pattern');
+    $bundle = $this->entity;
+    if ($bundle->setTitlePattern($pattern) === FALSE) $form_state->setErrorByName('title_pattern','Invalid Title Pattern');
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
 //  protected function copyFormValuesToEntity(EntityInterface $entity, array $form, FormStateInterface $form_state) {
-//    /** @var \Drupal\media_entity\MediaBundleInterface $entity */
+//    /** @var \Drupal\wisski_core\WisskiBundleInterface $entity */
 //    parent::copyFormValuesToEntity($entity, $form, $form_state);
-//    // Use type configuration for the plugin that was chosen.
-//    $configuration = $form_state->getValue('type_configuration');
-//    $configuration = empty($configuration[$entity->getType()->getPluginId()]) ? [] : $configuration[$entity->getType()->getPluginId()];
-//    $entity->setTypeConfiguration($configuration);
+//    
 //  }
   
 
@@ -86,8 +110,9 @@ class WisskiBundleForm extends EntityForm {
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-    /** @var  \Drupal\media_entity\MediaBundleInterface $bundle */
+    /** @var  \Drupal\wisski_core\WisskiBundleInterface $bundle */
     $bundle = $this->entity;
+    
     $status = $bundle->save();
 
     $t_args = array('%name' => $bundle->label());

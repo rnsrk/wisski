@@ -4,7 +4,12 @@ use Drupal\wisski_core\WisskiEntityInterface;
 
 function wisski_core_generate_title(WisskiEntityInterface $entity) {
 //ddebug_backtrace();
-  $title = 'Hoppala';
-  dpm(func_get_args()+array('result'=>$title),__METHOD__);
+  $bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->load($entity->bundle());
+  $pattern = $bundle->getTitlePattern();
+  if (empty($pattern)) {
+    $title_list = $entity->get('name')->getValue();
+    $title = $title_list[0]['value'];
+  }
+  dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
   return $title;
 }
