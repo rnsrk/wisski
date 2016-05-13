@@ -41,6 +41,7 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     "uuid" = "uuid"
  *   },
  *   bundle_entity_type = "wisski_bundle",
+ *	 label_callback = "wisski_core_generate_title",
  *   permission_granularity = "entity_type",
  *   admin_permission = "administer wisski",
  *	 fieldable = TRUE,
@@ -173,5 +174,21 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
       $out[$field_name] = $field_values;
     }
     return $out;
+  }
+  
+  public function getFieldDataTypes() {
+    $types = array();
+
+    // Gather a list of referenced entities.
+    foreach ($this->getFields() as $field_name => $field_items) {
+      foreach ($field_items as $field_item) {
+        // Loop over all properties of a field item.
+        foreach ($field_item->getProperties(TRUE) as $property_name => $property) {
+          $types[$field_name][$property_name][] = get_class($property);
+        }
+      }
+    }
+
+    return $types;
   }
 }

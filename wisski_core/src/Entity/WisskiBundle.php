@@ -37,5 +37,16 @@ use Drupal\wisski_core\WisskiBundleInterface;
  * )
  */
 class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterface {
-
+  
+  private $title_pattern = array();
+  
+  public function getTitlePattern() {
+    
+    return $this->title_pattern;
+  }
+  
+  public function setTitlePattern(array $title_pattern) {
+    
+    $this->title_pattern = $title_pattern;
+  }
 }

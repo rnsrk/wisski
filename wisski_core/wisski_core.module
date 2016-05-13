@@ -1,3 +1,10 @@
 <?php
 
-//this file intentionally left blank
+use Drupal\wisski_core\WisskiEntityInterface;
+
+function wisski_core_generate_title(WisskiEntityInterface $entity) {
+//ddebug_backtrace();
+  $title = 'Hoppala';
+  dpm(func_get_args()+array('result'=>$title),__METHOD__);
+  return $title;
+}

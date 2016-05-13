@@ -56,7 +56,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    */
   public function buildHeader() {
     $header['id'] = $this->t('ID');
-    $header['name'] = $this->t('Name');
+    $header['title'] = $this->t('title');
     $header['bundle'] = $this->t('Bundle');
     return $header + parent::buildHeader();
   }
@@ -69,7 +69,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
 //    dpm($entity->tellMe('id','bundle'));
     $row['id'] = $id = $entity->id();
 //    echo "Hello ".$id;
-    $row['name'] = Link::createFromRoute($entity->name->value,'entity.wisski_individual.view',array('wisski_individual'=>$id));
+    $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.view',array('wisski_individual'=>$id));
     $row['bundle'] = $entity->bundle();
     
     return $row + parent::buildRow($entity);
