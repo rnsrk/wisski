@@ -69,13 +69,13 @@ class wisski_core_ontology_overviewForm extends FormBase {
    # if(empty($form_state->getValue('select_store'))) {
    # if(empty($selected_store)) {
       // give out a message that there is no local store currently - the user should select one
-    $form['nothing_here'] = array(
-      '#type' => 'item',
-      '#markup' => '<b>No store is specified currently.</b><br/> Please select a store below.',
-    );
+   # $form['nothing_here'] = array(
+   #   '#type' => 'item',
+   #   '#markup' => '<b>No store is specified currently.</b><br/> Please select a store below.',
+   # );
                                                 
     $selected_store = !empty($form_state->getValue('select_store')) ? $form_state->getValue('select_store') : "0";
-    drupal_set_message('selected: ' . $selected_store); 
+    #drupal_set_message('selected: ' . $selected_store); 
       
     $form['select_store'] = array(
       '#type' => 'select',
@@ -119,24 +119,20 @@ class wisski_core_ontology_overviewForm extends FormBase {
       $selected_name= $adapterlist[$selected_id];
       // load the store adapter entity object by means of the id of the selected store
       $selected_adapter = \Drupal\wisski_salz\Entity\Adapter::load($selected_id);      
-      drupal_set_message('Current selected adapter: ' . serialize($selected_adapter));
+      # drupal_set_message('Current selected adapter: ' . serialize($selected_adapter));
       // load the engine of the adapter
-      $engine = $selected_adapter->getEngine();
-      #drupal_set_message('hello engine ' . $engine->getPluginId());
+      $engine = $selected_adapter->getEngine();      
  
-       
       // if the engine is of type sparql11_with_pb we can load the existing ontologies 
       if($engine->getPluginId() === 'sparql11_with_pb' ) {
        
-        #drupal_set_message('Engine: ' . serialize($engine));
         #drupal_set_message('Type: ' . $engine->getPluginId());
         $infos = $engine->getOntologies();
         #drupal_set_message(serialize($infos));
-        dpm($infos);
+        #dpm($infos);
       
         // there already is an ontology
         if(!empty($infos) && count($infos) > 0 ) {
-          #drupal_set_message('!!!');
           $form['stores']['header'] = array(
             '#type' => 'item',
             '#markup' => '<b>Currently loaded Ontology:</b><br/>',
@@ -146,9 +142,8 @@ class wisski_core_ontology_overviewForm extends FormBase {
           foreach($infos as $ont) {
            // $table .= "<tr><td>" . $ont->ont . "</td><td>" . $ont->iri . "</td><td>" . $ont->ver . "</td><td>" . $ont->graph . "</td></tr>";
           $table .= "<tr><td>" . $ont->ont . "</td><td>" . $ont->iri . "</td><td>" . $ont->ver . "</td><td>" . $ont->graph . "</td></tr>";
-          drupal_set_message('ont ont: ' . $ont->ont);
-          dpm($ont);          
-          drupal_set_message('ont ' . serialize($ont));
+          #drupal_set_message('ont ont: ' . $ont->ont);
+          #dpm($ont);          
           }
           
           $table .= "</table>";
@@ -166,7 +161,21 @@ class wisski_core_ontology_overviewForm extends FormBase {
             '#submit' => array('::deleteOntology'),
           );
         
-        
+          $ns = "";
+          $ns = $engine->getNamespaces();
+              
+          $tablens = "<table><tr><th>Short Name</th><th>URI</th></tr>";
+          foreach($ns as $key => $value) {
+            $tablens .= "<tr><td>" . $key . "</td><td>" . $value . "</td></tr>";
+          }
+          $tablens .= "</table>";
+                             
+          $form['stores']['ns_table'] = array(
+            '#type' => 'item',
+            '#markup' => $tablens,
+          );
+                                             
+          
         } else {
           // No ontology was found
           $form['stores']['load_onto'] = array(
@@ -256,25 +265,7 @@ class wisski_core_ontology_overviewForm extends FormBase {
     #    '#type' => 'submit',
     #    '#value' => t('Save'),
     #  );
-                             
-                                                                    
-      // stop here
-                                                       
- /*                                                                                    
-   $ns = "";                                                                                                                                                                          
-   #$ns = $local_store->getNamespaces();
-                                                                                   
-   $table = "<table><tr><th>Short Name</th><th>URI</th></tr>";
-   foreach($ns as $key => $value) {
-   $table .= "<tr><td>" . $key . "</td><td>" . $value . "</td></tr>";
-   }
-   $table .= "</table>";
-                                                                                            
-   $form['ns_table'] = array(
-     '#type' => 'item',
-     '#markup' => $table,
-   );
- */                                                                                                                 
+                                                                                                                                             
    return $form;
    
   }

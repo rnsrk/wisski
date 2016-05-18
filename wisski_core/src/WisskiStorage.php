@@ -74,7 +74,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         if($adapter->hasEntity($id)) {
           // if so - ask for the bundles for that id
           $bundle_ids = $adapter->getBundleIdsForEntityId($id);
-          #drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundles) . ".");
+          //drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundle_ids) . ".");
           foreach($bundle_ids as $bundleid) {
 #            dpm($field_definitions,'Field defs for '.$bundleid);
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
@@ -87,6 +87,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             try {
               foreach ($field_definitions as $field_name => $field_def) {
                 if ($field_def instanceof BaseFieldDefinition) {
+                  if ($field_name === 'bundle') continue;
                 //drupal_set_message("Hello i am a base field ".$field_name);
                   //this is a base field and cannot have multiple values
                   //@TODO make sure, we load the RIGHT value
@@ -114,8 +115,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   $target_bundles = $field_settings['handler_settings']['target_bundles'];
                 }
                 $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
-#                drupal_set_message(serialize($new_field_values));
+                //drupal_set_message(serialize($new_field_values));
                 if (empty($new_field_values)) continue;
+                $info[$id]['bundle'] = $bundleid;
                 //dpm($field_def->getType(),$field_name);
                 if ($field_def->getType() === 'image') {
                   $value = $new_field_values[$id][$field_name];
@@ -251,7 +253,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
     }*/
     $entity_info = WisskiHelper::array_merge_nonempty($entity_info,$info);
-    //dpm(func_get_args()+array('info'=>$info,'result'=>$entity_info),__METHOD__);
+#    dpm(func_get_args()+array('info'=>$info,'result'=>$entity_info),__METHOD__);
     return $entity_info;
   }
 
