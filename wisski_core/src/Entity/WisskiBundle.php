@@ -39,7 +39,11 @@ use Drupal\wisski_core\WisskiBundleInterface;
  */
 class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterface {
   
-  private $title_pattern = array();
+  /**
+   * The field based pattern for the entity title generation
+   * @var array
+   */
+  protected $title_pattern = array();
   
   public function getTitlePattern() {
     
@@ -47,14 +51,16 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   }
   
   public function setTitlePattern($title_pattern) {
-    
+    dpm($this->entityManager()->getStorage($this->entityTypeId));
     if (!$this->isValidTitlePattern($title_pattern)) return FALSE;
+    drupal_set_message('Saving title pattern for bundle '.$this->id.' '.serialize($title_pattern));
     $this->title_pattern = $title_pattern;
     return TRUE;
   }
   
   protected function isValidTitlePattern($title_pattern) {
   
+    
     return TRUE;
   }
 }

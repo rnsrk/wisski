@@ -218,7 +218,7 @@ class WisskiPathbuilderController extends ControllerBase {
   
   private function pb_render_path($path) {
     $pathform = array();
-    
+
     $pathform['#item'] = $path;
     
     $pathform['#attributes'] = $path->getEnabled() ? array('class' => array('menu-enabled')) : array('class' => array('menu-disabled')); 
@@ -344,6 +344,7 @@ class WisskiPathbuilderController extends ControllerBase {
       
       
     }
+    
 /*
         // Build a list of operations.
         $operations = array();

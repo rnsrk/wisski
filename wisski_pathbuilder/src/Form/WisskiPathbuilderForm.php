@@ -254,7 +254,7 @@ class WisskiPathbuilderForm extends EntityForm {
 #      '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
     );
     
-    
+dpm($form);    
     
     return $form;
   }
