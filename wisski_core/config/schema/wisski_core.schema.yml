@@ -1,4 +1,4 @@
-wisski_core.bundle.*:
+wisski_core.wisski_bundle.*:
   type: config_entity
   label: 'WissKI Bundle'
   mapping:
@@ -14,3 +14,6 @@ wisski_core.bundle.*:
     field_map:
       type: mapping
       label: 'Field map'
+    title_pattern:
+      type: string
+      label: 'Title Pattern'

@@ -22,39 +22,30 @@ class WisskiTitlePatternForm extends EntityForm {
     
     /** @var \Drupal\media_entity\MediaBundleInterface $bundle */
     $form['#entity'] = $bundle = $this->entity;
-
+    
     $available_fields = \Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundle->id());
     
     $form['#title'] = $this->t('Edit title pattern for bundle %label', array('%label' => $bundle->label()));
     
+    $options = array();
+    foreach ($available_fields as $field_name => $field_def) {
+      $options[$field_name] = $field_def->getLabel().' ('.$field_name.')';
+    }
+    
     $form_storage = $form_state->getStorage();
-    $pattern = empty($form_storage['cached_pattern']) ? $bundle->getTitlePattern() : $form_storage['cached_pattern'];
-/*
-    $pattern['dummy_field'] = array(
-      'name' => 'dummy_field',
-      'weight' => 0,
-      'optional' => FALSE,
-      'type' => 'field',
-    );
-    $pattern['bummy_field'] = array(
-      'name' => 'bummy_field',
-      'weight' => 1,
-      'optional' => TRUE,
-      'type' => 'field',
-    );
-    $pattern['text2'] = array(
-      'type' => 'text',
-      'text' => '>>>',
-      'weight' => 2,
-    );
-*/
+    if (isset($form_storage['cached_pattern']) && !empty($form_storage['cached_pattern'])) {
+      $pattern = $form_storage['cached_pattern'];
+    } else {
+      $pattern = $bundle->getTitlePattern();
+    }
+
     $count = count($pattern);
 
     $trigger = $form_state->getTriggeringElement();
     if ($trigger['#name'] === 'new-text-button') {
       $pattern['text'.$count] = array(
         'weight' => $count,
-        'text' => '',
+        'label' => '',
         'type' => 'text',
       );
     }
@@ -64,6 +55,7 @@ class WisskiTitlePatternForm extends EntityForm {
         $pattern[$selection] = array(
           'type' => 'field',
           'name' => $selection,
+          'label' => $available_fields[$selection]->getLabel(),
           'weight' => $count,
           'optional' => TRUE,
         );
@@ -76,14 +68,15 @@ class WisskiTitlePatternForm extends EntityForm {
     $header = array(
       '',
       $this->t('Content'),
-      '',
+      $this->t('Options'),
       $this->t('Weight'),
-      ''
+      '',
+      '',
     );
 
     $form['pattern'] = array(
       '#type' => 'table',
-      '#theme' => 'table__menu_overview',
+      //'#theme' => 'table__menu_overview',
       '#caption' => $this->t('Title Pattern'),
       '#header' => $header,
       '#empty' => $this->t('This bundle has no title pattern, yet'),
@@ -109,10 +102,6 @@ class WisskiTitlePatternForm extends EntityForm {
     );
     foreach ($pattern as $key => $attributes) {
       $form['pattern'][$key] = $this->renderRow($key,$attributes);
-    }
-    $options = array();
-    foreach ($available_fields as $field_name => $field_def) {
-      $options[$field_name] = $field_def->getLabel().' ('.$field_name.')';
     }
     $form['field_select_box'] = array(
       '#type' => 'select',
@@ -141,7 +130,7 @@ class WisskiTitlePatternForm extends EntityForm {
    *
    */
   private function renderRow($key,array $attributes) {
-  
+    //dpm(func_get_args(),__METHOD__);  
     $rendered = array();
   
     $rendered['#attributes']['class'][] = 'draggable';
@@ -153,8 +142,17 @@ class WisskiTitlePatternForm extends EntityForm {
     );
     
     if ($attributes['type'] === 'field') {
-      $rendered['field_name'] = array(
-        '#markup' => $attributes['name'],
+      $label = $key;
+      if (isset($attributes['name'])) $label = $attributes['name'];
+      $print_label = $label;
+      if (isset($attributes['label'])) {
+        $label = $attributes['label'];
+        $print_label = $attributes['label'].' ('.$print_label.')';
+      }
+      $rendered['label'] = array(
+        '#type' => 'item',
+        '#markup' => $print_label,
+        '#value' => $label,
       );
       $rendered['optional'] = array(
         '#type' => 'checkbox',
@@ -164,9 +162,9 @@ class WisskiTitlePatternForm extends EntityForm {
       );
     }
     if ($attributes['type'] === 'text') {
-      $rendered['text'] = array(
+      $rendered['label'] = array(
         '#type' => 'textfield',
-        '#default_value' => $attributes['text'],
+        '#default_value' => $attributes['label'],
         '#title' => $this->t('Text'),
         '#title_display' => 'invisible',
       );
@@ -186,7 +184,11 @@ class WisskiTitlePatternForm extends EntityForm {
       '#attributes' => array('class' => array('row-parent')),
       '#value' => isset($attributes['parent'])? $attributes['parent'] : 0,
     );
-    
+    $rendered['type'] = array(
+      '#type' => 'hidden',
+      '#value' => $attributes['type'],
+    );
+
     return $rendered;
   }
 
@@ -203,10 +205,16 @@ class WisskiTitlePatternForm extends EntityForm {
    * {@inheritdoc}
    */
   protected function actions(array $form, FormStateInterface $form_state) {
-    $actions = parent::actions($form, $form_state);
-    $actions['submit']['#value'] = t('Save pattern');
-    $actions['delete']['#value'] = t('Delete pattern');
-    $actions['delete']['#access'] = $this->entity->access('edit');
+    $actions['submit'] = array(
+      '#type' => 'submit',
+      '#value' => $this->t('Save pattern'),
+      '#submit' => array("::submitForm","::save"),
+    );
+    $actions['delete'] = array(
+      '#value' => t('Delete pattern'),
+      '#type' => 'submit',
+      '#submit' => array("::deletePattern"),
+    );
     return $actions;
   }
 
@@ -218,6 +226,7 @@ class WisskiTitlePatternForm extends EntityForm {
     $bundle = $this->entity;
     
     $pattern = $form_state->getValue('pattern');
+
     $valid = $bundle->setTitlePattern($pattern);
 
     if ($valid) {
@@ -227,6 +236,15 @@ class WisskiTitlePatternForm extends EntityForm {
 
       $form_state->setRedirectUrl($bundle->urlInfo('edit-form'));
     }
+  }
+  
+  public function deletePattern(array $form, FormStateInterface $form_state) {
+    
+    $bundle = $this->entity;
+    $bundle->removeTitlePattern();
+    $bundle->save();
+    drupal_set_message(t('Removed title pattern for bundle %name.', array('%name' => $bundle->label())));
+    $form_state->setRedirectUrl($bundle->urlInfo('edit-form'));
   }
   
 }

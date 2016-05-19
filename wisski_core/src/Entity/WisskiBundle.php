@@ -11,18 +11,19 @@ use Drupal\wisski_core\WisskiBundleInterface;
  * @ConfigEntityType(
  *   id = "wisski_bundle",
  *   label = @Translation("Wisski Bundle"),
+ *	 fieldable = FALSE,
  *   handlers = {
  *     "form" = {
  *       "add" = "Drupal\wisski_core\Form\WisskiBundleForm",
  *       "edit" = "Drupal\wisski_core\Form\WisskiBundleForm",
- *	 "delete" = "Drupal\wisski_core\Form\WisskiBundleDeleteForm",
+ *			 "delete" = "Drupal\wisski_core\Form\WisskiBundleDeleteForm",
  *       "title" = "Drupal\wisski_core\Form\WisskiTitlePatternForm",
  *     },
  *     "list_builder" = "Drupal\wisski_core\Controller\WisskiBundleListBuilder",
  *     "access" = "Drupal\wisski_core\Controller\WisskiBundleAccessHandler",
  *   },
  *   admin_permission = "administer wisski_core",
- *   config_prefix = "bundle",
+ *   config_prefix = "wisski_bundle",
  *   bundle_of = "wisski_individual",
  *   entity_keys = {
  *     "id" = "id",
@@ -41,26 +42,29 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   /**
    * The field based pattern for the entity title generation
-   * @var array
+   * @var string
    */
-  protected $title_pattern = array();
+  protected $title_pattern = '';
   
   public function getTitlePattern() {
     
-    return $this->title_pattern;
+    return unserialize($this->title_pattern);
+  }
+  
+  public function removeTitlePattern() {
+    $this->title_pattern = '';
   }
   
   public function setTitlePattern($title_pattern) {
     dpm($this->entityManager()->getStorage($this->entityTypeId));
     if (!$this->isValidTitlePattern($title_pattern)) return FALSE;
     drupal_set_message('Saving title pattern for bundle '.$this->id.' '.serialize($title_pattern));
-    $this->title_pattern = $title_pattern;
+    $this->title_pattern = serialize($title_pattern);
     return TRUE;
   }
   
   protected function isValidTitlePattern($title_pattern) {
   
-    
     return TRUE;
   }
 }
