@@ -570,7 +570,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   /**
    * {@inheritdoc}
    */
-#  public function hasData() {
-#    return FALSE;
-#  }  
+  public function hasData() {
+    //@TODO this is only for development purposes. So we can uninstall the module without having to delete data
+    return FALSE;
+  }  
 }
