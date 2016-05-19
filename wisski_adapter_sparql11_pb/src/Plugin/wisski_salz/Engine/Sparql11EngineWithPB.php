@@ -14,6 +14,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Language\LanguageInterface;
 
 use Drupal\wisski_adapter_sparql11_pb\Query\Query;
+use \EasyRdf;
 
 /**
  * Wiki implementation of an external entity storage client.
@@ -1173,20 +1174,192 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return uniqid($prefix);
   }
   
+  public function getDefaultDataGraphUri() {
+    // here we should return a default graph for this store.
+    return "graf://dr.acula";
+  }
+  
+  
+  /**
+   * Generate the triple part for the statements (excluding any Select/Insert or
+   * whatever). This should be used for any pattern generation. Everything else
+   * is evil.
+   *
+   * @param $pb	a pathbuilder isntance
+   * @param $path the path as a path object of which the triple parts should be 
+   *              generated. May also be a group.
+   * @param $primitiveValue The primitive data value that should be stored or
+   *              asked for in the query.
+   * @param $subject_in If there should be any subject on a certain position 
+   *              this could be encoded by using $subject_in and the 
+   *              $startingposition parameter.
+   * @param $object_in If there should be any object. The position of the object
+   *              may be encoded in the disambposition.
+   * @param $disambposition The position in the path where the object or the
+   *              general disambiguation of this path lies. 0 means no disamb,
+   *              1 means disamb on the first concept, 2 on the second concept
+   *              and so on.
+   * @param $startingposition From where on the path should be generated in means
+   *              of concepts from the beginning.
+   * @param $write Is this a write or a read-request?
+   */
+  public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE) {
+    // the query construction parameter
+    $query = "";
+
+    // if we disamb on ourself, return.
+    if($disambposition == 0 && !empty($object_in)) return "";
+
+    // get the clearArray of this path, we skip anything that is in upper groups.
+    $clearPathArray = $this->getClearPathArray($path, $pb);
+    
+    // old uri pointer
+    $olduri = NULL;
+    // old key pointer
+    $oldkey = NULL;
+    
+    // if the old uri is empty we assume there is no uri and we have to
+    // generate one in write mode. In ask mode we make variable-questions
+    
+    // get the default datagraphuri    
+    $datagraphuri = $this->getDefaultDataGraphUri();
+    
+    // iterate through the given path array
+    foreach($clearPathArray as $key => $value) {
+      
+      // skip anything that is smaller than $startingposition.
+      if($key < ($startingposition*2)) 
+        continue;
+      
+      // basic initialisation
+      $uri = NULL;
+      
+      // if we may write, we generate uris
+      if($write) {
+        $uri = $this->getUri($datagraphuri);
+      }
+      
+      if($key % 2 == 0) {
+        // if it is the first element and we have a subject_in
+        // then we have to replace the first element with subject_in
+        // and typically we don't do a type triple. So we skip the rest.
+        if($key == 0 && !empty($subject_in)) {
+          $olduri = $subject_in;
+          continue;
+        }
+        
+        // if the key is the disambpos
+        // and we have an object
+        if($key == ($disambposition*2) && !empty($object_in)) {
+          $uri = $object_in;
+        } else {
+          // if it is not the disamb-case we add type-triples        
+          if($write) 
+            $query .= "<$uri> a <$value> . ";
+          else
+            $query .= "?x$key a <$value> . ";
+        }             
+
+        // magic function
+        if($key > 0 && !empty($prop)) 
+          if($write)
+            $query .= "<$olduri> <$prop> <$uri> . ";
+          else {
+            if(!empty($olduri))
+              $query .= "<$olduri> ";
+            else
+              $query .= "?x$oldkey ";
+          
+            $query .= "<$prop> ";
+                    
+            if(!empty($uri))
+              $query .= "<$uri> . ";
+            else
+              $query .= "?x$key . ";
+          }
+         
+         // if this is the disamb, we may break.
+         if($key == ($disambposition*2) && !empty($object_in))
+           break;
+          
+         $olduri = $uri;
+         $oldkey = $key;
+      } else {
+        $prop = $value;
+      }
+    }
+
+    // get the primitive for this path if any    
+    $primitive = $path->getDatatypeProperty();
+    
+    if(!empty($primitive) && empty($object_in)) {
+      if(!empty($olduri))
+        $query .= "<$olduri> ";
+      else
+        $query .= "?x$oldkey ";
+      
+      $query .= "<$primitive> ";
+      
+      if(!empty($primitiveValue)) {
+        $query .= "'" . $primitiveValue . "' . ";
+      } else
+        $query .= " ?out . ";
+    }
+    
+    return $query;
+  }
+  
   public function addNewFieldValue($entity_id, $fieldid, $value, $pb) {
 #    drupal_set_message(serialize($this->getUri("smthg")));
-    $datagraphuri = "http://test.me/";
+    $datagraphuri = $this->getDefaultDataGraphUri();
 
     $pbarray = $pb->getPbEntriesForFid($fieldid);
     
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['id']);
+    
+#    drupal_set_message("smthg: " . serialize($this->generateTriplesForPath($pb, $path, NULL, "http://test.me/12", "http://argh.el/235", 2, TRUE)));
 
     if(empty($path))
       continue;
 
+#    $clearPathArray = $this->getClearPathArray($path, $pb);
+#    $path->setDisamb(1);
+#    $path->save();
+
+    if($path->getDisamb()) {
+      $sparql = "SELECT * WHERE { GRAPH ?g { ";
+      $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb(), FALSE);
+      $sparql .= " } }";
+      
+#     drupal_set_message("query: " . serialize($sparql));
+      
+      $disambresult = $this->directQuery($sparql);
+  
+      if(!empty($disambresult))
+        $disambresult = current($disambresult);      
+#      drupal_set_message("rais: " . serialize($result));
+    }
+    
+    $eid = str_replace("\\", "/", $entity_id);
+
+    $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
+    if(empty($path->getDisamb()))
+      $sparql .= $this->generateTriplesForPath($pb, $path, $value, $eid, NULL, NULL, NULL, TRUE);
+    else
+      if(empty($disambresult))
+        $sparql .= $this->generateTriplesForPath($pb, $path, $value, $eid, NULL, NULL, NULL, TRUE);
+      else
+        $sparql .= $this->generateTriplesForPath($pb, $path, $value, $eid, $disambresult->{"x" . $path->getDisamb()*2}->dumpValue("text"), $path->getDisamb(), NULL, TRUE);
+
+    $sparql .= " } } ";
+ 
+/*   
+    drupal_set_message("I would do: " . htmlentities($sparql));
+
+
     $clearPathArray = $this->getClearPathArray($path, $pb);
 
-    $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> {";
+    $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
     $olduri = NULL;
     $prop = NULL;
     foreach($clearPathArray as $key => $step) {
@@ -1198,7 +1371,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         continue;
       }
         
-      $uri = $this->getUri("http://test.me/");
+      $uri = $this->getUri($datagraphuri);
       if($key % 2 == 0) {
         $sparql .= "<$uri> a <$step> . ";
         if($key > 0) 
@@ -1216,8 +1389,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         
     $sparql .= " } }";
 
-#    drupal_set_message("I do: " . htmlentities($sparql));
-
+    drupal_set_message("I do: " . htmlentities($sparql));
+*/
     $result = $this->directUpdate($sparql);
     
     
@@ -1452,8 +1625,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
   // -------------------------------- Ontologie thingies ----------------------
 
-  public function addOntologies($iri = NULL) {
-    drupal_set_message('iri: ' . $iri);
+  public function addOntologies($iri = NULL) { 
     if (empty($iri)) {
       //load all ontologies
       $query = "SELECT ?ont WHERE {?ont a owl:Ontology}";
@@ -1524,10 +1696,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // $this->loadOntologyInfo();
     
     // add namespaces to table
- /* 
+  
     $file = file_get_contents($iri);
-    $format = EasyRdf_Format::guessFormat($file, $iri);
-
+    $format = \EasyRdf_Format::guessFormat($file, $iri); 
     if(empty($format)) {
       drupal_set_message("Could not initialize namespaces.", 'error');
     } else {
@@ -1585,7 +1756,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
       
     }    
-   */ 
+    
     // return the result
     return $result;   
 
@@ -1598,8 +1769,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     } else
       $query = "SELECT DISTINCT ?ont (COALESCE(?niri, 'none') as ?iri) (COALESCE(?nver, 'none') as ?ver) (COALESCE(?ngraph, 'default') as ?graph) WHERE { ?ont a owl:Ontology . OPTIONAL { GRAPH ?ngraph { ?ont a owl:Ontology } } . OPTIONAL { ?ont owl:ontologyIRI ?niri. ?ont owl:versionIRI ?nver . } }";
      
-    $results = $this->directQuery($query);
-    drupal_set_message('results?' . serialize($results)); 
+    $results = $this->directQuery($query); 
   /*
   if (!$ok) {
     foreach ($results as $err) {
@@ -1627,6 +1797,33 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    */                                              
     return $results;
   }
-                                                                                                                                                         
+  
+  private function putNamespace($short_name,$long_name) {
+    $result = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
+              ->fields('ns')
+              ->condition('short_name',$short_name,'=')
+              ->execute()
+              ->fetchAssoc();
+    if (empty($result)) {
+      db_insert('wisski_salz_sparql11_ontology_namespaces')
+              ->fields(array('short_name' => $short_name,'long_name' => $long_name))
+              ->execute();
+    } else {
+     //      drupal_set_message('Namespace '.$short_name.' already exists in DB');
+    }
+  }
+                                                                                                           
+  public function getNamespaces() {
+    $ns = array();
+    $db_spaces = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
+                  ->fields('ns')
+                  ->execute()
+                  ->fetchAllAssoc('short_name');
+    foreach ($db_spaces as $space) {
+      $ns[$space->short_name] = $space->long_name;
+    }
+    return $ns;
+  }
+                                                                                                                                                                                                                                      
 
 }
