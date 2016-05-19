@@ -9,7 +9,22 @@ function wisski_core_generate_title(WisskiEntityInterface $entity) {
   if (empty($pattern)) {
     $title_list = $entity->get('name')->getValue();
     $title = $title_list[0]['value'];
+  } else {
+    foreach ($pattern as $key => $attributes) {
+      if ($attributes['type'] === 'field') {
+        //@var \Drupal\Core\Field\FieldItemList $values
+        $values = $entity->get($key);
+        //dpm($values,$key);
+        if ($values->count() === 1) {
+          $title .= $values->first()->getValue()['value'];
+        }
+        
+      }
+      if ($attributes['type'] === 'text') {
+        $title .= $attributes['label'];
+      }
+    }
   }
-  dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
+  //dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
   return $title;
 }
