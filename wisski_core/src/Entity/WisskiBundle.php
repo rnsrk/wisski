@@ -58,7 +58,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   public function setTitlePattern($title_pattern) {
     dpm($this->entityManager()->getStorage($this->entityTypeId));
     if (!$this->isValidTitlePattern($title_pattern)) return FALSE;
-    drupal_set_message('Saving title pattern for bundle '.$this->id.' '.serialize($title_pattern));
+    dpm($title_pattern,'Saving title pattern for bundle '.$this->id);
     $this->title_pattern = serialize($title_pattern);
     return TRUE;
   }

@@ -73,13 +73,13 @@ class WisskiTitlePatternForm extends EntityForm {
 
     $header = array(
       '',
-      $this->t('Type'),
+//      $this->t('Type'),
       $this->t('Content'),
       $this->t('Options'),
       $this->t('Show #'),
       $this->t('Delimiter'),
       $this->t('Weight'),
-      '',
+      $this->t('Parent'),
       '',
     );
 
@@ -139,20 +139,19 @@ class WisskiTitlePatternForm extends EntityForm {
    *
    */
   private function renderRow($key,array $attributes) {
-    //dpm(func_get_args(),__METHOD__);  
+    //dpm($attributes,__METHOD__.' '.$key);  
     $rendered = array();
   
     $rendered['#attributes']['class'][] = 'draggable';
-      
-    $rendered['id'] = array(
-      '#type' => 'hidden',
-      '#attributes' => array('class' => array('row-id')),
-      '#value' => $key,
+    
+    $rendered['indent'] = array(
+      array(
+        '#theme' => 'indentation',
+        '#size' => $attributes['depth'],
+      ),
+      $attributes['type'],
     );
-    $rendered['type'] = array(
-      '#markup' => $attributes['type'],
-    );
-      
+    
     if ($attributes['type'] === 'field') {
       $label = $key;
       if (isset($attributes['name'])) $label = $attributes['name'];
@@ -196,7 +195,7 @@ class WisskiTitlePatternForm extends EntityForm {
         '#title' => $this->t('Text'),
         '#title_display' => 'invisible',
       );
-      //make sure we have four cells filled
+      //make sure we have all cells filled
       foreach(array('optional','cardinality','delimiter') as $placeholder) {
         $rendered[$placeholder] = array('#type' => 'hidden');
       }
@@ -213,13 +212,20 @@ class WisskiTitlePatternForm extends EntityForm {
     $rendered['parent'] = array(
       '#type' => 'hidden',
       '#attributes' => array('class' => array('row-parent')),
-      '#value' => isset($attributes['parent'])? $attributes['parent'] : 0,
+      '#value' => $attributes['parent'],
     );
+    
+    $rendered['id'] = array(
+      '#type' => 'hidden',
+      '#attributes' => array('class' => array('row-id')),
+      '#value' => $key,
+    );
+    
     $rendered['type'] = array(
       '#type' => 'hidden',
       '#value' => $attributes['type'],
     );
-
+    //dpm(func_get_args()+array('result'=>$rendered),__METHOD__);    
     return $rendered;
   }
 
@@ -258,6 +264,14 @@ class WisskiTitlePatternForm extends EntityForm {
     
     $pattern = $form_state->getValue('pattern');
 
+    foreach ($pattern as $key => &$attributes) {
+      if (!isset($attributes['children'])) $attributes['children'] = array();
+      if (!isset($attributes['depth'])) $attributes['depth'] = 0;
+      if (!empty($attributes['parent'])) {
+        $pattern[$attributes['parent']]['children'][] = $key;
+        $attributes['depth'] = $pattern[$atributes['parent']]+1;
+      }
+    }
     $valid = $bundle->setTitlePattern($pattern);
 
     if ($valid) {

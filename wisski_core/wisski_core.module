@@ -6,27 +6,49 @@ function wisski_core_generate_title(WisskiEntityInterface $wisski_individual) {
 //ddebug_backtrace();
   $bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->load($wisski_individual->bundle());
   $pattern = $bundle->getTitlePattern();
+  $parts = array();
   $title = '';
   if (empty($pattern)) {
     $title_list = $wisski_individual->get('name')->getValue();
     $title = $title_list[0]['value'];
   } else {
-    foreach ($pattern as $key => $attributes) {
+    foreach (array_reverse($pattern) as $key => $attributes) {
       if ($attributes['type'] === 'field') {
         //@var \Drupal\Core\Field\FieldItemList $values
         $values = $wisski_individual->get($key);
         //dpm($values,$key);
-        if ($values->count() === 1) {
-          $title .= $values->first()->getValue()['value'];
+        if (empty($values) && $attributes['optional'] === FALSE) {
+          $parts[$key] = FALSE;
+          continue;
         }
-        
+        $part = '';
+        $cardinality = $attributes['cardinality'];
+        $delimiter = $attributes['delimiter'];
+        $i = 0;
+        foreach ($values as $value) {
+          if ($cardinality > 0 && $i >= $cardinality) break;
+          $part .= $value->getString();
+          if (++$i < $cardinality) $part .= $delimiter;
+        } 
       }
       if ($attributes['type'] === 'text') {
-        $title .= $attributes['label'];
+        $part = $attributes['label'];
       }
+      //if (!empty($attributes['children'])){dpm($part,'Part');dpm($parts,'Parts '.$key);}
+      foreach ($attributes['children'] as $child_id) {
+        if (!empty($parts[$child_id])) {
+          $part .= $parts[$child_id];
+        } elseif ($pattern[$child_id]['optional'] === FALSE) {
+          $part = FALSE;
+        }
+        unset($parts[$child_id]);
+      }
+      $parts[$key] = $part;
     }
   }
 //  $wisski_individual->label = $title;
-//  dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
+
+  $title = implode('',array_reverse($parts));
+  //dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
   return $title;
 }
