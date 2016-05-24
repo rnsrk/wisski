@@ -284,12 +284,6 @@ class WisskiTitlePatternForm extends EntityForm {
   }
   
   public function deletePattern(array $form, FormStateInterface $form_state) {
-    
-    $bundle = $this->entity;
-    $bundle->removeTitlePattern();
-    $bundle->save();
-    drupal_set_message(t('Removed title pattern for bundle %name.', array('%name' => $bundle->label())));
-    $form_state->setRedirectUrl($bundle->urlInfo('edit-form'));
-  }
-  
+    $form_state->setRedirectUrl($this->entity->urlInfo('delete-title-form'));
+  }  
 }

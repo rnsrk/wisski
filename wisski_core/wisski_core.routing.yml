@@ -161,6 +161,13 @@ entity.wisski_bundle.title_form:
   requirements:
     _entity_access: 'wisski_bundle.edit'
 
+entity.wisski_bundle.delete_title_form:
+  path: '/admin/structure/wisski_core/{wisski_bundle}/delete-title'
+  defaults:
+    _entity_form: wisski_bundle.delete_title
+  requirements:
+    _entity_access: 'wisski_bundle.edit'
+
 entity.wisski_bundle.entity_list:
   path: '/admin/structure/wisski_core/{wisski_bundle}/list'
   defaults:
