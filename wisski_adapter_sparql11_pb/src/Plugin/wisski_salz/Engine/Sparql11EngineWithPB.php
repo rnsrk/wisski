@@ -573,7 +573,17 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
   }
 
-  public function pathToReturnValue($patharray, $primitive = NULL, $eid = NULL, $position = 0) {
+  public function pathToReturnValue($patharray, $primitive = NULL, $eid = NULL, $position = 0, $main_property = NULL, $disamb = 0) {
+
+    // hack for old disamb thingies
+    if($disamb*2 > count($patharray))
+      $disamb -= 1;
+
+    // also
+    $disamb = $disamb*2;
+
+    
+
     $sparql = "SELECT DISTINCT * WHERE { ";
     foreach($patharray as $key => $step) {
       if($key % 2 == 0) 
@@ -610,16 +620,32 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
     $result = $this->directQuery($sparql);
     
-#    drupal_set_message(serialize($result));
-    
     $out = array();
     foreach($result as $thing) {
- #     drupal_set_message("we got something!");
       $name = 'x' . (count($patharray)-1);
-      if(!empty($primitive))
-        $out[] = $thing->out->getValue();
-      else
-        $out[] = $thing->{$name}->dumpValue("text");
+      if(!empty($primitive)) {
+        if(empty($main_property)) {
+          $out[] = $thing->out->getValue();
+        } else {
+          if(empty($disamb))
+            $out[] = array($main_property => $thing->out->getValue());
+          else {
+          #  drupal_set_message("disamb: " . serialize($disamb));
+          #  drupal_set_message("pa: " . serialize($patharray));
+          #  drupal_set_message("res: " . serialize($result));
+            $out[] = array($main_property => $thing->out->getValue(), 'wisskiDisamb' => $thing->{'x'.$disamb}->dumpValue("text"));
+          }
+        }
+      } else {
+        if(empty($main_property)) {
+          $out[] = $thing->{$name}->dumpValue("text");
+        } else { 
+          if(empty($disamb))
+            $out[] = array($main_property => $thing->{$name}->dumpValue("text"));
+          else
+            $out[] = array($main_property => $thing->{$name}->dumpValue("text"), 'wisskiDisamb' => $thing->{'x'.$disamb}->dumpValue("text"));
+        }
+      }
     }
     
     return $out;
@@ -893,8 +919,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
 #    drupal_set_message("fun: " . serialize(func_get_args()));
 #    drupal_set_message("2");
-#    
-#    $main_property = \Drupal\field\Entity\FieldStorageConfig::loadByName($entity_type, $field_name)->getItemDefinition()->mainPropertyName();
+#   
+#    drupal_set_message("muha: " . serialize($field_id));
+    $main_property = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);#->getItemDefinition()->mainPropertyName();
+    if(!empty($main_property))
+      $main_property = $main_property->getMainPropertyName();
+#     drupal_set_message("mp: " . serialize($main_property) . "for field " . serialize($field_id));
 #    if (in_array($main_property,$property_ids)) {
 #      return $this->loadFieldValues($entity_ids,array($field_id),$language);
 #    }
@@ -1022,7 +1052,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           // if this is question for a subgroup - handle it otherwise
           if($pbarray['parent'] > 0 && $path->isGroup()) {
 #              drupal_set_message("I am asking for: " . serialize($this->getClearGroupArray($path, $pb)) . "with eid: " . serialize($eid));
-            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid));
+            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid, 0, $main_property, $path->getDisamb()));
 #              drupal_set_message("I've got: " . serialize($out[$eid][$field_id]));
           } else {
               // it is a field?
@@ -1041,8 +1071,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
               continue;
             }
 #              drupal_set_message("pa: " . serialize($path->getPathArray()) . " cpa: " . serialize($clearPathArray) . " cga: " . serialize($this->getClearGroupArray($parent, $pb)));
-            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $eid, (count($this->getClearGroupArray($par, $pb))-1)));
+            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $eid, (count($this->getClearGroupArray($par, $pb))-1), $main_property, $path->getDisamb()));
           }
+
+#            drupal_set_message($path->getDisamb());
 #              drupal_set_message("I loaded: " . serialize($out));
         }
         
