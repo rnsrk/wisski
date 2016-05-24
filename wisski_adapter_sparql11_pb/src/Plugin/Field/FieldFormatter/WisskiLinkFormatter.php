@@ -13,6 +13,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Image\ImageFactory;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Url;
    
 /**
  * Plugin implementation of the 'wisski_link_formatter' formatter.
@@ -151,7 +152,7 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
     foreach($items as $delta => $item) {
       $values = $item->toArray();
       
-      drupal_set_message("item: " . serialize($values['value']));
+#      drupal_set_message("item: " . serialize($values['value']));
       
 #      $elements[$delta] = array(
         #'#theme' => 'text',
@@ -159,11 +160,29 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
 #        '#title' => 'dssdf',
 #        '#default_value' => $values['value'],
 #      );
-      $elements[$delta] = array(
-        '#type' => 'inline_template',
-        '#template' => '{{ value|nl2br }}',
-        '#context' => ['value' => $item->value],
-      );
+      if(empty($item->wisskiDisamb)) {
+        $elements[$delta] = array(
+          '#type' => 'inline_template',
+          '#template' => '{{ value|nl2br }}',
+          '#context' => ['value' => $item->value],
+        );
+      } else {
+#        drupal_set_message("got: " . serialize($item->wisskiDisamb));
+        
+        $url = $item->wisskiDisamb;
+        $url = str_replace('/', '\\', $url);
+        $url = 'wisski_core/' . $url . '/view';
+        
+#        drupal_set_message("url: " . serialize($url));
+        
+        $elements[$delta] = array(
+          '#type' => 'link',
+          '#title' => $item->value,
+          '#url' => Url::fromUri('internal:/' . $url),
+        );
+        
+#        drupal_set_message(serialize($elements));
+      }
       
     }
 /*
