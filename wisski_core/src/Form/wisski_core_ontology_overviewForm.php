@@ -294,6 +294,11 @@ class wisski_core_ontology_overviewForm extends FormBase {
     if($engine->getPluginId() === 'sparql11_with_pb' ) {  
       $infos = $engine->getOntologies();
       #drupal_set_message('infos in submit' . serialize($infos));                                                                                                    
+      // redirect to the wisski config ontology page
+      $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
+      // rebuild the form to display the information regarding the selected store
+      $form_state->setRebuild();
+      #$form_state->setUserInput($form_state->getValue('select_store'));
       $engine->addOntologies($form_state->getValue('load_onto'));
     }                        
    return;
@@ -323,6 +328,10 @@ class wisski_core_ontology_overviewForm extends FormBase {
              $engine->deleteOntology(strval($ont->ont), 'no-graph');
              drupal_set_message('Successfully deleted ontology ' . $ont->ont);
            }
+           // redirect to the wisski config ontology page
+           $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
+           // rebuild the form to display the information regarding the selected store
+           $form_state->setRebuild();                              
          }
        }
                                                                
