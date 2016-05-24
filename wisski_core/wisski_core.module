@@ -2,18 +2,19 @@
 
 use Drupal\wisski_core\WisskiEntityInterface;
 
-function wisski_core_generate_title(WisskiEntityInterface $entity) {
+function wisski_core_generate_title(WisskiEntityInterface $wisski_individual) {
 //ddebug_backtrace();
-  $bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->load($entity->bundle());
+  $bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->load($wisski_individual->bundle());
   $pattern = $bundle->getTitlePattern();
+  $title = '';
   if (empty($pattern)) {
-    $title_list = $entity->get('name')->getValue();
+    $title_list = $wisski_individual->get('name')->getValue();
     $title = $title_list[0]['value'];
   } else {
     foreach ($pattern as $key => $attributes) {
       if ($attributes['type'] === 'field') {
         //@var \Drupal\Core\Field\FieldItemList $values
-        $values = $entity->get($key);
+        $values = $wisski_individual->get($key);
         //dpm($values,$key);
         if ($values->count() === 1) {
           $title .= $values->first()->getValue()['value'];
@@ -25,6 +26,7 @@ function wisski_core_generate_title(WisskiEntityInterface $entity) {
       }
     }
   }
-  //dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
+//  $wisski_individual->label = $title;
+//  dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
   return $title;
 }

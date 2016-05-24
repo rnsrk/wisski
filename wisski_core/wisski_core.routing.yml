@@ -67,6 +67,7 @@ entity.wisski_individual.canonical:
   defaults:
   # Calls the view controller, defined in the annotation of the contact entity
     _entity_view: 'wisski_individual'
+    _title_callback: 'wisski_core_generate_title'
     _title: 'WissKI Entity Content'
   requirements:
   # Calls the access controller of the entity, $operation 'view'

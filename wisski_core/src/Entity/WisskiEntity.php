@@ -36,7 +36,8 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     "id" = "eid",
  *     "revision" = "vid",
  *     "bundle" = "bundle",
- *     "label" = "name",
+ *     "label" = "label",
+ *
  *     "langcode" = "langcode",
  *     "uuid" = "uuid"
  *   },
@@ -56,7 +57,8 @@ use Drupal\wisski_core\WisskiEntityInterface;
  * )
  */
 class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
-  
+  //@TODO we have a 'name' entity key and don't know what to do with it. SPARQL adapter uses a 'Tempo Hack'
+  //making it the same as 'eid'
   /**
    * {@inheritdoc}
    */
@@ -191,4 +193,5 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
 
     return $types;
   }
+  
 }

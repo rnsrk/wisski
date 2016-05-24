@@ -41,6 +41,7 @@ class WisskiTitlePatternForm extends EntityForm {
 
     $count = count($pattern);
 
+    //if user added a new title element, find out the type and add a template with standard values
     $trigger = $form_state->getTriggeringElement();
     if ($trigger['#name'] === 'new-text-button') {
       $pattern['text'.$count] = array(
@@ -58,8 +59,13 @@ class WisskiTitlePatternForm extends EntityForm {
           'label' => $available_fields[$selection]->getLabel(),
           'weight' => $count,
           'optional' => TRUE,
+          'cardinality' => 1,
+          'delimiter' => ', ',
         );
-      } else drupal_set_message($this->t('Please choose a field to add'),'error');
+      } else {
+        //this may not happen
+        drupal_set_message($this->t('Please choose a field to add'),'error');
+      }
     }
     
     $form_storage['cached_pattern'] = $pattern;
@@ -67,8 +73,11 @@ class WisskiTitlePatternForm extends EntityForm {
 
     $header = array(
       '',
+      $this->t('Type'),
       $this->t('Content'),
       $this->t('Options'),
+      $this->t('Show #'),
+      $this->t('Delimiter'),
       $this->t('Weight'),
       '',
       '',
@@ -140,7 +149,10 @@ class WisskiTitlePatternForm extends EntityForm {
       '#attributes' => array('class' => array('row-id')),
       '#value' => $key,
     );
-    
+    $rendered['type'] = array(
+      '#markup' => $attributes['type'],
+    );
+      
     if ($attributes['type'] === 'field') {
       $label = $key;
       if (isset($attributes['name'])) $label = $attributes['name'];
@@ -160,15 +172,34 @@ class WisskiTitlePatternForm extends EntityForm {
         '#title_display' => 'after',
         '#default_value' => $attributes['optional'],
       );
+      static $cardinalities = array(1=>1,2=>2,3=>3,-1=>'all');
+      $rendered['cardinality'] = array(
+        '#type' => 'select',
+        '#title' => $this->t('cardinality'),
+        '#title_display' => 'invisible',
+        '#options' => $cardinalities,
+        '#default_value' => $attributes['cardinality'],
+      );
+      $rendered['delimiter'] = array(
+        '#type' => 'textfield',
+        '#size' => 8,
+        '#title' => $this->t('delimiter'),
+        '#title_display' => 'invisible',
+        '#default_value' => isset($attributes['delimiter'])? $attributes['delimiter']: ', ',
+      );
     }
     if ($attributes['type'] === 'text') {
+      //put a text field here, so that fixed strings can be added to the title
       $rendered['label'] = array(
         '#type' => 'textfield',
         '#default_value' => $attributes['label'],
         '#title' => $this->t('Text'),
         '#title_display' => 'invisible',
       );
-      $rendered['placeholder'] = array('#type' => 'hidden');
+      //make sure we have four cells filled
+      foreach(array('optional','cardinality','delimiter') as $placeholder) {
+        $rendered[$placeholder] = array('#type' => 'hidden');
+      }
     }
     $rendered['weight'] = array(
       '#type' => 'weight',
