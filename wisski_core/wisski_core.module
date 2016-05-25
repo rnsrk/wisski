@@ -6,21 +6,28 @@ function wisski_core_generate_title(WisskiEntityInterface $wisski_individual) {
 //ddebug_backtrace();
   $bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->load($wisski_individual->bundle());
   $pattern = $bundle->getTitlePattern();
+  unset($pattern['max_id']);
+  dpm(array('pattern'=>$pattern,'entity'=>$wisski_individual),__METHOD__);
   $parts = array();
+  $empty_children = array();
   $title = '';
   if (empty($pattern)) {
     $title_list = $wisski_individual->get('name')->getValue();
     $title = $title_list[0]['value'];
   } else {
-    foreach (array_reverse($pattern) as $key => $attributes) {
+    foreach ($pattern as $key => $attributes) {
+      $empty = TRUE;
       if ($attributes['type'] === 'field') {
         //@var \Drupal\Core\Field\FieldItemList $values
-        $values = $wisski_individual->get($key);
+        $values = $wisski_individual->get($attributes['name']);
         //dpm($values,$key);
-        if (empty($values) && $attributes['optional'] === FALSE) {
-          $parts[$key] = FALSE;
+        if (empty($values)) {
+          if ($attributes['optional'] === FALSE) {
+            $parts[$key] = FALSE;
+          }
           continue;
         }
+        $empty = FALSE;
         $part = '';
         $cardinality = $attributes['cardinality'];
         $delimiter = $attributes['delimiter'];
@@ -35,20 +42,20 @@ function wisski_core_generate_title(WisskiEntityInterface $wisski_individual) {
         $part = $attributes['label'];
       }
       //if (!empty($attributes['children'])){dpm($part,'Part');dpm($parts,'Parts '.$key);}
-      foreach ($attributes['children'] as $child_id) {
-        if (!empty($parts[$child_id])) {
-          $part .= $parts[$child_id];
-        } elseif ($pattern[$child_id]['optional'] === FALSE) {
-          $part = FALSE;
-        }
-        unset($parts[$child_id]);
+      if ($empty && isset($attributes['children'])) {
+        $empty_children += $attributes['children'];
       }
       $parts[$key] = $part;
     }
   }
-//  $wisski_individual->label = $title;
-
-  $title = implode('',array_reverse($parts));
+  //dpm(array('parts'=>$parts,'empty_children'=>$empty_children),'after');
+  $parts = array_diff_key($parts,array_flip($empty_children));
+  if (in_array(FALSE,$parts)) {
+    drupal_set_message('Detected invalid title','error');
+    $title_list = $wisski_individual->get('name')->getValue();
+    $title = $title_list[0]['value'];
+  }
+  $title = implode('',$parts);
   //dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
   return $title;
 }

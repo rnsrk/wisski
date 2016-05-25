@@ -39,21 +39,31 @@ class WisskiTitlePatternForm extends EntityForm {
       $pattern = $bundle->getTitlePattern();
     }
 
-    $count = count($pattern);
+    $max_id = -1;
+    if (isset($pattern['max_id'])) {
+      $max_id = $pattern['max_id'];
+      unset($pattern['max_id']);
+    }
+    $count = count($pattern)-1;
 
     //if user added a new title element, find out the type and add a template with standard values
     $trigger = $form_state->getTriggeringElement();
     if ($trigger['#name'] === 'new-text-button') {
-      $pattern['text'.$count] = array(
+      $id = 't'.++$max_id;
+      $pattern[$id] = array(
         'weight' => $count,
         'label' => '',
         'type' => 'text',
+        'id' => $id,
+        'parents' => '',
+        'name' => 'text'.$id,
       );
     }
     if ($trigger['#name'] === 'field_select_box') {
       $selection = $form_state->getValue('field_select_box');
       if (!empty($selection) && $selection !== 'empty') {
-        $pattern[$selection] = array(
+        $id = 'f'.++$max_id;
+        $pattern[$id] = array(
           'type' => 'field',
           'name' => $selection,
           'label' => $available_fields[$selection]->getLabel(),
@@ -61,25 +71,24 @@ class WisskiTitlePatternForm extends EntityForm {
           'optional' => TRUE,
           'cardinality' => 1,
           'delimiter' => ', ',
+          'id' => $id,
+          'parents' => '',
         );
       } else {
         //this may not happen
         drupal_set_message($this->t('Please choose a field to add'),'error');
       }
     }
-    
-    $form_storage['cached_pattern'] = $pattern;
-    $form_state->setStorage($form_storage);
 
     $header = array(
-      '',
-//      $this->t('Type'),
+      $this->t('ID'),
       $this->t('Content'),
       $this->t('Options'),
       $this->t('Show #'),
       $this->t('Delimiter'),
+      $this->t('Dependencies'),
       $this->t('Weight'),
-      $this->t('Parent'),
+      '',
       '',
     );
 
@@ -89,19 +98,11 @@ class WisskiTitlePatternForm extends EntityForm {
       '#caption' => $this->t('Title Pattern'),
       '#header' => $header,
       '#empty' => $this->t('This bundle has no title pattern, yet'),
-      '#attributes' => array('id' => 'wisski-title-table'),
+      '#prefix' => '<div id=\'wisski-title-table\'>',
+      '#suffix' => '</div>',
       '#tabledrag' => array(
-        // @TODO ! WATCH OUT we use the group and source names 'row-parent','row-id', and 'row-weight'
+        // @TODO ! WATCH OUT we use the group name 'row-weight'
         // hard-coded in the buildRow function again
-        array(
-          'action' => 'match',
-          'relationship' => 'parent',
-          'group' => 'row-parent',
-          'subgroup' => 'row-parent',
-          'source' => 'row-id',
-          'hidden' => TRUE,
-          'limit' => 9,
-        ),
         array(
           'action' => 'order',
           'relationship' => 'sibling',
@@ -120,7 +121,6 @@ class WisskiTitlePatternForm extends EntityForm {
         'callback' => 'Drupal\wisski_core\Form\WisskiTitlePatternForm::ajaxResponse',
         'wrapper' => 'wisski-title-table'
       ),
-      //'#name' => 'field-select-box',
     );
     $form['new_text'] = array(
       '#type' => 'button',
@@ -131,7 +131,11 @@ class WisskiTitlePatternForm extends EntityForm {
       ),
       '#name' => 'new-text-button',
     );
-//    dpm($form,'after');
+
+    $pattern['max_id'] = $max_id;    
+    $form_storage['cached_pattern'] = $pattern;
+    $form_state->setStorage($form_storage);
+
     return $form;
   }
   
@@ -144,12 +148,11 @@ class WisskiTitlePatternForm extends EntityForm {
   
     $rendered['#attributes']['class'][] = 'draggable';
     
-    $rendered['indent'] = array(
-      array(
-        '#theme' => 'indentation',
-        '#size' => $attributes['depth'],
-      ),
-      $attributes['type'],
+    $rendered['id'] = array(
+      '#type' => 'item',
+      '#value' => $attributes['id'],
+      '#markup' => $attributes['id'],
+      '#attributes' => array('class' => array('row-id')),
     );
     
     if ($attributes['type'] === 'field') {
@@ -181,7 +184,7 @@ class WisskiTitlePatternForm extends EntityForm {
       );
       $rendered['delimiter'] = array(
         '#type' => 'textfield',
-        '#size' => 8,
+        '#size' => 4,
         '#title' => $this->t('delimiter'),
         '#title_display' => 'invisible',
         '#default_value' => isset($attributes['delimiter'])? $attributes['delimiter']: ', ',
@@ -200,6 +203,13 @@ class WisskiTitlePatternForm extends EntityForm {
         $rendered[$placeholder] = array('#type' => 'hidden');
       }
     }
+    
+    $rendered['parents'] = array(
+      '#type' => 'textfield',
+      '#default_value' => $attributes['parents'],
+      '#size' => 8,
+    );
+        
     $rendered['weight'] = array(
       '#type' => 'weight',
       '#delta' => 51,
@@ -209,23 +219,17 @@ class WisskiTitlePatternForm extends EntityForm {
     
     $rendered['#weight'] = $attributes['weight'];
     
-    $rendered['parent'] = array(
-      '#type' => 'hidden',
-      '#attributes' => array('class' => array('row-parent')),
-      '#value' => $attributes['parent'],
-    );
-    
-    $rendered['id'] = array(
-      '#type' => 'hidden',
-      '#attributes' => array('class' => array('row-id')),
-      '#value' => $key,
-    );
-    
     $rendered['type'] = array(
       '#type' => 'hidden',
       '#value' => $attributes['type'],
+      //'#markup' => $attributes['type'],
     );
-    //dpm(func_get_args()+array('result'=>$rendered),__METHOD__);    
+    
+    $rendered['name'] = array(
+      '#type' => 'hidden',
+      '#value' => $attributes['name'],
+    );
+//    dpm(array('attributes'=>$attributes,'result'=>$rendered),__METHOD__);    
     return $rendered;
   }
 
@@ -250,37 +254,94 @@ class WisskiTitlePatternForm extends EntityForm {
     $actions['delete'] = array(
       '#value' => t('Delete pattern'),
       '#type' => 'submit',
+      '#limit_validation_errors' => array(),
       '#submit' => array("::deletePattern"),
     );
     return $actions;
+  }
+
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+
+    $pattern = $form_state->getValue('pattern');
+    $max_id = 0;
+
+    $errors = array();
+    if (isset($title_pattern['max_id'])) unset($title_pattern['max_id']);
+
+    $children = array();
+    
+    foreach ($pattern as $row_id => &$attributes) {
+      if (!isset($attributes['type'])) 
+        $errors[] = array($row_id.'][type','not set');
+      elseif ($attributes['type'] === 'field') {
+        if (empty($attributes['name'])) 
+          $errors[] = array($row_id.'][name','empty');
+        elseif (preg_match('/[^a-z0-9_]/',$attributes['name'])) 
+          $errors[] = array($row_id.'][name','invalid');
+        if (!in_array($attributes['cardinality'],array(-1,1,2,3))) 
+          $errors[] = array($row_id.'][cardinality','invalid');
+        if (empty($attributes['delimiter']))
+          $errors[] = array($row_id.'][delimiter','empty');
+      } elseif ($attributes['type'] === 'text') {
+        if (empty($attributes['label'])) 
+          $errors[] = array($row_id.'][label','empty');
+      } else $errors[] = array($row_id.'][type','invalid');
+      
+      if (isset($attributes['parents']) && $attributes['parents'] !== '') {
+        $parents = explode(',',$attributes['parents']);
+        foreach ($parents as $parent) {
+          $t_parent = trim($parent);
+          if (array_key_exists($t_parent,$pattern)) $children[$t_parent][] = $row_id;
+          else $errors[] = array($row_id.'][parents','invalid');
+        }
+      }
+      $num_id = intval(substr($attributes['id'],1));
+      if ($num_id > $max_id) $max_id = $num_id;
+    }
+    $pattern['max_id'] = $max_id;
+
+    foreach ($children as $row_id => $row_children) {
+      $pattern[$row_id]['children'] = $row_children;
+    }
+
+    if (empty($errors)) {
+      $form_state->setValue('pattern',$pattern);
+    } else {
+      foreach ($errors as $error_array) {
+        //dpm($error_array,'Errors');
+        list($element,$error_type) = $error_array;
+        $t_error_type = $this->tError($error_type);
+        $form_state->setErrorByName('pattern]['.$element,$t_error_type);
+      }
+    }
+  }
+
+  protected function tError($error_type) {
+    
+    switch ($error_type) {
+      case 'invalid': return $this->t('Invalid');
+      case 'not set': return $this->t('Not Set');
+      case 'empty': return $this->t('Empty');
+      case 'cyclic': return $this->t('Cyclic Dependency');
+      default: return $this->t('Wrong');
+    }
   }
 
   /**
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
+    
     /** @var  \Drupal\wisski_core\WisskiBundleInterface $bundle */
     $bundle = $this->entity;
-    
     $pattern = $form_state->getValue('pattern');
+    
+    $bundle->setTitlePattern($pattern);
+    $bundle->save();
+    
+    drupal_set_message(t('The title pattern for bundle %name has been updated.', array('%name' => $bundle->label())));
 
-    foreach ($pattern as $key => &$attributes) {
-      if (!isset($attributes['children'])) $attributes['children'] = array();
-      if (!isset($attributes['depth'])) $attributes['depth'] = 0;
-      if (!empty($attributes['parent'])) {
-        $pattern[$attributes['parent']]['children'][] = $key;
-        $attributes['depth'] = $pattern[$atributes['parent']]+1;
-      }
-    }
-    $valid = $bundle->setTitlePattern($pattern);
-
-    if ($valid) {
-      $bundle->save();
-
-      drupal_set_message(t('The title pattern for bundle %name has been updated.', array('%name' => $bundle->label())));
-
-      $form_state->setRedirectUrl($bundle->urlInfo('edit-form'));
-    }
+    $form_state->setRedirectUrl($bundle->urlInfo('edit-form'));
   }
   
   public function deletePattern(array $form, FormStateInterface $form_state) {

@@ -4,6 +4,7 @@ namespace Drupal\wisski_core\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBundleBase;
 use Drupal\wisski_core\WisskiBundleInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * Defines the bundle configuration entity.
@@ -43,6 +44,8 @@ use Drupal\wisski_core\WisskiBundleInterface;
  */
 class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterface {
   
+  use StringTranslationTrait;
+  
   /**
    * The field based pattern for the entity title generation
    * @var string
@@ -59,33 +62,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   }
   
   public function setTitlePattern($title_pattern) {
-    dpm($this->entityManager()->getStorage($this->entityTypeId));
-    if (!$this->isValidTitlePattern($title_pattern)) return FALSE;
-    dpm($title_pattern,'Saving title pattern for bundle '.$this->id);
     $this->title_pattern = serialize($title_pattern);
-    return TRUE;
+    drupal_set_message('Set title pattern for '.$this->label());
+    //dpm($title_pattern);
   }
-  
-  protected function isValidTitlePattern($title_pattern) {
-    
-    foreach($title_pattern as $key => $attributes) {
-      if (!isset($attributes['type'])) return $this->showPatternError($key,'type',$this->t('not set'));
-      if ($attributes['type'] === 'field') {
-        if (empty($attributes['label'])) return $this->showPatternError($key,'label',$this->t('empty'));
-        if (preg_match('/[^a-z0-9_]/',$attributes['label'])) return $this->showPatternError($key,'label',$this->t('invalid'));
-        if (!in_array($attributes['cardinality'],array(-1,1,2,3))) return $this->showPatternError($key,'cardinality',$this->t('invalid'));
-      } elseif ($attributes['type'] === 'text') {
-        if (empty($attributes['label'])) return $this->showPatternError($key,'label',$this->t('empty'));
-      } else return $this->showPatternError($key,'type',$this->t('invalid'));
-      
-    }
-    return TRUE;
-  }
-  
-  protected function showPatternError($key,$attribute,$type,$explanation=NULL) {
-    $message = $this->t('The %attribute for %key is %type',array('%attribute' => $attribute,'%key'=>$key,'%type'=>$type));
-    if (!empty($explanation)) $message .= ': '.$explanation;
-    drupal_set_message($message,'error');
-    return FALSE;
-  }
+
 }
