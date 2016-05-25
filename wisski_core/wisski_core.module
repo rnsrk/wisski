@@ -47,15 +47,16 @@ function wisski_core_generate_title(WisskiEntityInterface $wisski_individual) {
       }
       $parts[$key] = $part;
     }
+      //dpm(array('parts'=>$parts,'empty_children'=>$empty_children),'after');
+    $parts = array_diff_key($parts,array_flip($empty_children));
+    if (in_array(FALSE,$parts)) {
+      drupal_set_message('Detected invalid title','error');
+      $title_list = $wisski_individual->get('name')->getValue();
+      $title = $title_list[0]['value'];
+    }
+    $title = implode('',$parts);
   }
-  //dpm(array('parts'=>$parts,'empty_children'=>$empty_children),'after');
-  $parts = array_diff_key($parts,array_flip($empty_children));
-  if (in_array(FALSE,$parts)) {
-    drupal_set_message('Detected invalid title','error');
-    $title_list = $wisski_individual->get('name')->getValue();
-    $title = $title_list[0]['value'];
-  }
-  $title = implode('',$parts);
+
   //dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
   return $title;
 }
