@@ -107,6 +107,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   } elseif (!empty($new_field_values)) {
                     $info[$id][$field_name] = current($new_field_values);
                   }
+                  $info[$id]['bundle'] = $bundleid;
                   continue;                 
                 }
                 //here we have a "normal field" so we can assume an array of field values is OK
