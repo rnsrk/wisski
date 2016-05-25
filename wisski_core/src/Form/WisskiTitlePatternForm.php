@@ -10,6 +10,10 @@ use Drupal\Core\Render\Element;
 use Drupal\Core\Ajax\AjaxResponse;
 
 class WisskiTitlePatternForm extends EntityForm {
+
+  private $field_defs;
+
+  private $field_storage_defs;
   
   /**
    * {@inheritdoc}
@@ -23,12 +27,12 @@ class WisskiTitlePatternForm extends EntityForm {
     /** @var \Drupal\media_entity\MediaBundleInterface $bundle */
     $form['#entity'] = $bundle = $this->entity;
     
-    $available_fields = \Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundle->id());
+    if (!isset($this->field_defs)) $this->field_defs = \Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundle->id());
     
     $form['#title'] = $this->t('Edit title pattern for bundle %label', array('%label' => $bundle->label()));
     
     $options = array();
-    foreach ($available_fields as $field_name => $field_def) {
+    foreach ($this->field_defs as $field_name => $field_def) {
       $options[$field_name] = $field_def->getLabel().' ('.$field_name.')';
     }
     
@@ -46,37 +50,48 @@ class WisskiTitlePatternForm extends EntityForm {
     }
     $count = count($pattern)-1;
 
-    //if user added a new title element, find out the type and add a template with standard values
+    //if user added or removed a new title element, find out the type and add a template with standard values
     $trigger = $form_state->getTriggeringElement();
-    if ($trigger['#name'] === 'new-text-button') {
-      $id = 't'.++$max_id;
-      $pattern[$id] = array(
-        'weight' => $count,
-        'label' => '',
-        'type' => 'text',
-        'id' => $id,
-        'parents' => '',
-        'name' => 'text'.$id,
-      );
-    }
-    if ($trigger['#name'] === 'field_select_box') {
-      $selection = $form_state->getValue('field_select_box');
-      if (!empty($selection) && $selection !== 'empty') {
-        $id = 'f'.++$max_id;
+    if (!is_null($trigger)) {
+      $trigger = $trigger['#name'];
+      dpm($trigger,'Trigger');
+      if ($trigger === 'new-text-button') {
+        $id = 't'.++$max_id;
         $pattern[$id] = array(
-          'type' => 'field',
-          'name' => $selection,
-          'label' => $available_fields[$selection]->getLabel(),
           'weight' => $count,
-          'optional' => TRUE,
-          'cardinality' => 1,
-          'delimiter' => ', ',
+          'label' => '',
+          'type' => 'text',
           'id' => $id,
           'parents' => '',
+          'name' => 'text'.$id,
         );
+      } elseif ($trigger === 'field_select_box') {
+        $selection = $form_state->getValue('field_select_box');
+        if (!empty($selection) && $selection !== 'empty') {
+          $id = 'f'.++$max_id;
+          $pattern[$id] = array(
+            'type' => 'field',
+            'name' => $selection,
+            'label' => $this->field_defs[$selection]->getLabel(),
+            'weight' => $count,
+            'optional' => TRUE,
+            'cardinality' => 1,
+            'delimiter' => ', ',
+            'id' => $id,
+            'parents' => '',
+          );
+        } else {
+          //this may not happen
+          drupal_set_message($this->t('Please choose a field to add'),'error');
+        }
       } else {
-        //this may not happen
-        drupal_set_message($this->t('Please choose a field to add'),'error');
+        $xpl = explode(':',$trigger);
+        if ($xpl[0] === 'remove' && isset($xpl[1])) {
+          if (isset($pattern[$xpl[1]])) {
+            $max_id--;
+            unset($pattern[$xpl[1]]);
+          }
+        }
       }
     }
 
@@ -88,6 +103,7 @@ class WisskiTitlePatternForm extends EntityForm {
       $this->t('Delimiter'),
       $this->t('Dependencies'),
       $this->t('Weight'),
+      '',
       '',
       '',
     );
@@ -156,9 +172,8 @@ class WisskiTitlePatternForm extends EntityForm {
     );
     
     if ($attributes['type'] === 'field') {
-      $label = $key;
-      if (isset($attributes['name'])) $label = $attributes['name'];
-      $print_label = $label;
+      $field_name = $label = $attributes['name'];
+      $print_label = $field_name;
       if (isset($attributes['label'])) {
         $label = $attributes['label'];
         $print_label = $attributes['label'].' ('.$print_label.')';
@@ -174,6 +189,11 @@ class WisskiTitlePatternForm extends EntityForm {
         '#title_display' => 'after',
         '#default_value' => $attributes['optional'],
       );
+      $field_def = $this->field_defs[$field_name];
+      if ($field_def->isRequired()) {
+        $rendered['optional']['#default_value'] = FALSE;
+        $rendered['optional']['#disabled'] = TRUE;
+      }
       static $cardinalities = array(1=>1,2=>2,3=>3,-1=>'all');
       $rendered['cardinality'] = array(
         '#type' => 'select',
@@ -189,6 +209,18 @@ class WisskiTitlePatternForm extends EntityForm {
         '#title_display' => 'invisible',
         '#default_value' => isset($attributes['delimiter'])? $attributes['delimiter']: ', ',
       );
+      if (!isset($this->field_storage_defs[$field_name])) $this->field_storage_defs[$field_name] = $field_def->getFieldStorageDefinition();
+      $field_storage_def = $this->field_storage_defs[$field_name];
+      $card = $field_storage_def->getCardinality();
+      if ($card <= 3) {
+        $sub_cards = range(1,$card);
+        $rendered['cardinality']['#options'] = $sub_cards;
+        if ($card === 1) {
+          $rendered['cardinality']['#disabled'] = TRUE;
+          $rendered['delimiter']['#default_value'] = '';
+          $rendered['delimiter']['#disabled'] = TRUE;
+        }
+      }
     }
     if ($attributes['type'] === 'text') {
       //put a text field here, so that fixed strings can be added to the title
@@ -228,6 +260,16 @@ class WisskiTitlePatternForm extends EntityForm {
     $rendered['name'] = array(
       '#type' => 'hidden',
       '#value' => $attributes['name'],
+    );
+    
+    $rendered['remove_op'] = array(
+      '#type' => 'button',
+      '#name' => 'remove:'.$key,
+      '#value' => 'remove',
+      '#ajax' => array(
+        'callback' => 'Drupal\wisski_core\Form\WisskiTitlePatternForm::ajaxResponse',
+        'wrapper' => 'wisski-title-table'
+      ),
     );
 //    dpm(array('attributes'=>$attributes,'result'=>$rendered),__METHOD__);    
     return $rendered;
