@@ -459,6 +459,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 
   public function load($id) {
+#    drupal_set_message("b1: " . microtime());
         
     $out = array();
     $uri = str_replace('\\', '/', $id);
@@ -466,14 +467,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    drupal_set_message("parse url: " . serialize(parse_url($uri)));
 
     $url = parse_url($uri);
+#    drupal_set_message("b2: " . microtime());
 
     if(!empty($url["scheme"]))
-      $query = "SELECT * WHERE { { <$uri> ?p ?o } UNION { ?s ?p <$uri> } }"; 
+      $query = "SELECT * WHERE { { <$uri> ?p ?o } UNION { ?s ?p <$uri> } } LIMIT 1"; 
     else
-      $query = 'SELECT * WHERE { ?s ?p "' . $id . '" }';  
-    
+      $query = 'SELECT * WHERE { ?s ?p "' . $id . '" } LIMIT 1';  
+#    drupal_set_message("b3: " . microtime());    
     $result = $this->directQuery($query);
-        
+#    drupal_set_message("b4: " . microtime());
     foreach($result as $thing) {
 #      $uri = $thing->s->dumpValue("text");
 #      $uri = str_replace('/','\\',$uri);
@@ -482,7 +484,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #      $out[$uri] = array('eid' => $uri, 'bundle' => 'e21_person', 'name' => 'frizt');#$thing->s->dumpValue("text"), 'bundle' => 'e21_person', 'name' => 'frizt');
 #      $i++;
     }
-    
+#    drupal_set_message("b5: " . microtime());
 #    drupal_set_message("load single");
     
     return $out;
@@ -575,12 +577,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
   public function pathToReturnValue($patharray, $primitive = NULL, $eid = NULL, $position = 0, $main_property = NULL, $disamb = 0) {
 
-    // hack for old disamb thingies
-    if($disamb*2 > count($patharray))
-      $disamb -= 1;
+#    drupal_set_message("pa: " . serialize($patharray) . " disamb: " . $disamb); 
 
     // also
-    $disamb = $disamb*2;
+    if($disamb > 0)
+      $disamb = ($disamb-1)*2;
+    else
+      $disamb = NULL;
+      
+#    drupal_set_message(" after pa: " . serialize($patharray) . " disamb: $disamb and " . serialize(is_null($disamb))); 
 
     
 
@@ -622,12 +627,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
     $out = array();
     foreach($result as $thing) {
+#      drupal_set_message("thing is: " . serialize($thing));
       $name = 'x' . (count($patharray)-1);
       if(!empty($primitive)) {
         if(empty($main_property)) {
           $out[] = $thing->out->getValue();
         } else {
-          if(empty($disamb))
+          if(is_null($disamb) == TRUE)
             $out[] = array($main_property => $thing->out->getValue());
           else {
           #  drupal_set_message("disamb: " . serialize($disamb));
@@ -640,7 +646,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         if(empty($main_property)) {
           $out[] = $thing->{$name}->dumpValue("text");
         } else { 
-          if(empty($disamb))
+          if(is_null($disamb) == TRUE)
             $out[] = array($main_property => $thing->{$name}->dumpValue("text"));
           else
             $out[] = array($main_property => $thing->{$name}->dumpValue("text"), 'wisskiDisamb' => $thing->{'x'.$disamb}->dumpValue("text"));
@@ -917,6 +923,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * The Yaml-Adapter cannot handle field properties, we insist on field values being the main property
    */
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+#    drupal_set_message("a1: " . microtime());
 #    drupal_set_message("fun: " . serialize(func_get_args()));
 #    drupal_set_message("2");
 #   
@@ -946,7 +953,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     //$adapterid = $this->getConfiguration()['id'];
         
     foreach($pbs as $pb) {
-      
+#      drupal_set_message("a2: " . microtime());
       // if we have no adapter for this pb it may go home.
       if(empty($pb->getAdapterId()))
         continue;
@@ -965,14 +972,16 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $found_any_data = FALSE;
       
       foreach($entity_ids as $eid) {
-      
+#        drupal_set_message("a3: " . microtime());
         // here we should check if we really know the entity by asking the TS for it.
         // this would speed everything up largely, I think.
-        $entity = $this->load($eid);
-        
+        // 
+        // for now we assume we know the entity.
+        // $entity = $this->load($eid);
+#        drupal_set_message("a4: " . microtime());
         // if there is nothing, continue.
-        if(empty($entity))
-          continue;
+        // if(empty($entity))
+        //  continue;
 
         if($field_id == "bundle" && !empty($bundleid_in))
           $out[$eid]["bundle"] = array($bundleid_in);
@@ -1070,9 +1079,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
               drupal_set_message("Path " . $path->getName() . " with id " . $path->id() . " has no parent.", "error");
               continue;
             }
-#              drupal_set_message("pa: " . serialize($path->getPathArray()) . " cpa: " . serialize($clearPathArray) . " cga: " . serialize($this->getClearGroupArray($parent, $pb)));
-            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $eid, (count($this->getClearGroupArray($par, $pb))-1), $main_property, $path->getDisamb()));
+#              drupal_set_message("pa: " . serialize($path->getPathArray()) . " cpa: " . serialize($clearPathArray) . " cga: " . serialize($this->getClearGroupArray($par, $pb)));
+            
+            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $eid, count($path->getPathArray()) - count($clearPathArray), $main_property, $path->getDisamb()));#(count($this->getClearGroupArray($par, $pb))-1), $main_property, $path->getDisamb()));
+#            drupal_set_message("smthg: " . serialize($out[$eid][$field_id]));
           }
+#          drupal_set_message("bla: " . serialize($out[$eid][$field_id]));
 
 #            drupal_set_message($path->getDisamb());
 #              drupal_set_message("I loaded: " . serialize($out));
