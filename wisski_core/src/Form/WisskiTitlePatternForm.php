@@ -217,7 +217,6 @@ class WisskiTitlePatternForm extends EntityForm {
         $rendered['cardinality']['#options'] = $sub_cards;
         if ($card === 1) {
           $rendered['cardinality']['#disabled'] = TRUE;
-          $rendered['delimiter']['#default_value'] = '';
           $rendered['delimiter']['#disabled'] = TRUE;
         }
       }
