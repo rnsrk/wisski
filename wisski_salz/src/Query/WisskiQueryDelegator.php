@@ -23,15 +23,22 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   
   public function execute() {
 dpm($this,__METHOD__);
+    $pager = FALSE;
+    if (isset($this->pager)) {
+      $pager = TRUE;
+      $this->initializePager();
+    }
     if ($this->count) {
       $result = 0;
       foreach ($this->dependent_queries as $query) {
+        $query = $query->range($this->range['start'],$this->range['length']);
         $result += $query->execute();
       }
       return $result;
     } else {
       $result = array();
       foreach ($this->dependent_queries as $query) {
+        $query = $query->range($this->range['start'],$this->range['length']);
         $sub_result = $query->execute();
         $result = array_merge($result,$sub_result);
       }
