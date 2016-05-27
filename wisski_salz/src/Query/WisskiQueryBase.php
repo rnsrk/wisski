@@ -23,4 +23,10 @@ abstract class WisskiQueryBase extends QueryBase implements QueryInterface, Quer
   public function getEngine() {
     return $this->parent_engine;
   }
+  
+  public function normalQuery() {
+  
+    $this->count = FALSE;
+    return $this;
+  }
 }

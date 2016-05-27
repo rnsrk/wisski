@@ -41,6 +41,7 @@ dpm($this,__METHOD__);
         $this->initializePager();
       }
       foreach ($this->dependent_queries as $query) {
+        $query = $query->normalQuery();
         if ($pager) $query = $query->range($this->range['start'],$this->range['length']);
         $sub_result = $query->execute();
         $result = array_merge($result,$sub_result);
