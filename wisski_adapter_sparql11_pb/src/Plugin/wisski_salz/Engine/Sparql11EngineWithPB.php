@@ -412,10 +412,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * and returns an array of ids if there is something...
    *
    */ 
-  public function loadIndividualsForBundle($bundleid, $pathbuilder) {
+  public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = NULL) {
     
     // there should be someone asking for more than one...
     $groups = $pathbuilder->getGroupsForBundle($bundleid);
+
+#    drupal_set_message(serialize($bundleid));
      
     // no group defined in this pb - return   
     if(empty($groups)) {
@@ -433,7 +435,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $grouppath = $this->getClearPathArray($group, $pathbuilder);
       
     // build the query
-    $query = "SELECT ?x0 WHERE {";
+    if(is_null($count) == FALSE)
+      $query = "SELECT (COUNT(?x0) as ?cnt) WHERE {";
+    else
+      $query = "SELECT ?x0 WHERE {";
        
     foreach($grouppath as $key => $pathpart) {
       if($key % 2 == 0)
@@ -443,6 +448,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
     
     $query .= "}";
+    
+    if(is_null($limit) == FALSE && is_null($offset) == FALSE && is_null($count) == TRUE)
+      $query .= " LIMIT $limit OFFSET $offset ";
+    
+    drupal_set_message("query: " . serialize($query));
+    
+#    return;
 
     // ask for the query
     $result = $this->directQuery($query);
@@ -452,6 +464,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // for now simply take the first element
     // later on we need names here!
     foreach($result as $thing) {
+
+      // if it is a count query, return the integer      
+      if(is_null($count) == FALSE)
+        return $thing->cnt->getValue();
+      
       $uri = $thing->x0->dumpValue("text");
       $uri = str_replace('/','\\',$uri);
       
@@ -467,7 +484,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 
   public function load($id) {
-#    drupal_set_message("b1: " . microtime());
+#    drupal_set_message("b1: $id " . microtime());
         
     $out = array();
     $uri = str_replace('\\', '/', $id);
