@@ -32,6 +32,9 @@ class Query extends WisskiQueryBase {
     $adapterid = $engine->adapterId();
     
 #    $adapter = \Drupal\wisski_salz\Entity\Adapter::load($adapterid);
+
+#    drupal_set_message("you are evil!");
+#    return;
     
     // if we have not adapter, we may go home, too
     if(empty($adapterid))
@@ -54,15 +57,47 @@ class Query extends WisskiQueryBase {
       // check if the queries adapter is the adapter of the pb we currently use.
       if($pbadapter->id() != $adapterid)
         continue;
+        
+      if(isset($this->pager)) {
+#        drupal_set_message("pa: " . serialize($this->pager));
+#        $this->initializePager();
+#        $limit = $this->pager->range['length'];
+#        $offset = $this->pager->range['start'];
+      }
+      
+#      drupal_set_message(serialize($this->count));
+      
+#      if(isset($this->count)) {
+#        drupal_set_message("I give back to you: " . serialize($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE)));
+#        return $pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE);
+#      }
 
+
+
+#      $limit = NULL;
+#      $offset = NULL;
+#
+#      if(isset($this->pager['limit']))
+#        $limit = $this->pager['limit'];
+#      if(isset($this->pager['element']));
+#        $offset = $this->pager['element'];
+        
+#      drupal_set_message(serialize($this->pager));
+      
       // care about everything...
       foreach($this->condition->conditions() as $condition) {
         $field = $condition['field'];
         $value = $condition['value'];
 
         // just return something if it is a bundle-condition
-        if($field == 'bundle')
-          return array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb));
+        if($field == 'bundle') {
+          if(isset($this->count)) {
+#            drupal_set_message("I give back to you: " . serialize($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE)));
+            return $pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE);
+          }
+          return array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset));
+
+        }
 
       }
         
