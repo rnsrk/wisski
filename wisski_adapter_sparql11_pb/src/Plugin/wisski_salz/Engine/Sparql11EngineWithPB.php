@@ -412,12 +412,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * and returns an array of ids if there is something...
    *
    */ 
-  public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = NULL) {
+  public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE) {
     
     // there should be someone asking for more than one...
     $groups = $pathbuilder->getGroupsForBundle($bundleid);
 
-#    drupal_set_message(serialize($bundleid));
+#    drupal_set_message(serialize($bundleid) . " and " . serialize($count) . " " . microtime());
      
     // no group defined in this pb - return   
     if(empty($groups)) {
@@ -435,7 +435,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $grouppath = $this->getClearPathArray($group, $pathbuilder);
       
     // build the query
-    if(is_null($count) == FALSE)
+    if(!empty($count))
       $query = "SELECT (COUNT(?x0) as ?cnt) WHERE {";
     else
       $query = "SELECT ?x0 WHERE {";
@@ -449,10 +449,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
     $query .= "}";
     
-    if(is_null($limit) == FALSE && is_null($offset) == FALSE && is_null($count) == TRUE)
+    if(is_null($limit) == FALSE && is_null($offset) == FALSE && empty($count))
       $query .= " LIMIT $limit OFFSET $offset ";
     
-    drupal_set_message("query: " . serialize($query));
+#    drupal_set_message("query: " . serialize($query) . " and " . microtime());
     
 #    return;
 
@@ -466,7 +466,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     foreach($result as $thing) {
 
       // if it is a count query, return the integer      
-      if(is_null($count) == FALSE)
+      if(!empty($count))
         return $thing->cnt->getValue();
       
       $uri = $thing->x0->dumpValue("text");
