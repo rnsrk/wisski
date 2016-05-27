@@ -159,8 +159,14 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   #  $component = $evd->getComponent($field_name);
                   #  dpm($component['type'],$field_name);
                   #}
+                  
                   // $value must be the image uri
                   $file_uri = current($value);
+                  
+                  // temporary hack - if the file_uri is an array the data might be in the target_id                  
+                  if(is_array($file_uri))
+                    $file_uri = $file_uri['target_id'];
+                  
                   // we now check for an existing 'file managed' with that uri
                   $query = \Drupal::entityQuery('file');
                   $query->condition('uri',$file_uri);
