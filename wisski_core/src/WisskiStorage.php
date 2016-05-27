@@ -142,8 +142,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     $target_bundle_id = current($target_bundles);
                   }
                   $target_id = $new_field_values[$id][$field_name];
-                  $target_cache_id = 'wisski_individual.'.$target_id.'.bundle';
-                  \Drupal::cache()->set($target_cache_id,$target_bundle_id);
+                  if (is_array($target_id)) {
+                    $target_id = $target_id['target_id'];
+                  }
+                  $this->prepareLoading($target_id,$target_bundle_id);
                 }
                 if ($field_def->getType() === 'image') {
                   $value = $new_field_values[$id][$field_name];
