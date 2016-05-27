@@ -70,9 +70,8 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * and inserts the 'edit' and 'delete' links as defined for the entity type.
    */
   public function buildHeader() {
-    $header['id'] = $this->t('ID');
     $header['title'] = $this->t('title');
-    $header['bundle'] = $this->t('Bundle');
+    $header['preview_image'] = '';
     return $header + parent::buildHeader();
   }
 
@@ -82,10 +81,18 @@ class WisskiEntityListBuilder extends EntityListBuilder {
   public function buildRow(EntityInterface $entity) {
 #dpm($this);
 //    dpm($entity->tellMe('id','bundle'));
-    $row['id'] = $id = $entity->id();
 //    echo "Hello ".$id;
-    $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.view',array('wisski_individual'=>$id));
-    $row['bundle'] = $entity->bundle();
+    $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.view',array('wisski_individual'=>$entity->id()));
+    $prev = $entity->get('preview_image');
+    dpm($prev,'Preview Image');
+    $row['preview_image'] = array(
+      '#theme' => 'image',
+      '#uri' => '',
+      '#alt' => 'peview '.$entity->label(),
+      '#title' => $entity->label(),
+      '#width' => 40,
+      '#height' => 20,
+    );
     
     return $row + parent::buildRow($entity);
   }

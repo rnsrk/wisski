@@ -37,7 +37,7 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     "revision" = "vid",
  *     "bundle" = "bundle",
  *     "label" = "label",
- *
+ *		 "preview_image" = "preview_image",
  *     "langcode" = "langcode",
  *     "uuid" = "uuid"
  *   },
@@ -145,6 +145,12 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
       ->setTranslatable(TRUE)
       ->setRevisionable(TRUE);
     
+    $fields['preview_image'] = BaseFieldDefinition::create('image')
+      ->setLabel(t('Preview Image'))
+      ->setDescription(t('A reference to an image file that is used as the preview image of the entity'))
+      ->setSetting('target_type','file')
+      ->setDefaultValue(NULL);
+    
     return $fields;
   }
 
@@ -193,5 +199,4 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
 
     return $types;
   }
-  
 }

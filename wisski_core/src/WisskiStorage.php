@@ -103,6 +103,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               foreach ($field_definitions as $field_name => $field_def) {
                 if ($field_def instanceof BaseFieldDefinition) {
                   if ($field_name === 'bundle') continue;
+                  if ($field_name === 'preview_image') continue;
                 //drupal_set_message("Hello i am a base field ".$field_name);
                   //this is a base field and cannot have multiple values
                   //@TODO make sure, we load the RIGHT value
@@ -189,6 +190,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     }
                   }
                   $new_field_values[$id][$field_name] = $value;
+                  if (!isset($entity_info[$id]['preview_image'])) $info[$id]['preview_image'] = $value;
                 }
                 if (isset($new_field_values[$id][$field_name])) {
                   if (!isset($info[$id]) || !isset($info[$id][$field_name])) $info[$id][$field_name] = $new_field_values[$id][$field_name];
