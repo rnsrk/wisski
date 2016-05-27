@@ -224,21 +224,27 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
     $result = $this->directQuery($query);
     
-#    drupal_set_message(serialize($result));
+#    drupal_set_message("res: " . serialize($result));
     
    $out = array();
     foreach($result as $thing) {
     
       // ask for a bundle from the pb that has this class thing in it
       $groups = $pb->getAllGroups();
+
+#      drupal_set_message("groups: " . count($groups) . " " . serialize($groups));
+
+      $i = 0;
       
       foreach($groups as $group) {
         // this does not work for subgroups
         #$path_array = $group->getPathArray();
                 
-        $path_array = $this->getClearPathArray($group, $pb);
+#        $path_array = $this->getClearPathArray($group, $pb);
+        $path_array = $this->getClearGroupArray($group, $pb);
+        $i++;
  
-#        drupal_set_message(serialize($path_array));
+#        drupal_set_message("p_a " . $i . " " . $group->getName() . " " . serialize($path_array));
         
         if(empty($group) || empty($path_array))
           continue;
@@ -256,6 +262,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
       }
     }
+
+#    drupal_set_message("serializing out: " . serialize($out));
 
     return $out;    
     
