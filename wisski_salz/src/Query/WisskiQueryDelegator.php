@@ -26,6 +26,7 @@ dpm($this,__METHOD__);
     if ($this->count) {
       $result = 0;
       foreach ($this->dependent_queries as $adapter_id => $query) {
+        $query = $query->count();
         $sub_result = $query->execute();
         if (is_numeric($sub_result))
           $result += $sub_result;
@@ -105,11 +106,12 @@ dpm($this,__METHOD__);
   /**
    * {@inheritdoc}
    */
-  public function count() {
-    parent::count();
-    foreach ($this->dependent_queries as $query) $query->count();
-    return $this;
-  }
+// removed: we do this in execute() now
+//  public function count() {
+//    parent::count();
+//    foreach ($this->dependent_queries as $query) $query->count();
+//    return $this;
+//  }
 
   /**
    * {@inheritdoc}
