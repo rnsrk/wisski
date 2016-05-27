@@ -61,6 +61,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       $ids = array_diff_key($ids,$entity_info);
       if (empty($ids)) return $entity_info;
     }
+    
     $adapters = entity_load_multiple('wisski_salz_adapter');
 #    dpm(serialize($adapters));
 #    drupal_set_message("hallo welt");
@@ -68,6 +69,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #    dpm($all_field_definitions,'field_definitions before');
     // for every id
     foreach($ids as $id) {
+      //see if we got bundle information cached. Useful for entity reference and more
+      $cached_bundle = NULL;
+      $cid = 'wisski_individual.'.$id.'.bundle';
+      if ($cache = \Drupal::cache()->get($cid)) {
+        $cached_bundle = $cache->data;
+      }
       // ask all adapters
       foreach($adapters as $aid => $adapter) {
         // if they know that id
@@ -75,6 +82,14 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           // if so - ask for the bundles for that id
           $bundle_ids = $adapter->getBundleIdsForEntityId($id);
           //drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundle_ids) . ".");
+          if (isset($cached_bundle)) {
+            if (in_array($cached_bundle,$bundle_ids)) {
+              $bundle_ids = array($cached_bundle);
+            } else {
+              //cached bundle is not handled by this adapter
+              continue;
+            }
+          }
           foreach($bundle_ids as $bundleid) {
 #            dpm($field_definitions,'Field defs for '.$bundleid);
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
@@ -111,15 +126,25 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   continue;                 
                 }
                 //here we have a "normal field" so we can assume an array of field values is OK
-                if ($field_def->getType() === 'entity_reference') {
-                  $field_settings = $field_def->getSettings();
-                  $target_bundles = $field_settings['handler_settings']['target_bundles'];
-                }
                 $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
                 //drupal_set_message(serialize($new_field_values));
                 if (empty($new_field_values)) continue;
                 $info[$id]['bundle'] = $bundleid;
                 //dpm($field_def->getType(),$field_name);
+                if ($field_def->getType() === 'entity_reference') {
+                  $field_settings = $field_def->getSettings();
+                  $target_bundles = $field_settings['handler_settings']['target_bundles'];
+                  if (count($target_bundles) === 1) {
+                    $target_bundle_id = current($target_bundles);
+                  } else {
+                    drupal_set_message($this->t('Multiple target bundles for field %field'),array('%field' => $field_name));
+                    //@TODO create a MASTER BUNDLE and choose that one here
+                    $target_bundle_id = current($target_bundles);
+                  }
+                  $target_id = $new_field_values[$id][$field_name];
+                  $target_cache_id = 'wisski_individual.'.$target_id.'.bundle';
+                  \Drupal::cache()->set($target_cache_id,$target_bundle_id);
+                }
                 if ($field_def->getType() === 'image') {
                   $value = $new_field_values[$id][$field_name];
                   // we assume that $value is an image URI which is to be rplaced by a FileID
@@ -577,4 +602,11 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     //@TODO this is only for development purposes. So we can uninstall the module without having to delete data
     return FALSE;
   }  
+  
+  public function prepareLoading($entity_id,$bundle_id) {
+  
+    $cid = 'wisski_individual.'.$entity_id.'.bundle';
+    $data = $bundle_id;
+    \Drupal::cache()->set($cid, $data);
+  }
 }
