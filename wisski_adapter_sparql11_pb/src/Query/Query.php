@@ -88,24 +88,29 @@ class Query extends WisskiQueryBase {
         
 #      drupal_set_message(serialize($this->pager));
 #drupal_set_message("you are evil!" . microtime());      
+#      drupal_set_message("my cond is: " . serialize($this->condition));
       // care about everything...
+
       foreach($this->condition->conditions() as $condition) {
         $field = $condition['field'];
         $value = $condition['value'];
 #        drupal_set_message("you are evil!" . microtime() . serialize($this->count));
+
+#        drupal_set_message("my cond is: " . serialize($condition));
 
         // just return something if it is a bundle-condition
         if($field == 'bundle') {
 #          drupal_set_message("I go and look for : " . serialize($value) . " and " . serialize($limit) . " and " . serialize($offset) . " and " . $this->count);
           if($this->count) {
 #            drupal_set_message("I give back to you: " . serialize($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE)));
-            return $pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE);
+            return $pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE, $this->condition->conditions());
           }
-          return array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE));
+          return array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()));
 
         }
 
       }
+      
         
       // do something with conditions ... but for now we just load everything.   
 #      $ents = array_merge($ents, $this->parent_engine->loadMultiple());

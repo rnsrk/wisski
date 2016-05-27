@@ -122,12 +122,27 @@ class WisskiPathForm extends EntityForm {
     );
     
     // preserve tree
-    $form['path_data']['path_array'] = array(
+    #$form['path_data']['path_array'] = array(
+    #  '#type' => 'markup',
+    #  '#tree' => TRUE,
+    #  '#value' => "",
+    #);
+
+    $form['path_data']['path_container'] = array(
+      '#type' => 'container',
+      '#attributes' => array(
+      'class' => array('container-inline'),
+      ),
+    );
+                                   
+    
+    // preserve tree
+    $form['path_data']['path_container']['path_array'] = array(
       '#type' => 'markup',
       '#tree' => TRUE,
       '#value' => "",
     );
-
+                                  
     // read the userinput
     #$input = $form_state->getUserInput();#
     
@@ -137,11 +152,16 @@ class WisskiPathForm extends EntityForm {
     if(empty($form_state->getValue('path_data'))) {
       if(!empty( $path->getPathArray() ))
         $existing_paths = $path->getPathArray();
+      drupal_set_message('getPathArray: ' . serialize($existing_paths));
+       
     } else {
       $pd = $form_state->getValue('path_data');
-      $pa = $pd['path_array'];
       
+      #$pa = $pd['path_array'];
+      $pa = $form_state->getValue('path_array');
       $existing_paths = $pa;
+      drupal_set_message('pa:' . serialize ($pa));
+     
     }
     
 #    drupal_set_message(serialize($existing_paths));
@@ -151,20 +171,21 @@ class WisskiPathForm extends EntityForm {
       $existing_paths[] = "0";
 
     $curvalues = $existing_paths;
-  
+    drupal_set_message('curvalues: ' . serialize($curvalues));
     // go through all values and create fields for them
     foreach($curvalues as $key => $element) {
-   
+      drupal_set_message("key " . $key . ": element " . $element);
       if(!empty($curvalues[($key-1)])) {
 
-       // function getPathAlternatives takes as paramter an array of the previous steps 
+       // function getPathAlternatives takes as parameter an array of the previous steps 
        // or an empty array if this is the beginning of the path.        
         $path_options = $engine->getPathAlternatives(array($curvalues[($key-1)]));
       } else {
         $path_options = $engine->getPathAlternatives();
       }    
                   
-      $form['path_data']['path_array'][$key] = array(
+      
+      $form['path_data']['path_container']['path_array'][$key] = array(
         '#default_value' => $element,
         '#type' => 'select',
         '#options' => array_merge(array("0" => 'Please select.'), $path_options),
@@ -174,8 +195,16 @@ class WisskiPathForm extends EntityForm {
           'wrapper' => 'path_array_div',
           'event' => 'change', 
         ),
-      );    
-    }
+      );
+    
+    
+      $form['path_data']['path_container'][$key]['add_path_field_submit'] = array(
+        '#type' => 'submit',
+        '#value' => $this->t('+'),
+        '#submit' => array('::submitAddPathField'),
+      );
+    }                               
+    dpm($form['path_data']);
     
     $primitive = array();
 
@@ -229,6 +258,10 @@ class WisskiPathForm extends EntityForm {
     #  drupal_set_message("ajax: " . serialize($form_state));
       return $form['path_data'];
    # }
+  }
+  
+  public function submitAddPathField() {
+    drupal_set_message("HELLO");
   }
   
   /**

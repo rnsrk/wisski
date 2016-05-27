@@ -412,46 +412,73 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * and returns an array of ids if there is something...
    *
    */ 
-  public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE) {
-    
-    // there should be someone asking for more than one...
-    $groups = $pathbuilder->getGroupsForBundle($bundleid);
+  public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE) {
 
-#    drupal_set_message(serialize($bundleid) . " and " . serialize($count) . " " . microtime());
-     
-    // no group defined in this pb - return   
-    if(empty($groups)) {
-      return array();
+    $conds = array();
+    // see if we have any conditions
+    foreach($conditions as $cond) {
+      if($cond["field"] != "bundle") {
+        // get pb entries
+        $pbentries = $pathbuilder->getPbEntriesForFid($cond["field"]);
+        
+        if(empty($pbentries))
+          continue;
+        
+        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbentries['id']);
+        
+        if(empty($path))
+          continue;
+        
+        $conds[] = $path;
+      }
     }
-
-    // for now simply take the first one
-    // in future: iterate here!
-    // @TODO!
-    $group = $groups[0];
     
-    // get the group 
-    // this does not work for subgroups! do it otherwise!
-    #$grouppath = $group->getPathArray();    
-    $grouppath = $this->getClearPathArray($group, $pathbuilder);
-      
+
+ #    drupal_set_message("conds are: " . serialize($conds));
+
     // build the query
     if(!empty($count))
       $query = "SELECT (COUNT(?x0) as ?cnt) WHERE {";
     else
       $query = "SELECT ?x0 WHERE {";
-       
-    foreach($grouppath as $key => $pathpart) {
-      if($key % 2 == 0)
-        $query .= " ?x" . $key . " a <". $pathpart . "> . ";
-      else
-        $query .= " ?x" . ($key-1) . " <" . $pathpart . "> ?x" . ($key+1) . " . "; 
+    
+
+    if(empty($conds)) {    
+      // there should be someone asking for more than one...
+      $groups = $pathbuilder->getGroupsForBundle($bundleid);
+     
+      // no group defined in this pb - return   
+      if(empty($groups)) {
+        return array();
+      }
+
+      // for now simply take the first one
+      // in future: iterate here!
+      // @TODO!
+      $group = $groups[0];
+    
+      // get the group 
+      // this does not work for subgroups! do it otherwise!
+      #$grouppath = $group->getPathArray();    
+      $grouppath = $this->getClearPathArray($group, $pathbuilder);
+             
+      foreach($grouppath as $key => $pathpart) {
+        if($key % 2 == 0)
+          $query .= " ?x" . $key . " a <". $pathpart . "> . ";
+        else
+          $query .= " ?x" . ($key-1) . " <" . $pathpart . "> ?x" . ($key+1) . " . "; 
+      }
+    } else {
+      foreach($conds as $path) {
+        $query .= $this->generateTriplesForPath($pathbuilder, $path, '', NULL, NULL, 0, 0, FALSE);
+      }
     }
     
     $query .= "}";
     
     if(is_null($limit) == FALSE && is_null($offset) == FALSE && empty($count))
       $query .= " LIMIT $limit OFFSET $offset ";
-    
+     
 #    drupal_set_message("query: " . serialize($query) . " and " . microtime());
     
 #    return;
