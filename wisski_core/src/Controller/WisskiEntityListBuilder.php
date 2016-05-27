@@ -33,7 +33,9 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * We only load entities form the specified bundle
    */
   protected function getEntityIds() {
-    $query = $this->getStorage()->getQuery()
+  
+    $storage = $this->getStorage();
+    $query = $storage->getQuery()
       ->sort($this->entityType->getKey('id'));
 
     // Only add the pager if a limit is specified.
@@ -42,8 +44,13 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     }
     if (!empty($this->bundle)) {
       $query->condition('bundle',$this->bundle);
-    }
-    return $query->execute();
+      $entity_ids = $query->execute();
+      foreach ($entity_ids as $eid) {
+        $storage->writeToCache($eid,$this->bundle);
+      }
+      return $entity_ids;
+    } else return $query->execute();
+    
   }
 
   /**
