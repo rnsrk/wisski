@@ -7,7 +7,7 @@ function wisski_core_generate_title(WisskiEntityInterface $wisski_individual) {
   $bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->load($wisski_individual->bundle());
   $pattern = $bundle->getTitlePattern();
   unset($pattern['max_id']);
-  dpm(array('pattern'=>$pattern,'entity'=>$wisski_individual),__METHOD__);
+#  dpm(array('pattern'=>$pattern,'entity'=>$wisski_individual),__METHOD__);
   $parts = array();
   $empty_children = array();
   $title = '';
@@ -52,9 +52,11 @@ function wisski_core_generate_title(WisskiEntityInterface $wisski_individual) {
     if (in_array(FALSE,$parts)) {
       drupal_set_message('Detected invalid title','error');
       $title_list = $wisski_individual->get('name')->getValue();
+      #drupal_set_message("bla: " . serialize($title_list));
       $title = $title_list[0]['value'];
+    } else {
+      $title = implode('',$parts);
     }
-    $title = implode('',$parts);
   }
 
   //dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
