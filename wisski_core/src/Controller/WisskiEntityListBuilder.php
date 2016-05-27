@@ -44,6 +44,13 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $query->pager($this->limit);
     }
     if (!empty($this->bundle)) {
+      $bundle_object = \Drupal::entityManager()->getStorage('wisski_bundle')->load($this->bundle);
+      $pattern = $bundle_object->getTitlePattern();
+      foreach ($pattern as $key => $attributes) {
+        if ($attributes['type'] === 'field' && !$attributes['optional']) {
+          $query->condition($attributes['name']);
+        }
+      }
       $query->condition('bundle',$this->bundle);
       $entity_ids = $query->execute();
       foreach ($entity_ids as $eid) {

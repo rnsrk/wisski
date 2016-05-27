@@ -47,10 +47,16 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   use StringTranslationTrait;
   
   /**
-   * The field based pattern for the entity title generation
+   * The field based pattern for the entity title generation.
+   * A serialized array.
    * @var string
    */
   protected $title_pattern = '';
+  
+  /**
+   * The pager limit for the bundle based entity list
+   */
+  protected $pager_limit = 10;
   
   public function getTitlePattern() {
     
@@ -67,4 +73,11 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     //dpm($title_pattern);
   }
 
+  public function getPagerLimit() {
+    return $this->pager_limit;
+  }
+  
+  public function setPagerLimit($limit) {
+    $this->pager_limit = $limit;
+  }
 }
