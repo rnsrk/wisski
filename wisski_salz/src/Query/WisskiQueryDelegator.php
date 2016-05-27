@@ -25,11 +25,11 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 dpm($this,__METHOD__);
     if ($this->count) {
       $result = 0;
-      foreach ($this->dependent_queries as $query) {
+      foreach ($this->dependent_queries as $adapter_id => $query) {
         $sub_result = $query->execute();
         if (is_numeric($sub_result))
           $result += $sub_result;
-        else dpm($sub_result,'Wrong result type');
+        else dpm($sub_result,'Wrong result type from '.$adapter_id);
       }
       return $result;
     } else {
