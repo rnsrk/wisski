@@ -141,11 +141,13 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     //@TODO create a MASTER BUNDLE and choose that one here
                     $target_bundle_id = current($target_bundles);
                   }
-                  $target_id = $new_field_values[$id][$field_name];
-                  if (is_array($target_id)) {
+                  $target_ids = $new_field_values[$id][$field_name];
+                  if (!is_array($target_ids)) $target_ids = array(array('target_id'=>$target_ids));
+                  foreach ($target_ids as $target_id) {
                     $target_id = $target_id['target_id'];
+                    $this->prepareLoading($target_id,$target_bundle_id);
                   }
-                  $this->prepareLoading($target_id,$target_bundle_id);
+                  
                 }
                 if ($field_def->getType() === 'image') {
                   $value = $new_field_values[$id][$field_name];
