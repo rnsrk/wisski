@@ -38,9 +38,13 @@ dpm($this,__METHOD__);
       $pager = FALSE;
       if (isset($this->pager)) {
         $pager = TRUE;
+        //initializePager() generates a clone of $this with $count = TRUE
+        //this is then passed to the dependent_queries which are NOT cloned
+        //thus we must reset $count for the dependent_queries
         $this->initializePager();
       }
       foreach ($this->dependent_queries as $query) {
+        //set $query->count = FALSE;
         $query = $query->normalQuery();
         if ($pager) $query = $query->range($this->range['start'],$this->range['length']);
         $sub_result = $query->execute();
