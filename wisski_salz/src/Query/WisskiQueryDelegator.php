@@ -26,7 +26,10 @@ dpm($this,__METHOD__);
     if ($this->count) {
       $result = 0;
       foreach ($this->dependent_queries as $query) {
-        $result += $query->execute();
+        $sub_result = $query->execute();
+        if (is_numeric($sub_result))
+          $result += $sub_result;
+        else dpm($sub_result,'Wrong result type');
       }
       return $result;
     } else {
