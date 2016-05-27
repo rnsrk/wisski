@@ -18,7 +18,10 @@ class Query extends WisskiQueryBase {
       $value = $condition['value'];
       $ents = array_filter($ents,function($ent) use ($field,$value) {return $ent[$field] === $value;});
     }
-    return array_keys($ents);
+    if ($this->count)
+      return count($ents);
+    else
+      return array_keys($ents);
   }
 
   /**
