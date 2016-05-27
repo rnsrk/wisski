@@ -145,7 +145,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   if (!is_array($target_ids)) $target_ids = array(array('target_id'=>$target_ids));
                   foreach ($target_ids as $target_id) {
                     $target_id = $target_id['target_id'];
-                    $this->prepareLoading($target_id,$target_bundle_id);
+                    $this->writeToCache($target_id,$target_bundle_id);
                   }
                   
                 }
@@ -607,7 +607,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     return FALSE;
   }  
   
-  public function prepareLoading($entity_id,$bundle_id) {
+  public function writeToCache($entity_id,$bundle_id) {
   
     $cid = 'wisski_individual.'.$entity_id.'.bundle';
     $data = $bundle_id;
