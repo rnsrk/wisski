@@ -13,7 +13,7 @@ use Drupal\Core\Link;
 class WisskiEntityListBuilder extends EntityListBuilder {
 
   private $bundle;
-  
+
   /**
    * {@inheritdoc}
    *
@@ -21,8 +21,9 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * parent::render() is where EntityListBuilder creates the table using our
    * buildHeader() and buildRow() implementations.
    */
-  public function render($bundle = '') {
+  public function render($bundle = '',$limit = NULL) {
 
+    $this->limit = $limit;
     $this->bundle = $bundle;
     $build['table'] = parent::render();
     return $build;
