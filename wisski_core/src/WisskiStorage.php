@@ -166,7 +166,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   // temporary hack - if the file_uri is an array the data might be in the target_id                  
                   if(is_array($file_uri))
                     $file_uri = $file_uri['target_id'];
-                  $local_file_uri = file_default_scheme().'://'.$file_uri;
+                  // another hack, make sure we have a good local name
+                  // @TODO do not use md5 since we cannot assume that to be consistent over time
+                  $local_file_uri = file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));
                   // we now check for an existing 'file managed' with that uri
                   $query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
                   $file_ids = $query->execute();
@@ -195,14 +197,14 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                         //$file->save();
                         
                         $data = file_get_contents($file_uri);
-                        
+                        dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
                         $file = file_save_data($data, $local_file_uri);
                         if ($file) {
                           $value = $file->id();
                           dpm('replaced '.$file_uri.' with new file '.$value);
                         } else {
                           drupal_set_message('Error saving file','error');
-                          dpm($data,$file_uri);
+                          //dpm($data,$file_uri);
                         }
                       } catch (EntityStorageException $e) {
                         drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
