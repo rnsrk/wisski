@@ -84,11 +84,12 @@ class WisskiEntityListBuilder extends EntityListBuilder {
 //    echo "Hello ".$id;
     $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.view',array('wisski_individual'=>$entity->id()));
     $prev = $entity->get('preview_image');
-    dpm($prev,'Preview Image');
+#    drupal_set_message(serialize($prev->view()));
+#    dpm($prev,'Preview Image');
     $row['preview_image'] = array(
       '#theme' => 'image',
       '#uri' => '',
-      '#alt' => 'peview '.$entity->label(),
+      '#alt' => 'preview '.$entity->label(),
       '#title' => $entity->label(),
       '#width' => 40,
       '#height' => 20,

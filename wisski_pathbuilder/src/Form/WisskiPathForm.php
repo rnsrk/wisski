@@ -198,7 +198,7 @@ class WisskiPathForm extends EntityForm {
       );
     
     
-      $form['path_data']['path_container'][$key]['add_path_field_submit'] = array(
+      $form['path_data']['path_container']['path_array'][$key]['add_path_field_submit'] = array(
         '#type' => 'submit',
         '#value' => $this->t('+'),
         '#submit' => array('::submitAddPathField'),
