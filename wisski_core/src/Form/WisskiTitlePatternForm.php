@@ -28,7 +28,7 @@ class WisskiTitlePatternForm extends EntityForm {
     $form['#entity'] = $bundle = $this->entity;
     
     if (!isset($this->field_defs)) $this->field_defs = \Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundle->id());
-    
+
     $form['#title'] = $this->t('Edit title pattern for bundle %label', array('%label' => $bundle->label()));
     
     $options = array();
