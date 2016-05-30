@@ -166,10 +166,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   // temporary hack - if the file_uri is an array the data might be in the target_id                  
                   if(is_array($file_uri))
                     $file_uri = $file_uri['target_id'];
-                  
+                  $local_file_uri = file_default_scheme().'://'.$file_uri;
                   // we now check for an existing 'file managed' with that uri
-                  $query = \Drupal::entityQuery('file');
-                  $query->condition('uri',$file_uri);
+                  $query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
                   $file_ids = $query->execute();
                   if (!empty($file_ids)) {
                     // if there is one, we must set the field value to the image's FID
@@ -177,27 +176,37 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     dpm('replaced '.$file_uri.' with existing file '.$value);
                     //@TODO find out what to do if there is more than one file with that uri
                   } else {
-                    // if we have no managed file with that uri, we try to generate one
-                    try {
-                      
-                      //$file = File::create(array(
-                      //  'uri'=>$file_uri,
-                      //));
-                      //dpm($file,'File Object');
-                      //$file->save();
-                      
-                      $data = file_get_contents($file_uri);
-                      //$stripped_filename = substr($file_uri,strrpos($file_uri,'/'));
-                      $file = file_save_data($data, $file_uri);
-                      if ($file) {
-                        $value = $file->id();
-                        dpm('replaced '.$file_uri.' with new file '.$value);
-                      } else {
-                        drupal_set_message('Error saving file','error');
-                        dpm($data,$file_uri);
+                    $query = \drupal::entityQuery('file')->condition('uri',$local_file_uri);
+                    $file_ids = $query->execute();
+                    if (!empty($file_ids)) {
+                      //we have a local file with the same filename.
+                      //lets assume this is the file we were looking for
+                      $value = current($file_ids);
+                      dpm('replaced '.$file_uri.' with existing file '.$value);
+                      //@TODO find out what to do if there is more than one file with that uri
+                    } else {
+                      // if we have no managed file with that uri, we try to generate one
+                      try {
+                        
+                        //$file = File::create(array(
+                        //  'uri'=>$file_uri,
+                        //));
+                        //dpm($file,'File Object');
+                        //$file->save();
+                        
+                        $data = file_get_contents($file_uri);
+                        
+                        $file = file_save_data($data, $local_file_uri);
+                        if ($file) {
+                          $value = $file->id();
+                          dpm('replaced '.$file_uri.' with new file '.$value);
+                        } else {
+                          drupal_set_message('Error saving file','error');
+                          dpm($data,$file_uri);
+                        }
+                      } catch (EntityStorageException $e) {
+                        drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
                       }
-                    } catch (EntityStorageException $e) {
-                      drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
                     }
                   }
                   $new_field_values[$id][$field_name] = $value;
