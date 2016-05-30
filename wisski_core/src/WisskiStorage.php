@@ -174,7 +174,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   if (!empty($file_ids)) {
                     // if there is one, we must set the field value to the image's FID
                     $value = current($file_ids);
-                    //dpm('replaced with existing file '.current($file_ids));
+                    dpm('replaced with existing file '.$value);
                     //@TODO find out what to do if there is more than one file with that uri
                   } else {
                     // if we have no managed file with that uri, we try to generate one
@@ -187,10 +187,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                       //$file->save();
                       
                       $data = file_get_contents($file_uri);
-                      $stripped_filename = substr($file_uri,strrpos($file_uri,'/'));
-                      $file = file_save_data($data, 'public://'.$stripped_filename);
+                      //$stripped_filename = substr($file_uri,strrpos($file_uri,'/'));
+                      $file = file_unmanaged_save_data($data, $file_uri);
                       $value = $file->id();
-                      #dpm('replaced with new file '.$file->id());
+                      dpm('replaced with new file '.$value);
                     } catch (EntityStorageException $e) {
                       drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
                     }
