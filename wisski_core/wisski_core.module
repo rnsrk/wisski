@@ -4,61 +4,16 @@ use Drupal\wisski_core\WisskiEntityInterface;
 
 function wisski_core_generate_title(WisskiEntityInterface $wisski_individual) {
 //ddebug_backtrace();
-  $bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->load($wisski_individual->bundle());
-  $pattern = $bundle->getTitlePattern();
-  unset($pattern['max_id']);
-#  dpm(array('pattern'=>$pattern,'entity'=>$wisski_individual),__METHOD__);
-  $parts = array();
-  $empty_children = array();
-  $title = '';
-  if (empty($pattern)) {
-    $title_list = $wisski_individual->get('name')->getValue();
-    $title = $title_list[0]['value'];
-  } else {
-    foreach ($pattern as $key => $attributes) {
-      $empty = TRUE;
-      if ($attributes['type'] === 'field') {
-        //@var \Drupal\Core\Field\FieldItemList $values
-        $values = $wisski_individual->get($attributes['name']);
-        //dpm($values,$key);
-        if (empty($values)) {
-          if ($attributes['optional'] === FALSE) {
-            $parts[$key] = FALSE;
-          }
-          continue;
-        }
-        $empty = FALSE;
-        $part = '';
-        $cardinality = $attributes['cardinality'];
-        $delimiter = $attributes['delimiter'];
-        $i = 0;
-        foreach ($values as $value) {
-          if ($cardinality > 0 && $i >= $cardinality) break;
-          $part .= $value->getString();
-          if (++$i < $cardinality) $part .= $delimiter;
-        } 
-      }
-      if ($attributes['type'] === 'text') {
-        $part = $attributes['label'];
-      }
-      //if (!empty($attributes['children'])){dpm($part,'Part');dpm($parts,'Parts '.$key);}
-      if ($empty && isset($attributes['children'])) {
-        $empty_children += $attributes['children'];
-      }
-      $parts[$key] = $part;
-    }
-      //dpm(array('parts'=>$parts,'empty_children'=>$empty_children),'after');
-    $parts = array_diff_key($parts,array_flip($empty_children));
-    if (in_array(FALSE,$parts)) {
-      drupal_set_message('Detected invalid title','error');
-      $title_list = $wisski_individual->get('name')->getValue();
-      #drupal_set_message("bla: " . serialize($title_list));
-      $title = $title_list[0]['value'];
-    } else {
-      $title = implode('',$parts);
-    }
-  }
-
-  //dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
+  $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($wisski_individual->bundle());
+  $title = $bundle->generateEntityTitle($wisski_individual);
   return $title;
+}
+
+
+function wisski_core_flush_title_caches($bundle_ids=NULL,$entity_ids=NULL) {
+  
+  $bundles = \Drupal\wisski_core\Entity\WisskiBundle::loadMultiple($bundle_ids);
+  foreach ($bundles as $bundle) {
+    $bundle->flushTitleCache($entity_ids);
+  }
 }

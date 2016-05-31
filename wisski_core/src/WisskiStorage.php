@@ -404,17 +404,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   protected function doSaveFieldItems(ContentEntityInterface $entity, array $names = []) {
 //    dpm(func_get_args(),__METHOD__);
     
-//    $adapters = entity_load_multiple('wisski_salz_adapter');
-#    dpm(serialize($adapters));
-      // ask all adapters
     list($values,$original_values) = $this->extractFieldData($entity);
-    $bundle = $values['bundle'][0]['target_id'];
-    dpm(func_get_args()+array('values'=>$values,'bundle'=>$bundle),__METHOD__);
-
-
-#    $bundles = $this->entityManager->getBundleInfo('wisski_individual');
-//    dpm($bundles);
-
+    $bundle_id = $values['bundle'][0]['target_id'];
+    dpm(func_get_args()+array('values'=>$values,'bundle'=>$bundle_id),__METHOD__);
+    
     $local_writeable_adapters = array();
     $writeable_adapters = array();
 
@@ -464,102 +457,30 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       // we locate all writeable stores
       // then we locate all local stores in these writeable stores
       // and write to them
-      
+      $success = FALSE;
 #      drupal_set_message("I ask adapter " . serialize($adapter) . " for id " . serialize($entity->id()) . " and get: " . serialize($adapter->hasEntity($id)));
       // if they know that id
       if($adapter->hasEntity($entity->id())) {
-        // if so - ask for the bundles for that id
-#        $bundles = $adapter->getBundleIdsForEntityId($id);
-        #drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundles) . ".");
-          
-          // perhaps we have to check for the field definitions - we ignore this for now.
-#          foreach($bundles as $bundleid) {
-#            $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
-            #drupal_set_message("asking for: " . serialize(array_keys($field_definitions)));
-            try {
-#              drupal_set_message(" I ask adapter: " . serialize($adapter));
-              $adapter_info = $adapter->writeFieldValues($entity->id(), $values, $bundle, $original_values);
-              /*
-              $adapter_info = $adapter->loadFieldValues(array($id),array_keys($field_definitions));
-
-              #drupal_set_message('ive got: ' . serialize($adapter_info));
-                            
-              foreach($adapter_info as $entity_id => $entity_values) {
-                //if we don't know about that entity yet, this adapter's info can be used without a change
-                if (!isset($info[$entity_id])) $info[$entity_id] = $entity_values;
-                else {
-                  //integrate additional values on existing entities
-                  foreach($entity_values as $field_name => $value) {
-                    if (empty($value)) continue;
-                    #drupal_set_message("looking for $entity_id in " . serialize($info));
-                    $actual_field_info = $info[$entity_id][$field_name];
-                
-                    // if there is no field definition throw an error.
-                    if(empty($field_definitions[$field_name])) {
-                      drupal_set_message("Asked for field definition of field " . $field_name . " on WissKI Individual but there was nothing.", 'error');
-                      continue;
-                    }
-                
-                    if ($field_definitions[$field_name] instanceof BaseFieldDefinition) {
-                      //this is a base field and cannot have multiple values
-                      //@TODO make sure, we load the RIGHT value
-                      if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
-                        $this->t('1Multiple values for %field_name in entity %id: %val1, %val2',array(
-                          '%field_name'=>$field_name,
-                          '%id'=>$entity_id,
-                          '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
-                          '%val2'=>$value,
-                        )),'error');
-                      else $info[$entity_id][$field_name] = $value;
-                      continue;
-                    }
-                
-                    #drupal_set_message("what do we have here: " . serialize($field_definitions[$field_name]));
-                
-                    //rest is a field
-                    $cardinality = 1; #cardinality on text fields seems to be evil?#$field_definitions[$field_name]->getCardinality();
-                
-                    if ($cardinality === 1) {
-                      //this field cannot have multiple values
-                      //@TODO make sure, we load the RIGHT value
-                      if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
-                        $this->t('Multiple values for field %field_name in entity %id: %val1, %val2',array(
-                          '%field_name'=>$field_name,
-                          '%id'=>$entity_id,
-                          '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
-                          '%val2'=>$value,
-                        )),'error');
-                      else $info[$entity_id][$field_name] = $value;
-                      continue;
-                    }
-                    if (!is_array($actual_field_info)) $actual_field_info = array($actual_field_info);
-                    if ($cardinality > 0 && count($actual_field_info) >= $cardinality) {
-                      drupal_set_message(
-                        $this->t('Too many values for field %field_name in entity %id. %card allowed. Tried to add %val2',array(
-                          '%field_name'=>$field_name,
-                          '%id'=>$entity_id,
-                          '%card'=>$cardinality,
-                          '%val1'=>$value, )),'error');
-                    } else $actual_field_info[] = $value;
-                    $info[$entity_id][$field_name] = $actual_field_info;
-                  }
-                }  
-              }*/
-            } catch (\Exception $e) {
-              drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
-            }              
-        #  }     
-          
-        } else {
-#          drupal_set_message("No, I don't know " . $id . " and I am " . $aid . ".");
+        
+        // perhaps we have to check for the field definitions - we ignore this for now.
+        //   $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundle_idid);
+        try {
+          //drupal_set_message(" I ask adapter: " . serialize($adapter));
+          //@TODO return correct success code
+          $adapter_info = $adapter->writeFieldValues($entity->id(), $values, $bundle_id, $original_values);
+          $success = TRUE;
+        } catch (\Exception $e) {
+          drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
         }
+      } else {
+        //drupal_set_message("No, I don't know " . $id . " and I am " . $aid . ".");
       }
-    #}
-
-
-//    foreach($adapters as $aid => $adapter) {
       
-//    }
+      if ($success) {
+        //we have successfully written to this adapter
+        \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)->flushTitleCache($entity->id());
+      }
+    }
   }
 
   private function extractFieldData(ContentEntityInterface $entity) {

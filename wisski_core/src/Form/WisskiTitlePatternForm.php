@@ -246,6 +246,7 @@ class WisskiTitlePatternForm extends EntityForm {
         'callback' => 'Drupal\wisski_core\Form\WisskiTitlePatternForm::ajaxResponse',
         'wrapper' => 'wisski-title-table'
       ),
+      '#limit_validation_errors' => array(),
     );
 //    dpm(array('attributes'=>$attributes,'result'=>$rendered),__METHOD__);    
     return $rendered;
@@ -295,7 +296,7 @@ class WisskiTitlePatternForm extends EntityForm {
       elseif ($attributes['type'] === 'path') {
         if (empty($attributes['name'])) 
           $errors[] = array($row_id,'empty','name');
-        elseif (!preg_match('/^[a-z0-9_]+(\.[a-z0-9_]+)?$/',$attributes['name'])) 
+        elseif (!preg_match('/^[a-z0-9_]+\.[a-z0-9_]+|uri$/',$attributes['name'])) 
           $errors[] = array($row_id,'invalid','name');
         if (!in_array($attributes['cardinality'],array(-1,1,2,3))) 
           $errors[] = array($row_id.'][cardinality','invalid');
