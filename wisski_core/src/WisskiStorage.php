@@ -102,6 +102,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             try {
               foreach ($field_definitions as $field_name => $field_def) {
                 if ($field_def instanceof BaseFieldDefinition) {
+                  //the bundle key will be set via the loop variable $bundleid
                   if ($field_name === 'bundle') continue;
                   
                 //drupal_set_message("Hello i am a base field ".$field_name);
