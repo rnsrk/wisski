@@ -11,9 +11,7 @@ use Drupal\Core\Ajax\AjaxResponse;
 
 class WisskiTitlePatternForm extends EntityForm {
 
-  private $field_defs;
-
-  private $field_storage_defs;
+  private $path_options;
   
   /**
    * {@inheritdoc}
@@ -27,14 +25,9 @@ class WisskiTitlePatternForm extends EntityForm {
     /** @var \Drupal\media_entity\MediaBundleInterface $bundle */
     $form['#entity'] = $bundle = $this->entity;
     
-    if (!isset($this->field_defs)) $this->field_defs = \Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundle->id());
-
     $form['#title'] = $this->t('Edit title pattern for bundle %label', array('%label' => $bundle->label()));
-    
-    $options = array();
-    foreach ($this->field_defs as $field_name => $field_def) {
-      $options[$field_name] = $field_def->getLabel().' ('.$field_name.')';
-    }
+
+    $options = $this->getPathOptions($bundle->id());
     
     $form_storage = $form_state->getStorage();
     if (isset($form_storage['cached_pattern']) && !empty($form_storage['cached_pattern'])) {
@@ -65,14 +58,20 @@ class WisskiTitlePatternForm extends EntityForm {
           'parents' => '',
           'name' => 'text'.$id,
         );
-      } elseif ($trigger === 'field_select_box') {
-        $selection = $form_state->getValue('field_select_box');
+      } elseif ($trigger === 'path_select_box') {
+        $selection = $form_state->getValue('path_select_box');
         if (!empty($selection) && $selection !== 'empty') {
-          $id = 'f'.++$max_id;
+          if ($selection === 'uri') $label = 'URI';
+          else {
+            dpm($options,$selection);
+            list($pb_id) = explode('.',$selection);
+            $label = $options[$pb_id][$selection];
+          }
+          $id = 'p'.++$max_id;
           $pattern[$id] = array(
-            'type' => 'field',
+            'type' => 'path',
             'name' => $selection,
-            'label' => $this->field_defs[$selection]->getLabel(),
+            'label' => $label,
             'weight' => $count,
             'optional' => TRUE,
             'cardinality' => 1,
@@ -82,7 +81,7 @@ class WisskiTitlePatternForm extends EntityForm {
           );
         } else {
           //this may not happen
-          drupal_set_message($this->t('Please choose a field to add'),'error');
+          drupal_set_message($this->t('Please choose a path to add'),'error');
         }
       } else {
         $xpl = explode(':',$trigger);
@@ -129,10 +128,10 @@ class WisskiTitlePatternForm extends EntityForm {
     foreach ($pattern as $key => $attributes) {
       $form['pattern'][$key] = $this->renderRow($key,$attributes);
     }
-    $form['field_select_box'] = array(
+    $form['path_select_box'] = array(
       '#type' => 'select',
-      '#options' => array('empty'=>' - '.$this->t('None').' - ') + $options,
-      '#title' => $this->t('Add another field'),
+      '#options' => $options,
+      '#title' => $this->t('Add a path'),
       '#ajax' => array(
         'callback' => 'Drupal\wisski_core\Form\WisskiTitlePatternForm::ajaxResponse',
         'wrapper' => 'wisski-title-table'
@@ -171,17 +170,11 @@ class WisskiTitlePatternForm extends EntityForm {
       '#attributes' => array('class' => array('row-id')),
     );
     
-    if ($attributes['type'] === 'field') {
-      $field_name = $label = $attributes['name'];
-      $print_label = $field_name;
-      if (isset($attributes['label'])) {
-        $label = $attributes['label'];
-        $print_label = $attributes['label'].' ('.$print_label.')';
-      }
+    if ($attributes['type'] === 'path') {
       $rendered['label'] = array(
         '#type' => 'item',
-        '#markup' => $print_label,
-        '#value' => $label,
+        '#markup' => $attributes['label'],
+        '#value' => $attributes['label'],
       );
       $rendered['optional'] = array(
         '#type' => 'checkbox',
@@ -189,11 +182,6 @@ class WisskiTitlePatternForm extends EntityForm {
         '#title_display' => 'after',
         '#default_value' => $attributes['optional'],
       );
-      $field_def = $this->field_defs[$field_name];
-      if ($field_def->isRequired()) {
-        $rendered['optional']['#default_value'] = FALSE;
-        $rendered['optional']['#disabled'] = TRUE;
-      }
       static $cardinalities = array(1=>1,2=>2,3=>3,-1=>'all');
       $rendered['cardinality'] = array(
         '#type' => 'select',
@@ -209,17 +197,6 @@ class WisskiTitlePatternForm extends EntityForm {
         '#title_display' => 'invisible',
         '#default_value' => isset($attributes['delimiter'])? $attributes['delimiter']: ', ',
       );
-      if (!isset($this->field_storage_defs[$field_name])) $this->field_storage_defs[$field_name] = $field_def->getFieldStorageDefinition();
-      $field_storage_def = $this->field_storage_defs[$field_name];
-      $card = $field_storage_def->getCardinality();
-      if ($card <= 3) {
-        $sub_cards = range(1,$card);
-        $rendered['cardinality']['#options'] = $sub_cards;
-        if ($card === 1) {
-          $rendered['cardinality']['#disabled'] = TRUE;
-          $rendered['delimiter']['#disabled'] = TRUE;
-        }
-      }
     }
     if ($attributes['type'] === 'text') {
       //put a text field here, so that fixed strings can be added to the title
@@ -304,6 +281,7 @@ class WisskiTitlePatternForm extends EntityForm {
   public function validateForm(array &$form, FormStateInterface $form_state) {
 
     $pattern = $form_state->getValue('pattern');
+    dpm($pattern);
     $max_id = 0;
 
     $errors = array();
@@ -313,12 +291,12 @@ class WisskiTitlePatternForm extends EntityForm {
     
     foreach ($pattern as $row_id => &$attributes) {
       if (!isset($attributes['type'])) 
-        $errors[] = array($row_id.'][type','not set');
-      elseif ($attributes['type'] === 'field') {
+        $errors[] = array($row_id,'not set','type');
+      elseif ($attributes['type'] === 'path') {
         if (empty($attributes['name'])) 
-          $errors[] = array($row_id.'][name','empty');
-        elseif (preg_match('/[^a-z0-9_]/',$attributes['name'])) 
-          $errors[] = array($row_id.'][name','invalid');
+          $errors[] = array($row_id,'empty','name');
+        elseif (!preg_match('/^[a-z0-9_]+(\.[a-z0-9_]+)?$/',$attributes['name'])) 
+          $errors[] = array($row_id,'invalid','name');
         if (!in_array($attributes['cardinality'],array(-1,1,2,3))) 
           $errors[] = array($row_id.'][cardinality','invalid');
         if (empty($attributes['delimiter']))
@@ -326,7 +304,7 @@ class WisskiTitlePatternForm extends EntityForm {
       } elseif ($attributes['type'] === 'text') {
         if (empty($attributes['label'])) 
           $errors[] = array($row_id.'][label','empty');
-      } else $errors[] = array($row_id.'][type','invalid');
+      } else $errors[] = array($row_id,'invalid','type');
       
       if (isset($attributes['parents']) && $attributes['parents'] !== '') {
         $parents = explode(',',$attributes['parents']);
@@ -349,10 +327,10 @@ class WisskiTitlePatternForm extends EntityForm {
       $form_state->setValue('pattern',$pattern);
     } else {
       foreach ($errors as $error_array) {
-        //dpm($error_array,'Errors');
-        list($element,$error_type) = $error_array;
+        dpm($error_array,'Errors');
+        list($element,$error_type,$category) = $error_array;
         $t_error_type = $this->tError($error_type);
-        $form_state->setErrorByName('pattern]['.$element,$t_error_type);
+        $form_state->setErrorByName('pattern]['.$element,$t_error_type.' '.$category);
       }
     }
   }
@@ -388,4 +366,27 @@ class WisskiTitlePatternForm extends EntityForm {
   public function deletePattern(array $form, FormStateInterface $form_state) {
     $form_state->setRedirectUrl($this->entity->urlInfo('delete-title-form'));
   }  
+  
+  private function getPathOptions($bundle_id) {
+    
+    $options = &$this->path_options;
+    //if we already gathered the data, we can stop here
+    if (!isset($options)) {
+      $options['empty'] = ' - '.$this->t('select').' - ';
+      $options['uri'] = 'URI';
+      //find all paths from all active pathbuilders
+      $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
+      $paths = array();
+      foreach ($pbs as $pb_id => $pb) {
+        $pb_paths = $pb->getAllPaths();
+        foreach ($pb_paths as $path) {
+          $path_id = $path->getID();
+          if ($bundle_id === $pb->getBundle($path_id))
+            $options[$pb_id][$pb_id.'.'.$path_id] = $path->getName();
+        }
+      }
+    }
+    //dpm(array('$bundle_id'=>$bundle_id,'result'=>$options),__METHOD__);
+    return $options;
+  }
 }
