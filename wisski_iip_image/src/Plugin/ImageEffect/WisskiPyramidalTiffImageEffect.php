@@ -78,6 +78,12 @@ class WisskiPyramidalTiffImageEffect extends ConfigurableImageEffectBase impleme
    */
   public function applyEffect(ImageInterface $image) {
     // Apply any effects to the image here.
+    
+    $source = $image->getSource();
+    
+#    $result = shell_exec("convert " . $source . " -define tiff:tile-geometry=256x256 -compress jpeg 'ptif:" . escapeshellarg($destination) . "'";);
+    
+    return $result;
   }
                
 #  /**
