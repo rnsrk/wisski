@@ -88,7 +88,7 @@
       $item_attributes = $item->_attributes;
       unset($item->_attributes);
 
-      drupal_set_message("url: " . serialize($item));
+#      drupal_set_message("url: " . serialize($item));
 
       $elements[$delta] = array(
         '#theme' => 'image_formatter',

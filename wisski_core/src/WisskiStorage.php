@@ -102,8 +102,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             try {
               foreach ($field_definitions as $field_name => $field_def) {
                 if ($field_def instanceof BaseFieldDefinition) {
+                  //the bundle key will be set via the loop variable $bundleid
                   if ($field_name === 'bundle') continue;
-                  if ($field_name === 'preview_image') continue;
+                  
                 //drupal_set_message("Hello i am a base field ".$field_name);
                   //this is a base field and cannot have multiple values
                   //@TODO make sure, we load the RIGHT value
@@ -115,11 +116,15 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     if (in_array($old_field_value,$new_field_values) && count($new_field_values) > 1) {
                       //@TODO drupal_set_message('Multiple values for base field '.$field_name,'error');
                       //FALLLBACK: do nothing, old field value stays the same
+                      //WATCH OUT: if you change this remember to handle preview_image case correctly
                     } elseif (count($new_field_values) === 1) {
-                      $info[$id][$field_name] = $new_field_values[0];
+                      $value = $new_field_values[0];
+                      if ($field_name === 'preview_image') $value = $this->getFileId($value);
+                      $info[$id][$field_name] = $value;
                     } else {
-                        //@TODO drupal_set_message('Multiple values for base field '.$field_name,'error');
-                      }
+                      //@TODO drupal_set_message('Multiple values for base field '.$field_name,'error');
+                      //WATCH OUT: if you change this remember to handle preview_image case correctly
+                    }
                   } elseif (!empty($new_field_values)) {
                     $info[$id][$field_name] = current($new_field_values);
                   }
@@ -166,56 +171,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   // temporary hack - if the file_uri is an array the data might be in the target_id                  
                   if(is_array($file_uri))
                     $file_uri = $file_uri['target_id'];
-                  // another hack, make sure we have a good local name
-                  // @TODO do not use md5 since we cannot assume that to be consistent over time
-                  $local_file_uri = file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));
-                  // we now check for an existing 'file managed' with that uri
-                  $query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
-                  $file_ids = $query->execute();
-                  if (!empty($file_ids)) {
-                    // if there is one, we must set the field value to the image's FID
-                    $value = current($file_ids);
-                    dpm('replaced '.$file_uri.' with existing file '.$value);
-                    //@TODO find out what to do if there is more than one file with that uri
-                  } else {
-                    $query = \drupal::entityQuery('file')->condition('uri',$local_file_uri);
-                    $file_ids = $query->execute();
-                    if (!empty($file_ids)) {
-                      //we have a local file with the same filename.
-                      //lets assume this is the file we were looking for
-                      $value = current($file_ids);
-                      dpm('replaced '.$file_uri.' with existing file '.$value);
-                      //@TODO find out what to do if there is more than one file with that uri
-                    } else {
-                      // if we have no managed file with that uri, we try to generate one
-                      try {
-                        
-                        //$file = File::create(array(
-                        //  'uri'=>$file_uri,
-                        //));
-                        //dpm($file,'File Object');
-                        //$file->save();
-                        
-                        $data = file_get_contents($file_uri);
-                        dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
-                        $file = file_save_data($data, $local_file_uri);
-                        if ($file) {
-                          $value = $file->id();
-                          dpm('replaced '.$file_uri.' with new file '.$value);
-                        } else {
-                          drupal_set_message('Error saving file','error');
-                          //dpm($data,$file_uri);
-                        }
-                      } catch (EntityStorageException $e) {
-                        drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
-                      }
-                    }
-                  }
-                  $new_field_values[$id][$field_name] = $value;
-                  if (!isset($entity_info[$id]['preview_image'])) {
-                    dpm('Setting preview_image',$id);
-                    $info[$id]['preview_image'] = $value;
-                  }
+                  
+                  $new_field_values[$id][$field_name] = $this->getFileId($file_uri);
                 }
                 if (isset($new_field_values[$id][$field_name])) {
                   if (!isset($info[$id]) || !isset($info[$id][$field_name])) $info[$id][$field_name] = $new_field_values[$id][$field_name];
@@ -314,6 +271,56 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     return $entity_info;
   }
 
+  protected function getFileId($file_uri) {
+
+    // another hack, make sure we have a good local name
+    // @TODO do not use md5 since we cannot assume that to be consistent over time
+    $local_file_uri = file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));
+    // we now check for an existing 'file managed' with that uri
+    $query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
+    $file_ids = $query->execute();
+    if (!empty($file_ids)) {
+      // if there is one, we must set the field value to the image's FID
+      $value = current($file_ids);
+      dpm('replaced '.$file_uri.' with existing file '.$value);
+      //@TODO find out what to do if there is more than one file with that uri
+    } else {
+      $query = \drupal::entityQuery('file')->condition('uri',$local_file_uri);
+      $file_ids = $query->execute();
+      if (!empty($file_ids)) {
+        //we have a local file with the same filename.
+        //lets assume this is the file we were looking for
+        $value = current($file_ids);
+        dpm('replaced '.$file_uri.' with existing file '.$value);
+        //@TODO find out what to do if there is more than one file with that uri
+      } else {
+        // if we have no managed file with that uri, we try to generate one
+        try {
+          
+          //$file = File::create(array(
+          //  'uri'=>$file_uri,
+          //));
+          //dpm($file,'File Object');
+          //$file->save();
+          
+          $data = file_get_contents($file_uri);
+          dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
+          $file = file_save_data($data, $local_file_uri);
+          if ($file) {
+            $value = $file->id();
+            dpm('replaced '.$file_uri.' with new file '.$value);
+          } else {
+            drupal_set_message('Error saving file','error');
+            //dpm($data,$file_uri);
+          }
+        } catch (EntityStorageException $e) {
+          drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
+        }
+      }
+    }
+    return $value;
+  }
+
 #  /**
 #   * This function is called by the Views module.
 #   */
@@ -397,17 +404,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   protected function doSaveFieldItems(ContentEntityInterface $entity, array $names = []) {
 //    dpm(func_get_args(),__METHOD__);
     
-//    $adapters = entity_load_multiple('wisski_salz_adapter');
-#    dpm(serialize($adapters));
-      // ask all adapters
     list($values,$original_values) = $this->extractFieldData($entity);
-    $bundle = $values['bundle'][0]['target_id'];
-    dpm(func_get_args()+array('values'=>$values,'bundle'=>$bundle),__METHOD__);
-
-
-#    $bundles = $this->entityManager->getBundleInfo('wisski_individual');
-//    dpm($bundles);
-
+    $bundle_id = $values['bundle'][0]['target_id'];
+    dpm(func_get_args()+array('values'=>$values,'bundle'=>$bundle_id),__METHOD__);
+    
     $local_writeable_adapters = array();
     $writeable_adapters = array();
 
@@ -457,102 +457,30 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       // we locate all writeable stores
       // then we locate all local stores in these writeable stores
       // and write to them
-      
+      $success = FALSE;
 #      drupal_set_message("I ask adapter " . serialize($adapter) . " for id " . serialize($entity->id()) . " and get: " . serialize($adapter->hasEntity($id)));
       // if they know that id
       if($adapter->hasEntity($entity->id())) {
-        // if so - ask for the bundles for that id
-#        $bundles = $adapter->getBundleIdsForEntityId($id);
-        #drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundles) . ".");
-          
-          // perhaps we have to check for the field definitions - we ignore this for now.
-#          foreach($bundles as $bundleid) {
-#            $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
-            #drupal_set_message("asking for: " . serialize(array_keys($field_definitions)));
-            try {
-#              drupal_set_message(" I ask adapter: " . serialize($adapter));
-              $adapter_info = $adapter->writeFieldValues($entity->id(), $values, $bundle, $original_values);
-              /*
-              $adapter_info = $adapter->loadFieldValues(array($id),array_keys($field_definitions));
-
-              #drupal_set_message('ive got: ' . serialize($adapter_info));
-                            
-              foreach($adapter_info as $entity_id => $entity_values) {
-                //if we don't know about that entity yet, this adapter's info can be used without a change
-                if (!isset($info[$entity_id])) $info[$entity_id] = $entity_values;
-                else {
-                  //integrate additional values on existing entities
-                  foreach($entity_values as $field_name => $value) {
-                    if (empty($value)) continue;
-                    #drupal_set_message("looking for $entity_id in " . serialize($info));
-                    $actual_field_info = $info[$entity_id][$field_name];
-                
-                    // if there is no field definition throw an error.
-                    if(empty($field_definitions[$field_name])) {
-                      drupal_set_message("Asked for field definition of field " . $field_name . " on WissKI Individual but there was nothing.", 'error');
-                      continue;
-                    }
-                
-                    if ($field_definitions[$field_name] instanceof BaseFieldDefinition) {
-                      //this is a base field and cannot have multiple values
-                      //@TODO make sure, we load the RIGHT value
-                      if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
-                        $this->t('1Multiple values for %field_name in entity %id: %val1, %val2',array(
-                          '%field_name'=>$field_name,
-                          '%id'=>$entity_id,
-                          '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
-                          '%val2'=>$value,
-                        )),'error');
-                      else $info[$entity_id][$field_name] = $value;
-                      continue;
-                    }
-                
-                    #drupal_set_message("what do we have here: " . serialize($field_definitions[$field_name]));
-                
-                    //rest is a field
-                    $cardinality = 1; #cardinality on text fields seems to be evil?#$field_definitions[$field_name]->getCardinality();
-                
-                    if ($cardinality === 1) {
-                      //this field cannot have multiple values
-                      //@TODO make sure, we load the RIGHT value
-                      if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
-                        $this->t('Multiple values for field %field_name in entity %id: %val1, %val2',array(
-                          '%field_name'=>$field_name,
-                          '%id'=>$entity_id,
-                          '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
-                          '%val2'=>$value,
-                        )),'error');
-                      else $info[$entity_id][$field_name] = $value;
-                      continue;
-                    }
-                    if (!is_array($actual_field_info)) $actual_field_info = array($actual_field_info);
-                    if ($cardinality > 0 && count($actual_field_info) >= $cardinality) {
-                      drupal_set_message(
-                        $this->t('Too many values for field %field_name in entity %id. %card allowed. Tried to add %val2',array(
-                          '%field_name'=>$field_name,
-                          '%id'=>$entity_id,
-                          '%card'=>$cardinality,
-                          '%val1'=>$value, )),'error');
-                    } else $actual_field_info[] = $value;
-                    $info[$entity_id][$field_name] = $actual_field_info;
-                  }
-                }  
-              }*/
-            } catch (\Exception $e) {
-              drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
-            }              
-        #  }     
-          
-        } else {
-#          drupal_set_message("No, I don't know " . $id . " and I am " . $aid . ".");
+        
+        // perhaps we have to check for the field definitions - we ignore this for now.
+        //   $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundle_idid);
+        try {
+          //drupal_set_message(" I ask adapter: " . serialize($adapter));
+          //@TODO return correct success code
+          $adapter_info = $adapter->writeFieldValues($entity->id(), $values, $bundle_id, $original_values);
+          $success = TRUE;
+        } catch (\Exception $e) {
+          drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
         }
+      } else {
+        //drupal_set_message("No, I don't know " . $id . " and I am " . $aid . ".");
       }
-    #}
-
-
-//    foreach($adapters as $aid => $adapter) {
       
-//    }
+      if ($success) {
+        //we have successfully written to this adapter
+        \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)->flushTitleCache($entity->id());
+      }
+    }
   }
 
   private function extractFieldData(ContentEntityInterface $entity) {

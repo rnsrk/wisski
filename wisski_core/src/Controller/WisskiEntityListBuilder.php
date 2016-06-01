@@ -80,6 +80,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    */
   public function buildRow(EntityInterface $entity) {
 #dpm($this);
+//dpm($entity);
 //    dpm($entity->tellMe('id','bundle'));
 //    echo "Hello ".$id;
     $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.view',array('wisski_individual'=>$entity->id()));
@@ -89,8 +90,8 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $prev_uri = \Drupal::entityManager()->getStorage('file')->load($prev_id)->getFileUri();
       $row['preview_image'] = array('data'=>array(
         '#theme' => 'image',
-        '#uri' => $prev_uri?:'',
-        '#alt' => $this->t('preview %label',array('%label' => $entity->label())),
+        '#uri' => $prev_uri,
+        '#alt' => 'preview '.$entity->label(),
         '#title' => $entity->label(),
         '#width' => 40,
         '#height' => 20,
