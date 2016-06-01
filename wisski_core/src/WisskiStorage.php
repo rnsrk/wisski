@@ -37,7 +37,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 //  dpm($ids,__METHOD__);
     $entities = array();
     $values = $this->getEntityInfo($ids);
-  dpm($values,'values');    
+//  dpm($values,'values');    
     foreach ($ids as $id) {
       //@TODO combine this with getEntityInfo
       if (!empty($values[$id])) $entities[$id] = $this->create($values[$id]);
@@ -283,7 +283,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     if (!empty($file_ids)) {
       // if there is one, we must set the field value to the image's FID
       $value = current($file_ids);
-      dpm('replaced '.$file_uri.' with existing file '.$value);
+      //dpm('replaced '.$file_uri.' with existing file '.$value);
       //@TODO find out what to do if there is more than one file with that uri
       $local_file_uri = $file_uri;
     } else {
@@ -293,7 +293,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         //we have a local file with the same filename.
         //lets assume this is the file we were looking for
         $value = current($file_ids);
-        dpm('replaced '.$file_uri.' with existing local file '.$value);
+        //dpm('replaced '.$file_uri.' with existing local file '.$value);
         //@TODO find out what to do if there is more than one file with that uri
       } else {
         // if we have no managed file with that uri, we try to generate one
@@ -310,7 +310,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           $file = file_save_data($data, $local_file_uri);
           if ($file) {
             $value = $file->id();
-            dpm('replaced '.$file_uri.' with new file '.$value);
+            //dpm('replaced '.$file_uri.' with new file '.$value);
           } else {
             drupal_set_message('Error saving file','error');
             //dpm($data,$file_uri);
