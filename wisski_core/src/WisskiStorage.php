@@ -37,7 +37,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 //  dpm($ids,__METHOD__);
     $entities = array();
     $values = $this->getEntityInfo($ids);
-//  dpm($values,'values');    
+  dpm($values,'values');    
     foreach ($ids as $id) {
       //@TODO combine this with getEntityInfo
       if (!empty($values[$id])) $entities[$id] = $this->create($values[$id]);
@@ -105,14 +105,15 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   //the bundle key will be set via the loop variable $bundleid
                   if ($field_name === 'bundle') continue;
                   if ($field_name === 'preview_image') {
-                    $new_field_values[$id][$field_name] = $this->getPreviewImage($id,$bundleid,$adapter);
-                  }
-                //drupal_set_message("Hello i am a base field ".$field_name);
-                  //this is a base field and cannot have multiple values
-                  //@TODO make sure, we load the RIGHT value
-                  $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
+                    $new_field_values[] = $this->getPreviewImage($id,$bundleid,$adapter);
+                  } else {
+                    //drupal_set_message("Hello i am a base field ".$field_name);
+                    //this is a base field and cannot have multiple values
+                    //@TODO make sure, we load the RIGHT value
+                    $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
                   
-                  $new_field_values = $new_field_values[$id][$field_name];
+                    $new_field_values = $new_field_values[$id][$field_name];
+                  }
                   if (isset($info[$id][$field_name])) {
                     $old_field_value = $info[$id][$field_name];
                     if (in_array($old_field_value,$new_field_values) && count($new_field_values) > 1) {
@@ -159,7 +160,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   $value = $new_field_values[$id][$field_name];
                   // we assume that $value is an image URI which is to be rplaced by a FileID
                   #drupal_set_message('we got an image to handle. Field name:'.$field_name);
-                  dpm($value,'image_info');dpm($entity_info[$id],'current info');
+                  //dpm($value,'image_info');dpm($entity_info[$id],'current info');
                   #foreach ($entity_view_displays as $evd) {
                   #  $component = $evd->getComponent($field_name);
                   #  dpm($component['type'],$field_name);
@@ -284,6 +285,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       $value = current($file_ids);
       dpm('replaced '.$file_uri.' with existing file '.$value);
       //@TODO find out what to do if there is more than one file with that uri
+      $local_file_uri = $file_uri;
     } else {
       $query = \drupal::entityQuery('file')->condition('uri',$local_file_uri);
       $file_ids = $query->execute();
@@ -291,7 +293,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         //we have a local file with the same filename.
         //lets assume this is the file we were looking for
         $value = current($file_ids);
-        dpm('replaced '.$file_uri.' with existing file '.$value);
+        dpm('replaced '.$file_uri.' with existing local file '.$value);
         //@TODO find out what to do if there is more than one file with that uri
       } else {
         // if we have no managed file with that uri, we try to generate one
@@ -318,18 +320,31 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         }
       }
     }
+    //dpm($value,'image fid');
     return $value;
   }
 
   private function getPreviewImage($entity_id,$bundle_id,$adapter) {
     
-    $cache = FALSE;
-    if ($cache) return $cache;
+    $cache_id = 'wisski_preview_image.'.$entity_id;
+    if ($cache = \Drupal::cache()->get($cache_id)) {
+      list($preview_uri,$image_style_id) = $cache->data;
+    }
     else {
       $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
-      $preview_image = current($images);
-      return $this->getFileId($preview_image);
+      $preview_uri = current($images);
+      $image_style_id = 'thumbnail';
+      \Drupal::cache()->set($cache_id,array($preview_uri,$image_style_id));
     }
+    if (!empty($image_style)) {
+      $image_style = \Drupal\image\Entity\ImageStyle::load($image_style_id);
+      $styled_image_uri = $image_style->buildUri($local_file_uri);
+      if ($image_style->createDerivative($local_file_uri,$styled_image_uri)) {
+        return $this->getFileId($styled_image_uri);
+      }
+    }
+    
+    return $this->getFileId($preview_uri);
   }
 
 #  /**

@@ -85,6 +85,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
 //    echo "Hello ".$id;
     $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.view',array('wisski_individual'=>$entity->id()));
     //dpm($entity);
+    //dpm($entity->get('preview_image'));
     $prev_id = $entity->get('preview_image')->first()->target_id;
     if ($prev_id) {
       $prev_uri = \Drupal::entityManager()->getStorage('file')->load($prev_id)->getFileUri();
