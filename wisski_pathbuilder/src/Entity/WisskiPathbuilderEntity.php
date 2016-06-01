@@ -739,33 +739,38 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      * @return an array of path objects
      */
      
-    public function getImagePathIDsForGroup($groupid, $recursive = true) {
+    public function getImagePathIDsForGroup($groupid, $recursive = true, $subtree = NULL) {
       $pbpaths = $this->getPbPaths();
        
       $group = $pbpaths[$groupid];
-       
+      
       $paths = array();
+
+      if(empty($subtree)) {
+        $subtree = $this->pathtree;
+
+        // search in the ptree in case it is no maingroup
+        $subtree = $subtree[$groupid];
+      } 
        
       if(empty($group))
         return array();
          
-      foreach($group as $potpath) {
+      foreach($subtree['children'] as $sub) {
          
-        if(!empty($potpath['children']) && $recursive)
-          $paths = array_merge($paths, $this->getImagePathsForGroup($potpath['id'], $recursive));
-        else {
+        if(!empty($sub['children'])) {
+
+          if($recursive)
+            $paths = array_merge($paths, $this->getImagePathIDsForGroup($sub['id'], $recursive, $sub));
+
+        } else {
         
-          if(empty($potpath['field']))
-            continue;
-          
-          $field = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $potpath['field']);#->getItemDefinition()->mainPropertyName();
-          
-          if(strpos('image', $field->getType()))
-           $paths[] = $potpath;
+          if(strpos($pbpaths[$sub['id']]['fieldtype'], 'image') !== FALSE) 
+            $paths[] = $sub['id'];
           
         }
-
       }       
+      
       return $paths;    
     }
                         

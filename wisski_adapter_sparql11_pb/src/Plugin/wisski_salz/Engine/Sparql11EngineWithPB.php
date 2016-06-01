@@ -203,24 +203,39 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
   private $entity_info;
 
+  /*
+   * Load the image data for a given entity id
+   * @return an array of values?
+   *
+   */
   public function getImagesForEntityId($entityid, $bundleid) {
     $pb = $this->getPbForThis();
+
+    drupal_set_message("yay!");
     
     $ret = array();
     
     $groups = $pb->getGroupsForBundle($bundleid);
     
     foreach($groups as $group) {
-      $paths = $pb->getImagePathIDsForGroup($group);
+      $paths = $pb->getImagePathIDsForGroup($group->id());
       
+      drupal_set_message("paths: " . serialize($paths));
+            
       foreach($paths as $pathid) {
       
         $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
         
+        drupal_set_message(serialize($path));
+        
+#        drupal_set_message("thing: " . serialize($this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $entityid, 0, NULL, 0)));
+        
         // position 0 is wrong here, but it will hold for now
-        $ret[] = $this->pathToReturnValue($path->id(), $path->getDatatypeProperty(), $entityid, 0, NULL, 0);
+        $ret = array_merge($ret, $this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $entityid, 0, NULL, 0));
       } 
     }
+    
+    drupal_set_message("returning: " . serialize($ret));
     
     return $ret;
   }
