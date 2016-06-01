@@ -119,7 +119,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                       //WATCH OUT: if you change this remember to handle preview_image case correctly
                     } elseif (count($new_field_values) === 1) {
                       $value = $new_field_values[0];
-                      if ($field_name === 'preview_image') $value = $this->getFileId($value);
+                      if ($field_name === 'preview_image') {
+                        $value = $this->getPreviewImage($id,$bundleid,$adapter);
+                      }
                       $info[$id][$field_name] = $value;
                     } else {
                       //@TODO drupal_set_message('Multiple values for base field '.$field_name,'error');
@@ -319,6 +321,17 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
     }
     return $value;
+  }
+
+  private function getPreviewImage($entity_id,$bundle_id,$adapter) {
+    
+    $cache = FALSE;
+    if ($cache) return $cache;
+    else {
+      $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
+      $preview_image = current($images);
+      return $this->getFileId($preview_image);
+    }
   }
 
 #  /**
