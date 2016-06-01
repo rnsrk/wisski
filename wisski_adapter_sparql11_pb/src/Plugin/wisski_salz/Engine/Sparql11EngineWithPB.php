@@ -203,6 +203,28 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
   private $entity_info;
 
+  public function getImagesForEntityId($entityid, $bundleid) {
+    $pb = $this->getPbForThis();
+    
+    $ret = array();
+    
+    $groups = $pb->getGroupsForBundle($bundleid);
+    
+    foreach($groups as $group) {
+      $paths = $pb->getImagePathIDsForGroup($group);
+      
+      foreach($paths as $pathid) {
+      
+        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
+        
+        // position 0 is wrong here, but it will hold for now
+        $ret[] = $this->pathToReturnValue($path->id(), $path->getDatatypeProperty(), $entityid, 0, NULL, 0);
+      } 
+    }
+    
+    return $ret;
+  }
+
   /**
    *
    *

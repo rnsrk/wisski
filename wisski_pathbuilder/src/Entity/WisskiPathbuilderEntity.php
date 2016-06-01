@@ -730,8 +730,44 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         }
       }
       // nothing found?
-      return array();;
+      return array();
     }
-                  
+    
+    /**
+     * Determine all image paths for a given bundle
+     *
+     * @return an array of path objects
+     */
+     
+    public function getImagePathIDsForGroup($groupid, $recursive = true) {
+      $pbpaths = $this->getPbPaths();
+       
+      $group = $pbpaths[$groupid];
+       
+      $paths = array();
+       
+      if(empty($group))
+        return array();
+         
+      foreach($group as $potpath) {
+         
+        if(!empty($potpath['children']) && $recursive)
+          $paths = array_merge($paths, $this->getImagePathsForGroup($potpath['id'], $recursive));
+        else {
+        
+          if(empty($potpath['field']))
+            continue;
+          
+          $field = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $potpath['field']);#->getItemDefinition()->mainPropertyName();
+          
+          if(strpos('image', $field->getType()))
+           $paths[] = $potpath;
+          
+        }
+
+      }       
+      return $paths;    
+    }
+                        
   } 
               
