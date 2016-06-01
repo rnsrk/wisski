@@ -31,58 +31,56 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  
 class WisskiPyramidalTiffImageEffect extends ImageEffectBase implements ConfigurableImageEffectInterface, ContainerFactoryPluginInterface {
 
-/**
+  /**
    * {@inheritdoc}
-      */
-        public function applyEffect(ImageInterface $image) {
-            // Apply any effects to the image here.
-              }
+   */
+  public function applyEffect(ImageInterface $image) {
+    // Apply any effects to the image here.
+  }
                
-               
-/**
+  /**
    * {@inheritdoc}
-      */
-        public function getForm() {
-            // Return a configuration form to allow the user to set some options.
-              }
-              
- /**
-    * {@inheritdoc}
-       */
-         public function __construct(array $configuration, $plugin_id, array $plugin_definition, ConfigFactoryInterface $config) {
-             // The ConfigFactoryInterface is injected from the create method below.
-                 parent::__construct($configuration, $plugin_id, $plugin_definition);
-                   }
+   */
+  public function getForm() {
+    // Return a configuration form to allow the user to set some options.
+  }
 
-/**
+  /**
    * {@inheritdoc}
-      */
-        public static function create(ContainerInterface $container, array $configuration, $plugin_id, array $plugin_definition) {
-            // Pull anything out of the container interface and inject it into the plugin's constructor.
-                // In this case I have chosen to inject the entire config factory, however you should be as
-                    // specific as possible when using dependency injection.
-                        return new static(
-                              $configuration,
-                                    $plugin_id,
-                                          $plugin_definition,
-                                                $container->get('config.factory')
-                                                    );
-                                                      }
+   */
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, ConfigFactoryInterface $config) {
+    // The ConfigFactoryInterface is injected from the create method below.
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, array $plugin_definition) {
+    // Pull anything out of the container interface and inject it into the plugin's constructor.
+    // In this case I have chosen to inject the entire config factory, however you should be as
+    // specific as possible when using dependency injection.
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('config.factory')
+    );
+  }
                                                       
-/**
+  /**
    * {@inheritdoc}
-      */
-        public function getSummary() {
-            // Return a summary of the options the user has chosen. This appears after the image effect
-                // name in the user interface. I have chosen to specify the option the user has selected inside
-                    // brackets. This seems to be a convention.
-                        $quality = $this->configuration['image_jpeg_quality'];
-                            return array(
-                                  '#markup' => '(' . $quality . '% ' . $this->t('Quality') . ')',
-                                      );
-                                        }
-                                         
-                                         }
+   */
+  public function getSummary() {
+    // Return a summary of the options the user has chosen. This appears after the image effect
+    // name in the user interface. I have chosen to specify the option the user has selected inside
+    // brackets. This seems to be a convention.
+    $quality = $this->configuration['image_jpeg_quality'];
+    return array(
+      '#markup' => '(' . $quality . '% ' . $this->t('Quality') . ')',
+    );
+  }
+}
                                          
           
 
