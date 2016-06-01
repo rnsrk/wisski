@@ -128,7 +128,11 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                       //WATCH OUT: if you change this remember to handle preview_image case correctly
                     }
                   } elseif (!empty($new_field_values)) {
-                    $info[$id][$field_name] = current($new_field_values);
+                    $value = current($new_field_values);
+                    if ($field_name === 'preview_image') {
+                      $value = $this->getPreviewImage($id,$bundleid,$adapter);
+                    }
+                    $info[$id][$field_name] = $value;
                   }
                   if (!isset($info[$id]['bundle'])) $info[$id]['bundle'] = $bundleid;
                   continue;                 
