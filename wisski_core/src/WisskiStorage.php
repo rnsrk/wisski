@@ -304,7 +304,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           //$file->save();
           
           $data = file_get_contents($file_uri);
-          dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
+          //dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
           $file = file_save_data($data, $local_file_uri);
           if ($file) {
             $value = $file->id();
