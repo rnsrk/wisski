@@ -151,16 +151,17 @@ class WisskiPathForm extends EntityForm {
     #drupal_set_message('path_data ' . serialize($form_state->getValue('path_data')));
 
     // if there was something in form_state - use that because it is likely more accurate
-    if(empty($form_state->getValue('path_data'))) {
+    #if(empty($form_state->getValue('path_data'))) {
+    if(empty($form_state->getValue('path_array'))) {
       if(!empty( $path->getPathArray() ))
         $existing_paths = $path->getPathArray();
-     # drupal_set_message('getPathArray: ' . serialize($existing_paths));
+      drupal_set_message('getPathArray: ' . serialize($existing_paths));
        
     } else {
       #$pa = $pd['path_array'];
       $pa = $form_state->getValue('path_array');
       $existing_paths = $pa;
-     # drupal_set_message('pa:' . serialize ($pa));
+      drupal_set_message('pa: ' . serialize ($pa));
      
     }
     
@@ -202,12 +203,19 @@ class WisskiPathForm extends EntityForm {
     
       $form['path_data']['add_path_field_submit'][$key] = array(
         '#type' => 'submit',
-        '#value' => $this->t('+'),
+        '#value' => $this->t('+'.$key),
+        #'#title' => '+' . $key,
         '#submit' => array('::submitAddPathField'),
         #'#prefix' => '<td>',
         #'#suffix' => '</td></tr></table><div class="clearfix"></div>',
         #'#suffix' => '</div>',
       );
+     
+      #$form['path_data'][$key]['add_path_hidden'] = array(
+      #  '#type' => 'hidden',
+      #  '#value' => $this->t('+'.$key),
+      #);
+                                                                          
     }                               
     #dpm($form['path_data']);
     
@@ -275,19 +283,21 @@ class WisskiPathForm extends EntityForm {
     drupal_set_message('parents ' . serialize($parents));
     #$existing_paths[$trigger_element+1] = "HI";
     $existing_paths_part = array_splice($existing_paths, $trigger_element+1);
-    #$existing_paths[] = "0";
-    #array_merge($existing_paths, $existing_paths_part); 
-   # drupal_set_message(serialize($form_state));
-   # drupal_set_message(serialize($path_data));
+    $existing_paths[] = "0";
+    
+    #drupal_set_message(serialize($form_state));
     drupal_set_message('existing_paths: ' . serialize($existing_paths));
     drupal_set_message('existing_paths_part: ' . serialize($existing_paths_part));
     drupal_set_message('existing_paths_complete: ' . serialize($existing_paths_complete));
-    
+    $existing_paths_new = array_merge($existing_paths, $existing_paths_part);
+    drupal_set_message('existing_paths_new: ' . serialize($existing_paths_new));
+    $form_state->setValue('path_array', $existing_paths_new);
+    drupal_set_message('form state path array' . serialize($form_state->getValue('path_array'))); 
     #drupal_set_message('complete_form: ' . serialize($complete_form));
     #drupal_set_message('path_data: ' . serialize($complete_form['path_data']));
     #drupal_set_message('trigger ' . serialize($form_state->getTriggeringElement()));  
     #dpm($complete_form['path_data']);
-    dpm($form_state->getTriggeringElement());
+    #dpm($form_state->getTriggeringElement());
     
     /*
     // Find out what was submitted.
