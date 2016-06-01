@@ -42,7 +42,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       //@TODO combine this with getEntityInfo
       if (!empty($values[$id])) $entities[$id] = $this->create($values[$id]);
     }
-//    dpm(array('in'=>$ids,'out'=>$entities),__METHOD__);
+    //dpm(array('in'=>$ids,'out'=>$entities),__METHOD__);
     return $entities;
   }
 
@@ -159,7 +159,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   $value = $new_field_values[$id][$field_name];
                   // we assume that $value is an image URI which is to be rplaced by a FileID
                   #drupal_set_message('we got an image to handle. Field name:'.$field_name);
-                  //dpm($value,'image_info');
+                  dpm($value,'image_info');dpm($entity_info[$id],'current info');
                   #foreach ($entity_view_displays as $evd) {
                   #  $component = $evd->getComponent($field_name);
                   #  dpm($component['type'],$field_name);

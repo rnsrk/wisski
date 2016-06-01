@@ -128,16 +128,16 @@ class WisskiPathForm extends EntityForm {
     #  '#value' => "",
     #);
 
-    $form['path_data']['path_container'] = array(
-      '#type' => 'container',
-      '#attributes' => array(
-      'class' => array('container-inline'),
-      ),
-    );
+#    $form['path_data']['path_container'] = array(
+ #     '#type' => 'container',
+  #    '#attributes' => array(
+   #   'class' => array('container-inline'),
+    #  ),
+   # );
                                    
     
     // preserve tree
-    $form['path_data']['path_container']['path_array'] = array(
+    $form['path_data']['path_array'] = array(
       '#type' => 'markup',
       '#tree' => TRUE,
       '#value' => "",
@@ -147,20 +147,20 @@ class WisskiPathForm extends EntityForm {
     #$input = $form_state->getUserInput();#
     
     $existing_paths = array();
+    #drupal_set_message('val ' . serialize($form_state->getValues()));
+    #drupal_set_message('path_data ' . serialize($form_state->getValue('path_data')));
 
     // if there was something in form_state - use that because it is likely more accurate
     if(empty($form_state->getValue('path_data'))) {
       if(!empty( $path->getPathArray() ))
         $existing_paths = $path->getPathArray();
-      drupal_set_message('getPathArray: ' . serialize($existing_paths));
+     # drupal_set_message('getPathArray: ' . serialize($existing_paths));
        
     } else {
-      $pd = $form_state->getValue('path_data');
-      
       #$pa = $pd['path_array'];
       $pa = $form_state->getValue('path_array');
       $existing_paths = $pa;
-      drupal_set_message('pa:' . serialize ($pa));
+     # drupal_set_message('pa:' . serialize ($pa));
      
     }
     
@@ -184,12 +184,14 @@ class WisskiPathForm extends EntityForm {
         $path_options = $engine->getPathAlternatives();
       }    
                   
-      
-      $form['path_data']['path_container']['path_array'][$key] = array(
+      $form['path_data']['path_array'][$key] = array(
         '#default_value' => $element,
         '#type' => 'select',
         '#options' => array_merge(array("0" => 'Please select.'), $path_options),
         '#title' => $this->t('Step ' . $key . ': Select the next step of the path'),
+        #'#prefix' => '<div class="container-inline">',
+        #'#prefix' => '<table border= \'0\'><tr><td>',
+        #'#suffix' => '</td>',
         '#ajax' => array(
           'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
           'wrapper' => 'path_array_div',
@@ -198,13 +200,16 @@ class WisskiPathForm extends EntityForm {
       );
     
     
-      $form['path_data']['path_container'][$key]['add_path_field_submit'] = array(
+      $form['path_data']['add_path_field_submit'][$key] = array(
         '#type' => 'submit',
         '#value' => $this->t('+'),
         '#submit' => array('::submitAddPathField'),
+        #'#prefix' => '<td>',
+        #'#suffix' => '</td></tr></table><div class="clearfix"></div>',
+        #'#suffix' => '</div>',
       );
     }                               
-    dpm($form['path_data']);
+    #dpm($form['path_data']);
     
     $primitive = array();
 
@@ -260,8 +265,51 @@ class WisskiPathForm extends EntityForm {
    # }
   }
   
-  public function submitAddPathField() {
-    drupal_set_message("HELLO");
+  public function submitAddPathField(array &$form, FormStateInterface $form_state) {    
+    $existing_paths = $form_state->getValue('path_array');
+    $existing_paths_complete = $existing_paths;
+    $complete_form = $form_state->getCompleteForm(); 
+    $trigger = $form_state->getTriggeringElement();
+    $parents = $trigger['#parents'];
+    $trigger_element = $parents[0];
+    drupal_set_message('parents ' . serialize($parents));
+    #$existing_paths[$trigger_element+1] = "HI";
+    $existing_paths_part = array_splice($existing_paths, $trigger_element+1);
+    #$existing_paths[] = "0";
+    #array_merge($existing_paths, $existing_paths_part); 
+   # drupal_set_message(serialize($form_state));
+   # drupal_set_message(serialize($path_data));
+    drupal_set_message('existing_paths: ' . serialize($existing_paths));
+    drupal_set_message('existing_paths_part: ' . serialize($existing_paths_part));
+    drupal_set_message('existing_paths_complete: ' . serialize($existing_paths_complete));
+    
+    #drupal_set_message('complete_form: ' . serialize($complete_form));
+    #drupal_set_message('path_data: ' . serialize($complete_form['path_data']));
+    #drupal_set_message('trigger ' . serialize($form_state->getTriggeringElement()));  
+    #dpm($complete_form['path_data']);
+    dpm($form_state->getTriggeringElement());
+    
+    /*
+    // Find out what was submitted.
+    $values = $form_state->getValues();
+    drupal_set_message(serialize($values));
+    
+    foreach ($values as $key => $value) {
+      $label = isset($form[$key]['#title']) ? $form[$key]['#title'] : $key;
+                    
+      // Many arrays return 0 for unselected values so lets filter that out.
+      if (is_array($value)) {
+        $value = array_filter($value);
+      }
+      // Only display for controls that have titles and values.
+      if ($value) {
+        $display_value = is_array($value) ? print_r($value, 1) : $value;
+        $message = $this->t('Value for %title: %value', ['%title' => $label, '%value' => $display_value]);
+        drupal_set_message($message);
+      }
+    }
+    */                                                                                        
+    $form_state->setRebuild();
   }
   
   /**
