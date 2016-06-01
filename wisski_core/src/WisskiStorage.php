@@ -104,7 +104,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 if ($field_def instanceof BaseFieldDefinition) {
                   //the bundle key will be set via the loop variable $bundleid
                   if ($field_name === 'bundle') continue;
-                  
+                  if ($field_name === 'preview_image') {
+                    $new_field_values[$id][$field_name] = $this->getPreviewImage($id,$bundleid,$adapter);
+                  }
                 //drupal_set_message("Hello i am a base field ".$field_name);
                   //this is a base field and cannot have multiple values
                   //@TODO make sure, we load the RIGHT value
@@ -118,21 +120,13 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                       //FALLLBACK: do nothing, old field value stays the same
                       //WATCH OUT: if you change this remember to handle preview_image case correctly
                     } elseif (count($new_field_values) === 1) {
-                      $value = $new_field_values[0];
-                      if ($field_name === 'preview_image') {
-                        $value = $this->getPreviewImage($id,$bundleid,$adapter);
-                      }
-                      $info[$id][$field_name] = $value;
+                      $info[$id][$field_name] = $new_field_values[0];
                     } else {
                       //@TODO drupal_set_message('Multiple values for base field '.$field_name,'error');
                       //WATCH OUT: if you change this remember to handle preview_image case correctly
                     }
                   } elseif (!empty($new_field_values)) {
-                    $value = current($new_field_values);
-                    if ($field_name === 'preview_image') {
-                      $value = $this->getPreviewImage($id,$bundleid,$adapter);
-                    }
-                    $info[$id][$field_name] = $value;
+                    $info[$id][$field_name] = current($new_field_values);
                   }
                   if (!isset($info[$id]['bundle'])) $info[$id]['bundle'] = $bundleid;
                   continue;                 
