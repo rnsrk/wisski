@@ -78,8 +78,14 @@ class WisskiPyramidalTiffImageEffect extends ConfigurableImageEffectBase impleme
    */
   public function applyEffect(ImageInterface $image) {
     // Apply any effects to the image here.
+
+    drupal_set_message("yay, I am here!");
     
-    $source = $image->getSource();
+    drupal_set_message(serialize($image->apply('pyramid', array())));
+
+    drupal_set_message("done.");
+    
+#    $source = $image->getSource();
     
 #    $result = shell_exec("convert " . $source . " -define tiff:tile-geometry=256x256 -compress jpeg 'ptif:" . escapeshellarg($destination) . "'";);
     

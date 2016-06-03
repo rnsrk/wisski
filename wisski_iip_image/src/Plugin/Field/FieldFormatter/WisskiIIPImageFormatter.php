@@ -18,6 +18,7 @@
   use Drupal\Core\Form\FormStateInterface;
   use Drupal\Core\Cache\Cache;
   use Drupal\image\Plugin\Field\FieldFormatter\ImageFormatterBase;
+  use Drupal\colorbox\Plugin\Field\FieldFormatter\ColorboxFormatter;
   
   /**
    * Plugin implementation of the 'wisski_iip_image' formatter.
@@ -31,11 +32,20 @@
    *   }
    * )
    */
-  class WisskiIIPImageFormatter extends ImageFormatterBase {
+#  class WisskiIIPImageFormatter extends ImageFormatterBase {
+  class WisskiIIPImageFormatter extends ColorboxFormatter {
     /**
      * {@inheritdoc}
      */
     public function viewElements(FieldItemListInterface $items, $langcode) {
+      dpm($this->attachment);
+      $elements = parent::viewElements($items, $langcode);    
+
+      dpm($elements);
+
+      return $elements;
+
+/*
       
       $elements = array();
       $files = $this->getEntitiesToView($items, $langcode);
@@ -45,6 +55,23 @@
     if (empty($files)) {
       return $elements;
     }
+
+    $image_style_name = 'wisski_pyramid';
+
+    if(! $image_style = \Drupal\image\Entity\ImageStyle::load($image_style_name)) {
+      $values = array('name'=>$image_style_name,'label'=>'Wisski Pyramid Style');
+      $image_style = \Drupal\image\Entity\ImageStyle::create($values);
+#      $image_style->addImageEffect('WisskiPyramidalTiffImageEffect', array());
+      $image_style->save();
+    }
+    
+#    drupal_set_message("image_style: " . serialize($image_style));
+
+#    $image_uri = ImageStyle::load('your_style-name')->buildUrl($file->getFileUri());
+#    drupal_set_message(serialize($
+        
+    
+    
 
     $url = NULL;
     $image_link_setting = $this->getSetting('image_link');
@@ -69,6 +96,17 @@
     }
 
     foreach ($files as $delta => $file) {
+ 
+      $image_uri = ImageStyle::load('wisski_pyramid')->buildUri($file->getFileUri());
+      drupal_set_message(serialize($image_uri));
+      
+      drupal_set_message("1: " . serialize($file->getFileUri()));
+      drupal_set_message("2: " . serialize($image_uri));
+      drupal_set_message("cd: " . serialize($image_style->createDerivative($file->getFileUri(),$image_uri)));
+      
+      drupal_set_message(serialize($image_style));
+      $url = Url::fromUri(file_create_url($image_uri));     
+ 
       $cache_contexts = array();
       if (isset($link_file)) {
         $image_uri = $file->getFileUri();
@@ -90,12 +128,16 @@
 
 #      drupal_set_message("url: " . serialize($item));
 
+      drupal_set_message("miauz: " . serialize($items->getEntity()));
+
       $elements[$delta] = array(
-        '#theme' => 'image_formatter',
+#        '#theme' => 'image_formatter',
+        '#theme' => 'colorbox_formatter',
         '#item' => $item,
         '#item_attributes' => $item_attributes,
-        '#image_style' => $image_style_setting,
-        '#url' => $url,
+        '#entity' => $items->getEntity(),
+#        '#image_style' => $image_style_setting,
+#        '#url' => $url,
         '#cache' => array(
           'tags' => $cache_tags,
           'contexts' => $cache_contexts,
@@ -104,7 +146,7 @@
     }
 
     return $elements;
-
+*/
     }
     
 
