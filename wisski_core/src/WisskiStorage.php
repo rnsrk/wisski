@@ -287,7 +287,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       //@TODO find out what to do if there is more than one file with that uri
       $local_file_uri = $file_uri;
     } else {
-      $query = \drupal::entityQuery('file')->condition('uri',$local_file_uri);
+      $query = \Drupal::entityQuery('file')->condition('uri',$local_file_uri);
       $file_ids = $query->execute();
       if (!empty($file_ids)) {
         //we have a local file with the same filename.
