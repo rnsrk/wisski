@@ -13,6 +13,9 @@ use Drupal\Core\Link;
 class WisskiEntityListBuilder extends EntityListBuilder {
 
   private $bundle;
+  
+  private $num_entities;
+  private $image_height;
 
   /**
    * {@inheritdoc}
@@ -56,6 +59,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       foreach ($entity_ids as $eid) {
         $storage->writeToCache($eid,$this->bundle);
       }
+      $this->num_entities = count($entity_ids);
       return $entity_ids;
     } else return $query->execute();
     
@@ -70,8 +74,9 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * and inserts the 'edit' and 'delete' links as defined for the entity type.
    */
   public function buildHeader() {
-    $header['title'] = $this->t('title');
-    $header['preview_image'] = '';
+    
+    $header['preview_image'] = $this->t('Entity');
+    $header['title'] = '';
     return $header + parent::buildHeader();
   }
 
@@ -83,7 +88,6 @@ class WisskiEntityListBuilder extends EntityListBuilder {
 //dpm($entity);
 //    dpm($entity->tellMe('id','bundle'));
 //    echo "Hello ".$id;
-    $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.view',array('wisski_individual'=>$entity->id()));
     //dpm($entity);
     //dpm($entity->get('preview_image'));
     $prev_id = $entity->get('preview_image')->first()->target_id;
@@ -94,11 +98,32 @@ class WisskiEntityListBuilder extends EntityListBuilder {
         '#uri' => $prev_uri,
         '#alt' => 'preview '.$entity->label(),
         '#title' => $entity->label(),
-        '#width' => 40,
-        '#height' => 20,
+        '#width' => $this->getImageWidth(),
+        //'#height' => 100,
       ));
     } else $row['preview_image'] = $this->t('No preview available');
+    $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.view',array('wisski_individual'=>$entity->id()));
     return $row + parent::buildRow($entity);
+  }
+  
+  
+  
+  private function getImageWidth() {
+    
+    if (isset($this->image_height)) return $this->image_height;
+    $settings = \Drupal::config('wisski_core.settings');
+    $n = $settings->get('wisski_preview_image_min_width_pixel');
+    $x = $settings->get('wisski_preview_image_max_width_pixel');
+    $l = $this->num_entities;
+    return min(
+      $x,
+      max(
+        $n,
+        ceil((($l-1)*$n+(100-$l)*$x)/99)
+      )
+    );
+    dpm(array('min'=>$n,'width'=>$width,'max'=>$x),__METHOD__);
+    return $width;
   }
 
 }
