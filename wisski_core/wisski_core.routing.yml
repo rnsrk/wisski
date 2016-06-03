@@ -48,6 +48,13 @@ wisski_core.wisski_entities:
   requirements:
     _permission: 'access content'
 
+wisski.display_settings:
+  path: '/admin/config/wisski/display_settings'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\WisskiDisplaySettingsForm'
+  requirements:
+    _permission: 'administer wisski bundles'
+
 entity.wisski_individual.list:
   path: '/wisski_core/list'
   defaults:
