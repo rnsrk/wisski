@@ -1,0 +1,13 @@
+iipmooviewer:
+  js:
+    /libraries/iipmooviewer/js/mootools-core-1.6.0-compressed.js: {}
+    /libraries/iipmooviewer/js/iipmooviewer-2.0-min.js: {}
+    /libraries/iipmooviewer/js/gallery.min.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupalSettings
+
+iip_integration:
+  js:
+    js/iip_integration.js
