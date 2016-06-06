@@ -10,4 +10,7 @@ iipmooviewer:
 
 iip_integration:
   js:
-    js/iip_integration.js
+    js/iip_integration.js: {}
+  dependencies:
+    - core/jquery
+    - iipmooviewer
