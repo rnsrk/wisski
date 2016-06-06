@@ -22,7 +22,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   }
   
   public function execute() {
-dpm($this,__METHOD__);
+#dpm($this,__METHOD__);
     if ($this->count) {
       $result = 0;
       foreach ($this->dependent_queries as $adapter_id => $query) {

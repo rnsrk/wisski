@@ -36,7 +36,9 @@ class WisskiPathForm extends EntityForm {
     // but this function does
     // so we have to override this one to get hold of the pb id
     $this->pb = $wisski_pathbuilder;
+    drupal_set_message('BUILD: ' . serialize($form_state));
     return parent::buildForm($form, $form_state, $wisski_pathbuilder);
+    
   }
     
 
@@ -44,7 +46,7 @@ class WisskiPathForm extends EntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {    
-     
+    drupal_set_message('FORM: ' . serialize($form_state)); 
     $form = parent::form($form, $form_state);
     
     // get the entity    
@@ -161,9 +163,11 @@ class WisskiPathForm extends EntityForm {
       #$pa = $pd['path_array'];
       $pa = $form_state->getValue('path_array');
       $existing_paths = $pa;
-      drupal_set_message('pa: ' . serialize ($pa));
-     
+      drupal_set_message('pa: ' . serialize ($pa));     
     }
+    drupal_set_message("HI");
+    drupal_set_message('isRebuilding? ' . serialize($form_state->isRebuilding()));  
+    $form_state->setRebuild();
     
 #    drupal_set_message(serialize($existing_paths));
 
@@ -204,8 +208,13 @@ class WisskiPathForm extends EntityForm {
       $form['path_data']['add_path_field_submit'][$key] = array(
         '#type' => 'submit',
         '#value' => $this->t('+'.$key),
+       # '#submit' => array(array($this,'Drupal\wisski_pathbuilder\Form\WisskiPathForm::submitAddPathField')),
         #'#title' => '+' . $key,
-        '#submit' => array('::submitAddPathField'),
+        '#ajax' => array(
+          'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxAddPathField',
+          'wrapper' => 'path_array_div',
+         # 'event' => 'change',
+        ),
         #'#prefix' => '<td>',
         #'#suffix' => '</td></tr></table><div class="clearfix"></div>',
         #'#suffix' => '</div>',
@@ -217,8 +226,6 @@ class WisskiPathForm extends EntityForm {
       #);
                                                                           
     }                               
-    #dpm($form['path_data']);
-    
     $primitive = array();
 
     // only act if there is more than the dummy entry
@@ -269,11 +276,24 @@ class WisskiPathForm extends EntityForm {
      # return array('#type' => 'ajax', '#commands' => $commands);
     #  return $form['item']['path_array']['pathbuilder_add_select'];        
     #  drupal_set_message("ajax: " . serialize($form_state));
+       #$form_state->setRebuild();
       return $form['path_data'];
    # }
   }
+ # public function submitAddPathField($form, $form_state) {
+  #  drupal_set_message("submit"); 
+    #$form_state->setRebuild();
+  #}
   
-  public function submitAddPathField(array &$form, FormStateInterface $form_state) {    
+  public function ajaxAddPathField($form, $form_state) {    
+    drupal_set_message("HELLO");
+    #$selector = '#path_array_div';
+     
+    #$commands = array();
+    #$commands[] = ajax_command_append($selector, "Stuff...");
+    #return array('#type' => 'ajax', '#commands' => $commands);
+    
+         
     $existing_paths = $form_state->getValue('path_array');
     $existing_paths_complete = $existing_paths;
     $complete_form = $form_state->getCompleteForm(); 
@@ -283,7 +303,7 @@ class WisskiPathForm extends EntityForm {
     drupal_set_message('parents ' . serialize($parents));
     #$existing_paths[$trigger_element+1] = "HI";
     $existing_paths_part = array_splice($existing_paths, $trigger_element+1);
-    $existing_paths[] = "0";
+    $existing_paths[] = "HI";
     
     #drupal_set_message(serialize($form_state));
     drupal_set_message('existing_paths: ' . serialize($existing_paths));
@@ -298,28 +318,14 @@ class WisskiPathForm extends EntityForm {
     #drupal_set_message('trigger ' . serialize($form_state->getTriggeringElement()));  
     #dpm($complete_form['path_data']);
     #dpm($form_state->getTriggeringElement());
-    
-    /*
-    // Find out what was submitted.
-    $values = $form_state->getValues();
-    drupal_set_message(serialize($values));
-    
-    foreach ($values as $key => $value) {
-      $label = isset($form[$key]['#title']) ? $form[$key]['#title'] : $key;
-                    
-      // Many arrays return 0 for unselected values so lets filter that out.
-      if (is_array($value)) {
-        $value = array_filter($value);
-      }
-      // Only display for controls that have titles and values.
-      if ($value) {
-        $display_value = is_array($value) ? print_r($value, 1) : $value;
-        $message = $this->t('Value for %title: %value', ['%title' => $label, '%value' => $display_value]);
-        drupal_set_message($message);
-      }
-    }
-    */                                                                                        
+    drupal_set_message('isRebuild? ' . serialize($form_state->isRebuilding()));
     $form_state->setRebuild();
+    drupal_set_message('isRebuild now? ' . serialize($form_state->isRebuilding()));
+    #$form_state->('wisski_path_add_form') 
+    return $form['path_data'];
+    #$form_state->set
+    #$form_state->setRebuild();
+     
   }
   
   /**
