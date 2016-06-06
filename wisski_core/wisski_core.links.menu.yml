@@ -17,6 +17,14 @@ wisski_core.wisski_entities:
   route_name: entity.wisski_individual.list
   weight: 50
 
+wisski.display_settings:
+  title: 'WissKI Display Settings'
+  description: 'Specify display configurations'
+  parent: wisski.content
+  route_name: wisski.display_settings
+  weight: 50
+
+
 wisski.content:
   title: 'WissKI'
   parent: system.admin_config
