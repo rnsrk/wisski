@@ -60,7 +60,7 @@ class Query extends WisskiQueryBase {
       if($pbadapter->id() != $adapterid)
         continue;
         
-      if(isset($this->pager)) {
+      if(isset($this->pager)&&!empty($this->range)) {
 #        drupal_set_message("pa: " . serialize($this->range));
 #        $this->initializePager();
         $limit = $this->range['length'];

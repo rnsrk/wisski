@@ -13,4 +13,4 @@ iip_integration:
     js/iip_integration.js: {}
   dependencies:
     - core/jquery
-    - iipmooviewer
+    - wisski_iip_image/iipmooviewer
