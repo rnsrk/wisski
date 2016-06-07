@@ -1,0 +1,25 @@
+#wisski_iip_inject > .canvas {
+  position:relative;
+}
+
+#wisski_iip_inject > .credit {
+  left: 0;
+  right: inherit;
+}
+
+#wisski_iip_inject {
+  height: 400px;
+  width: 600px;
+  position: relative;
+}
+
+#cboxLoadedContent {
+}
+
+#cboxLoadedContent > .cboxPhoto {
+  visibility: hidden;
+}
+
+.iipmooviewer .navcontainer .navbuttons {
+  z-index: 100;
+}
