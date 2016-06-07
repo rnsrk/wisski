@@ -67,7 +67,7 @@ class WisskiEntitySearch extends SearchPluginBase {
         }
       }
     } else {
-      $bundle_ids = \Drupal::entityQuery('wisski_bundle')->range(0,1)->execute();
+      $bundle_ids = \Drupal::entityQuery('wisski_bundle')->range(0,16)->execute();
       $bundles = \Drupal\wisski_core\Entity\WisskiBundle::loadMultiple($bundle_ids);
       $options = array();
       foreach($bundles as $bundle_id => $bundle) $options[$bundle_id] = $bundle->label();
