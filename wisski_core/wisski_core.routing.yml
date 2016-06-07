@@ -190,3 +190,17 @@ wisski.menu:
   path: '/admin/config/wisski'
   requirements:
     _permission: 'administer wisski'
+
+search.wisski.result:
+  path: '/search/wisski_search_result'
+  defaults:
+    _title: 'Wisski Search Results'
+  requirements:
+    _permission: 'view wisski content'
+
+wisski.titles.autocomplete:
+  path: '/search/wisski_autocomplete'
+  defaults:
+    _controller: '\Drupal\wisski_core\Controller\WisskiTitleAutocompletion::autocomplete'
+  requirements:
+    _permission: 'view wisski content'
