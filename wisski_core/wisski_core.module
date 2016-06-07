@@ -17,3 +17,13 @@ function wisski_core_flush_title_caches($bundle_ids=NULL,$entity_ids=NULL) {
     $bundle->flushTitleCache($entity_ids);
   }
 }
+
+function wisski_trace($dpm=TRUE) {
+
+  $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS,3);
+  if ($dpm && function_exists('dpm')) {
+    $label = (string) $trace[1]['function'].'() called from';
+    dpm(array($label => $trace[2]),__METHOD__);
+  }
+  return $trace[2];
+}

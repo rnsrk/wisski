@@ -30,7 +30,7 @@ class QueryFactory implements QueryFactoryInterface {
    */
   public function get(EntityTypeInterface $entity_type, $conjunction) {
     
-    return new WisskiQueryDelegator($entity_type,$conjuction,$this->namespaces);
+    return new WisskiQueryDelegator($entity_type,$conjunction,$this->namespaces);
   }
 
   /**

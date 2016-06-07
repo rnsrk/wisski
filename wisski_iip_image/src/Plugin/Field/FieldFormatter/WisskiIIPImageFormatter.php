@@ -41,7 +41,7 @@
 
       dpm($this->attachment);
       $elements = parent::viewElements($items, $langcode);    
-
+      
       $elements['#attached']['library'][] = 'wisski_iip_image/iipmooviewer';
       $elements['#attached']['library'][] = 'wisski_iip_image/iip_integration';      
       dpm($elements);

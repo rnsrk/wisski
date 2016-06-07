@@ -69,7 +69,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     }
   }
   
-  protected static $cached_titles;
+  protected $cached_titles;
   
   public function generateEntityTitle($wisski_individual) {
     
