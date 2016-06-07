@@ -38,6 +38,7 @@
      * {@inheritdoc}
      */
     public function viewElements(FieldItemListInterface $items, $langcode) {
+
       dpm($this->attachment);
       $elements = parent::viewElements($items, $langcode);    
 
@@ -66,8 +67,8 @@
 
       return $elements;
 
-/*
-      
+
+/*      
       $elements = array();
       $files = $this->getEntitiesToView($items, $langcode);
 #     drupal_set_message(serialize($files));
