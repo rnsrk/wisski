@@ -336,7 +336,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       $image_style_id = 'thumbnail';
       \Drupal::cache()->set($cache_id,array($preview_uri,$image_style_id));
     }
-    if (!empty($image_style)) {
+    if (!empty($image_style_id)) {
       $image_style = \Drupal\image\Entity\ImageStyle::load($image_style_id);
       $styled_image_uri = $image_style->buildUri($local_file_uri);
       if ($image_style->createDerivative($local_file_uri,$styled_image_uri)) {
