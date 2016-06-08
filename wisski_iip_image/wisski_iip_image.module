@@ -1,0 +1,19 @@
+<?php
+
+use Drupal\Core\Template\Attribute;
+use Drupal\Core\Url;
+use Drupal\image\Entity\ImageStyle;
+
+
+function wisski_iip_image_preprocess_colorbox_formatter(&$variables) {
+  $iu = $variables['image']['#uri'];
+  
+  $style = ImageStyle::load('wisski_pyramid');
+  $nuri = $style->buildUri($iu);
+  
+  if(strpos($nuri, "public://") !== FALSE)
+    $nuri = str_replace("public://", \Drupal::service('file_system')->realpath("public://"). '/', $nuri);
+  
+  $variables['attributes']['iip'] = $nuri;
+  
+}
