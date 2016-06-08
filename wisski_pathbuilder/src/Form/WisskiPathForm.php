@@ -6,6 +6,7 @@
  
 namespace Drupal\wisski_pathbuilder\Form;
 
+use Drupal\Core\Form\FormState;
 use Drupal\Core\Form\FormStateInterface; 
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityInterface;
@@ -26,7 +27,10 @@ class WisskiPathForm extends EntityForm {
       
 
   protected $pb = NULL;
-  
+
+  #public function getFormId() {
+  #  return 'wisski_path_form';
+  #}  
   /**
    * @{inheritdoc}
    */
@@ -165,9 +169,9 @@ class WisskiPathForm extends EntityForm {
       $existing_paths = $pa;
       drupal_set_message('pa: ' . serialize ($pa));     
     }
-    drupal_set_message("HI");
-    drupal_set_message('isRebuilding? ' . serialize($form_state->isRebuilding()));  
-    $form_state->setRebuild();
+    #drupal_set_message("HI");
+    #drupal_set_message('isRebuilding? ' . serialize($form_state->isRebuilding()));  
+    #$form_state->setRebuild();
     
 #    drupal_set_message(serialize($existing_paths));
 
@@ -210,10 +214,12 @@ class WisskiPathForm extends EntityForm {
         '#value' => $this->t('+'.$key),
        # '#submit' => array(array($this,'Drupal\wisski_pathbuilder\Form\WisskiPathForm::submitAddPathField')),
         #'#title' => '+' . $key,
+       # '#class' => 'use-ajax-submit',
         '#ajax' => array(
           'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxAddPathField',
           'wrapper' => 'path_array_div',
-         # 'event' => 'change',
+         # 'method' => 'after',
+         # 'event' => 'click',
         ),
         #'#prefix' => '<td>',
         #'#suffix' => '</td></tr></table><div class="clearfix"></div>',
@@ -303,7 +309,8 @@ class WisskiPathForm extends EntityForm {
     drupal_set_message('parents ' . serialize($parents));
     #$existing_paths[$trigger_element+1] = "HI";
     $existing_paths_part = array_splice($existing_paths, $trigger_element+1);
-    $existing_paths[] = "HI";
+    $existing_paths[] = "0";
+    #$existing_paths[] = "0";
     
     #drupal_set_message(serialize($form_state));
     drupal_set_message('existing_paths: ' . serialize($existing_paths));
@@ -318,14 +325,14 @@ class WisskiPathForm extends EntityForm {
     #drupal_set_message('trigger ' . serialize($form_state->getTriggeringElement()));  
     #dpm($complete_form['path_data']);
     #dpm($form_state->getTriggeringElement());
-    drupal_set_message('isRebuild? ' . serialize($form_state->isRebuilding()));
-    $form_state->setRebuild();
-    drupal_set_message('isRebuild now? ' . serialize($form_state->isRebuilding()));
-    #$form_state->('wisski_path_add_form') 
-    return $form['path_data'];
-    #$form_state->set
+    #drupal_set_message('isRebuild? ' . serialize($form_state->isRebuilding()));
     #$form_state->setRebuild();
-     
+    #$form = \Drupal::formBuilder()->rebuildForm('wisski_path_form', $form_state);
+    $form = \Drupal::formBuilder()->rebuildForm('Drupal\wisski_pathbuilder\Form\WisskiPathForm', $form_state);
+    #drupal_set_message('FORMBUILDER: ' . \Drupal::formBuilder());
+    #drupal_set_message('isRebuild now? ' . serialize($form_state->isRebuilding()));
+    return $form['path_data'];
+    #$form_state->setRebuild();
   }
   
   /**
