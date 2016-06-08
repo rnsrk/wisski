@@ -61,7 +61,7 @@
       if(! $image_style = \Drupal\image\Entity\ImageStyle::load($image_style_name)) {
         $values = array('name'=>$image_style_name,'label'=>'Wisski Pyramid Style');
         $image_style = \Drupal\image\Entity\ImageStyle::create($values);
-#      $image_style->addImageEffect('WisskiPyramidalTiffImageEffect', array());
+        $image_style->addImageEffect(array('id' => 'WisskiPyramidalTiffImageEffect'));
         $image_style->save();
       }
     
@@ -98,6 +98,7 @@
       foreach ($files as $delta => $file) {
  
         $image_uri = ImageStyle::load('wisski_pyramid')->buildUri($file->getFileUri());
+        $image_style->createDerivative($file->getFileUri(),$image_uri);
 #        drupal_set_message(serialize($image_uri));
       
 #      drupal_set_message("1: " . serialize($file->getFileUri()));
@@ -144,7 +145,7 @@
           
           #$attributes['iip_path'] = drupal_realpath($image_uri);
           
-          $elements[$delta]['#item_attributes'] = array('longdesc' => 'blue');
+#          $elements[$delta]['#item_attributes'] = array('longdesc' => 'blue');
           
           #$elements[$delta]['#item']->_attributes = array('class' => 'blue');
           
@@ -152,7 +153,7 @@
           #dpm($attributes);
           
           #$elements[$delta]['#url'] = $url;
-          $elements[$delta]['#settings']['colorbox_image_style'] = 'wisski_pyramid';
+#          $elements[$delta]['#settings']['colorbox_image_style'] = 'wisski_pyramid';
           #$elements[$delta]['#iip_path'] = drupal_realpath($image_uri);          
           
 /*

@@ -2,10 +2,10 @@ jQuery(document).bind('cbox_complete', function() {
   var server = "/fcgi-bin/iipsrv.fcgi";
   var images = ["/srv/www/htdocs/dev/sites/default/files/de514d90b6b6862363818e117ebf7e59.tif"];
 
-  var images = [jQuery.colorbox.element().context.href];
+  var images = [jQuery.colorbox.element().attr("iip")];
   
 //  (function($, window, undefined) {  
-//    console.log( jQuery.colorbox.element().context.href );
+//    console.log( jQuery.colorbox.element().context.iip );
 //  })(jQuery, window);
   var credit = '&copy; <a href="http://www.gnm.de/">Germanisches Nationalmuseum</a>';
   var iipmooviewer = new IIPMooViewer( "cboxLoadedContent", {
