@@ -8,6 +8,8 @@ use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 
+use Drupal\wisski_core\WisskiHelper;
+
 /**
  * @SearchPlugin(
  *   id = "wisski_individual_search",
@@ -52,26 +54,35 @@ class WisskiEntitySearch extends SearchPluginBase {
       '#title' => $this->t('Search by Entity Title'),
     );
     $storage = $form_state->getStorage();
+    $paths = (isset($storage['paths'])) ? $storage['paths']: array();
+    $input = $form_state->getUserInput();
+    if (isset($input['bundles']['select_bundles'])) {
+      $selection = $input['bundles']['select_bundles'];
+    } else $selection = array();
     if (isset($storage['options'])) {
       $options = $storage['options'];
       $trigger = $form_state->getTriggeringElement();
-      if ($trigger['#name'] == 'btn-add-bundle') {
-        $input = $form_state->getUserInput()['bundles'];
-        $new_bundle = $input['auto_bundle'];
-        $selection = $input['select_bundles'];
+      if ($trigger['#name'] == 'btn-add-bundle') {    
+        $new_bundle = $input['bundles']['auto_bundle'];
         $matches = array();
         if (preg_match('/^(\w+)\s\((\w+)\)$/',$new_bundle,$matches)) {
           list(,$label,$id) = $matches;
           if (!isset($options[$id])) $options[$id] = $label;
           $selection[$id] = $id;
+          $paths[$id] = WisskiHelper::getPathOptions($id);
         }
       }
     } else {
       $bundle_ids = \Drupal::entityQuery('wisski_bundle')->range(0,16)->execute();
       $bundles = \Drupal\wisski_core\Entity\WisskiBundle::loadMultiple($bundle_ids);
       $options = array();
-      foreach($bundles as $bundle_id => $bundle) $options[$bundle_id] = $bundle->label();
+      foreach($bundles as $bundle_id => $bundle) {
+        $options[$bundle_id] = $bundle->label();
+        $paths[$bundle_id] = WisskiHelper::getPathOptions($bundle_id);
+      }
     }
+    $storage['paths'] = $paths;
+    //dpm($paths,'Paths');
     $storage['options'] = $options;
     $form_state->setStorage($storage);
     $form['bundles'] = array(
@@ -82,29 +93,69 @@ class WisskiEntitySearch extends SearchPluginBase {
     $form['bundles']['select_bundles'] = array(
       '#type' => 'checkboxes',
       '#options' => $options,
-      '#title' => $this->t('Select Bundles'),
       '#prefix' => '<div id = wisski-search-bundles>',
       '#suffix' => '</div>',
+      '#ajax' => array(
+        'wrapper' => 'wisski-search-paths',
+        'callback' => 'Drupal\wisski_core\Plugin\Search\WisskiEntitySearch::replacePaths',
+      ),
     );
-    if (isset($selection)) $form['bundles']['select_bundles']['#value'] = $selection;
     $form['bundles']['auto_bundle'] = array(
+      '#type' => 'container',
+      '#attributes' => array('class' => 'container-inline','title' => $this->t('Find more Bundles')),
+      
+    );
+    $form['bundles']['auto_bundle']['input_field'] = array(
       '#type' => 'entity_autocomplete',
       '#target_type' => 'wisski_bundle',
-      '#title' => $this->t('Find more Bundles'),
+      '#size' => 48,
     );
-    $form['bundles']['add_op'] = array(
+    $form['bundles']['auto_bundle']['add_op'] = array(
       '#type' => 'button',
-      '#value' => $this->t('Add'),
+      '#value' => '+',
       '#limit_validation_errors' => array(),
       '#ajax' => array(
         'wrapper' => 'wisski-search-bundles',
-        'callback' => 'Drupal\wisski_core\Plugin\Search\WisskiEntitySearch::ajaxCallback',
+        'callback' => 'Drupal\wisski_core\Plugin\Search\WisskiEntitySearch::replaceSelectBoxes',
       ),
       '#name' => 'btn-add-bundle',
     );
-    $form['fields']['#type'] = 'container';
-    $form['fields']['#attributes']['id'] = 'wisski-search-fields';
-    
+    $selection = array_filter($selection);
+    $selected_paths = array_intersect_key($paths,$selection);
+    $form['paths'] = array(
+      '#type' => 'hidden',
+      '#prefix' => '<div id=wisski-search-paths>',
+      '#suffix' => '</div>',
+      '#tree' => TRUE,
+      '#title' => $this->t('Search in Paths'),
+    );
+    if (!empty($selected_paths)) {
+      $form['paths']['#type'] = 'fieldset';
+      foreach ($selected_paths as $bundle_id => $bundle_paths) {
+        $form['paths'][$bundle_id] = array(
+          '#type' => 'fieldset',
+          '#tree' => TRUE,
+          '#title' => $options[$bundle_id],
+        );
+        foreach ($bundle_paths as $pb => $pb_paths) {
+          if (is_string($pb_paths)) {
+            //this is a global pseudo-path like 'uri'
+            $form['paths'][$bundle_id][$pb] = array(
+              '#type' => 'textfield',
+              '#title' => $pb_paths,
+            );
+          } else {
+            foreach ($pb_paths as $path_id => $path_label) {
+              $form['paths'][$bundle_id][$path_id] = array(
+                '#type' => 'textfield',
+                '#title' => $path_label,
+                '#description' => $path_id,
+              );
+            }
+          }
+        }
+      }
+    }
   }
 
   public function buildSearchUrlQuery(FormStateInterface $form_state) {
@@ -113,6 +164,7 @@ class WisskiEntitySearch extends SearchPluginBase {
       'keys',
       'bundles',
       'entity_title',
+      'paths',
     );
     $parameters['keys'] = array();
     $vals = $form_state->getValues();
@@ -121,9 +173,14 @@ class WisskiEntitySearch extends SearchPluginBase {
     
   }
 
-  public function ajaxCallback(array $form,FormStateInterface $form_state) {
+  public function replaceSelectBoxes(array $form,FormStateInterface $form_state) {
     
     return $form['bundles']['select_bundles'];
+  }
+  
+  public function replacePaths(array $form,FormStateInterface $form_state) {
+    
+    return $form['paths'];
   }
 
 }

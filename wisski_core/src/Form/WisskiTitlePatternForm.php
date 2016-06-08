@@ -9,6 +9,8 @@ use Drupal\Core\Render\Element;
 
 use Drupal\Core\Ajax\AjaxResponse;
 
+use Drupal\wisski_core\WisskiHelper;
+
 class WisskiTitlePatternForm extends EntityForm {
 
   private $path_options;
@@ -27,7 +29,7 @@ class WisskiTitlePatternForm extends EntityForm {
     
     $form['#title'] = $this->t('Edit title pattern for bundle %label', array('%label' => $bundle->label()));
 
-    $options = $this->getPathOptions($bundle->id());
+    $options = WisskiHelper::getPathOptions($bundle->id());
     
     $form_storage = $form_state->getStorage();
     if (isset($form_storage['cached_pattern']) && !empty($form_storage['cached_pattern'])) {
@@ -368,26 +370,4 @@ class WisskiTitlePatternForm extends EntityForm {
     $form_state->setRedirectUrl($this->entity->urlInfo('delete-title-form'));
   }  
   
-  private function getPathOptions($bundle_id) {
-    
-    $options = &$this->path_options;
-    //if we already gathered the data, we can stop here
-    if (!isset($options)) {
-      $options['empty'] = ' - '.$this->t('select').' - ';
-      $options['uri'] = 'URI';
-      //find all paths from all active pathbuilders
-      $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
-      $paths = array();
-      foreach ($pbs as $pb_id => $pb) {
-        $pb_paths = $pb->getAllPaths();
-        foreach ($pb_paths as $path) {
-          $path_id = $path->getID();
-          if ($bundle_id === $pb->getBundle($path_id))
-            $options[$pb_id][$pb_id.'.'.$path_id] = $path->getName();
-        }
-      }
-    }
-    //dpm(array('$bundle_id'=>$bundle_id,'result'=>$options),__METHOD__);
-    return $options;
-  }
 }
