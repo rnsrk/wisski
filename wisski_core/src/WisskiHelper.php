@@ -43,4 +43,14 @@ class WisskiHelper {
     //dpm(array('$bundle_id'=>$bundle_id,'result'=>$options),__METHOD__);
     return $options;
   }
+  
+  public static function getParentBundleIds($bundle_id) {
+    
+    $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
+    $parents = array();
+    foreach ($pbs as $pb_id => $pb) {
+      $parents[] = $pb->getParentBundleId($bundle_id);
+    }
+    return $parents;
+  }
 }
