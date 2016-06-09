@@ -10,14 +10,22 @@ entity.wisski_bundle.add:
   appears_on:
     - entity.wisski_bundle.list
 
-entity.wisski_individual.list_bundles:
-  route_name: entity.wisski_bundle.list
-  title: 'Show Bundles'
-  appears_on:
-    - entity.wisski_individual.list
-
 entity.wisski_bundle.title:
   route_name: entity.wisski_bundle.title_form
   title: 'Edit title pattern'
   appears_on:
     - entity.wisski_bundle.edit_form
+
+wisski.navigate:
+  title: 'Navigate'
+  description: 'Browse through classes and individuals'
+  route_name: entity.wisski_bundle.list
+  appears_on:
+    - standard.front_page
+
+wisski.find:
+  title: 'Find'
+  description: 'Search for individuals'
+  route_name: search.view_wisski_entities
+  appears_on:
+    - standard.front_page
