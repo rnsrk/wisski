@@ -804,6 +804,47 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       
       return $paths;    
     }
+    
+    /**
+     * Get the parent groupid for a given groupid
+     *
+     * @return False if not found, the groupid if something was found
+     */
+    public function getParentBundleId($bundleid) {
+      $groupids = $this->getGroupsForBundle($bundleid);  
+    
+      // @TODO we just use the first one here for now
+      $groupid = current($groupids);
+      
+      $parent = $this->getParentGroupId($groupid);
+      
+      $pbpaths = $this->getPbPaths();
+      
+      return $pbpaths[$parent]['bundle'];
+    
+    }
+    
+    /**
+     * Get the parent groupid for a given groupid
+     *
+     * @return False if not found, the groupid if something was found
+     */
+    public function getParentGroupId($groupid, $tree = NULL) {
+      if(empty($tree))
+        $tree = $this->pathtree;
+      
+      foreach($tree['children'] as $sub) {
+        if($sub['id'] == $bundleid)
+          return $tree['id'];
+        
+        $subout = $this->getParentBundle($bundleid, $tree['children']);
+        
+        if(!empty($subout))
+          return $subout;
+      }
+      
+      return FALSE;   
+    }
                         
   } 
               
