@@ -254,8 +254,6 @@ class WisskiPathbuilderForm extends EntityForm {
 #      '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
     );
     
-dpm($form);    
-    
     return $form;
   }
   
@@ -315,6 +313,14 @@ dpm($form);
       
       $pb->addPathToPathTree($path_in_wisski->id(), (int)$path->group_id, $path_in_wisski->isGroup());
       
+      // check enabled or disabled
+      $pbpaths = $pb->getPbPaths();
+      
+      $pbpaths[$path_in_wisski->id()]['enabled'] = html_entity_decode((string)$path->enabled);
+      $pbpaths[$path_in_wisski->id()]['weight'] = html_entity_decode((string)$path->weight);
+      
+      $pb->setPbPaths($pbpaths);
+      
     }
     
     $pb->save();
@@ -327,7 +333,7 @@ dpm($form);
     // first we have to get any additional fields because we just got the tree-part
     // and not the real data-fields
     $pbpath = $this->entity->getPbPath($grouparray['id']);
-#   drupal_set_message(serialize($pbpath));       
+
     // if we did not get something, stop.
     if(empty($pbpath))
       return array();
@@ -480,10 +486,15 @@ dpm($form);
     
     // for now it is equal which create mode is called.
 #    if($form_state->getValue('create_mode') == "0") {
-
+      $pbpaths = $pathbuilder->getPbPaths();
+    
       $allgroupsandpaths = $pathbuilder->getAllGroupsAndPaths();
 
       foreach($allgroupsandpaths as $path) {
+      
+        // check if enabled - if not, we don't create fields
+        if(empty($pbpaths[$path->id()]['enabled']))
+          continue;
 
         if($path->isGroup()) {
           $pathbuilder->generateBundleForGroup($path->id());
@@ -494,7 +505,7 @@ dpm($form);
           $pathbuilder->generateFieldForPath($path->id(), $path->getName());
       }
       
-#    }
+    #}
 
     // save the tree
     $pathbuilder->setPathTree($pathtree);
