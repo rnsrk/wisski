@@ -837,7 +837,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         if($sub['id'] == $bundleid)
           return $sub['id'];
         
-        $subout = $this->getParentBundle($bundleid, $sub['children']);
+        $subout = $this->getParentGroupId($groupid, $sub['children']);
         
         if(!empty($subout))
           return $subout;
