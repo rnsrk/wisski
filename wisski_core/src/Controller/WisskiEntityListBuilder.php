@@ -91,40 +91,18 @@ class WisskiEntityListBuilder extends EntityListBuilder {
 //    echo "Hello ".$id;
     //dpm($entity);
     //dpm($entity->get('preview_image'));
-    $prev_id = $entity->get('preview_image')->first()->target_id;
-    if ($prev_id) {
+    $prev = $entity->get('preview_image')->first();
+    if ($prev) {
+      $prev_id = $prev->target_id;
       $prev_uri = \Drupal::entityManager()->getStorage('file')->load($prev_id)->getFileUri();
       $row['preview_image'] = array('data'=>array(
         '#theme' => 'image',
         '#uri' => $prev_uri,
         '#alt' => 'preview '.$entity->label(),
         '#title' => $entity->label(),
-        '#width' => $this->getImageWidth(),
-        //'#height' => 100,
       ));
     } else $row['preview_image'] = $this->t('No preview available');
     $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.view',array('wisski_individual'=>$entity->id()));
     return $row + parent::buildRow($entity);
-  }
-  
-  
-  
-  private function getImageWidth() {
-    
-    if (isset($this->image_height)) return $this->image_height;
-    $settings = \Drupal::config('wisski_core.settings');
-    $n = $settings->get('wisski_preview_image_min_width_pixel');
-    $x = $settings->get('wisski_preview_image_max_width_pixel');
-    $l = $this->num_entities;
-    return min(
-      $x,
-      max(
-        $n,
-        ceil((($l-1)*$n+(100-$l)*$x)/99)
-      )
-    );
-    dpm(array('min'=>$n,'width'=>$width,'max'=>$x),__METHOD__);
-    return $width;
-  }
-
+  } 
 }

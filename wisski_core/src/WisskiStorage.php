@@ -13,6 +13,8 @@ use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\file\FileStorage;
 use Drupal\file\Entity\File;
 
+use Drupal\image\Entity\ImageStyle;
+
 use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\wisski_core\Query\WisskiQueryInterface;
 //use Drupal\wisski_core\WisskiInvalidArgumentException;
@@ -272,7 +274,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     return $entity_info;
   }
 
-  protected function getFileId($file_uri) {
+  protected function getFileId($file_uri,&$local_file_uri='') {
 
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
@@ -328,25 +330,52 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     
     $cache_id = 'wisski_preview_image.'.$entity_id;
     if ($cache = \Drupal::cache()->get($cache_id)) {
-      list($preview_uri,$image_style_id) = $cache->data;
+      dpm('Preview image from cache');
+      return $cache->data;
     }
     else {
       $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
-      $preview_uri = current($images);
-      $image_style_id = 'thumbnail';
-      \Drupal::cache()->set($cache_id,array($preview_uri,$image_style_id));
+      $input_uri = current($images);
+      $output_uri = '';
+      $input_id = $this->getFileId($input_uri,$output_uri);
+      $image_style = $this->getPreviewStyle();
+      $preview_uri = $image_style->buildUri($output_uri);
+      //dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
+      if ($image_style->createDerivative($output_uri,$preview_uri)) {
+        drupal_set_message('Style did it');
+        $preview_id = $this->getFileId($preview_uri);
+        \Drupal::cache()->set($cache_id,$preview_id);
+        return $preview_id;
+      } else return $input_id;
     }
-    if (!empty($image_style_id)) {
-      $file = \Drupal\file\Entity\File::load($this->getFileId($preview_uri));
-      $input_uri = $file->getFileUri();
-      $image_style = \Drupal\image\Entity\ImageStyle::load($image_style_id);
-      $styled_image_uri = $image_style->buildUri($input_uri);//dpm($styled_image_uri);
-      if ($image_style->createDerivative($input_uri,$styled_image_uri)) {
-        return $this->getFileId($styled_image_uri);
-      }
-    }
+  }
+  
+  private $image_style;
+  
+  private function getPreviewStyle() {
     
-    return $this->getFileId($preview_uri);
+    if (isset($this->image_style)) return $this->image_style;
+    $image_style_name = 'wisski_preview';
+
+    if(! $image_style = ImageStyle::load($image_style_name)) {
+      $values = array('name'=>$image_style_name,'label'=>'Wisski Preview Image Style');
+      $image_style = ImageStyle::create($values);
+      $settings = \Drupal::config('wisski_core.settings');
+      $w = $settings->get('wisski_preview_image_max_width_pixel');
+      $h = $settings->get('wisski_preview_image_max_height_pixel');
+      $config = array(
+        'id' => 'image_scale',
+        'data' => array(
+          'width' => isset($w) ? $w : 100,
+          'height' => isset($h) ? $h : 100,
+          'upscale' => FALSE,
+        ),
+      );
+      $image_style->addImageEffect($config);
+      $image_style->save();
+    }
+    $this->image_style = $image_style;
+    return $image_style;
   }
 
 #  /**

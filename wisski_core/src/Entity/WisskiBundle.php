@@ -76,7 +76,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $titles = $this->getCachedTitles();
     $entity_id = $wisski_individual->id();
     if (isset($titles[$entity_id])) {
-      drupal_set_message('Title from cache');
+      //drupal_set_message('Title from cache');
       return $titles[$entity_id];
     }
     $pattern = $this->getTitlePattern();
@@ -187,7 +187,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       if ($cache = \Drupal::cache()->get($cache_id)) {
         $this->cached_titles = $cache->data;  
       } else $this->cached_titles = array();
-    }dpm($this->cached_titles,'cached titles');
+    }//dpm($this->cached_titles,'cached titles');
     return $this->cached_titles;
   }
   

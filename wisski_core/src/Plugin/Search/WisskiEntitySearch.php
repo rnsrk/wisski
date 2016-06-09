@@ -63,17 +63,16 @@ class WisskiEntitySearch extends SearchPluginBase {
       $options = $storage['options'];
       $trigger = $form_state->getTriggeringElement();
       if ($trigger['#name'] == 'btn-add-bundle') {    
-        $new_bundle = $input['bundles']['auto_bundle'];
+        $new_bundle = $input['bundles']['auto_bundle']['input_field'];
         $matches = array();
         if (preg_match('/^(\w+)\s\((\w+)\)$/',$new_bundle,$matches)) {
           list(,$label,$id) = $matches;
           if (!isset($options[$id])) $options[$id] = $label;
-          $selection[$id] = $id;
           $paths[$id] = WisskiHelper::getPathOptions($id);
         }
       }
     } else {
-      $bundle_ids = \Drupal::entityQuery('wisski_bundle')->range(0,16)->execute();
+      $bundle_ids = \Drupal::entityQuery('wisski_bundle')->range(0,1)->execute();
       $bundles = \Drupal\wisski_core\Entity\WisskiBundle::loadMultiple($bundle_ids);
       $options = array();
       foreach($bundles as $bundle_id => $bundle) {
@@ -174,7 +173,7 @@ class WisskiEntitySearch extends SearchPluginBase {
   }
 
   public function replaceSelectBoxes(array $form,FormStateInterface $form_state) {
-    
+  drupal_set_message('AJAX calling');    
     return $form['bundles']['select_bundles'];
   }
   
