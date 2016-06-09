@@ -829,15 +829,18 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      *
      * @return False if not found, the groupid if something was found
      */
-    public function getParentGroupId($groupid, $tree = NULL) {
+    public function getParentGroupId($groupid, $tree = NULL, $parent = FALSE) {
       if(empty($tree))
         $tree = $this->pathtree;
       
       foreach($tree as $sub) {
-        if($sub['id'] == $bundleid)
-          return $sub['id'];
+        if($sub['id'] == $groupid)
+          return $parent;
         
-        $subout = $this->getParentGroupId($groupid, $sub['children']);
+        if(empty($sub['children']))
+          continue;
+        
+        $subout = $this->getParentGroupId($groupid, $sub['children'], $sub['id']);
         
         if(!empty($subout))
           return $subout;
