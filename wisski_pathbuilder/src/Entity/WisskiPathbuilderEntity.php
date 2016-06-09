@@ -316,6 +316,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
 #        'type' => 'entity_reference_entity_view',//has to fit the field type, see above
 #        'settings' => array('trim_length' => '200'),
 #        'weight' => 1,//@TODO specify a "real" weight
+        'weight' => $pbpaths[$pathid]['weight'],
       );
     
       $view_entity_values = array(
@@ -327,6 +328,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       
       $display_options = array(
         'type' => 'entity_reference_entity_view',
+        'weight' => $pbpaths[$pathid]['weight'],
       );
 
       $display = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual' . '.'.$bundle.'.default');
@@ -437,9 +439,9 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
 
       $view_options = array(
         // this might also be formatterwidget - I am unsure here. @TODO
-        'type' => $pbpaths[$pathid]['fieldtype'], #'text_summary_or_trimmed',//has to fit the field type, see above
+        'type' => $pbpaths[$pathid]['displaywidget'], #'text_summary_or_trimmed',//has to fit the field type, see above
         'settings' => array(), #array('trim_length' => '200'),
-        'weight' => 1,//@TODO specify a "real" weight
+        'weight' => $pbpaths[$pathid]['weight'],#'weight' => 1,//@TODO specify a "real" weight
       );
     
       $view_entity_values = array(
@@ -448,18 +450,24 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         'mode' => 'default',
         'status' => TRUE,
       );
+      
+      $display_options = array(
+        'type' => $pbpaths[$pathid]['formatterwidget'],
+        'settings' => array(),
+        'weight' => $pbpaths[$pathid]['weight'],
+      );
 
       // find the current display elements
       $display = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual' . '.'.$bundle.'.default');
       if (is_null($display)) $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
       // setComponent enables them
-      $display->setComponent($fieldid,$view_options)->save();
+      $display->setComponent($fieldid,$display_options)->save();
 
       // find the current form display elements
       $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual' . '.'.$bundle.'.default');
-      if (is_null($form_display)) $form_display = $display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
+      if (is_null($form_display)) $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
       // setComponent enables them
-      $form_display->setComponent($fieldid)->save();
+      $form_display->setComponent($fieldid, $view_options)->save();
 
       drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
     }
