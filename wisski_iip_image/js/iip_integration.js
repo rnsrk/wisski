@@ -3,14 +3,15 @@ jQuery(document).bind('cbox_complete', function() {
 
   var images = [jQuery.colorbox.element().attr("iip")];
 
+  var prefix = drupalSettings.path.baseUrl + '/libraries/iipmooviewer/images/';
+
 //  var credit = '&copy; <a href="http://www.gnm.de/">Germanisches Nationalmuseum</a>';
 
   var iipmooviewer = new IIPMooViewer( "cboxLoadedContent", {
     image: images,
     server: server,
-    credit: credit,
-    prefix: '/dev/libraries/iipmooviewer/images/',
-//    prefix: \'' . $base_path . drupal_get_path('module', 'wisski_iip') . '/iipmooviewer/images/\',
+//    credit: credit,
+    prefix: prefix,
 //    ' . $scale . '
     showNavWindow: true,
     showNavButtons: true,

@@ -508,6 +508,29 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
 
       $bundle = \Drupal::entityManager()->getStorage($mode)->create(array('id'=>$bundleid, 'label'=>$bundle_name));
       $bundle->save();
+      
+      // disable entity name and uid for now everywhere @TODO perhaps subgroups only?
+      
+      $view_entity_values = array(
+        'targetEntityType' => 'wisski_individual',
+        'bundle' => $bundleid,
+        'mode' => 'default',
+        'status' => TRUE,
+      );
+      
+      $evd = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual.' . $bundleid . '.default');
+      if (is_null($evd)) $evd = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
+      $efd = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual.' . $bundleid . '.default');
+      if (is_null($efd)) $efd = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
+      
+      $evd->removeComponent('name');
+      $evd->removeComponent('uid');
+      $evd->save();
+      
+      $efd->removeComponent('name');
+      $efd->removeComponent('uid');
+      $efd->save();
+      
       drupal_set_message(t('Created new bundle %bundle for group with id %groupid.',array('%bundle'=>$bundle_name, '%groupid'=>$groupid)));
     }
     
