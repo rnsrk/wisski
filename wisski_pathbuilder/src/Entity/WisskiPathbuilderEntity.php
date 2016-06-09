@@ -833,11 +833,11 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       if(empty($tree))
         $tree = $this->pathtree;
       
-      foreach($tree['children'] as $sub) {
+      foreach($tree as $sub) {
         if($sub['id'] == $bundleid)
-          return $tree['id'];
+          return $sub['id'];
         
-        $subout = $this->getParentBundle($bundleid, $tree['children']);
+        $subout = $this->getParentBundle($bundleid, $sub['children']);
         
         if(!empty($subout))
           return $subout;
