@@ -58,7 +58,7 @@ class AddOverviewForm extends FormBase1 {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $this->pipe = $wisski_salz;
+    //$this->pipe = $wisski_salz;
 
     $form['#attached']['library'][] = 'wisski_salz/wisski_salz.admin';
     $header = [
@@ -77,7 +77,7 @@ class AddOverviewForm extends FormBase1 {
 
     $options = [];
     foreach ($this->manager->getDefinitions() as $id => $plugin) {
-      $options[$id] = $plugin['label'];
+      $options[$id] = isset($plugin['label']) ? $plugin['label']:$id;
     }
 
     return $form;
@@ -92,9 +92,9 @@ class AddOverviewForm extends FormBase1 {
   private function buildRows() {
     $rows = [];
     $all_plugins = $this->manager->getDefinitions();
-    uasort($all_plugins, function ($a, $b) {
-      return strnatcasecmp($a['label'], $b['label']);
-    });
+    //uasort($all_plugins, function ($a, $b) {
+    //  return strnatcasecmp($a['label'], $b['label']);
+    //});
     foreach ($all_plugins as $definition) {
       /** @var \Drupal\wisski_salz\EngineInterface $plugin */
       $plugin = $this->manager->createInstance($definition['id']);
