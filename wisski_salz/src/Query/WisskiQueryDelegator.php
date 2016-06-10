@@ -36,7 +36,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     } else {
       $result = array();
       $pager = FALSE;
-      if (isset($this->pager)) {
+      if ($this->pager) {
         $pager = TRUE;
         //initializePager() generates a clone of $this with $count = TRUE
         //this is then passed to the dependent_queries which are NOT cloned

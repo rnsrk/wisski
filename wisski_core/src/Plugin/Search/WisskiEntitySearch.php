@@ -30,8 +30,19 @@ class WisskiEntitySearch extends SearchPluginBase {
   public function execute() {
     dpm($this,__METHOD__);
     $results = array();
-    if (!$this->isSearchExecutable()) {
-      return $results;
+    if ($this->isSearchExecutable()) {
+      $query = \Drupal::entityQuery('wisski_individual');
+      foreach ($this->getParameters() as $key => $condition) {
+        if (is_array($condition)) {
+          $group = $query->andConditionGroup();
+          foreach ($condition as $subkey => $subcondition) {
+            $query->condition($key,$subkey);
+            $group->condition($subkey,$subcondition);
+          }
+          $query->condition($group);
+        } else $query->condition($key,$condition);
+      }
+      return $query->execute();
     }
     return array(
       array(
