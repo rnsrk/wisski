@@ -17,7 +17,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
 
 //    $header['id'] = t('ID');
     $header['label'] = $this->t('Name');
-//    $header['parent'] = $this->t('Parent');
+    $header['parent'] = $this->t('Parent');
     return $header + parent::buildHeader();
   }
 
@@ -31,11 +31,20 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     //@TODO use EntityFieldQuery or whatsolike
     //$ents = WisskiEntity::load(array('bundle'=>$id));
     $parents = \Drupal\wisski_core\WisskiHelper::getParentBundleIds($id);
-    dpm($parents,'parents of '.$id);
     $row['label'] = array(
       'data' => $this->getLabel($entity),
       'class' => array('menu-label'),
     );
+    if (list($key,$value) = each($parents)) {
+      $row['parent'] = array(
+        'data' => array(
+          '#type' => 'link',
+          '#url' => Url::fromRoute('entity.entity_view_display.wisski_individual.default')
+            ->setRouteParameters(array('wisski_bundle' => $key)),
+          '#title' => $value,
+        ),
+      );
+    } else $row['parent'] = '';
     $row += parent::buildRow($entity);
     $row['operations']['data']['#links']['add'] = array(
       'title' => $this->t('Add an Entity'),

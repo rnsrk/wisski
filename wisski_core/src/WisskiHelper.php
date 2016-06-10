@@ -44,12 +44,17 @@ class WisskiHelper {
     return $options;
   }
   
-  public static function getParentBundleIds($bundle_id) {
+  public static function getParentBundleIds($bundle_id,$get_labels=TRUE) {
     
     $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
     $parents = array();
     foreach ($pbs as $pb_id => $pb) {
-      $parents[] = $pb->getParentBundleId($bundle_id);
+      $parent_id = $pb->getParentBundleId($bundle_id);
+      if ($parent_id) {
+        if ($get_labels) {
+          $parents[$parent_id] = \Drupal\wisski_core\Entity\WisskiBundle::load($parent_id)->label();
+        } else $parents[$parent_id] = $parent_id;
+      }
     }
     return $parents;
   }
