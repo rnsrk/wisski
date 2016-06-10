@@ -223,9 +223,9 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     $this->pathbuilder->setPbPaths($pbpaths);
     $this->pathbuilder->save();
     
-    drupal_set_message(serialize($pbpaths[$pathid]));
+#    drupal_set_message(serialize($pbpaths[$pathid]));
     
-    drupal_set_message(serialize($this->pathbuilder->getPbPaths()));
+#    drupal_set_message(serialize($this->pathbuilder->getPbPaths()));
     
     return;    
     // it is a field
