@@ -811,14 +811,19 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      * @return False if not found, the groupid if something was found
      */
     public function getParentBundleId($bundleid) {
-      $groupids = $this->getGroupsForBundle($bundleid);  
+      $groups = $this->getGroupsForBundle($bundleid);  
+      
+#      dpm($groupids);
     
       // @TODO we just use the first one here for now
-      $groupid = current($groupids);
+      $group = current($groups);
       
-      $parent = $this->getParentGroupId($groupid);
+      $parent = $this->getParentGroupId($group->id());
       
       $pbpaths = $this->getPbPaths();
+
+      if(empty($pbpaths[$parent]))
+        return NULL;
       
       return $pbpaths[$parent]['bundle'];
     

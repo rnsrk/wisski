@@ -73,17 +73,19 @@ class WisskiPathbuilderForm extends EntityForm {
     // is set more directly at the top. Furthermore in the create mode
     // the table is unnecessary.
     if($this->operation == 'edit') { 	   
-      $header = array("title", "Path", array('data' => $this->t("Enabled"), 'class' => array('checkbox')), "Weight", array('data' => $this->t('Operations'), 'colspan' => 3));
+      $header = array("title", "Path", array('data' => $this->t("Enabled"), 'class' => array('checkbox')), "Weight", array('data' => $this->t('Operations'), 'colspan' => 11));
      
       $form['pathbuilder_table'] = array(
         '#type' => 'table',
-        '#theme' => 'table__menu_overview',
+#        '#theme' => 'table__menu_overview',
         '#header' => $header,
 #      '#rows' => $rows,
         '#attributes' => array(
-          'id' => 'my-module-table',
+          'id' => 'wisski_pathbuilder_' . $pathbuilder->id(),
         ),
+        
         '#tabledrag' => array(
+          
           array(
             'action' => 'match',
             'relationship' => 'parent',
@@ -99,6 +101,7 @@ class WisskiPathbuilderForm extends EntityForm {
             'group' => 'menu-weight',
           ),
         ),
+        
       );	
 
       $pathforms = array();
@@ -107,6 +110,8 @@ class WisskiPathbuilderForm extends EntityForm {
       foreach($pathbuilder->getPathTree() as $grouparray) {
         $pathforms = array_merge($pathforms, $this->recursive_render_tree($grouparray));
       }
+    
+      $pbpaths = $pathbuilder->getPbPaths();
     
       // iterate through all the pathforms and bring the forms in a tree together
       foreach($pathforms as $pathform) {    
@@ -119,9 +124,8 @@ class WisskiPathbuilderForm extends EntityForm {
         $form['pathbuilder_table'][$path->id()]['#attributes'] = $pathform['#attributes'];
         $form['pathbuilder_table'][$path->id()]['#attributes']['class'][] = 'draggable';
 
-
         // TableDrag: Sort the table row according to its existing/configured weight.
-        $form['pathbuilder_table'][$path->id()]['#weight'] = $path->weight;
+        $form['pathbuilder_table'][$path->id()]['#weight'] = $pbpaths[$path->id()]['weight'];
 
         // Add special classes to be used for tabledrag.js.
         $pathform['parent']['#attributes']['class'] = array('menu-parent');
@@ -158,6 +162,36 @@ class WisskiPathbuilderForm extends EntityForm {
           'url' => \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.configure_field_form')
                      ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
+        
+        if(!empty($pbpaths[$path->id()]) && !empty($pbpaths[$path->id()]['bundle'])) { 
+          $links['bundleedit'] = array(
+            'title' => $this->t('Edit Bundle'),
+         # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
+            'url' => \Drupal\Core\Url::fromRoute('entity.wisski_bundle.edit_form')
+                     ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
+          );
+/*        
+          $links['fieldsedit'] = array(
+            'title' => $this->t('Manage Fields for Bundle'),
+         # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
+            'url' => \Drupal\Core\Url::fromRoute('entity.field_config.wisski_individual.default')
+                     ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
+          );
+ */       
+          $links['formedit'] = array(
+            'title' => $this->t('Manage Form Display for Bundle'),
+         # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
+            'url' => \Drupal\Core\Url::fromRoute('entity.entity_form_display.wisski_individual.default')
+                     ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
+          );
+        
+          $links['displayedit'] = array(
+            'title' => $this->t('Manage Display for Bundle'),
+         # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
+            'url' => \Drupal\Core\Url::fromRoute('entity.entity_view_display.wisski_individual.default')
+                     ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
+          );
+        }
 
         $links['delete'] = array(
           'title' => $this->t('Delete'),
@@ -254,6 +288,7 @@ class WisskiPathbuilderForm extends EntityForm {
 #      '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
     );
     
+#    dpm($form);
     return $form;
   }
   
@@ -348,13 +383,36 @@ class WisskiPathbuilderForm extends EntityForm {
       return array();
     }
     
-    foreach($grouparray['children'] as $childpath) {
-      $subform = $this->recursive_render_tree($childpath, $grouparray['id'], $delta, $depth +1);
-      $pathform = array_merge($pathform, $subform);
+    $subforms = array();
+    
+    $children = array();
+    $weights = array();
+    
+    foreach($grouparray['children'] as $key => $child) {
+      $pbp = $this->entity->getPbPath($key);
+      $weights[$key] = $pbp['weight'];
     }
     
+    $children = $grouparray['children'];
+    
+    array_multisort($weights, $children);
+    
+    foreach($children as $childpath) {
+      $subform = $this->recursive_render_tree($childpath, $grouparray['id'], $delta, $depth +1);
+
+      $pathform = array_merge($pathform, $subform);
+    }
+        
     return $pathform;    
     
+  }
+  
+  private function wisski_weight_sort($a, $b) {
+#    dpm("I am alive!");
+    if(intval($a['weight']['#default_value']) == intval($b['weight']['#default_value']))
+      return 0;
+    
+    return (intval($a['weight']['#default_value']) < intval($b['weight']['#default_value'])) ? -1 : 1;
   }
   
   private function pb_render_path($pathid, $enabled, $weight, $depth, $parent, $bundle, $field, $fieldtype, $displaywidget, $formatterwidget) {
@@ -412,36 +470,43 @@ class WisskiPathbuilderForm extends EntityForm {
     );
 
     $pathform['id'] = array(
+#      '#type' => 'value',
       '#type' => 'hidden',
       '#value' => $path->id(),
     );
     
     $pathform['parent'] = array(
+#      '#type' => 'value',
       '#type' => 'hidden',
       '#value' => $parent,
     );
     
     $pathform['bundle'] = array(
+#      '#type' => 'value',
       '#type' => 'hidden',
       '#value' => $bundle,
     );
 
     $pathform['field'] = array(
+#      '#type' => 'value',
       '#type' => 'hidden',
       '#value' => $field,
     );
     
     $pathform['fieldtype'] = array(
+#      '#type' => 'value',
       '#type' => 'hidden',
       '#value' => $fieldtype,
     );
 
     $pathform['displaywidget'] = array(
+ #     '#type' => 'value',
       '#type' => 'hidden',
       '#value' => $displaywidget,
     );
 
     $pathform['formatterwidget'] = array(
+#      '#type' => 'value',
       '#type' => 'hidden',
       '#value' => $formatterwidget,
     );
