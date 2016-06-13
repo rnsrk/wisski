@@ -56,25 +56,31 @@ class WisskiEntitySearch extends SearchPluginBase {
 
   public function searchFormAlter(array &$form, FormStateInterface $form_state) {
   
-    //dpm($form,__FUNCTION__);
+    dpm($form,__FUNCTION__);
+    
+    unset($form['basic']);
+    
     $form['entity_title'] = array(
       '#type' => 'textfield',
       '#autocomplete_route_name' => 'wisski.titles.autocomplete',
       '#autocomplete_route_parameters' => isset($selected_bundles)?array('bundles'=>$selected_bundles):array(),
       '#default_value' => '',
       '#title' => $this->t('Search by Entity Title'),
+      '#description' => $this->t('Finds titles from the cache table'),
+      '#attributes' => array('placeholder' => $this->t('Entity Title')),
     );
     $storage = $form_state->getStorage();
     $paths = (isset($storage['paths'])) ? $storage['paths']: array();
     $input = $form_state->getUserInput();
-    if (isset($input['bundles']['select_bundles'])) {
-      $selection = $input['bundles']['select_bundles'];
+    dpm($input);
+    if (isset($input['advanced']['bundles']['select_bundles'])) {
+      $selection = $input['advanced']['bundles']['select_bundles'];
     } else $selection = array();
     if (isset($storage['options'])) {
       $options = $storage['options'];
       $trigger = $form_state->getTriggeringElement();
       if ($trigger['#name'] == 'btn-add-bundle') {    
-        $new_bundle = $input['bundles']['auto_bundle']['input_field'];
+        $new_bundle = $input['advanced']['bundles']['auto_bundle']['input_field'];
         $matches = array();
         if (preg_match('/^(.+)\s\((\w+)\)$/',$new_bundle,$matches)) {
           list(,$label,$id) = $matches;
@@ -95,12 +101,21 @@ class WisskiEntitySearch extends SearchPluginBase {
     //dpm($paths,'Paths');
     $storage['options'] = $options;
     $form_state->setStorage($storage);
-    $form['bundles'] = array(
+    $form['advanced'] = array(
+      '#type' => 'details',
+      '#tree' => TRUE,
+      '#title' => $this->t('Advanced Search'),
+    );
+    $form['advanced']['keys'] = array(
+      '#type' => 'search',
+      '#title' => $this->t('Search for keywords'),
+    );
+    $form['advanced']['bundles'] = array(
       '#type' => 'fieldset',
       '#tree' => TRUE,
-      '#title' => $this->t('Search in Bundles'),
+      '#title' => $this->t('in Bundles')
     );
-    $form['bundles']['select_bundles'] = array(
+    $form['advanced']['bundles']['select_bundles'] = array(
       '#type' => 'checkboxes',
       '#options' => $options,
       '#prefix' => '<div id = wisski-search-bundles>',
@@ -110,17 +125,18 @@ class WisskiEntitySearch extends SearchPluginBase {
         'callback' => 'Drupal\wisski_core\Plugin\Search\WisskiEntitySearch::replacePaths',
       ),
     );
-    $form['bundles']['auto_bundle'] = array(
+    $form['advanced']['bundles']['auto_bundle'] = array(
       '#type' => 'container',
       '#attributes' => array('class' => 'container-inline','title' => $this->t('Find more Bundles')),
       
     );
-    $form['bundles']['auto_bundle']['input_field'] = array(
+    $form['advanced']['bundles']['auto_bundle']['input_field'] = array(
       '#type' => 'entity_autocomplete',
       '#target_type' => 'wisski_bundle',
       '#size' => 48,
+      '#attributes' => array('placeholder' => $this->t('Bundle Name')),
     );
-    $form['bundles']['auto_bundle']['add_op'] = array(
+    $form['advanced']['bundles']['auto_bundle']['add_op'] = array(
       '#type' => 'button',
       '#value' => '+',
       '#limit_validation_errors' => array(),
@@ -132,17 +148,17 @@ class WisskiEntitySearch extends SearchPluginBase {
     );
     $selection = array_filter($selection);
     $selected_paths = array_intersect_key($paths,$selection);
-    $form['paths'] = array(
+    $form['advanced']['paths'] = array(
       '#type' => 'hidden',
       '#prefix' => '<div id=wisski-search-paths>',
       '#suffix' => '</div>',
       '#tree' => TRUE,
-      '#title' => $this->t('Search in Paths'),
+      '#title' => $this->t('in Paths'),
     );
     if (!empty($selected_paths)) {
-      $form['paths']['#type'] = 'fieldset';
+      $form['advanced']['paths']['#type'] = 'fieldset';
       foreach ($selected_paths as $bundle_id => $bundle_paths) {
-        $form['paths'][$bundle_id] = array(
+        $form['advanced']['paths'][$bundle_id] = array(
           '#type' => 'fieldset',
           '#tree' => TRUE,
           '#title' => $options[$bundle_id],
@@ -150,13 +166,13 @@ class WisskiEntitySearch extends SearchPluginBase {
         foreach ($bundle_paths as $pb => $pb_paths) {
           if (is_string($pb_paths)) {
             //this is a global pseudo-path like 'uri'
-            $form['paths'][$bundle_id][$pb] = array(
+            $form['advanced']['paths'][$bundle_id][$pb] = array(
               '#type' => 'textfield',
               '#title' => $pb_paths,
             );
           } else {
             foreach ($pb_paths as $path_id => $path_label) {
-              $form['paths'][$bundle_id][$path_id] = array(
+              $form['advanced']['paths'][$bundle_id][$path_id] = array(
                 '#type' => 'textfield',
                 '#title' => $path_label,
                 '#description' => $path_id,
@@ -166,13 +182,19 @@ class WisskiEntitySearch extends SearchPluginBase {
         }
       }
     }
+    $form['actions']['#type'] = 'actions';
+    $form['actions']['submit'] = array(
+      '#type' => 'submit',
+      '#value' => $this->t('Search Wisski Entities'),
+    );
+    //dpm($form);
   }
 
   public function buildSearchUrlQuery(FormStateInterface $form_state) {
     
     $parameter_keys = array(
       'keys',
-      'bundles',
+      'advanced',
       'entity_title',
       'paths',
     );
@@ -184,12 +206,12 @@ class WisskiEntitySearch extends SearchPluginBase {
   }
 
   public function replaceSelectBoxes(array $form,FormStateInterface $form_state) {
-    return $form['bundles']['select_bundles'];
+    return $form['advanced']['bundles']['select_bundles'];
   }
   
   public function replacePaths(array $form,FormStateInterface $form_state) {
     
-    return $form['paths'];
+    return $form['advanced']['paths'];
   }
 
 }
