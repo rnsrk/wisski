@@ -56,7 +56,7 @@ class WisskiEntitySearch extends SearchPluginBase {
 
   public function searchFormAlter(array &$form, FormStateInterface $form_state) {
   
-    dpm($form,__FUNCTION__);
+    //dpm($form,__FUNCTION__);
     
     unset($form['basic']);
     
@@ -72,7 +72,7 @@ class WisskiEntitySearch extends SearchPluginBase {
     $storage = $form_state->getStorage();
     $paths = (isset($storage['paths'])) ? $storage['paths']: array();
     $input = $form_state->getUserInput();
-    dpm($input);
+    //dpm($input);
     if (isset($input['advanced']['bundles']['select_bundles'])) {
       $selection = $input['advanced']['bundles']['select_bundles'];
     } else $selection = array();
@@ -146,6 +146,7 @@ class WisskiEntitySearch extends SearchPluginBase {
       ),
       '#name' => 'btn-add-bundle',
     );
+    //dpm(array($selection,$paths));
     $selection = array_filter($selection);
     $selected_paths = array_intersect_key($paths,$selection);
     $form['advanced']['paths'] = array(

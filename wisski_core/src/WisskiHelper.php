@@ -20,27 +20,30 @@ class WisskiHelper {
     return $return;
   }
 
-  static $path_options;
+  static $path_options = array();
 
   public static function getPathOptions($bundle_id) {
     
-    $options = &self::$path_options;
+    $options = &self::$path_options[$bundle_id];
     //if we already gathered the data, we can stop here
-    if (!isset($options)) {
+    if (empty($options)) {
       $options['uri'] = 'URI';
       //find all paths from all active pathbuilders
       $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
       $paths = array();
+      $flip = array();
       foreach ($pbs as $pb_id => $pb) {
         $pb_paths = $pb->getAllPaths();
         foreach ($pb_paths as $path) {
           $path_id = $path->getID();
-          if ($bundle_id === $pb->getBundle($path_id))
+          if ($bundle_id === $pb->getBundle($path_id)) {
             $options[$pb_id][$pb_id.'.'.$path_id] = $path->getName();
+            $flip[$path_id][] = $bundle_id;
+          }
         }
       }
     }
-    //dpm(array('$bundle_id'=>$bundle_id,'result'=>$options),__METHOD__);
+    //dpm(array('$bundle_id'=>$bundle_id,'result'=>$options,'flip'=>$flip),__METHOD__);
     return $options;
   }
   
