@@ -214,5 +214,4 @@ class WisskiEntitySearch extends SearchPluginBase {
     
     return $form['advanced']['paths'];
   }
-
 }

@@ -10,12 +10,21 @@ wisski_core.wisski_uris:
   parent: wisski.content
   route_name: wisski_core.wisski_uris
   weight: 60
-wisski_core.wisski_entities:
-  title: 'WissKI entities'
-  description: 'Specify entity display configurations'
+
+wisski.browse_entities:
+  title: 'Navigate'
+  description: 'Browse WissKI entities'
   parent: wisski.content
   route_name: entity.wisski_individual.list
-  weight: 50
+  weight: -200
+
+#this will go wrong when the install hokk wasn't executed
+wisski.search_entities:
+  title: 'Find'
+  description: 'Search WissKI entities'
+  parent: wisski.content
+  route_name: search.view_wisski_search
+  weight: -199
 
 wisski.display_settings:
   title: 'WissKI Display Settings'
@@ -23,7 +32,6 @@ wisski.display_settings:
   parent: wisski.content
   route_name: wisski.display_settings
   weight: 50
-
 
 wisski.content:
   title: 'WissKI'
@@ -36,8 +44,3 @@ entity.wisski_individual.bundle_menu:
   parent: system.admin_structure
   description: 'Manage WissKI Entities'
   route_name: entity.wisski_bundle.list
-
-entity.wisski_individual.list:
-  route_name: entity.wisski_individual.list
-  description: ' - none - '
-  title: 'WissKI Entities'

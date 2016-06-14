@@ -10,6 +10,9 @@ use Drupal\wisski_core\Entity\WisskiEntity;
 
 class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityHandlerInterface {
 
+  const NAVIGATE = 1;
+  const CONFIG = 2;
+  
   /**
    * {@inheritdoc}
    */
@@ -17,8 +20,11 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
 
 //    $header['id'] = t('ID');
     $header['label'] = $this->t('Name');
-    $header['parent'] = $this->t('Parent');
-    return $header + parent::buildHeader();
+    if ($this->type === self::CONFIG) {
+      $header['parent'] = $this->t('Parent');
+      $header + parent::buildHeader();
+    }
+    return $header;
   }
 
   /**
@@ -26,7 +32,30 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
    */
   public function buildRow(EntityInterface $entity) {
     
-//    $row['id'] = 
+    switch ($this->type) {
+      case self::NAVIGATE: return $this->buildNavigateRow($entity);
+      case self::CONFIG: return $this->buildConfigRow($entity);
+    }
+    drupal_set_message($this->t('Invalid list type'),'error');
+    return array();
+  }
+  
+  private function buildNavigateRow($entity) {
+    
+    $row['label'] = array(
+      'data' => array(
+        '#type' => 'link',
+        '#url' => Url::fromRoute('entity.wisski_bundle.entity_list')
+          ->setRouteParameters(array('wisski_bundle' => $entity->id())),
+        '#title' => $entity->label(),
+      ),
+    );
+    return $row;
+  }
+  
+  private function buildConfigRow($entity) {
+    
+    //    $row['id'] = 
     $id = $entity->get('id');
     //@TODO use EntityFieldQuery or whatsolike
     //$ents = WisskiEntity::load(array('bundle'=>$id));
@@ -65,13 +94,14 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
   /**
    * {@inheritdoc}
    */
-   /*
-  public function render() {
+  public function render($type = self::CONFIG) {
+    
+    $this->type = $type;
     $build = parent::render();
-    $build['#empty'] = t('No media bundle available. <a href="@link">Add media bundle</a>.', array(
-      '@link' => Url::fromRoute('media.bundle_add')->toString(),
+    $build['#empty'] = t('No WissKI bundle available. <a href="@link">Add media bundle</a>.', array(
+      '@link' => Url::fromRoute('entity.wisski_bundle.add')->toString(),
     ));
     return $build;
   }
-*/
+
 }
