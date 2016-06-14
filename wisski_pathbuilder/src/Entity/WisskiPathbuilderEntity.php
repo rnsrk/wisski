@@ -812,6 +812,9 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      */
     public function getParentBundleId($bundleid) {
       $groups = $this->getGroupsForBundle($bundleid);  
+
+      if(empty($groups))
+        return NULL;
       
 #      dpm($groupids);
     
