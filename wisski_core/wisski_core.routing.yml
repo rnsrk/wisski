@@ -191,6 +191,3 @@ wisski.titles.autocomplete:
     _controller: '\Drupal\wisski_core\Controller\WisskiTitleAutocompletion::autocomplete'
   requirements:
     _permission: 'view wisski content'
-
-#search.view_wisski_search:
-#  path: '/search/wisski'
