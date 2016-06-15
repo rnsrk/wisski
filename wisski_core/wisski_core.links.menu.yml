@@ -18,7 +18,7 @@ wisski.browse_entities:
   route_name: entity.wisski_individual.list
   weight: -200
 
-#this will go wrong when the install hokk wasn't executed
+#this will go wrong when the install hook wasn't executed
 wisski.search_entities:
   title: 'Find'
   description: 'Search WissKI entities'

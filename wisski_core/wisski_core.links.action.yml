@@ -15,17 +15,3 @@ entity.wisski_bundle.title:
   title: 'Edit title pattern'
   appears_on:
     - entity.wisski_bundle.edit_form
-
-wisski.navigate:
-  title: 'Navigate'
-  description: 'Browse through classes and individuals'
-  route_name: entity.wisski_bundle.list
-  appears_on:
-    - standard.front_page
-
-wisski.find:
-  title: 'Find'
-  description: 'Search for individuals'
-  route_name: search.view_wisski_entities
-  appears_on:
-    - standard.front_page
