@@ -18,13 +18,12 @@ wisski.browse_entities:
   route_name: entity.wisski_individual.list
   weight: -200
 
-#this will go wrong when the install hook wasn't executed
-#wisski.search_entities:
-#  title: 'Find'
-#  description: 'Search WissKI entities'
-#  parent: wisski.content
-#  route_name: search.view_wisski_search
-#  weight: -199
+wisski.search_entities:
+  title: 'Find'
+  description: 'Search WissKI entities'
+  parent: wisski.content
+  route_name: search.view_wisski_search
+  weight: -199
 
 wisski.display_settings:
   title: 'WissKI Display Settings'
