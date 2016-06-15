@@ -40,7 +40,8 @@ class WisskiPathForm extends EntityForm {
     // but this function does
     // so we have to override this one to get hold of the pb id
     $this->pb = $wisski_pathbuilder;
-    drupal_set_message('BUILD: ' . serialize($form_state));
+#    dpm($this->pb, 'pb');
+#    drupal_set_message('BUILD: ' . serialize($form_state));
     return parent::buildForm($form, $form_state, $wisski_pathbuilder);
     
   }
@@ -50,7 +51,7 @@ class WisskiPathForm extends EntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {    
-    drupal_set_message('FORM: ' . serialize($form_state)); 
+#    drupal_set_message('FORM: ' . serialize($form_state)); 
     $form = parent::form($form, $form_state);
     
     // get the entity    
@@ -58,7 +59,9 @@ class WisskiPathForm extends EntityForm {
 
     // do we have an engine for queries?
     $got_engine = FALSE;
-
+    
+#    dpm($this->pb, "pb in form: ");
+    
     // load the pb entity this path currently is attached to 
     // we found this out by the url we're coming from!
     $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($this->pb);
@@ -144,7 +147,7 @@ class WisskiPathForm extends EntityForm {
     
     // preserve tree
     $form['path_data']['path_array'] = array(
-      '#type' => 'markup',
+      '#type' => 'table',
       '#tree' => TRUE,
       '#value' => "",
     );
@@ -161,13 +164,26 @@ class WisskiPathForm extends EntityForm {
     if(empty($form_state->getValue('path_array'))) {
       if(!empty( $path->getPathArray() ))
         $existing_paths = $path->getPathArray();
-      drupal_set_message('getPathArray: ' . serialize($existing_paths));
+#      drupal_set_message('getPathArray: ' . serialize($existing_paths));
        
     } else {
       #$pa = $pd['path_array'];
       $pa = $form_state->getValue('path_array');
-      $existing_paths = $pa;
-      drupal_set_message('pa: ' . serialize ($pa));     
+      dpm($pa);
+      
+      $paout = array();
+      
+      foreach($pa as $key => $values) {
+        foreach($values as $subkey => $step) {
+          if(strpos($subkey, 'button_') !== FALSE) 
+            continue;
+        
+            $paout[$subkey] = $step;
+        }
+      }
+      
+      $existing_paths = $paout;
+#      drupal_set_message('pa: ' . serialize ($pa));     
     }
     #drupal_set_message("HI");
     #drupal_set_message('isRebuilding? ' . serialize($form_state->isRebuilding()));  
@@ -180,10 +196,15 @@ class WisskiPathForm extends EntityForm {
       $existing_paths[] = "0";
 
     $curvalues = $existing_paths;
-    drupal_set_message('curvalues: ' . serialize($curvalues));
+    dpm($curvalues, 'curvalues: ');
+    
+    // count the steps as the last one doesn't need a button
+    $i = 0; 
+    
     // go through all values and create fields for them
     foreach($curvalues as $key => $element) {
-      drupal_set_message("key " . $key . ": element " . $element);
+      
+#      drupal_set_message("key " . $key . ": element " . $element);
       if(!empty($curvalues[($key-1)])) {
 
        // function getPathAlternatives takes as parameter an array of the previous steps 
@@ -193,7 +214,7 @@ class WisskiPathForm extends EntityForm {
         $path_options = $engine->getPathAlternatives();
       }    
                   
-      $form['path_data']['path_array'][$key] = array(
+      $form['path_data']['path_array'][$i][$key] = array(
         '#default_value' => $element,
         '#type' => 'select',
         '#options' => array_merge(array("0" => 'Please select.'), $path_options),
@@ -208,24 +229,36 @@ class WisskiPathForm extends EntityForm {
         ),
       );
     
-    
-      $form['path_data']['add_path_field_submit'][$key] = array(
-        '#type' => 'submit',
-        '#value' => $this->t('+'.$key),
-       # '#submit' => array(array($this,'Drupal\wisski_pathbuilder\Form\WisskiPathForm::submitAddPathField')),
+      if($i < count($curvalues) -1 ) {
+        $form['path_data']['path_array'][$i]['button_' . $key] = array(
+          '#type' => 'submit',
+#         '#type' => 'button',
+          '#value' => $this->t('+'.$key),
+          '#ajax' => array(
+            'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
+            'wrapper' => 'path_array_div',
+            'event' => 'click', 
+          #'prevent' => 'submit',
+          ),
+          '#attributes' => array(
+            'data' => array($key),
+          ),
+#        '#executes_submit_callback' => false,
+          '#submit' => array(array($this,'Drupal\wisski_pathbuilder\Form\WisskiPathForm::submitAddPathField')),
         #'#title' => '+' . $key,
        # '#class' => 'use-ajax-submit',
-        '#ajax' => array(
-          'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxAddPathField',
-          'wrapper' => 'path_array_div',
+#        '#ajax' => array(
+#          'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxAddPathField',
+#          'wrapper' => 'path_array_div',
          # 'method' => 'after',
          # 'event' => 'click',
-        ),
+#        ),
         #'#prefix' => '<td>',
         #'#suffix' => '</td></tr></table><div class="clearfix"></div>',
         #'#suffix' => '</div>',
-      );
-     
+        );
+      }
+      $i++;
       #$form['path_data'][$key]['add_path_hidden'] = array(
       #  '#type' => 'hidden',
       #  '#value' => $this->t('+'.$key),
@@ -246,6 +279,8 @@ class WisskiPathForm extends EntityForm {
       '#title' => t('Please select the datatype property for the Path.'),
     );
     
+    dpm($form, 'form');
+    
     return $form;
   }
   
@@ -265,7 +300,7 @@ class WisskiPathForm extends EntityForm {
   
   public function ajaxPathData(array $form, array $form_state) {
    # $value = \Drupal\Component\Utility\NestedArray::getValue(
-    #  $form_state->getValues(),
+                   #  $form_state->getValues(),
      # $form_state->getTriggeringElement()['#array_parents']); 
    # drupal_set_message($form_state->getTriggeringElement()['#path_array']);  
    # $response = new AjaxResponse();
@@ -283,15 +318,56 @@ class WisskiPathForm extends EntityForm {
     #  return $form['item']['path_array']['pathbuilder_add_select'];        
     #  drupal_set_message("ajax: " . serialize($form_state));
        #$form_state->setRebuild();
+      dpm($form['path_data'], "ajax!!!");
       return $form['path_data'];
    # }
   }
- # public function submitAddPathField($form, $form_state) {
-  #  drupal_set_message("submit"); 
-    #$form_state->setRebuild();
-  #}
+ public function submitAddPathField(array $form, FormStateInterface $form_state) {
+    dpm($form_state, "submit"); 
+    
+    dpm($form_state->getTriggeringElement(), "trigger");
+
+    $triggerid = $form_state->getTriggeringElement()['#attributes']['data'][0];
+    
+    dpm($triggerid);
+    
+    $values = $form_state->getValues();
+    
+    $newpa = array();
+    
+    foreach($values['path_array'] as $key => $value) {
+      foreach($value as $subkey => $subvalue) {
+        // skip buttons
+        if(strpos($subkey, 'button_') !== FALSE)
+          continue;
+        
+        // just copy
+        if($subkey < $triggerid) {
+          $newpa[$key][$subkey] = $subvalue;
+        }
+        // we have to add something before that
+        if($key == $triggerid) {
+          $newpa[$key][$subkey] = "0"; 
+          $newpa[$key+1][$subkey+1] = "0"; 
+          $newpa[$key+2][$subkey+2] = $subvalue;
+        }
+        
+        if($key > $triggerid) {
+          $newpa[$key+2][$subkey+2] = $subvalue; 
+        }
+        
+      }
+    }
+
+    $form_state->setValue('path_array', $newpa);
+    
+    dpm($form_state->getValues(), "values");
+    
+    $form_state->setRebuild();
+ }
   
-  public function ajaxAddPathField($form, $form_state) {    
+#  public function ajaxAddPathField($form, $form_state) {    
+/*
     drupal_set_message("HELLO");
     #$selector = '#path_array_div';
      
@@ -333,7 +409,8 @@ class WisskiPathForm extends EntityForm {
     #drupal_set_message('isRebuild now? ' . serialize($form_state->isRebuilding()));
     return $form['path_data'];
     #$form_state->setRebuild();
-  }
+*/
+#  }
   
   /**
    * {@inheritdoc}
@@ -363,8 +440,16 @@ class WisskiPathForm extends EntityForm {
       )));
     }
     
+    if(empty($this->pb))
+      $pbid = $form_state->getBuildInfo()['args'][0];
+    else
+      $pbid = $this->pb;
+ 
+    dpm($pbid, "pbid");
+      
     // load the pb
-    $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($this->pb);
+    $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($pbid);
+
     
     // add the path to its tree if it was not there already
     if(is_null($pb->getPbPath($path->id())))
@@ -374,7 +459,7 @@ class WisskiPathForm extends EntityForm {
     $status = $pb->save();
 
     $redirect_url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.edit_form')
-                          ->setRouteParameters(array('wisski_pathbuilder'=>$this->pb));
+                          ->setRouteParameters(array('wisski_pathbuilder'=>$pbid));
         
                          
     $form_state->setRedirectUrl($redirect_url);             
