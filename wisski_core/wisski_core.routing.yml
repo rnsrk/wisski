@@ -56,15 +56,12 @@ wisski.display_settings:
     _permission: 'administer wisski bundles'
 
 entity.wisski_individual.list:
-  path: '/wisski_core/list'
+  path: '/wisski/navigate'
   defaults:
-    _entity_list: 'wisski_individual'
+    _controller: '\Drupal\wisski_core\Controller\WisskiEntityListController::listing'
     _title: 'WissKI Entities'
-  options:
-    parameters:
-      bundle: wisski_bundle
   requirements:
-    _entity_access: 'wisski_individual.view'
+    _permission: 'view wisski content'
 
 # the canonical link template as seen in the WisskiEntity class annotations
 # is crucial for the Views module to integrate a link to the entity
@@ -176,13 +173,10 @@ entity.wisski_bundle.delete_title_form:
     _entity_access: 'wisski_bundle.edit'
 
 entity.wisski_bundle.entity_list:
-  path: '/admin/structure/wisski_core/{wisski_bundle}/list'
+  path: '/wisski/navigate/{wisski_bundle}'
   defaults:
     _controller: '\Drupal\wisski_core\Controller\WisskiEntityListController::listing'
     _title: 'Entities in Bundle'
-  options:
-    parameters:
-      bundle: wisski_bundle
   requirements:
     _permission: 'view wisski content'
 
@@ -190,13 +184,6 @@ wisski.menu:
   path: '/admin/config/wisski'
   requirements:
     _permission: 'administer wisski'
-
-search.wisski.result:
-  path: '/search/wisski_search_result'
-  defaults:
-    _title: 'Wisski Search Results'
-  requirements:
-    _permission: 'view wisski content'
 
 wisski.titles.autocomplete:
   path: '/search/wisski_autocomplete'
