@@ -17,6 +17,16 @@ use Drupal\wisski_core\WisskiHelper;
  * )
  */
 class WisskiEntitySearch extends SearchPluginBase {
+  
+  /**
+   * Maximum number of bundles to show on initial page
+   */
+  private $bundle_limit = 16;
+  
+  /**
+   * Maximum number of paths to show for each bundle
+   */
+  private $path_limit = 10;
 
   /**
    * Execute the search.
@@ -89,7 +99,8 @@ class WisskiEntitySearch extends SearchPluginBase {
         }
       }
     } else {
-      $bundle_ids = \Drupal::entityQuery('wisski_bundle')->range(0,16)->execute();
+      $bundle_count = \Drupal::entityQuery('wisski_bundle')->count()->execute();
+      $bundle_ids = \Drupal::entityQuery('wisski_bundle')->range(0,$this->bundle_limit)->execute();
       $bundles = \Drupal\wisski_core\Entity\WisskiBundle::loadMultiple($bundle_ids);
       $options = array();
       foreach($bundles as $bundle_id => $bundle) {
@@ -106,10 +117,13 @@ class WisskiEntitySearch extends SearchPluginBase {
       '#tree' => TRUE,
       '#title' => $this->t('Advanced Search'),
     );
+    /*
     $form['advanced']['keys'] = array(
       '#type' => 'search',
       '#title' => $this->t('Search for keywords'),
+      '#size' => 60,
     );
+    */
     $form['advanced']['bundles'] = array(
       '#type' => 'fieldset',
       '#tree' => TRUE,
@@ -125,27 +139,29 @@ class WisskiEntitySearch extends SearchPluginBase {
         'callback' => 'Drupal\wisski_core\Plugin\Search\WisskiEntitySearch::replacePaths',
       ),
     );
-    $form['advanced']['bundles']['auto_bundle'] = array(
-      '#type' => 'container',
-      '#attributes' => array('class' => 'container-inline','title' => $this->t('Find more Bundles')),
-      
-    );
-    $form['advanced']['bundles']['auto_bundle']['input_field'] = array(
-      '#type' => 'entity_autocomplete',
-      '#target_type' => 'wisski_bundle',
-      '#size' => 48,
-      '#attributes' => array('placeholder' => $this->t('Bundle Name')),
-    );
-    $form['advanced']['bundles']['auto_bundle']['add_op'] = array(
-      '#type' => 'button',
-      '#value' => '+',
-      '#limit_validation_errors' => array(),
-      '#ajax' => array(
-        'wrapper' => 'wisski-search-bundles',
-        'callback' => 'Drupal\wisski_core\Plugin\Search\WisskiEntitySearch::replaceSelectBoxes',
-      ),
-      '#name' => 'btn-add-bundle',
-    );
+    if ($bundle_count > $this->bundle_limit) {
+      $form['advanced']['bundles']['auto_bundle'] = array(
+        '#type' => 'container',
+        '#attributes' => array('class' => 'container-inline','title' => $this->t('Find more Bundles')),
+        
+      );
+      $form['advanced']['bundles']['auto_bundle']['input_field'] = array(
+        '#type' => 'entity_autocomplete',
+        '#target_type' => 'wisski_bundle',
+        '#size' => 48,
+        '#attributes' => array('placeholder' => $this->t('Bundle Name')),
+      );
+      $form['advanced']['bundles']['auto_bundle']['add_op'] = array(
+        '#type' => 'button',
+        '#value' => '+',
+        '#limit_validation_errors' => array(),
+        '#ajax' => array(
+          'wrapper' => 'wisski-search-bundles',
+          'callback' => 'Drupal\wisski_core\Plugin\Search\WisskiEntitySearch::replaceSelectBoxes',
+        ),
+        '#name' => 'btn-add-bundle',
+      );
+    } else $form['advanced']['bundles']['auto_bundle']['#type'] = 'hidden';
     //dpm(array($selection,$paths));
     $selection = array_filter($selection);
     $selected_paths = array_intersect_key($paths,$selection);
@@ -159,6 +175,7 @@ class WisskiEntitySearch extends SearchPluginBase {
     if (!empty($selected_paths)) {
       $form['advanced']['paths']['#type'] = 'fieldset';
       foreach ($selected_paths as $bundle_id => $bundle_paths) {
+        $bundle_path_options = array();
         $form['advanced']['paths'][$bundle_id] = array(
           '#type' => 'fieldset',
           '#tree' => TRUE,
@@ -167,20 +184,43 @@ class WisskiEntitySearch extends SearchPluginBase {
         foreach ($bundle_paths as $pb => $pb_paths) {
           if (is_string($pb_paths)) {
             //this is a global pseudo-path like 'uri'
-            $form['advanced']['paths'][$bundle_id][$pb] = array(
-              '#type' => 'textfield',
-              '#title' => $pb_paths,
-            );
+            $bundle_path_options[$pb] = $pb_paths;
           } else {
             foreach ($pb_paths as $path_id => $path_label) {
-              $form['advanced']['paths'][$bundle_id][$path_id] = array(
-                '#type' => 'textfield',
-                '#title' => $path_label,
-                '#description' => $path_id,
-              );
+              $bundle_path_options[$path_id] = "$path_label ($path_id)";
             }
           }
         }
+        for ($i = 0; $i < $this->path_limit && $i < count($bundle_path_options); $i++) {
+          if ($list = each($bundle_path_options)) {
+            list($path_id) = $list;
+            $form['advanced']['paths'][$bundle_id][$i] = array(
+              '#type' => 'container',
+              '#attributes' => array('class' => 'container-inline'),
+              '#tree' => TRUE,
+              'path_selection' => array(
+                '#type' => 'select',
+                '#options' => $bundle_path_options,
+                '#default_value' => $path_id,
+              ),
+              'input_field' => array(
+                '#type' => 'textfield',
+                '#default_value' => '',
+                '#size' => 30,
+              ),
+            );
+          }
+        }
+        $form['advanced']['paths'][$bundle_id]['query_type'] = array(
+          '#type' => 'container',
+          '#attributes' => array('class' => 'container-inline'),
+          'selection' => array(
+            '#type' => 'radios',
+            '#options' => array('AND' => $this->t('All'),'OR' => $this->t('Any')),
+            '#default_value' => 'AND',
+            '#title' => $this->t('Match'),
+          ),
+        );
       }
     }
     $form['actions']['#type'] = 'actions';
@@ -194,16 +234,15 @@ class WisskiEntitySearch extends SearchPluginBase {
   public function buildSearchUrlQuery(FormStateInterface $form_state) {
     
     $parameter_keys = array(
-      'keys',
       'advanced',
       'entity_title',
-      'paths',
     );
-    $parameters['keys'] = array();
     $vals = $form_state->getValues();
-    //dpm($vals,__METHOD__);
-    return array_intersect_key($vals,array_flip($parameter_keys));
-    
+    dpm($vals,__METHOD__);
+    $return = array_intersect_key($vals,array_flip($parameter_keys));
+    // 'keys' must be set for the Search Plugin, don't know why
+    $return['keys'] = array();
+    return $return;    
   }
 
   public function replaceSelectBoxes(array $form,FormStateInterface $form_state) {
