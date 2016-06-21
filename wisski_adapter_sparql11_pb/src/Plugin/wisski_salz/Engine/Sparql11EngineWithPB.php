@@ -46,7 +46,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       } else {
         return $this->nextProperties($last, $next);
       }
-
+    } elseif (!empty($future)) {
+      $next = $future[0];
+      if ($this->isaProperty($next))
+        return $this->getClasses();
+      else
+        return $this->getProperties();
     } else {
       return [];
     }
@@ -121,6 +126,23 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $out = array();
       foreach ($result as $obj) {
         $class = $obj->class->getUri();
+        $out[$class] = $class;
+      }
+      uksort($out,'strnatcasecmp');
+      return $out;
+    }
+    return FALSE;
+  }
+  
+  public function getProperties() {
+  
+    $query = "SELECT DISTINCT ?property WHERE { ?class a owl:ObjectProperty . }";  
+    $result = $this->directQuery($query);
+    
+    if (count($result) > 0) {
+      $out = array();
+      foreach ($result as $obj) {
+        $class = $obj->property->getUri();
         $out[$class] = $class;
       }
       uksort($out,'strnatcasecmp');
