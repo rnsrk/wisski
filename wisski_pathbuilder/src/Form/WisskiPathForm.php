@@ -200,7 +200,7 @@ dpm($twig);
       }      
       
       if ($trigger_type === 'btn' && $row_num+1 < count($paout) && $paout[$row_num+1] !== 'empty') {
-        $paout = \Drupal\wisski_core\WisskiHelper::array_insert($paout,array('empty','empty'),$path_key+1);
+        $paout = \Drupal\wisski_core\WisskiHelper::array_insert($paout,array('empty','empty'),$path_key);
       }
       //dpm($paout,'after');
       $existing_paths = $paout;
