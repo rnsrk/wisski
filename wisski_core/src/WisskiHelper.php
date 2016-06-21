@@ -39,14 +39,17 @@ class WisskiHelper {
       foreach ($rev as $chunk) {
         $out[] = array_reverse($chunk);
       }
-      return array_reverse($out);
+      $out = array_reverse($out);
+      while (count($out) < 2) $out[] = array();
+      return $out;
     } else return array_chunk($array,$offset);
   }
 
   public static function array_insert(array $array,array $insertion,int $offset=NULL) {
-    
+    dpm(func_get_args(),__METHOD__);    
     if (is_null($offset)||$offset===0) return array_merge($insertion,$array);
     list($part1,$part2) = self::array_split($array,$offset);
+    dpm(array($part1,$part2),__FUNCTION__);
     return array_merge($part1,$insertion,$part2);
   }
 

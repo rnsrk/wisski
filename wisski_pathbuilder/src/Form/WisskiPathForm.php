@@ -199,8 +199,8 @@ dpm($twig);
         $paout[$row_num] = $input['step:'.$row_num]['select'];
       }      
       
-      if ($trigger_type === 'btn' && $row_num+1 < count($paout) && $paout[$row_num+1] !== 'empty') {
-        $paout = \Drupal\wisski_core\WisskiHelper::array_insert($paout,array('empty','empty'),$path_key);
+      if ($trigger_type === 'btn' && $paout[$row_num] !== 'empty') {
+        $paout = \Drupal\wisski_core\WisskiHelper::array_insert($paout,array('empty','empty'),$row_num);
       }
       //dpm($paout,'after');
       $existing_paths = $paout;
@@ -261,7 +261,7 @@ dpm($twig);
         '#limit_validation_errors' => array(),
       );
     
-      if($i < count($curvalues) - 2 ) {
+      if($i < count($curvalues) - 1 && !($i % 2)) {
         
         $form['path_data']['path_array']['step:'.$key]['btn'] = array(
           //'#type' => 'submit',
