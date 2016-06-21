@@ -191,10 +191,10 @@ dpm($twig);
       if (!$did_match) {
         drupal_set_message($this->t('The trigger name didn\'t match','error'));
       } else {
-        //dpm(array('trigger'=>$trigger,'matches'=>$matches),'Triggered');
+        dpm(array('trigger'=>$trigger,'matches'=>$matches),'Triggered');
         list(,$row_num,$trigger_type) = $matches;
       }
-      //dpm($paout,'before');
+      dpm($paout,'before');
       if ($trigger_type === 'select') {
         $paout[$row_num] = $input['step:'.$row_num]['select'];
       }      
@@ -202,7 +202,7 @@ dpm($twig);
       if ($trigger_type === 'btn' && $paout[$row_num] !== 'empty') {
         $paout = \Drupal\wisski_core\WisskiHelper::array_insert($paout,array('empty','empty'),$row_num);
       }
-      //dpm($paout,'after');
+      dpm($paout,'after');
       $existing_paths = $paout;
       $storage['existing_paths'] = $existing_paths;
       $form_state->setStorage($storage);
@@ -288,25 +288,21 @@ dpm($twig);
 
     // only act if there is more than the dummy entry
     // and if it is not a property -> path length odd +1 for dummy -> even
-    if(count($curvalues) > 1 && count($curvalues) % 2 == 0)
+    if(count($curvalues) > 1 && count($curvalues) % 2 == 0) {
       $primitive = $engine->getPrimitiveMapping($curvalues[(count($curvalues)-2)]);
     
-    $form['path_data']['path_array']['datatype_property'] = array(
-      '#default_value' => isset($datatype_property) ? $datatype_property : $path->getDatatypeProperty(), #$this->t('Please select.'),
-      '#type' => 'select',
-      '#options' => array_merge(array("0" => 'Please select.'), $primitive),
-      '#title' => t('Please select the datatype property for the Path.'),
+      $form['path_data']['path_array']['datatype_property']['select'] = array(
+        '#default_value' => isset($datatype_property) ? $datatype_property : $path->getDatatypeProperty(), #$this->t('Please select.'),
+        '#type' => 'select',
+        '#options' => array_merge(array('empty' => 'Please select.'), $primitive),
+        '#title' => t('Please select the datatype property for the Path.'),
+      );
+    } else $form['path_data']['datatype_property']['select'] = array(
+      '#type' => 'hidden',
+      '#value' => 'empty',
     );
+    $form['path_data']['path_array']['datataype_property']['btn']['#type'] = 'hidden';
     
-    $form['test_button'] = array(
-      '#type' => 'button',
-      '#value' => 'Click',
-      '#ajax' => array(
-        'wrapper' => 'wisski-path-table',
-        'callback' => '\Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
-      ),
-    );
-
     //dpm($form['path_data']['path_array'], 'formixxx000');
     
     return $form;
