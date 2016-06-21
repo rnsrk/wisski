@@ -185,22 +185,24 @@ dpm($twig);
       $storage = $form_state->getStorage();
       $paout = $storage['existing_paths'];
 
-      $trigger = $input['_triggering_element_name'];
+      $trigger = $form_state->getTriggeringElement();
+      dpm($trigger,'Trigger');
       $matches = array();
-      $did_match = preg_match('/^step\:(\d+)\[(\w+)\]$/',$trigger,$matches);
+      $did_match = preg_match('/^(\w+)(\d+)$/',$trigger['#attributes']['data-wisski'],$matches);
       if (!$did_match) {
         drupal_set_message($this->t('The trigger name didn\'t match','error'));
-      } else {
-        dpm(array('trigger'=>$trigger,'matches'=>$matches),'Triggered');
-        list(,$row_num,$trigger_type) = $matches;
+      } else {        
+        list(,$trigger_type,$row_num) = $matches;
       }
       dpm($paout,'before');
       if ($trigger_type === 'select') {
         $paout[$row_num] = $input['step:'.$row_num]['select'];
       }      
-      
       if ($trigger_type === 'btn' && $paout[$row_num] !== 'empty') {
         $paout = \Drupal\wisski_core\WisskiHelper::array_insert($paout,array('empty','empty'),$row_num);
+      }
+      if ($trigger_type === 'del' && count($paout) > $row_num + 1) {
+        $paout = \Drupal\wisski_core\WisskiHelper::array_remove_part($paout,$row_num,2);
       }
       dpm($paout,'after');
       $existing_paths = $paout;
@@ -250,8 +252,9 @@ dpm($twig);
         '#value' => $element,
         '#type' => 'select',
         '#options' => array_merge(array('empty' => $this->t('Select next step')), $path_options),
-        '#title' => $this->t('Step ' . $key . ': Select the next step of the path'),
-        '#title_display' => 'invisible',
+        //'#title' => $this->t('Step ' . $key . ': Select the next step of the path'),
+        //'#title_display' => 'invisible',
+        '#attributes' => array('data-wisski' => 'select'.$key),
         '#description' => $pre,
         '#ajax' => array(
           'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
@@ -262,23 +265,41 @@ dpm($twig);
       );
     
       if($i < count($curvalues) - 1 && !($i % 2)) {
-        
-        $form['path_data']['path_array']['step:'.$key]['btn'] = array(
+        $form['path_data']['path_array']['step:'.$key]['op']['#type'] = 'actions';
+        $form['path_data']['path_array']['step:'.$key]['op']['btn'] = array(
           //'#type' => 'submit',
           '#type' => 'button',
           '#value' => '+'.$key,
-          '#name' => 'step:'.$key.'[btn]',
+          '#attributes' => array('data-wisski' => 'btn'.$key),
           '#ajax' => array(
             'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
             'wrapper' => 'wisski-path-table',
             'event' => 'click', 
           ),
+          '#name' => 'btn'.$key,
           '#limit_validation_errors' => array(),
         );
-      } else $form['path_data']['path_array']['step:'.$key]['btn'] = array(
-        '#type' => 'hidden',
-        '#title' => 'nop:'.$key
-      );
+        $form['path_data']['path_array']['step:'.$key]['op']['del'] = array(
+          '#type' => 'button',
+          '#value' => '-'.$key,
+          '#attributes' => array('data-wisski' => 'del'.$key),
+          '#ajax' => array(
+            'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
+            'wrapper' => 'wisski-path-table',
+            'event' => 'click', 
+          ),
+          '#name' => 'del'.$key,
+          '#limit_validation_errors' => array(),
+        );
+      } else {
+        $form['path_data']['path_array']['step:'.$key]['op'] = array(
+          '#type' => 'hidden',
+          '#title' => 'nop:'.$key
+        );
+      }
+      
+      
+      
       $i++;
     }                         
     

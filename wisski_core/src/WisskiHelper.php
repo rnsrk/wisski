@@ -46,11 +46,33 @@ class WisskiHelper {
     return $out;
   }
 
+  /**
+   * inserts an array as subarray of another numerically indexed array
+   * @param $array the array where the portion shall be inserted
+   * @param $insertion the portion to be inserted
+   * @param $offset the first index of the inserted sub-array after insertion
+   * @return a re-indexed array with the subportion inserted
+   */
   public static function array_insert(array $array,array $insertion,int $offset=NULL) {
     
     if ($offset==0) return array_merge($insertion,$array);
     list($part1,$part2) = self::array_split($array,$offset);
     return array_merge($part1,$insertion,$part2);
+  }
+  
+  /**
+   * Removes a portion of a numerically indexed array
+   * @param $array the input array
+   * @param $offset the first index to be removed
+   * @param $the length of the portion to remove
+   * @return an array resembling the input but with the specified part removed and re-indexed
+   */
+  public static function array_remove_part(array $array,int $offset,int $length=NULL) {
+    
+    if ($length == 0) return $array;
+    list($part1,$part2) = self::array_split($array,$offset);
+    list($lost,$part3) = self::array_split($part2,$length);
+    return array_merge($part1,$part3);
   }
 
   static $path_options = array();
