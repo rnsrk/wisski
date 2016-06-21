@@ -240,15 +240,11 @@ dpm($twig);
         '#attributes' => array('class' => 'wisski-row', 'id' => 'wisski-row-'.$key),
       );
 #      drupal_set_message("key " . $key . ": element " . $element);
-      $pre = 'none';
-      if($key > 0 && $curvalues[($key-1)] !== 'empty') {
-        $pre = $curvalues[($key-1)];
-       // function getPathAlternatives takes as parameter an array of the previous steps 
-       // or an empty array if this is the beginning of the path.        
-        $path_options = $engine->getPathAlternatives(array($pre));
-      } else {
-        $path_options = $engine->getPathAlternatives();
-      }    
+      if ($key > 0) {
+        $pre = $curvalues[($key-1)] !== 'empty' ? array($curvalues[($key-1)]) : array();
+        $succ = (isset($curvalues[($key+1)]) && $curvalues[($key+1)] !== 'empty') ? array($curvalues[($key+1)]) : array();
+        $path_options = $engine->getPathAlternatives($pre,$succ);
+      } else $path_options = $engine->getPathAlternatives();
       $form['path_data']['path_array']['step:'.$key]['select'] = array(
         '#default_value' => 'empty',
         '#value' => $element,
