@@ -19,6 +19,36 @@ class WisskiHelper {
     }
     return $return;
   }
+  
+  /**
+   * Splits the array in two parts at a given index.
+   * Not tested with non-numeric indices. Expect keys to be re-arranged
+   * @param $array the array to be split
+   * @param $offset the index where to split the array. The entry at $offset will be the first in the
+   * second part after splitting i.e. there will we a number of $offset elements in the first part
+   * @return an array with two elements representing the first and second part of the original array
+   */
+  public static function array_split(array $array,int $offset=NULL) {
+    
+    if (is_null($offset)||$offset===0) return array(array(),$array);
+    $count = count($array);
+    if ($offset >= $count) return array($array,array());
+    if (2*$offset < $count) {
+      $rev = array_chunk(array_reverse($array),$count-$offset);
+      $out = array();
+      foreach ($rev as $chunk) {
+        $out[] = array_reverse($chunk);
+      }
+      return array_reverse($out);
+    } else return array_chunk($array,$offset);
+  }
+
+  public static function array_insert(array $array,array $insertion,int $offset=NULL) {
+    
+    if (is_null($offset)||$offset===0) return array_merge($insertion,$array);
+    list($part1,$part2) = self::array_split($array,$offset);
+    return array_merge($part1,$insertion,$part2);
+  }
 
   static $path_options = array();
 

@@ -191,3 +191,10 @@ wisski.titles.autocomplete:
     _controller: '\Drupal\wisski_core\Controller\WisskiTitleAutocompletion::autocomplete'
   requirements:
     _permission: 'view wisski content'
+
+wisski.test_form:
+  path: '/wisski_test'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\WisskiTestForm'
+  requirements:
+    _access: 'TRUE'

@@ -46,14 +46,25 @@ class WisskiPathForm extends EntityForm {
     
   }
     
+  /**
+   * this seems to be necessary to prevent AJAX from firing twice
+   */
+  private $semaphore = FALSE;
 
    /**
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {    
-#    drupal_set_message('FORM: ' . serialize($form_state)); 
-    $form = parent::form($form, $form_state);
     
+#    drupal_set_message('FORM: ' . serialize($form_state)); 
+/*
+    $form = parent::form($form, $form_state);
+    $twig = \Drupal::service('twig');
+dpm($twig);
+    $twig->enableDebug();
+    $twig->enableAutoReload();
+*/
+//dpm($form,'Input Form');    
     // get the entity    
     $path = $this->entity;
 
@@ -146,10 +157,9 @@ class WisskiPathForm extends EntityForm {
                                    
     
     // preserve tree
-    $form['path_data']['path_array'] = array(
-      '#type' => 'table',
-      '#tree' => TRUE,
-      '#value' => "",
+    $form['path_data'] = array(
+      '#type' => 'container',
+      //'#tree' => TRUE,
     );
                                   
     // read the userinput
@@ -161,110 +171,123 @@ class WisskiPathForm extends EntityForm {
 
     // if there was something in form_state - use that because it is likely more accurate
     #if(empty($form_state->getValue('path_data'))) {
-    if(empty($form_state->getValue('path_array'))) {
+    $input = $form_state->getUserInput();
+    //dpm($input,'Input');
+    
+    if(empty($input)) {
       if(!empty( $path->getPathArray() ))
         $existing_paths = $path->getPathArray();
 #      drupal_set_message('getPathArray: ' . serialize($existing_paths));
        
     } else {
       #$pa = $pd['path_array'];
-      $pa = $form_state->getValue('path_array');
-      dpm($pa);
-      
-      $paout = array();
-      
-      foreach($pa as $key => $values) {
-        foreach($values as $subkey => $step) {
-          if(strpos($subkey, 'button_') !== FALSE) 
-            continue;
-        
-            $paout[$subkey] = $step;
-        }
+      //$pa = $form_state->getValue('path_array');
+      $storage = $form_state->getStorage();
+      $paout = $storage['existing_paths'];
+
+      $trigger = $input['_triggering_element_name'];
+      $matches = array();
+      $did_match = preg_match('/^step\:(\d+)\[(\w+)\]$/',$trigger,$matches);
+      if (!$did_match) {
+        drupal_set_message($this->t('The trigger name didn\'t match','error'));
+      } else {
+        //dpm(array('trigger'=>$trigger,'matches'=>$matches),'Triggered');
+        list(,$row_num,$trigger_type) = $matches;
       }
+      //dpm($paout,'before');
+      if ($trigger_type === 'select') {
+        $paout[$row_num] = $input['step:'.$row_num]['select'];
+      }      
       
+      if ($trigger_type === 'btn' && $row_num+1 < count($paout) && $paout[$row_num+1] !== 'empty') {
+        $paout = \Drupal\wisski_core\WisskiHelper::array_insert($paout,array('empty','empty'),$path_key+1);
+      }
+      //dpm($paout,'after');
       $existing_paths = $paout;
+      $storage['existing_paths'] = $existing_paths;
+      $form_state->setStorage($storage);
 #      drupal_set_message('pa: ' . serialize ($pa));     
     }
     #drupal_set_message("HI");
     #drupal_set_message('isRebuilding? ' . serialize($form_state->isRebuilding()));  
     #$form_state->setRebuild();
     
+    if (end($existing_paths) !== 'empty') $existing_paths[] = 'empty';
+    
 #    drupal_set_message(serialize($existing_paths));
 
-    // if there is no new field create one
-    if(array_search("0", $existing_paths) === FALSE)
-      $existing_paths[] = "0";
-
     $curvalues = $existing_paths;
-    dpm($curvalues, 'curvalues: ');
+//    dpm($curvalues, 'curvalues');
+
+    $form['path_data']['#pathcount'] = count($curvalues);
     
     // count the steps as the last one doesn't need a button
     $i = 0; 
     
+    $form['path_data']['path_array'] = array(
+      '#type' => 'table',
+      '#prefix' => '<div id="wisski-path-table">',
+      '#suffix' => '</div>',
+      '#header' => array('step' => $this->t('Step'),'op' => ''),
+      '#tree' => FALSE,
+    );
+    
     // go through all values and create fields for them
     foreach($curvalues as $key => $element) {
-      
+      $form['path_data']['path_array']['step:'.$key] = array(
+        '#type' => 'container',
+        '#tree' => TRUE,
+        '#attributes' => array('class' => 'wisski-row', 'id' => 'wisski-row-'.$key),
+      );
 #      drupal_set_message("key " . $key . ": element " . $element);
-      if(!empty($curvalues[($key-1)])) {
-
+      $pre = 'none';
+      if($key > 0 && $curvalues[($key-1)] !== 'empty') {
+        $pre = $curvalues[($key-1)];
        // function getPathAlternatives takes as parameter an array of the previous steps 
        // or an empty array if this is the beginning of the path.        
-        $path_options = $engine->getPathAlternatives(array($curvalues[($key-1)]));
+        $path_options = $engine->getPathAlternatives(array($pre));
       } else {
         $path_options = $engine->getPathAlternatives();
       }    
-                  
-      $form['path_data']['path_array'][$i][$key] = array(
-        '#default_value' => $element,
+      $form['path_data']['path_array']['step:'.$key]['select'] = array(
+        '#default_value' => 'empty',
+        '#value' => $element,
         '#type' => 'select',
-        '#options' => array_merge(array("0" => 'Please select.'), $path_options),
+        '#options' => array_merge(array('empty' => $this->t('Select next step')), $path_options),
         '#title' => $this->t('Step ' . $key . ': Select the next step of the path'),
-        #'#prefix' => '<div class="container-inline">',
-        #'#prefix' => '<table border= \'0\'><tr><td>',
-        #'#suffix' => '</td>',
+        '#title_display' => 'invisible',
+        '#description' => $pre,
         '#ajax' => array(
           'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
-          'wrapper' => 'path_array_div',
+          'wrapper' => 'wisski-path-table',
           'event' => 'change', 
         ),
+        '#limit_validation_errors' => array(),
       );
     
-      if($i < count($curvalues) -1 ) {
-        $form['path_data']['path_array'][$i]['button_' . $key] = array(
-          '#type' => 'submit',
-#         '#type' => 'button',
-          '#value' => $this->t('+'.$key),
+      if($i < count($curvalues) - 2 ) {
+        
+        $form['path_data']['path_array']['step:'.$key]['btn'] = array(
+          //'#type' => 'submit',
+          '#type' => 'button',
+          '#value' => '+'.$key,
+          '#name' => 'step:'.$key.'[btn]',
           '#ajax' => array(
             'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
-            'wrapper' => 'path_array_div',
+            'wrapper' => 'wisski-path-table',
             'event' => 'click', 
-          #'prevent' => 'submit',
           ),
-          '#attributes' => array(
-            'data' => array($key),
-          ),
-#        '#executes_submit_callback' => false,
-          '#submit' => array(array($this,'Drupal\wisski_pathbuilder\Form\WisskiPathForm::submitAddPathField')),
-        #'#title' => '+' . $key,
-       # '#class' => 'use-ajax-submit',
-#        '#ajax' => array(
-#          'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxAddPathField',
-#          'wrapper' => 'path_array_div',
-         # 'method' => 'after',
-         # 'event' => 'click',
-#        ),
-        #'#prefix' => '<td>',
-        #'#suffix' => '</td></tr></table><div class="clearfix"></div>',
-        #'#suffix' => '</div>',
+          '#limit_validation_errors' => array(),
         );
-      }
+      } else $form['path_data']['path_array']['step:'.$key]['btn'] = array(
+        '#type' => 'hidden',
+        '#title' => 'nop:'.$key
+      );
       $i++;
-      #$form['path_data'][$key]['add_path_hidden'] = array(
-      #  '#type' => 'hidden',
-      #  '#value' => $this->t('+'.$key),
-      #);
-                                                                          
-    }                               
+    }                         
+    
+
+    
     $primitive = array();
 
     // only act if there is more than the dummy entry
@@ -272,14 +295,23 @@ class WisskiPathForm extends EntityForm {
     if(count($curvalues) > 1 && count($curvalues) % 2 == 0)
       $primitive = $engine->getPrimitiveMapping($curvalues[(count($curvalues)-2)]);
     
-    $form['path_data']['datatype_property'] = array(
-      '#default_value' => $path->getDatatypeProperty(), #$this->t('Please select.'),
+    $form['path_data']['path_array']['datatype_property'] = array(
+      '#default_value' => isset($datatype_property) ? $datatype_property : $path->getDatatypeProperty(), #$this->t('Please select.'),
       '#type' => 'select',
       '#options' => array_merge(array("0" => 'Please select.'), $primitive),
       '#title' => t('Please select the datatype property for the Path.'),
     );
     
-    dpm($form, 'form');
+    $form['test_button'] = array(
+      '#type' => 'button',
+      '#value' => 'Click',
+      '#ajax' => array(
+        'wrapper' => 'wisski-path-table',
+        'callback' => '\Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
+      ),
+    );
+
+    //dpm($form['path_data']['path_array'], 'formixxx000');
     
     return $form;
   }
@@ -298,7 +330,7 @@ class WisskiPathForm extends EntityForm {
   *   rendered sample date will be empty as well.
   */
   
-  public function ajaxPathData(array $form, array $form_state) {
+  public function ajaxPathData(array $form, FormStateInterface $form_state) {
    # $value = \Drupal\Component\Utility\NestedArray::getValue(
                    #  $form_state->getValues(),
      # $form_state->getTriggeringElement()['#array_parents']); 
@@ -318,10 +350,10 @@ class WisskiPathForm extends EntityForm {
     #  return $form['item']['path_array']['pathbuilder_add_select'];        
     #  drupal_set_message("ajax: " . serialize($form_state));
        #$form_state->setRebuild();
-      dpm($form['path_data'], "ajax!!!");
-      return $form['path_data'];
-   # }
+    //dpm($form,'AJAX says');
+    return $form['path_data']['path_array'];
   }
+  
  public function submitAddPathField(array $form, FormStateInterface $form_state) {
     dpm($form_state, "submit"); 
     
