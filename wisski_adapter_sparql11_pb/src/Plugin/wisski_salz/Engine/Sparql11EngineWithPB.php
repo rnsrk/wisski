@@ -136,7 +136,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
   public function getProperties() {
   
-    $query = "SELECT DISTINCT ?property WHERE { ?class a owl:ObjectProperty . }";  
+    $query = "SELECT DISTINCT ?property WHERE { ?property a owl:ObjectProperty . }";  
     $result = $this->directQuery($query);
     
     if (count($result) > 0) {
