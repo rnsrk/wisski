@@ -138,7 +138,7 @@ dpm($twig);
     //BEGIN find the correct values for path_array and datatype_property
     //get the user input to see if there was a change
     $input = $form_state->getUserInput();
-    dpm($input,'Input');
+    //dpm($input,'Input');
     
     if(empty($input)) {
       //no input means the form is fresh and we take the info form the path entity
@@ -156,7 +156,7 @@ dpm($twig);
       $datatype_property = $storage['datataype_property'];
       //now, let's se whats new
       $trigger = $form_state->getTriggeringElement();
-      dpm($trigger,'Trigger');
+      //dpm($trigger,'Trigger');
       $matches = array();
       //the ajax triggers have wisski-data attibutes set to
       // selectNN, btnNN, delNN, or data0
