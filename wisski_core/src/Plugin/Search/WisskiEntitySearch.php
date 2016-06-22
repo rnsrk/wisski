@@ -63,14 +63,15 @@ class WisskiEntitySearch extends SearchPluginBase {
       $results = $query->execute();
     }
     dpm($results,__METHOD__.'::results');
-    return array(
-      array(
-        'link' => Url::fromRoute('<current>')->toString(),
-        'type' => 'Dummy result type',
-        'title' => 'Dummy title',
-        'snippet' => SafeMarkup::format("Dummy search snippet to display. Keywords: @keywords\n\nConditions: @search_parameters", ['@keywords' => $this->keywords, '@search_parameters' => print_r($this->searchParameters, TRUE)]),
-      ),
-    );
+    $return = array();
+    foreach ($result as $entity_id) {
+      $return[] = array(
+        'link' => Url::fromRoute('entity.wisski_individual.view',array('wisski_individual'=>$result))->toString(),
+        'type' => 'Wisski Entity',
+        'title' => $entity_id,
+      );
+    }
+    return $return;
   }
 
   public function searchFormAlter(array &$form, FormStateInterface $form_state) {
