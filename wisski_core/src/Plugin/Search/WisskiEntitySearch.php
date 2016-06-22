@@ -64,9 +64,9 @@ class WisskiEntitySearch extends SearchPluginBase {
     }
     dpm($results,__METHOD__.'::results');
     $return = array();
-    foreach ($result as $entity_id) {
+    foreach ($results as $entity_id) {
       $return[] = array(
-        'link' => Url::fromRoute('entity.wisski_individual.view',array('wisski_individual'=>$result))->toString(),
+        'link' => Url::fromRoute('entity.wisski_individual.view',array('wisski_individual'=>$entity_id))->toString(),
         'type' => 'Wisski Entity',
         'title' => $entity_id,
       );
