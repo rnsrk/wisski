@@ -55,10 +55,11 @@ class WisskiEntitySearch extends SearchPluginBase {
           default: $group = $query->orConditionGroup();
         }
         $qroup = $group->condition('bundle',$bundle_id);
-        foreach ($parameters[$bundle_id]['paths'] as $path_id => $search_string) {
-          $group = $group->condition($path_id,$search_string);
+        foreach ($parameters[$bundle_id]['paths'] as $path_id => list($search_string,$operator)) {
+          $group = $group->condition($path_id,$search_string,$operator);
         }
         $query->condition($group);
+        //dpm($query);
       }
       $results = $query->execute();
     }
@@ -208,20 +209,22 @@ class WisskiEntitySearch extends SearchPluginBase {
               '#type' => 'container',
               '#attributes' => array('class' => 'container-inline'),
               '#tree' => TRUE,
-              'input_field' => array(
-                '#type' => 'search',
-                '#default_value' => '',
-                '#size' => 30,
-                '#weight' => 1,
-              ),
-              'in' => array(
-                '#markup' => '&nbsp; '.$this->t('in').' &nbsp;',
-                '#weight' => 2,
-              ),
               'path_selection' => array(
                 '#type' => 'select',
                 '#options' => $bundle_path_options,
                 '#default_value' => $path_id,
+                '#weight' => 1,
+              ),
+              'operator' => array(
+                '#type' => 'select',
+                '#options' => $this->getSearchOperators(),
+                '#default_value' => '=',
+                '#weight' => 2,
+              ),
+              'input_field' => array(
+                '#type' => 'textfield',
+                '#default_value' => '',
+                '#size' => 30,
                 '#weight' => 3,
               ),
               
@@ -248,15 +251,48 @@ class WisskiEntitySearch extends SearchPluginBase {
     //dpm($form);
   }
 
+  protected function getSearchOperators() {
+  
+    return array(
+      '=' => $this->t('equal'),
+      '<>' => $this->t('not equal'),
+      '>' => '>',
+      '>=' => '>=',
+      '<' => '<',
+      '<=' => '<=',
+      'STARTS_WITH' => $this->t('Starts with'),
+      'CONTAINS' => $this->t('Contains'),
+      'ENDS_WITH' => $this->t('Ends with'),
+      'IN' => $this->t('one of'),
+      'NOT IN' => $this->t('none of'),
+      'BETWEEN' => $this->t('between'),
+    );
+    switch ($operator) {
+      case '=':
+      case '<>':
+      case '>':
+      case '>=':
+      case '<':
+      case '<=':
+      case 'STARTS_WITH':
+      case 'CONTAINS':
+      case 'ENDS_WITH':
+      case 'IN':
+      case 'NOT IN':
+      case 'BETWEEN':
+    }
+  }
+
   public function buildSearchUrlQuery(FormStateInterface $form_state) {
     
     $vals = $form_state->getValues();
+    dpm($vals,__FUNCTION__.'::values');
     $keys = '';
     foreach($vals['advanced']['paths'] as $bundle_id => $paths) {
       $return[$bundle_id]['query_type'] = $paths['query_type']['selection'];
       unset($paths['query_type']);
       foreach ($paths as $path_parameters) {
-        if ($path_parameters['input_field']) $keys[] = $return[$bundle_id]['paths'][$path_parameters['path_selection']] = trim($path_parameters['input_field']);
+        if ($path_parameters['input_field']) $keys[] = $return[$bundle_id]['paths'][$path_parameters['path_selection']] = array(trim($path_parameters['input_field']),$path_parameters['operator']);
       }
     }
     $return['bundles'] = array_filter($vals['advanced']['bundles']['select_bundles']);
