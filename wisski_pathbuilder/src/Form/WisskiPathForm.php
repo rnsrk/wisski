@@ -162,7 +162,7 @@ dpm($twig);
       // selectNN, btnNN, delNN, or data0
       // see below
       // so we can find out what was intended to be changed
-      $did_match = preg_match('/^(\w+)(\d*)$/',$trigger['#attributes']['data-wisski'],$matches);
+      $did_match = preg_match('/^([a-z]+)(\d*)$/',$trigger['#attributes']['data-wisski'],$matches);
       if (!$did_match) {
         drupal_set_message($this->t('The trigger name didn\'t match','error'));
       } else {    
