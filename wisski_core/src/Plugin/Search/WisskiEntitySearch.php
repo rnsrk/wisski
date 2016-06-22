@@ -55,7 +55,7 @@ class WisskiEntitySearch extends SearchPluginBase {
           default: $group = $query->orConditionGroup();
         }
         $qroup = $group->condition('bundle',$bundle_id);
-        foreach ($parameters[$bundle_id]['paths'] as $path_id => list($search_string,$operator)) {
+        foreach ($parameters[$bundle_id]['paths'] as list($path_id,$search_string,$operator)) {
           dpm($operator.' '.$search_string,'Setting condition');
           $group = $group->condition($path_id,$search_string,$operator);
         }
@@ -293,7 +293,7 @@ class WisskiEntitySearch extends SearchPluginBase {
       $return[$bundle_id]['query_type'] = $paths['query_type']['selection'];
       unset($paths['query_type']);
       foreach ($paths as $path_parameters) {
-        if ($path_parameters['input_field']) $keys[] = $return[$bundle_id]['paths'][$path_parameters['path_selection']] = array(trim($path_parameters['input_field']),$path_parameters['operator']);
+        if ($path_parameters['input_field']) $keys[] = $return[$bundle_id]['paths'][] = array($path_parameters['path_selection'],trim($path_parameters['input_field']),$path_parameters['operator']);
       }
     }
     $return['bundles'] = array_filter($vals['advanced']['bundles']['select_bundles']);
