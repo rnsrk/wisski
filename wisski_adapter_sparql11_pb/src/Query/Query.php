@@ -163,8 +163,10 @@ class Query extends WisskiQueryBase {
         $out = array();
         
         foreach($result as $hit) {
-          $out[] = $hit->x0->getUri();
+          $out[] = str_replace('/', '\\', $hit->x0->getUri());
         }
+        
+        
         
 #        dpm($out, "out");
         return $out;        
