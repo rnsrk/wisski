@@ -1464,24 +1464,24 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             $op = '!=';
           if($op == 'STARTS_WITH') {
             $regex = true;
-            $primitiveValue = '*' . $primitiveValue;
+            $primitiveValue = '^' . $primitiveValue;
           }
           
           if($op == 'ENDS_WITH') {
             $regex = true;
-            $primitiveValue = '' . $primitiveValue . '*';
+            $primitiveValue = '' . $primitiveValue . '$';
           }
           
           if($op == 'CONTAINS') {
             $regex = true;
-            $primitiveValue = '*' . $primitiveValue . '*';
+            $primitiveValue = '' . $primitiveValue . '", "i';
           }
           
         
           if($regex)
             $query .= ' ?out . FILTER ( regex ( ?out, "' . $primitiveValue . '" ) ) . ';
           else
-            $query .= ' ?out . FILTER ( ?out ' . $op . ' ' . $primitiveValue . ' ) . ';
+            $query .= ' ?out . FILTER ( ?out ' . $op . ' "' . $primitiveValue . '" ) . ';
         }
       } else
         $query .= " ?out . ";
