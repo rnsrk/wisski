@@ -128,85 +128,68 @@ dpm($twig);
       $path_options = $engine->getPathAlternatives();
     }
 
-    $form['path_data'] = array(
-      '#type' => 'markup',
-#      '#tree' => TRUE,
-     // The prefix/suffix provide the div that we're replacing, named by
-     // #ajax['wrapper'] below.
-     '#prefix' => '<div id="path_array_div">',
-     '#suffix' => '</div>',
-     '#value' => "",
-      
-    );
-    
-    // preserve tree
-    #$form['path_data']['path_array'] = array(
-    #  '#type' => 'markup',
-    #  '#tree' => TRUE,
-    #  '#value' => "",
-    #);
-
-#    $form['path_data']['path_container'] = array(
- #     '#type' => 'container',
-  #    '#attributes' => array(
-   #   'class' => array('container-inline'),
-    #  ),
-   # );
-                                   
-    
-    // preserve tree
-    $form['path_data'] = array(
-      '#type' => 'container',
-      //'#tree' => TRUE,
-    );
-                                  
-    // read the userinput
-    #$input = $form_state->getUserInput();#
-    
     $existing_paths = array();
     #drupal_set_message('val ' . serialize($form_state->getValues()));
     #drupal_set_message('path_data ' . serialize($form_state->getValue('path_data')));
 
     // if there was something in form_state - use that because it is likely more accurate
     #if(empty($form_state->getValue('path_data'))) {
+    
+    //BEGIN find the correct values for path_array and datatype_property
+    //get the user input to see if there was a change
     $input = $form_state->getUserInput();
-    //dpm($input,'Input');
+    dpm($input,'Input');
     
     if(empty($input)) {
+      //no input means the form is fresh and we take the info form the path entity
       if(!empty( $path->getPathArray() ))
         $existing_paths = $path->getPathArray();
+      $datatype_property = $path->getDatatypeProperty();
 #      drupal_set_message('getPathArray: ' . serialize($existing_paths));
        
     } else {
-      #$pa = $pd['path_array'];
-      //$pa = $form_state->getValue('path_array');
+      
+      //we had a click so the user changed something
+      //first gather the chced values
       $storage = $form_state->getStorage();
       $paout = $storage['existing_paths'];
       $datatype_property = $storage['datataype_property'];
+      //now, let's se whats new
       $trigger = $form_state->getTriggeringElement();
-      //dpm($trigger,'Trigger');
+      dpm($trigger,'Trigger');
       $matches = array();
-      $did_match = preg_match('/^(\w+)(\d+)$/',$trigger['#attributes']['data-wisski'],$matches);
+      //the ajax triggers have wisski-data attibutes set to
+      // selectNN, btnNN, delNN, or data0
+      // see below
+      // so we can find out what was intended to be changed
+      $did_match = preg_match('/^(\w+)(\d*)$/',$trigger['#attributes']['data-wisski'],$matches);
       if (!$did_match) {
         drupal_set_message($this->t('The trigger name didn\'t match','error'));
-      } else {        
+      } else {    
+        //$trigger type is select, btn, del, or data, respectively
+        //$row num represents the number of the table row where the cahnge was done (empty for datatype_property)
         list(,$trigger_type,$row_num) = $matches;
       }
       //dpm($paout,'before');
       if ($trigger_type === 'select') {
-        $paout[$row_num] = $input['step:'.$row_num]['select'];
+        //triggered a standard step selection, so we change the selected row to the chosen value
+        $paout[$row_num] = $input['path_array']['step:'.$row_num]['select'];
       }      
       if ($trigger_type === 'btn' && $paout[$row_num] !== 'empty') {
+        //triggered path enhancement, so we add two empty steps right BEFORE the selected row
         $paout = \Drupal\wisski_core\WisskiHelper::array_insert($paout,array('empty','empty'),$row_num);
       }
       if ($trigger_type === 'del' && count($paout) > $row_num + 1) {
+        //triggered row deletion, removes two steps beginning with the selected row
         $paout = \Drupal\wisski_core\WisskiHelper::array_remove_part($paout,$row_num,2);
       }
       if ($trigger_type === 'data') {
-        $datatype_property = $input['datatype_property'];
+        //triggered datatype selection, change to chosen value
+        $datatype_property = $input['path_array']['datatype_property']['select'];
       }
       //dpm($paout,'after');
       $existing_paths = $paout;
+      //set the cache
       $storage['existing_paths'] = $existing_paths;
       $storage['datatype_property'] = $datatype_property;
       $form_state->setStorage($storage);
@@ -217,28 +200,30 @@ dpm($twig);
     #$form_state->setRebuild();
     
     if (end($existing_paths) !== 'empty') $existing_paths[] = 'empty';
-    
+
+    //END value detection, now $existing_paths and $datatype_property are set correctly, according to entity info and/or user input
 #    drupal_set_message(serialize($existing_paths));
 
     $curvalues = $existing_paths;
 //    dpm($curvalues, 'curvalues');
 
-    $form['path_data']['#pathcount'] = count($curvalues);
+
+    $form['#pathcount'] = count($curvalues);
     
     // count the steps as the last one doesn't need a button
     $i = 0; 
     
-    $form['path_data']['path_array'] = array(
+    $form['path_array'] = array(
       '#type' => 'table',
       '#prefix' => '<div id="wisski-path-table">',
       '#suffix' => '</div>',
       '#header' => array('step' => $this->t('Step'),'op' => ''),
-      '#tree' => FALSE,
+      //'#tree' => TRUE,
     );
     
     // go through all values and create fields for them
     foreach($curvalues as $key => $element) {
-      $form['path_data']['path_array']['step:'.$key] = array(
+      $form['path_array']['step:'.$key] = array(
         '#type' => 'container',
         '#tree' => TRUE,
         '#attributes' => array('class' => 'wisski-row', 'id' => 'wisski-row-'.$key),
@@ -249,7 +234,7 @@ dpm($twig);
         $succ = (isset($curvalues[($key+1)]) && $curvalues[($key+1)] !== 'empty') ? array($curvalues[($key+1)]) : array();
         $path_options = $engine->getPathAlternatives($pre,$succ);
       } else $path_options = $engine->getPathAlternatives();
-      $form['path_data']['path_array']['step:'.$key]['select'] = array(
+      $form['path_array']['step:'.$key]['select'] = array(
         '#default_value' => 'empty',
         '#value' => $element,
         '#type' => 'select',
@@ -267,8 +252,8 @@ dpm($twig);
       );
     
       if($i < count($curvalues) - 1 && !($i % 2)) {
-        $form['path_data']['path_array']['step:'.$key]['op']['#type'] = 'actions';
-        $form['path_data']['path_array']['step:'.$key]['op']['btn'] = array(
+        $form['path_array']['step:'.$key]['op']['#type'] = 'actions';
+        $form['path_array']['step:'.$key]['op']['btn'] = array(
           //'#type' => 'submit',
           '#type' => 'button',
           '#value' => '+'.$key,
@@ -281,7 +266,7 @@ dpm($twig);
           '#name' => 'btn'.$key,
           '#limit_validation_errors' => array(),
         );
-        $form['path_data']['path_array']['step:'.$key]['op']['del'] = array(
+        $form['path_array']['step:'.$key]['op']['del'] = array(
           '#type' => 'button',
           '#value' => '-'.$key,
           '#attributes' => array('data-wisski' => 'del'.$key),
@@ -294,29 +279,29 @@ dpm($twig);
           '#limit_validation_errors' => array(),
         );
       } else {
-        $form['path_data']['path_array']['step:'.$key]['op'] = array(
+        $form['path_array']['step:'.$key]['op'] = array(
           '#type' => 'hidden',
           '#title' => 'nop:'.$key
         );
-      }
-      
-      
-      
+      }  
       $i++;
     }                         
-    
-
-    
+        
     $primitive = array();
+
+    $form['path_array']['datatype_property'] = array(
+      '#type' => 'container',
+      '#tree' => TRUE,
+    );
 
     // only act if there is more than the dummy entry
     // and if it is not a property -> path length odd +1 for dummy -> even
     if(count($curvalues) > 1 && count($curvalues) % 2 == 0) {
       $primitive = $engine->getPrimitiveMapping($curvalues[(count($curvalues)-2)]);
     
-      $form['path_data']['path_array']['datatype_property']['select'] = array(
+      $form['path_array']['datatype_property']['select'] = array(
         '#default_value' => 'empty',
-        '#value' => isset($datatype_property) ? $datatype_property : $path->getDatatypeProperty(), #$this->t('Please select.'),
+        '#value' => $datatype_property,
         '#type' => 'select',
         '#options' => array_merge(array('empty' => $this->t('Select datatype property')), $primitive),
         //'#title' => t('Please select the datatype property for the Path.'),
@@ -327,23 +312,23 @@ dpm($twig);
         ),
         '#attributes' => array('data-wisski' => 'data0'),
       );
-    } else $form['path_data']['datatype_property']['select'] = array(
+    } else $form['path_array']['datatype_property']['select'] = array(
       '#type' => 'hidden',
       '#value' => 'empty',
     );
-    $form['path_data']['path_array']['datataype_property']['op'] = array(
+    $form['path_array']['datatype_property']['op'] = array(
       '#type' => 'hidden',
       '#value' => 'op',
     );
     
-    //dpm($form['path_data']['path_array'], 'formixxx000');
+    //dpm($form['path_array'], 'formixxx000');
     
     return $form;
   }
   
   public function ajaxPathData(array $form, FormStateInterface $form_state) {
    
-    return $form['path_data']['path_array'];
+    return $form['path_array'];
   }
   
   /**
@@ -353,7 +338,6 @@ dpm($twig);
     //parent::save($form,$form_state);
     //$pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilder::load($this->pb);
 #    dpm(array($this->entity,$this->pb),__METHOD__);
-    //$form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder' => $this->pb));
 
     $path = $this->entity;
     
@@ -386,11 +370,7 @@ dpm($twig);
     // save the pb
     $status = $pb->save();
 
-    $redirect_url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.edit_form')
-                              ->setRouteParameters(array('wisski_pathbuilder'=>$pbid));
-    
-    $form_state->setRedirectUrl($redirect_url);
-
+    $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder' => $pbid));
   }
  
   /**
@@ -407,18 +387,23 @@ dpm($twig);
       $values = array_diff_key($values, $this->entity->getPluginCollections());
     }
 
+    //$values represent form values as hidden in the render elements i.e. the path steps can be found in
+    // $values['path_array']['step:'.$row_number]['select']
     $values = $form_state->getValues();
     //dpm($values,__METHOD__.'::values');
     $path_array = array();
-    foreach ($values as $key => $value) {
+    foreach ($values['path_array'] as $key => $value) {
+      //gather step values while ignoring empty lines
       if (strpos($key,'step') === 0 && $value['select'] !== 'empty') {
         $row = explode(':',$key)[1];
         $path_array[$row] = $value['select'];
+      } elseif ($key === 'datatype_property') {
+        $datatype_property = $value['select'];
       }
     }
     $entity->setPathArray($path_array);
     //the $values do not accept the datatype_property value being named correctly, thus select is our desired goal
-    $entity->setDatatypeProperty($values['select']);
+    $entity->setDatatypeProperty($datatype_property);
     $entity->setID($values['id']);
     $entity->setName($values['name']);
     $entity->setType($values['type']);
