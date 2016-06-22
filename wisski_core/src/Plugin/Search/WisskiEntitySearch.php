@@ -48,12 +48,13 @@ class WisskiEntitySearch extends SearchPluginBase {
       //dpm($parameters,__FUNCTION__.'::parameters');
       foreach ($parameters['bundles'] as $bundle_id) {
         if (!isset($parameters[$bundle_id])) continue;
-        $query->condition('bundle',$bundle_id);
+        
         switch ($parameters[$bundle_id]['query_type']) {
           case 'AND': $group = $query->andConditionGroup(); break;
           case 'OR' : 
           default: $group = $query->orConditionGroup();
         }
+        $group->condition('bundle',$bundle_id);
         foreach ($paramaters[$bundle_id]['paths'] as $path_id => $search_string) {
           $group->condition($path_id,$search_string);
         }
