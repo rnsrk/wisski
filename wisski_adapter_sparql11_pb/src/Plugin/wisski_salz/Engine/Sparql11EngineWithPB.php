@@ -1478,7 +1478,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           }
           
         
-          if($regex)
+          if($regex || $op == 'BETWEEN' || $op == 'IN' || $op == 'NOT IN')
             $query .= ' ?out . FILTER ( regex ( ?out, "' . $primitiveValue . '" ) ) . ';
           else
             $query .= ' ?out . FILTER ( ?out ' . $op . ' "' . $primitiveValue . '" ) . ';
