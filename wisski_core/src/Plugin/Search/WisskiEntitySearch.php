@@ -45,7 +45,7 @@ class WisskiEntitySearch extends SearchPluginBase {
       $query = \Drupal::entityQuery('wisski_individual');
       $query->setPathQuery();
       $parameters = $this->getParameters();
-      //dpm($parameters,__FUNCTION__.'::parameters');
+      dpm($parameters,__FUNCTION__.'::parameters');
       foreach ($parameters['bundles'] as $bundle_id) {
         if (!isset($parameters[$bundle_id])) continue;
         
@@ -54,9 +54,9 @@ class WisskiEntitySearch extends SearchPluginBase {
           case 'OR' : 
           default: $group = $query->orConditionGroup();
         }
-        $group->condition('bundle',$bundle_id);
-        foreach ($paramaters[$bundle_id]['paths'] as $path_id => $search_string) {
-          $group->condition($path_id,$search_string);
+        $qroup = $group->condition('bundle',$bundle_id);
+        foreach ($parameters[$bundle_id]['paths'] as $path_id => $search_string) {
+          $group = $group->condition($path_id,$search_string);
         }
         $query->condition($group);
       }
@@ -76,7 +76,7 @@ class WisskiEntitySearch extends SearchPluginBase {
   public function searchFormAlter(array &$form, FormStateInterface $form_state) {
   
     //dpm($form,__FUNCTION__);
-    
+    dpm($this,__METHOD__);
     unset($form['basic']);
     
     $form['entity_title'] = array(
