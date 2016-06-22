@@ -127,7 +127,7 @@ class Query extends WisskiQueryBase {
           $each_condition_group = $condition['field'];
           
           foreach($each_condition_group->conditions() as $cond) {
-            
+
             // save the bundle for the bundle cache    
             if($cond['field'] == 'bundle') {
               $bundle_id = $cond['value'];
@@ -147,13 +147,15 @@ class Query extends WisskiQueryBase {
             
             $value = $cond['value'];
             
+            $op = $cond['operator'];
+                        
             $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path_id);
             
             // if it is no valid path - skip    
             if(empty($path))
               continue;
 
-            $query .= $pbadapter->getEngine()->generateTriplesForPath($pb, $path, $value);
+            $query .= $pbadapter->getEngine()->generateTriplesForPath($pb, $path, $value, NULL, NULL, 0, 0, FALSE, $op);
           }
         }
           
@@ -162,7 +164,7 @@ class Query extends WisskiQueryBase {
           return array();
       
         $query = "SELECT * WHERE { " . $query . " }";
-        
+        dpm($query, 'query');        
         $result = $pbadapter->getEngine()->directQuery($query);
         
         $out = array();
