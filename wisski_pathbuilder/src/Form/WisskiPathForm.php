@@ -13,6 +13,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
+use Drupal\Core\Entity\EntityWithPluginCollectionInterface;
 use Drupal\Core\Url;
 use Drupal\wisski_salz\EngineInterface;
 use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
@@ -46,11 +47,6 @@ class WisskiPathForm extends EntityForm {
     
   }
     
-  /**
-   * this seems to be necessary to prevent AJAX from firing twice
-   */
-  private $semaphore = FALSE;
-
    /**
    * {@inheritdoc}
    */
@@ -98,8 +94,9 @@ dpm($twig);
       '#type' => 'textfield',
       '#maxlength' => 255,
       '#title' => $this->t('Name'),
-      '#default_value' => empty($path->getName()) ? $this->t('Name for the path') : $path->getName(),
-      '#description' => $this->t("Name of the path."),
+      '#default_value' => empty($path->getName()) ? NULL : $path->getName(),
+      '#attributes' => array('placeholder' => $this->t('Name for the path')),
+      //'#description' => $this->t("Name of the path."),
       '#required' => true,
     );
     
@@ -113,6 +110,7 @@ dpm($twig);
         'source' => array('name'),
         'exists' => 'wisski_path_load',
       ),
+      '#reequired' => TRUE,
     );
     
     // the name for this path
@@ -184,9 +182,9 @@ dpm($twig);
       //$pa = $form_state->getValue('path_array');
       $storage = $form_state->getStorage();
       $paout = $storage['existing_paths'];
-
+      $datatype_property = $storage['datataype_property'];
       $trigger = $form_state->getTriggeringElement();
-      dpm($trigger,'Trigger');
+      //dpm($trigger,'Trigger');
       $matches = array();
       $did_match = preg_match('/^(\w+)(\d+)$/',$trigger['#attributes']['data-wisski'],$matches);
       if (!$did_match) {
@@ -194,7 +192,7 @@ dpm($twig);
       } else {        
         list(,$trigger_type,$row_num) = $matches;
       }
-      dpm($paout,'before');
+      //dpm($paout,'before');
       if ($trigger_type === 'select') {
         $paout[$row_num] = $input['step:'.$row_num]['select'];
       }      
@@ -204,9 +202,13 @@ dpm($twig);
       if ($trigger_type === 'del' && count($paout) > $row_num + 1) {
         $paout = \Drupal\wisski_core\WisskiHelper::array_remove_part($paout,$row_num,2);
       }
-      dpm($paout,'after');
+      if ($trigger_type === 'data') {
+        $datatype_property = $input['datatype_property'];
+      }
+      //dpm($paout,'after');
       $existing_paths = $paout;
       $storage['existing_paths'] = $existing_paths;
+      $storage['datatype_property'] = $datatype_property;
       $form_state->setStorage($storage);
 #      drupal_set_message('pa: ' . serialize ($pa));     
     }
@@ -313,202 +315,80 @@ dpm($twig);
       $primitive = $engine->getPrimitiveMapping($curvalues[(count($curvalues)-2)]);
     
       $form['path_data']['path_array']['datatype_property']['select'] = array(
-        '#default_value' => isset($datatype_property) ? $datatype_property : $path->getDatatypeProperty(), #$this->t('Please select.'),
+        '#default_value' => 'empty',
+        '#value' => isset($datatype_property) ? $datatype_property : $path->getDatatypeProperty(), #$this->t('Please select.'),
         '#type' => 'select',
-        '#options' => array_merge(array('empty' => 'Please select.'), $primitive),
-        '#title' => t('Please select the datatype property for the Path.'),
+        '#options' => array_merge(array('empty' => $this->t('Select datatype property')), $primitive),
+        //'#title' => t('Please select the datatype property for the Path.'),
+        '#ajax' => array(
+          'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
+          'wrapper' => 'wisski-path-table',
+          'event' => 'change', 
+        ),
+        '#attributes' => array('data-wisski' => 'data0'),
       );
     } else $form['path_data']['datatype_property']['select'] = array(
       '#type' => 'hidden',
       '#value' => 'empty',
     );
-    $form['path_data']['path_array']['datataype_property']['btn']['#type'] = 'hidden';
+    $form['path_data']['path_array']['datataype_property']['op'] = array(
+      '#type' => 'hidden',
+      '#value' => 'op',
+    );
     
     //dpm($form['path_data']['path_array'], 'formixxx000');
     
     return $form;
   }
   
-/**
-  * Ajax callback to render a sample of the input path data.
-  *
-  * @param array $form
-  *   Form API array structure.
-  * @param array $form_state
-  *   Form state information.
-  *
-  * @return AjaxResponse
-  *   Ajax replace command with the rendered sample date using the given
-  *   format. If the given format cannot be identified or was empty, the
-  *   rendered sample date will be empty as well.
-  */
-  
   public function ajaxPathData(array $form, FormStateInterface $form_state) {
-   # $value = \Drupal\Component\Utility\NestedArray::getValue(
-                   #  $form_state->getValues(),
-     # $form_state->getTriggeringElement()['#array_parents']); 
-   # drupal_set_message($form_state->getTriggeringElement()['#path_array']);  
-   # $response = new AjaxResponse();
-   # $response->addCommand(new ReplaceCommand('#edit-date-format-suffix', '<small id="edit-date-format-suffix">' . $format . '</small>'));
-  #  return $response;
- # return $form['replace_textfield'];   
-  #  if ($form_state->getValue('path_array')!='0') {
-      #$selector = '#path_array_div';
-      
-     # $commands = array();
-     # $commands[] = ajax_command_after($selector, "New 'after'...");
-     # $commands[] = ajax_command_replace("#after_status", "<div id='after_status'>Updated after_command_example " . date('r') . "</div>");
-       
-     # return array('#type' => 'ajax', '#commands' => $commands);
-    #  return $form['item']['path_array']['pathbuilder_add_select'];        
-    #  drupal_set_message("ajax: " . serialize($form_state));
-       #$form_state->setRebuild();
-    //dpm($form,'AJAX says');
+   
     return $form['path_data']['path_array'];
   }
-  
- public function submitAddPathField(array $form, FormStateInterface $form_state) {
-    dpm($form_state, "submit"); 
-    
-    dpm($form_state->getTriggeringElement(), "trigger");
-
-    $triggerid = $form_state->getTriggeringElement()['#attributes']['data'][0];
-    
-    dpm($triggerid);
-    
-    $values = $form_state->getValues();
-    
-    $newpa = array();
-    
-    foreach($values['path_array'] as $key => $value) {
-      foreach($value as $subkey => $subvalue) {
-        // skip buttons
-        if(strpos($subkey, 'button_') !== FALSE)
-          continue;
-        
-        // just copy
-        if($subkey < $triggerid) {
-          $newpa[$key][$subkey] = $subvalue;
-        }
-        // we have to add something before that
-        if($key == $triggerid) {
-          $newpa[$key][$subkey] = "0"; 
-          $newpa[$key+1][$subkey+1] = "0"; 
-          $newpa[$key+2][$subkey+2] = $subvalue;
-        }
-        
-        if($key > $triggerid) {
-          $newpa[$key+2][$subkey+2] = $subvalue; 
-        }
-        
-      }
-    }
-
-    $form_state->setValue('path_array', $newpa);
-    
-    dpm($form_state->getValues(), "values");
-    
-    $form_state->setRebuild();
- }
-  
-#  public function ajaxAddPathField($form, $form_state) {    
-/*
-    drupal_set_message("HELLO");
-    #$selector = '#path_array_div';
-     
-    #$commands = array();
-    #$commands[] = ajax_command_append($selector, "Stuff...");
-    #return array('#type' => 'ajax', '#commands' => $commands);
-    
-         
-    $existing_paths = $form_state->getValue('path_array');
-    $existing_paths_complete = $existing_paths;
-    $complete_form = $form_state->getCompleteForm(); 
-    $trigger = $form_state->getTriggeringElement();
-    $parents = $trigger['#parents'];
-    $trigger_element = $parents[0];
-    drupal_set_message('parents ' . serialize($parents));
-    #$existing_paths[$trigger_element+1] = "HI";
-    $existing_paths_part = array_splice($existing_paths, $trigger_element+1);
-    $existing_paths[] = "0";
-    #$existing_paths[] = "0";
-    
-    #drupal_set_message(serialize($form_state));
-    drupal_set_message('existing_paths: ' . serialize($existing_paths));
-    drupal_set_message('existing_paths_part: ' . serialize($existing_paths_part));
-    drupal_set_message('existing_paths_complete: ' . serialize($existing_paths_complete));
-    $existing_paths_new = array_merge($existing_paths, $existing_paths_part);
-    drupal_set_message('existing_paths_new: ' . serialize($existing_paths_new));
-    $form_state->setValue('path_array', $existing_paths_new);
-    drupal_set_message('form state path array' . serialize($form_state->getValue('path_array'))); 
-    #drupal_set_message('complete_form: ' . serialize($complete_form));
-    #drupal_set_message('path_data: ' . serialize($complete_form['path_data']));
-    #drupal_set_message('trigger ' . serialize($form_state->getTriggeringElement()));  
-    #dpm($complete_form['path_data']);
-    #dpm($form_state->getTriggeringElement());
-    #drupal_set_message('isRebuild? ' . serialize($form_state->isRebuilding()));
-    #$form_state->setRebuild();
-    #$form = \Drupal::formBuilder()->rebuildForm('wisski_path_form', $form_state);
-    $form = \Drupal::formBuilder()->rebuildForm('Drupal\wisski_pathbuilder\Form\WisskiPathForm', $form_state);
-    #drupal_set_message('FORMBUILDER: ' . \Drupal::formBuilder());
-    #drupal_set_message('isRebuild now? ' . serialize($form_state->isRebuilding()));
-    return $form['path_data'];
-    #$form_state->setRebuild();
-*/
-#  }
   
   /**
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-    
-    $path = $this->entity;
-    
-    $patharray = $path->getPathArray();
-
-    // unset the last step because this usually is an empty field for selection        
-    if($patharray[count($patharray) -1] == "0") {
-      unset($patharray[count($patharray) -1]);
-      $path->setPathArray($patharray);
-    }
-    
-    $status = $path->save();
-    
-    if($status) {
-      // Setting the success message.
-      drupal_set_message($this->t('Saved the path: @id.', array(
-        '@id' => $path->getID(),
-      )));
-    } else {
-      drupal_set_message($this->t('The path @id could not be saved.', array(
-        '@id' => $path->getID(),
-      )));
-    }
-    
-    if(empty($this->pb))
-      $pbid = $form_state->getBuildInfo()['args'][0];
-    else
-      $pbid = $this->pb;
+    //parent::save($form,$form_state);
+    //$pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilder::load($this->pb);
+    dpm(array($this->entity,$this->pb),__METHOD__);
+    //$form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder' => $this->pb));
+  }
  
-    dpm($pbid, "pbid");
-      
-    // load the pb
-    $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($pbid);
-
+  /**
+   * {@inheritdoc}
+   * overridden to ensure the correct mapping of form values to entity properties
+   */
+  protected function copyFormValuesToEntity(EntityInterface $entity, array $form, FormStateInterface $form_state) {
     
-    // add the path to its tree if it was not there already
-    if(is_null($pb->getPbPath($path->id())))
-      $pb->addPathToPathTree($path->id(), 0, $path->isGroup());
-    
-    // save the pb
-    $status = $pb->save();
+    $values = $form_state->getValues();
 
-    $redirect_url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.edit_form')
-                          ->setRouteParameters(array('wisski_pathbuilder'=>$pbid));
-        
-                         
-    $form_state->setRedirectUrl($redirect_url);             
- }
+    //From parent, not sure what this is necessary for
+    if ($this->entity instanceof EntityWithPluginCollectionInterface) {
+      // Do not manually update values represented by plugin collections.
+      $values = array_diff_key($values, $this->entity->getPluginCollections());
+    }
+
+    $values = $form_state->getValues();
+    //dpm($values,__METHOD__.'::values');
+    $path_array = array();
+    foreach ($values as $key => $value) {
+      if (strpos($key,'step') === 0 && $value['select'] !== 'empty') {
+        $row = explode(':',$key)[1];
+        $path_array[$row] = $value['select'];
+      }
+    }
+    $entity->setPathArray($path_array);
+    //the $values do not accept the datatype_property value being named correctly, thus select is our desired goal
+    $entity->setDatatypeProperty($values['select']);
+    $entity->setID($values['id']);
+    $entity->setName($values['name']);
+    $entity->setType($values['type']);
+    
+    //dpm($entity,__FUNCTION__.'::path');
+  }
+
 }
-    
- 
+
+
