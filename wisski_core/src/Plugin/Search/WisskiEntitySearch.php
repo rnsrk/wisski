@@ -38,25 +38,33 @@ class WisskiEntitySearch extends SearchPluginBase {
    *   A structured list of search results
    */
   public function execute() {
-    dpm($this,__METHOD__);
+    
+    //dpm($this,__METHOD__);
     $results = array();
     if ($this->isSearchExecutable()) {
       $query = \Drupal::entityQuery('wisski_individual');
-      foreach ($this->getParameters() as $key => $condition) {
-        if (is_array($condition)) {
-          $group = $query->andConditionGroup();
-          foreach ($condition as $subkey => $subcondition) {
-            $query->condition($key,$subkey);
-            $group->condition($subkey,$subcondition);
-          }
-          $query->condition($group);
-        } else $query->condition($key,$condition);
+      $query->setPathQuery();
+      $parameters = $this->getParameters();
+      //dpm($parameters,__FUNCTION__.'::parameters');
+      foreach ($parameters['bundles'] as $bundle_id) {
+        if (!isset($parameters[$bundle_id])) continue;
+        $query->condition('bundle',$bundle_id);
+        switch ($parameters[$bundle_id]['query_type']) {
+          case 'AND': $group = $query->andConditionGroup(); break;
+          case 'OR' : 
+          default: $group = $query->orConditionGroup();
+        }
+        foreach ($paramaters[$bundle_id]['paths'] as $path_id => $search_string) {
+          $group->condition($path_id,$search_string);
+        }
+        $query->condition($group);
       }
-      return $query->execute();
+      $results = $query->execute();
     }
+    dpm($results,__METHOD__.'::results');
     return array(
       array(
-        'link' => Url::fromRoute('search.wisski.result')->toString(),
+        'link' => Url::fromRoute('<current>')->toString(),
         'type' => 'Dummy result type',
         'title' => 'Dummy title',
         'snippet' => SafeMarkup::format("Dummy search snippet to display. Keywords: @keywords\n\nConditions: @search_parameters", ['@keywords' => $this->keywords, '@search_parameters' => print_r($this->searchParameters, TRUE)]),
@@ -198,16 +206,23 @@ class WisskiEntitySearch extends SearchPluginBase {
               '#type' => 'container',
               '#attributes' => array('class' => 'container-inline'),
               '#tree' => TRUE,
+              'input_field' => array(
+                '#type' => 'search',
+                '#default_value' => '',
+                '#size' => 30,
+                '#weight' => 1,
+              ),
+              'in' => array(
+                '#markup' => '&nbsp; '.$this->t('in').' &nbsp;',
+                '#weight' => 2,
+              ),
               'path_selection' => array(
                 '#type' => 'select',
                 '#options' => $bundle_path_options,
                 '#default_value' => $path_id,
+                '#weight' => 3,
               ),
-              'input_field' => array(
-                '#type' => 'textfield',
-                '#default_value' => '',
-                '#size' => 30,
-              ),
+              
             );
           }
         }
@@ -233,15 +248,19 @@ class WisskiEntitySearch extends SearchPluginBase {
 
   public function buildSearchUrlQuery(FormStateInterface $form_state) {
     
-    $parameter_keys = array(
-      'advanced',
-      'entity_title',
-    );
     $vals = $form_state->getValues();
-    dpm($vals,__METHOD__);
-    $return = array_intersect_key($vals,array_flip($parameter_keys));
+    $keys = '';
+    foreach($vals['advanced']['paths'] as $bundle_id => $paths) {
+      $return[$bundle_id]['query_type'] = $paths['query_type']['selection'];
+      unset($paths['query_type']);
+      foreach ($paths as $path_parameters) {
+        if ($path_parameters['input_field']) $keys[] = $return[$bundle_id]['paths'][$path_parameters['path_selection']] = trim($path_parameters['input_field']);
+      }
+    }
+    $return['bundles'] = array_filter($vals['advanced']['bundles']['select_bundles']);
+    $return['entity_title'] = $vals['entity_title'];
     // 'keys' must be set for the Search Plugin, don't know why
-    $return['keys'] = array();
+    $return['keys'] = implode(', ',$keys);
     return $return;    
   }
 

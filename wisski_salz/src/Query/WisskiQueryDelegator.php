@@ -107,7 +107,15 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     foreach ($this->dependent_queries as $query) $query->sort($field,$direction,$langcode);
     return $this;
   }
-
+  
+  public function setPathQuery() {
+    foreach ($this->dependent_queries as $query) $query->setPathQuery();
+  }
+  
+  public function setFieldQuery() {
+    foreach ($this->dependent_queries as $query) $query->setFieldQuery(); 
+  }
+  
   /**
    * {@inheritdoc}
    */
