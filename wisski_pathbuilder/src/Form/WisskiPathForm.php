@@ -352,8 +352,45 @@ dpm($twig);
   public function save(array $form, FormStateInterface $form_state) {
     //parent::save($form,$form_state);
     //$pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilder::load($this->pb);
-    dpm(array($this->entity,$this->pb),__METHOD__);
+#    dpm(array($this->entity,$this->pb),__METHOD__);
     //$form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder' => $this->pb));
+
+    $path = $this->entity;
+    
+    $status = $path->save();
+    
+    if($status) {
+      // Setting the success message.
+      drupal_set_message($this->t('Saved the path: @id.', array(
+        '@id' => $path->getID(),
+      )));
+    } else {
+      drupal_set_message($this->t('The path @id could not be saved.', array(
+        '@id' => $path->getID(),
+      )));
+    }
+        
+    if(empty($this->pb))
+      $pbid = $form_state->getBuildInfo()['args'][0];
+    else
+      $pbid = $this->pb;
+          
+    // load the pb
+    $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($pbid);
+     
+       
+    // add the path to its tree if it was not there already
+    if(is_null($pb->getPbPath($path->id())))
+      $pb->addPathToPathTree($path->id(), 0, $path->isGroup());
+      
+    // save the pb
+    $status = $pb->save();
+
+    $redirect_url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.edit_form')
+                              ->setRouteParameters(array('wisski_pathbuilder'=>$pbid));
+    
+    $form_state->setRedirectUrl($redirect_url);
+
   }
  
   /**
