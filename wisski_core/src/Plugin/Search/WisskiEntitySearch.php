@@ -56,6 +56,7 @@ class WisskiEntitySearch extends SearchPluginBase {
         }
         $qroup = $group->condition('bundle',$bundle_id);
         foreach ($parameters[$bundle_id]['paths'] as $path_id => list($search_string,$operator)) {
+          dpm($operator.' '.$search_string,'Setting condition');
           $group = $group->condition($path_id,$search_string,$operator);
         }
         $query->condition($group);
