@@ -114,63 +114,66 @@ class Query extends WisskiQueryBase {
           }
         }
       }
-        
+      
+      // if this is a path query act upon it accordingly
       if($this->isPathQuery()) {
-        $query = "";
         
+        // construct the query
+        $query = "";
+        // what bundle is it - for the bundle cache
+        $bundle_id = "";
+                
         foreach($this->condition->conditions() as $condition) {
           $each_condition_group = $condition['field'];
           
           foreach($each_condition_group->conditions() as $cond) {
-            if($cond['field'] == 'bundle')
+            
+            // save the bundle for the bundle cache    
+            if($cond['field'] == 'bundle') {
+              $bundle_id = $cond['value'];
               continue;
+            }
             
             $pb_and_path = explode(".", $cond['field']);
                         
             $pbid = $pb_and_path[0];
             
+            // if this is not the correct pathbuilder
             if($pbid != $pb->id())
               continue;
             
+            // get the path
             $path_id = $pb_and_path[1];
             
             $value = $cond['value'];
             
             $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path_id);
             
+            // if it is no valid path - skip    
             if(empty($path))
               continue;
-            
-              
-            
-            
-#            dpm($path, "path");            
+
             $query .= $pbadapter->getEngine()->generateTriplesForPath($pb, $path, $value);
-            
-#            dpm($cond, "cond");
           }
-          
-#          dpm($condition, "cond");
         }
-        
+          
+        // if no query was constructed - there is nothing to search.     
         if(empty($query))
           return array();
-        
+      
         $query = "SELECT * WHERE { " . $query . " }";
         
         $result = $pbadapter->getEngine()->directQuery($query);
         
         $out = array();
-        
+      
         foreach($result as $hit) {
-          $out[] = str_replace('/', '\\', $hit->x0->getUri());
+          $entity_id = str_replace('/', '\\', $hit->x0->getUri());
+          $out[] = $entity_id;
+          \Drupal::entityManager()->getStorage('wisski_individual')->writeToCache($entity_id,$bundle_id);
         }
-        
-        
-        
-#        dpm($out, "out");
+                  
         return $out;        
-#        dpm($query, "I am asking: ");
       }
     
         
