@@ -18,6 +18,7 @@ use Drupal\image\Entity\ImageStyle;
 use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\wisski_core\Query\WisskiQueryInterface;
 //use Drupal\wisski_core\WisskiInvalidArgumentException;
+use Drupal\wisski_core\WisskiCacheHelper;
 
 use Drupal\Core\Field\BaseFieldDefinition;
 
@@ -339,7 +340,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       if ($image_style->createDerivative($output_uri,$preview_uri)) {
         drupal_set_message('Style did it');
         $preview_id = $this->getFileId($preview_uri);
-        WisskiCacheHelper::setPreviewImage($preview_id);
+        WisskiCacheHelper::putPreviewImage($preview_id);
         return $preview_id;
       } else return $input_id;
     }

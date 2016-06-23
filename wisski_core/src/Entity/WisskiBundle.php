@@ -137,7 +137,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         $title = implode('',$parts);
       }
     }
-    $this->setCachedTitles($entity_id,$title);
+    $this->setCachedTitle($entity_id,$title);
     //dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
     return $title;
   }
@@ -180,7 +180,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   public function getCachedTitle($entity_id) {
     
     if (!isset($this->cached_titles[$entity_id])) {  
-      if ($title = WisskiHelper::getEntityTitle($entity_id,$this->id())) $this->cached_titles[$entity_id] = $title;
+      if ($title = WisskiCacheHelper::getEntityTitle($entity_id,$this->id())) $this->cached_titles[$entity_id] = $title;
       else return NULL;
     }//dpm($this->cached_titles,'cached titles');
     return $this->cached_titles[$entity_id];
