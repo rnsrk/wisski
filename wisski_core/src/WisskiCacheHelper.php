@@ -50,7 +50,7 @@ class WisskiCacheHelper {
     self::flushCacheData($cid);
   }
   
-  static functiob flushAllEntityTitles($bundle_id=NULL) {
+  static function flushAllEntityTitles($bundle_id=NULL) {
     
     if (is_null($bundle_id)) $tags[] = 'wisski_bundled_titles.default';
     else $tags[] = 'wisski_bundled_titles.'.$bundle_id;

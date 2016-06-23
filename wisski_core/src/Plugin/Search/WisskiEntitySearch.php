@@ -67,10 +67,12 @@ class WisskiEntitySearch extends SearchPluginBase {
     dpm($results,__METHOD__.'::results');
     $return = array();
     foreach ($results as $entity_id) {
+      $title = \Drupal\wisski_core\WisskiCacheHelper::getEntityTitle($entity_id);
+      if (is_null($title)) $title = $entity_id;
       $return[] = array(
         'link' => Url::fromRoute('entity.wisski_individual.view',array('wisski_individual'=>$entity_id))->toString(),
         'type' => 'Wisski Entity',
-        'title' => $entity_id,
+        'title' => $title,
       );
     }
     return $return;

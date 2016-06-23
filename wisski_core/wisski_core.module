@@ -11,7 +11,11 @@ function wisski_core_generate_title(WisskiEntityInterface $wisski_individual) {
 
 
 function wisski_core_flush_title_caches($bundle_ids=NULL,$entity_ids=NULL) {
-  
+
+  if (is_null($bundle_ids)) {
+    \Drupal\wisski_core\WisskiCacheHelper::flushAllEntityTitles();
+    return;
+  }
   $bundles = \Drupal\wisski_core\Entity\WisskiBundle::loadMultiple($bundle_ids);
   foreach ($bundles as $bundle) {
     $bundle->flushTitleCache($entity_ids);
