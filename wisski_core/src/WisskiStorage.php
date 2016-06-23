@@ -72,11 +72,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     // for every id
     foreach($ids as $id) {
       //see if we got bundle information cached. Useful for entity reference and more
-      $cached_bundle = NULL;
-      $cid = 'wisski_individual.'.$id.'.bundle';
-      if ($cache = \Drupal::cache()->get($cid)) {
-        $cached_bundle = $cache->data;
-      }
+      $cached_bundle = WisskiCacheHelper::getCallingBundle($id);
       // ask all adapters
       foreach($adapters as $aid => $adapter) {
         // if they know that id
@@ -328,10 +324,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
   private function getPreviewImage($entity_id,$bundle_id,$adapter) {
     
-    $cache_id = 'wisski_preview_image.'.$entity_id;
-    if ($cache = \Drupal::cache()->get($cache_id)) {
+    if ($preview = WisskiCacheHelper::getPreviewImage($entity_id)) {
       dpm('Preview image from cache');
-      return $cache->data;
+      return $preview;
     }
     else {
       $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
@@ -344,7 +339,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       if ($image_style->createDerivative($output_uri,$preview_uri)) {
         drupal_set_message('Style did it');
         $preview_id = $this->getFileId($preview_uri);
-        \Drupal::cache()->set($cache_id,$preview_id);
+        WisskiCacheHelper::setPreviewImage($preview_id);
         return $preview_id;
       } else return $input_id;
     }
@@ -621,8 +616,6 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   
   public function writeToCache($entity_id,$bundle_id) {
   
-    $cid = 'wisski_individual.'.$entity_id.'.bundle';
-    $data = $bundle_id;
-    \Drupal::cache()->set($cid, $data);
+    WisskiCacheHelper::putCallingBundle($entity_id,$bundle_id);
   }
 }

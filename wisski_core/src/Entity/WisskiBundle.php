@@ -6,6 +6,8 @@ use Drupal\Core\Config\Entity\ConfigEntityBundleBase;
 use Drupal\wisski_core\WisskiBundleInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 
+use Drupal\wisski_core\WisskiCacheHelper;
+
 /**
  * Defines the bundle configuration entity.
  *
@@ -73,11 +75,11 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   public function generateEntityTitle($wisski_individual) {
     
-    $titles = $this->getCachedTitles();
     $entity_id = $wisski_individual->id();
-    if (isset($titles[$entity_id])) {
+    $title = $this->getCachedTitle($entity_id);
+    if (isset($title)) {
       //drupal_set_message('Title from cache');
-      return $titles[$entity_id];
+      return $title;
     }
     $pattern = $this->getTitlePattern();
     unset($pattern['max_id']);
@@ -135,8 +137,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         $title = implode('',$parts);
       }
     }
-    $titles[$entity_id] = $title;
-    $this->setCachedTitles($titles);
+    $this->setCachedTitles($entity_id,$title);
     //dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
     return $title;
   }
@@ -159,36 +160,30 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    */
   public function flushTitleCache($entity_ids = NULL) {
 
-    $cache_id = 'wisski_title_cache'.$this->id();
     if (is_null($entity_ids)) {
       unset($this->cached_titles);
-      \Drupal::cache()->delete($cache_id);
+      WisskiCacheHelper::flushAllEntityTitles($this->id());
     } elseif ($entity_ids !== array()) {
-      if ($cache = \Drupal::cache()->get($cache_id)) {
-        $data = $cache->data;
-        $data = array_diff_key($data,array_flip($entity_ids));
-        \Drupal::cache()->set($cache_id,$data);
-        $this->cached_titles = $data;
+      foreach ($entity_ids as $entity_id) {
+        unset($this->cached_titles[$entity_id]);
+        WisskiCacheHelper::flushEntityTitle($entity_id,$this->id());
       } 
     }
   }
 
-  private function setCachedTitles(array $titles) {
+  private function setCachedTitle($entity_id,$title) {
     
-    $this->cached_titles = $titles;
-    $cache_id = 'wisski_title_cache'.$this->id();
-    \Drupal::cache()->set($cache_id,$titles);
+    $this->cached_titles[$entity_id] = $title;
+    WisskiCacheHelper::putEntityTitle($entity_id,$title,$this->id());
   }
 
-  public function getCachedTitles() {
+  public function getCachedTitle($entity_id) {
     
-    if (!isset($this->cached_titles)) {  
-      $cache_id = 'wisski_title_cache'.$this->id();
-      if ($cache = \Drupal::cache()->get($cache_id)) {
-        $this->cached_titles = $cache->data;  
-      } else $this->cached_titles = array();
+    if (!isset($this->cached_titles[$entity_id])) {  
+      if ($title = WisskiHelper::getEntityTitle($entity_id,$this->id())) $this->cached_titles[$entity_id] = $title;
+      else return NULL;
     }//dpm($this->cached_titles,'cached titles');
-    return $this->cached_titles;
+    return $this->cached_titles[$entity_id];
   }
   
   public function setTitlePattern($title_pattern) {
