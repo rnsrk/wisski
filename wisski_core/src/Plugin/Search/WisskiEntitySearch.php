@@ -56,7 +56,7 @@ class WisskiEntitySearch extends SearchPluginBase {
         }
         $qroup = $group->condition('bundle',$bundle_id);
         foreach ($parameters[$bundle_id]['paths'] as list($path_id,$search_string,$operator)) {
-          dpm($operator.' '.$search_string,'Setting condition');
+          //dpm($operator.' '.$search_string,'Setting condition');
           $group = $group->condition($path_id,$search_string,$operator);
         }
         $query->condition($group);
@@ -79,9 +79,12 @@ class WisskiEntitySearch extends SearchPluginBase {
   public function searchFormAlter(array &$form, FormStateInterface $form_state) {
   
     //dpm($form,__FUNCTION__);
-    dpm($this,__METHOD__);
+    //dpm($this,__METHOD__);
     unset($form['basic']);
-    
+
+    if (!empty($_GET)) $defaults = $_GET;
+    elseif (!empty($_POST)) $defaults = $_POST;
+    //if (isset($defaults)) dpm($defaults,'Defaults');
     $form['entity_title'] = array(
       '#type' => 'textfield',
       '#autocomplete_route_name' => 'wisski.titles.autocomplete',
@@ -94,7 +97,7 @@ class WisskiEntitySearch extends SearchPluginBase {
     $storage = $form_state->getStorage();
     $paths = (isset($storage['paths'])) ? $storage['paths']: array();
     $input = $form_state->getUserInput();
-    //dpm($input);
+    //dpm($input,'User input');
     if (isset($input['advanced']['bundles']['select_bundles'])) {
       $selection = $input['advanced']['bundles']['select_bundles'];
     } else $selection = array();
@@ -113,13 +116,18 @@ class WisskiEntitySearch extends SearchPluginBase {
     } else {
       $bundle_count = \Drupal::entityQuery('wisski_bundle')->count()->execute();
       $bundle_ids = \Drupal::entityQuery('wisski_bundle')->range(0,$this->bundle_limit)->execute();
+      if (isset($defaults['bundles'])) $bundle_ids = array_unique(array_merge($bundle_ids,array_values($defaults['bundles'])));
       $bundles = \Drupal\wisski_core\Entity\WisskiBundle::loadMultiple($bundle_ids);
       $options = array();
+      $selection = array();
       foreach($bundles as $bundle_id => $bundle) {
         $options[$bundle_id] = $bundle->label();
         $paths[$bundle_id] = WisskiHelper::getPathOptions($bundle_id);
+        if (isset($defaults['bundles'][$bundle_id])) $selection[$bundle_id] = $bundle_id;
+        else $selection[$bundle_id] = 0;
       }
     }
+    //dpm($selection,'selection');
     $storage['paths'] = $paths;
     //dpm($paths,'Paths');
     $storage['options'] = $options;
@@ -128,6 +136,7 @@ class WisskiEntitySearch extends SearchPluginBase {
       '#type' => 'details',
       '#tree' => TRUE,
       '#title' => $this->t('Advanced Search'),
+      '#open' => isset($defaults['bundles']),
     );
     /*
     $form['advanced']['keys'] = array(
@@ -144,11 +153,12 @@ class WisskiEntitySearch extends SearchPluginBase {
     $form['advanced']['bundles']['select_bundles'] = array(
       '#type' => 'checkboxes',
       '#options' => $options,
+      '#default_value' => $selection,
       '#prefix' => '<div id = wisski-search-bundles>',
       '#suffix' => '</div>',
       '#ajax' => array(
         'wrapper' => 'wisski-search-paths',
-        'callback' => 'Drupal\wisski_core\Plugin\Search\WisskiEntitySearch::replacePaths',
+        'callback' => array($this,'replacePaths'),
       ),
     );
     if ($bundle_count > $this->bundle_limit) {
@@ -169,7 +179,7 @@ class WisskiEntitySearch extends SearchPluginBase {
         '#limit_validation_errors' => array(),
         '#ajax' => array(
           'wrapper' => 'wisski-search-bundles',
-          'callback' => 'Drupal\wisski_core\Plugin\Search\WisskiEntitySearch::replaceSelectBoxes',
+          'callback' => array($this,'replaceSelectBoxes'),
         ),
         '#name' => 'btn-add-bundle',
       );
@@ -197,18 +207,29 @@ class WisskiEntitySearch extends SearchPluginBase {
           if (is_string($pb_paths)) {
             //this is a global pseudo-path like 'uri'
             $bundle_path_options[$pb] = $pb_paths;
+            if (isset($defaults[$bundle_id]['paths'][$pb])) $bundle_path_defaults[$pb] = $defaults[$bundle_id]['paths'][$pb];
           } else {
             foreach ($pb_paths as $path_id => $path_label) {
               $bundle_path_options[$path_id] = "$path_label ($path_id)";
             }
           }
         }
+        if (isset($defaults[$bundle_id]['paths'])) $bundle_path_defaults = $defaults[$bundle_id]['paths'];
+        else $bundle_path_defaults = array();
+        //dpm($bundle_path_defaults,'defaults '.$bundle_id);
         for ($i = 0; $i < $this->path_limit && $i < count($bundle_path_options); $i++) {
-          if ($list = each($bundle_path_options)) {
-            list($path_id) = $list;
+          $list = each($bundle_path_defaults);
+          $def_input = '';
+          $def_operator = '=';
+          if ($list) list(,list($path_id,$def_input,$def_operator)) = $list;
+          else {
+            $list = each($bundle_path_options);
+            if ($list) list($path_id) = $list;
+          }
+          if ($list !== FALSE) {
             $form['advanced']['paths'][$bundle_id][$i] = array(
               '#type' => 'container',
-              '#attributes' => array('class' => 'container-inline'),
+              '#attributes' => array('class' => 'container-inline', 'data-wisski' => $bundle_id.'.'.$i),
               '#tree' => TRUE,
               'path_selection' => array(
                 '#type' => 'select',
@@ -219,16 +240,16 @@ class WisskiEntitySearch extends SearchPluginBase {
               'operator' => array(
                 '#type' => 'select',
                 '#options' => $this->getSearchOperators(),
-                '#default_value' => '=',
+                '#default_value' => $def_operator,
                 '#weight' => 2,
               ),
               'input_field' => array(
                 '#type' => 'textfield',
-                '#default_value' => '',
+                '#default_value' => $def_input,
                 '#size' => 30,
                 '#weight' => 3,
               ),
-              
+              '#element_validate' => array(array($this,'validateChoice')),
             );
           }
         }
@@ -238,7 +259,7 @@ class WisskiEntitySearch extends SearchPluginBase {
           'selection' => array(
             '#type' => 'radios',
             '#options' => array('AND' => $this->t('All'),'OR' => $this->t('Any')),
-            '#default_value' => 'AND',
+            '#default_value' => isset($defaults[$bundle_id]['query_type']) ? $defaults[$bundle_id]['query_type'] : 'AND',
             '#title' => $this->t('Match'),
           ),
         );
@@ -255,7 +276,7 @@ class WisskiEntitySearch extends SearchPluginBase {
   protected function getSearchOperators() {
   
     return array(
-      '=' => $this->t('equal'),
+      '=' => $this->t('exactly'),
       '<>' => $this->t('not equal'),
       '>' => '>',
       '>=' => '>=',
@@ -264,11 +285,21 @@ class WisskiEntitySearch extends SearchPluginBase {
       'STARTS_WITH' => $this->t('Starts with'),
       'CONTAINS' => $this->t('Contains'),
       'ENDS_WITH' => $this->t('Ends with'),
+      'ALL' => $this->t('all of'),
       'IN' => $this->t('one of'),
-      'NOT IN' => $this->t('none of'),
+      'NOT_IN' => $this->t('none of'),
       'BETWEEN' => $this->t('between'),
     );
-    switch ($operator) {
+    
+  }
+  
+  public function validateChoice(array $element, FormStateInterface $form_state, array $form) {
+  
+    //dpm(func_get_args(),__METHOD__);
+    list($bundle_id,$row_num) = explode('.',$element['#attributes']['data-wisski']);
+    $vals = $form_state->getValue(array('advanced','paths',$bundle_id,$row_num));
+    $input = $vals['input_field'];
+    switch ($vals['operator']) {
       case '=':
       case '<>':
       case '>':
@@ -277,11 +308,34 @@ class WisskiEntitySearch extends SearchPluginBase {
       case '<=':
       case 'STARTS_WITH':
       case 'CONTAINS':
-      case 'ENDS_WITH':
+      case 'ENDS_WITH': {    
+        if (!empty($input) && strlen($input) < 3) {
+          $form_state->setError(
+            $element['input_field'],
+            $this->t('Search string must consists of at least three (3) characters')
+          );
+          //dpm($vals,__FUNCTION__.'::values');
+        }
+        break;
+      }
+      case 'ALL':
       case 'IN':
-      case 'NOT IN':
-      case 'BETWEEN':
+      case 'NOT IN': break;
+      case 'BETWEEN': {
+        if (!empty($input) && !preg_match('/^\s*\S+\s*\,\s*\S+\s*$/',$input)) {
+          $form_state->setError(
+            $element['input_field'],
+            $this->t(
+              'For the %between query, the search string must contain exactly two values divided by a comma (,)',
+              array('%between' => $this->getSearchOperators()['BETWEEN'])
+            )
+          );
+          //dpm($vals,__FUNCTION__.'::values');
+        }
+        break;
+      }
     }
+    
   }
 
   public function buildSearchUrlQuery(FormStateInterface $form_state) {
