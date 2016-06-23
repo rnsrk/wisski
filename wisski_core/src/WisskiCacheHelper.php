@@ -8,7 +8,7 @@ use Drupal\Core\Cache\Cache;
 class WisskiCacheHelper {
 
   static function putCacheData($cid,$data,$tags=NULL) {
-    if (is_null($tag)) {
+    if (is_null($tags)) {
       \Drupal::cache()->set($cid, $data);
     } else {
       \Drupal::cache()->set($cid,$data,CacheBackendInterface::CACHE_PERMANENT,$tags);
