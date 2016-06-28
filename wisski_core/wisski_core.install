@@ -1,0 +1,72 @@
+<?php
+
+/**
+ * implements hook_schema()
+ */
+function wisski_core_schema() {
+
+  $schema['wisski_entity_map'] = array(
+    'description' => 'generates a serial number for those entity IDs which have a generated title',
+    'fields' => array(
+      'num' => array(
+        'description' => 'the Serial Number for the generated title',
+        'type' => 'serial',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'eid' => array(
+        'description' => 'the Entity ID',
+        'type' => 'varchar',
+        'length' => '2048',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('num'),
+  );
+
+  $schema['wisski_title_n_grams'] = array(
+    
+    'description' => 'Stores n-grams of generated entity titles for search and index purposes',
+    'fields' => array(
+      'ent_num' => array(
+        'description' => 'Entity Serial Number from wisski_entity_map',
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'bundle' => array(
+        'description' => 'Bundle Name',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => FALSE,
+        'default' => 'default',
+      ),
+      'ngram' => array(
+        'description' => 'n-gram from the title',
+        'type' => 'char',
+        'length' => 8,
+        'not null' => TRUE,
+      ),
+      'n' => array(
+        'description' => 'the length of the n-gram',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('ent_num','bundle','ngram'),
+    'indexes' => array(
+      'ngrams' => array('ngram','n'),
+      'entities' => array('ent_num','bundle'),
+    ),
+    'foreign keys' => array(
+      'ent_num' => array(
+        'wisski_entity_map' => array(
+          'ent_num' => 'num',
+        ),
+      ),
+    ),
+  );
+  //dpm($schema);
+  return $schema;
+}

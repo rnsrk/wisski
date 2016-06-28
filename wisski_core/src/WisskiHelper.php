@@ -116,4 +116,42 @@ class WisskiHelper {
     }
     return $parents;
   }
+  
+  /**
+   * makes an array of arrays of n-grams from the string indexed by n.
+   * @param $string the input string
+   * @param $n the integer length of the n-grams, due to database restrictions we limit this to eight (8) when $db_limit is TRUE
+   * @param $all_shorter bool indicating whether all n-grams with a smaller length shall be included, those will be stored in different sub-arrays
+   * @param $min integer giving the shortest n-gram length, only used if $all_shorter == TRUE
+   * @param $db_limit limits the output n-gram length to eight, see $n
+   * @return two level array holding arrays with n-grams keyed by n
+   */
+  public static function str_n_grams(string $string,$n=5,$all_shorter=TRUE,$min=2,$db_limit=TRUE) {
+    
+    if (!is_int($n) || ($all_shorter && (!is_int($min) || $min > $n))) return NULL;
+    if ($db_limit && $n > 8) {
+      drupal_set_message('N-grams of length '.$n.' cannot be handled. Reduced to 8','notice');
+      $n = 8;
+    }
+    $string = strtolower($string);
+    return self::do_str_n_grams($string,$n,$all_shorter,$min);
+  }
+  
+  /**
+   * @see self::str_n_grams
+   */
+  private static function do_str_n_grams($string,$n,$all_shorter,$min) {
+  
+    $out = array();
+    for ($i = 0; $i <= strlen($string)-$n; $i++) {
+      $sub = trim(substr($string,$i,$n)," \t\n\r\0\x0B\.\,\;\"\'");
+      if (strlen($sub) === $n) $out[] = $sub;
+    }
+    $out = array_unique($out);
+    sort($out);
+    if ($n === $min || !$all_shorter) return array($n => $out);      
+    $all = self::do_str_n_grams($string,$n-1,TRUE,$min);
+    $all[$n] = $out;
+    return $all;
+  }
 }

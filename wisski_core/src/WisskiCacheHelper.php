@@ -26,6 +26,17 @@ class WisskiCacheHelper {
 
   static function putEntityTitle($entity_id,$entity_title,$bundle_id=NULL) {
     
+    $ent_num = db_insert('wisski_entity_map')->fields(array('eid' => $entity_id))->execute();
+    foreach(WisskiHelper::str_n_grams($entity_title) as $n => $ngrams) {
+      foreach ($ngrams as $ngram) {
+        db_insert('wisski_title_trigrams')->fields(array(
+          'ent_num' => $ent_num,
+          'ngram' => $trigram,
+          'bundle' => $bundle_id ? : 'default',
+          'n' => $n,
+        ))->execute();
+      }
+    }
     $tags[] = 'wisski_bundled_titles.default';
     $cid = 'wisski_title.'.$entity_id.'.default';
     self::putCacheData($cid,$entity_title,$tags);
@@ -92,5 +103,4 @@ class WisskiCacheHelper {
     $cid = 'wisski_preview_image.'.$entity_id;
     self::flushCacheData($cid);
   }
-
 }
