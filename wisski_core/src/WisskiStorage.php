@@ -340,7 +340,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       if ($image_style->createDerivative($output_uri,$preview_uri)) {
         drupal_set_message('Style did it');
         $preview_id = $this->getFileId($preview_uri);
-        WisskiCacheHelper::putPreviewImage($preview_id);
+        WisskiCacheHelper::putPreviewImage($entity_id,$preview_id);
         return $preview_id;
       } else return $input_id;
     }

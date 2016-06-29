@@ -1227,6 +1227,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     if(empty($path))
       continue;
+      
+    if(!drupal_validate_utf8($value))
+      $value = utf8_encode($value);
 
     $clearPathArray = $this->getClearPathArray($path, $pb);
     
@@ -1502,6 +1505,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     if(empty($path))
       continue;
+      
+    if(!drupal_validate_utf8($value))
+      $value = utf8_encode($value);
 
 #    $clearPathArray = $this->getClearPathArray($path, $pb);
 #    $path->setDisamb(1);
