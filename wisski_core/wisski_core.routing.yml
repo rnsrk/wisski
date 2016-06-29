@@ -85,6 +85,12 @@ entity.wisski_individual.view:
   requirements:
     _entity_access: 'wisski_individual.view'
 
+entity.wisski_individual.forward:
+  path: '/wisski/navigate/{wisski_bundle}/{wisski_individual}/forward'
+  defaults:
+    _controller: '\Drupal\wisski_core\Controller\WisskiEntityViewForwarder::forward'
+  requirements:
+    _entity_access: 'wisski_individual.view'
 
 entity.wisski_individual.edit_form:
   path: '/wisski_core/{wisski_individual}/edit'
@@ -198,3 +204,6 @@ wisski.test_form:
     _form: '\Drupal\wisski_core\Form\WisskiTestForm'
   requirements:
     _access: 'TRUE'
+
+route_callbacks:
+  - 'wisski.routes::routes'

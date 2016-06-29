@@ -24,10 +24,12 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * parent::render() is where EntityListBuilder creates the table using our
    * buildHeader() and buildRow() implementations.
    */
-  public function render($bundle = '',$limit = NULL) {
+  public function render($bundle = '',$entity = NULL) {
 
-    $this->limit = $limit;
+    if (!isset($this->limit))
+      $this->limit = \Drupal::config('wisski_core.settings')->get('wisski_max_entities_per_page');
     $this->bundle = $bundle;
+    $this->entity = $entity;
     $build['table'] = parent::render();
     return $build;
   }
@@ -38,6 +40,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    */
   protected function getEntityIds() {
   
+    if (isset($this->entity)) dpm($this->entity);
     $storage = $this->getStorage();
     $query = $storage->getQuery()
       ->sort($this->entityType->getKey('id'));
@@ -102,7 +105,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
         '#title' => $entity->label(),
       ));
     } else $row['preview_image'] = $this->t('No preview available');
-    $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.view',array('wisski_individual'=>$entity->id()));
+    $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.forward',array('wisski_bundle'=>$this->bundle,'wisski_individual'=>$entity->id()));
     return $row + parent::buildRow($entity);
   } 
 }
