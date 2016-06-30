@@ -12,6 +12,7 @@ use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11Engine;
 use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Language\LanguageInterface;
+use Drupal\wisski_salz\AdapterHelper;
 
 use Drupal\wisski_adapter_sparql11_pb\Query\Query;
 use \EasyRdf;
@@ -261,6 +262,29 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
     return $ret;
   }
+  
+  public function getDrupalId($uri) {
+    
+    if(is_int($id) === TRUE)
+      $id = AdapterHelper::getDrupalIdForUri($uri);
+    else
+      $id = $uri;
+        
+    return $id;
+  }
+  
+  public function getUriForDrupalId($id) {
+    // danger zone: if id already is an uri e.g. due to entity reference
+    // we load that. @TODO: I don't like that.
+    if(is_int($id) === TRUE) {
+      $uri = AdapterHelper::getUrisForDrupalId($id);
+      // just take the first one for now.
+      $uri = current($uri);
+    } else
+      $uri = $id;
+    
+    return $uri;
+  }
 
   /**
    *
@@ -270,7 +294,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getBundleIdsForEntityId($entityid) {
     $pb = $this->getPbForThis();
     
-    $uri = str_replace('\\', '/', $entityid);
+    #dpm($entityid, "eid");
+
+    $uri = $this->getUriForDrupalId($entityid);    
+    
+    #$uri = str_replace('\\', '/', $entityid);
 
 #    drupal_set_message("parse url: " . serialize(parse_url($uri)));
 
@@ -556,8 +584,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         return $thing->cnt->getValue();
       
       $uri = $thing->x0->dumpValue("text");
-      $uri = str_replace('/','\\',$uri);
       
+      #$uri = str_replace('/','\\',$uri);
+      // this is no uri anymore - rename this variable.
+      $uri = $this->getDrupalId($uri);
+          
       // store the bundleid to the bundle-cache as it might be important
       // for subsequent queries.
       
@@ -573,7 +604,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    drupal_set_message("b1: $id " . microtime());
         
     $out = array();
-    $uri = str_replace('\\', '/', $id);
+#    $uri = str_replace('\\', '/', $id);
+
+    $uri = $this->getUriForDrupalId($id);
+#    dpm(serialize($uri), 'uri!');
 
 #    drupal_set_message("parse url: " . serialize(parse_url($uri)));
 
@@ -616,8 +650,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     foreach($result as $thing) {
       
       $uri = $thing->s->dumpValue("text");
-      $uri = str_replace('/','\\',$uri);
+      #$uri = str_replace('/','\\',$uri);
       
+      $uri = $this->getUriForDrupalId($uri);
+    
 #      drupal_set_message("my uri is: " . htmlentities($uri));
       
       $out[$uri] = array('eid' => $uri, 'bundle' => 'e21_person', 'name' => 'frizt');
@@ -653,7 +689,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
     
     if(!empty($eid)) {
-      $eid = str_replace("\\", "/", $eid);
+      // rename to uri
+      $eid = $this->getUriForDrupalId($eid);
+    
+#      $eid = str_replace("\\", "/", $eid);
       $url = parse_url($eid);
       
       if(!empty($url["scheme"]))
@@ -713,7 +752,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
     
     if(!empty($eid)) {
-      $eid = str_replace("\\", "/", $eid);
+      // rename to uri
+      $eid = $this->getUriForDrupalId($eid);
+    
+#      $eid = str_replace("\\", "/", $eid);
       $url = parse_url($eid);
       
       if(!empty($url["scheme"]))
@@ -1253,7 +1295,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
     
     if(!empty($entity_id)) {
-      $eid = str_replace("\\", "/", $entity_id);
+      // rename to uri
+      $eid = $this->getUriForDrupalId($eid);    
+#      $eid = str_replace("\\", "/", $entity_id);
       $url = parse_url($eid);
       
       if(!empty($url["scheme"]))
@@ -1527,7 +1571,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #      drupal_set_message("rais: " . serialize($result));
     }
     
-    $eid = str_replace("\\", "/", $entity_id);
+    // rename to uri
+    $eid = $this->getUriForDrupalId($eid);
+        
+#    $eid = str_replace("\\", "/", $entity_id);
 
     $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
     if(empty($path->getDisamb()))
