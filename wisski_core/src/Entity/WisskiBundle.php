@@ -110,7 +110,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           }
           $part = '';
           $cardinality = $attributes['cardinality'];
-          if ($cardinality < 0) $cardinality = count($values);
+          if ($cardinality < 0 || $cardinality > count($values)) $cardinality = count($values);
           $delimiter = $attributes['delimiter'];
           $i = 0;
           foreach ($values as $value) {
