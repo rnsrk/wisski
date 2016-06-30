@@ -23,15 +23,13 @@ function wisski_salz_schema() {
       'uri' => array(
         'description' => 'the uri',
         'type' => 'varchar',
-        'length' => '10000',
+        'length' => '2048',
         'not null' => TRUE,
       ),
     ),
     'primary key' => array('rid'),
-    'unique keys' => array(
-      'uri' => array('uri'),
-    ),
     'indexes' => array(
+      'uri' => array('uri'),
       'eid' => array('eid'),
     ),
   );

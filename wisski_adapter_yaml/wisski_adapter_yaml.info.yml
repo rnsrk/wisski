@@ -6,4 +6,3 @@ version: 0.1-dev
 type: module
 configure: wisski_adapters.wisski_adapter_yaml
 dependencies:
- - wisski_salz

@@ -6,5 +6,4 @@ version: 0.1-dev
 type: module
 configure: wisski_adapters.wisski_adapter_sparql11_pb
 dependencies:
- - wisski_salz
  - wisski_pathbuilder
