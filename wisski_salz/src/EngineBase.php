@@ -200,4 +200,12 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   public function unsetPreferredLocalStore() {
     $this->is_preferred_local_store = FALSE;
   }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function checkUriExists ($uri) {
+    return FALSE;
+  }
+
 }

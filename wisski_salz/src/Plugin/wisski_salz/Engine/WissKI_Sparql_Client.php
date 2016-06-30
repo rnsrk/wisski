@@ -91,7 +91,7 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 				return new EasyRdf_Graph($this->getQueryUri, $response->getBody(), $type);
 			}
 		} else {
-			echo __METHOD__.' (line: '.__LINE__.') failed request '.htmlentities($query)."\n\r";
+			echo __METHOD__.' (line: '.__LINE__.') failed request '.htmlentities($query). "---" . $response->getBody() . "\n\r";
 			throw new EasyRdf_Exception(
 				"HTTP request for SPARQL query failed: ".$response->getBody()
 			);

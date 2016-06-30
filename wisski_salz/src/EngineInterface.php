@@ -120,5 +120,12 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * @TODO check how to include quantitive restrictions on field values
    * @return TRUE if the entity was successfully saved, FALSE or an error_string otherwise
    */
-   public function writeFieldValues($entity_id,array $field_values,$bundle = NULL);
+  public function writeFieldValues($entity_id,array $field_values,$bundle = NULL);
+
+    
+  /**
+   * Checks if the engine knows something about the URI.
+   */
+  public function checkUriExists($uri);
+
 }
