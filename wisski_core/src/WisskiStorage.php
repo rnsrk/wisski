@@ -22,6 +22,12 @@ use Drupal\wisski_core\WisskiCacheHelper;
 
 use Drupal\Core\Field\BaseFieldDefinition;
 
+use Drupal\Core\Entity\EntityTypeInterface;
+ 
+use Drupal\Core\Entity\EntityManagerInterface;
+ 
+use Drupal\Core\Cache\CacheBackendInterface;
+
 /**
  * Test Storage that returns a Singleton Entity, so we can see what the FieldItemInterface does
  */

@@ -89,8 +89,10 @@ entity.wisski_individual.forward:
   path: '/wisski/navigate/{wisski_bundle}/{wisski_individual}/forward'
   defaults:
     _controller: '\Drupal\wisski_core\Controller\WisskiEntityViewForwarder::forward'
+    _title: 'Forwarding'
   requirements:
-    _entity_access: 'wisski_individual.view'
+#    _entity_access: 'wisski_individual.view'
+    _access: 'TRUE'
 
 entity.wisski_individual.edit_form:
   path: '/wisski_core/{wisski_individual}/edit'
