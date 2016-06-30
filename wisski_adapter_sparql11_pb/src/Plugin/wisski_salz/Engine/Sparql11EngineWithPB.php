@@ -1226,7 +1226,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['id']);
 
     if(empty($path))
-      continue;
+      return;
       
     if(!drupal_validate_utf8($value))
       $value = utf8_encode($value);
@@ -1504,7 +1504,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    drupal_set_message("smthg: " . serialize($this->generateTriplesForPath($pb, $path, NULL, "http://test.me/12", "http://argh.el/235", 2, TRUE)));
 
     if(empty($path))
-      continue;
+      return;
       
     if(!drupal_validate_utf8($value))
       $value = utf8_encode($value);

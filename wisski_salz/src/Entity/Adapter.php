@@ -218,8 +218,9 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
   /**
    * {@inheritdoc}
    */  
-   public function writeFieldValues($entity_id, array $field_values,$bundle = NULL) {
-#     drupal_set_message("He called me!");
-     return $this->getEngine()->writeFieldValues($entity_id, $field_values,$bundle);
-   }
+  public function writeFieldValues($entity_id, array $field_values,$bundle = NULL) {
+#    drupal_set_message("He called me!");
+    return $this->getEngine()->writeFieldValues($entity_id, $field_values,$bundle);
+  }
+
 }

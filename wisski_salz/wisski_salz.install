@@ -1,0 +1,40 @@
+<?php
+
+/**
+ * implements hook_schema()
+ */
+function wisski_salz_schema() {
+
+  $schema['wisski_salz_id2uri'] = array(
+    'description' => 'stores the mapping between Drupal-usable ID and URIs per adapter',
+    'fields' => array(
+      'rid' => array(
+        'description' => 'the id for an entry in this table; also taken as id for the entity if there is none yet',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'eid' => array(
+        'description' => 'the Drupal Entity ID',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => FALSE,
+      ),
+      'uri' => array(
+        'description' => 'the uri',
+        'type' => 'varchar',
+        'length' => '10000',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('rid'),
+    'unique keys' => array(
+      'uri' => array('uri'),
+    ),
+    'indexes' => array(
+      'eid' => array('eid'),
+    ),
+  );
+
+  return $schema;
+}

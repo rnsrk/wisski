@@ -126,7 +126,7 @@ class WisskiHelper {
    * @param $db_limit limits the output n-gram length to eight, see $n
    * @return two level array holding arrays with n-grams keyed by n
    */
-  public static function str_n_grams(string $string,$n=5,$all_shorter=TRUE,$min=2,$db_limit=TRUE) {
+  public static function str_n_grams($string,$n=5,$all_shorter=TRUE,$min=2,$db_limit=TRUE) {
     
     if (!is_int($n) || ($all_shorter && (!is_int($min) || $min > $n))) return NULL;
     if ($db_limit && $n > 8) {

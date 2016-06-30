@@ -164,7 +164,7 @@ dpm($twig);
       // so we can find out what was intended to be changed
       $did_match = preg_match('/^([a-z]+)(\d*)$/',$trigger['#attributes']['data-wisski'],$matches);
       if (!$did_match) {
-        drupal_set_message($this->t('The trigger name didn\'t match','error'));
+        drupal_set_message($this->t('The trigger name didn\'t match'),'error');
       } else {    
         //$trigger type is select, btn, del, or data, respectively
         //$row num represents the number of the table row where the cahnge was done (empty for datatype_property)

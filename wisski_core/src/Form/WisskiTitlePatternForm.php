@@ -49,7 +49,6 @@ class WisskiTitlePatternForm extends EntityForm {
     $trigger = $form_state->getTriggeringElement();
     if (!is_null($trigger)) {
       $trigger = $trigger['#name'];
-      dpm($trigger,'Trigger');
       if ($trigger === 'new-text-button') {
         $id = 't'.++$max_id;
         $pattern[$id] = array(
@@ -284,7 +283,6 @@ class WisskiTitlePatternForm extends EntityForm {
   public function validateForm(array &$form, FormStateInterface $form_state) {
 
     $pattern = $form_state->getValue('pattern');
-    dpm($pattern);
     $max_id = 0;
 
     $errors = array();
