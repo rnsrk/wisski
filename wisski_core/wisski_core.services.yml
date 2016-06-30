@@ -10,3 +10,5 @@ services:
   wisski.routes:
     class: Drupal\wisski_core\Routing\WisskiRoutes
     arguments: ['@entity.manager']
+  wisski.forwarder:
+    class: Drupal\wisski_core\Controller\WisskiEntityViewForwarder

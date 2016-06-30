@@ -6,17 +6,15 @@ use Drupal\Core\Entity\ContentEntityStorageInterface;
 
 class WisskiEntityViewForwarder {
 
-  private $storage;
+  public function forward($wisski_individual,$wisski_bundle) {
 
-  public function __construct(EntityStorageInterface $storage) {
-    $this->storage = $storage;
-    dpm($this->storage,__METHOD__);
-  }
-
-  public static function forward($wisski_individual,$wisski_bundle) {
-    dpm(func_get_args(),__METHOD__);
-    $forwarder = \Drupal::service('wisski.forwarder');
-    dpm($forwarder);
-    return array('#markup' => '<h1>Gotcha</h1>');
+    $storage = \Drupal::entityManager()->getStorage('wisski_individual');
+    $storage->writeToCache($wisski_individual,$wisski_bundle);
+    $entity = $storage->load($wisski_individual);
+    $entity_type = $storage->getEntityType();
+    $view_builder_class = $entity_type->getViewBuilderClass();
+    $view_builder = $view_builder_class::createInstance(\Drupal::getContainer(),$entity_type);
+    dpm($view_builder);
+    return $view_builder->view($entity);
   }
 }
