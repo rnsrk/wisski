@@ -9,7 +9,7 @@ namespace Drupal\wisski_salz;
 
 
 class AdapterHelper {
-  
+
   public static function getDrupalIdForUri($uri, $create_if_not_exists = TRUE) {
     $row = db_select('wisski_salz_id2uri', 'm')
               ->fields('m', array('eid'))
@@ -58,7 +58,10 @@ class AdapterHelper {
       return $eid;
     }
   }
-
+  
+  /**
+   * Get all URIs for the 
+   */
   public static function getUrisForDrupalId($eid) {
     $uris = db_select('wisski_salz_id2uri', 'm')
               ->fields('m', array('uri'))
@@ -68,5 +71,8 @@ class AdapterHelper {
     if (empty($uris)) return array();
     return $uris;
   }
+  
+  
+
 
 }

@@ -104,35 +104,5 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
    */
   public function writeFieldValues($entity_id,array $field_values,$bundle = NULL);
 
-  /** 
-   * Returns a Drupal-usable ID for a given URI.
-   * If there is no mapping, this function creates an Id.
-   * @param uri the URI
-   * @param check_exists make a live check on the engine if the URI is present
-   * @return the Id or NULL if check_exists is TRUE and the engine doesn't know
-   *         about the URI.
-   */
-  public function getDrupalIdForUri($uri, $check_exists = TRUE);
-
-  /**
-   * Set the Drupal-usable ID for a given URI.
-   * @param uri the URI
-   * @param id the ID
-   * @param no_update if TRUE, the ID will not be set if there is already an ID
-   *        for the URI
-   * @return TRUE if the ID could be set, FALSE otherwise (esp. when $no_update
-   *         is TRUE and the URI already exists)
-   */
-  public function setDrupalIdForUri($uri, $id, $no_update = FALSE);
-
-   /**
-   * Returns the URI for the given Drupal ID
-   * @param id the ID
-   * @return the URI or NULL if no such mapping exists, ie. the ID is unknown to
-   *         the adapter
-   */
- public function getUrisForDrupalId($id);
-
-
 
 }
