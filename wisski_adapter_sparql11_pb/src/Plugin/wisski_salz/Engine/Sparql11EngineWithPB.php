@@ -265,7 +265,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
   public function getDrupalId($uri) {
     
-    if(is_int($id) !== TRUE) {
+    if(is_int($uri) !== TRUE) {
       $id = AdapterHelper::getDrupalIdForUri($uri);
     } else {
       $id = $uri;
@@ -500,7 +500,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    */ 
   public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE) {
-
+    
     $conds = array();
     // see if we have any conditions
     foreach($conditions as $cond) {
@@ -601,7 +601,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 
   public function load($id) {
-#    drupal_set_message("b1: $id " . microtime());
+    drupal_set_message("b1: $id " . microtime());
         
     $out = array();
 #    $uri = str_replace('\\', '/', $id);
@@ -670,8 +670,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @inheritdoc
    */
   public function hasEntity($entity_id) {
+ 
+#    dpm($entity_id, "eid");
     
     $ent = $this->load($entity_id);
+
+#    dpm(!empty($ent), "ent");
+
     return !empty($ent);
   }
  
@@ -786,26 +791,40 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         if(empty($main_property)) {
           $out[] = $thing->out->getValue();
         } else {
+          
+          $outvalue = $thing->out->getValue();
+          
+          if($main_property == "target_id")
+            $outvalue = $this->getDrupalId($outvalue);
+          
           if(is_null($disamb) == TRUE)
-            $out[] = array($main_property => $thing->out->getValue());
+            $out[] = array($main_property => $outvalue);
           else {
           #  drupal_set_message("disamb: " . serialize($disamb));
           #  drupal_set_message("pa: " . serialize($patharray));
           #  drupal_set_message("res: " . serialize($result));
-            $out[] = array($main_property => $thing->out->getValue(), 'wisskiDisamb' => $thing->{'x'.$disamb}->dumpValue("text"));
+            $out[] = array($main_property => $outvalue, 'wisskiDisamb' => $thing->{'x'.$disamb}->dumpValue("text"));
           }
         }
       } else {
         if(empty($main_property)) {
           $out[] = $thing->{$name}->dumpValue("text");
         } else { 
+        
+          $outvalue = $thing->{$name}->dumpValue("text");
+          
+          if($main_property == "target_id")
+            $outvalue = $this->getDrupalId($outvalue);
+        
           if(is_null($disamb) == TRUE)
-            $out[] = array($main_property => $thing->{$name}->dumpValue("text"));
+            $out[] = array($main_property => $outvalue);
           else
-            $out[] = array($main_property => $thing->{$name}->dumpValue("text"), 'wisskiDisamb' => $thing->{'x'.$disamb}->dumpValue("text"));
+            $out[] = array($main_property => $outvalue, 'wisskiDisamb' => $thing->{'x'.$disamb}->dumpValue("text"));
         }
       }
     }
+
+#    dpm($out, 'ptrv');
     
     return $out;
     
@@ -1544,7 +1563,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $pbarray = $pb->getPbEntriesForFid($fieldid);
     
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['id']);
-    
+    dpm($entity_id, "I add!");
 #    drupal_set_message("smthg: " . serialize($this->generateTriplesForPath($pb, $path, NULL, "http://test.me/12", "http://argh.el/235", 2, TRUE)));
 
     if(empty($path))
@@ -1572,11 +1591,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
     
     // rename to uri
-    $eid = $this->getUriForDrupalId($eid);
+    $eid = $this->getUriForDrupalId($entity_id);
         
 #    $eid = str_replace("\\", "/", $entity_id);
 
     $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
+#    drupal_set_message(serialize($path), "I would do: ");
+#    drupal_set_message(serialize($eid
+    
     if(empty($path->getDisamb()))
       $sparql .= $this->generateTriplesForPath($pb, $path, $value, $eid, NULL, NULL, NULL, TRUE);
     else
@@ -1586,6 +1608,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $sparql .= $this->generateTriplesForPath($pb, $path, $value, $eid, $disambresult->{"x" . $path->getDisamb()*2}->dumpValue("text"), $path->getDisamb(), NULL, TRUE);
 
     $sparql .= " } } ";
+    
+#    dpm($sparql, "I would do: ");
  
 /*   
     drupal_set_message("I would do: " . htmlentities($sparql));
@@ -1652,6 +1676,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
     
     $out = array();
+    
+    return $out;
         
     // get the adapterid that was loaded
     // haha, this is the engine-id...
@@ -1678,6 +1704,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // here we should check if we really know the entity by asking the TS for it.
         // this would speed everything up largely, I think.
         $entity = $this->load($entity_id);
+
+        dpm($entity, "entity!");
         
         // if there is nothing, continue.
         if(empty($entity))
@@ -1688,7 +1716,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // @TODO !!!
         $old_values = $this->loadFieldValues(array($entity_id), array_keys($field_values), $bundle);
 
-#        drupal_set_message("the old values were: " . serialize($old_values));
+        drupal_set_message("the old values were: " . serialize($old_values));
 
         if(!empty($old_values))
           $old_values = $old_values[$entity_id];
@@ -1696,52 +1724,42 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #        drupal_set_message("the old values were: " . serialize($old_values));
 
         foreach($field_values as $key => $fieldvalue) {
-#          drupal_set_message("key: " . serialize($key) . " fieldvalue is: " . serialize($fieldvalue)); 
-  
-          if($key == "eid") {
-            // we skip this for now
-            continue;
-          }
-          
-          if($key == "uid") {
-            // we skip this for now
-            continue;
-          }
-                    
-          if($key == "name") {
-            // tempo hack
-            continue;
-          }
+          drupal_set_message("key: " . serialize($key) . " fieldvalue is: " . serialize($fieldvalue)); 
 
-          if($key == "langcode") {
-            // tempo hack
-            continue;
-          }
+          $path = $pb->getPbEntriesForFid($key);          
 
-          if($key == "uuid") {
-            // tempo hack
+          if(empty($path)) 
             continue;
-          }
-          
-          if($key == "bundle") {
-            continue;
-          }
-          
+            
+          drupal_set_message("I am still here: $key");
+
           $mainprop = $fieldvalue['main_property'];
           
           unset($fieldvalue['main_property']);
           
           foreach($fieldvalue as $key2 => $val) {
+
+            drupal_set_message(serialize($val[$mainprop]) . " new");
+            drupal_set_message(serialize($old_values[$key][$key2][$mainprop]) . " old");
+          
             // if they are the same - skip
+            // I don't know why this should be working, but I leave it here...
             if($val[$mainprop] == $old_values[$key]) 
               continue;
               
+            // the real value comparison is this here:
+            if($val[$mainprop] == $old_values[$key][$key2][$mainprop])
+              continue;
+              
             // if oldvalues are an array and the value is in there - skip
-            if(is_array($old_values[$key]) && in_array($val[$mainprop], $old_values[$key]))
+            if(is_array($old_values[$key]) && in_array($val[$mainprop], $old_values[$key][$key2]))
               continue;
               
             // now write to the database
             
+            drupal_set_message($entity_id . "I really write!" . serialize($val[$mainprop])  . " and " . serialize($old_values[$key]) );
+            return;
+/*            
             // first delete the old values
             if(is_array($old_values[$key]))
               $this->deleteOldFieldValue($entity_id, $key, $old_values[$key][$key2], $pb);
@@ -1750,7 +1768,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             
             // add the new ones
             $this->addNewFieldValue($entity_id, $key, $val[$mainprop], $pb); 
-            
+*/            
 #            drupal_set_message("I would write " . $val[$mainprop] . " to the db and delete " . serialize($old_values[$key]) . " for it.");
             
           }
