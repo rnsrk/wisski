@@ -7,7 +7,6 @@
 
 namespace Drupal\wisski_salz;
 
-
 class AdapterHelper {
   
   /**
@@ -44,7 +43,7 @@ class AdapterHelper {
    *        check_exists is FALSE.
    * @return the set/generated entity ID or NULL if the mapping was deleted
    */
-  public static function setDrupalIdForUri(string $uri, int $eid = NULL, $check_exists = TRUE, $exists = FALSE) {
+  public static function setDrupalIdForUri($uri, $eid = NULL, $check_exists = TRUE, $exists = FALSE) {
     // looks as if we cannot use db_upsert
     if ($check_exists) {
       $exists = self::getDrupalIdForUri($uri);
