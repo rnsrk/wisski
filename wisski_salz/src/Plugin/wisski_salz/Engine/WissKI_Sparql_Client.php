@@ -27,7 +27,7 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
   * @ignore
   */
   protected function request($type, $query) {
-
+    
     // Check for undefined prefixes
     $prefixes = '';
     // @TODO: Check - this should not happen every time I query something, this is very 
@@ -60,7 +60,7 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 			$client->setUri($this->getUpdateUri());
 			$encodedQuery = 'update='.urlencode($prefixes . $query);
 			$client->setRawData($encodedQuery);
-			$client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
+			$client->setHeaders('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8');
 	
 		} elseif ($type == 'query') {
 				// Use GET if the query is less than 2kB
@@ -74,7 +74,7 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 						$client->setMethod('POST');
 						$client->setUri($this->getQueryUri());
 						$client->setRawData($encodedQuery);
-						$client->setHeaders('Content-Type', 'application/x-www-form-urlencoded');
+						$client->setHeaders('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8');
 				}
 		}
 		$response = $client->request();
