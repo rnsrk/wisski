@@ -68,8 +68,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
       $row['parent'] = array(
         'data' => array(
           '#type' => 'link',
-          '#url' => Url::fromRoute('entity.entity_view_display.wisski_individual.default')
-            ->setRouteParameters(array('wisski_bundle' => $key)),
+          '#url' => new Url('entity.entity_view_display.wisski_individual.default',array('wisski_bundle' => $key)),
           '#title' => $value,
         ),
       );

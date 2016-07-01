@@ -1,4 +1,0 @@
-wisski.bundle_list:
-  route_name: entity.wisski_bundle.list
-  title: Navigate
-  base_route: standard.front_page

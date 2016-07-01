@@ -106,6 +106,10 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       ));
     } else $row['preview_image'] = $this->t('No preview available');
     $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.view',array('wisski_bundle'=>$this->bundle,'wisski_individual'=>$entity->id()));
-    return $row + parent::buildRow($entity);
+    $row += parent::buildRow($entity);
+    foreach($row['operations']['data']['#links'] as &$link) {
+      $link['url']->setRouteParameter('wisski_bundle',$this->bundle);
+    }
+    return $row;
   } 
 }

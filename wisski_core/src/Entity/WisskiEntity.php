@@ -49,6 +49,7 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *   links = {
  *     "canonical" = "/wisski/navigate/{wisski_bundle}/{wisski_individual}",
  *     "delete-form" = "/wisski/navigate/{wisski_bundle}/{wisski_individual}/delete",
+ *     "add-form" = "/wisski/create/{wisski_bundle}",
  *     "edit-form" = "/wisski/navigate/{wisski_bundle}/{wisski_individual}/edit",
  *     "admin-form" = "/admin/structure/wisski_core/manage/{wisski_bundle}"
  *   },
