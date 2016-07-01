@@ -22,7 +22,7 @@ class Query extends WisskiQueryBase {
    */
   public function execute() {
 
-#    dpm($this, "exe");
+//    dpm($this, "exe");
     
 #    dpm($this->andConditi, "cond");
 
@@ -96,6 +96,52 @@ class Query extends WisskiQueryBase {
       // care about everything...
 
       if($this->isFieldQuery()) {
+        
+        $eidquery = FALSE;
+        $bundlequery = FALSE;
+        
+        foreach($this->condition->conditions() as $condition) {
+          $field = $condition['field'];
+          $value = $condition['value'];
+          
+          if($field == "bundle")
+            $bundlequery = $value;
+          if($field == "eid")
+            $eidquery = $value;
+        }
+        
+#        dpm($eidquery,"eidquery");
+#        dpm($bundlequery, "bundlequery");
+        
+        $eidquery = current($eidquery);
+        
+        $bundlequery = current($bundlequery);
+        
+        $giveback = array();
+        
+        // eids are a special case
+        if($eidquery !== FALSE) {
+          // load the id, this hopefully helps.
+          $thing = $pbadapter->getEngine()->load($eidquery);
+        
+#          dpm($thing, "thing");
+        
+          if($bundlquery === FALSE)
+            $giveback = array($thing['eid']);
+            
+          else {
+        
+            // load the bundles for this id
+            $bundleids = $pbadapter->getEngine()->getBundleIdsForEntityId($thing['eid']);        
+
+            if(in_array($bundlequery, $bundleids))
+              $giveback =  array($thing['eid']);
+#            drupal_set_message(serialize($giveback) . "I give back for ask $eidquery");
+            return $giveback;
+          }
+        }
+          
+        
         foreach($this->condition->conditions() as $condition) {
           $field = $condition['field'];
           $value = $condition['value'];
@@ -105,11 +151,14 @@ class Query extends WisskiQueryBase {
 
           // just return something if it is a bundle-condition
           if($field == 'bundle') {
-#  	        drupal_set_message("I go and look for : " . serialize($value) . " and " . serialize($limit) . " and " . serialize($offset) . " and " . $this->count);
+  	        drupal_set_message("I go and look for : " . serialize($value) . " and " . serialize($limit) . " and " . serialize($offset) . " and " . $this->count);
             if($this->count) {
-#   	         drupal_set_message("I give back to you: " . serialize($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE)));
+   	         drupal_set_message("I give back to you: " . serialize($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE)));
               return $pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE, $this->condition->conditions());
             }
+            
+            dpm(array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions())), 'out!');
+            
             return array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()));
           }
         }

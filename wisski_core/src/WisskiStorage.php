@@ -49,7 +49,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 //  dpm($values,'values');    
     foreach ($ids as $id) {
       //@TODO combine this with getEntityInfo
-      if (!empty($values[$id])) $entities[$id] = $this->create($values[$id]);
+      if (!empty($values[$id])) {
+        $entity = $this->create($values[$id]);
+        $entities[$id] = $entity;
+      }
     }
     //dpm(array('in'=>$ids,'out'=>$entities),__METHOD__);
     return $entities;
@@ -332,7 +335,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   private function getPreviewImage($entity_id,$bundle_id,$adapter) {
     
     if ($preview = WisskiCacheHelper::getPreviewImage($entity_id)) {
-      dpm('Preview image from cache');
+      drupal_set_message('Preview image from cache');
       return $preview;
     }
     else {
@@ -343,6 +346,15 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       $image_style = $this->getPreviewStyle();
       $preview_uri = $image_style->buildUri($output_uri);
       //dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
+      if (!preg_match('/^.+?\.\w+$/',$output_uri)) {
+        drupal_set_message('Invalid image uri '.$output_uri);
+        if (!preg_match('/^.+?\.\w+$/',$input_uri)) {
+          drupal_set_message('Invalid image uri '.$input_uri);
+        
+          return 1;
+        }
+        return $input_uri;
+      }
       if ($image_style->createDerivative($output_uri,$preview_uri)) {
         drupal_set_message('Style did it');
         $preview_id = $this->getFileId($preview_uri);
@@ -465,8 +477,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     
     list($values,$original_values) = $this->extractFieldData($entity);
     $bundle_id = $values['bundle'][0]['target_id'];
-    dpm(func_get_args()+array('values'=>$values,'bundle'=>$bundle_id),__METHOD__);
-    
+//    dpm(func_get_args()+array('values'=>$values,'bundle'=>$bundle_id),__METHOD__);
+    //echo implode(', ',array_keys((array) $entity));
     $local_writeable_adapters = array();
     $writeable_adapters = array();
 
@@ -602,6 +614,16 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * @TODO must be implemented
    */
   protected function has($id, EntityInterface $entity) {
+    
+    if ($entity->isNew()) return FALSE;
+    $adapters = entity_load_multiple('wisski_salz_adapter');
+    // ask all adapters
+    foreach($adapters as $aid => $adapter) {
+      if($adapter->getEngine()->hasEntity($id)) {
+        return TRUE;
+      }            
+    }
+    return FALSE;
   }
 
   /**

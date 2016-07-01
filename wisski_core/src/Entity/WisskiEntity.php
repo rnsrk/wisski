@@ -199,4 +199,12 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
 
     return $types;
   }
+  
+  /**
+   * Is the entity new? We cannot answer that question with certainty, so we always say NO unless we definitely know it better
+   */
+  public function isNew() {
+  
+    return !empty($this->enforceIsNew);
+  }
 }
