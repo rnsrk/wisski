@@ -7,9 +7,16 @@
 
 namespace Drupal\wisski_salz;
 
-
 class AdapterHelper {
-
+  
+  /**
+   * Get the Drupal-usable Id for a given URI.
+   * @param uri the URI
+   * @param create_if_not_exists if there is no mapping for the URI generate a
+   *        new Id
+   * @return The ID or NULL if there is no mapping and $create_if_not_exists is
+   *        false.
+   */
   public static function getDrupalIdForUri($uri, $create_if_not_exists = TRUE) {
     $row = db_select('wisski_salz_id2uri', 'm')
               ->fields('m', array('eid'))
@@ -22,7 +29,9 @@ class AdapterHelper {
     return NULL;
   }
   
-  /** Updates/inserts/deletes a mapping.
+  /** 
+   * Updates/inserts/deletes a mapping between a URI and a Drupal-usable, 
+   * numeric Id.
    * @param uri the URI. A string and must not be NULL.
    * @param eid the entity ID. An entity is always numeric! If NULL and there 
    *        exists a mapping, the mapping is deleted. If NULL and there is no
@@ -34,7 +43,7 @@ class AdapterHelper {
    *        check_exists is FALSE.
    * @return the set/generated entity ID or NULL if the mapping was deleted
    */
-  public static function setDrupalIdForUri(string $uri, int $eid = NULL, $check_exists = TRUE, $exists = FALSE) {
+  public static function setDrupalIdForUri($uri, $eid = NULL, $check_exists = TRUE, $exists = FALSE) {
     // looks as if we cannot use db_upsert
     if ($check_exists) {
       $exists = self::getDrupalIdForUri($uri);
@@ -60,7 +69,9 @@ class AdapterHelper {
   }
   
   /**
-   * Get all URIs for the 
+   * Get all URIs for the given Drupal-usable id
+   * @param eid the entity ID
+   * @return an array of URIs. If there is no mapping, returns an empty array.
    */
   public static function getUrisForDrupalId($eid) {
     $uris = db_select('wisski_salz_id2uri', 'm')
@@ -72,6 +83,11 @@ class AdapterHelper {
     return $uris;
   }
   
+
+  public static function createCanonicalWisskiUri($options) {
+    
+
+  }
   
 
 

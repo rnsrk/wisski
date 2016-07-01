@@ -265,11 +265,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
   public function getDrupalId($uri) {
     
-    if(is_int($id) === TRUE)
+    if(is_int($id) !== TRUE) {
       $id = AdapterHelper::getDrupalIdForUri($uri);
-    else
+    } else {
       $id = $uri;
-        
+    }
     return $id;
   }
   
@@ -280,9 +280,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $uri = AdapterHelper::getUrisForDrupalId($id);
       // just take the first one for now.
       $uri = current($uri);
-    } else
+    } else {
       $uri = $id;
-    
+    }
     return $uri;
   }
 

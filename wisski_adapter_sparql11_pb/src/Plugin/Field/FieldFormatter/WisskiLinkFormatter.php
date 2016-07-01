@@ -170,8 +170,9 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
 #        drupal_set_message("got: " . serialize($item->wisskiDisamb));
         
         $url = $item->wisskiDisamb;
-        $url = str_replace('/', '\\', $url);
-        $url = 'wisski_core/' . $url . '/view';
+#        $url = str_replace('/', '\\', $url);
+        $entity_id = AdapterHelper::getDrupalIdForUri($url);
+        $url = 'wisski_core/' . $entity_id . '/view';
         
 #        drupal_set_message("url: " . serialize($url));
         

@@ -170,7 +170,8 @@ class Query extends WisskiQueryBase {
         $out = array();
       
         foreach($result as $hit) {
-          $entity_id = str_replace('/', '\\', $hit->x0->getUri());
+#          $entity_id = str_replace('/', '\\', $hit->x0->getUri());
+          $entity_id = AdapterHelper::getDrupalIdForUri($hit->x0->getUri());
           $out[] = $entity_id;
           \Drupal::entityManager()->getStorage('wisski_individual')->writeToCache($entity_id,$bundle_id);
         }
