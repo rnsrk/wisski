@@ -621,7 +621,7 @@ class Sparql11Engine extends EngineBase {
 	* @return the escaped string
 	* @author Martin Scholz
 	*/
-	public function escapeSparqlLiteral(string $literal, $escape_backslash = TRUE) {
+	public function escapeSparqlLiteral($literal, $escape_backslash = TRUE) {
 	  $sic  = array("\\",   '"',   "'",   "\b",  "\f",  "\n",  "\r",  "\t");
 	  $corr = array($escape_backslash ? "\\\\" : "\\", '\\"', "\\'", "\\b", "\\f", "\\n", "\\r", "\\t");
   	$literal = str_replace($sic, $corr, $literal);
@@ -635,7 +635,7 @@ class Sparql11Engine extends EngineBase {
 	* @return the escaped string
 	* @author Martin Scholz
 	*/
-	public function escapeSparqlRegex(string $regex, $also_literal = FALSE) {
+	public function escapeSparqlRegex($regex, $also_literal = FALSE) {
 		//  $chars = "\\.*+?^$()[]{}|";
 	  $sic = array('\\', '.', '*', '+', '?', '^', '$', '(', ')', '[', ']', '{', '}', '|');
   	$corr = array('\\\\', '\.', '\*', '\+', '\?', '\^', '\$', '\(', '\)', '\[', '\]', '\{', '\}', '\|');

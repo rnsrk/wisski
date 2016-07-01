@@ -265,7 +265,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
   public function getDrupalId($uri) {
     
-    if(is_int($id) !== TRUE) {
+    if(is_int($uri) !== TRUE) {
       $id = AdapterHelper::getDrupalIdForUri($uri);
     } else {
       $id = $uri;
@@ -806,7 +806,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
       }
     }
-    
+
+dpm($out, __METHOD__);
     return $out;
     
   }
@@ -1270,8 +1271,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if(empty($path))
       return;
       
-    if(!drupal_validate_utf8($value))
-      $value = utf8_encode($value);
+#   if(!drupal_validate_utf8($value)) {
+#     $value = utf8_encode($value);
+#   }
 
     $clearPathArray = $this->getClearPathArray($path, $pb);
     
@@ -1406,6 +1408,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @param $write Is this a write or a read-request?
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=') {
+dpm(func_get_args(), __METHOD__);
     // the query construction parameter
     $query = "";
 
@@ -1463,10 +1466,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }             
 
         // magic function
-        if($key > 0 && !empty($prop)) 
-          if($write)
+        if($key > 0 && !empty($prop)) { 
+          if($write) {
             $query .= "<$olduri> <$prop> <$uri> . ";
-          else {
+          } else {
             if(!empty($olduri))
               $query .= "<$olduri> ";
             else
@@ -1479,6 +1482,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             else
               $query .= "?x$key . ";
           }
+        }
          
          // if this is the disamb, we may break.
          if($key == ($disambposition*2) && !empty($object_in))
@@ -1503,6 +1507,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $query .= "<$primitive> ";
       
       if(!empty($primitiveValue)) {
+        
+        // we have to escape it otherwise the sparql query may break
+        $primitiveValue = $this->escapeSparqlLiteral($primitiveValue);
+
         if($op == '=') 
           $query .= "'" . $primitiveValue . "' . ";
         else {
@@ -1526,9 +1534,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           
         
           if($regex || $op == 'BETWEEN' || $op == 'IN' || $op == 'NOT IN')
-            $query .= ' ?out . FILTER ( regex ( ?out, "' . $primitiveValue . '" ) ) . ';
+            $query .= ' ?out . FILTER ( regex ( ?out, "' . $this->escapeSparqlRegex($primitiveValue) . '" ) ) . ';
           else
-            $query .= ' ?out . FILTER ( ?out ' . $op . ' "' . $primitiveValue . '" ) . ';
+            // we have to use STR() otherwise we may get into trouble with
+            // datatype and lang comparisons
+            $query .= ' ?out . FILTER ( STR(?out) ' . $op . ' "' . $primitiveValue . '" ) . ';
         }
       } else
         $query .= " ?out . ";
@@ -1550,8 +1560,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if(empty($path))
       return;
       
-    if(!drupal_validate_utf8($value))
-      $value = utf8_encode($value);
+#    if(!drupal_validate_utf8($value)) {
+#      $value = utf8_encode($value);
+#    }
 
 #    $clearPathArray = $this->getClearPathArray($path, $pb);
 #    $path->setDisamb(1);
@@ -1572,18 +1583,18 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
     
     // rename to uri
-    $eid = $this->getUriForDrupalId($eid);
+    $subject_uri = $this->getUriForDrupalId($entity_id);
         
-#    $eid = str_replace("\\", "/", $entity_id);
+#    $subject_uri = str_replace("\\", "/", $entity_id);
 
     $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
     if(empty($path->getDisamb()))
-      $sparql .= $this->generateTriplesForPath($pb, $path, $value, $eid, NULL, NULL, NULL, TRUE);
+      $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, NULL, TRUE);
     else
       if(empty($disambresult))
-        $sparql .= $this->generateTriplesForPath($pb, $path, $value, $eid, NULL, NULL, NULL, TRUE);
+        $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, NULL, TRUE);
       else
-        $sparql .= $this->generateTriplesForPath($pb, $path, $value, $eid, $disambresult->{"x" . $path->getDisamb()*2}->dumpValue("text"), $path->getDisamb(), NULL, TRUE);
+        $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . $path->getDisamb()*2}->dumpValue("text"), $path->getDisamb(), NULL, TRUE);
 
     $sparql .= " } } ";
  

@@ -23,6 +23,7 @@ class AdapterHelper {
               ->condition('uri', $uri)
               ->execute()
               ->fetchObject();
+#dpm(array($row, $uri), "getids");
     if (!empty($row)) return $row->eid;
     // create an ID if we are told to do so
     if ($create_if_not_exists) return self::setDrupalIdForUri($uri, NULL, FALSE, FALSE);
@@ -74,13 +75,23 @@ class AdapterHelper {
    * @return an array of URIs. If there is no mapping, returns an empty array.
    */
   public static function getUrisForDrupalId($eid) {
-    $uris = db_select('wisski_salz_id2uri', 'm')
-              ->fields('m', array('uri'))
-              ->condition('eid', $eid)
-              ->execute()
-              ->fetchCol();
-    if (empty($uris)) return array();
-    return $uris;
+    // we preprocess the entity id
+    // one may pass an object with field eid for convienience
+    if (is_object($eid) && isset($eid->eid)) {
+      $eid = $eid->eid;
+    }
+    if (is_integer($eid) || (is_string($eid) && preg_match('/^\d+$/', $eid))) {
+      $uris = db_select('wisski_salz_id2uri', 'm')
+        ->fields('m', array('uri'))
+        ->condition('eid', $eid)
+        ->execute()
+        ->fetchCol();
+#dpm(array($eid, $uris, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)), "geturis");
+      if (empty($uris)) return array();
+      return $uris;
+    } else {
+      throw new \InvalidArgumentException("bad entity id: $eid");
+    }
   }
   
 
