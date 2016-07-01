@@ -235,10 +235,12 @@ dpm($twig);
         $path_options = $engine->getPathAlternatives($pre,$succ);
       } else $path_options = $engine->getPathAlternatives();
       $form['path_array']['step:'.$key]['select'] = array(
-        '#default_value' => 'empty',
+        //'#default_value' => 'empty',
         '#value' => $element,
         '#type' => 'select',
-        '#options' => array_merge(array('empty' => $this->t('Select next step')), $path_options),
+        '#empty_value' => 'empty',
+        '#empty_option' => $this->t('Select next step'),
+        '#options' => $path_options,
         //'#title' => $this->t('Step ' . $key . ': Select the next step of the path'),
         //'#title_display' => 'invisible',
         '#attributes' => array('data-wisski' => 'select'.$key),
@@ -293,25 +295,45 @@ dpm($twig);
       '#type' => 'container',
       '#tree' => TRUE,
     );
-
+    
     // only act if there is more than the dummy entry
     // and if it is not a property -> path length odd +1 for dummy -> even
-    if(count($curvalues) > 1 && count($curvalues) % 2 == 0) {
-      $primitive = $engine->getPrimitiveMapping($curvalues[(count($curvalues)-2)]);
-    
-      $form['path_array']['datatype_property']['select'] = array(
-        '#default_value' => 'empty',
-        '#value' => $datatype_property,
-        '#type' => 'select',
-        '#options' => array_merge(array('empty' => $this->t('Select datatype property')), $primitive),
-        //'#title' => t('Please select the datatype property for the Path.'),
-        '#ajax' => array(
-          'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
-          'wrapper' => 'wisski-path-table',
-          'event' => 'change', 
-        ),
-        '#attributes' => array('data-wisski' => 'data0'),
-      );
+    if(count($curvalues) > 1 && count($curvalues) % 2 == 0 && $primitive = $engine->getPrimitiveMapping($curvalues[(count($curvalues)-2)])) {  
+      if (count($primitive) == 1) {
+        $default = current($primitive);
+        dpm($default,'Default');
+        $form_state->setValue(array('path_array','datatype_property','select'),$default);
+        $form['path_array']['datatype_property']['select'] = array(
+          '#default_value' => $default,
+          '#value' => $default,
+          '#type' => 'select',
+          '#options' => $primitive,
+          //'#title' => t('Please select the datatype property for the Path.'),
+          '#ajax' => array(
+            'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
+            'wrapper' => 'wisski-path-table',
+            'event' => 'change', 
+          ),
+          '#attributes' => array('data-wisski' => 'data0'),
+          '#disabled' => TRUE,
+        );
+      } else {
+        $form['path_array']['datatype_property']['select'] = array(
+          '#value' => $datatype_property,
+          '#type' => 'select',
+          '#empty_value' => 'empty',
+          '#empty_option' => $this->t('Select datatype property'),
+          '#options' => $primitive,
+          //'#title' => t('Please select the datatype property for the Path.'),
+          '#ajax' => array(
+            'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
+            'wrapper' => 'wisski-path-table',
+            'event' => 'change', 
+          ),
+          '#attributes' => array('data-wisski' => 'data0'),
+          '#required' => TRUE,
+        );
+      }    
     } else $form['path_array']['datatype_property']['select'] = array(
       '#type' => 'hidden',
       '#value' => 'empty',
@@ -342,7 +364,7 @@ dpm($twig);
     $path = $this->entity;
     
     $status = $path->save();
-    
+dpm($path,'Saved path');    
     if($status) {
       // Setting the success message.
       drupal_set_message($this->t('Saved the path: @id.', array(
@@ -390,7 +412,7 @@ dpm($twig);
     //$values represent form values as hidden in the render elements i.e. the path steps can be found in
     // $values['path_array']['step:'.$row_number]['select']
     $values = $form_state->getValues();
-    //dpm($values,__METHOD__.'::values');
+    dpm($values,__METHOD__.'::values');
     $path_array = array();
     foreach ($values['path_array'] as $key => $value) {
       //gather step values while ignoring empty lines

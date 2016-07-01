@@ -1,3 +1,5 @@
+# -- old routes, delete --
+
 wisski_core.wisski_navigate:
   path: '/admin/config/wisski/navigate'
   defaults:
@@ -48,6 +50,8 @@ wisski_core.wisski_entities:
   requirements:
     _permission: 'access content'
 
+# -- end old routes --
+
 wisski.display_settings:
   path: '/admin/config/wisski/display_settings'
   defaults:
@@ -63,11 +67,19 @@ entity.wisski_individual.list:
   requirements:
     _permission: 'view wisski content'
 
+entity.wisski_bundle.entity_list:
+  path: '/wisski/navigate/{wisski_bundle}'
+  defaults:
+    _controller: '\Drupal\wisski_core\Controller\WisskiEntityListController::listing'
+    _title: 'Entities in Bundle'
+  requirements:
+    _permission: 'view wisski content'
+
 # the canonical link template as seen in the WisskiEntity class annotations
 # is crucial for the Views module to integrate a link to the entity
 # it MUST be named 'canonical'
 entity.wisski_individual.canonical:
-  path: '/wisski_core/{wisski_individual}/view'
+  path: '/wisski/navigate/{wisski_bundle}/{wisski_individual}'
   defaults:
   # Calls the view controller, defined in the annotation of the contact entity
     _entity_view: 'wisski_individual'
@@ -78,24 +90,15 @@ entity.wisski_individual.canonical:
     _entity_access: 'wisski_individual.view'
 
 entity.wisski_individual.view:
-  path: '/wisski_core/{wisski_individual}/view'
+  path: '/wisski/navigate/{wisski_bundle}/{wisski_individual}/view'
   defaults:
-    _entity_view: 'wisski_individual'
-    _title: 'WissKI Entity Content'
+    _controller: '\Drupal\wisski_core\Controller\WisskiEntityViewForwarder::forward'
+#    _title: 'WissKI Entity Content'
   requirements:
     _entity_access: 'wisski_individual.view'
 
-entity.wisski_individual.forward:
-  path: '/wisski/navigate/{wisski_bundle}/{wisski_individual}/forward'
-  defaults:
-    _controller: '\Drupal\wisski_core\Controller\WisskiEntityViewForwarder::forward'
-    _title: 'Forwarding'
-  requirements:
-#    _entity_access: 'wisski_individual.view'
-    _access: 'TRUE'
-
 entity.wisski_individual.edit_form:
-  path: '/wisski_core/{wisski_individual}/edit'
+  path: '/wisski/navigate/{wisski_bundle}/{wisski_individual}/edit'
   defaults:
     _entity_form: 'wisski_individual.edit'
     _title: 'Edit entity'
@@ -103,7 +106,7 @@ entity.wisski_individual.edit_form:
     _entity_access: 'wisski_individual.edit'
 
 entity.wisski_individual.delete_form:
-  path: '/wisski_core/{wisski_individual}/delete'
+  path: '/wisski/navigate/{wisski_bundle}/{wisski_individual}/delete'
   defaults:
     _entity_form: 'wisski_individual.delete'
     _title: 'Delete entity'
@@ -111,12 +114,12 @@ entity.wisski_individual.delete_form:
     _entity_access: 'wisski_individual.delete'
 
 entity.wisski_individual.add:
-  path: '/wisski_core/{wisski_bundle}/add'
+  path: '/wisski/create/{wisski_bundle}'
   defaults:
-    _entity_form: 'wisski_individual'
+    _controller: 'Drupal\wisski_core\Controller\WisskiEntityController::add'
     _title: 'Add WissKI Entity'
   requirements:
-    _entity_access: 'wisski_individual.create'
+    _entity_create_access: 'wisski_individual'
 
 entity.wisski_bundle.list:
   path: '/admin/structure/wisski_core'
@@ -132,17 +135,6 @@ entity.wisski_bundle.add:
     _entity_form: wisski_bundle.add
   requirements:
     _permission: 'administer wisski bundles'
-
-entity.wisski_bundle.entity_add:
-  path: '/admin/structure/wisski_core/{wisski_bundle}/add'
-  defaults:
-    _controller: 'Drupal\wisski_core\Controller\WisskiEntityController::add'
-    _title: 'Add WissKI Entity'
-  options:
-    parameters:
-      bundle: wisski_bundle
-  requirements:
-    _entity_create_access: 'wisski_individual'
 
 #notice that the route name has to match the one given in the WisskiBundle annotation
 #i.e.
@@ -179,14 +171,6 @@ entity.wisski_bundle.delete_title_form:
     _entity_form: wisski_bundle.delete_title
   requirements:
     _entity_access: 'wisski_bundle.edit'
-
-entity.wisski_bundle.entity_list:
-  path: '/wisski/navigate/{wisski_bundle}'
-  defaults:
-    _controller: '\Drupal\wisski_core\Controller\WisskiEntityListController::listing'
-    _title: 'Entities in Bundle'
-  requirements:
-    _permission: 'view wisski content'
 
 wisski.menu:
   path: '/admin/config/wisski'

@@ -22,7 +22,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     $header['label'] = $this->t('Name');
     if ($this->type === self::CONFIG) {
       $header['parent'] = $this->t('Parent');
-      $header + parent::buildHeader();
+      $header += parent::buildHeader();
     }
     return $header;
   }
@@ -77,16 +77,14 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     $row += parent::buildRow($entity);
     $row['operations']['data']['#links']['add'] = array(
       'title' => $this->t('Add an Entity'),
-      'url' => new Url('entity.wisski_bundle.entity_add',array('wisski_bundle' => $id),array('wisski_bundle'=> $id)),
+      'url' => new Url('entity.wisski_individual.add',array('wisski_bundle' => $id)),
       'weight' => 5,
     );
-    if ($entity->hasLinkTemplate('edit-form')) {
-      $row['operations']['data']['#links']['list'] = array(
-        'title' => $this->t('List Entities'),
-        'weight' => 10,
-        'url' => $entity->urlInfo('entity-list'),
-      );
-    }
+    $row['operations']['data']['#links']['list'] = array(
+      'title' => $this->t('List Entities'),
+      'weight' => 10,
+      'url' => $entity->urlInfo('entity-list'),
+    );
 //    dpm($row['operations']['data']['#links'],__METHOD__);
     return $row;
   }

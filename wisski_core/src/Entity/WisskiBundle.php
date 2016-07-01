@@ -37,7 +37,7 @@ use Drupal\wisski_core\WisskiCacheHelper;
  *   links = {
  *     "edit-form" = "/admin/structure/wisski_core/{wisski_bundle}/edit",
  *     "delete-form" = "/admin/structure/wisski_core/{wisski_bundle}/delete",
- *     "entity-list" = "/admin/structure/wisski_core/{wisski_bundle}/list",
+ *     "entity-list" = "/wisski/navigate/{wisski_bundle}",
  *     "list" = "/admin/structure/wisski_core",
  *     "title-form" = "/admin/structure/wisski_core/{wisski_bundle}/title",
  *     "delete-title-form" = "/admin/structure/wisski_core/{wisski_bundle}/delete-title",

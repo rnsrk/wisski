@@ -14,16 +14,16 @@ wisski_core.wisski_uris:
 wisski.browse_entities:
   title: 'Navigate'
   description: 'Browse WissKI entities'
-  parent: wisski.content
+  menu_name: 'main'
   route_name: entity.wisski_individual.list
-  weight: -200
+  weight: 10
 
 wisski.search_entities:
   title: 'Find'
   description: 'Search WissKI entities'
-  parent: wisski.content
+  menu_name: 'main'
   route_name: search.view_wisski_search
-  weight: -199
+  weight: 20
 
 wisski.display_settings:
   title: 'WissKI Display Settings'

@@ -45,11 +45,11 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *   permission_granularity = "entity_type",
  *   admin_permission = "administer wisski",
  *	 fieldable = TRUE,
- *   field_ui_base_route = "entity.wisski_bundle.entity_add",
+ *   field_ui_base_route = "entity.wisski_individual.add",
  *   links = {
- *     "canonical" = "/wisski_core/{wisski_individual}/view",
- *     "delete-form" = "/wisski_core/{wisski_individual}/delete",
- *     "edit-form" = "/wisski_core/{wisski_individual}/edit",
+ *     "canonical" = "/wisski/navigate/{wisski_bundle}/{wisski_individual}",
+ *     "delete-form" = "/wisski/navigate/{wisski_bundle}/{wisski_individual}/delete",
+ *     "edit-form" = "/wisski/navigate/{wisski_bundle}/{wisski_individual}/edit",
  *     "admin-form" = "/admin/structure/wisski_core/manage/{wisski_bundle}"
  *   },
  *   translatable = FALSE,
