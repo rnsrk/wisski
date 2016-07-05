@@ -1487,8 +1487,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @param $startingposition From where on the path should be generated in means
    *              of concepts from the beginning.
    * @param $write Is this a write or a read-request?
+   * @param $mode defaults to 'field' - but may be 'group' or 'entity_reference' in special cases
    */
-  public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=') {
+  public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field') {
 #dpm(func_get_args(), __METHOD__);
     // the query construction parameter
     $query = "";
@@ -1497,7 +1498,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if($disambposition == 0 && !empty($object_in)) return "";
 
     // get the clearArray of this path, we skip anything that is in upper groups.
-    $clearPathArray = $this->getClearPathArray($path, $pb);
+    if($mode == 'field')
+      $clearPathArray = $this->getClearPathArray($path, $pb);
+    if($mode == 'entity_reference')
+      $clearPathArray = $path->getPathArray();  
+    
+#    dpm($clearPathArray, "cpa");
     
     // old uri pointer
     $olduri = NULL;
@@ -1629,6 +1635,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
   
   public function addNewFieldValue($entity_id, $fieldid, $value, $pb) {
+#    drupal_set_message("I get: " . $entity_id, " with fid " . $fieldid . " and value " . $value);
 #    drupal_set_message(serialize($this->getUri("smthg")));
     $datagraphuri = $this->getDefaultDataGraphUri();
 
@@ -1671,17 +1678,21 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
 #    drupal_set_message(serialize($path), "I would do: ");
 #    drupal_set_message(serialize($eid
-    
-    if(empty($path->getDisamb()))
-      $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, NULL, TRUE);
-    else
-      if(empty($disambresult))
+
+    if($path->isGroup()) {
+      $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $value, (count($path->getPathArray())-1)/2, NULL, TRUE, '', 'entity_reference');
+    } else {
+      if(empty($path->getDisamb()))
         $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, NULL, TRUE);
       else
-        $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . $path->getDisamb()*2}->dumpValue("text"), $path->getDisamb(), NULL, TRUE);
-
+        if(empty($disambresult))
+          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, NULL, TRUE);
+        else
+          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . $path->getDisamb()*2}->dumpValue("text"), $path->getDisamb(), NULL, TRUE);
+    }
     $sparql .= " } } ";
-    
+  
+       
 #    dpm($sparql, "I would do: ");
  
 /*   
@@ -1729,7 +1740,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
   
   public function writeFieldValues($entity_id, array $field_values, $bundle=NULL) {
-    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
+#    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
     
     // tricky thing here is that the entity_ids that are coming in typically
     // are somewhere from a store. In case of rdf it is easy - they are uris.
@@ -1830,7 +1841,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
               
             // now write to the database
             
-            drupal_set_message($entity_id . "I really write!" . serialize($val[$mainprop])  . " and " . serialize($old_values[$key]) );
+#            drupal_set_message($entity_id . "I really write!" . serialize($val[$mainprop])  . " and " . serialize($old_values[$key]) );
 #            return;
             
             // first delete the old values
