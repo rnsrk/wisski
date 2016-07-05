@@ -37,6 +37,13 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * @return TRUE if the storage handles this entity, FALSE otherwise
    */
   public function hasEntity($entity_id);
+  
+  /**
+   * Creates a new entity and adds the new id to the given entity object
+   * @param $entity the given entity
+   * @return TRUE on success, false else.
+   */
+  public function createEntity($entity);
 
 
   /**

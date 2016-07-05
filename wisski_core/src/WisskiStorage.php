@@ -164,6 +164,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   }
                   
                 }
+                if ($field_def->getType() === 'text_with_summary') {
+                  $value['value'] = $value;
+                  $value['format'] = 'full_html';
+                }
                 if ($field_def->getType() === 'image') {
                   $value = $new_field_values[$id][$field_name];
                   // we assume that $value is an image URI which is to be rplaced by a FileID
@@ -281,7 +285,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   }
 
   protected function getFileId($file_uri,&$local_file_uri='') {
-
+#drupal_set_message('Image uri: '.$file_uri);
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
     $local_file_uri = file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));
@@ -335,7 +339,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   private function getPreviewImage($entity_id,$bundle_id,$adapter) {
     
     if ($preview = WisskiCacheHelper::getPreviewImage($entity_id)) {
-      drupal_set_message('Preview image from cache');
+#      drupal_set_message('Preview image from cache');
       return $preview;
     }
     else {
@@ -346,15 +350,6 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       $image_style = $this->getPreviewStyle();
       $preview_uri = $image_style->buildUri($output_uri);
       //dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
-      if (!preg_match('/^.+?\.\w+$/',$output_uri)) {
-        drupal_set_message('Invalid image uri '.$output_uri);
-        if (!preg_match('/^.+?\.\w+$/',$input_uri)) {
-          drupal_set_message('Invalid image uri '.$input_uri);
-        
-          return 1;
-        }
-        return $input_uri;
-      }
       if ($image_style->createDerivative($output_uri,$preview_uri)) {
         drupal_set_message('Style did it');
         $preview_id = $this->getFileId($preview_uri);
@@ -473,7 +468,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * @TODO must be implemented
    */
   protected function doSaveFieldItems(ContentEntityInterface $entity, array $names = []) {
-//    dpm(func_get_args(),__METHOD__);
+#    dpm(func_get_args(),__METHOD__);
     
     list($values,$original_values) = $this->extractFieldData($entity);
     $bundle_id = $values['bundle'][0]['target_id'];
@@ -521,6 +516,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     foreach($adapters_to_use as $aid => $adapter) {
       // if it is a new entity
       if($entity->isNew()) {
+
+        $adapter->createEntity($entity); 
         // in this case we have to add the triples for a new entity
         // after that it should be the same for edit and for create
       }

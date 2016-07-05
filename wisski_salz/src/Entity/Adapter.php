@@ -186,6 +186,13 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
   public function hasEntity($entity_id) {
     return $this->getEngine()->hasEntity($entity_id);
   }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function createEntity($entity) {
+    return $this->getEngine()->createEntity($entity);
+  }
 
   /**
    * {@inheritdoc}

@@ -14,6 +14,7 @@ class WisskiEntityForm extends ContentEntityForm {
     drupal_set_message("Form is built.");
     //@TODO extend form
     //dpm($this->getEntity());
+    dpm($form,__METHOD__);
     return $form;
   }
 

@@ -107,6 +107,10 @@ class Sparql11Engine extends EngineBase {
   public function hasEntity($entity_id) {
     return FALSE;
   }
+  
+  public function createEntity($entity) {
+    return FALSE;
+  }
 
   
   /**

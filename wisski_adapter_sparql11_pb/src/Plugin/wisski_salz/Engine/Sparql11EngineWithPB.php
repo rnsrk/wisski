@@ -234,7 +234,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getImagesForEntityId($entityid, $bundleid) {
     $pb = $this->getPbForThis();
 
-#    drupal_set_message("yay!");
+#    drupal_set_message("yay!" . $entityid . " and " . $bundleid);
+    
+    $entityid = $this->getDrupalId($entityid);
     
     $ret = array();
     
@@ -292,9 +294,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    */
   public function getBundleIdsForEntityId($entityid) {
+        
     $pb = $this->getPbForThis();
     
-    #dpm($entityid, "eid");
+#    dpm($entityid, "eid");
 
     $uri = $this->getUriForDrupalId($entityid);    
     
@@ -601,7 +604,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 
   public function load($id) {
-    drupal_set_message("b1: $id " . microtime());
+#    drupal_set_message("b1: $id " . microtime());
         
     $out = array();
 #    $uri = str_replace('\\', '/', $id);
@@ -732,7 +735,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
   public function pathToReturnValue($patharray, $primitive = NULL, $eid = NULL, $position = 0, $main_property = NULL, $disamb = 0) {
 
-#    drupal_set_message("pa: " . serialize($patharray) . " disamb: " . $disamb); 
+#    drupal_set_message("pa: " . serialize($patharray) . " disamb: " . $disamb . " and eid " . $eid); 
 
     // also
     if($disamb > 0)
@@ -794,8 +797,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           
           $outvalue = $thing->out->getValue();
           
-          if($main_property == "target_id")
-            $outvalue = $this->getDrupalId($outvalue);
+#          if($main_property == "target_id")
+#            $outvalue = $this->getDrupalId($outvalue);
           
           if(is_null($disamb) == TRUE)
             $out[] = array($main_property => $outvalue);
@@ -813,8 +816,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         
           $outvalue = $thing->{$name}->dumpValue("text");
           
-          if($main_property == "target_id")
-            $outvalue = $this->getDrupalId($outvalue);
+#          if($main_property == "target_id")
+#            $outvalue = $this->getDrupalId($outvalue);
         
           if(is_null($disamb) == TRUE)
             $out[] = array($main_property => $outvalue);
@@ -1391,6 +1394,67 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    drupal_set_message("I delete field $field from entity $entity_id that currently has the value $value");
   }
 
+  /**
+   * Create a new entity
+   * @param $entity an entity object
+   * @return TRUE on success
+   */
+  public function createEntity($entity) {
+    #$uri = $this->getUri($this->getDefaultDataGraphUri());
+    
+    $bundleid = $entity->bundle();
+
+    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    
+    $out = array();
+        
+    // get the adapterid that was loaded
+    // haha, this is the engine-id...
+    //$adapterid = $this->getConfiguration()['id'];
+        
+    foreach($pbs as $pb) {
+#      drupal_set_message("a2: " . microtime());
+      // if we have no adapter for this pb it may go home.
+      if(empty($pb->getAdapterId()))
+        continue;
+        
+      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
+
+      // if we have not adapter, we may go home, too
+      if(empty($adapter))
+        continue;
+      
+      // if he didn't ask for us...    
+      if($this->getConfiguration()['id'] != $adapter->getEngine()->getConfiguration()['id'])
+        continue;
+     
+      $groups = $pb->getGroupsForBundle($bundleid);
+
+      // for now simply take the first one.    
+      $groups = current($groups);
+
+      $triples = $this->generateTriplesForPath($pb, $groups, '', NULL, NULL, 0, 0, TRUE);
+      
+      $sparql = "INSERT DATA { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " . $triples . " } } ";
+      #dpm($sparql, "spargel");      
+      $result = $this->directUpdate($sparql);
+    
+      $uri = explode(" ", $triples, 2);
+      
+      $uri = substr($uri[0], 1, -1);
+      
+      
+      
+    }
+#    dpm($groups, "bundle");
+        
+#    $entity->set('id',$uri);
+    $entity->set('eid',$uri);
+    
+#    "INSERT INTO { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " 
+    
+  }
+
   public function getUri($prefix) {
     return uniqid($prefix);
   }
@@ -1425,7 +1489,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @param $write Is this a write or a read-request?
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=') {
-dpm(func_get_args(), __METHOD__);
+#dpm(func_get_args(), __METHOD__);
     // the query construction parameter
     $query = "";
 
@@ -1515,7 +1579,7 @@ dpm(func_get_args(), __METHOD__);
     // get the primitive for this path if any    
     $primitive = $path->getDatatypeProperty();
     
-    if(!empty($primitive) && empty($object_in)) {
+    if(!empty($primitive) && empty($object_in) && !$path->isGroup()) {
       if(!empty($olduri))
         $query .= "<$olduri> ";
       else
@@ -1571,7 +1635,7 @@ dpm(func_get_args(), __METHOD__);
     $pbarray = $pb->getPbEntriesForFid($fieldid);
     
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['id']);
-    dpm($entity_id, "I add!");
+    #dpm($entity_id, "I add!");
 #    drupal_set_message("smthg: " . serialize($this->generateTriplesForPath($pb, $path, NULL, "http://test.me/12", "http://argh.el/235", 2, TRUE)));
 
     if(empty($path))
@@ -1665,7 +1729,7 @@ dpm(func_get_args(), __METHOD__);
   }
   
   public function writeFieldValues($entity_id, array $field_values, $bundle=NULL) {
-#    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
+    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
     
     // tricky thing here is that the entity_ids that are coming in typically
     // are somewhere from a store. In case of rdf it is easy - they are uris.
@@ -1686,7 +1750,7 @@ dpm(func_get_args(), __METHOD__);
     
     $out = array();
     
-    return $out;
+#    return $out;
         
     // get the adapterid that was loaded
     // haha, this is the engine-id...
@@ -1714,7 +1778,7 @@ dpm(func_get_args(), __METHOD__);
         // this would speed everything up largely, I think.
         $entity = $this->load($entity_id);
 
-        dpm($entity, "entity!");
+        #dpm($entity, "entity!");
         
         // if there is nothing, continue.
         if(empty($entity))
@@ -1725,7 +1789,7 @@ dpm(func_get_args(), __METHOD__);
         // @TODO !!!
         $old_values = $this->loadFieldValues(array($entity_id), array_keys($field_values), $bundle);
 
-        drupal_set_message("the old values were: " . serialize($old_values));
+        #drupal_set_message("the old values were: " . serialize($old_values));
 
         if(!empty($old_values))
           $old_values = $old_values[$entity_id];
@@ -1733,14 +1797,14 @@ dpm(func_get_args(), __METHOD__);
 #        drupal_set_message("the old values were: " . serialize($old_values));
 
         foreach($field_values as $key => $fieldvalue) {
-          drupal_set_message("key: " . serialize($key) . " fieldvalue is: " . serialize($fieldvalue)); 
+          #drupal_set_message("key: " . serialize($key) . " fieldvalue is: " . serialize($fieldvalue)); 
 
           $path = $pb->getPbEntriesForFid($key);          
 
           if(empty($path)) 
             continue;
             
-          drupal_set_message("I am still here: $key");
+          #drupal_set_message("I am still here: $key");
 
           $mainprop = $fieldvalue['main_property'];
           
@@ -1748,8 +1812,8 @@ dpm(func_get_args(), __METHOD__);
           
           foreach($fieldvalue as $key2 => $val) {
 
-            drupal_set_message(serialize($val[$mainprop]) . " new");
-            drupal_set_message(serialize($old_values[$key][$key2][$mainprop]) . " old");
+            #drupal_set_message(serialize($val[$mainprop]) . " new");
+            #drupal_set_message(serialize($old_values[$key][$key2][$mainprop]) . " old");
           
             // if they are the same - skip
             // I don't know why this should be working, but I leave it here...
@@ -1767,8 +1831,8 @@ dpm(func_get_args(), __METHOD__);
             // now write to the database
             
             drupal_set_message($entity_id . "I really write!" . serialize($val[$mainprop])  . " and " . serialize($old_values[$key]) );
-            return;
-/*            
+#            return;
+            
             // first delete the old values
             if(is_array($old_values[$key]))
               $this->deleteOldFieldValue($entity_id, $key, $old_values[$key][$key2], $pb);
@@ -1777,7 +1841,7 @@ dpm(func_get_args(), __METHOD__);
             
             // add the new ones
             $this->addNewFieldValue($entity_id, $key, $val[$mainprop], $pb); 
-*/            
+            
 #            drupal_set_message("I would write " . $val[$mainprop] . " to the db and delete " . serialize($old_values[$key]) . " for it.");
             
           }

@@ -775,18 +775,42 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
        
       $group = $pbpaths[$groupid];
       
-      $paths = array();
-
-      if(empty($subtree)) {
-        $subtree = $this->pathtree;
-
-        // search in the ptree in case it is no maingroup
-        $subtree = $subtree[$groupid];
-      } 
-       
       if(empty($group))
         return array();
-         
+      
+      $paths = array();
+      
+      if(empty($subtree)) {
+        $parents = array();
+        
+        $to_look = $group;
+        
+        while($to_look && $to_look['parent']) {
+          $parents = array_merge(array($to_look['parent']), $parents);
+          
+          $to_look = $pbpaths[$to_look['parent']];
+        }
+
+        $tmptree = $this->pathtree;
+        $i = 0;
+                
+        foreach($parents as $parent) {
+          $tmptree = $tmptree[$parent];
+          
+          $i++;
+          
+          if($i < count($parents))
+            $tmptree = $tmptree['children'];
+        }
+        
+        // special case - top group. then just descend one time.
+        if(empty($parents))
+          $tmptree = $tmptree[$groupid];
+        
+        $subtree = $tmptree;
+
+      } 
+                      
       foreach($subtree['children'] as $sub) {
          
         if(!empty($sub['children'])) {
@@ -801,6 +825,9 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
           
         }
       }       
+      
+#      if(!empty($paths));
+#      dpm($paths, "paths");
       
       return $paths;    
     }

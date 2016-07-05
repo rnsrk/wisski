@@ -22,7 +22,7 @@ class Query extends WisskiQueryBase {
    */
   public function execute() {
 
-//    dpm($this, "exe");
+    dpm($this, "exe");
     
 #    dpm($this->andConditi, "cond");
 
@@ -97,8 +97,8 @@ class Query extends WisskiQueryBase {
 
       if($this->isFieldQuery()) {
         
-        $eidquery = FALSE;
-        $bundlequery = FALSE;
+        $eidquery = NULL;
+        $bundlequery = NULL;
         
         foreach($this->condition->conditions() as $condition) {
           $field = $condition['field'];
@@ -112,21 +112,22 @@ class Query extends WisskiQueryBase {
         
 #        dpm($eidquery,"eidquery");
 #        dpm($bundlequery, "bundlequery");
-        
-        $eidquery = current($eidquery);
-        
-        $bundlequery = current($bundlequery);
-        
+                
         $giveback = array();
-        
+                
         // eids are a special case
-        if($eidquery !== FALSE) {
+        if($eidquery !== NULL) {
+          
+          $eidquery = current($eidquery);
+          
+          $bundlequery = current($bundlequery);
+          
           // load the id, this hopefully helps.
           $thing = $pbadapter->getEngine()->load($eidquery);
         
-#          dpm($thing, "thing");
+#          dpm($eidquery, "thing");
         
-          if($bundlquery === FALSE)
+          if($bundlequery === NULL)
             $giveback = array($thing['eid']);
             
           else {
@@ -151,13 +152,13 @@ class Query extends WisskiQueryBase {
 
           // just return something if it is a bundle-condition
           if($field == 'bundle') {
-  	        drupal_set_message("I go and look for : " . serialize($value) . " and " . serialize($limit) . " and " . serialize($offset) . " and " . $this->count);
+#  	        drupal_set_message("I go and look for : " . serialize($value) . " and " . serialize($limit) . " and " . serialize($offset) . " and " . $this->count);
             if($this->count) {
-   	         drupal_set_message("I give back to you: " . serialize($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE)));
+#   	         drupal_set_message("I give back to you: " . serialize($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE)));
               return $pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE, $this->condition->conditions());
             }
             
-            dpm(array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions())), 'out!');
+#            dpm($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()), 'out!');
             
             return array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()));
           }
@@ -213,7 +214,7 @@ class Query extends WisskiQueryBase {
           return array();
       
         $query = "SELECT * WHERE { " . $query . " }";
-        dpm($query, 'query');        
+#        dpm($query, 'query');        
         $result = $pbadapter->getEngine()->directQuery($query);
         
         $out = array();

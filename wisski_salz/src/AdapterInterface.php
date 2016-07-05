@@ -74,7 +74,11 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
    * @see EngineInterface::hasEntity()
    */
   public function hasEntity($entity_id);
-
+  
+  /**
+   * @see EngineInterface::createEntity()
+   */
+  public function createEntity($entity);
   
   /**
    * @see EngineInterface::loadFieldValues()
