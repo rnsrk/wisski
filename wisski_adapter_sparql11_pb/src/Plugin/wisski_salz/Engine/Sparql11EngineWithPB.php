@@ -266,8 +266,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
   
   public function getDrupalId($uri) {
+    #dpm($uri, "uri");
     
-    if(is_int($uri) !== TRUE) {
+    if(is_numeric($uri) !== TRUE) {
       $id = AdapterHelper::getDrupalIdForUri($uri);
     } else {
       $id = $uri;
@@ -278,13 +279,17 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getUriForDrupalId($id) {
     // danger zone: if id already is an uri e.g. due to entity reference
     // we load that. @TODO: I don't like that.
-    if(is_int($id) === TRUE) {
+#    drupal_set_message("in: " . serialize($id));
+#    drupal_set_message("vgl: " . serialize(is_int($id)));
+    if(is_numeric($id) === TRUE) {
       $uri = AdapterHelper::getUrisForDrupalId($id);
       // just take the first one for now.
       $uri = current($uri);
     } else {
       $uri = $id;
     }
+    
+#    drupal_set_message("out: " . serialize($uri));
     return $uri;
   }
 
@@ -590,16 +595,17 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
       #$uri = str_replace('/','\\',$uri);
       // this is no uri anymore - rename this variable.
-      $uri = $this->getDrupalId($uri);
+      $uriname = $this->getDrupalId($uri);
           
       // store the bundleid to the bundle-cache as it might be important
       // for subsequent queries.
       
-      $pathbuilder->setBundleIdForEntityId($uri, $bundleid);
+      $pathbuilder->setBundleIdForEntityId($uriname, $bundleid);
       
-      $outarr[$uri] = array('eid' => $uri, 'bundle' => $bundleid, 'name' => $uri);
+      $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
     }
-
+#    dpm($outarr, "outarr");
+#    return;
     return $outarr;
   }
 
@@ -1235,7 +1241,21 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           // if this is question for a subgroup - handle it otherwise
           if($pbarray['parent'] > 0 && $path->isGroup()) {
 #              drupal_set_message("I am asking for: " . serialize($this->getClearGroupArray($path, $pb)) . "with eid: " . serialize($eid));
-            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid, 0, $main_property, $path->getDisamb()));
+            // this was the old query without evil numeric ids.
+            // now we have to change all this.
+            #$out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid, 0, $main_property, $path->getDisamb()));
+            // nowadays we do it otherwise
+            
+            $tmp = $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid, 0, $main_property, $path->getDisamb());
+                        
+            foreach($tmp as $key => $item) {
+              $tmp[$key]["target_id"] = $this->getDrupalId($item["target_id"]);
+            }
+            
+            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);
+            
+            
+#            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->getDrupalId($this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid, 0, $main_property, $path->getDisamb())));
 #              drupal_set_message("I've got: " . serialize($out[$eid][$field_id]));
           } else {
               // it is a field?
@@ -1443,7 +1463,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
       $uri = substr($uri[0], 1, -1);
       
-      
+      $uri = $this->getDrupalId($uri);
       
     }
 #    dpm($groups, "bundle");
@@ -1461,7 +1481,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
   public function getDefaultDataGraphUri() {
     // here we should return a default graph for this store.
-    return "graf://dr.acula";
+    return "graf://dr.acula/";
   }
   
   
@@ -1503,6 +1523,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if($mode == 'entity_reference')
       $clearPathArray = $path->getPathArray();  
     
+    // in case of disamb etc. we have to add the countdiff
+    // first check if there is any real clearpath
+    if(count($clearPathArray) > 2) {
+      $countdiff = count($path->getPathArray()) - count($clearPathArray);
+    } else {
+      $countdiff = 0;
+    }  
+#    $countdiff = 0;
 #    dpm($clearPathArray, "cpa");
     
     // old uri pointer
@@ -1515,12 +1543,17 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
     // get the default datagraphuri    
     $datagraphuri = $this->getDefaultDataGraphUri();
+
+ #   dpm($clearPathArray, "cpa");
+ #   dpm($key+$countdiff, "diff");
     
     // iterate through the given path array
     foreach($clearPathArray as $key => $value) {
       
+      $localkey = $key+$countdiff;
+      
       // skip anything that is smaller than $startingposition.
-      if($key < ($startingposition*2)) 
+      if($localkey < ($startingposition*2)) 
         continue;
       
       // basic initialisation
@@ -1531,7 +1564,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $uri = $this->getUri($datagraphuri);
       }
       
-      if($key % 2 == 0) {
+      if($localkey % 2 == 0) {
         // if it is the first element and we have a subject_in
         // then we have to replace the first element with subject_in
         // and typically we don't do a type triple. So we skip the rest.
@@ -1542,18 +1575,18 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         
         // if the key is the disambpos
         // and we have an object
-        if($key == ($disambposition*2) && !empty($object_in)) {
+        if($localkey == ($disambposition*2) && !empty($object_in)) {
           $uri = $object_in;
         } else {
           // if it is not the disamb-case we add type-triples        
           if($write) 
             $query .= "<$uri> a <$value> . ";
           else
-            $query .= "?x$key a <$value> . ";
+            $query .= "?x$localkey a <$value> . ";
         }             
 
         // magic function
-        if($key > 0 && !empty($prop)) { 
+        if($localkey > 0 && !empty($prop)) { 
           if($write) {
             $query .= "<$olduri> <$prop> <$uri> . ";
           } else {
@@ -1567,16 +1600,16 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             if(!empty($uri))
               $query .= "<$uri> . ";
             else
-              $query .= "?x$key . ";
+              $query .= "?x$localkey . ";
           }
         }
          
          // if this is the disamb, we may break.
-         if($key == ($disambposition*2) && !empty($object_in))
+         if($localkey == ($disambposition*2) && !empty($object_in))
            break;
           
          $olduri = $uri;
-         $oldkey = $key;
+         $oldkey = $localkey;
       } else {
         $prop = $value;
       }
@@ -1648,6 +1681,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if(empty($path))
       return;
       
+#    $entity_id = $this->getUriForDrupalId($entity_id);
+      
 #    if(!drupal_validate_utf8($value)) {
 #      $value = utf8_encode($value);
 #    }
@@ -1658,10 +1693,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     if($path->getDisamb()) {
       $sparql = "SELECT * WHERE { GRAPH ?g { ";
-      $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb(), FALSE);
+#      $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, 0, FALSE);
+      $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE);
       $sparql .= " } }";
       
-#     drupal_set_message("query: " . serialize($sparql));
+#     drupal_set_message("query: " . serialize($sparql) . " disamb on: " . $path->getDisamb());
       
       $disambresult = $this->directQuery($sparql);
   
@@ -1678,22 +1714,25 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
 #    drupal_set_message(serialize($path), "I would do: ");
 #    drupal_set_message(serialize($eid
+#    drupal_set_message("subj: " . serialize($subject_uri) . " obj: " . serialize($this->getUriForDrupalId($value)));
 
     if($path->isGroup()) {
-      $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $value, (count($path->getPathArray())-1)/2, NULL, TRUE, '', 'entity_reference');
+      $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value), (count($path->getPathArray())-1)/2, NULL, TRUE, '', 'entity_reference');
     } else {
       if(empty($path->getDisamb()))
         $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, NULL, TRUE);
-      else
-        if(empty($disambresult))
+      else {
+ #       drupal_set_message("disamb: " . serialize($disambresult) . " miau " . $path->getDisamb());
+        if(empty($disambresult) || empty($disambresult->{"x" . $path->getDisamb()*2}) )
           $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, NULL, TRUE);
         else
           $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . $path->getDisamb()*2}->dumpValue("text"), $path->getDisamb(), NULL, TRUE);
+      }
     }
     $sparql .= " } } ";
   
        
-#    dpm($sparql, "I would do: ");
+ #   dpm($sparql, "I would do: ");
  
 /*   
     drupal_set_message("I would do: " . htmlentities($sparql));
@@ -1800,7 +1839,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // @TODO !!!
         $old_values = $this->loadFieldValues(array($entity_id), array_keys($field_values), $bundle);
 
-        #drupal_set_message("the old values were: " . serialize($old_values));
+#        drupal_set_message("the old values for $entity_id were: " . serialize($old_values));
 
         if(!empty($old_values))
           $old_values = $old_values[$entity_id];
@@ -1823,8 +1862,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           
           foreach($fieldvalue as $key2 => $val) {
 
-            #drupal_set_message(serialize($val[$mainprop]) . " new");
-            #drupal_set_message(serialize($old_values[$key][$key2][$mainprop]) . " old");
+ #           drupal_set_message(serialize($val[$mainprop]) . " new");
+ #           drupal_set_message(serialize($old_values[$key]) . " old");
           
             // if they are the same - skip
             // I don't know why this should be working, but I leave it here...

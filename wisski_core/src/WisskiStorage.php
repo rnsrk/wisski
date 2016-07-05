@@ -194,7 +194,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               }
               //drupal_set_message("Das richtige: ".serialize($info));
             } catch (\Exception $e) {
-              drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
+              drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . $e->getMessage()); #because ' . serialize($e));
             }              
           }     
           
@@ -444,11 +444,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   /**
    * {@inheritdoc}
    */
-#  public function save(EntityInterface $entity) {
-#
-#    return parent::save($entity);
-#  }
-
+/*
+  public function save(EntityInterface $entity) {
+#    drupal_set_message("I am saving, yay!" . serialize($entity->id()));
+    return parent::save($entity);
+  }
+*/
   /**
    * {@inheritdoc}
    */
@@ -515,8 +516,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     
     foreach($adapters_to_use as $aid => $adapter) {
       // if it is a new entity
-      if($entity->isNew()) {
-
+      if($entity->isNew() && empty($entity->id())) {
+#        dpm($entity);
+#        drupal_set_message(serialize($entity->isNew()) . " yay!");
         $adapter->createEntity($entity); 
         // in this case we have to add the triples for a new entity
         // after that it should be the same for edit and for create

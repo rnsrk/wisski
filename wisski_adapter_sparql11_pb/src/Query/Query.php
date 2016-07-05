@@ -22,7 +22,7 @@ class Query extends WisskiQueryBase {
    */
   public function execute() {
 
-    dpm($this, "exe");
+#    dpm($this, "exe");
     
 #    dpm($this->andConditi, "cond");
 
@@ -159,7 +159,8 @@ class Query extends WisskiQueryBase {
             }
             
 #            dpm($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()), 'out!');
-            
+#            dpm(array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions())), "muhaha!");
+#            return;           
             return array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()));
           }
         }
