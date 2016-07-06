@@ -1336,7 +1336,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if(empty($value)) {
         $sparql .= "?x$key <$primitive> ?out . ";
       } else {
-        $sparql .= "?x$key <$primitive> '$value' . ";
+        $sparql .= "?x$key <$primitive> '" . $this->escapeSparqlLiteral($value) ."' . ";
       }
     }
     
@@ -1893,7 +1893,7 @@ dpm(array('old_values' => $old_values, 'val' => $val));
             
               // first delete the old values
               if(is_array($old_values[$key]))
-                $this->deleteOldFieldValue($entity_id, $key, $old_values[$key][$key2], $pb);
+                $this->deleteOldFieldValue($entity_id, $key, $old_values[$key][$key2][$mainprop], $pb);
               else
                 $this->deleteOldFieldValue($entity_id, $key, $old_values[$key], $pb);
             }
