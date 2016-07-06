@@ -1316,27 +1316,30 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #   }
 
     $clearPathArray = $this->getClearPathArray($path, $pb);
-    
+#    dpm($clearPathArray);
 #    $group = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['parent']);
     
 #    $path_array = $path->getPathArray();
     
+    $diff = count($path->getPathArray()) - count($clearPathArray);
+    
 #    $sparql = "SELECT DISTINCT * WHERE { GRAPH ?g {";
     $sparql = "SELECT DISTINCT * WHERE {";
     foreach($clearPathArray as $key => $step) {
+#    for($i=(count($path->getPathArray())-1);$i>= (count($path->getPathArray())-count($clearPathArray)-1); $i--) {
       if($key % 2 == 0) 
-        $sparql .= "?x$key a <$step> . ";
+        $sparql .= "?x" . ($key+$diff) . " a <$step> . ";
       else
-        $sparql .= '?x' . ($key-1) . " <$step> ?x" . ($key+1) . " . ";    
+        $sparql .= '?x' . ($key+$diff-1) . " <$step> ?x" . ($key+$diff+1) . " . ";    
     }
     
     $primitive = $path->getDatatypeProperty();
     
     if(!empty($primitive)) {
       if(empty($value)) {
-        $sparql .= "?x$key <$primitive> ?out . ";
+        $sparql .= "?x" . ($key+$diff) . " <$primitive> ?out . ";
       } else {
-        $sparql .= "?x$key <$primitive> '" . $this->escapeSparqlLiteral($value) ."' . ";
+        $sparql .= "?x" . ($key+$diff) . " <$primitive> '" . $this->escapeSparqlLiteral($value) ."' . ";
       }
     }
     
@@ -1347,9 +1350,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $url = parse_url($eid);
       
       if(!empty($url["scheme"]))
-        $sparql .= " FILTER (?x0 = <$eid> ) . ";
+        $sparql .= " FILTER (?x$diff = <$eid> ) . ";
       else
-        $sparql .= " FILTER (?x0 = \"$eid\" ) . ";
+        $sparql .= " FILTER (?x$diff = \"$eid\" ) . ";
     }
     
 #    $sparql .= " } }";
@@ -1367,7 +1370,21 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
 #      drupal_set_message("thing is: " . serialize($thing));
       
-      for($i=(count($clearPathArray)-1);$i>= 0; $i--) {
+#      for($i=(count($clearPathArray)-1);$i>= 0; $i--) {
+
+      for($i=$diff; $i<count($clearPathArray)+$diff; $i++) {
+        $name = "x" . $i;
+        if($i % 2 == 0) {
+#          $name = "x" . $i; 
+#          drupal_set_message("name is: " . $name);
+          $outarray[$key][$i] = $thing->{$name}->dumpValue("text");
+        } else {
+          $outarray[$key][$i] = $clearPathArray[($i-$diff)];
+        }
+      }
+
+/*
+      for($i=(count($path->getPathArray())-1);$i>= (count($path->getPathArray())-count($clearPathArray)-1); $i--) {
         $name = "x" . $i;
         if($i % 2 == 0) {
 #          $name = "x" . $i; 
@@ -1377,12 +1394,20 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           $outarray[$key][$i] = $clearPathArray[$i];
         }
       }
+ */     
+#      drupal_set_message("my outarr1 is: " . serialize($outarray));
       
       ksort($outarray[$key]);
    #     drupal_set_message("we got something!");
   #    $name = 'x' . (count($clearPathArray)-1);
       if(!empty($primitive))
-        $outarray[$key]["out"] = $thing->out->getValue();
+        if(empty($value)) {
+          $outarray[$key]["primitive"] = $primitive;
+          $outarray[$key]["out"] = $thing->out->getValue();
+        } else {
+          $outarray[$key]["primitive"] = $primitive;
+          $outarray[$key]["out"] = $value;
+        }
      # else
      #   $out[] = $thing->$name->dumpValue("text");
 #    }
@@ -1397,19 +1422,27 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $sparqldelete = "DELETE DATA { " ;
  
       $arr = $outarray[$key];
- 
+#      dpm($path->getDisamb()); 
       $i=0;
-      foreach($arr as $k => $v) {
       
-       $sparqldelete .= "<" . $v . "> ";
-       $i++;
-       
-       if($i >= 3)
-         break;
+      // is there a disamb?
+      if($path->getDisamb() > 0 && isset($arr[($path->getDisamb()-2)*2])) {
+        $i = ($path->getDisamb()-2)*2;
+        
+        $sparqldelete .= "<" . $arr[$i++] . "> ";
+        $sparqldelete .= "<" . $arr[$i++] . "> ";
+        $sparqldelete .= "<" . $arr[$i++] . "> ";
+      } else { // no disamb - cut in the end!
+        // -3 because out and primitive
+        $maxi = count($arr)-3;
+        
+        $sparqldelete .= "<" . $arr[$maxi] . "> ";
+        $sparqldelete .= "<" . $arr['primitive'] . "> ";
+        $sparqldelete .= "'" . $arr['out'] . "' ";
       }
-    
-      $sparqldelete .= "}";
-
+      
+      $sparqldelete .= " } ";
+      
       $result = $this->directUpdate($sparqldelete);    
     
 #    drupal_set_message("delete query: " . htmlentities($sparqldelete));
@@ -1872,7 +1905,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             // check if there are any old values. If not, delete nothing.
             if(!empty($old_values)) {
          
-dpm(array('old_values' => $old_values, 'val' => $val));
+#dpm(array('old_values' => $old_values, 'val' => $val));
               // if they are the same - skip
               // I don't know why this should be working, but I leave it here...
               if($val[$mainprop] == $old_values[$key]) 
