@@ -1338,7 +1338,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
     if(!empty($entity_id)) {
       // rename to uri
-      $eid = $this->getUriForDrupalId($eid);    
+      $eid = $this->getUriForDrupalId($entiy_id);    
 #      $eid = str_replace("\\", "/", $entity_id);
       $url = parse_url($eid);
       
@@ -1867,7 +1867,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
             // check if there are any old values. If not, delete nothing.
             if(!empty($old_values)) {
-          
+         
+dpm(array('old_values' => $old_values, 'val' => $val));
               // if they are the same - skip
               // I don't know why this should be working, but I leave it here...
               if($val[$mainprop] == $old_values[$key]) 
