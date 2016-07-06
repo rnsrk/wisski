@@ -1333,7 +1333,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $primitive = $path->getDatatypeProperty();
     
     if(!empty($primitive)) {
-      $sparql .= "?x$key <$primitive> ?out . ";
+      if(empty($value)) {
+        $sparql .= "?x$key <$primitive> ?out . ";
+      } else {
+        $sparql .= "?x$key <$primitive> '$value' . ";
+      }
     }
     
     if(!empty($entity_id)) {
