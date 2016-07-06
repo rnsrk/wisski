@@ -117,7 +117,21 @@ class WisskiEntitySearch extends SearchPluginBase {
       }
     } else {
       $bundle_count = \Drupal::entityQuery('wisski_bundle')->count()->execute();
-      $bundle_ids = \Drupal::entityQuery('wisski_bundle')->range(0,$this->bundle_limit)->execute();
+      // don't load only bundle_limit amount of bundles
+      #$bundle_ids = \Drupal::entityQuery('wisski_bundle')->range(0,$this->bundle_limit)->execute();
+      // load all
+      $bundle_ids = \Drupal::entityQuery('wisski_bundle')->execute();
+      
+      // now filter them again
+      // get all top groups from pbs
+      $parents = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
+        
+      // only show top groups
+      foreach($bundle_ids as $bundle_id => $label) {
+        if(!in_array($bundle_id, $parents))
+          unset($bundle_ids[$bundle_id]);
+      }
+                            
       if (isset($defaults['bundles'])) $bundle_ids = array_unique(array_merge($bundle_ids,array_values($defaults['bundles'])));
       $bundles = \Drupal\wisski_core\Entity\WisskiBundle::loadMultiple($bundle_ids);
       $options = array();
@@ -129,6 +143,7 @@ class WisskiEntitySearch extends SearchPluginBase {
         else $selection[$bundle_id] = 0;
       }
     }
+    
     //dpm($selection,'selection');
     $storage['paths'] = $paths;
     //dpm($paths,'Paths');
