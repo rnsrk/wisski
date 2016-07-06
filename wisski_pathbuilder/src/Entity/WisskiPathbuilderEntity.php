@@ -208,7 +208,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      *
      */
     public function generateIdForBundle($group_id) {
-      return 'b' . substr(md5($this->id() . '_' . $parent_bundle . '_' . $group_id . '_' . $this->getCreateMode()), 0, -1 );
+      return 'b' . substr(md5($this->id() . '_' . $group_id . '_' . $this->getCreateMode()), 0, -1 );
     }
     
     /**
