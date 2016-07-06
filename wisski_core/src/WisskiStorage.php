@@ -164,9 +164,20 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   }
                   
                 }
+                // NOTE: this is a dirty hack that sets the text format for all long texts
+                // with summary
+                // TODO: make format storable and provide option for default format in case
+                // no format can be retrieved from storage
                 if ($field_def->getType() === 'text_with_summary') {
-                  $value['value'] = $value;
-                  $value['format'] = 'full_html';
+                   foreach($new_field_values as &$xid) {
+                    foreach($xid as &$xfieldname) {
+                      foreach ($xfieldname as &$xindex) {
+                         $xindex['format'] = 'full_html';
+                       }
+                     }
+                   }
+#                  $value['value'] = $value;
+#                  $value['format'] = 'full_html';
                 }
                 if ($field_def->getType() === 'image') {
                   $value = $new_field_values[$id][$field_name];
