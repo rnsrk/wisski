@@ -116,6 +116,33 @@ class WisskiHelper {
     }
     return $parents;
   }
+
+  /**
+   * Gets the top bundles from the pathbuilders of the system
+   * @param $get_labels useless
+   * @return returns a list of top bundle ids
+   */
+  public static function getTopBundleIds($get_labels=FALSE) {
+    
+    $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
+    $parents = array();
+    foreach ($pbs as $pb_id => $pb) {
+      $pathtree = $pb->getPathTree();
+      $pbarr = $pb->getPbPaths();
+      
+      foreach($pathtree as $key => $value) {
+        if(!empty($pbarr[$key]['bundle']))
+          $parents[$key] = $pbarr[$key]['bundle'];
+      }
+#      $parent_id = $pb->getParentBundleId($bundle_id);
+#      if ($parent_id) {
+#        if ($get_labels) {
+#          $parents[$parent_id] = \Drupal\wisski_core\Entity\WisskiBundle::load($parent_id)->label();
+#        } else $parents[$parent_id] = $parent_id;
+#      }
+    }
+    return $parents;
+  }
   
   /**
    * makes an array of arrays of n-grams from the string indexed by n.

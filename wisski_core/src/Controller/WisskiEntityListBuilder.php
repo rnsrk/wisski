@@ -25,7 +25,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * buildHeader() and buildRow() implementations.
    */
   public function render($bundle = '',$entity = NULL) {
-
+  
     if (!isset($this->limit))
       $this->limit = \Drupal::config('wisski_core.settings')->get('wisski_max_entities_per_page');
     $this->bundle = $bundle;
@@ -39,7 +39,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * We only load entities form the specified bundle
    */
   protected function getEntityIds() {
-  
+#   dpm($this); 
     if (isset($this->entity)) dpm($this->entity);
     $storage = $this->getStorage();
     $query = $storage->getQuery()
@@ -89,7 +89,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    */
   public function buildRow(EntityInterface $entity) {
 #dpm($this);
-//dpm($entity);
+#dpm($entity);
 //    dpm($entity->tellMe('id','bundle'));
 //    echo "Hello ".$id;
     //dpm($entity);
