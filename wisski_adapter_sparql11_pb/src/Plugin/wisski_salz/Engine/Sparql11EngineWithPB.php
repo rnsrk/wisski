@@ -1862,37 +1862,37 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           
           foreach($fieldvalue as $key2 => $val) {
 
-            drupal_set_message(serialize($val[$mainprop]) . " new");
-            drupal_set_message(serialize($old_values[$key]) . " old");
+ #           drupal_set_message(serialize($val[$mainprop]) . " new");
+ #           drupal_set_message(serialize($old_values[$key]) . " old");
+
+            // check if there are any old values. If not, delete nothing.
+            if(!empty($old_values)) {
           
-            // if they are the same - skip
-            // I don't know why this should be working, but I leave it here...
-            if($val[$mainprop] == $old_values[$key]) 
-#            if(isset($val[$mainprop]) && isset($old_values[$key]) && $val[$mainprop] == $old_values[$key]) 
-              continue;
+              // if they are the same - skip
+              // I don't know why this should be working, but I leave it here...
+              if($val[$mainprop] == $old_values[$key]) 
+                continue;
               
-            // the real value comparison is this here:
-            if($val[$mainprop] == $old_values[$key][$key2][$mainprop])
-#            if(isset($val[$mainprop]) && isset($old_values[$key][$key2][$mainprop]) && $val[$mainprop] == $old_values[$key][$key2][$mainprop])
-              continue;
+              // the real value comparison is this here:
+              if($val[$mainprop] == $old_values[$key][$key2][$mainprop])
+                continue;
               
-            // if oldvalues are an array and the value is in there - skip
-            if(is_array($old_values[$key]) && in_array($val[$mainprop], $old_values[$key][$key2]))
-#            if(isset($val[$mainprop]) && isset($old_values[$key][$key2]) && in_array($val[$mainprop], $old_values[$key][$key2]))
-              continue;
+              // if oldvalues are an array and the value is in there - skip
+              if(is_array($old_values[$key]) && in_array($val[$mainprop], $old_values[$key][$key2]))
+                continue;
               
             // now write to the database
             
 #            drupal_set_message($entity_id . "I really write!" . serialize($val[$mainprop])  . " and " . serialize($old_values[$key]) );
 #            return;
             
-            // first delete the old values
-            if(is_array($old_values[$key]))
-#            if(is_array($old_values[$key]) && isset($old_values[$key][$key2]))
-              $this->deleteOldFieldValue($entity_id, $key, $old_values[$key][$key2], $pb);
-            else
-              $this->deleteOldFieldValue($entity_id, $key, $old_values[$key], $pb);
-            
+              // first delete the old values
+              if(is_array($old_values[$key]))
+                $this->deleteOldFieldValue($entity_id, $key, $old_values[$key][$key2], $pb);
+              else
+                $this->deleteOldFieldValue($entity_id, $key, $old_values[$key], $pb);
+            }
+                  
             // add the new ones
             $this->addNewFieldValue($entity_id, $key, $val[$mainprop], $pb); 
             
