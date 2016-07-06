@@ -1338,7 +1338,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
     if(!empty($entity_id)) {
       // rename to uri
-      $eid = $this->getUriForDrupalId($entiy_id);    
+      $eid = $this->getUriForDrupalId($entity_id);    
 #      $eid = str_replace("\\", "/", $entity_id);
       $url = parse_url($eid);
       
