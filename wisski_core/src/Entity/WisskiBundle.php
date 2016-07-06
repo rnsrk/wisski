@@ -163,8 +163,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     if (is_null($entity_ids)) {
       unset($this->cached_titles);
       WisskiCacheHelper::flushAllEntityTitles($this->id());
-    } elseif ($entity_ids !== array()) {
-      foreach ($entity_ids as $entity_id) {
+    } elseif (!empty($entity_ids)) {
+      foreach ((array) $entity_ids as $entity_id) {
         unset($this->cached_titles[$entity_id]);
         WisskiCacheHelper::flushEntityTitle($entity_id,$this->id());
       } 
