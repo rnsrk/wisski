@@ -31,12 +31,17 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-    // get all top groups from pbs
-    $parents = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();    
 
-    // only show top groups
-    if(!in_array($entity->id, $parents))
-      return array();
+    // in case of navigate - exclude all non-top-groups
+    if($this->type == self::NAVIGATE) {
+      // get all top groups from pbs
+      $parents = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();    
+
+      // only show top groups
+      if(!in_array($entity->id, $parents))
+        return array();
+      
+    }
 
     switch ($this->type) {
       case self::NAVIGATE: return $this->buildNavigateRow($entity);
