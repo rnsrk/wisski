@@ -138,8 +138,8 @@ dpm($twig);
     //BEGIN find the correct values for path_array and datatype_property
     //get the user input to see if there was a change
     $input = $form_state->getUserInput();
-    dpm($input,'Input');
-    dpm($form_state->getStorage(), 'storage');
+    #dpm($input,'Input');
+    #dpm($form_state->getStorage(), 'storage');
     
     
     if(empty($input)) {
@@ -147,6 +147,7 @@ dpm($twig);
       if(!empty( $path->getPathArray() ))
         $existing_paths = $path->getPathArray();
       $datatype_property = $path->getDatatypeProperty();
+      $disamb = $path->getDisamb();
 #      drupal_set_message('getPathArray: ' . serialize($existing_paths));
        
     } else {
@@ -177,7 +178,7 @@ dpm($twig);
           list(,$trigger_type,$row_num) = $matches;
         }
         
-        dpm($input,'before');
+#        dpm($input,'before');
         if ($trigger_type === 'wisskipathselect') {
           //triggered a standard step selection, so we change the selected row to the chosen value
           $paout[$row_num] = $input['wisskipathselect'.$row_num];#$input['path_array']['step:'.$row_num]['select'];
@@ -190,15 +191,20 @@ dpm($twig);
           //triggered row deletion, removes two steps beginning with the selected row
           $paout = \Drupal\wisski_core\WisskiHelper::array_remove_part($paout,$row_num,2);
         }
-        if ($trigger_type === 'data') {
+        if ($trigger_type === 'data' && $row_num == 0) {
           //triggered datatype selection, change to chosen value
           $datatype_property = $input['path_array']['datatype_property']['datatypeselect'];
+        }
+        if ($trigger_type === 'data' && $row_num == 1) {
+          //triggered datatype selection, change to chosen value
+          $disamb = $input['path_array']['disamb']['disambselect'];
         }
         //dpm($paout,'after');
         $existing_paths = $paout;
         //set the cache
         $storage['existing_paths'] = $existing_paths;
         $storage['datatype_property'] = $datatype_property;
+        $storage['disamb'] = $disamb;
         $form_state->setStorage($storage);
 #      drupal_set_message('pa: ' . serialize ($pa));     
       } else { // case else - primary if we are editing
@@ -219,6 +225,7 @@ dpm($twig);
         }
         
         $datatype_property = $input['path_array']['datatype_property']['datatypeselect'];
+        $disamb = $input['path_array']['disamb']['disambselect'];
         $existing_paths = $paout;
       }
     }
@@ -334,7 +341,7 @@ dpm($twig);
     if(count($curvalues) > 1 && count($curvalues) % 2 == 0 && $primitive = $engine->getPrimitiveMapping($curvalues[(count($curvalues)-2)])) {  
       if (count($primitive) == 1) {
         $default = current($primitive);
-        dpm($default,'Default');
+#        dpm($default,'Default');
         $form_state->setValue(array('path_array','datatype_property','datatypeselect'),$default);
         $form['path_array']['datatype_property']['datatypeselect'] = array(
           '#default_value' => $default,
@@ -351,7 +358,7 @@ dpm($twig);
           '#disabled' => TRUE,
         );
       } else {
-        dpm($datatype_property, "dataprop");
+#        dpm($datatype_property, "dataprop");
         $form['path_array']['datatype_property']['datatypeselect'] = array(
           '#value' => $datatype_property,
           '#type' => 'select',
@@ -373,6 +380,35 @@ dpm($twig);
       '#value' => 'empty',
     );
     $form['path_array']['datatype_property']['opis'] = array(
+      '#type' => 'hidden',
+      '#value' => 'opis',
+    );
+    
+    if(count($curvalues) > 1 && count($curvalues) % 2 == 0 ) {  
+      foreach($curvalues as $key => $curvalue) {
+        if($key%2 == 0)
+          $disamboptions[($key/2)+1] = $curvalue; 
+      }
+      $form['path_array']['disamb']['disambselect'] = array(
+        '#value' => $disamb,
+        '#type' => 'select',
+        '#empty_value' => 'empty',
+        '#empty_option' => $this->t('Select disambiguation concept'),
+        '#options' => $disamboptions,
+        //'#title' => t('Please select the datatype property for the Path.'),
+#        '#ajax' => array(
+#          'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
+#          'wrapper' => 'wisski-path-table',
+#          'event' => 'change', 
+#        ),
+        '#attributes' => array('data-wisski' => 'data1'),
+        '#required' => TRUE,
+      );
+    } else $form['path_array']['disamb']['disambselect'] = array(
+      '#type' => 'hidden',
+      '#value' => 'empty',
+    );
+    $form['path_array']['disamb']['opis'] = array(
       '#type' => 'hidden',
       '#value' => 'opis',
     );
@@ -460,6 +496,8 @@ dpm($twig);
         }
       } elseif ($key === 'datatype_property') {
         $datatype_property = $value['datatypeselect'];
+      } elseif ($key === 'disamb') {
+        $disamb = $value['disambselect'];
       }
     }
     ksort($path_array);
@@ -471,7 +509,7 @@ dpm($twig);
     $entity->setID($values['id']);
     $entity->setName($values['name']);
     $entity->setType($values['type']);
-    
+    $entity->setDisamb($disamb);    
     //dpm($entity,__FUNCTION__.'::path');
   }
 
