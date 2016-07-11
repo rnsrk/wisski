@@ -62,7 +62,7 @@ wisski.display_settings:
 wisski.wisski_ontology:
   path: '/admin/config/wisski/ontology'
   defaults:
-    _form: '\Drupal\wisski_core\Form\wisski_core_ontology_overviewForm'
+    _form: '\Drupal\wisski_core\Form\WisskiOntologyForm'
     _title: 'Ontology'
   requirements:
     _permission: 'access content'
