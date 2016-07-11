@@ -192,7 +192,7 @@ class WisskiOntologyForm extends FormBase {
       $infos = $engine->getOntologies();
       #drupal_set_message('infos in submit' . serialize($infos));                                                                                                    
       // redirect to the wisski config ontology page
-      $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
+#      $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
       // rebuild the form to display the information regarding the selected store
       $form_state->setRebuild();
       #$form_state->setUserInput($form_state->getValue('select_store'));
@@ -226,7 +226,7 @@ class WisskiOntologyForm extends FormBase {
              drupal_set_message('Successfully deleted ontology ' . $ont->ont);
            }
            // redirect to the wisski config ontology page
-           $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
+#           $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
            // rebuild the form to display the information regarding the selected store
            $form_state->setRebuild();                              
          }
