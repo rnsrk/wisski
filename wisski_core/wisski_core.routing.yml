@@ -59,6 +59,14 @@ wisski.display_settings:
   requirements:
     _permission: 'administer wisski bundles'
 
+wisski.wisski_ontology:
+  path: '/admin/config/wisski/ontology'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\wisski_core_ontology_overviewForm'
+    _title: 'Ontology'
+  requirements:
+    _permission: 'access content'
+
 entity.wisski_individual.list:
   path: '/wisski/navigate'
   defaults:
