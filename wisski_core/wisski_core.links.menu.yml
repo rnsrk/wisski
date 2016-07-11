@@ -15,6 +15,13 @@
 #
 # -- end old menus
 
+wisski.create_entities:
+  title: 'Create'
+  description: 'Create WissKI entities'
+  menu_name: 'main'
+  route_name: entity.wisski_individual_create.list
+  weight: 5
+
 wisski.browse_entities:
   title: 'Navigate'
   description: 'Browse WissKI entities'
