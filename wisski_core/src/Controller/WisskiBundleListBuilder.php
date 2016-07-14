@@ -12,6 +12,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
 
   const NAVIGATE = 1;
   const CONFIG = 2;
+  const CREATE = 3;
   
   /**
    * {@inheritdoc}
@@ -31,9 +32,9 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-
-    // in case of navigate - exclude all non-top-groups
-    if($this->type == self::NAVIGATE) {
+#    dpm($this->type);
+    // in case of navigate and create - exclude all non-top-groups
+    if($this->type == self::NAVIGATE || $this->type == self::CREATE) {
       // get all top groups from pbs
       $parents = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();    
 
@@ -45,6 +46,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
 
     switch ($this->type) {
       case self::NAVIGATE: return $this->buildNavigateRow($entity);
+      case self::CREATE: return $this->buildCreateRow($entity);
       case self::CONFIG: return $this->buildConfigRow($entity);
     }
     drupal_set_message($this->t('Invalid list type'),'error');
@@ -99,11 +101,26 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     return $row;
   }
 
+  private function buildCreateRow($entity) {
+#    dpm($entity);    
+    $row['label'] = array(
+      'data' => array(
+        '#type' => 'link',
+        '#url' => Url::fromRoute('entity.wisski_individual.add')
+#        '#url' => Url::fromRoute('entity.wisski_bundle.entity_list')
+          ->setRouteParameters(array('wisski_bundle' => $entity->id())),
+        '#title' => $entity->label(),
+      ),
+    );
+    return $row;
+  }
+  
+
   /**
    * {@inheritdoc}
    */
   public function render($type = self::CONFIG) {
-    
+  
     $this->type = $type;
     $build = parent::render();
     $build['#empty'] = t('No WissKI bundle available. <a href="@link">Add media bundle</a>.', array(

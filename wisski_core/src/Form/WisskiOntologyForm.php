@@ -18,36 +18,25 @@ use Drupal\Core\Url;
  *   Form for the ontology handling menu
  * @author Mark Fichtner
  */
-class wisski_core_ontology_overviewForm extends FormBase {
+class WisskiOntologyForm extends FormBase {
   
   /**
    * {@inheritdoc}.
-   * The Id of every WissKI form is the name of the form class except that
-   * 'Form' is added with '_form'
+   * The Id of every WissKI form is the name of the form class
    */
   public function getFormId() {
-    return 'wisski_core_ontology_overview_form';
+    return 'WisskiOntologyForm';
   }
                         
   public function buildForm(array $form, FormStateInterface $form_state) {
-    //drupal_set_message("muahah");
-    
-/*    $form['my_text_field'] = array(
-      '#type' => 'textfield',
-      '#title' => 'Example',
-    );
-    return $form;                          
- */ 
-  
     $form = array();
+
     // in wisski d8 there will be no local stores anymore, 
     // we assume that every store could load an ontology
     // we load all store entities and 
     // have to choose for which store we want to load an ontology     
-    #$local_store = wisski_salz_invoke_local_store();
     $adapters = \Drupal\wisski_salz\Entity\Adapter::loadMultiple();      
-    #drupal_set_message(serialize($adapters));
-    #dpm($adapters);
+
     $adapterlist = array();
      
     // create a list of all adapters to choose from
@@ -58,39 +47,28 @@ class wisski_core_ontology_overviewForm extends FormBase {
         $adapterlist[$adapter->id()] = $adapter->label();
       }  
     }
-    #drupal_set_message(serialize($adapterlist));                   
-    // we have to rewrite the functions of local_store, 
-    // look at wisski d7 wisski_salz/adapters/sparql11/SPARQL11Adapter.php for more details
-    // old d7 form can be found in wisski_core/wisski_core.admin.inc   
-    
-   
+
     // check if there is a selected store
     $selected_store = "";
-   # if(empty($form_state->getValue('select_store'))) {
-   # if(empty($selected_store)) {
-      // give out a message that there is no local store currently - the user should select one
-   # $form['nothing_here'] = array(
-   #   '#type' => 'item',
-   #   '#markup' => '<b>No store is specified currently.</b><br/> Please select a store below.',
-   # );
                                                 
     $selected_store = !empty($form_state->getValue('select_store')) ? $form_state->getValue('select_store') : "0";
-    #drupal_set_message('selected: ' . $selected_store); 
-      
+
+    // generate a select field      
     $form['select_store'] = array(
       '#type' => 'select',
       '#title' => $this->t('Select the store for which you want to load an ontology.'),
       '#default_value' => $selected_store,
       '#options' => array_merge(array("0" => 'Please select.'), $adapterlist),
       '#ajax' => array(
-        'callback' => 'Drupal\wisski_core\Form\wisski_core_ontology_overviewForm::ajaxStores',
+        'callback' => 'Drupal\wisski_core\Form\WisskiOntologyForm::ajaxStores',
         'wrapper' => 'select_store_div',
         'event' => 'change',
         #'effect' => 'slide',
            
       ),                                               
     );  
-      
+    
+    // ajax wrapper 
     $form['stores'] = array(
       '#type' => 'markup',
       // The prefix/suffix provide the div that we're replacing, named by
@@ -100,21 +78,10 @@ class wisski_core_ontology_overviewForm extends FormBase {
       '#value' => "",
     );
       
-    /*  for ($i = 0; $i <= $selected_store; $i++) {
-        $form['stores']["checkbox$i"] = array(
-          '#type' => 'item',
-          '#markup' => "Hello $selected_store",
-         # '#title' => "Load ontology for $i",
-        );
-      }
-    */                         
-   # return $form;
-    
+    // if there is already a store selected    
     if(!empty($form_state->getValue('select_store'))) {
- # } else {
        
-     // if there is a selected store - check if there is an ontology in the store
-        
+      // if there is a selected store - check if there is an ontology in the store
       $selected_id = $form_state->getValue('select_store');
       $selected_name= $adapterlist[$selected_id];
       // load the store adapter entity object by means of the id of the selected store
@@ -140,10 +107,8 @@ class wisski_core_ontology_overviewForm extends FormBase {
           
           $table = "<table><tr><th>Name</th><th>Iri</th><th>Version</th><th>Graph</th></tr>";
           foreach($infos as $ont) {
-           // $table .= "<tr><td>" . $ont->ont . "</td><td>" . $ont->iri . "</td><td>" . $ont->ver . "</td><td>" . $ont->graph . "</td></tr>";
-          $table .= "<tr><td>" . $ont->ont . "</td><td>" . $ont->iri . "</td><td>" . $ont->ver . "</td><td>" . $ont->graph . "</td></tr>";
-          #drupal_set_message('ont ont: ' . $ont->ont);
-          #dpm($ont);          
+            // $table .= "<tr><td>" . $ont->ont . "</td><td>" . $ont->iri . "</td><td>" . $ont->ver . "</td><td>" . $ont->graph . "</td></tr>";
+            $table .= "<tr><td>" . $ont->ont . "</td><td>" . $ont->iri . "</td><td>" . $ont->ver . "</td><td>" . $ont->graph . "</td></tr>";
           }
           
           $table .= "</table>";
@@ -162,7 +127,7 @@ class wisski_core_ontology_overviewForm extends FormBase {
           );
         
           $ns = "";
-          $ns = $engine->getNamespaces();
+#          $ns = $engine->getNamespaces();
               
           $tablens = "<table><tr><th>Short Name</th><th>URI</th></tr>";
           foreach($ns as $key => $value) {
@@ -196,82 +161,14 @@ class wisski_core_ontology_overviewForm extends FormBase {
                                                                                                                            
       }
     } 
-        
- /*                            
-       # if(stristr($selected_store->getPluginId(), 'sparql') !== FALSE) {
-                       
-               $infos = $engine->getOntologies();
-                drupal_set_message(serialize($infos));
-                // there already is an ontology
-                if(!empty($infos) && count($infos) > 0 ) {
-                $form['header'] = array(
-                '#type' => 'item',
-                '#markup' => '<b>Currently loaded Ontology:</b><br/>',
-                );
-                                                        
-                $table = "<table><tr><th>Name</th><th>Iri</th><th>Version</th><th>Graph</th></tr>";
-                foreach($infos as $ont) {
-                 $table .= "<tr><td>" . $ont->ont . "</td><td>" . $ont->iri . "</td><td>" . $ont->ver . "</td><td>" . $ont->graph . "</td></tr>";
-                }
-                $table .= "</table>";
-                                                                                                                    
-                                                                                                                 
-                $form['table'] = array(
-                '#type' => 'item',
-                '#markup' => $table,
-                );
-                                                                                                                                                   
-               $form['delete_ont'] = array(
-               '#type' => 'submit',
-               '#name' => 'Delete Ontology',
-                '#value' => 'Delete Ontology',
-                '#submit' => array('wisski_core_delete_ontology'),
-                );
-                                                                                                                                                                                                                                    
-    #  $form['stores']['neu'] = array(
-     #   '#type' => 'item',
-      #  '#markup' => "Hi $selected_store $selected_name!",
-    #  );
-     
-     }  else { 
-      // No ontology was found      
-       $form['stores']['load_onto'] = array(
-         '#type' => 'textfield',
-         '#title' => "Load Ontology for store <em> $selected_name </em>:",
-         '#description' => 'Please give the URL to a loadable ontology.',
-       );
-                                          
-       $form['stores']['load_onto_submit'] = array(
-         '#type' => 'submit',
-         '#name' => 'Load Ontology',
-         '#value' => 'Load Ontology',
-         '#submit' => array('wisski_core_load_ontology'),
-       );
-    }
-    
-  */
-        
-  #   $engine = $selected_adapter->getEngine();
-     
-   #        drupal_set_message('Engine: ' . serialize($engine));
-    #             drupal_set_message('Type: ' . $engine->getPluginId());
-                     
-    #    $infostest = $engine->getOntologies();
-    #    drupal_set_message(serialize($infostest));
-        
-                                                                                      
-                                                                  
-   #   $form['actions']['submit'] = array(
-    #    '#type' => 'submit',
-    #    '#value' => t('Save'),
-    #  );
-                                                                                                                                             
+ 
    return $form;
    
   }
   
   
-  public function ajaxStores(array $form, array $form_state) {
+  public function ajaxStores(array $form, FormStateInterface $form_state) {
+ #   dpm("yay!");
     return $form['stores'];
   }
    
@@ -295,7 +192,7 @@ class wisski_core_ontology_overviewForm extends FormBase {
       $infos = $engine->getOntologies();
       #drupal_set_message('infos in submit' . serialize($infos));                                                                                                    
       // redirect to the wisski config ontology page
-      $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
+#      $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
       // rebuild the form to display the information regarding the selected store
       $form_state->setRebuild();
       #$form_state->setUserInput($form_state->getValue('select_store'));
@@ -329,7 +226,7 @@ class wisski_core_ontology_overviewForm extends FormBase {
              drupal_set_message('Successfully deleted ontology ' . $ont->ont);
            }
            // redirect to the wisski config ontology page
-           $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
+#           $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
            // rebuild the form to display the information regarding the selected store
            $form_state->setRebuild();                              
          }

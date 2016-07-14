@@ -15,19 +15,26 @@
 #
 # -- end old menus
 
+wisski.create_entities:
+  title: 'Create'
+  description: 'Create WissKI entities'
+  menu_name: 'main'
+  route_name: entity.wisski_individual_create.list
+  weight: 30
+
 wisski.browse_entities:
   title: 'Navigate'
   description: 'Browse WissKI entities'
   menu_name: 'main'
   route_name: entity.wisski_individual.list
-  weight: 10
+  weight: 20
 
 wisski.search_entities:
   title: 'Find'
   description: 'Search WissKI entities'
   menu_name: 'main'
   route_name: search.view_wisski_search
-  weight: 20
+  weight: 10
 
 wisski.display_settings:
   title: 'WissKI Display Settings'
@@ -35,6 +42,13 @@ wisski.display_settings:
   parent: wisski.content
   route_name: wisski.display_settings
   weight: 50
+
+wisski.wisski_ontology:
+  title: 'WissKI Ontology'
+  description: 'Specify/detect the ontology for this WissKI system'
+  parent: wisski.content
+  route_name: wisski.wisski_ontology
+  weight: 100
 
 wisski.content:
   title: 'WissKI'
