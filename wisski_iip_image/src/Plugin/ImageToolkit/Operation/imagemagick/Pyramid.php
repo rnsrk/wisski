@@ -82,7 +82,8 @@ class Pyramid extends ImagemagickImageToolkitOperationBase {
 
     return $arguments;
 */
-  return true;
+#  return true;
+    return $arguments;
   }
 
   /**
