@@ -547,29 +547,47 @@ class WisskiPathbuilderForm extends EntityForm {
       // save the path
       $pathbuilder->setPbPaths($pbpaths);
 
+      // generate fields!
+      $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
+      
+      // check if enabled - if not, we don't create fields
+      
+      if(empty($path['enabled']))
+        continue;
+
+      if($pathob->isGroup()) {
+        $pathbuilder->generateBundleForGroup($pathob->id());
+                  
+        if(!in_array($pathob->id(), array_keys($pathbuilder->getMainGroups())))
+          $pathbuilder->generateFieldForSubGroup($pathob->id(), $pathob->getName());  
+      } else
+        $pathbuilder->generateFieldForPath($pathob->id(), $pathob->getName());
+      
+
     }
     
     // for now it is equal which create mode is called.
 #    if($form_state->getValue('create_mode') == "0") {
-      $pbpaths = $pathbuilder->getPbPaths();
+    $pbpaths = $pathbuilder->getPbPaths();
+
+/*    
+    $allgroupsandpaths = $pathbuilder->getAllGroupsAndPaths();
+
+    foreach($allgroupsandpaths as $path) {
     
-      $allgroupsandpaths = $pathbuilder->getAllGroupsAndPaths();
+      // check if enabled - if not, we don't create fields
+      if(empty($pbpaths[$path->id()]['enabled']))
+        continue;
 
-      foreach($allgroupsandpaths as $path) {
-      
-        // check if enabled - if not, we don't create fields
-        if(empty($pbpaths[$path->id()]['enabled']))
-          continue;
-
-        if($path->isGroup()) {
-          $pathbuilder->generateBundleForGroup($path->id());
-                    
-          if(!in_array($path->id(), array_keys($pathbuilder->getMainGroups())))
-            $pathbuilder->generateFieldForSubGroup($path->id(), $path->getName());  
-        } else
-          $pathbuilder->generateFieldForPath($path->id(), $path->getName());
-      }
-      
+      if($path->isGroup()) {
+        $pathbuilder->generateBundleForGroup($path->id());
+                  
+        if(!in_array($path->id(), array_keys($pathbuilder->getMainGroups())))
+          $pathbuilder->generateFieldForSubGroup($path->id(), $path->getName());  
+      } else
+        $pathbuilder->generateFieldForPath($path->id(), $path->getName());
+    }
+*/      
     #}
 
     // save the tree
