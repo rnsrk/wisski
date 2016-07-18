@@ -30,8 +30,12 @@ class WisskiRouteSubscriber extends RouteSubscriberBase {
     foreach (array('search.view_wisski_search','search.help_wisski_search') as $key) {    
       $route = $collection->get($key);
       if (is_null($route)) {
+        $route = $routes[$key];
+        
         $collection->add($key,$routes[$key]);      
       }
+      $req = $route->getRequirement('_permission');
+      $route->setRequirement('_permission',$req.',view wisski content');
     }
   }
 }
