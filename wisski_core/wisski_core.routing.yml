@@ -95,7 +95,7 @@ entity.wisski_bundle.entity_list:
 # is crucial for the Views module to integrate a link to the entity
 # it MUST be named 'canonical'
 entity.wisski_individual.canonical:
-  path: '/wisski/navigate/{wisski_bundle}/{wisski_individual}'
+  path: '/wisski/navigate/{wisski_bundle}/{wisski_individual}/view'
   defaults:
   # Calls the view controller, defined in the annotation of the contact entity
     _entity_view: 'wisski_individual'
