@@ -36,7 +36,7 @@ class WisskiRoutes {
         [
           '_entity_view' => 'wisski_individual',
           'bundle' => $type->id(),
-          '_title' => 'WissKI Entity Content',
+          '_title_callback' => 'wisski_core_generate_title_with_bundle',
         ],
         [
           '_entity_access' => 'wisski_individual.view',

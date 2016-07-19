@@ -9,6 +9,12 @@ function wisski_core_generate_title(WisskiEntityInterface $wisski_individual) {
   return $title;
 }
 
+function wisski_core_generate_title_with_bundle(WisskiEntityInterface $wisski_individual) {
+//ddebug_backtrace();
+  $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($wisski_individual->bundle());
+  $title = $bundle->generateEntityTitle($wisski_individual,TRUE);
+  return $title;
+}
 
 function wisski_core_flush_title_caches($bundle_ids=NULL,$entity_ids=NULL) {
 
