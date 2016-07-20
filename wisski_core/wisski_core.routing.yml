@@ -127,15 +127,6 @@ entity.wisski_individual.add:
   requirements:
     _entity_create_access: 'wisski_individual'
 
-entity.wisski_individual.triples:
-  path: '/wisski/navigate/{wisski_bundle}/{wisski_individual}/triples'
-  defaults:
-    _entity_form: 'wisski_individual.triples'
-    _title: 'View triples'
-  requirements:
-    _entity_access: 'wisski_individual.view_triples'
-
-
 entity.wisski_bundle.list:
   path: '/admin/structure/wisski_core'
   defaults:
