@@ -84,7 +84,7 @@ entity.wisski_individual_create.list:
     _permission: 'view wisski content'
 
 entity.wisski_bundle.entity_list:
-  path: '/wisski/navigate/{wisski_bundle}'
+  path: '/wisski/navigate/{wisski_bundle}/list'
   defaults:
     _controller: '\Drupal\wisski_core\Controller\WisskiEntityListController::listing'
 #    _title_callback: '\Drupal\wisski_core\Entity\WisskiBundle::label'
@@ -95,7 +95,7 @@ entity.wisski_bundle.entity_list:
 # is crucial for the Views module to integrate a link to the entity
 # it MUST be named 'canonical'
 entity.wisski_individual.canonical:
-  path: '/wisski/navigate/{wisski_bundle}/{wisski_individual}'
+  path: '/wisski/navigate/{wisski_individual}/view'
   defaults:
     _controller: '\Drupal\wisski_core\Controller\WisskiEntityViewForwarder::forward'
     _title_callback: 'wisski_core_generate_title'
@@ -104,7 +104,7 @@ entity.wisski_individual.canonical:
     _access: 'TRUE'
 
 entity.wisski_individual.edit_form:
-  path: '/wisski/navigate/{wisski_bundle}/{wisski_individual}/edit'
+  path: '/wisski/navigate/{wisski_individual}/edit'
   defaults:
     _entity_form: 'wisski_individual.edit'
     _title: 'Edit entity'
@@ -112,7 +112,7 @@ entity.wisski_individual.edit_form:
     _entity_access: 'wisski_individual.edit'
 
 entity.wisski_individual.delete_form:
-  path: '/wisski/navigate/{wisski_bundle}/{wisski_individual}/delete'
+  path: '/wisski/navigate/{wisski_individual}/delete'
   defaults:
     _entity_form: 'wisski_individual.delete'
     _title: 'Delete entity'

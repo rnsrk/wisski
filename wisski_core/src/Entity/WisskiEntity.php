@@ -47,10 +47,10 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *	 fieldable = TRUE,
  *   field_ui_base_route = "entity.wisski_individual.add",
  *   links = {
- *     "canonical" = "/wisski/navigate/{wisski_bundle}/{wisski_individual}",
- *     "delete-form" = "/wisski/navigate/{wisski_bundle}/{wisski_individual}/delete",
+ *     "canonical" = "/wisski/navigate/{wisski_individual}",
+ *     "delete-form" = "/wisski/navigate/{wisski_individual}/delete",
  *     "add-form" = "/wisski/create/{wisski_bundle}",
- *     "edit-form" = "/wisski/navigate/{wisski_bundle}/{wisski_individual}/edit",
+ *     "edit-form" = "/wisski/navigate/{wisski_individual}/edit",
  *     "admin-form" = "/admin/structure/wisski_core/manage/{wisski_bundle}",
  *   },
  *   translatable = FALSE,
