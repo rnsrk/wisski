@@ -25,9 +25,8 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     "form" = {
  *       "default" = "Drupal\wisski_core\Form\WisskiEntityForm",
  *       "edit" = "Drupal\wisski_core\Form\WisskiEntityForm",
- *			 "add" = "Drupal\wisski_core\Form\WisskiEntityForm",
- *			 "delete" = "Drupal\wisski_core\Form\WisskiEntityDeleteForm",
- *			 "triples" = "Drupal\wisski_core\Form\WisskiEntityTriplesForm"
+ *	 "add" = "Drupal\wisski_core\Form\WisskiEntityForm",
+ *	 "delete" = "Drupal\wisski_core\Form\WisskiEntityDeleteForm",
  *     },
  *     "access" = "Drupal\wisski_core\Controller\WisskiEntityAccessHandler",
  *   },
@@ -53,7 +52,6 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     "add-form" = "/wisski/create/{wisski_bundle}",
  *     "edit-form" = "/wisski/navigate/{wisski_bundle}/{wisski_individual}/edit",
  *     "admin-form" = "/admin/structure/wisski_core/manage/{wisski_bundle}",
- *     "triples-form" = "/wisski/navigate/{wisski_bundle}/{wisski_individual}/triples"
  *   },
  *   translatable = FALSE,
  * )
