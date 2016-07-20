@@ -1,9 +1,15 @@
 <?php
 
 use Drupal\wisski_core\WisskiEntityInterface;
+use Drupal\wisski_core\Entity\WisskiEntity;
 
 function wisski_core_generate_title(WisskiEntityInterface $wisski_individual) {
 //ddebug_backtrace();
+  if (!($wisski_individual instanceof WisskiEntityInterface)) try {
+    $wisski_individual = WisskiEntity::load($wisski_individual);
+  } catch (\Exception $e) {
+    drupal_set_message('Error when loading individual','error');
+  }
   $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($wisski_individual->bundle());
   $title = $bundle->generateEntityTitle($wisski_individual);
   return $title;
