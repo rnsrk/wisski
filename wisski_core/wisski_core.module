@@ -3,20 +3,27 @@
 use Drupal\wisski_core\WisskiEntityInterface;
 use Drupal\wisski_core\Entity\WisskiEntity;
 
-function wisski_core_generate_title(WisskiEntityInterface $wisski_individual) {
+function wisski_core_generate_title($wisski_individual) {
 //ddebug_backtrace();
   if (!($wisski_individual instanceof WisskiEntityInterface)) try {
     $wisski_individual = WisskiEntity::load($wisski_individual);
   } catch (\Exception $e) {
     drupal_set_message('Error when loading individual','error');
+    return is_string($wisski_individual) ? $wisski_individual : 'WissKI Entity';
   }
   $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($wisski_individual->bundle());
   $title = $bundle->generateEntityTitle($wisski_individual);
   return $title;
 }
 
-function wisski_core_generate_title_with_bundle(WisskiEntityInterface $wisski_individual) {
+function wisski_core_generate_title_with_bundle($wisski_individual) {
 //ddebug_backtrace();
+  if (!($wisski_individual instanceof WisskiEntityInterface)) try {
+    $wisski_individual = WisskiEntity::load($wisski_individual);
+  } catch (\Exception $e) {
+    drupal_set_message('Error when loading individual','error');
+    return is_string($wisski_individual) ? $wisski_individual : 'WissKI Entity';
+  }
   $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($wisski_individual->bundle());
   $title = $bundle->generateEntityTitle($wisski_individual,TRUE);
   return $title;
