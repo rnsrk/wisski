@@ -168,7 +168,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 // with summary
                 // TODO: make format storable and provide option for default format in case
                 // no format can be retrieved from storage
-                if ($field_def->getType() === 'text_with_summary') {
+                $hack_type = $field_def->getType();
+                if ($hack_type == 'text_with_summary' || $hack_type == 'text_long') {
                    foreach($new_field_values as &$xid) {
                     foreach($xid as &$xfieldname) {
                       foreach ($xfieldname as &$xindex) {
