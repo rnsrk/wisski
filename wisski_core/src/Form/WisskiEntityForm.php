@@ -31,8 +31,8 @@ class WisskiEntityForm extends ContentEntityForm {
 #    $drupalid = AdapterHelper::getDrupalIdForUri($entity->id());
 #    dpm($bundle,__METHOD__);
     $form_state->setRedirect(
-#      'entity.wisski_individual.canonical', 
-      'entity.wisski_individual.view', 
+      'entity.wisski_individual.canonical', 
+#      'entity.wisski_individual.view', 
       array(
         'wisski_bundle' => $bundle,
         'wisski_individual' => $drupalid,
