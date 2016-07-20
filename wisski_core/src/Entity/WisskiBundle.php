@@ -73,12 +73,17 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   protected $cached_titles;
   
-  public function generateEntityTitle($wisski_individual) {
+  public function generateEntityTitle($wisski_individual,$include_bundle=FALSE) {
     
     $entity_id = $wisski_individual->id();
     $title = $this->getCachedTitle($entity_id);
     if (isset($title)) {
       //drupal_set_message('Title from cache');
+      if ($include_bundle) {
+        drupal_set_message('Enhance Title '.$title);
+        $title = $this->label().': '.$title;
+      }
+    
       return $title;
     }
     $pattern = $this->getTitlePattern();
@@ -86,7 +91,6 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     //dpm(array('pattern'=>$pattern,'entity'=>$wisski_individual),__METHOD__);
     $parts = array();
     $empty_children = array();
-    $title = '';
     if (empty($pattern)) {
       $title_list = $wisski_individual->get('name')->getValue();
       $title = $title_list[0]['value'];
@@ -139,6 +143,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     }
     $this->setCachedTitle($entity_id,$title);
     //dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
+    if ($include_bundle) {
+      drupal_set_message('Enhance Title '.$title);
+      $title = $this->label().': '.$title;
+    }  
     return $title;
   }
   

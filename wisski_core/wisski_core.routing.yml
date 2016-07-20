@@ -87,7 +87,7 @@ entity.wisski_bundle.entity_list:
   path: '/wisski/navigate/{wisski_bundle}'
   defaults:
     _controller: '\Drupal\wisski_core\Controller\WisskiEntityListController::listing'
-    _title: 'Entities in Bundle'
+#    _title_callback: '\Drupal\wisski_core\Entity\WisskiBundle::label'
   requirements:
     _permission: 'view wisski content'
 
@@ -95,12 +95,11 @@ entity.wisski_bundle.entity_list:
 # is crucial for the Views module to integrate a link to the entity
 # it MUST be named 'canonical'
 entity.wisski_individual.canonical:
-  path: '/wisski/navigate/{wisski_bundle}/{wisski_individual}'
+  path: '/wisski/navigate/{wisski_bundle}/{wisski_individual}/view'
   defaults:
   # Calls the view controller, defined in the annotation of the contact entity
     _entity_view: 'wisski_individual'
     _title_callback: 'wisski_core_generate_title'
-    _title: 'WissKI Entity Content'
   requirements:
   # Calls the access controller of the entity, $operation 'view'
     _entity_access: 'wisski_individual.view'
