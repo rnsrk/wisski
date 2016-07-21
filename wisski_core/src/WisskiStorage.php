@@ -88,6 +88,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         // if they know that id
         if($adapter->hasEntity($id)) {
           // if so - ask for the bundles for that id
+          // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
           $bundle_ids = $adapter->getBundleIdsForEntityId($id);
           //drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundle_ids) . ".");
           if (isset($cached_bundle)) {
@@ -98,6 +99,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               continue;
             }
           }
+          $bundle_ids = array_slice($bundle_ids,0,1);
           foreach($bundle_ids as $bundleid) {
 #            dpm($field_definitions,'Field defs for '.$bundleid);
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);

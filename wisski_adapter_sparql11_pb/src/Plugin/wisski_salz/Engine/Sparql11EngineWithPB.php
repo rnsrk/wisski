@@ -358,8 +358,19 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           
 #          drupal_set_message(serialize($pbpaths[$group->id()]));
           
-          if(!empty($pbpaths[$group->id()]))
+          if(!empty($pbpaths[$group->id()])) {
+            $elem = $pbpaths[$group->id()];
+            // priorize top groups to the front if the array
+#            dpm($elem);
+            if(empty($elem['parent'])) {
+#              dpm("I resort...");
+              $tmpout = $out;
+              $out = array();
+              $out[$pbpaths[$group->id()]['bundle']] = $pbpaths[$group->id()]['bundle'];
+              $out = array_merge($out, $tmpout);
+            }
             $out[$pbpaths[$group->id()]['bundle']] = $pbpaths[$group->id()]['bundle'];
+          }
         }
       }
     }

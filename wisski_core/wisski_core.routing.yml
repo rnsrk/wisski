@@ -107,7 +107,7 @@ entity.wisski_individual.edit_form:
   path: '/wisski/navigate/{wisski_individual}/edit'
   defaults:
     _entity_form: 'wisski_individual.edit'
-    _title: 'Edit entity'
+#    _title: 'Edit entity'
   requirements:
     _entity_access: 'wisski_individual.edit'
 
@@ -115,7 +115,7 @@ entity.wisski_individual.delete_form:
   path: '/wisski/navigate/{wisski_individual}/delete'
   defaults:
     _entity_form: 'wisski_individual.delete'
-    _title: 'Delete entity'
+#    _title: 'Delete entity'
   requirements:
     _entity_access: 'wisski_individual.delete'
 

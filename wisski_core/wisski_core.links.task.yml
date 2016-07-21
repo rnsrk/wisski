@@ -1,16 +1,15 @@
-wisski_core.local_tasks:
-  deriver: 'Drupal\wisski_core\Plugin\Derivative\WisskiDeriver'
-  weight: 100
-
-#entity.wisski_individual.canonical:
-#  route_name: entity.wisski_individual.canonical
-#  base_route: entity.wisski_individual.canonical
-#  title: View
-#entity.wisski_individual.edit_form:
-#  route_name: entity.wisski_individual.edit_form
-#  base_route: entity.wisski_individual.canonical
-#  title: Edit
-#entity.wisski_individual.delete_form:
-#  route_name: entity.wisski_individual.delete_form
-#  base_route: entity.wisski_individual.canonical
-#  title: Delete
+entity.wisski_individual.canonical:
+  route_name: entity.wisski_individual.canonical
+  base_route: entity.wisski_individual.canonical
+  title: View
+  weight: -100
+entity.wisski_individual.edit_form:
+  route_name: entity.wisski_individual.edit_form
+  base_route: entity.wisski_individual.canonical
+  title: Edit
+  weight: -99
+entity.wisski_individual.delete_form:
+  route_name: entity.wisski_individual.delete_form
+  base_route: entity.wisski_individual.canonical
+  title: Delete
+  weight: -98

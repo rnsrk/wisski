@@ -12,6 +12,7 @@ class WisskiEntityForm extends ContentEntityForm {
 
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildForm($form,$form_state);
+    $form['#title'] = $this->t('Edit').' '.$this->entity->label();
 #    drupal_set_message("Form is built.");
     //@TODO extend form
     //dpm($this->getEntity());
