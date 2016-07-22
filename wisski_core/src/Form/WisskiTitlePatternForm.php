@@ -320,15 +320,22 @@ class WisskiTitlePatternForm extends EntityForm {
     }
     $pattern['max_id'] = $max_id;
 
-    foreach ($children as $row_id => $row_children) {
-      $pattern[$row_id]['children'] = $row_children;
+    $cycle = array();
+    if ($this->containsCycle($children,$cycle)) {
+      foreach ($cycle as $elem) {
+        $errors[] = array($elem.'][parents','cyclic');
+      }
+    } else {
+      foreach ($children as $row_id => $row_children) {
+        $pattern[$row_id]['children'] = $row_children;
+      }
     }
 
     if (empty($errors)) {
       $form_state->setValue('pattern',$pattern);
     } else {
       foreach ($errors as $error_array) {
-        dpm($error_array,'Errors');
+//        dpm($error_array,'Errors');
         list($element,$error_type,$category) = $error_array;
         $t_error_type = $this->tError($error_type);
         $form_state->setErrorByName('pattern]['.$element,$t_error_type.' '.$category);
@@ -367,5 +374,56 @@ class WisskiTitlePatternForm extends EntityForm {
   public function deletePattern(array $form, FormStateInterface $form_state) {
     $form_state->setRedirectUrl($this->entity->urlInfo('delete-title-form'));
   }  
+  
+  public function containsCycle($array,&$cycle) {
+    $out = self::cycle_detection($array);
+    if ($out === FALSE) return FALSE;
+    $cycle = $out;
+    return TRUE;
+  }
+  
+  /**
+   * takes associative array having node names as keys and arrays of node names connect to them as values
+   * returns FALSE if the represented graph contains no cycle, or an array containing the cycle
+   */
+  public static function cycle_detection($array) {
+    
+    $checked = array();
+    foreach ($array as $key => $partners) {
+      if (!in_array($key,$checked)) {
+        $cycle = self::recursive_cycle_detection($array,$key,array(),$checked);
+        if ($cycle !== FALSE) return self::extract_cycle($cycle);
+      }
+    }
+    return FALSE;
+  }
+  
+  private static function extract_cycle($array) {
+    $key = end($array);
+    reset($array);
+    while($elem = array_shift($array)) {
+      if ($elem === $key) {
+        break;
+      }
+    }
+    return $array;
+  }
+  
+  private static function recursive_cycle_detection($array,$key,$history,&$checked) {
+    
+    if (empty($array[$key])) return FALSE;
+    $history[] = $key;
+    foreach($array[$key] as $child) {
+      if (in_array($child,$history)) {
+        $history[] = $child;
+        return $history;
+      }
+      if (in_array($child,$checked)) return FALSE;
+      $result = self::recursive_cycle_detection($array,$child,$history,$checked);
+      if ($result !== FALSE) return $result;
+    }
+    $checked[] = $key;
+    return FALSE;
+  }
   
 }
