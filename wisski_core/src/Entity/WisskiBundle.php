@@ -157,7 +157,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $adapters = \Drupal::entityManager()->getStorage('wisski_salz_adapter')->loadMultiple();
     $values = array();
     foreach ($adapters as $adapter) {
-      $values += $adapter->getEngine()->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $eid, 0,'', $path->getDisamb());
+      $values += $adapter->getEngine()->pathToReturnValue($path, $adapter->getEngine()->getPbForThis(), $eid, 0);
     }
     return $values;
   }
