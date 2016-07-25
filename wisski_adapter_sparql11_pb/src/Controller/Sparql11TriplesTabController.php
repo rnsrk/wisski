@@ -60,9 +60,9 @@ class Sparql11TriplesTabController extends ControllerBase {
             );
           } else {
             $out_triples[] = array(
+              "<" . join('> <', $uris) . ">",
               "<" . $result->po->getUri() . ">",
               $result->o instanceof \EasyRdf_Resource ? "<" . $result->o->getUri() . ">" : '"' . $result->o->getValue() . '"',
-              "<" . join('> <', $uris) . ">",
               "<" . $result->g->getUri() . ">",
               $label
             );
