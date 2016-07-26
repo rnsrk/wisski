@@ -46,6 +46,8 @@ use Drupal\wisski_core\WisskiCacheHelper;
  */
 class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterface {
   
+  use StringTranslationTrait;
+  
   /**
    * The field based pattern for the entity title generation.
    * A serialized array.
@@ -57,6 +59,11 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    * The pager limit for the bundle based entity list
    */
   protected $pager_limit = 10;
+  
+  /**
+   * The options array for this bundle's title pattern
+   */
+  protected $path_options = array();
   
   public function getTitlePattern() {
     
@@ -98,7 +105,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       foreach ($pattern as $key => $attributes) {
         if ($attributes['type'] === 'path') {
           $name = $attributes['name'];
-          if ($name === 'uri') $values = array($entity_id);
+          if ($name === 'eid') $values = array($entity_id);
+          elseif ($name === 'uri.long' || $name === 'uri.short') {
+            $values = array($this->getUriString($entity_id,$name));
+          }
           else {
             list($pb_id,$path_id) = explode('.',$attributes['name']);
             $values = $this->gatherTitleValues($entity_id,$path_id);
@@ -161,6 +171,49 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     }
     return $values;
   }
+  
+  public function getPathOptions($bundle_id) {
+    
+    $options = $this->path_options;
+    //if we already gathered the data, we can stop here
+    if (empty($options)) {
+      $options = array(
+        'eid' => $this->t('Entity\'s Drupal ID'),
+        'uri.long' => $this->t('Full URI'),
+        'uri.short' => $this->t('Short URI'),
+      );
+      //find all paths from all active pathbuilders
+      $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
+      $paths = array();
+      foreach ($pbs as $pb_id => $pb) {
+        $pb_paths = $pb->getAllPaths();
+        foreach ($pb_paths as $path) {
+          $path_id = $path->getID();
+          if ($this->id() === $pb->getBundle($path_id)) {
+            $options[$pb_id][$pb_id.'.'.$path_id] = $path->getName();
+          }
+        }
+      }
+    }
+    return $options;
+  }
+
+  public function getUriString($entity_id,$type) {
+    
+    $uris = \Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($entity_id);
+    if (empty($uris)) return '';
+    $uri = current($uris);
+    if ($type === 'uri.long') return $uri;
+    if ($type === 'uri.short') {
+      $matches = array();
+      if (preg_match('/^.*\W(\w+)$/',$uri,$matches)) {
+        return $matches[1];
+      } else {
+        dpm($uri,'no match');
+      }
+    }
+    return '';
+  }
 
   /**
    * Flushes the cache of generated entity titles
@@ -208,5 +261,20 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   public function setPagerLimit($limit) {
     $this->pager_limit = $limit;
+  }
+  
+  public function getParentBundleIds($get_labels=TRUE) {
+    
+    $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
+    $parents = array();
+    foreach ($pbs as $pb_id => $pb) {
+      $parent_id = $pb->getParentBundleId($this->id());
+      if ($parent_id) {
+        if ($get_labels) {
+          $parents[$parent_id] = self::load($parent_id)->label();
+        } else $parents[$parent_id] = $parent_id;
+      }
+    }
+    return $parents;
   }
 }

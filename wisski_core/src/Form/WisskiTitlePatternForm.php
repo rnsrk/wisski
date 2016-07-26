@@ -29,7 +29,7 @@ class WisskiTitlePatternForm extends EntityForm {
     
     $form['#title'] = $this->t('Edit title pattern for bundle %label', array('%label' => $bundle->label()));
 
-    $options = WisskiHelper::getPathOptions($bundle->id());
+    $options = $bundle->getPathOptions();
     
     $form_storage = $form_state->getStorage();
     if (isset($form_storage['cached_pattern']) && !empty($form_storage['cached_pattern'])) {
@@ -62,7 +62,7 @@ class WisskiTitlePatternForm extends EntityForm {
       } elseif ($trigger === 'path_select_box') {
         $selection = $form_state->getValue('path_select_box');
         if (!empty($selection) && $selection !== 'empty') {
-          if ($selection === 'uri') $label = 'URI';
+          if (in_array($selection,array('eid','uri.short','uri.long'))) $label = $options[$selection];
           else {
             dpm($options,$selection);
             list($pb_id) = explode('.',$selection);
@@ -133,6 +133,8 @@ class WisskiTitlePatternForm extends EntityForm {
       '#type' => 'select',
       '#options' => $options,
       '#title' => $this->t('Add a path'),
+      '#empty_value' => 'empty',
+      '#empty_option' => ' - '.$this->t('select').' - ',
       '#ajax' => array(
         'callback' => 'Drupal\wisski_core\Form\WisskiTitlePatternForm::ajaxResponse',
         'wrapper' => 'wisski-title-table'
@@ -152,6 +154,7 @@ class WisskiTitlePatternForm extends EntityForm {
     $form_storage['cached_pattern'] = $pattern;
     $form_state->setStorage($form_storage);
 
+//dpm(drupal_render($form['path_select_box']));
     return $form;
   }
   

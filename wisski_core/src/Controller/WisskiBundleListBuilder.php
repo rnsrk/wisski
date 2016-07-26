@@ -72,7 +72,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     $id = $entity->get('id');
     //@TODO use EntityFieldQuery or whatsolike
     //$ents = WisskiEntity::load(array('bundle'=>$id));
-    $parents = \Drupal\wisski_core\WisskiHelper::getParentBundleIds($id);
+    $parents = $entity->getParentBundleIds();
     $row['label'] = array(
       'data' => $this->getLabel($entity),
       'class' => array('menu-label'),
