@@ -9,11 +9,13 @@ use Drupal\wisski_core;
 use Drupal\wisski_salz\AdapterHelper;
 use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11Engine;
 use Drupal\Core\Controller\ControllerBase;
-
+use Drupal\Core\Url;
+use Drupal\Core\Link;
 
 class Sparql11TriplesTabController extends ControllerBase {
 
   public function forward($wisski_individual) {
+
 
     $storage = \Drupal::entityManager()->getStorage('wisski_individual');
 
@@ -22,69 +24,103 @@ class Sparql11TriplesTabController extends ControllerBase {
     $bundle_id = $match->query->get('wisski_bundle');
     if ($bundle_id) $storage->writeToCache($wisski_individual,$bundle_id);
 
+    // get the target uri from the parameters
+    $target_uri = $match->query->get('target_uri');
+
     $entity = $storage->load($wisski_individual);
-
-    $uris = AdapterHelper::getUrisForDrupalId($entity->id());
-
-    // first, list all the URIs associated with this entity
-#    $form['uris'] = array(
-#      '#type' => 'table',
-#      '#caption' => $this->t('Associated URI(s)'),
-#      '#rows' => array_map(function ($a) { return array(
-#        '#value' => $a,
-#      ); }, $uris),
-#    );
-
-    // build a table of incoming and outgoing triples
-    $in_triples = array(); // subj pred adapter
-    $out_triples = array(); // pred obj adapter
     
+    // if it is empty, the entity is the starting point
+    if(empty($target_uri)) {
+
+      $target_uri = AdapterHelper::getUrisForDrupalId($entity->id());
+      
+      $target_uri = current($target_uri);
+      
+    } else // if not we want to view something else
+      $target_uri = urldecode($target_uri);
+      
+    // go through all adapters    
     $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
+
+    #$my_url = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', $entity->id()));
+
+    $form['in_triples'] = array(
+      '#type' => 'table',
+      '#caption' => $this->t('In-coming triples'),
+      '#header' => array('Subject', 'Predicate', 'Object', 'Graph', 'Adapter'),
+    );
+    
+    $form['out_triples'] = array(
+      '#type' => 'table',
+      '#caption' => $this->t('Out-going triples'),
+      '#header' => array('Subject', 'Predicate', 'Object', 'Graph', 'Adapter'),
+    );
+
     foreach ($adapters as $a) {
       $label = $a->label();
       $e = $a->getEngine();
       if ($e instanceof Sparql11Engine) {
-        $values = 'VALUES ?x { <' . join('> <', $uris) .'> } ';
+        $values = 'VALUES ?x { <' . $target_uri . '> } ';
         $q = "SELECT ?g ?s ?sp ?po ?o WHERE { $values { { GRAPH ?g { ?s ?sp ?x } } UNION { GRAPH ?g { ?x ?po ?o } } } }";
 #        dpm($q);
         $results = $e->directQuery($q);
         foreach ($results as $result) {
 #var_dump($result);
           if (isset($result->sp)) {
-            $in_triples[] = array(
-              "<" . $result->s->getUri() . ">",
-              "<" . $result->sp->getUri() . ">",
-              "<" . join('> <', $uris) . ">",
-              "<" . $result->g->getUri() . ">",
-              $label
+            
+            $existing_bundles = $e->getBundleIdsForEntityId($result->s->getUri());
+
+            if(empty($existing_bundles))
+              $subjecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->s->getUri() ) );
+            else {
+              $remote_entity_id = $e->getDrupalId($result->s->getUri());
+              $subjecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $remote_entity_id, 'target_uri' => $result->s->getUri() ) );
+            }
+
+            $predicateuri = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->sp->getUri() ) );
+
+            $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $target_uri ) );
+
+#            dpm(\Drupal::l($this->t('sub'), $subjecturi));
+            $form['in_triples'][] = array(
+#              "<" . $result->s->getUri() . ">",
+              Link::fromTextAndUrl($this->t($result->s->getUri()), $subjecturi)->toRenderable(),
+              Link::fromTextAndUrl($this->t($result->sp->getUri()), $predicateuri)->toRenderable(),
+              Link::fromTextAndUrl($this->t($target_uri), $objecturi)->toRenderable(),
+              array('#type' => 'item', '#title' => $result->g->getUri()),
+              array('#type' => 'item', '#title' => $label),
             );
           } else {
-            $out_triples[] = array(
-              "<" . join('> <', $uris) . ">",
-              "<" . $result->po->getUri() . ">",
-              $result->o instanceof \EasyRdf_Resource ? "<" . $result->o->getUri() . ">" : '"' . $result->o->getValue() . '"',
-              "<" . $result->g->getUri() . ">",
-              $label
+            
+            $subjecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $target_uri ) );
+
+            $predicateuri = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->po->getUri() ) );
+
+            if($result->o instanceof \EasyRdf_Resource) {
+              $existing_bundles = $e->getBundleIdsForEntityId($result->o->getUri());
+              
+              if(empty($existing_bundles))
+                $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->o->getUri() ) );
+              else {
+                $remote_entity_id = $e->getDrupalId($result->o->getUri());              
+                $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $remote_entity_id, 'target_uri' => $result->o->getUri() ) );
+              }            
+            }
+            
+            $form['out_triples'][] = array(
+              Link::fromTextAndUrl($this->t($target_uri), $subjecturi)->toRenderable(),
+              Link::fromTextAndUrl($this->t($result->po->getUri()), $predicateuri)->toRenderable(),
+              $result->o instanceof \EasyRdf_Resource ? Link::fromTextAndUrl($this->t($result->o->getUri()), $objecturi)->toRenderable() : array('#type' => 'item', '#title' => $result->o->getValue()),
+              array('#type' => 'item', '#title' => $result->g->getUri()),
+              array('#type' => 'item', '#title' => $label),
             );
           }
         }
       }
     }
     
-    $form['in_triples'] = array(
-      '#type' => 'table',
-      '#caption' => $this->t('In-coming triples'),
-      '#header' => array('Subject', 'Predicate', 'Object', 'Graph', 'Adapter'),
-      '#rows' => $in_triples,
-    );
-    $form['out_triples'] = array(
-      '#type' => 'table',
-      '#caption' => $this->t('Out-going triples'),
-      '#header' => array('Subject', 'Predicate', 'Object', 'Graph', 'Adapter'),
-      '#rows' => $out_triples,
-    );
-    
-    $form['#title'] = $this->t('View Triples for ') . $entity->label();
+
+    $form['#title'] = $this->t('View Triples for ') . $target_uri;
 
     return $form;
 
