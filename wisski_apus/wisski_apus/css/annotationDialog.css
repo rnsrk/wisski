@@ -1,0 +1,31 @@
+
+.wisski-anno-dialog .wisski-entity-picker {
+  
+
+}
+
+.wisski-anno-entity-list.ui-accordion h3.ui-accordion-header {
+  font-style: normal;
+  font-size: 1em;
+}
+
+.wisski-anno-entity-list.ui-accordion h3.ui-accordion-header a {
+  display: inline;
+  padding-left: 1em;
+}
+
+.wisski-anno-entity-list a {
+  background-position: -64px -112px;
+}
+
+.wisski-ckeditor-sidebar-entity-picker .ui-dialog-titlebar {
+  height: 1em;
+  padding: 3px 3px 3px 10px;
+}
+
+.wisski-anno-dialog .anno-id {
+  font-size: 0.8em;
+}
+
+
+

@@ -1,0 +1,19 @@
+<?php
+
+
+use Drupal\Core\Url;
+
+function wisski_apus_where_referred ($uri) {
+}
+
+function wisski_apus_delete_references ($uri) {
+}
+
+
+function wisski_apus_page_attachments(array &$page) {
+  $content_callback_url = Url::fromRoute('wisski_apus.infobox_content');
+  $page['#attached']['drupalSettings']['wisskiApus']['infobox']['contentCallbackURL'] = $content_callback_url->toString();
+  $page['#attached']['library'][] = 'wisski_apus/infobox';
+}
+
+
