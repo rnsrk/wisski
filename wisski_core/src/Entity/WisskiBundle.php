@@ -163,6 +163,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   private function gatherTitleValues($eid,$path_id) {
 
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path_id);
+    $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load('my1stpb');
     //dpm($path,$path_id);
     $adapters = \Drupal::entityManager()->getStorage('wisski_salz_adapter')->loadMultiple();
     $values = array();

@@ -765,7 +765,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 */
   public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL) {
 #    dpm("ptrv");
-if (is_null($path)) {dpm(func_get_args(),__METHOD__);return array();}
     if(!$path->isGroup())
       $primitive = $path->getDatatypeProperty();
     else
