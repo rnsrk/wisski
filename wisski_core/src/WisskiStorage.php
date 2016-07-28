@@ -551,10 +551,11 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         try {
           //drupal_set_message(" I ask adapter: " . serialize($adapter));
           //@TODO return correct success code
+dpm(array($values, $original_values, strpos($values['f5c052bacc0158d1e0ddf1a666589e6b'][0]['value'],"\r"), strpos($original_values['f5c052bacc0158d1e0ddf1a666589e6b'][0]['value'], "\r")));
           $adapter_info = $adapter->writeFieldValues($entity->id(), $values, $bundle_id, $original_values);
           $success = TRUE;
         } catch (\Exception $e) {
-          drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
+          drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e->getMessage()));
         }
       } else {
         //drupal_set_message("No, I don't know " . $id . " and I am " . $aid . ".");
