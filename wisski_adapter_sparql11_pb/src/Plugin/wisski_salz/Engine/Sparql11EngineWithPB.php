@@ -156,31 +156,52 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return FALSE;
   }
 
+  /**
+   * returns an array of properties for which domain and/or range match the input
+   * @param an associative array with keys 'domain' and/or 'range'
+   * @return array of matching properties | FALSE if there was no cache data
+   */
+  protected function getPropertiesFromCache($settings) {
+
+    if (isset($settings['domain'])) {
+      $dom_properties = \Drupal::service('database')->select('wisski_s11_domains','d')->fields('d')->condition('domain',$settings['domain'])->execute()->fetchAllAssoc();
+      dpm($dom_properties,'domains');
+    }
+    if (isset($settings['range'])) {
+      $rng_properties = \Drupal::service('database')->select('wisski_s11_ranges','r')->fields('r')->condition('range',$settings['range'])->execute()->fetchAllAssoc();
+      dpm($rng_properties,'ranges');
+    }
+    return array();
+    return array_intersect_key($dom_properties,$rng_properties);
+  }
 
   public function nextProperties($class,$class_after = NULL) {
-    //old name, but no hierarchy anymore
-    $query = 
-      "SELECT DISTINCT ?property "
-      ."WHERE { "
-        ."?property a owl:ObjectProperty. "
-        ."?property rdfs:domain ?d_superclass. "
-        ."<$class> rdfs:subClassOf* ?d_superclass. "
-      ;
-    if (isset($class_after)) {
-      $query .= 
-        "?property rdfs:range ?r_superclass. "
-        ."<$class_after> rdfs:subClassOf* ?r_superclass. "
-      ;
-    }
-    $query .= "}";
-    $result = $this->directQuery($query);
-    
-    if (count($result) == 0) return array();
-    
-    $output = array();
-    foreach ($result as $obj) {
-      $prop = $obj->property->getUri();
-      $output[$prop] = $prop;
+
+    $settings['domain'] = $class;
+    if (!is_null($class_after)) $settings['range'] = $class_after;
+    $output = $this->getPropertiesFromCache($settings);
+    if ($output === FALSE) {
+      drupal_set_message('none in cache');
+      $output = $dom_properties = $this->getPropertiesByDomain($class);
+      drupal_set_message(serialize($dom_properties));
+      $query = \Drupal::service('database')->insert('wisski_sp11_domains')->fields('domain','property');
+      foreach ($dom_properties as $domain => $properties) {
+        foreach ($properties as $property) {
+          $query->values($domain,$property);
+        }
+      }
+      $query->execute();
+      if (isset($class_after)) {
+        $rng_properties = $this->getPropertiesByDomain($class);
+        $query = \Drupal::service('database')->insert('wisski_sp11_ranges')->fields('range','property');
+        foreach ($rng_properties as $range => $properties) {
+          foreach ($properties as $property) {
+            $query->values($range,$property);
+          }
+        }
+        $query->execute();
+        $output = array_intersect_key($output,$rng_properties);
+      }
     }
     uksort($output,'strnatcasecmp');
     return $output;
@@ -2161,6 +2182,102 @@ if (is_null($path)) {dpm(func_get_args(),__METHOD__);return array();}
     }
     return $ns;
   }
-                                                                                                                                                                                                                                      
 
+  /**
+   * {@inheritdoc}
+   */
+  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+    
+    //use \Drupal\Core\StringTranslation\StringTranslationTrait;
+    
+    $form = parent::buildConfigurationForm($form, $form_state);
+
+    $button_label = $this->t('Start Reasoning');
+    $emphasized = $this->t('This will take several minutes.');
+
+    $form['reasoner'] = array(
+      '#type' => 'details',
+      '#title' => $this->t('Compute Type and Property Hierarchy and Domains and Ranges'),
+      'description' => array(
+        '#type' => 'fieldset',
+        '#title' => $this->t('Read carefully'),
+        'description_start' => array('#markup' => $this->t("Clicking the %label button will initiate a set of complex SPARQL queries computing",array('%label'=>$button_label))),
+        'description_list' => array(
+          '#theme' => 'item_list',
+          '#items' => array(
+            $this->t("the class hierarchy"),
+            $this->t("the property hierarchy"),
+            $this->t("the domains of all properties"),
+            $this->t("the ranges of all properties"),
+          ),
+        ),
+        'description_end' => array(
+          '#markup' => $this->t(
+            "in the specified triple store. <strong>%placeholder</strong> The pathbuilders relying on this adapter will become much faster by doing this.",
+            array('%placeholder'=>$emphasized)
+          ),
+        ),
+      ),
+      'start_button' => array(
+        '#type' => 'button',
+        '#value' => $button_label,
+        '#ajax' => array(
+          'wrapper' => 'reasoner',
+          'callback' => array($this,'startReasoning'),
+        ),
+      ),
+    );
+//    static $semaphore = FALSE;
+//    if (!$semaphore) {
+//      \Drupal::service('form_builder')->prepareForm('wisski_reasoning_form',$form,$form_state);
+//      dpm($form,'Form');
+//      $semaphore = TRUE;
+//    }
+    return $form;
+  }
+
+  public function startReasoning(array $form,FormStateInterface $form_state) {
+    
+    $this->doTheReasoning();
+    return $form['reasoner'];
+  }
+  
+  public function doTheReasoning() {
+    $this->computePropertyHierarchy();
+  }
+  
+  private function computePropertyHierarchy() {
+  
+    $super_properties = array();
+    
+    //first round: find properties
+    $result = $this->directQuery("SELECT ?property WHERE {?property a owl:Property.}");
+    foreach ($result as $row) {
+      $super_properties[$row->property->getUri()] = array();
+    }
+    
+    //second round: find first level super properties
+    $result = $this->directQuery("SELECT ?property ?super WHERE {?property rdfs:subPropertyOf ?super.}");
+    foreach ($result as $row) {
+      $super_properties[$row->property->getUri()][$row->super->getUri()] = $row->super->getUri();
+    }
+    
+    //third round, here comes the reasoning, the super properties of super properties are super properties
+    $working = TRUE;
+    reset($super_properties);
+    while ($working) {
+      $working = FALSE;
+      foreach ($super_properties as &$supers) {
+        $new_supers = array();
+        foreach ($supers as $super) {
+          $new_supers = array_merge($new_supers,$super_properties[$super]);
+          if ($diff = array_diff($new_supers,$supers)) {
+            $working = TRUE;
+            $supers = array_merge($supers,$diff);
+          }
+        }
+      }
+    }
+  }
+  
 }
