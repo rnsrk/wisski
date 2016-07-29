@@ -110,7 +110,7 @@ dpm($twig);
         'source' => array('name'),
         'exists' => 'wisski_path_load',
       ),
-      '#reequired' => TRUE,
+      '#required' => TRUE,
     );
     
     // the name for this path
@@ -210,8 +210,9 @@ dpm($twig);
 #      drupal_set_message('pa: ' . serialize ($pa));     
       } else { // case else - primary if we are editing
         // everything is in input - don't ask me why!
-        
-        foreach($input as $key => $something) {
+        dpm($input,'Input else');
+        if (isset($input['_triggering_element_name'])) {
+          $key = $input['_triggering_element_name'];
           $did_match = preg_match('/^([a-z]+)(\d*)$/', $key, $matches);
           if (!$did_match) {
             continue;
@@ -221,7 +222,7 @@ dpm($twig);
           }
           
           if($trigger_type == 'wisskipathselect')
-            $paout[$row_num] = $something;
+            $paout[$row_num] = $input[$key];
           #dpm($paout, "pa out in step $key");
         }
         
@@ -287,7 +288,7 @@ dpm($twig);
         '#attributes' => array('data-wisski' => 'select'.$key),
         '#description' => $pre,
         '#ajax' => array(
-          'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
+          'callback' => array($this,'ajaxPathData'),
           'wrapper' => 'wisski-path-table',
           'event' => 'change', 
         ),
@@ -302,7 +303,7 @@ dpm($twig);
           '#value' => '+'.$key,
           '#attributes' => array('data-wisski' => 'btn'.$key),
           '#ajax' => array(
-            'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
+            'callback' => array($this,'ajaxPathData'),
             'wrapper' => 'wisski-path-table',
             'event' => 'click', 
           ),
@@ -314,7 +315,7 @@ dpm($twig);
           '#value' => '-'.$key,
           '#attributes' => array('data-wisski' => 'del'.$key),
           '#ajax' => array(
-            'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
+            'callback' => array($this,'ajaxPathData'),
             'wrapper' => 'wisski-path-table',
             'event' => 'click', 
           ),
@@ -351,7 +352,7 @@ dpm($twig);
           '#options' => $primitive,
           //'#title' => t('Please select the datatype property for the Path.'),
           '#ajax' => array(
-            'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
+            'callback' => array($this,'ajaxPathData'),
             'wrapper' => 'wisski-path-table',
             'event' => 'change', 
           ),
@@ -368,7 +369,7 @@ dpm($twig);
           '#options' => $primitive,
           //'#title' => t('Please select the datatype property for the Path.'),
           '#ajax' => array(
-            'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
+            'callback' => array($this,'ajaxPathData'),
             'wrapper' => 'wisski-path-table',
             'event' => 'change', 
           ),
@@ -398,7 +399,7 @@ dpm($twig);
         '#options' => $disamboptions,
         //'#title' => t('Please select the datatype property for the Path.'),
 #        '#ajax' => array(
-#          'callback' => 'Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
+#          'callback' => array($this,'ajaxPathData'),
 #          'wrapper' => 'wisski-path-table',
 #          'event' => 'change', 
 #        ),
@@ -415,7 +416,7 @@ dpm($twig);
     );
     
     //dpm($form['path_array'], 'formixxx000');
-    
+    //dpm(\Drupal::service('form_builder')->prepareForm('wisski_path_form',$form['path_array'],$form_state));
     return $form;
   }
   

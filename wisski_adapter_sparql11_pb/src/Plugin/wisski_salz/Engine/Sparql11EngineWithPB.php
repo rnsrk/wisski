@@ -197,7 +197,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         ."?property a owl:ObjectProperty. "
         ."?d_super_prop rdfs:domain ?d_superclass. "
         ."?property rdfs:subPropertyOf* ?d_super_prop. "
-        ."$class rdfs:subClassOf* ?d_superclass. "
+        ."<$class> rdfs:subClassOf* ?d_superclass. "
         ."FILTER NOT EXISTS { "
           ."?d_sub_prop rdfs:subPropertyOf+ ?d_super_prop. "
           ."?property rdfs:subPropertyOf* ?d_sub_prop. "
@@ -207,7 +207,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $query .= 
         "?r_super_prop rdfs:range ?r_superclass. "
         ."?property rdfs:subPropertyOf* ?r_super_prop. "
-        ."$class_after rdfs:subClassOf* ?r_superclass. "
+        ."<$class_after> rdfs:subClassOf* ?r_superclass. "
         ."FILTER NOT EXISTS { "
           ."?r_sub_prop rdfs:subPropertyOf+ ?r_super_prop. "
           ."?property rdfs:subPropertyOf* ?r_sub_prop. "
