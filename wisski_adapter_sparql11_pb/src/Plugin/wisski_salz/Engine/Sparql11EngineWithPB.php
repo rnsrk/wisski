@@ -2532,7 +2532,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if (isset($domains[$property])) {
         $add_up = array();
         foreach ($domains[$property] as $domain) {
-          if ($sub_domains = $sub_classes[$domain]) {
+          if (isset($sub_classes[$domain]) && $sub_domains = $sub_classes[$domain]) {
             $add_up = empty($add_up) ? $sub_domains : array_intersect_key($add_up,$sub_domains);
           }
         }
@@ -2568,7 +2568,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if (isset($ranges[$property])) {
         $add_up = array();
         foreach ($ranges[$property] as $range) {
-          if ($sub_ranges = $sub_classes[$range]) {
+          if (isset($sub_classes[$range]) && $sub_ranges = $sub_classes[$range]) {
             $add_up = empty($add_up) ? $sub_ranges : array_intersect_key($add_up,$sub_ranges);
           }
         }

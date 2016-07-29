@@ -46,12 +46,16 @@ class WisskiPathForm extends EntityForm {
     return parent::buildForm($form, $form_state, $wisski_pathbuilder);
     
   }
-    
+  
+  
+  
    /**
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {    
-    
+
+    $now = time();
+    \Drupal::logger('wisski_path_form')->debug('Call '.$now);
 #    drupal_set_message('FORM: ' . serialize($form_state)); 
 /*
     $form = parent::form($form, $form_state);
@@ -138,7 +142,7 @@ dpm($twig);
     //BEGIN find the correct values for path_array and datatype_property
     //get the user input to see if there was a change
     $input = $form_state->getUserInput();
-    #dpm($input,'Input');
+    dpm($input,'Input '.$now);
     #dpm($form_state->getStorage(), 'storage');
     
     
@@ -146,8 +150,8 @@ dpm($twig);
       //no input means the form is fresh and we take the info form the path entity
       if(!empty( $path->getPathArray() ))
         $existing_paths = $path->getPathArray();
-      $datatype_property = $path->getDatatypeProperty();
-      $disamb = $path->getDisamb();
+      $datatype_property = $path->getDatatypeProperty()?:'empty';
+      $disamb = $path->getDisamb()?:'empty';
 #      drupal_set_message('getPathArray: ' . serialize($existing_paths));
        
     } else {
@@ -155,15 +159,15 @@ dpm($twig);
       //we had a click so the user changed something
       //first gather the chced values
       $storage = $form_state->getStorage();
-      $paout = $storage['existing_paths'];
-      
+      $paout = isset($storage['existing_paths']) ? $storage['existing_paths'] : array();
+      //dpm($storage,'Click');
       // in case of there is something in storage...
       if(!empty($paout)) {
       
-        $datatype_property = $storage['datataype_property'];
+        $datatype_property = isset($storage['datataype_property']) ? $storage['datatype_property'] : 'empty';
         //now, let's se whats new
         $trigger = $form_state->getTriggeringElement();
-        //dpm($trigger,'Trigger');
+        dpm($trigger,'Trigger');
         $matches = array();
         //the ajax triggers have wisski-data attibutes set to
         // selectNN, btnNN, delNN, or data0
@@ -179,7 +183,7 @@ dpm($twig);
         }
         
 #        dpm($input,'before');
-        if ($trigger_type === 'wisskipathselect') {
+        if ($trigger_type === 'select') {
           //triggered a standard step selection, so we change the selected row to the chosen value
           $paout[$row_num] = $input['wisskipathselect'.$row_num];#$input['path_array']['step:'.$row_num]['select'];
         }      
@@ -201,16 +205,11 @@ dpm($twig);
         }
         //dpm($paout,'after');
         $existing_paths = $paout;
-        //set the cache
-        $storage['existing_paths'] = $existing_paths;
-        $storage['datatype_property'] = $datatype_property;
-        $storage['disamb'] = $disamb;
-        $form_state->setStorage($storage);
 
 #      drupal_set_message('pa: ' . serialize ($pa));     
       } else { // case else - primary if we are editing
         // everything is in input - don't ask me why!
-        dpm($input,'Input else');
+        //dpm($input,'Input else');
         if (isset($input['_triggering_element_name'])) {
           $key = $input['_triggering_element_name'];
           $did_match = preg_match('/^([a-z]+)(\d*)$/', $key, $matches);
@@ -237,11 +236,17 @@ dpm($twig);
     
     if (end($existing_paths) !== 'empty') $existing_paths[] = 'empty';
 
+    $storage['existing_paths'] = $existing_paths;
+    $storage['datatype_property'] = $datatype_property;
+    $storage['disamb'] = $disamb;
+    dpm($storage,'Storage to write');
+    $form_state->setStorage($storage);
+
     //END value detection, now $existing_paths and $datatype_property are set correctly, according to entity info and/or user input
 #    drupal_set_message(serialize($existing_paths));
 
     $curvalues = $existing_paths;
-//    dpm($curvalues, 'curvalues');
+    //dpm($curvalues, 'curvalues');
 
 
     $form['#pathcount'] = count($curvalues);
@@ -288,7 +293,7 @@ dpm($twig);
         '#attributes' => array('data-wisski' => 'select'.$key),
         '#description' => $pre,
         '#ajax' => array(
-          'callback' => array($this,'ajaxPathData'),
+          'callback' => '\Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
           'wrapper' => 'wisski-path-table',
           'event' => 'change', 
         ),
@@ -303,7 +308,7 @@ dpm($twig);
           '#value' => '+'.$key,
           '#attributes' => array('data-wisski' => 'btn'.$key),
           '#ajax' => array(
-            'callback' => array($this,'ajaxPathData'),
+            'callback' => '\Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
             'wrapper' => 'wisski-path-table',
             'event' => 'click', 
           ),
@@ -315,7 +320,7 @@ dpm($twig);
           '#value' => '-'.$key,
           '#attributes' => array('data-wisski' => 'del'.$key),
           '#ajax' => array(
-            'callback' => array($this,'ajaxPathData'),
+            'callback' => '\Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
             'wrapper' => 'wisski-path-table',
             'event' => 'click', 
           ),
@@ -352,7 +357,7 @@ dpm($twig);
           '#options' => $primitive,
           //'#title' => t('Please select the datatype property for the Path.'),
           '#ajax' => array(
-            'callback' => array($this,'ajaxPathData'),
+            'callback' => '\Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
             'wrapper' => 'wisski-path-table',
             'event' => 'change', 
           ),
@@ -369,7 +374,7 @@ dpm($twig);
           '#options' => $primitive,
           //'#title' => t('Please select the datatype property for the Path.'),
           '#ajax' => array(
-            'callback' => array($this,'ajaxPathData'),
+            'callback' => '\Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
             'wrapper' => 'wisski-path-table',
             'event' => 'change', 
           ),
@@ -399,7 +404,7 @@ dpm($twig);
         '#options' => $disamboptions,
         //'#title' => t('Please select the datatype property for the Path.'),
 #        '#ajax' => array(
-#          'callback' => array($this,'ajaxPathData'),
+#          'callback' => '\Drupal\wisski_pathbuilder\Form\WisskiPathForm::ajaxPathData',
 #          'wrapper' => 'wisski-path-table',
 #          'event' => 'change', 
 #        ),
@@ -420,8 +425,8 @@ dpm($twig);
     return $form;
   }
   
-  public function ajaxPathData(array $form, FormStateInterface $form_state) {
-   
+  public static function ajaxPathData(array $form, FormStateInterface $form_state) {
+    \Drupal::logger('wisski_path_form')->debug('ajax call');
     return $form['path_array'];
   }
   

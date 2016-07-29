@@ -1,5 +1,6 @@
 <?php
 use \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
 
 /**
  * Menu arugment loader. Returns a pathbuilder entity
