@@ -156,60 +156,104 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return FALSE;
   }
 
-  /**
-   * returns an array of properties for which domain and/or range match the input
-   * @param an associative array with keys 'domain' and/or 'range'
-   * @return array of matching properties | FALSE if there was no cache data
-   */
-  protected function getPropertiesFromCache($settings) {
-
-    if (isset($settings['domain'])) {
-      $dom_properties = \Drupal::service('database')->select('wisski_s11_domains','d')->fields('d')->condition('domain',$settings['domain'])->execute()->fetchAllAssoc();
-      dpm($dom_properties,'domains');
-    }
-    if (isset($settings['range'])) {
-      $rng_properties = \Drupal::service('database')->select('wisski_s11_ranges','r')->fields('r')->condition('range',$settings['range'])->execute()->fetchAllAssoc();
-      dpm($rng_properties,'ranges');
-    }
-    return array();
-    return array_intersect_key($dom_properties,$rng_properties);
-  }
-
   public function nextProperties($class,$class_after = NULL) {
 
-    $settings['domain'] = $class;
-    if (!is_null($class_after)) $settings['range'] = $class_after;
-    $output = $this->getPropertiesFromCache($settings);
+    $output = $this->getPropertiesFromCache($class,$class_after);
     if ($output === FALSE) {
       drupal_set_message('none in cache');
-      $output = $dom_properties = $this->getPropertiesByDomain($class);
-      drupal_set_message(serialize($dom_properties));
-      $query = \Drupal::service('database')->insert('wisski_sp11_domains')->fields('domain','property');
-      foreach ($dom_properties as $domain => $properties) {
-        foreach ($properties as $property) {
-          $query->values($domain,$property);
-        }
-      }
-      $query->execute();
-      if (isset($class_after)) {
-        $rng_properties = $this->getPropertiesByDomain($class);
-        $query = \Drupal::service('database')->insert('wisski_sp11_ranges')->fields('range','property');
-        foreach ($rng_properties as $range => $properties) {
-          foreach ($properties as $property) {
-            $query->values($range,$property);
-          }
-        }
-        $query->execute();
-        $output = array_intersect_key($output,$rng_properties);
-      }
+      $output = $this->getPropertiesFromStore($class,$class_after);
     }
     uksort($output,'strnatcasecmp');
     return $output;
   }
 
+  /**
+   * returns an array of properties for which domain and/or range match the input
+   * @param an associative array with keys 'domain' and/or 'range'
+   * @return array of matching properties | FALSE if there was no cache data
+   */
+  protected function getPropertiesFromCache($class,$class_after = NULL) {
 
+    $dom_properties = array();
+    $cid = 'wisski_reasoner_reverse_domains';
+    if ($cache = \Drupal::cache()->get($cid)) {
+      $dom_properties = $cache->data[$class]?:array();
+    } else return FALSE;
+    $rng_properties = array();
+    if (isset($class_after)) {
+      $cid = 'wisski_reasoner_reverse_ranges';
+      if ($cache = \Drupal::cache()->get($cid)) {
+        $rng_properties = $cache->data[$class_after]?:array();
+      } else return FALSE;
+    } else return $dom_properties;
+    return array_intersect_key($dom_properties,$rng_properties);
+  }
+
+  public function getPropertiesFromStore($class,$class_after = NULL) {
+    
+    $query = 
+      "SELECT DISTINCT ?property ?d_superclass "
+      ."WHERE { "
+        ."?property a owl:ObjectProperty. "
+        ."?d_super_prop rdfs:domain ?d_superclass. "
+        ."?property rdfs:subPropertyOf* ?d_super_prop. "
+        ."$class rdfs:subClassOf* ?d_superclass. "
+        ."FILTER NOT EXISTS { "
+          ."?d_sub_prop rdfs:subPropertyOf+ ?d_super_prop. "
+          ."?property rdfs:subPropertyOf* ?d_sub_prop. "
+          ."?d_sub_prop rdfs:domain ?d_any_class. "
+        ."} ";
+    if (isset($class_after)) {
+      $query .= 
+        "?r_super_prop rdfs:range ?r_superclass. "
+        ."?property rdfs:subPropertyOf* ?r_super_prop. "
+        ."$class_after rdfs:subClassOf* ?r_superclass. "
+        ."FILTER NOT EXISTS { "
+          ."?r_sub_prop rdfs:subPropertyOf+ ?r_super_prop. "
+          ."?property rdfs:subPropertyOf* ?r_sub_prop. "
+          ."?r_sub_prop rdfs:range ?r_any_class. "
+        ."} ";
+    }
+    $query .= "}";
+    $result = $this->directQuery($query);
+    $output = array();
+    foreach ($result as $obj) {
+      $prop = $obj->property->getUri();
+      $output[$prop] = $prop;
+    }
+    return $output;
+  }
 
   public function nextClasses($property,$property_after = NULL) {
+    
+    $output = $this->getClassesFromCache($property,$property_after);
+    if ($output === FALSE) {
+      drupal_set_message('none in cache');
+      $output = $this->getClassesFromStore($property,$property_after);
+    }
+    uksort($output,'strnatcasecmp');
+    return $output;
+  }
+
+  protected function getClassesFromCache($property,$property_after = NULL) {
+
+    $dom_classes = array();
+    $cid = 'wisski_reasoner_ranges';
+    if ($cache = \Drupal::cache()->get($cid)) {
+      $rng_classes = $cache->data[$property]?:array();
+    } else return FALSE;
+    $dom_classes = array();
+    if (isset($property_after)) {
+      $cid = 'wisski_reasoner_domains';
+      if ($cache = \Drupal::cache()->get($cid)) {
+        $dom_classes = $cache->data[$property_after]?:array();
+      } else return FALSE;
+    } else return $rng_classes;
+    return array_intersect_key($rng_classes,$dom_classes);
+  }
+
+
+  public function getClassesFromStore($property,$property_after = NULL) {
   
     $query = 
       "SELECT DISTINCT ?class "
@@ -2182,13 +2226,34 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return $ns;
   }
 
+  private $super_properties = array();
+  private $clean_super_properties = array();
+
   /**
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    
-    //use \Drupal\Core\StringTranslation\StringTranslationTrait;
-    
+
+#    $cids = array(
+#      'properties',
+#      'sub_properties',
+#      'super_properties',
+#      'inverse_properties',
+#      'sub_classes',
+#      'super_classes',
+#      'domains',
+#      'reverse_domains',
+#      'ranges',
+#      'reverse_ranges',
+#    );
+#    $results = array();
+#    foreach ($cids as $cid) {
+#      if ($cache = \Drupal::cache()->get('wisski_reasoner_'.$cid)) {
+#        $results[$cid] = $cache->data;
+#      }
+#    }
+#    dpm($results,'Results');
+
     $form = parent::buildConfigurationForm($form, $form_state);
 
     $button_label = $this->t('Start Reasoning');
@@ -2242,41 +2307,274 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
   
   public function doTheReasoning() {
-    $this->computePropertyHierarchy();
-  }
   
-  private function computePropertyHierarchy() {
-  
+    $properties = array();
     $super_properties = array();
+    $sub_properties = array();
     
-    //first round: find properties
-    $result = $this->directQuery("SELECT ?property WHERE {?property a owl:Property.}");
+    //find properties
+    $result = $this->directQuery("SELECT ?property WHERE {?property a owl:ObjectProperty.}");
     foreach ($result as $row) {
-      $super_properties[$row->property->getUri()] = array();
+      $properties[$row->property->getUri()] = $row->property->getUri();
+    }
+    $cid = 'wisski_reasoner_properties';
+    \Drupal::cache()->set($cid,$properties);
+    
+    //find first level super and sub properties
+    $result = $this->directQuery(
+      "SELECT ?property ?super WHERE {"
+        ."?property rdfs:subPropertyOf ?super."
+        ." FILTER NOT EXISTS {"
+         ." ?mid_prop rdfs:subPropertyOf+ ?super."
+         ." ?property rdfs:subPropertyOf+ ?mid_prop."
+        ."}"
+      ."}");
+    foreach ($result as $row) {
+      $prop = $row->property->getUri();
+      $super = $row->super->getUri();
+      $super_properties[$prop][$super] = $super;
+      $sub_properties[$super][$prop] = $prop;
+      if (!isset($properties[$prop])) $properties[$prop] = $prop;
+    }
+
+    //for later use we find the length of the longest path in the hierarchy
+    $depth = 0;
+    $horizon = $top_properties = array_diff_key($properties,$super_properties);
+    while (!empty($horizon)) {
+      $all_subs = array_intersect_key($sub_properties,$horizon);
+      $horizon = call_user_func_array('array_merge',$all_subs);
+      $depth++;
+    }
+    $max_depth = $depth;
+    
+    //now lets find inverses
+    $inverses = array();
+    $results = $this->directQuery("SELECT ?prop ?inverse WHERE {{?prop owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf ?prop.}}");
+    foreach ($results as $row) {
+      $inverses[$row->prop->getUri()] = $row->inverse->getUri();
+    }
+    $cid = 'wisski_reasoner_inverse_properties';
+    \Drupal::cache()->set($cid,$inverses);
+    
+/*    
+    //find all recursively defined sub properties
+    //start with those having no sub properties
+    $horizon = $bottom_properties = array_diff_key($properties,$sub_properties);
+    while (!empty($horizon)) {
+      //take the first
+      $prop = array_shift($horizon);
+      $supers = $super_properties[$prop];
+      //take all sub properties of the current node and add it to each super property
+      $subs = $sub_properties[$prop];
+      foreach ($supers as $super) {
+        $sub_properties[$super] = array_merge($sub_properties[$super],$subs);
+      }
+      $horizon = array_merge($horizon,$supers);
+    }
+
+    //here comes the reasoning, the super properties of super properties are super properties
+    $horizon = $top_properties = array_diff_key($properties,$super_properties);
+    while (!empty($horizon)) {
+      $prop = array_shift($horizon);
+      $subs = $sub_properties[$prop];
+      $supers = $super_properties[$prop];
+      foreach ($subs as $sub) {
+        $super_properties[$sub] = array_merge($super_properties[$sub],$supers);
+      }
+      $horizon = array_merge($horizon,$subs);
     }
     
-    //second round: find first level super properties
-    $result = $this->directQuery("SELECT ?property ?super WHERE {?property rdfs:subPropertyOf ?super.}");
-    foreach ($result as $row) {
-      $super_properties[$row->property->getUri()][$row->super->getUri()] = $row->super->getUri();
+*/
+    $cid = 'wisski_reasoner_sub_properties';
+    \Drupal::cache()->set($cid,$sub_properties);
+    $cid = 'wisski_reasoner_super_properties';
+    \Drupal::cache()->set($cid,$super_properties);
+    
+    //now the same things for classes
+    //find all classes
+    $classes = array();
+    $results = $this->directQuery("SELECT ?class WHERE {?class a owl:Class.}");
+    foreach ($results as $row) {
+      $classes[$row->class->getUri()] = $row->class->getUri();
     }
     
-    //third round, here comes the reasoning, the super properties of super properties are super properties
-    $working = TRUE;
-    reset($super_properties);
-    while ($working) {
-      $working = FALSE;
-      foreach ($super_properties as &$supers) {
-        $new_supers = array();
-        foreach ($supers as $super) {
-          $new_supers = array_merge($new_supers,$super_properties[$super]);
-          if ($diff = array_diff($new_supers,$supers)) {
-            $working = TRUE;
-            $supers = array_merge($supers,$diff);
-          }
+    //find top level hierarchy
+    $super_classes = array();
+    $sub_classes = array();
+    $results = $this->directQuery("SELECT ?class ?super WHERE {?class rdfs:subClassOf ?super.}");
+    foreach ($results as $row) {
+      $sub = $row->class->getUri();
+      $super = $row->super->getUri();
+      $super_classes[$sub][$super] = $super;
+      $sub_classes[$super][$sub] = $sub;
+    }
+    
+    $horizon = $top_classes = array_diff_key($class,$super_classes);
+    while(!empty($horizon)) {
+      $class = array_shift($horizon);
+      $supers = $super_classes[$class];
+      $subs = $sub_classes[$class];
+      foreach ($subs as $sub) {
+        $super_classes[$sub] = array_merge($super_classes[$sub],$supers);
+      }
+      $horizon = array_merge($horizon,$subs);
+    }
+    
+    $cid = 'wisski_reasoner_super_classes';
+    \Drupal::cache()->set($cid,$super_classes);
+    
+    $horizon = $bottom_classes = array_diff_key($class,$sub_classes);
+    while(!empty($horizon)) {
+      $class = array_shift($horizon);
+      $subs = $sub_classes[$class];
+      $supers = $super_classes[$class];
+      foreach ($supers as $super) {
+        $sub_classes[$super] = array_merge($sub_classes[$super],$subs);
+      }
+      $horizon = array_merge($horizon,$supers);
+    }
+    $cid = 'wisski_reasoner_sub_classes';
+    \Drupal::cache()->set($cid,$sub_classes);
+    
+    //explicit top level domains
+    $domains = array();
+    
+    $results = $this->directQuery(
+      "SELECT ?property ?domain WHERE {"
+        ." ?property rdfs:domain ?domain."
+        // we only need top level domains, so no proper subClass of the domain shall be taken into account
+        ." FILTER NOT EXISTS { ?domain rdfs:subClassOf+ ?super_domain. ?property rdfs:domain ?super_domain.}"
+      ." }");
+    foreach ($results as $row) {
+      $domains[$row->property->getUri()][$row->domain->getUri()] = $row->domain->getUri();
+    }
+    
+    //explicit top level ranges
+    $ranges = array();
+    
+    $results = $this->directQuery(
+      "SELECT ?property ?range WHERE {"
+        ." ?property rdfs:range ?range."
+        // we only need top level ranges, so no proper subClass of the range shall be taken into account
+        ." FILTER NOT EXISTS { ?range rdfs:subClassOf+ ?super_range. ?property rdfs:range ?super_range.}"
+      ." }");
+    foreach ($results as $row) {
+      $ranges[$row->property->getUri()][$row->range->getUri()] = $row->range->getUri();
+    }
+    
+    //gather domains for properties where they are unspecified
+    //find the properties having no domain/range
+    $no_domain = array_diff_key($properties,$domains);    
+    $no_range = array_diff_key($properties,$ranges);
+    
+    //first try to find domain and range via the inverses
+    foreach ($no_domain as $prop) {
+      if ($inv = $inverses[$prop]) {
+        if ($dom = $ranges[$inv]) {
+          $domains[$prop][$dom] = $dom;
+          unset($no_domain[$prop]);
         }
       }
     }
+    foreach ($no_range as $prop) {
+      if ($inv = $inverses[$prop]) {
+        if ($rng = $ranges[$inv]) {
+          $ranges[$prop][$rng] = $rng;
+          unset($no_range[$prop]);
+        }
+      }
+    }
+    
+    //now try to find the domain from super classes, remember multiple domains mean an AND over the domains
+    $horizon = $no_domain;
+    //we know that we can only have a maximum number of search rounds equalling the maximum depth of the property hierarchy
+    $depth = 0;
+    while (!empty($horizon) && $depth < $max_depth) {
+      $new_horizon = array();
+      while (!empty($horizon)) {
+        //take the first
+        $prop = array_shift($horizon);
+        //find out if ALL super properties have a domain set
+        $supers = $super_properties[$prop];
+        $super_domains = array_intersect_key($domains,$supers);
+        if (count($supers) === count($super_domains)) {
+          //multi-merge all domains
+          $domains[$prop] = call_user_func_array('array_merge',$super_domains);
+        } else array_push($new_horizon,$prop);
+      }
+      $horizon = $new_horizon;
+      $depth++;
+    }
+    
+    //remember sub classes of domains are domains, too.
+    //if a property has exactly one domain set, we can add all subClasses of that domain
+    //if there are multiple domains we can only add those being subClasses of ALL of the domains
+    foreach ($properties as $property) {
+      if (isset($domains[$property])) {
+        $add_up = array();
+        foreach ($domains[$property] as $domain) {
+          if ($sub_domains = $sub_classes[$domain]) {
+            $add_up = empty($add_up) ? $sub_domains : array_intersect_key($add_up,$sub_domains);
+          }
+        }
+        $domains[$property] = array_merge($domains[$property],$add_up);
+      }
+    }
+    
+    //gather ranges for properties where they are still unspecified
+    $horizon = $no_range;
+    //we know that we can only have a maximum number of search rounds equalling the maximum depth of the property hierarchy
+    $depth = 0;
+    while (!empty($horizon) && $depth < $max_depth) {
+      $new_horizon = array();
+      while (!empty($horizon)) {
+        //take the first
+        $prop = array_shift($horizon);
+        //find out if ALL super properties have a range set
+        $supers = $super_properties[$prop];
+        $super_ranges = array_intersect_key($ranges,$supers);
+        if (count($supers) === count($super_ranges)) {
+          //multi-merge all ranges
+          $ranges[$prop] = call_user_func_array('array_merge',$super_ranges);
+        } else array_push($new_horizon,$prop);
+      }
+      $horizon = $new_horizon;
+      $depth++;
+    }
+    
+    //remember sub classes of ranges are ranges, too.
+    //if a property has exactly one range set, we can add all subClasses of that range
+    //if there are multiple ranges we can only add those being subClasses of ALL of the ranges
+    foreach ($properties as $property) {
+      if (isset($ranges[$property])) {
+        $add_up = array();
+        foreach ($ranges[$property] as $range) {
+          if ($sub_ranges = $sub_classes[$range]) {
+            $add_up = empty($add_up) ? $sub_ranges : array_intersect_key($add_up,$sub_ranges);
+          }
+        }
+        $ranges[$property] = array_merge($ranges[$property],$add_up);
+      }
+    }
+    
+    
+    //for the pathbuilders to work correctly, we also need inverted search
+    $reverse_domains = array();
+    foreach ($domains as $prop => $classes) {
+      foreach ($classes as $class) $reverse_domains[$class][$prop] = $prop;
+    }
+    $reverse_ranges = array();
+    foreach ($ranges as $prop => $classes) {
+      foreach ($classes as $class) $reverse_ranges[$class][$prop] = $prop;
+    }
+    $cid = 'wisski_reasoner_domains';
+    \Drupal::cache()->set($cid,$domains);
+    $cid = 'wisski_reasoner_ranges';
+    \Drupal::cache()->set($cid,$ranges);
+    $cid = 'wisski_reasoner_reverse_domains';
+    \Drupal::cache()->set($cid,$reverse_domains);
+    $cid = 'wisski_reasoner_reverse_ranges';
+    \Drupal::cache()->set($cid,$reverse_ranges);
   }
   
 }
