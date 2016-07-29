@@ -2254,6 +2254,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    }
 #    dpm($results,'Results');
 
+    $cid = 'wisski_reasoner_reverse_domains';
+    $in_cache = !empty(\Drupal::cache()->get($cid));
+
     $form = parent::buildConfigurationForm($form, $form_state);
 
     $button_label = $this->t('Start Reasoning');
@@ -2262,6 +2265,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $form['reasoner'] = array(
       '#type' => 'details',
       '#title' => $this->t('Compute Type and Property Hierarchy and Domains and Ranges'),
+      '#prefix' => '<div id="wisski-reasoner-block">',
+      '#suffix' => '</div>',
       'description' => array(
         '#type' => 'fieldset',
         '#title' => $this->t('Read carefully'),
@@ -2286,23 +2291,37 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         '#type' => 'button',
         '#value' => $button_label,
         '#ajax' => array(
-          'wrapper' => 'reasoner',
+          'wrapper' => 'wisski-reasoner-block',
           'callback' => array($this,'startReasoning'),
         ),
+        '#prefix' => '<div id="wisski-reasoner-start-button">',
+        '#suffix' => '</div>',
       ),
     );
-//    static $semaphore = FALSE;
-//    if (!$semaphore) {
-//      \Drupal::service('form_builder')->prepareForm('wisski_reasoning_form',$form,$form_state);
-//      dpm($form,'Form');
-//      $semaphore = TRUE;
-//    }
+    if ($in_cache) {
+      $form['reasoner']['start_button']['#disabled'] = !$form_state->getValue('flush_button');
+      $form['reasoner']['flush_button'] = array(
+        '#type' => 'checkbox',
+        '#title' => $this->t('Re-Compute results'),
+        '#default_value' => FALSE,
+        '#description' => $this->t('You already have reasoning results in your cache'),
+        '#ajax' => array(
+          'wrapper' => 'wisski-reasoner-start-button',
+          'callback' => array($this,'checkboxAjax'),
+        ),
+      );
+    }
     return $form;
+  }
+
+  public function checkboxAjax(array $form, FormStateInterface $form_state) {
+    return $form['reasoner']['start_button'];
   }
 
   public function startReasoning(array $form,FormStateInterface $form_state) {
     
     $this->doTheReasoning();
+    $form_state->setRedirect('<current>');
     return $form['reasoner'];
   }
   
