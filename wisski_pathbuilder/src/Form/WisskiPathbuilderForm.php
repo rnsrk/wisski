@@ -288,6 +288,29 @@ class WisskiPathbuilderForm extends EntityForm {
 #      '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
     );
     
+    $form['additional']['export'] = array(
+      '#type' => 'fieldset',
+      '#tree' => FALSE,
+      '#title' => $this->t('Export Templates'),
+    );
+    
+    $form['additional']['export']['export'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Pathbuilder Definition Import',
+      '#description' => $this->t('Path to a pathbuilder definition file.'),
+#      '#default_value' => $pathbuilder->getCreateMode(),
+#      '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
+    );
+    
+    $form['additional']['export']['exportbutton'] = array(
+      '#type' => 'submit',
+      '#value' => 'Import',
+      '#submit' => array('::export'),
+#      '#description' => $this->t('Path to a pathbuilder definition file.'),
+#      '#default_value' => $pathbuilder->getCreateMode(),
+#      '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
+    );
+    
 #    dpm($form);
     return $form;
   }
