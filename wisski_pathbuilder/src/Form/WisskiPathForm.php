@@ -142,7 +142,7 @@ dpm($twig);
     //BEGIN find the correct values for path_array and datatype_property
     //get the user input to see if there was a change
     $input = $form_state->getUserInput();
-    dpm($input,'Input '.$now);
+    #dpm($input,'Input '.$now);
     #dpm($form_state->getStorage(), 'storage');
     
     
@@ -167,7 +167,7 @@ dpm($twig);
         $datatype_property = isset($storage['datataype_property']) ? $storage['datatype_property'] : 'empty';
         //now, let's se whats new
         $trigger = $form_state->getTriggeringElement();
-        dpm($trigger,'Trigger');
+        #dpm($trigger,'Trigger');
         $matches = array();
         //the ajax triggers have wisski-data attibutes set to
         // selectNN, btnNN, delNN, or data0
@@ -210,8 +210,12 @@ dpm($twig);
       } else { // case else - primary if we are editing
         // everything is in input - don't ask me why!
         //dpm($input,'Input else');
-        if (isset($input['_triggering_element_name'])) {
-          $key = $input['_triggering_element_name'];
+        
+        // @Dorian: Do you testing. This one killed all paths when clicking
+        // readded old code, needs good explanation to not do so.
+        foreach($input as $key => $something) {
+        #if (isset($input['_triggering_element_name'])) {
+        #  $key = $input['_triggering_element_name'];
           $did_match = preg_match('/^([a-z]+)(\d*)$/', $key, $matches);
           if (!$did_match) {
             continue;
@@ -239,7 +243,7 @@ dpm($twig);
     $storage['existing_paths'] = $existing_paths;
     $storage['datatype_property'] = $datatype_property;
     $storage['disamb'] = $disamb;
-    dpm($storage,'Storage to write');
+    #dpm($storage,'Storage to write');
     $form_state->setStorage($storage);
 
     //END value detection, now $existing_paths and $datatype_property are set correctly, according to entity info and/or user input
