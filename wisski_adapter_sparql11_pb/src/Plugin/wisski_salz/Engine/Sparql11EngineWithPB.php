@@ -915,6 +915,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         } else {
           
           $outvalue = $thing->out->getValue();
+
+          // special case: DateTime... render this as normal value for now.
+          if(is_a($outvalue, "DateTime")) {
+            $outvalue = (string)$outvalue->format('Y-m-d\TH:i:s.u');;
+          }
           
 #          if($main_property == "target_id")
 #            $outvalue = $this->getDrupalId($outvalue);
