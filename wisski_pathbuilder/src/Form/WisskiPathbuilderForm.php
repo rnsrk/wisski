@@ -265,13 +265,13 @@ class WisskiPathbuilderForm extends EntityForm {
       '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
     );
     
-    $form['additional']['import'] = array(
+    $form['import'] = array(
       '#type' => 'fieldset',
       '#tree' => FALSE,
       '#title' => $this->t('Import Templates'),
     );
     
-    $form['additional']['import']['import'] = array(
+    $form['import']['import'] = array(
       '#type' => 'textfield',
       '#title' => 'Pathbuilder Definition Import',
       '#description' => $this->t('Path to a pathbuilder definition file.'),
@@ -279,7 +279,7 @@ class WisskiPathbuilderForm extends EntityForm {
 #      '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
     );
     
-    $form['additional']['import']['importbutton'] = array(
+    $form['import']['importbutton'] = array(
       '#type' => 'submit',
       '#value' => 'Import',
       '#submit' => array('::import'),
@@ -288,23 +288,35 @@ class WisskiPathbuilderForm extends EntityForm {
 #      '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
     );
     
-    $form['additional']['export'] = array(
+    $form['export'] = array(
       '#type' => 'fieldset',
       '#tree' => FALSE,
       '#title' => $this->t('Export Templates'),
     );
     
-    $form['additional']['export']['export'] = array(
-      '#type' => 'textfield',
-      '#title' => 'Pathbuilder Definition Import',
-      '#description' => $this->t('Path to a pathbuilder definition file.'),
-#      '#default_value' => $pathbuilder->getCreateMode(),
-#      '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
+    $export_path = 'public://wisski_pathbuilder/export/';
+    
+    file_prepare_directory($export_path, FILE_CREATE_DIRECTORY);
+    
+    $files = file_scan_directory($export_path, '/.*/');
+    
+    foreach($files as $file) {
+    #  $form['export']['export'][] = array('#type' => 'link', '#title' => $file->filename, '#url' => Url::fromUri(file_create_url($file->uri)));
+      $items[] = array('#type' => 'link', '#title' => $file->filename, '#url' => Url::fromUri(file_create_url($file->uri)));
+    }
+    
+    $form['export']['export'] = array(
+      '#theme' => 'item_list',
+#      '#title' => 'Existing exports',
+      '#items' => $items,
+      '#type' => 'ul',
+      '#attributes' => array('class' => 'pb_export'),
     );
     
-    $form['additional']['export']['exportbutton'] = array(
+      
+    $form['export']['exportbutton'] = array(
       '#type' => 'submit',
-      '#value' => 'Import',
+      '#value' => 'Create Exportfile',
       '#submit' => array('::export'),
 #      '#description' => $this->t('Path to a pathbuilder definition file.'),
 #      '#default_value' => $pathbuilder->getCreateMode(),
@@ -314,6 +326,68 @@ class WisskiPathbuilderForm extends EntityForm {
 #    dpm($form);
     return $form;
   }
+
+  public function export(array &$form, FormStateInterface $form_state) {
+    $xmldoc = new \Symfony\Component\DependencyInjection\SimpleXMLElement("<pathbuilderinterface></pathbuilderinterface>");
+    
+    // get the pathbuilder    
+    $pathbuilder = $this->entity;
+ 
+    // fetch the paths
+    $paths = $form_state->getValue('pathbuilder_table');
+    
+    $pathtree = array();
+    $map = array();
+    
+    dpm($paths);
+    foreach($paths as $key => $path) {
+      
+      $this_path = $xmldoc->addChild("path");
+      
+      $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
+      
+      dpm($pathob);
+      
+      foreach($path as $subkey => $value) {
+        
+        // for now we skip the following:
+        if(in_array($subkey, array('bundle', 'field', 'path')))
+          continue;
+        
+        if($subkey == "parent")
+          $subkey = "group_id";
+        
+        $this_path->addChild($subkey, htmlspecialchars($value));
+      }
+      
+      $pa = $this_path->addChild('path_array');
+      foreach($pathob->getPathArray() as $subkey => $value) {
+        $pa->addChild($subkey % 2 == 0 ? 'x' : 'y', $value);
+      }
+      
+      $this_path->addChild('datatype_property', htmlspecialchars($pathob->getDatatypeProperty()));
+      $this_path->addChild('short_name', htmlspecialchars($pathob->getShortName()));
+      $this_path->addChild('disamb', htmlspecialchars($pathob->getDisamb()));
+      $this_path->addChild('description', htmlspecialchars($pathob->getDescription()));
+      $this_path->addChild('uuid', htmlspecialchars($pathob->uuid()));
+      if($pathob->getType() == "Group" || $pathob->getType() == "Smartgroup") {
+        $this_path->addChild('is_group', "1");
+      } else {
+        $this_path->addChild('is_group', "0");
+      }
+      $this_path->addChild('name', htmlspecialchars($pathob->getName()));
+      
+    }
+    
+    $dom = dom_import_simplexml($xmldoc)->ownerDocument;
+    $dom->formatOutput = true;
+    
+    $export_path = 'public://wisski_pathbuilder/export/';
+            
+    $file = file_save_data($dom->saveXML(), $export_path, FILE_EXISTS_RENAME);
+  }
+  
+  
   
   public function import(array &$form, FormStateInterface $form_state) {
     
