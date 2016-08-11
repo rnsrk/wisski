@@ -1163,7 +1163,7 @@ echo ($e->getTraceAsString());
     
     $graph_name = $this->getGraphName();
     // check and if neccessary insert individual information
-    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ <$individual_uri> rdf:type/rdfs:subClassOf* <$starting_concept>. }");
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { GRAPH ?g { <$individual_uri> rdf:type/rdfs:subClassOf* <$starting_concept>. } }");
     if ($ok && empty($result)) {
       $query = "INSERT{"
         ."GRAPH <$graph_name> {"
@@ -1236,7 +1236,7 @@ echo ($e->getTraceAsString());
     $graph_name = $this->getGraphName();
     
     // check and if neccessary insert individual information
-    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE{ <$individual_uri> rdf:type/rdfs:subClassOf* <$starting_concept>. }");
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { GRAPH ?g { <$individual_uri> rdf:type/rdfs:subClassOf* <$starting_concept>. } }");
     if (!$ok) {
       trigger_error("Errors while inserting data: ",E_USER_ERROR);
     }
@@ -1404,7 +1404,7 @@ echo ($e->getTraceAsString());
   
     $query = 
       "SELECT DISTINCT ?class "
-      ."WHERE { "
+      ."WHERE { GRAPH ?g { "
         ."<$property> rdfs:subPropertyOf* ?r_super_prop. "
         ."?r_super_prop rdfs:range ?r_super_class. "
         ."FILTER NOT EXISTS { "
@@ -1423,7 +1423,7 @@ echo ($e->getTraceAsString());
         ."} "
         ."?class rdfs:subClassOf* ?d_super_class. ";
     }
-    $query .= "}";
+    $query .= "} }";
     list($ok,$result) = $this->querySPARQL($query);
     if ($ok) {
       $output = array();
@@ -1446,7 +1446,7 @@ echo ($e->getTraceAsString());
     //old name, but no hierarchy anymore
     $query = 
       "SELECT DISTINCT ?property ?d_superclass "
-      ."WHERE { "
+      ."WHERE { GRAPH ?g { "
         ."?property a owl:ObjectProperty. "
         ."?property rdfs:domain ?d_superclass. "
         ."<$class> rdfs:subClassOf* ?d_superclass. "
@@ -1457,7 +1457,7 @@ echo ($e->getTraceAsString());
         ."<$class_after> rdfs:subClassOf* ?r_superclass. "
       ;
     }
-    $query .= "}";
+    $query .= "} }";
     list($ok,$result) = $this->querySPARQL($query);
     if ($ok) {
       if (empty($result)) return array();
@@ -1485,7 +1485,7 @@ echo ($e->getTraceAsString());
     
     $query = 
       "SELECT DISTINCT ?property ?d_superclass "
-      ."WHERE { "
+      ."WHERE { GRAPH ?g { "
         ."?property a owl:ObjectProperty. "
         ."?d_super_prop rdfs:domain ?d_superclass. "
         ."?property rdfs:subPropertyOf* ?d_super_prop. "
@@ -1506,7 +1506,7 @@ echo ($e->getTraceAsString());
           ."?r_sub_prop rdfs:range ?r_any_class. "
         ."} ";
     }
-    $query .= "}";
+    $query .= "} }";
     list($ok,$result) = $this->querySPARQL($query);
     if ($ok) {
       if (empty($result)) return array();
@@ -1533,10 +1533,10 @@ echo ($e->getTraceAsString());
     
     list($ok,$result) = $this->querySPARQL(
       "SELECT DISTINCT ?property "
-      ."WHERE { "
+      ."WHERE { GRAPH ?g { "
         ."?property a owl:DatatypeProperty. "
         ."?property rdfs:subPropertyOf*/rdfs:domain/(^rdfs:subClassOf)* <$class>. "
-      ."}"
+      ."} }"
     );
     if ($ok) {
       $output = array();
@@ -1555,10 +1555,10 @@ echo ($e->getTraceAsString());
     
     list($ok,$result) = $this->querySPARQL(
       "SELECT DISTINCT ?type "
-      ."WHERE { "
+      ."WHERE { GRAPH ?g {"
         ."<$node> a ?type."
         .(isset($node_after) ? " <$node_after> a ?type." : '')
-      ."}"
+      ."} }"
     );
     if ($ok) {
       foreach($result as $obj) {
@@ -1595,7 +1595,7 @@ echo ($e->getTraceAsString());
   
   public function getComments($entity_uri) {
     
-    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { <$entity_uri> rdfs:comment ?comment .}");
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { GRAPH ?g { <$entity_uri> rdfs:comment ?comment .} }");
     if ($ok) {
       $out = array();
       foreach ($result as $obj) {
@@ -1609,11 +1609,11 @@ echo ($e->getTraceAsString());
   public function getClasses($entity_uri=NULL) {
   
     if (isset($entity_uri)) {
-      $query = "SELECT DISTINCT ?class WHERE { <$entity_uri> rdf:type ?class .}";
+      $query = "SELECT DISTINCT ?class WHERE { GRAPH ?g { <$entity_uri> rdf:type ?class .} }";
     } else {
-      $query = "SELECT DISTINCT ?class WHERE {"
+      $query = "SELECT DISTINCT ?class WHERE { GRAPH ?g {"
         ." ?class a owl:Class."
-      ."}";  
+      ."} }";  
     }
     list($ok,$result) = $this->querySPARQL($query);
     if ($ok) {
@@ -1632,14 +1632,14 @@ echo ($e->getTraceAsString());
 
   public function getClassHierarchy($indexed_by_superclasses=FALSE) {
   
-    $query = "SELECT DISTINCT * WHERE {"
+    $query = "SELECT DISTINCT * WHERE { GRAPH ?g {"
       ." ?sub rdfs:subClassOf ?super."
       ." ?super a owl:Class."
       ." FILTER NOT EXISTS {"
         ." ?sub rdfs:subClassOf ?subsuper."
         ." ?subsuper rdfs:subClassOf ?super."
       ." }"
-    ."}"
+    ."} }"
     ;
     list($ok,$result) = $this->querySPARQL($query);
     if ($ok && !empty($result)) {
@@ -1664,7 +1664,7 @@ echo ($e->getTraceAsString());
   
   public function getIndsWithComments($class_uri) {
   
-    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE {?ind rdf:type <$class_uri> . OPTIONAL {?ind rdfs:comment ?comment. }}");
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { GRAPH ?g { ?ind rdf:type <$class_uri> . OPTIONAL {?ind rdfs:comment ?comment. }}}");
     if ($ok) {
       $out = array();
       foreach ($result as $obj) {
@@ -1679,7 +1679,7 @@ echo ($e->getTraceAsString());
   
   public function getIndividuals($class_uri) {
     
-    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { ?ind rdf:type <$class_uri> .}");
+    list($ok,$result) = $this->querySPARQL("SELECT DISTINCT * WHERE { GRAPH ?g { ?ind rdf:type <$class_uri> .} }");
     if ($ok) {
       $out = array();
       foreach ($result as $obj) {
@@ -1706,9 +1706,9 @@ echo ($e->getTraceAsString());
   public function getIndCount($class_uri = NULL) {
     
     if (empty($class_uri)) {
-      list($ok,$result) = $this->querySPARQL("SELECT DISTINCT (COUNT(?ind) AS ?count) WHERE {?ind a/a ?type}");
+      list($ok,$result) = $this->querySPARQL("SELECT DISTINCT (COUNT(?ind) AS ?count) WHERE { GRAPH ?g { ?ind a/a ?type } }");
     } else {
-      list($ok,$result) = $this->querySPARQL("SELECT DISTINCT (COUNT(?ind) AS ?count) WHERE {?ind a <$class_uri> .}");
+      list($ok,$result) = $this->querySPARQL("SELECT DISTINCT (COUNT(?ind) AS ?count) WHERE { GRAPH ?g { ?ind a <$class_uri> .} }");
     }
     if ($ok) return current($result)->count->getValue();
     return FALSE;
@@ -1720,10 +1720,10 @@ echo ($e->getTraceAsString());
       "SELECT ?class (COUNT(?ind) as ?count)"
       ." WHERE {"
         ."SELECT DISTINCT ?class ?ind "
-        ."WHERE {"
+        ."WHERE { GRAPH ?g {"
           ."?class rdfs:subClassOf ?topclass."
           ."?ind a ?class."
-        ."}"
+        ."} }"
       ."}"  
       ." GROUP BY ?class"
     ); 
@@ -1740,11 +1740,11 @@ echo ($e->getTraceAsString());
   public function getMatchingInds($match,$limit=0) {
   
     $query = "SELECT DISTINCT ?ind ?class"
-      ." WHERE {"
+      ." WHERE { GRAPH ?g {"
         ." ?ind a ?class."
         ." ?class a ?type."
         ." FILTER(CONTAINS(STR(?ind),\"$match\"))"
-      ."}";
+      ."} }";
     if ($limit > 0) $query .= " LIMIT $limit";
     list($ok,$result) = $this->querySPARQL($query);
     if ($ok) {
@@ -1770,14 +1770,14 @@ echo ($e->getTraceAsString());
       = $this->querySPARQL(
         "SELECT DISTINCT ?ind "
         ."WHERE "
-        ."{ "
+        ."{ GRAPH ?g {"
           ."<$bundle_uri> a owl:Class. "
           ."?ind a <$bundle_uri>. "
           ."FILTER NOT EXISTS { "
             ."?n (rdfs:subClassOf)+ <$bundle_uri>. "
             ."?ind a ?n. "
          ."} "
-      ."} "
+      ."} }"
 //  	."LIMIT 1 "
     );
     $then = time();
@@ -1820,14 +1820,14 @@ echo ($e->getTraceAsString());
       = $this->querySPARQL(
         "SELECT DISTINCT ?ind ?class "
         ."WHERE "
-        ."{ "
+        ."{ GRAPH ?g { "
           ."?class rdfs:subClassOf ?topclass. "
           ."?ind a ?class. "
           ."FILTER NOT EXISTS { "
             ."?n (rdfs:subClassOf)+ ?class. "
             ."?ind a ?n. "
          ."} "
-      ."} "
+      ."} }"
 //  	."LIMIT 1 "
     );
     $then = time();
@@ -1883,12 +1883,12 @@ echo ($e->getTraceAsString());
       = $this->querySPARQL(
         "SELECT DISTINCT ?property ?target "
         ."WHERE "
-        ."{ "
+        ."{ GRAPH ?g { "
           ."?class rdfs:subClassOf ?topclass. "
           ."<$ind_uri> a ?class. "
           ."?property a owl:ObjectProperty. "
           ."<$ind_uri> ?property ?target. "
-        ."} "
+        ."} } "
       );
     if ($ok) {
       foreach($result as $obj) {
@@ -1901,12 +1901,12 @@ echo ($e->getTraceAsString());
       = $this->querySPARQL(
         "SELECT DISTINCT ?property ?data "
         ."WHERE "
-        ."{ "
+        ."{ GRAPH ?g { "
           ."?class rdfs:subClassOf ?topclass. "
           ."<$ind_uri> a ?class. "
           ."?property a owl:DatatypeProperty. "
           ."<$ind_uri> ?property ?data. "
-        ."} "
+        ."} } "
       );
     if ($ok) {
       foreach($result as $obj) {
@@ -2119,9 +2119,9 @@ echo ($e->getTraceAsString());
     list($ok,$result) 
       = $this->querySPARQL(
         "SELECT DISTINCT ?class"
-          ." WHERE {"
+          ." WHERE { GRAPH ?g { "
             ."?class (rdfs:subClassOf)+ ?super."
-          ."}"
+          ."} }"
 //        ." LIMIT 20"
       );
     $then = time();
@@ -2346,7 +2346,7 @@ echo ($e->getTraceAsString());
     }
   
     // look for imported ontologies
-    $query = "SELECT DISTINCT ?ont FROM <$iri> WHERE { ?s a owl:Ontology . ?s owl:imports ?ont . }";
+    $query = "SELECT DISTINCT ?ont FROM <$iri> WHERE { GRAPH ?g { ?s a owl:Ontology . ?s owl:imports ?ont . } }";
     list($ok, $results) = $this->querySPARQL($query);
 
     // if there was nothing something is weired again.
@@ -2433,9 +2433,9 @@ echo ($e->getTraceAsString());
   public function getOntologies($graph = NULL) {
     // get ontology and version uri
     if(!empty($graph)) {
-      $query = "SELECT DISTINCT ?ont ?iri ?ver FROM <$graph> WHERE { ?ont a owl:Ontology . OPTIONAL { ?ont owl:ontologyIRI ?iri. ?ont owl:versionIRI ?ver . } }";
+      $query = "SELECT DISTINCT ?ont ?iri ?ver FROM <$graph> WHERE { GRAPH ?g { ?ont a owl:Ontology . OPTIONAL { ?ont owl:ontologyIRI ?iri. ?ont owl:versionIRI ?ver . } } }";
     } else
-      $query = "SELECT DISTINCT ?ont (COALESCE(?niri, 'none') as ?iri) (COALESCE(?nver, 'none') as ?ver) (COALESCE(?ngraph, 'default') as ?graph) WHERE { ?ont a owl:Ontology . OPTIONAL { GRAPH ?ngraph { ?ont a owl:Ontology } } . OPTIONAL { ?ont owl:ontologyIRI ?niri. ?ont owl:versionIRI ?nver . } }";
+      $query = "SELECT DISTINCT ?ont (COALESCE(?niri, 'none') as ?iri) (COALESCE(?nver, 'none') as ?ver) (COALESCE(?ngraph, 'default') as ?graph) WHERE { GRAPH ?g { ?ont a owl:Ontology . OPTIONAL { GRAPH ?ngraph { ?ont a owl:Ontology } } . OPTIONAL { ?ont owl:ontologyIRI ?niri. ?ont owl:versionIRI ?nver . } } }";
 
     list($ok, $results) = $this->querySPARQL($query);
     
@@ -2500,12 +2500,12 @@ echo ($e->getTraceAsString());
   }
   
   public function inferClasses() {
-    $query = "SELECT DISTINCT ?class WHERE {"
+    $query = "SELECT DISTINCT ?class WHERE { GRAPH ?g {"
       ." ?class rdfs:subClassOf owl:Thing ."
       ." FILTER NOT EXISTS {"
         ." ?class a owl:Class."
       ."}"
-    ."}";
+    ."} }";
     list($ok,$result) = $this->querySPARQL($query);
     if ($ok && !empty($result) && $result->numRows() > 0) {
       $graph_name = $this->getGraphName('inference');
@@ -2520,14 +2520,14 @@ echo ($e->getTraceAsString());
   
   public function inferClassHierarchy() {
   
-    $query = "SELECT DISTINCT ?class ?supersuper WHERE {"
+    $query = "SELECT DISTINCT ?class ?supersuper WHERE { GRAPH ?g {"
       ." ?class rdfs:subClassOf ?super."
       ." ?super rdfs:subClassOf ?supersuper."
       ." ?supersuper a owl:Class. "
       ." FILTER NOT EXISTS {"
         ." ?class rdfs:subClassOf ?supersuper."
       ."}"
-    ."}";
+    ."} }";
     list($ok,$result) = $this->querySPARQL($query);
     if ($ok && !empty($result) && $result->numRows() > 0) {
       $graph_name = $this->getGraphName('inference');
@@ -2545,14 +2545,14 @@ echo ($e->getTraceAsString());
     
   public function inferPropertyHierarchy() {
   
-    $query = "SELECT DISTINCT ?property ?supersuper WHERE {"
+    $query = "SELECT DISTINCT ?property ?supersuper WHERE { GRAPH ?g {"
       ." ?property rdfs:subPropertyOf ?super."
       ." ?super rdfs:subPropertyOf ?supersuper."
       ." ?supersuper a owl:ObjectProperty"
       ." FILTER NOT EXISTS {"
         ." ?property rdfs:subPropertyOf ?supersuper."
       ."}"
-    ."}";
+    ."} }";
     list($ok,$result) = $this->querySPARQL($query);
     if ($ok && !empty($result) && $result->numRows() > 0) {
       $graph_name = $this->getGraphName('inference');
@@ -2570,7 +2570,7 @@ echo ($e->getTraceAsString());
   
   public function inferDomains() {
   
-    $query = "SELECT DISTINCT ?property ?domain WHERE {"
+    $query = "SELECT DISTINCT ?property ?domain WHERE { GRAPH ?g {"
       ."{"
         ." ?property rdfs:subPropertyOf ?super."
         ." ?super rdfs:domain ?domain."
@@ -2583,7 +2583,7 @@ echo ($e->getTraceAsString());
       ." FILTER NOT EXISTS {"
         ." ?property rdfs:domain ?any_class."
       ."}"
-    ."}";
+    ."} }";
     list($ok,$result) = $this->querySPARQL($query);
     if ($ok && !empty($result) && $result->numRows() > 0) {
       $graph_name = $this->getGraphName('inference');
@@ -2600,7 +2600,7 @@ echo ($e->getTraceAsString());
   
   public function inferRanges() {
     
-    $query = "SELECT DISTINCT ?property ?range WHERE {"
+    $query = "SELECT DISTINCT ?property ?range WHERE { GRAPH ?g {"
       ."{"
         ." ?property rdfs:subPropertyOf ?super."
         ." ?super rdfs:range ?range."
@@ -2613,7 +2613,7 @@ echo ($e->getTraceAsString());
       ." FILTER NOT EXISTS {"
         ." ?property rdfs:range ?any_class."
       ."}"
-    ."}";
+    ."} }";
     list($ok,$result) = $this->querySPARQL($query);
     if ($ok && !empty($result) && $result->numRows() > 0) {
       $graph_name = $this->getGraphName('inference');
