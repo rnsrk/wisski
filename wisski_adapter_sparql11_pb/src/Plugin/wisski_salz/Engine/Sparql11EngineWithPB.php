@@ -31,38 +31,100 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
 
   /******************* BASIC Pathbuilder Support ***********************/
+
+  /**
+   * this adapter/engine provides two functions for retrieving path alternatives
+   * TODO bring that to the interface
+   */
+  public function providesFastMode() {
+    return TRUE;
+  }
+
+  /**
+   * {@inheritdoc}
+   * returns the possible next steps in path creation, if $this->providesFastMode() returns TRUE then this
+   * MUST react fast i.e. in the blink of an eye if $fast_mode = TRUE and it MUST return the complete set of options if $fast_mode=FALSE
+   * otherwise it should ignore the $fast_mode parameter
+   */  
+  public function getPathAlternatives($history = [], $future = [],$fast_mode=FALSE,$empty_uri='empty') {
+
+    \Drupal::logger('WissKI path alternatives: '.($fast_mode ? 'fast mode' : "normal mode"))->debug('History: '.serialize($history)."\n".'Future: '.serialize($future));
+    
+    $search_properties = NULL;
+    
+    $last = NULL;
+    if (!empty($history)) {
+      $candidate = array_pop($history);
+      if ($candidate === $empty_uri) {
+//        \Drupal::logger('WissKI path alternatives')->error('Not a valid URI: "'.$candidate.'"');
+        //as a fallback we assume that the full history is given so that every second step is a property
+        //we have already popped one element, so count($history) is even when we need a property
+        $search_properties = (0 === count($history) % 2);
+      }
+      elseif ($this->isValidUri('<'.$candidate.'>')) {
+        $last = $candidate;
+        if ($this->isAProperty($last) === FALSE) $search_properties = TRUE; 
+      }
+      else return array();
+    }
+    
+    $next = NULL;
+    if (!empty($future)) {
+      $candidate = array_shift($future);
+      if ($candidate !== $empty_uri) {
+        if ($this->isValidUri($candidate)) {
+          $next = $candidate;
+          if ($search_properties === NULL) {
+            if ($this->isAProperty($next) === FALSE) $search_properties = TRUE;
+          } elseif ($this->isAProperty($next) === $search_properties) {
+            drupal_set_message('History and Future are inconsistent','error');
+          }
+        } else return array();
+      }
+    }
+    
+    //$search_properties is TRUE if and only if last and next are valid URIs and no owl:Class-es
+    if ($search_properties) {
+      $return = $this->nextProperties($last,$next,$fast_mode);
+    } else {
+      $return = $this->nextClasses($last,$next,$fast_mode);
+    }
+    dpm(func_get_args()+array('result'=>$return),__FUNCTION__);
+    return $return;
+  }
   
   /**
    * @{inheritdoc}
    */
-  public function getPathAlternatives($history = [], $future = []) {
-    
-    if (empty($history) && empty($future)) {
-      
-      return $this->getClasses();
-
-    } elseif (!empty($history)) {
-      
-      $last = array_pop($history);
-      $next = empty($future) ? NULL : $future[0];
-
-      if ($this->isaProperty($last)) {
-        return $this->nextClasses($last, $next);
-      } else {
-        return $this->nextProperties($last, $next);
-      }
-    } elseif (!empty($future)) {
-      $next = $future[0];
-      if ($this->isaProperty($next))
-        return $this->getClasses();
-      else
-        return $this->getProperties();
-    } else {
-      return [];
-    }
-
-    
-  }
+//  public function getPathAlternatives($history = [], $future = []) {
+//
+//  \Drupal::logger('WissKI SPARQL Client')->debug("normal mode");
+//    if (empty($history) && empty($future)) {
+//      
+//      return $this->getClasses();
+//
+//    } elseif (!empty($history)) {
+//      
+//      $last = array_pop($history);
+//      $next = empty($future) ? NULL : $future[0];
+//
+//      if ($this->isaProperty($last)) {
+//        return $this->nextClasses($last, $next);
+//      } else {
+//        return $this->nextProperties($last, $next);
+//      }
+//    } elseif (!empty($future)) {
+//      $next = $future[0];
+//      if ($this->isaProperty($next))
+//        return $this->getClasses();
+//      else
+//        return $this->getProperties();
+//    } else {
+//      return [];
+//    }
+//
+//    
+//  }
   
   /**
    * @{inheritdoc}
@@ -156,12 +218,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return FALSE;
   }
 
-  public function nextProperties($class,$class_after = NULL) {
+  public function nextProperties($class=NULL,$class_after = NULL,$fast_mode=FALSE) {
 
+    \Drupal::logger(__METHOD__)->debug('class: '.$class.', class_after: '.$class_after);
     $output = $this->getPropertiesFromCache($class,$class_after);
     if ($output === FALSE) {
-      drupal_set_message('none in cache');
-      $output = $this->getPropertiesFromStore($class,$class_after);
+      //drupal_set_message('none in cache');
+      $output = $this->getPropertiesFromStore($class,$class_after,$fast_mode);
     }
     uksort($output,'strnatcasecmp');
     return $output;
@@ -189,30 +252,50 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return array_intersect_key($dom_properties,$rng_properties);
   }
 
-  public function getPropertiesFromStore($class,$class_after = NULL) {
-    
-    $query = 
-      "SELECT DISTINCT ?property ?d_superclass "
-      ."WHERE { "
-        ."?property a owl:ObjectProperty. "
-        ."?d_super_prop rdfs:domain ?d_superclass. "
-        ."?property rdfs:subPropertyOf* ?d_super_prop. "
-        ."<$class> rdfs:subClassOf* ?d_superclass. "
-        ."FILTER NOT EXISTS { "
-          ."?d_sub_prop rdfs:subPropertyOf+ ?d_super_prop. "
-          ."?property rdfs:subPropertyOf* ?d_sub_prop. "
-          ."?d_sub_prop rdfs:domain ?d_any_class. "
-        ."} ";
-    if (isset($class_after)) {
-      $query .= 
-        "?r_super_prop rdfs:range ?r_superclass. "
-        ."?property rdfs:subPropertyOf* ?r_super_prop. "
-        ."<$class_after> rdfs:subClassOf* ?r_superclass. "
-        ."FILTER NOT EXISTS { "
-          ."?r_sub_prop rdfs:subPropertyOf+ ?r_super_prop. "
-          ."?property rdfs:subPropertyOf* ?r_sub_prop. "
-          ."?r_sub_prop rdfs:range ?r_any_class. "
-        ."} ";
+  public function getPropertiesFromStore($class=NULL,$class_after = NULL,$fast_mode=FALSE) {
+
+    $query = "SELECT DISTINCT ?property WHERE {"
+      ."?property a owl:ObjectProperty. ";
+    if ($fast_mode) {  
+      if (isset($class)) $query .= "?property rdfs:domain <$class>. ";
+      if (isset($class_after)) $query .= "?property rdfs:range <$class_after>.";
+    } else {
+      if (isset($class)) {
+        $query .= "{"
+            ."?d_def_prop rdfs:domain ?d_def_class. "
+            ."<$class> rdfs:subClassOf* ?d_def_class. "
+          ."}"
+          ."{"
+            ."{?d_def_prop rdfs:subPropertyOf* ?property.} "
+          ."UNION "
+            ."{ "
+              ."?property rdfs:subPropertyOf+ ?d_def_prop. "
+              ."FILTER NOT EXISTS { "
+                ."?mid_prop rdfs:subPropertyOf+ ?d_def_prop. "
+                ."?property rdfs:subPropertyOf* ?mid_prop. "
+                ."?mid_prop rdfs:domain ?any_class. "
+              ."} "
+            ."}"
+          ."} ";
+      }
+      if (isset($class_after)) {
+        $query .= "{"
+            ."?r_def_prop rdfs:range ?r_def_class. "
+            ."<$class_after> rdfs:subClassOf* ?r_def_class. "
+          ."}"
+          ."{"
+            ."{?r_def_prop rdfs:subPropertyOf* ?property.} "
+          ."UNION "
+            ."{ "
+              ."?property rdfs:subPropertyOf+ ?r_def_prop. "
+              ."FILTER NOT EXISTS { "
+                ."?mid_prop rdfs:subPropertyOf+ ?r_def_prop. "
+                ."?property rdfs:subPropertyOf* ?mid_prop. "
+                ."?mid_prop rdfs:range ?any_class. "
+              ."} "
+            ."}"
+          ."} ";
+      }  
     }
     $query .= "}";
     $result = $this->directQuery($query);
@@ -224,12 +307,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return $output;
   }
 
-  public function nextClasses($property,$property_after = NULL) {
+  public function nextClasses($property=NULL,$property_after = NULL,$fast_mode=FALSE) {
     
+    \Drupal::logger(__METHOD__)->debug('property: '.$property.', property_after: '.$property_after);
     $output = $this->getClassesFromCache($property,$property_after);
     if ($output === FALSE) {
-      drupal_set_message('none in cache');
-      $output = $this->getClassesFromStore($property,$property_after);
+      //drupal_set_message('none in cache');
+      $output = $this->getClassesFromStore($property,$property_after,$fast_mode);
     }
     uksort($output,'strnatcasecmp');
     return $output;
@@ -252,29 +336,34 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return array_intersect_key($rng_classes,$dom_classes);
   }
 
-
-  public function getClassesFromStore($property,$property_after = NULL) {
+  public function getClassesFromStore($property=NULL,$property_after = NULL,$fast_mode=FALSE) {
   
-    $query = 
-      "SELECT DISTINCT ?class "
-      ."WHERE { "
-        ."<$property> rdfs:subPropertyOf* ?r_super_prop. "
-        ."?r_super_prop rdfs:range ?r_super_class. "
-        ."FILTER NOT EXISTS { "
-          ."?r_sub_prop rdfs:subPropertyOf+ ?r_super_prop. "
-          ."<$property> rdfs:subPropertyOf* ?r_sub_prop. "
-          ."?r_sub_prop rdfs:range ?r_any_class. "
-        ."} "
-        ."?class rdfs:subClassOf* ?r_super_class. ";
-    if (isset($property_after)) {
-      $query .= "<$property_after> rdfs:subPropertyOf* ?d_super_prop. "
-        ."?d_super_prop rdfs:domain ?d_super_class. "
-        ."FILTER NOT EXISTS { "
-          ."?d_sub_prop rdfs:subPropertyOf+ ?d_super_prop. "
-          ."<$property_after> rdfs:subPropertyOf* ?d_sub_prop. "
-          ."?d_sub_prop rdfs:domain ?d_any_class. "
-        ."} "
-        ."?class rdfs:subClassOf* ?d_super_class. ";
+    $query = "SELECT DISTINCT ?class WHERE {"
+      ."?class a owl:Class. ";
+    if ($fast_mode) {  
+      if (isset($property)) $query .= "<$property> rdfs:range ?class. ";
+      if (isset($property_after)) $query .= "<$property_after> rdfs:domain ?class. ";
+    } else {
+      if (isset($property)) {
+        $query .= "<$property> rdfs:subPropertyOf* ?r_super_prop. "
+          ."?r_super_prop rdfs:range ?r_super_class. "
+          ."FILTER NOT EXISTS { "
+            ."?r_sub_prop rdfs:subPropertyOf+ ?r_super_prop. "
+            ."<$property> rdfs:subPropertyOf* ?r_sub_prop. "
+            ."?r_sub_prop rdfs:range ?r_any_class. "
+          ."} "
+          ."?class rdfs:subClassOf* ?r_super_class. ";
+      }
+      if (isset($property_after)) {
+        $query .= "<$property_after> rdfs:subPropertyOf* ?d_super_prop. "
+          ."?d_super_prop rdfs:domain ?d_super_class. "
+          ."FILTER NOT EXISTS { "
+            ."?d_sub_prop rdfs:subPropertyOf+ ?d_super_prop. "
+            ."<$property_after> rdfs:subPropertyOf* ?d_sub_prop. "
+            ."?d_sub_prop rdfs:domain ?d_any_class. "
+          ."} "
+          ."?class rdfs:subClassOf* ?d_super_class. ";
+      }  
     }
     $query .= "}";
     $result = $this->directQuery($query);
@@ -2433,7 +2522,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $sub_classes[$super][$sub] = $sub;
     }
     
-    $horizon = $top_classes = array_diff_key($class,$super_classes);
+    $horizon = $top_classes = array_diff_key($classes,$super_classes);
     while(!empty($horizon)) {
       $class = array_shift($horizon);
       $supers = $super_classes[$class];
@@ -2447,7 +2536,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $cid = 'wisski_reasoner_super_classes';
     \Drupal::cache()->set($cid,$super_classes);
     
-    $horizon = $bottom_classes = array_diff_key($class,$sub_classes);
+    $horizon = $bottom_classes = array_diff_key($classes,$sub_classes);
     while(!empty($horizon)) {
       $class = array_shift($horizon);
       $subs = $sub_classes[$class];

@@ -40,6 +40,12 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
     
     $client = EasyRdf_Http::getDefaultHttpClient();
     $client->resetParameters();
+    $client->setConfig(array(
+        'maxredirects'    => 5,
+        'useragent'       => 'EasyRdf_Http_Client',
+        //we change the timeout from 10 secs since some of our requests will necessarily take much longer
+        'timeout'         => 100,
+    ));
 
     // Tell the server which response formats we can parse
     $accept = EasyRdf_Format::getHttpAcceptHeader(
@@ -92,8 +98,8 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 			}
 		} else {
 			$message = __METHOD__.' (line: '.__LINE__.') failed request '.htmlentities($query). "---" . $response->getBody() . "\n\r";
-			echo $message;
-			\Drupal::logger('wisski_sparql_client')->error($message);
+			ddebug_backtrace();
+			\Drupal::logger('wisski_sparql_client Request failed')->debug($message);
 			throw new EasyRdf_Exception(
 				"HTTP request for SPARQL query failed: ".$response->getBody()
 			);

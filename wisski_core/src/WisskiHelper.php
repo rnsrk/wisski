@@ -28,7 +28,7 @@ class WisskiHelper {
    * second part after splitting i.e. there will we a number of $offset elements in the first part
    * @return an array with two elements representing the first and second part of the original array
    */
-  public static function array_split(array $array,int $offset=NULL) {
+  public static function array_split(array $array,$offset=NULL) {
     
     if ($offset==0) return array(array(),$array);
     $count = count($array);
@@ -53,7 +53,7 @@ class WisskiHelper {
    * @param $offset the first index of the inserted sub-array after insertion
    * @return a re-indexed array with the subportion inserted
    */
-  public static function array_insert(array $array,array $insertion,int $offset=NULL) {
+  public static function array_insert(array $array,array $insertion,$offset=NULL) {
     
     if ($offset==0) return array_merge($insertion,$array);
     list($part1,$part2) = self::array_split($array,$offset);
