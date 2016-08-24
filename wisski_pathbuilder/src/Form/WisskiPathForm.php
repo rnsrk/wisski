@@ -146,7 +146,7 @@ class WisskiPathForm extends EntityForm {
       $row_selection = $attributes['data-wisski-row'];
       switch ($attributes['data-wisski-trigger-type']) {
         case 'operations': {
-            dpm($input,$trigger['#name']);
+            //dpm($input,$trigger['#name']);
             $operation = $input[$trigger['#name']];
             $selected_row = -1;
             switch ($operation) {
@@ -245,7 +245,7 @@ class WisskiPathForm extends EntityForm {
       );
       $form['path_content']['path_array'][$current_row] = $form_path_elem;
     }
-    dpm($path);
+    //dpm($path);
     if ($this->engine->providesDatatypeProperty() && !empty($this->path_array[$last_row]) && $this->path_array[$last_row] !== 'empty') {
       $options = $this->engine->getPrimitiveMapping($this->path_array[$last_row]);
       if (!empty($options)) {
@@ -300,7 +300,7 @@ class WisskiPathForm extends EntityForm {
       $values = array_diff_key($values, $this->entity->getPluginCollections());
     }
 
-    dpm($values,__METHOD__.'::values');
+    //dpm($values,__METHOD__.'::values');
 
     $path_array = array();
     

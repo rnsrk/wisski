@@ -89,7 +89,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     } else {
       $return = $this->nextClasses($last,$next,$fast_mode);
     }
-    dpm(func_get_args()+array('result'=>$return),__FUNCTION__);
+//    dpm(func_get_args()+array('result'=>$return),__FUNCTION__);
     return $return;
   }
   
