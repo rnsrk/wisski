@@ -67,7 +67,7 @@ class WisskiHelper {
    * @param $the length of the portion to remove
    * @return an array resembling the input but with the specified part removed and re-indexed
    */
-  public static function array_remove_part(array $array,int $offset,int $length=NULL) {
+  public static function array_remove_part(array $array,$offset,$length=NULL) {
     
     if ($length == 0) return $array;
     list($part1,$part2) = self::array_split($array,$offset);
