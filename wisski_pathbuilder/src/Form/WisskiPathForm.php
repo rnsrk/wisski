@@ -131,6 +131,7 @@ class WisskiPathForm extends EntityForm {
     if (!isset($this->path_array)) $this->path_array = $path->isNew() ? array() : $path->getPathArray();
     $selected_row = count($this->path_array);
     $fast_mode = FALSE;
+    $consistent_change = FALSE;
     
     //dpm($this->path_array,'Before');
     
@@ -152,6 +153,7 @@ class WisskiPathForm extends EntityForm {
             switch ($operation) {
               case 'cancel': break;
               case 'change': $selected_row = $row_selection; break;
+              case 'consistent_change': $consistent_change = TRUE; $selected_row = $row_selection; break;
               case 'remove': $this->path_array = WisskiHelper::array_remove_part($this->path_array,$row_selection,2); break;
               case 'insert': $this->path_array = WisskiHelper::array_insert($this->path_array,array('empty','empty'),$row_selection+1); break;
             }
@@ -161,7 +163,8 @@ class WisskiPathForm extends EntityForm {
             //user changed the entry in the selected row
             $selection = $input[$trigger['#name']];
             $this->path_array[$row_selection] = $selection;
-            $selected_row = -1;
+            //set the following step to 'change' mode
+            $selected_row = $row_selection + 1;
           }
       }
       
@@ -192,9 +195,9 @@ class WisskiPathForm extends EntityForm {
       }
       $is_current = $current_row === $selected_row;
       if ($is_current) {
-        $new_options = $this->engine->getPathAlternatives(array_slice($this->path_array,0,$current_row),array_slice($this->path_array,$current_row+1),$fast_mode);
-        //"adding" the new options ensures that the previous selection stays in the list
-        $element_options += $new_options;
+        $history = array_slice($this->path_array,0,$current_row);
+        $future = $consistent_change ? array_slice($this->path_array,$current_row+1) : array();
+        $element_options = $this->engine->getPathAlternatives($history,$future,$fast_mode); 
         //dpm($element_options,'options');
       }
       $form_path_elem['select_box'] = array(
@@ -221,6 +224,7 @@ class WisskiPathForm extends EntityForm {
       if ($is_current) $operations['cancel'] = $this->t('Cancel Edit');
       else {
         $operations['change'] = $this->t('Change');
+        if (isset($this->path_array[$current_row+1]) && $this->path_array[$current_row+1] !== 'empty') $operations['consistent_change'] = $this->t('Change and keep future');
         if ($current_row < $last_row) {
           $operations['remove'] = $this->t('Remove this and next');
           $operations['insert'] = $this->t('Add two steps');

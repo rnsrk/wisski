@@ -64,25 +64,31 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       elseif ($this->isValidUri('<'.$candidate.'>')) {
         $last = $candidate;
         if ($this->isAProperty($last) === FALSE) $search_properties = TRUE; 
+      } else {
+        \Drupal::logger('WissKI path alternatives')->debug('invalid URI '.$candidate);
+        return array();
       }
-      else return array();
     }
     
     $next = NULL;
     if (!empty($future)) {
       $candidate = array_shift($future);
       if ($candidate !== $empty_uri) {
-        if ($this->isValidUri($candidate)) {
+        if ($this->isValidUri('<'.$candidate.'>')) {
           $next = $candidate;
           if ($search_properties === NULL) {
             if ($this->isAProperty($next) === FALSE) $search_properties = TRUE;
           } elseif ($this->isAProperty($next) === $search_properties) {
             drupal_set_message('History and Future are inconsistent','error');
           }
-        } else return array();
+        } else {
+          \Drupal::logger('WissKI path alternatives')->debug('invalid URI '.$candidate);
+          return array();
+        }
       }
     }
     
+    \Drupal::logger('WissKI next '.($search_properties ? 'properties' : 'classes'))->debug('Last: '.$last.', Next: '.$next);
     //$search_properties is TRUE if and only if last and next are valid URIs and no owl:Class-es
     if ($search_properties) {
       $return = $this->nextProperties($last,$next,$fast_mode);
