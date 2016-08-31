@@ -100,7 +100,36 @@ class WisskiPathForm extends EntityForm {
       '#description' => $this->t("Is this Path a group?"),
     );
     
-    if ($this->engine->providesFastMode()) {
+    $cache_mode = FALSE;
+    
+    if ($this->engine->providesCacheMode()) {
+      $url = Url::fromRoute(
+        'entity.wisski_salz_adapter.edit_form',
+        array('wisski_salz_adapter' => $this->engine->adapterId()),
+        array('fragment' => 'edit-reasoner')
+      );
+      $cache_info = array(
+        '#type' => 'details',
+        'description' => array(
+          '#type' => 'item',
+          '#markup' => $this->t('The connected adapter provides precomputation of domains and ranges.'),
+        ),
+        'link' => array(
+          '#type' => 'link',
+          '#title' => $this->t('See the adapter\'s config page for details'),
+          '#url' => $url,
+        ),
+      );
+      if ($this->engine->isCacheSet()) {
+        $cache_mode = TRUE;
+        $cache_info['#title'] = $this->t('Reasoner has run. Cache is prepared');
+      } else {
+        $cache_info['#title'] = $this->t('Reasoner has not run. No cache information available');
+      }
+      $form['cache_info'] = $cache_info;
+    }
+    
+    if (!$cache_mode && $this->engine->providesFastMode()) {
     
       $fast_label = $this->t('Fast Mode');
       $fast_text = $this->t('Setting path alternative detection to %fast_mode will yield much faster loading time but may result in <b>incomplete option lists</b> in the respective select boxes',array('%fast_mode' => $fast_label));
@@ -129,7 +158,7 @@ class WisskiPathForm extends EntityForm {
     
     //first, set the default values
     if (!isset($this->path_array)) $this->path_array = $path->isNew() ? array() : $path->getPathArray();
-    $selected_row = count($this->path_array);
+    $selected_row = -1;
     $fast_mode = FALSE;
     $consistent_change = FALSE;
     

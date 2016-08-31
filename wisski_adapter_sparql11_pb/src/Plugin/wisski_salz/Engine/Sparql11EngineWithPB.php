@@ -212,6 +212,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
   public function getClasses() {
   
+    if ($cache = \Drupal::cache()->get('wisski_reasoner_classes')) return $cache->data;
     $query = "SELECT DISTINCT ?class WHERE { ?class a owl:Class . }";  
     $result = $this->directQuery($query);
     
@@ -229,6 +230,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
   public function getProperties() {
   
+    if ($cache = \Drupal::cache()->get('wisski_reasoner_properties')) return $cache->data;
     $query = "SELECT DISTINCT ?property WHERE { ?property a owl:ObjectProperty . }";  
     $result = $this->directQuery($query);
     
@@ -246,6 +248,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
   public function nextProperties($class=NULL,$class_after = NULL,$fast_mode=FALSE) {
 
+    if (!isset($class) && !isset($class_after)) return $this->getProperties();
     \Drupal::logger(__METHOD__)->debug('class: '.$class.', class_after: '.$class_after);
     $output = $this->getPropertiesFromCache($class,$class_after);
     if ($output === FALSE) {
@@ -365,6 +368,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
   public function nextClasses($property=NULL,$property_after = NULL,$fast_mode=FALSE) {
     
+    if (!isset($property) && !isset($property_after)) return $this->getClasses();
     \Drupal::logger(__METHOD__)->debug('property: '.$property.', property_after: '.$property_after);
     $output = $this->getClassesFromCache($property,$property_after);
     if ($output === FALSE) {
