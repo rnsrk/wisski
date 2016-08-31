@@ -1570,7 +1570,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         
         $sparqldelete .= "<" . $arr[$maxi] . "> ";
         $sparqldelete .= "<" . $arr['primitive'] . "> ";
-        $sparqldelete .= "'" . $arr['out'] . "' ";
+        $sparqldelete .= "'" . $this->escapeSparqlLiteral($arr['out']) . "' ";
       }
       
       $sparqldelete .= " } ";
