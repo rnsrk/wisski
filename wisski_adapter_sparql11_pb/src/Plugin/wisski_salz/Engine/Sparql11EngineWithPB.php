@@ -2504,12 +2504,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $more_cached = array_diff($cached,$stored);
     if (empty($more_stored) && empty($more_cached)) {
       $result = $this->t('Same results for cache and direct query');
+      $full_results = $stored;
     } else {
       $stored_text = empty($more_stored) ? '' : $this->t('more in store:')."\n\t".implode("\n\t",$more_stored);
       $cached_text = empty($more_cached) ? '' : $this->t('more in cache:')."\n\t".implode("\n\t",$more_cached);
       $result = $this->t('Different results:')."\n".$stored_text."\n".$cached_text;
+      $full_results = array_unique(array_merge($stored,$cached));
     }
-    $form['reasoner']['tester']['check_results']['#value'] = $candidate."\n".$result;
+    $form['reasoner']['tester']['check_results']['#value'] = $candidate."\n".$result."\n\n".$this->t('Full list of results')."\n\t".implode("\n\t",$full_results);
     return $form['reasoner']['tester']['check_results'];
   }
 
