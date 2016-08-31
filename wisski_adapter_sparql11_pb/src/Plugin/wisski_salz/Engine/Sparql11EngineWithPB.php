@@ -34,10 +34,30 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
   /**
    * this adapter/engine provides two functions for retrieving path alternatives
-   * TODO bring that to the interface
+   * @TODO bring that to the interface
    */
   public function providesFastMode() {
     return TRUE;
+  }
+  
+  /**
+   * this adapter/engine provides a pre-computed step alternative cache
+   * @TODO bring that to the interface
+   */
+  public function providesCacheMode() {
+  
+    return TRUE;
+  }
+  
+  /**
+   * returns TRUE if the cache is pre-computed and ready to use, FALSE otherwise
+   */
+  public function isCacheSet() {
+    //see $this->doTheReasoning()
+    // and $this->getPropertiesFromCache() / $this->getClassesFromCache
+    //the rasoner sets all reasoning based caches i.e. it is sufficient to check, that one of them is set
+    if ($cache = \Drupal::cache()->get('wisski_reasoner_properties')) return TRUE;
+    return FALSE;
   }
 
   /**
@@ -267,26 +287,48 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if (isset($class_after)) $query .= "?property rdfs:range <$class_after>.";
     } else {
       if (isset($class)) {
-        $query .= "{"
-            ."?d_def_prop rdfs:domain ?d_def_class. "
-            ."<$class> rdfs:subClassOf* ?d_def_class. "
-          ."}"
+        $query .= 
+          "{"
+            ."{?d_def_prop rdfs:domain ?d_def_class.}"
+            ." UNION "
+            ."{"
+              ."?d_def_prop owl:inverseOf ?inv. "
+              ."?inv rdfs:range ?d_def_class. "
+            ."}"
+          ."} "
+          ."<$class> rdfs:subClassOf* ?d_def_class. "
           ."{"
-            ."{?d_def_prop rdfs:subPropertyOf* ?property.} "
-          ."UNION "
+            ."{?d_def_prop rdfs:subPropertyOf* ?property.}"
+            ." UNION "
             ."{ "
               ."?property rdfs:subPropertyOf+ ?d_def_prop. "
-              ."FILTER NOT EXISTS { "
-                ."?mid_prop rdfs:subPropertyOf+ ?d_def_prop. "
-                ."?property rdfs:subPropertyOf* ?mid_prop. "
-                ."?mid_prop rdfs:domain ?any_class. "
-              ."} "
+              ." FILTER NOT EXISTS {"
+                ."{ "
+                  ."?mid_prop rdfs:subPropertyOf+ ?d_def_prop. "
+                  ."?property rdfs:subPropertyOf* ?mid_prop. "
+                ."}"
+                ."{"
+                  ."{?mid_prop rdfs:domain ?any_domain.}"
+                  ." UNION "
+                  ."{ "
+                    ."?mid_prop owl:inverseOf ?mid_inv. "
+                    ."?mid_inv rdfs:range ?any_range. "
+                  ."}"
+                ."}"
+              ."}"
             ."}"
-          ."} ";
+          ."}";
       }
       if (isset($class_after)) {
         $query .= "{"
-            ."?r_def_prop rdfs:range ?r_def_class. "
+            ."{ "
+                ."{?r_def_prop rdfs:range ?r_def_class.} "
+                ."UNION "
+                ."{ "
+                  ."?r_def_prop owl:inverseOf ?inv. "
+                  ."?inv rdfs:domain ?inv. "
+                ."} "
+              ."} "
             ."<$class_after> rdfs:subClassOf* ?r_def_class. "
           ."}"
           ."{"
@@ -295,9 +337,17 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             ."{ "
               ."?property rdfs:subPropertyOf+ ?r_def_prop. "
               ."FILTER NOT EXISTS { "
-                ."?mid_prop rdfs:subPropertyOf+ ?r_def_prop. "
-                ."?property rdfs:subPropertyOf* ?mid_prop. "
-                ."?mid_prop rdfs:range ?any_class. "
+                ."{ "
+                  ."?mid_prop rdfs:subPropertyOf+ ?r_def_prop. "
+                  ."?property rdfs:subPropertyOf* ?mid_prop. "
+                ."} "
+                ."{?mid_prop rdfs:range ?any_range.}"
+                  ." UNION "
+                  ."{ "
+                    ."?mid_prop owl:inverseOf ?mid_inv. "
+                    ."?mid_inv rdfs:domain ?any_domain. "
+                  ."}"
+                ."}"
               ."} "
             ."}"
           ."} ";
@@ -2410,12 +2460,54 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           'callback' => array($this,'checkboxAjax'),
         ),
       );
+      $form['reasoner']['tester'] = array(
+        '#type' => 'details',
+        '#title' => $this->t('Check reasoning results'),
+        'selected_prop' => array(
+          '#type' => 'select',
+          '#options' => $this->getClasses() + $this->getProperties(),
+          '#empty_value' => 'empty',
+          '#empty_option' => $this->t('select a class or property'),
+          '#ajax' => array(
+            'wrapper' => 'wisski-reasoner-check',
+            'callback' => array($this,'checkTheReasoner'),
+          ),
+        ),
+        'check_results' => array(
+          '#type' => 'textarea',
+          '#prefix' => '<div id="wisski-reasoner-check">',
+          '#suffix' => '</div>',      
+        ),
+      );
     }
     return $form;
   }
 
   public function checkboxAjax(array $form, FormStateInterface $form_state) {
     return $form['reasoner']['start_button'];
+  }
+  
+  public function checkTheReasoner(array $form, FormStateInterface $form_state) {
+  
+    $candidate = $form_state->getValue($form_state->getTriggeringElement()['#name']);
+    if ($this->isAProperty($candidate)) {
+      $stored = $this->getClassesFromStore($candidate);
+      $cached = $this->getClassesFromCache($candidate);
+    } else {
+      $stored = $this->getPropertiesFromStore($candidate);
+      $cached = $this->getPropertiesFromCache($candidate);
+    }
+    $more_stored = array_diff($stored,$cached);
+    $more_cached = array_diff($cached,$stored);
+    if (empty($more_stored) && empty($more_cached)) {
+      $result = $this->t('Same results for cache and direct query');
+    } else {
+      $stored_text = empty($more_stored) ? '' : $this->t('more in store:')."\n\t".implode("\n\t",$more_stored);
+      $cached_text = empty($more_cached) ? '' : $this->t('more in cache:')."\n\t".implode("\n\t",$more_cached);
+      $result = $this->t('Different results:')."\n".$stored_text."\n".$cached_text;
+    }
+    $form['reasoner']['tester']['check_results']['#value'] = $candidate."\n".$result;
+    return $form['reasoner']['tester']['check_results'];
   }
 
   public function startReasoning(array $form,FormStateInterface $form_state) {
@@ -2439,14 +2531,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $cid = 'wisski_reasoner_properties';
     \Drupal::cache()->set($cid,$properties);
     
-    //find first level super and sub properties
+    //find one step property hierarchy, i.e. properties that are direct children or direct parents to each other
+    // no sub-generations are gathered
     $result = $this->directQuery(
       "SELECT ?property ?super WHERE {"
-        ."?property rdfs:subPropertyOf ?super."
-        ." FILTER NOT EXISTS {"
-         ." ?mid_prop rdfs:subPropertyOf+ ?super."
-         ." ?property rdfs:subPropertyOf+ ?mid_prop."
-        ."}"
+        ."?property rdfs:subPropertyOf ?super. "
+        ."FILTER NOT EXISTS {?mid_property rdfs:subPropertyOf+ ?super. ?property rdfs:subPropertyOf ?mid_property.}"
       ."}");
     foreach ($result as $row) {
       $prop = $row->property->getUri();
@@ -2456,16 +2546,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if (!isset($properties[$prop])) $properties[$prop] = $prop;
     }
 
-    //for later use we find the length of the longest path in the hierarchy
-    $depth = 0;
-    $horizon = $top_properties = array_diff_key($properties,$super_properties);
-    while (!empty($horizon)) {
-      $all_subs = array_intersect_key($sub_properties,$horizon);
-      $horizon = call_user_func_array('array_merge',$all_subs);
-      $depth++;
-    }
-    $max_depth = $depth;
-    
+    $cid = 'wisski_reasoner_sub_properties';
+    \Drupal::cache()->set($cid,$sub_properties);
+    $cid = 'wisski_reasoner_super_properties';
+    \Drupal::cache()->set($cid,$super_properties);
+
     //now lets find inverses
     $inverses = array();
     $results = $this->directQuery("SELECT ?prop ?inverse WHERE {{?prop owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf ?prop.}}");
@@ -2475,40 +2560,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $cid = 'wisski_reasoner_inverse_properties';
     \Drupal::cache()->set($cid,$inverses);
     
-/*    
-    //find all recursively defined sub properties
-    //start with those having no sub properties
-    $horizon = $bottom_properties = array_diff_key($properties,$sub_properties);
-    while (!empty($horizon)) {
-      //take the first
-      $prop = array_shift($horizon);
-      $supers = $super_properties[$prop];
-      //take all sub properties of the current node and add it to each super property
-      $subs = $sub_properties[$prop];
-      foreach ($supers as $super) {
-        $sub_properties[$super] = array_merge($sub_properties[$super],$subs);
-      }
-      $horizon = array_merge($horizon,$supers);
-    }
-
-    //here comes the reasoning, the super properties of super properties are super properties
-    $horizon = $top_properties = array_diff_key($properties,$super_properties);
-    while (!empty($horizon)) {
-      $prop = array_shift($horizon);
-      $subs = $sub_properties[$prop];
-      $supers = $super_properties[$prop];
-      foreach ($subs as $sub) {
-        $super_properties[$sub] = array_merge($super_properties[$sub],$supers);
-      }
-      $horizon = array_merge($horizon,$subs);
-    }
-    
-*/
-    $cid = 'wisski_reasoner_sub_properties';
-    \Drupal::cache()->set($cid,$sub_properties);
-    $cid = 'wisski_reasoner_super_properties';
-    \Drupal::cache()->set($cid,$super_properties);
-    
     //now the same things for classes
     //find all classes
     $classes = array();
@@ -2517,10 +2568,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $classes[$row->class->getUri()] = $row->class->getUri();
     }
     
-    //find top level hierarchy
+    //find full class hierarchy
     $super_classes = array();
     $sub_classes = array();
-    $results = $this->directQuery("SELECT ?class ?super WHERE {?class rdfs:subClassOf ?super.}");
+    $results = $this->directQuery("SELECT ?class ?super WHERE {"
+      ."?class rdfs:subClassOf+ ?super. "
+      ."FILTER (!isBlank(?class)) "
+      ."FILTER (!isBlank(?super)) "
+      ."?super a owl:Class. "
+    ."}");
     foreach ($results as $row) {
       $sub = $row->class->getUri();
       $super = $row->super->getUri();
@@ -2528,32 +2584,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $sub_classes[$super][$sub] = $sub;
     }
     
-    $horizon = $top_classes = array_diff_key($classes,$super_classes);
-    while(!empty($horizon)) {
-      $class = array_shift($horizon);
-      $supers = $super_classes[$class];
-      $subs = $sub_classes[$class];
-      foreach ($subs as $sub) {
-        $super_classes[$sub] = array_merge($super_classes[$sub],$supers);
-      }
-      $horizon = array_merge($horizon,$subs);
-    }
-    
-    $cid = 'wisski_reasoner_super_classes';
-    \Drupal::cache()->set($cid,$super_classes);
-    
-    $horizon = $bottom_classes = array_diff_key($classes,$sub_classes);
-    while(!empty($horizon)) {
-      $class = array_shift($horizon);
-      $subs = $sub_classes[$class];
-      $supers = $super_classes[$class];
-      foreach ($supers as $super) {
-        $sub_classes[$super] = array_merge($sub_classes[$super],$subs);
-      }
-      $horizon = array_merge($horizon,$supers);
-    }
-    $cid = 'wisski_reasoner_sub_classes';
-    \Drupal::cache()->set($cid,$sub_classes);
+    \Drupal::cache()->set('wisski_reasoner_sub_classes',$sub_classes);
+    \Drupal::cache()->set('wisski_reasoner_super_classes',$super_classes);
     
     //explicit top level domains
     $domains = array();
@@ -2568,6 +2600,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $domains[$row->property->getUri()][$row->domain->getUri()] = $row->domain->getUri();
     }
     
+    //clear up, avoid DatatypeProperties
+    $domains = array_intersect_key($domains,$properties);
+    
     //explicit top level ranges
     $ranges = array();
     
@@ -2581,50 +2616,88 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $ranges[$row->property->getUri()][$row->range->getUri()] = $row->range->getUri();
     }
     
-    //gather domains for properties where they are unspecified
-    //find the properties having no domain/range
-    $no_domain = array_diff_key($properties,$domains);    
-    $no_range = array_diff_key($properties,$ranges);
+    //clear up, avoid DatatypeProperties
+    $ranges = array_intersect_key($ranges,$properties);    
     
-    //first try to find domain and range via the inverses
-    foreach ($no_domain as $prop) {
-      if ($inv = $inverses[$prop]) {
-        if ($dom = $ranges[$inv]) {
-          $domains[$prop][$dom] = $dom;
-          unset($no_domain[$prop]);
+    //take all properties with no super property
+    $top_properties = array_diff_key($properties,$super_properties);
+
+    $valid_definitions = TRUE;
+    //check if they all have domains and ranges set
+    $dom_check = array_diff_key($top_properties,$domains);
+    if (!empty($dom_check)) {
+      drupal_set_message('No domains for top-level properties: '.implode(', ',$dom_check),'error');
+      $valid_definitions = FALSE;
+    }
+    $rng_check = array_diff_key($top_properties,$ranges);
+    if (!empty($rng_check)) {
+      drupal_set_message('No ranges for top-level properties: '.implode(', ',$rng_check),'error');
+      $valid_definitions = FALSE;
+    }
+    
+    //set of properties where the domains and ranges are not fully set
+    $not_set = array_diff_key($properties,$top_properties);
+    
+    //while there are unchecked properties cycle throgh them, gather domain/range defs from all super properties and inverses
+    //and include them into own definition
+    $runs = 0;
+    while ($valid_definitions && !empty($not_set)) {
+      
+      $runs++;
+      //take one of the properties
+      $prop = array_shift($not_set);
+      //check if all super_properties have their domains/ranges set
+      $supers = $super_properties[$prop];
+      $invalid_supers = array_intersect($supers,$not_set);
+      if (empty($invalid_supers)) {
+        //take all the definitions of super properties and add them here
+        $new_domains = isset($domains[$prop]) ? $domains[$prop] : array();
+        $new_ranges = isset($ranges[$prop]) ? $ranges[$prop] : array();
+        foreach ($supers as $super_prop) {
+          $new_domains += $domains[$super_prop];
+          $new_ranges += $ranges[$super_prop];
         }
-      }
-    }
-    foreach ($no_range as $prop) {
-      if ($inv = $inverses[$prop]) {
-        if ($rng = $ranges[$inv]) {
-          $ranges[$prop][$rng] = $rng;
-          unset($no_range[$prop]);
+        $new_domains = array_unique($new_domains);
+        $new_ranges = array_unique($new_ranges);
+        
+        $remove_domains = array();
+        foreach ($new_domains as $domain_1) {
+          foreach ($new_domains as $domain_2) {
+            if ($domain_1 !== $domain_2) {
+              if (isset($super_classes[$domain_1]) && in_array($domain_2,$super_classes[$domain_1])) {
+                $remove_domains[] = $domain_2;
+              }
+            }
+          }
         }
+        if ($prop === 'http://erlangen-crm.org/150218/P37i_was_assigned_by') {
+        
+          \Drupal::logger('P37i')->debug(implode(', ',$new_domains)." \n ".implode(', ',$remove_domains));
+        }
+        $new_domains = array_diff($new_domains,$remove_domains);
+        
+        $domains[$prop] = array_combine($new_domains,$new_domains);
+        
+        $remove_ranges = array();
+        foreach ($new_ranges as $range_1) {
+          foreach ($new_ranges as $range_2) {
+            if ($range_1 !== $range_2) {
+              if (isset($super_classes[$range_1]) && in_array($range_2,$super_classes[$range_1])) {
+                $remove_ranges[] = $range_2;
+              }
+            }
+          }
+        }
+        $new_ranges = array_diff($new_ranges,$remove_ranges);
+        
+        $ranges[$prop] = array_combine($new_ranges,$new_ranges);
+        
+      } else {
+        //append this property to the end of the list to be checked again later-on
+        array_push($not_set,$prop);
       }
     }
-    
-    //now try to find the domain from super classes, remember multiple domains mean an AND over the domains
-    $horizon = $no_domain;
-    //we know that we can only have a maximum number of search rounds equalling the maximum depth of the property hierarchy
-    $depth = 0;
-    while (!empty($horizon) && $depth < $max_depth) {
-      $new_horizon = array();
-      while (!empty($horizon)) {
-        //take the first
-        $prop = array_shift($horizon);
-        //find out if ALL super properties have a domain set
-        $supers = $super_properties[$prop];
-        $super_domains = array_intersect_key($domains,$supers);
-        if (count($supers) === count($super_domains)) {
-          //multi-merge all domains
-          $domains[$prop] = call_user_func_array('array_merge',$super_domains);
-        } else array_push($new_horizon,$prop);
-      }
-      $horizon = $new_horizon;
-      $depth++;
-    }
-    
+    drupal_set_message('Definition checkup runs: '.$runs);
     //remember sub classes of domains are domains, too.
     //if a property has exactly one domain set, we can add all subClasses of that domain
     //if there are multiple domains we can only add those being subClasses of ALL of the domains
@@ -2638,33 +2711,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
         $domains[$property] = array_merge($domains[$property],$add_up);
       }
-    }
-    
-    //gather ranges for properties where they are still unspecified
-    $horizon = $no_range;
-    //we know that we can only have a maximum number of search rounds equalling the maximum depth of the property hierarchy
-    $depth = 0;
-    while (!empty($horizon) && $depth < $max_depth) {
-      $new_horizon = array();
-      while (!empty($horizon)) {
-        //take the first
-        $prop = array_shift($horizon);
-        //find out if ALL super properties have a range set
-        $supers = $super_properties[$prop];
-        $super_ranges = array_intersect_key($ranges,$supers);
-        if (count($supers) === count($super_ranges)) {
-          //multi-merge all ranges
-          $ranges[$prop] = call_user_func_array('array_merge',$super_ranges);
-        } else array_push($new_horizon,$prop);
-      }
-      $horizon = $new_horizon;
-      $depth++;
-    }
-    
-    //remember sub classes of ranges are ranges, too.
-    //if a property has exactly one range set, we can add all subClasses of that range
-    //if there are multiple ranges we can only add those being subClasses of ALL of the ranges
-    foreach ($properties as $property) {
       if (isset($ranges[$property])) {
         $add_up = array();
         foreach ($ranges[$property] as $range) {
@@ -2675,7 +2721,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $ranges[$property] = array_merge($ranges[$property],$add_up);
       }
     }
-    
     
     //for the pathbuilders to work correctly, we also need inverted search
     $reverse_domains = array();

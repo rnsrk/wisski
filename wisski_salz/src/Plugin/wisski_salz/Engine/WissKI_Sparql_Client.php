@@ -44,7 +44,7 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
         'maxredirects'    => 5,
         'useragent'       => 'EasyRdf_Http_Client',
         //we change the timeout from 10 secs since some of our requests will necessarily take much longer
-        'timeout'         => 100,
+        'timeout'         => 600,
     ));
 
     // Tell the server which response formats we can parse
