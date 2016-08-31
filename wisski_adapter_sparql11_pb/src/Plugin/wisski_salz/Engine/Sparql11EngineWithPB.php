@@ -2408,8 +2408,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    }
 #    dpm($results,'Results');
 
-    $cid = 'wisski_reasoner_reverse_domains';
-    $in_cache = !empty(\Drupal::cache()->get($cid));
+    $in_cache = $this->isCacheSet();
 
     $form = parent::buildConfigurationForm($form, $form_state);
 
@@ -2572,6 +2571,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $classes[$row->class->getUri()] = $row->class->getUri();
     }
     
+    \Drupal::cache()->set('wisski_reasoner_classes',$classes);
+    
     //find full class hierarchy
     $super_classes = array();
     $sub_classes = array();
@@ -2673,10 +2674,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
               }
             }
           }
-        }
-        if ($prop === 'http://erlangen-crm.org/150218/P37i_was_assigned_by') {
-        
-          \Drupal::logger('P37i')->debug(implode(', ',$new_domains)." \n ".implode(', ',$remove_domains));
         }
         $new_domains = array_diff($new_domains,$remove_domains);
         
