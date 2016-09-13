@@ -75,16 +75,18 @@ class WisskiCacheHelper {
     self::flushCacheData($cid);
   }
   
-  static function putPreviewImage($entity_id,$preview_image_id) {
+  static function putPreviewImage($entity_id,$preview_image_id,$preview_image_uri=NULL) {
   
     $cid = 'wisski_preview_image.'.$entity_id;
-    self::putCacheData($cid,$preview_image_id);
+    self::putCacheData($cid,array($preview_image_id,$preview_image_uri));
   }
   
-  static function getPreviewImage($entity_id) {
+  static function getPreviewImage($entity_id,$id_only=TRUE) {
     
     $cid = 'wisski_preview_image.'.$entity_id;
-    return self::getCacheData($cid);
+    $list = self::getCacheData($cid);
+    if ($id_inly) return $list[0];
+    return $list;
   }
   
   static function flushPreviewImage($entity_id) {

@@ -350,26 +350,30 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     return $value;
   }
 
-  private function getPreviewImage($entity_id,$bundle_id,$adapter) {
+  private function getPreviewImage($entity_id,$bundle_id,$adapter,$id_only=TRUE) {
     
-    if ($preview = WisskiCacheHelper::getPreviewImage($entity_id)) {
-#      drupal_set_message('Preview image from cache');
+    if ($preview = WisskiCacheHelper::getPreviewImage($entity_id,$id_only)) {
+      drupal_set_message('Preview image from cache');
       return $preview;
     }
     else {
       $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
+      if (empty($images)) return NULL;
       $input_uri = current($images);
       $output_uri = '';
       $input_id = $this->getFileId($input_uri,$output_uri);
       $image_style = $this->getPreviewStyle();
       $preview_uri = $image_style->buildUri($output_uri);
-      //dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
+      dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
       if ($image_style->createDerivative($output_uri,$preview_uri)) {
         drupal_set_message('Style did it');
         $preview_id = $this->getFileId($preview_uri);
-        WisskiCacheHelper::putPreviewImage($entity_id,$preview_id);
+        WisskiCacheHelper::putPreviewImage($entity_id,$preview_id,$preview_uri);
         return $preview_id;
-      } else return $input_id;
+      } else {
+        WisskiCacheHelper::putPreviewImage($entity_id,$input_id,'empty');
+        return $input_id;
+      }
     }
   }
   

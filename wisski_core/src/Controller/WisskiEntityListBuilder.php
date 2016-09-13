@@ -34,12 +34,22 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     return $build;
   }
 
+  protected $then = 0;
+
+  protected function tick($name='') {
+    
+    $now = microtime(TRUE)*1000;
+    dpm(ceil($now-$this->then).' ms',$name);
+    $this->then = $now;
+  }
+
   /**
    * {@inheritdoc}
    * We only load entities form the specified bundle
    */
   protected function getEntityIds() {
 #   dpm($this); 
+    $this->tick('init');
     if (isset($this->entity)) dpm($this->entity);
     $storage = $this->getStorage();
     $query = $storage->getQuery()
@@ -49,6 +59,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     if ($this->limit) {
       $query->pager($this->limit);
     }
+    $this->tick('prepare');
     if (!empty($this->bundle)) {
       $bundle_object = \Drupal::entityManager()->getStorage('wisski_bundle')->load($this->bundle);
       if ($pattern = $bundle_object->getTitlePattern()) {
@@ -59,11 +70,13 @@ class WisskiEntityListBuilder extends EntityListBuilder {
         }
       }
       $query->condition('bundle',$this->bundle);
+      $this->tick('bundle pattern');
       $entity_ids = $query->execute();
       foreach ($entity_ids as $eid) {
         $storage->writeToCache($eid,$this->bundle);
       }
       $this->num_entities = count($entity_ids);
+      $this->tick('Caching');
       return $entity_ids;
     } else return $query->execute();
     
@@ -94,17 +107,23 @@ class WisskiEntityListBuilder extends EntityListBuilder {
 //    echo "Hello ".$id;
     //dpm($entity);
     //dpm($entity->get('preview_image'));
+    $row_preview_image = $this->t('No preview available');
     $prev = $entity->get('preview_image')->first();
     if ($prev) {
       $prev_id = $prev->target_id;
-      $prev_uri = \Drupal::entityManager()->getStorage('file')->load($prev_id)->getFileUri();
-      $row['preview_image'] = array('data'=>array(
-        '#theme' => 'image',
-        '#uri' => $prev_uri,
-        '#alt' => 'preview '.$entity->label(),
-        '#title' => $entity->label(),
-      ));
-    } else $row['preview_image'] = $this->t('No preview available');
+      $prev_file = \Drupal::entityManager()->getStorage('file')->load($prev_id);
+      $prev_uri = $prev_file->getFileUri();
+      $prev_mime = $prev_file->getMimeType();
+      if (explode('/',$prev_mime)[0] === 'image') {
+        $row_preview_image = array('data'=>array(
+          '#theme' => 'image',
+          '#uri' => $prev_uri,
+          '#alt' => 'preview '.$entity->label(),
+          '#title' => $entity->label(),
+        ));
+      }
+    }
+    $row['preview_image'] = $row_preview_image;
     $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.canonical',array('wisski_bundle'=>$this->bundle,'wisski_individual'=>$entity->id()));
     $row += parent::buildRow($entity);
     foreach($row['operations']['data']['#links'] as &$link) {
