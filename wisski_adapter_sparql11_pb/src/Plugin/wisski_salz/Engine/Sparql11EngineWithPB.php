@@ -2753,11 +2753,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if (isset($properties[$property_uri])) return $inverses[$property_uri];
     }
     $results = $this->directQuery("SELECT ?inverse WHERE {{<$property_uri> owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf <$property_uri>.}}");
+    $inverse = '';
     foreach ($results as $row) {
-      $inverses[$property_uri] = $row->inverse->getUri();
+      $inverse = $row->inverse->getUri();
     }
+    $inverses[$property_uri] = $inverse;
     \Drupal::cache()->set($cid,$inverses);
-    return $inverses[$property_uri];
+    return $inverse;
   }
   
 }
