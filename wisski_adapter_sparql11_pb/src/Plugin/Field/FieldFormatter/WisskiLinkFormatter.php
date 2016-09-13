@@ -14,6 +14,7 @@ use Drupal\Core\Image\ImageFactory;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Url;
+use Drupal\wisski_salz\AdapterHelper;
    
 /**
  * Plugin implementation of the 'wisski_link_formatter' formatter.

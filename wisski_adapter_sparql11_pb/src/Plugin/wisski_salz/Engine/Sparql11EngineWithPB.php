@@ -1659,7 +1659,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * whatever). This should be used for any pattern generation. Everything else
    * is evil.
    *
-   * @param $pb	a pathbuilder isntance
+   * @param $pb	a pathbuilder instance
    * @param $path the path as a path object of which the triple parts should be 
    *              generated. May also be a group.
    * @param $primitiveValue The primitive data value that should be stored or
@@ -1763,17 +1763,53 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           if($write) {
             $query .= "<$olduri> <$prop> <$uri> . ";
           } else {
-            if(!empty($olduri))
-              $query .= "<$olduri> ";
-            else
-              $query .= "?x$oldkey ";
+            $inverse = $this->getInverseProperty($prop);
+            // if there is an inverse, don't do any unions
+            if(empty($inverse)) {
+              if(!empty($olduri))
+                $query .= "<$olduri> ";
+              else
+                $query .= "?x$oldkey ";
           
-            $query .= "<$prop> ";
+              $query .= "<$prop> ";
                     
-            if(!empty($uri))
-              $query .= "<$uri> . ";
-            else
-              $query .= "?x$localkey . ";
+              if(!empty($uri))
+                $query .= "<$uri> . ";
+              else
+                $query .= "?x$localkey . ";
+            } else { // if there is an inverse, make a union
+              $query = "{ { ";
+              // Forward query part
+              if(!empty($olduri))
+                $query .= "<$olduri> ";
+              else
+                $query .= "?x$oldkey ";
+          
+              $query .= "<$prop> ";
+                    
+              if(!empty($uri))
+                $query .= "<$uri> . ";
+              else
+                $query .= "?x$localkey . ";
+              
+              $query .= " } UNION { ";
+
+              // backward query part
+          
+              if(!empty($uri))
+                $query .= "<$uri> ";
+              else
+                $query .= "?x$localkey "; 
+          
+              $query .= "<$inverse> ";
+
+              if(!empty($olduri))
+                $query .= "<$olduri> . ";
+              else
+                $query .= "?x$oldkey . ";
+                            
+              $query .= " } } . "; 
+            }
           }
         }
          
@@ -1836,7 +1872,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       } else
         $query .= " ?out . ";
     }
-    
+        
     return $query;
   }
   
