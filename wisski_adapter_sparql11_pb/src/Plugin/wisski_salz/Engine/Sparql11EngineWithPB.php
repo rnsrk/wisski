@@ -1756,8 +1756,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             $query .= "<$uri> a <$value> . ";
           else
             $query .= "?x$localkey a <$value> . ";
-        }             
-
+        }
+        
         // magic function
         if($localkey > 0 && !empty($prop)) { 
           if($write) {
@@ -1778,7 +1778,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
               else
                 $query .= "?x$localkey . ";
             } else { // if there is an inverse, make a union
-              $query = "{ { ";
+              $query .= "{ { ";
               // Forward query part
               if(!empty($olduri))
                 $query .= "<$olduri> ";
@@ -1872,7 +1872,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       } else
         $query .= " ?out . ";
     }
-        
+
     return $query;
   }
   
