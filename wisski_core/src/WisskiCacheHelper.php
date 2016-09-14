@@ -59,6 +59,7 @@ class WisskiCacheHelper {
   
   static function putCallingBundle($entity_id,$bundle_id) {
   
+    if (self::getCallingBundle($entity_id) === $bundle_id) return;
     $cid = 'wisski_individual.'.$entity_id.'.bundle';
     self::putCacheData($cid, $bundle_id);
   }
