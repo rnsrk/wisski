@@ -202,7 +202,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     if ($type === 'uri.long') return $uri;
     if ($type === 'uri.short') {
       $matches = array();
-      if (preg_match('/^.*\W(.+)$/',$uri,$matches)) {
+      if (preg_match('/^.*[\#\/](.+)$/',$uri,$matches)) {
         return $matches[1];
       } else {
         dpm($uri,'no match');
