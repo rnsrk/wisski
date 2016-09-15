@@ -350,12 +350,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     return $value;
   }
 
-  private function getPreviewImage($entity_id,$bundle_id,$adapter,$id_only=TRUE) {
+  public function getPreviewImage($entity_id,$bundle_id,$adapter=NULL,$id_only=TRUE) {
     
     if ($preview = WisskiCacheHelper::getPreviewImage($entity_id,$id_only)) {
       drupal_set_message('Preview image from cache');
       return $preview;
-    }
+    } elseif (!isset($adapter)) return NULL;
     else {
       $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
       if (empty($images)) return NULL;

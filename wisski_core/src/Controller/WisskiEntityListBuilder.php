@@ -189,8 +189,8 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     //dpm($entity);
     //dpm($entity->get('preview_image'));
     $row_preview_image = $this->t('No preview available');
-    /*
-    $prev = $entity->get('preview_image')->first();
+    
+    $prev = $this->getStorage()->getPreviewImage($entity_id,$this->bundle->id());
     if ($prev) {
       $prev_id = $prev->target_id;
       $prev_file = \Drupal::entityManager()->getStorage('file')->load($prev_id);
@@ -204,7 +204,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
           '#title' => $entity->label(),
         ));
       }
-    }*/
+    }
     $row['preview_image'] = $row_preview_image;
     $entity_label = $this->bundle->generateEntityTitle($entity_id,$entity_id);
     $row['title'] = Link::createFromRoute($entity_label,'entity.wisski_individual.canonical',array('wisski_bundle'=>$this->bundle->id(),'wisski_individual'=>$entity_id));
