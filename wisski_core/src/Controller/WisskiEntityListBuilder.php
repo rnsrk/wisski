@@ -153,6 +153,29 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     }
     return $row;
   } 
+
+  private function getOperationLinks($entity_id) {
+  
+    //we have these hard-coded since there seems to be no possibility to generate fully qualified Route-URLs from
+    //link templates without having the entity itself at hand, which we want to avoid here
+    //add routes here to enhance the OPs list
+    $operations = array(
+      'view' => array('entity.wisski_individual.canonical',$this->t('View')),
+      'edit' => array('entity.wisski_individual.edit_form',$this->t('Edit')),
+      'delete' => array('entity.wisski_individual.delete_form',$this->t('Delete')),
+    );
+    $i = 0;
+    $links = array();
+    foreach ($operations as $key => list($route,$label)) {
+      $links[$key] = array(
+        'url' => Url::fromRoute($route,array('wisski_individual' => $entity_id,'wisski_bundle' => $this->bundle->id())),
+        'weight' => $i++,
+        'title' => $label,
+      );
+    }
+    dpm($links);
+    return $links;
+  }
   
   /**
    * re-written buildRow since we don't need to load the entity just to make its title
@@ -185,19 +208,10 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     $row['preview_image'] = $row_preview_image;
     $entity_label = $this->bundle->generateEntityTitle($entity_id,$entity_id);
     $row['title'] = Link::createFromRoute($entity_label,'entity.wisski_individual.canonical',array('wisski_bundle'=>$this->bundle->id(),'wisski_individual'=>$entity_id));
-    $row['operations'] = array(
+    $row['operations']['data'] = array(
       '#type' => 'operations',
-      '#links' => array(
-        'front' => array(
-          'title' => 'Go Home',
-          'weight' => 0,
-          'url' => Url::fromRoute('<front>'),
-        ),
-      ),
+      '#links' => $this->getOperationLinks($entity_id),
     );
-    foreach($row['operations']['data']['#links'] as &$link) {
-      $link['url']->setRouteParameter('wisski_bundle',$this->bundle->id());
-    }
     return $row;
   } 
 }
