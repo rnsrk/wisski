@@ -67,6 +67,25 @@ function wisski_core_schema() {
       ),
     ),
   );
+  
+  $schema['wisski_calling_bundles'] = array(
+    
+    'description' => 'Caches the calling bundle for individuals so that we can decide on the correct visualization',
+    'fields' => array(
+      'eid' => array(
+        'description' => 'Entity ID',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+      ),
+      'bid' => array(
+        'description' => 'bundle name / ID',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+      ),
+    ),
+  );
   //dpm($schema);
   return $schema;
 }

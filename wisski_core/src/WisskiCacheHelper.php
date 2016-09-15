@@ -59,15 +59,22 @@ class WisskiCacheHelper {
   
   static function putCallingBundle($entity_id,$bundle_id) {
   
-    if (self::getCallingBundle($entity_id) === $bundle_id) return;
-    $cid = 'wisski_individual.'.$entity_id.'.bundle';
-    self::putCacheData($cid, $bundle_id);
+    // DEBUG, change $entity_id and open up in case you get 'Could not load entities in adapter sparql_1_1_with_pathbuilder because ...'-error
+    // if ($entity_id === 'Albrecht Dürer') ddebug_backtrace();
+    $db = \Drupal::service('database');
+    $query = $db->select('wisski_calling_bundles','c')->fields('c')->condition('eid',$entity_id)->execute();
+    if ($result = $query->fetch()) {
+      if ($result->bid !== $bundle_id) $db->update('wisski_calling_bundles')->fields(array('bid' => $bundle_id))->condition('eid',$entity_id)->execute();
+    } else {
+      $db->insert('wisski_calling_bundles')->fields(array('eid' => $entity_id,'bid' => $bundle_id))->execute();
+    }
   }
   
   static function getCallingBundle($entity_id) {
   
-    $cid = 'wisski_individual.'.$entity_id.'.bundle';
-    return self::getCacheData($cid);
+    if ($record = \Drupal::service('database')->select('wisski_calling_bundles','c')->fields('c')->condition('eid',$entity_id)->execute()->fetch())
+      return $record->bid;
+    else return NULL;
   }
   
   static function flushCallingBundle($entity_id) {
