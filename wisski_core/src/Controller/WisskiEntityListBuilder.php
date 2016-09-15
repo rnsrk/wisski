@@ -5,6 +5,7 @@ namespace Drupal\wisski_core\Controller;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityListBuilder;
 use Drupal\Core\Link;
+use Drupal\Core\Url;
 
 /**
  * Provides a list controller for wisski_core entity.
@@ -28,9 +29,31 @@ class WisskiEntityListBuilder extends EntityListBuilder {
   
     if (!isset($this->limit))
       $this->limit = \Drupal::config('wisski_core.settings')->get('wisski_max_entities_per_page');
-    $this->bundle = $bundle;
+    $this->bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->load($bundle);
     $this->entity = $entity;
-    $build['table'] = parent::render();
+    $build['table'] = array(
+      '#type' => 'table',
+      '#header' => $this->buildHeader(),
+      '#title' => $this->getTitle(),
+      '#rows' => array(),
+      '#empty' => $this->t('There is no @label yet.', array('@label' => $this->entityType->getLabel())),
+      '#cache' => [
+        'contexts' => $this->entityType->getListCacheContexts(),
+        'tags' => $this->entityType->getListCacheTags(),
+      ],
+    );
+    foreach ($this->getEntityIds() as $entity_id) {
+      if ($row = $this->buildRowForId($entity_id)) {
+        $build['table']['#rows'][$entity_id] = $row;
+      }
+    }
+
+    // Only add the pager if a limit is specified.
+    if ($this->limit) {
+      $build['pager'] = array(
+        '#type' => 'pager',
+      );
+    }
     return $build;
   }
 
@@ -61,19 +84,18 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     }
     $this->tick('prepare');
     if (!empty($this->bundle)) {
-      $bundle_object = \Drupal::entityManager()->getStorage('wisski_bundle')->load($this->bundle);
-      if ($pattern = $bundle_object->getTitlePattern()) {
+      if ($pattern = $this->bundle->getTitlePattern()) {
         foreach ($pattern as $key => $attributes) {
           if ($attributes['type'] === 'field' && !$attributes['optional']) {
             $query->condition($attributes['name']);
           }
         }
       }
-      $query->condition('bundle',$this->bundle);
+      $query->condition('bundle',$this->bundle->id());
       $this->tick('bundle pattern');
       $entity_ids = $query->execute();
       foreach ($entity_ids as $eid) {
-        $storage->writeToCache($eid,$this->bundle);
+        $storage->writeToCache($eid,$this->bundle->id());
       }
       $this->num_entities = count($entity_ids);
       $this->tick('Caching');
@@ -124,10 +146,57 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       }
     }
     $row['preview_image'] = $row_preview_image;
-    $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.canonical',array('wisski_bundle'=>$this->bundle,'wisski_individual'=>$entity->id()));
+    $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.canonical',array('wisski_bundle'=>$this->bundle->id(),'wisski_individual'=>$entity->id()));
     $row += parent::buildRow($entity);
     foreach($row['operations']['data']['#links'] as &$link) {
-      $link['url']->setRouteParameter('wisski_bundle',$this->bundle);
+      $link['url']->setRouteParameter('wisski_bundle',$this->bundle->id());
+    }
+    return $row;
+  } 
+  
+  /**
+   * re-written buildRow since we don't need to load the entity just to make its title
+   */
+  public function buildRowForId($entity_id) {
+    
+    #dpm($this);
+    #dpm($entity);
+    //    dpm($entity->tellMe('id','bundle'));
+    //    echo "Hello ".$id;
+    //dpm($entity);
+    //dpm($entity->get('preview_image'));
+    $row_preview_image = $this->t('No preview available');
+    /*
+    $prev = $entity->get('preview_image')->first();
+    if ($prev) {
+      $prev_id = $prev->target_id;
+      $prev_file = \Drupal::entityManager()->getStorage('file')->load($prev_id);
+      $prev_uri = $prev_file->getFileUri();
+      $prev_mime = $prev_file->getMimeType();
+      if (explode('/',$prev_mime)[0] === 'image') {
+        $row_preview_image = array('data'=>array(
+          '#theme' => 'image',
+          '#uri' => $prev_uri,
+          '#alt' => 'preview '.$entity->label(),
+          '#title' => $entity->label(),
+        ));
+      }
+    }*/
+    $row['preview_image'] = $row_preview_image;
+    $entity_label = $this->bundle->generateEntityTitle($entity_id,$entity_id);
+    $row['title'] = Link::createFromRoute($entity_label,'entity.wisski_individual.canonical',array('wisski_bundle'=>$this->bundle->id(),'wisski_individual'=>$entity_id));
+    $row['operations'] = array(
+      '#type' => 'operations',
+      '#links' => array(
+        'front' => array(
+          'title' => 'Go Home',
+          'weight' => 0,
+          'url' => Url::fromRoute('<front>'),
+        ),
+      ),
+    );
+    foreach($row['operations']['data']['#links'] as &$link) {
+      $link['url']->setRouteParameter('wisski_bundle',$this->bundle->id());
     }
     return $row;
   } 

@@ -12,7 +12,9 @@ function wisski_core_generate_title($wisski_individual) {
     return is_string($wisski_individual) ? $wisski_individual : 'WissKI Entity';
   }
   $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($wisski_individual->bundle());
-  $title = $bundle->generateEntityTitle($wisski_individual);
+  $title_list = $wisski_individual->get('name')->getValue();
+  $fallback_title = $title_list[0]['value'];
+  $title = $bundle->generateEntityTitle($wisski_individual->id(),$fallback_title);
   return $title;
 }
 
@@ -25,7 +27,9 @@ function wisski_core_generate_title_with_bundle($wisski_individual) {
     return is_string($wisski_individual) ? $wisski_individual : 'WissKI Entity';
   }
   $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($wisski_individual->bundle());
-  $title = $bundle->generateEntityTitle($wisski_individual,TRUE);
+  $title_list = $wisski_individual->get('name')->getValue();
+  $fallback_title = $title_list[0]['value'];
+  $title = $bundle->generateEntityTitle($wisski_individual->id(),$fallback_title,TRUE);
   return $title;
 }
 

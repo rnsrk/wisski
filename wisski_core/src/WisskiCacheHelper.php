@@ -93,7 +93,7 @@ class WisskiCacheHelper {
     
     $cid = 'wisski_preview_image.'.$entity_id;
     $list = self::getCacheData($cid);
-    if ($id_inly) return $list[0];
+    if ($id_only) return $list[0];
     return $list;
   }
   

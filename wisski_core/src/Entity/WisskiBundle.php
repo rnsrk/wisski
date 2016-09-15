@@ -80,17 +80,15 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   protected $cached_titles;
   
-  public function generateEntityTitle($wisski_individual,$include_bundle=FALSE) {
+  public function generateEntityTitle($entity_id,$fallback_title='Wisski Individual',$include_bundle=FALSE) {
     
-    $entity_id = $wisski_individual->id();
     $title = $this->getCachedTitle($entity_id);
     if (isset($title)) {
       //drupal_set_message('Title from cache');
       if ($include_bundle) {
         drupal_set_message('Enhance Title '.$title);
         $title = $this->label().': '.$title;
-      }
-    
+      }    
       return $title;
     }
     $pattern = $this->getTitlePattern();
@@ -99,8 +97,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $parts = array();
     $empty_children = array();
     if (empty($pattern)) {
-      $title_list = $wisski_individual->get('name')->getValue();
-      $title = $title_list[0]['value'];
+      return $fallback_title;
     } else {
       foreach ($pattern as $key => $attributes) {
         if ($attributes['type'] === 'path') {
@@ -144,9 +141,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       $parts = array_diff_key($parts,array_flip($empty_children));
       if (in_array(FALSE,$parts)) {
         drupal_set_message('Detected invalid title','error');
-        $title_list = $wisski_individual->get('name')->getValue();
-        #drupal_set_message("bla: " . serialize($title_list));
-        $title = $title_list[0]['value'];
+        $title = $fallback_title;
       } else {
         $title = implode('',$parts);
       }
