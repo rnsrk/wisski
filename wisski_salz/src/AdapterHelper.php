@@ -100,6 +100,19 @@ class AdapterHelper {
 
   }
   
+  public static function getPreferredLocalStore() {
 
-
+    $cid = 'wisski_salz_preferred_local_store';
+    if ($cache = \Drupal::cache()->get($cid)) {
+      return $cache->data;
+    }
+    //since there is (or at least should be) only one preferred local store, we can stop on first sight
+    //TODO: decide what to do if there is none (e.g. return NULL or return any from the list)
+    foreach (\Drupal::entityManager()->getStorage('wisski_salz_adapter')->loadMultiple() as $adapter) {
+      if ($adapter->getEngine()->isPreferredLocalStore()) {
+        \Drupal::cache()->set($cid,$adapter);
+        return $adapter;
+      }
+    }
+  }
 }

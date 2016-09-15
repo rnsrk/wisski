@@ -173,7 +173,6 @@ class WisskiEntityListBuilder extends EntityListBuilder {
         'title' => $label,
       );
     }
-    dpm($links);
     return $links;
   }
   

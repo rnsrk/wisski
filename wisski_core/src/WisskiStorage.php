@@ -355,25 +355,37 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     if ($preview = WisskiCacheHelper::getPreviewImage($entity_id,$id_only)) {
       drupal_set_message('Preview image from cache');
       return $preview;
-    } elseif (!isset($adapter)) return NULL;
-    else {
-      $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
-      if (empty($images)) return NULL;
-      $input_uri = current($images);
-      $output_uri = '';
-      $input_id = $this->getFileId($input_uri,$output_uri);
-      $image_style = $this->getPreviewStyle();
-      $preview_uri = $image_style->buildUri($output_uri);
-      dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
-      if ($image_style->createDerivative($output_uri,$preview_uri)) {
-        drupal_set_message('Style did it');
-        $preview_id = $this->getFileId($preview_uri);
-        WisskiCacheHelper::putPreviewImage($entity_id,$preview_id,$preview_uri);
-        return $preview_id;
+    }
+    
+    if (!isset($adapter)) {
+      //try and use the default / i.e. preferred local adapter for this purpose
+      if ($pref_local = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore()) {
+        $adapter = $pref_local;
       } else {
-        WisskiCacheHelper::putPreviewImage($entity_id,$input_id,'empty');
-        return $input_id;
+        //without an adapter we cannot find the preview image
+        return NULL;
       }
+    }
+    
+    $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
+    if (empty($images)) {
+      WisskiCacheHelper::putPreviewImage($entity_id,'');
+      return NULL;
+    }
+    $input_uri = current($images);
+    $output_uri = '';
+    $input_id = $this->getFileId($input_uri,$output_uri);
+    $image_style = $this->getPreviewStyle();
+    $preview_uri = $image_style->buildUri($output_uri);
+    dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
+    if ($image_style->createDerivative($output_uri,$preview_uri)) {
+      drupal_set_message('Style did it');
+      $preview_id = $this->getFileId($preview_uri);
+      WisskiCacheHelper::putPreviewImage($entity_id,$preview_id,$preview_uri);
+      return $preview_id;
+    } else {
+      WisskiCacheHelper::putPreviewImage($entity_id,$input_id,'empty');
+      return $input_id;
     }
   }
   

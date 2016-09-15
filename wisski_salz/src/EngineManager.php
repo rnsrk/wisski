@@ -36,5 +36,5 @@ class EngineManager extends DefaultPluginManager {
       'Drupal\wisski_salz\Annotation\Engine'
     );
     $this->alterInfo('wisski_salz_engine');
-  }
+  }  
 }
