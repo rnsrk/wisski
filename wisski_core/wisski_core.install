@@ -75,15 +75,19 @@ function wisski_core_schema() {
       'eid' => array(
         'description' => 'Entity ID',
         'type' => 'varchar',
-        'length' => 64,
+        'length' => 1023,
         'not null' => TRUE,
       ),
       'bid' => array(
         'description' => 'bundle name / ID',
         'type' => 'varchar',
-        'length' => 64,
+        'length' => 1023,
         'not null' => TRUE,
       ),
+    ),
+    'indexes' => array(
+      'eid' => array(array('eid',128)),
+      'bid' => array(array('bid',128)),
     ),
   );
   //dpm($schema);
