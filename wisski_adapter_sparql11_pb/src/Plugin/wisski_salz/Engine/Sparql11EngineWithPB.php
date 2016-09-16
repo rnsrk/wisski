@@ -741,6 +741,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    */ 
   public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE) {
+
+#    dpm(func_get_args(), "yay!");
+    
+#    dpm(microtime(), 1);
     
     $conds = array();
     // see if we have any conditions
@@ -811,6 +815,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
 #    return;
 
+#    dpm(microtime(), 2);
+
     // ask for the query
     $result = $this->directQuery($query);
 
@@ -839,6 +845,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
 #    dpm($outarr, "outarr");
 #    return;
+#    dpm(microtime(), 3);
     return $outarr;
   }
 
@@ -1025,10 +1032,33 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
 #      $eid = str_replace("\\", "/", $eid);
 #      $url = parse_url($eid);
-      if($path->isGroup())
-        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, 0, FALSE, NULL, 'entity_reference');
-      else
+      if($path->isGroup()) {
+        $pbarray = $pb->getPbPaths();
+        $parentpathid = $pbarray[$path->id()]["parent"];
+        
+        // if there is a parent path
+        if(!empty($parentpathid)) {
+          
+          // load the parent path
+          $parentpath = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($parentpathid);
+          
+          $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, floor(count($parentpath->getPathArray())/2), FALSE, NULL, 'entity_reference'); 
+          
+#          dpm($sparql, $path->getName());
+          
+#          if(count($parentpath->getPathArray()) > 2)
+#           return;
+        } else {
+          // assume we start from zero
+          $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, 0, FALSE, NULL, 'entity_reference');
+#        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, floor(count($path->getPathArray())/2), FALSE, NULL, 'entity_reference');
+#        dpm($sparql, $path->getName());
+#        if(count($path->getPathArray()) > 3)
+#          return;
+        }
+      } else
         $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, 0, FALSE, NULL, 'field');
+#      dpm($sparql, $path->getName());
     } else {
       drupal_set_message("No EID for data. Error. ", 'error');
     }
@@ -1717,8 +1747,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // get the default datagraphuri    
     $datagraphuri = $this->getDefaultDataGraphUri();
 
- #   dpm($clearPathArray, "cpa");
- #   dpm($key+$countdiff, "diff");
+#    dpm($clearPathArray, "cpa");
+#    dpm($key+$countdiff, "diff");
+#    dpm($startingposition, "start");
     
     // iterate through the given path array
     foreach($clearPathArray as $key => $value) {
@@ -1741,7 +1772,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // if it is the first element and we have a subject_in
         // then we have to replace the first element with subject_in
         // and typically we don't do a type triple. So we skip the rest.
-        if($key == 0 && !empty($subject_in)) {
+        if($key == ($startingposition*2) && !empty($subject_in)) {
           $olduri = $subject_in;
           continue;
         }
@@ -1872,6 +1903,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       } else
         $query .= " ?out . ";
     }
+
+#    dpm($query);
 
     return $query;
   }
