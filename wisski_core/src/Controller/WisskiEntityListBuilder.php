@@ -7,6 +7,10 @@ use Drupal\Core\Entity\EntityListBuilder;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
 
+use Drupal\image\Entity\ImageStyle;
+
+use Drupal\wisski_core\WisskiCacheHelper;
+
 /**
  * Provides a list controller for wisski_core entity.
  *
@@ -199,20 +203,14 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     //dpm($entity->get('preview_image'));
     $row_preview_image = $this->t('No preview available');
     
-    $prev_id = $this->getPreviewImageUri($entity_id,$this->bundle->id());
-    if ($prev_id) {
-      $prev_file = \Drupal::entityManager()->getStorage('file')->load($prev_id);
-      $prev_uri = $prev_file->getFileUri();
-      $prev_mime = $prev_file->getMimeType();
-      //dpm($prev_file,'file');
-      if (explode('/',$prev_mime)[0] === 'image') {
-        $row_preview_image = array('data'=>array(
-          '#theme' => 'image',
-          '#uri' => $prev_uri,
-          '#alt' => 'preview '.$entity_id,
-          '#title' => $entity_id,
-        ));
-      }
+    $prev_uri = $this->getPreviewImageUri($entity_id,$this->bundle->id());
+    if ($prev_uri) {
+      $row_preview_image = array('data'=>array(
+        '#theme' => 'image',
+        '#uri' => $prev_uri,
+        '#alt' => 'preview '.$entity_id,
+        '#title' => $entity_id,
+      ));
     }
     $row['preview_image'] = $row_preview_image;
     $entity_label = $this->bundle->generateEntityTitle($entity_id,$entity_id);
@@ -243,6 +241,8 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     \Drupal::logger('wisski_preview_image')->debug('Images from dapter: '.serialize($images));
     $input_uri = current($images);
     $output_uri = '';
+    //get a correct image uri in $output_uri, by saving a file there
+    $this->storage->getFileId($input_uri,$output_uri);
     $image_style = $this->getPreviewStyle();
     $preview_uri = $image_style->buildUri($output_uri);
     dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));

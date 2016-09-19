@@ -13,8 +13,6 @@ use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\file\FileStorage;
 use Drupal\file\Entity\File;
 
-use Drupal\image\Entity\ImageStyle;
-
 use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\wisski_core\Query\WisskiQueryInterface;
 //use Drupal\wisski_core\WisskiInvalidArgumentException;
@@ -295,7 +293,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     return $entity_info;
   }
 
-  protected function getFileId($file_uri,&$local_file_uri='') {
+  public function getFileId($file_uri,&$local_file_uri='') {
 #drupal_set_message('Image uri: '.$file_uri);
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
