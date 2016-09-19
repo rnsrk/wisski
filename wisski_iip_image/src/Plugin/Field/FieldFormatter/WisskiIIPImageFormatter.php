@@ -72,7 +72,9 @@
       foreach ($files as $delta => $file) {
  
         $image_uri = ImageStyle::load('wisski_pyramid')->buildUri($file->getFileUri());
-        $image_style->createDerivative($file->getFileUri(),$image_uri);
+
+        if(!file_exists($image_uri))
+          $image_style->createDerivative($file->getFileUri(),$image_uri);
 
 #        $url = Url::fromUri(file_create_url($image_uri));     
 
