@@ -741,10 +741,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    */ 
   public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE) {
-
-#    dpm(func_get_args(), "yay!");
-    
-#    dpm(microtime(), 1);
     
     $conds = array();
     // see if we have any conditions
@@ -765,9 +761,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }
     }
     
-
- #    drupal_set_message("conds are: " . serialize($conds));
-
     // build the query
     if(!empty($count))
       $query = "SELECT (COUNT(?x0) as ?cnt) WHERE {";
@@ -775,10 +768,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $query = "SELECT ?x0 WHERE {";
     
 
-    if(empty($conds)) {    
+    if(empty($conds)) {
+      
       // there should be someone asking for more than one...
       $groups = $pathbuilder->getGroupsForBundle($bundleid);
-     
+      
+      
       // no group defined in this pb - return   
       if(empty($groups)) {
         return array();
@@ -793,7 +788,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // this does not work for subgroups! do it otherwise!
       #$grouppath = $group->getPathArray();    
       $grouppath = $this->getClearPathArray($group, $pathbuilder);
-             
+                   
       foreach($grouppath as $key => $pathpart) {
         if($key % 2 == 0)
           $query .= " ?x" . $key . " a <". $pathpart . "> . ";
@@ -805,7 +800,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $query .= $this->generateTriplesForPath($pathbuilder, $path, '', NULL, NULL, 0, 0, FALSE);
       }
     }
-    
+
     $query .= "}";
     
     if(is_null($limit) == FALSE && is_null($offset) == FALSE && empty($count))
@@ -815,11 +810,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
 #    return;
 
-#    dpm(microtime(), 2);
-
     // ask for the query
     $result = $this->directQuery($query);
-
+    
     $outarr = array();
 
     // for now simply take the first element
@@ -838,14 +831,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           
       // store the bundleid to the bundle-cache as it might be important
       // for subsequent queries.
-      
       $pathbuilder->setBundleIdForEntityId($uriname, $bundleid);
       
       $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
     }
 #    dpm($outarr, "outarr");
 #    return;
-#    dpm(microtime(), 3);
+
     return $outarr;
   }
 

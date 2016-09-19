@@ -9,6 +9,14 @@ use Drupal\Core\Entity\EntityTypeInterface;
 
 class Query extends WisskiQueryBase {
 
+  protected $then = 0;
+    
+  protected function tick($name='') {
+    $now = microtime(TRUE)*1000;
+    dpm(ceil($now-$this->then).' ms',$name);
+    $this->then = $now;
+  }
+
   #private $parent_engine;
 
   #public function __construct(EntityTypeInterface $entity_type,$condition,array $namespaces,Sparql11EngineWithPB $parent_engine) {
@@ -22,11 +30,7 @@ class Query extends WisskiQueryBase {
    */
   public function execute() {
 
-#    dpm($this, "exe");
-    
-#    dpm($this->andConditi, "cond");
-
-#    drupal_set_message("me is: " . serialize($this->count) . " at " . microtime());
+#    $this->tick('init query');
     
     // get the adapter
     $engine = $this->getEngine();
@@ -36,12 +40,7 @@ class Query extends WisskiQueryBase {
     
     // get the adapter id
     $adapterid = $engine->adapterId();
-    
-#    $adapter = \Drupal\wisski_salz\Entity\Adapter::load($adapterid);
-
-#    drupal_set_message("you are evil!" . microtime());
-#    return;
-    
+        
     // if we have not adapter, we may go home, too
     if(empty($adapterid))
       continue;
@@ -63,39 +62,17 @@ class Query extends WisskiQueryBase {
       // check if the queries adapter is the adapter of the pb we currently use.
       if($pbadapter->id() != $adapterid)
         continue;
-        
-      if(isset($this->pager)&&!empty($this->range)) {
-#        drupal_set_message("pa: " . serialize($this->range));
-#        $this->initializePager();
+      
+      // init pager-things
+      if(isset($this->pager) && !empty($this->range)) {
         $limit = $this->range['length'];
         $offset = $this->range['start'];
       }
 
-#      return;
-      
-#      drupal_set_message(serialize($this->count));
-      
-#      if(isset($this->count)) {
-#        drupal_set_message("I give back to you: " . serialize($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE)));
-#        return $pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE);
-#      }
-
-
-
-#      $limit = NULL;
-#      $offset = NULL;
-#
-#      if(isset($this->pager['limit']))
-#        $limit = $this->pager['limit'];
-#      if(isset($this->pager['element']));
-#        $offset = $this->pager['element'];
-        
-#      drupal_set_message(serialize($this->pager));
-#drupal_set_message("you are evil!" . microtime());      
-#      drupal_set_message("my cond is: " . serialize($this->condition));
       // care about everything...
-
       if($this->isFieldQuery()) {
+        
+    #    $this->tick("field query");
         
         $eidquery = NULL;
         $bundlequery = NULL;
@@ -141,7 +118,8 @@ class Query extends WisskiQueryBase {
             return $giveback;
           }
         }
-          
+        
+     #   $this->tick("field query half");
         
         foreach($this->condition->conditions() as $condition) {
           $field = $condition['field'];
@@ -165,9 +143,13 @@ class Query extends WisskiQueryBase {
           }
         }
       }
+
+      #$this->tick("afterprocessing");
       
       // if this is a path query act upon it accordingly
       if($this->isPathQuery()) {
+        
+      #  $this->tick("path query");
         
         // construct the query
         $query = "";
