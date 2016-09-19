@@ -55,10 +55,25 @@
       
       $service = \Drupal::service('image.toolkit.manager');
       $toolkit = $service->getDefaultToolkit();
+#      dpm($toolkit);
+#      $config = $this->configFactory->getEditable('imagemagick.settings');
+      
       if(empty($toolkit) || $toolkit->getPluginId() !== "imagemagick") {
-        drupal_set_message('Your standard toolkit is not imagemagick. Please use imagemagick for this module.', "error");
+        drupal_set_message('Your default toolkit is not imagemagick. Please use imagemagick for this module.', "error");
         return $elements;
       }
+      
+      $config = \Drupal::service('config.factory')->getEditable('imagemagick.settings');
+      
+      $formats = $config->get('image_formats');
+      
+      if(!isset($formats["PTIF"])) {
+        drupal_set_message("PTIF was not a valid image format. We enabled it for you. Make sure it is supported by your imagemagick configuration.");
+        $formats["PTIF"] = array('mime_type' => "image/tiff", "enabled" => TRUE);
+        $config->set('image_formats', $formats);
+        $config->save();
+      }
+      
 
       $image_style_name = 'wisski_pyramid';
 
