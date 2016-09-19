@@ -209,12 +209,14 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     
     $prev_uri = $this->getPreviewImageUri($entity_id,$this->bundle->id());
     if ($prev_uri) {
-      $row_preview_image = \Drupal::service('renderer')->renderPlain(array(
+      $array = array(
         '#theme' => 'image',
         '#uri' => $prev_uri,
         '#alt' => 'preview '.$entity_label,
         '#title' => $entity_label,
-      ));
+      );
+      \Drupal::service('renderer')->renderPlain($array);
+      $row_preview_image = $array['#markup'];
     }
     $row['preview_image'] = array('data' => array('#markup'=>'<a href='.$entity_url->toString().'>'.$row_preview_image.'</a>'));
     
