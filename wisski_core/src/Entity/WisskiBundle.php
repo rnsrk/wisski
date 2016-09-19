@@ -168,7 +168,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     return $values;
   }
   
-  public function getPathOptions($bundle_id) {
+  public function getPathOptions() {
     
     $options = $this->path_options;
     //if we already gathered the data, we can stop here

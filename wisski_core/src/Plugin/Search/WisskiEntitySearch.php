@@ -112,7 +112,8 @@ class WisskiEntitySearch extends SearchPluginBase {
         if (preg_match('/^(.+)\s\((\w+)\)$/',$new_bundle,$matches)) {
           list(,$label,$id) = $matches;
           if (!isset($options[$id])) $options[$id] = $label;
-          $paths[$id] = WisskiHelper::getPathOptions($id);
+          $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($id);
+          $paths[$id] = $bundle->getPathOptions();
         }
       }
     } else {
@@ -138,7 +139,7 @@ class WisskiEntitySearch extends SearchPluginBase {
       $selection = array();
       foreach($bundles as $bundle_id => $bundle) {
         $options[$bundle_id] = $bundle->label();
-        $paths[$bundle_id] = WisskiHelper::getPathOptions($bundle_id);
+        $paths[$bundle_id] = $bundle->getPathOptions();
         if (isset($defaults['bundles'][$bundle_id])) $selection[$bundle_id] = $bundle_id;
         else $selection[$bundle_id] = 0;
       }
