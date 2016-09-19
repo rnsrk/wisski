@@ -6,6 +6,7 @@ use Drupal\wisski_salz\Query\WisskiQueryBase;
 use Drupal\wisski_salz\Query\ConditionAggregate;
 use Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWithPB;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\wisski_salz\AdapterHelper;
 
 class Query extends WisskiQueryBase {
 
