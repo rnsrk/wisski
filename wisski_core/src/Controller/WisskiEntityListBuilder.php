@@ -201,20 +201,25 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     //    echo "Hello ".$id;
     //dpm($entity);
     //dpm($entity->get('preview_image'));
+    
+    $entity_label = $this->bundle->generateEntityTitle($entity_id,$entity_id);
+    $entity_url = Url::fromRoute('entity.wisski_individual.canonical',array('wisski_bundle'=>$this->bundle->id(),'wisski_individual'=>$entity_id));
+    
     $row_preview_image = $this->t('No preview available');
     
     $prev_uri = $this->getPreviewImageUri($entity_id,$this->bundle->id());
     if ($prev_uri) {
-      $row_preview_image = array('data'=>array(
+      $row_preview_image = \Drupal::service('renderer')->renderPlain(array(
         '#theme' => 'image',
         '#uri' => $prev_uri,
-        '#alt' => 'preview '.$entity_id,
-        '#title' => $entity_id,
+        '#alt' => 'preview '.$entity_label,
+        '#title' => $entity_label,
       ));
     }
-    $row['preview_image'] = $row_preview_image;
-    $entity_label = $this->bundle->generateEntityTitle($entity_id,$entity_id);
-    $row['title'] = Link::createFromRoute($entity_label,'entity.wisski_individual.canonical',array('wisski_bundle'=>$this->bundle->id(),'wisski_individual'=>$entity_id));
+    $row['preview_image'] = array('data' => array('#markup'=>'<a href='.$entity_url->toString().'>'.$row_preview_image.'</a>'));
+    
+    $row['title'] = Link::fromTextAndUrl($entity_label,$entity_url);
+
     $row['operations']['data'] = array(
       '#type' => 'operations',
       '#links' => $this->getOperationLinks($entity_id),
