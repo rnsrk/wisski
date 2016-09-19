@@ -52,6 +52,13 @@
       if (empty($files)) {
         return $elements;
       }
+      
+      $service = \Drupal::service('image.toolkit.manager');
+      $toolkit = $service->getDefaultToolkit();
+      if(empty($toolkit) || $toolkit->getPluginId() !== "imagemagick") {
+        drupal_set_message('Your standard toolkit is not imagemagick. Please use imagemagick for this module.', "error");
+        return $elements;
+      }
 
       $image_style_name = 'wisski_pyramid';
 

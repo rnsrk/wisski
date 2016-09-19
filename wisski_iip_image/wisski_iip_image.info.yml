@@ -6,3 +6,5 @@ version: VERSION
 core: 8.x
 dependencies:
   - field
+  - imagemagick
+  - image_effects
