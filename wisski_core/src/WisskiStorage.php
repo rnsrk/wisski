@@ -114,16 +114,13 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 if ($field_def instanceof BaseFieldDefinition) {
                   //the bundle key will be set via the loop variable $bundleid
                   if ($field_name === 'bundle') continue;
-                  if ($field_name === 'preview_image') {
-                    $new_field_values[] = $this->getPreviewImage($id,$bundleid,$adapter);
-                  } else {
-                    //drupal_set_message("Hello i am a base field ".$field_name);
-                    //this is a base field and cannot have multiple values
-                    //@TODO make sure, we load the RIGHT value
-                    $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
-                  
-                    $new_field_values = $new_field_values[$id][$field_name];
-                  }
+                  //drupal_set_message("Hello i am a base field ".$field_name);
+                  //this is a base field and cannot have multiple values
+                  //@TODO make sure, we load the RIGHT value
+                  $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
+                
+                  $new_field_values = $new_field_values[$id][$field_name];
+        
                   if (isset($info[$id][$field_name])) {
                     $old_field_value = $info[$id][$field_name];
                     if (in_array($old_field_value,$new_field_values) && count($new_field_values) > 1) {
@@ -348,73 +345,6 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     }
     //dpm($value,'image fid');
     return $value;
-  }
-
-  public function getPreviewImage($entity_id,$bundle_id,$adapter=NULL,$id_only=TRUE) {
-    
-    if ($preview = WisskiCacheHelper::getPreviewImage($entity_id,$id_only)) {
-      drupal_set_message('Preview image from cache');
-      return $preview;
-    }
-    
-    if (!isset($adapter)) {
-      //try and use the default / i.e. preferred local adapter for this purpose
-      if ($pref_local = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore()) {
-        $adapter = $pref_local;
-      } else {
-        //without an adapter we cannot find the preview image
-        return NULL;
-      }
-    }
-    
-    $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
-    if (empty($images)) {
-      WisskiCacheHelper::putPreviewImage($entity_id,'');
-      return NULL;
-    }
-    $input_uri = current($images);
-    $output_uri = '';
-    $input_id = $this->getFileId($input_uri,$output_uri);
-    $image_style = $this->getPreviewStyle();
-    $preview_uri = $image_style->buildUri($output_uri);
-    dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
-    if ($image_style->createDerivative($output_uri,$preview_uri)) {
-      drupal_set_message('Style did it');
-      $preview_id = $this->getFileId($preview_uri);
-      WisskiCacheHelper::putPreviewImage($entity_id,$preview_id,$preview_uri);
-      return $preview_id;
-    } else {
-      WisskiCacheHelper::putPreviewImage($entity_id,$input_id,'empty');
-      return $input_id;
-    }
-  }
-  
-  private $image_style;
-  
-  private function getPreviewStyle() {
-    
-    if (isset($this->image_style)) return $this->image_style;
-    $image_style_name = 'wisski_preview';
-
-    if(! $image_style = ImageStyle::load($image_style_name)) {
-      $values = array('name'=>$image_style_name,'label'=>'Wisski Preview Image Style');
-      $image_style = ImageStyle::create($values);
-      $settings = \Drupal::config('wisski_core.settings');
-      $w = $settings->get('wisski_preview_image_max_width_pixel');
-      $h = $settings->get('wisski_preview_image_max_height_pixel');
-      $config = array(
-        'id' => 'image_scale',
-        'data' => array(
-          'width' => isset($w) ? $w : 100,
-          'height' => isset($h) ? $h : 100,
-          'upscale' => FALSE,
-        ),
-      );
-      $image_style->addImageEffect($config);
-      $image_style->save();
-    }
-    $this->image_style = $image_style;
-    return $image_style;
   }
 
 #  /**

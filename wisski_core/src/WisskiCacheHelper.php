@@ -64,7 +64,9 @@ class WisskiCacheHelper {
     $db = \Drupal::service('database');
     $query = $db->select('wisski_calling_bundles','c')->fields('c')->condition('eid',$entity_id)->execute();
     if ($result = $query->fetch()) {
-      if ($result->bid !== $bundle_id) $db->update('wisski_calling_bundles')->fields(array('bid' => $bundle_id))->condition('eid',$entity_id)->execute();
+      if ($result->bid !== $bundle_id) {
+        $db->update('wisski_calling_bundles')->fields(array('bid' => $bundle_id))->condition('eid',$entity_id)->execute();
+      }
     } else {
       $db->insert('wisski_calling_bundles')->fields(array('eid' => $entity_id,'bid' => $bundle_id))->execute();
     }
@@ -83,21 +85,19 @@ class WisskiCacheHelper {
     self::flushCacheData($cid);
   }
   
-  static function putPreviewImage($entity_id,$preview_image_id,$preview_image_uri=NULL) {
+  static function putPreviewImageUri($entity_id,$preview_image_uri) {
   
     $cid = 'wisski_preview_image.'.$entity_id;
-    self::putCacheData($cid,array($preview_image_id,$preview_image_uri));
+    self::putCacheData($cid,$preview_image_uri);
   }
   
-  static function getPreviewImage($entity_id,$id_only=TRUE) {
+  static function getPreviewImageUri($entity_id) {
     
     $cid = 'wisski_preview_image.'.$entity_id;
-    $list = self::getCacheData($cid);
-    if ($id_only) return $list[0];
-    return $list;
+    return self::getCacheData($cid);
   }
   
-  static function flushPreviewImage($entity_id) {
+  static function flushPreviewImageUri($entity_id) {
     
     $cid = 'wisski_preview_image.'.$entity_id;
     self::flushCacheData($cid);

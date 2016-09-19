@@ -17,6 +17,8 @@ class WisskiEntityListBuilder extends EntityListBuilder {
   
   private $num_entities;
   private $image_height;
+  
+  private $adapter;
 
   /**
    * {@inheritdoc}
@@ -31,6 +33,13 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $this->limit = \Drupal::config('wisski_core.settings')->get('wisski_max_entities_per_page');
     $this->bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->load($bundle);
     $this->entity = $entity;
+    $pref_local = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore();
+    if (!$pref_local) {
+      $build['error'] = array(
+        '#type' => 'markup',
+        '#markup' => $this->t('There is no preferred local store'),
+      );
+    } else $this->adapter = $pref_local;
     $build['table'] = array(
       '#type' => 'table',
       '#header' => $this->buildHeader(),
@@ -94,6 +103,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $query->condition('bundle',$this->bundle->id());
       $this->tick('bundle pattern');
       $entity_ids = $query->execute();
+      $this->tick('get ids');
       foreach ($entity_ids as $eid) {
         $storage->writeToCache($eid,$this->bundle->id());
       }
@@ -189,18 +199,18 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     //dpm($entity->get('preview_image'));
     $row_preview_image = $this->t('No preview available');
     
-    $prev = $this->getStorage()->getPreviewImage($entity_id,$this->bundle->id());
-    if ($prev) {
-      $prev_id = $prev->target_id;
+    $prev_id = $this->getPreviewImageUri($entity_id,$this->bundle->id());
+    if ($prev_id) {
       $prev_file = \Drupal::entityManager()->getStorage('file')->load($prev_id);
       $prev_uri = $prev_file->getFileUri();
       $prev_mime = $prev_file->getMimeType();
+      //dpm($prev_file,'file');
       if (explode('/',$prev_mime)[0] === 'image') {
         $row_preview_image = array('data'=>array(
           '#theme' => 'image',
           '#uri' => $prev_uri,
-          '#alt' => 'preview '.$entity->label(),
-          '#title' => $entity->label(),
+          '#alt' => 'preview '.$entity_id,
+          '#title' => $entity_id,
         ));
       }
     }
@@ -213,4 +223,67 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     );
     return $row;
   } 
+  
+  public function getPreviewImageUri($entity_id,$bundle_id) {
+    
+    if ($preview = WisskiCacheHelper::getPreviewImageUri($entity_id)) {
+      \Drupal::logger('wisski_preview_image')->debug('From Cache '.$preview);
+      if ($preview === '') return NULL;
+      return $preview;
+    }
+    
+    if (!isset($this->adapter)) return NULL;
+    
+    $images = $this->adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
+    if (empty($images)) {
+      \Drupal::logger('wisski_preview_image')->debug('No preview images available form adapter');
+      WisskiCacheHelper::putPreviewImageUri($entity_id,'');
+      return NULL;
+    }
+    \Drupal::logger('wisski_preview_image')->debug('Images from dapter: '.serialize($images));
+    $input_uri = current($images);
+    $output_uri = '';
+    $image_style = $this->getPreviewStyle();
+    $preview_uri = $image_style->buildUri($output_uri);
+    dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
+    if ($image_style->createDerivative($output_uri,$preview_uri)) {
+      drupal_set_message('Style did it - uri is ' . $preview_uri);
+      WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
+      return $preview_uri;
+    } else {
+      dpm("style didnt do it with " . $entity_id);
+      WisskiCacheHelper::putPreviewImageUri($entity_id,$output_uri);
+      return $output_uri;
+    }
+  }
+  
+  private $image_style;
+  
+  private function getPreviewStyle() {
+    
+    if (isset($this->image_style)) return $this->image_style;
+    $image_style_name = 'wisski_preview';
+
+    $image_style = ImageStyle::load($image_style_name);
+    if (is_null($image_style)) {
+      $values = array('name'=>$image_style_name,'label'=>'Wisski Preview Image Style');
+      $image_style = ImageStyle::create($values);
+      $settings = \Drupal::config('wisski_core.settings');
+      $w = $settings->get('wisski_preview_image_max_width_pixel');
+      $h = $settings->get('wisski_preview_image_max_height_pixel');
+      $config = array(
+        'id' => 'image_scale',
+        'data' => array(
+          'width' => isset($w) ? $w : 100,
+          'height' => isset($h) ? $h : 100,
+          'upscale' => FALSE,
+        ),
+      );
+      $image_style->addImageEffect($config);
+      $image_style->save();
+    }
+    $this->image_style = $image_style;
+    return $image_style;
+  }
+
 }
