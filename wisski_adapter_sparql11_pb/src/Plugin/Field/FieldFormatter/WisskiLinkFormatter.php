@@ -149,6 +149,8 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
     $field_settings = $this->getFieldSettings();
     $elements = [];
 #    drupal_set_message(serialize($items));
+
+#    drupal_set_message("yay!");
     
     foreach($items as $delta => $item) {
       $values = $item->toArray();
@@ -161,6 +163,7 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
 #        '#title' => 'dssdf',
 #        '#default_value' => $values['value'],
 #      );
+#      dpm($item->wisskiDisamb);
       if(empty($item->wisskiDisamb)) {
         $elements[$delta] = array(
           '#type' => 'inline_template',
@@ -173,7 +176,7 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
         $url = $item->wisskiDisamb;
 #        $url = str_replace('/', '\\', $url);
         $entity_id = AdapterHelper::getDrupalIdForUri($url);
-        $url = 'wisski_core/' . $entity_id . '/view';
+        $url = 'wisski/navigate/' . $entity_id . '/view';
         
 #        drupal_set_message("url: " . serialize($url));
         

@@ -1099,6 +1099,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             $out[] = array($main_property => $outvalue);
           else {
 #            drupal_set_message("disamb: " . serialize($disamb));
+#            dpm($thing);
 #            drupal_set_message("pa: " . serialize($thing));
           #  drupal_set_message("res: " . serialize($result));
             $disambname = 'x'.$disamb;
