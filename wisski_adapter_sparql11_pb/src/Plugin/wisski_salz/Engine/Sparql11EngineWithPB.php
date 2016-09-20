@@ -1701,7 +1701,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @param $mode defaults to 'field' - but may be 'group' or 'entity_reference' in special cases
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field') {
-#dpm(func_get_args(), __METHOD__);
+//dpm(func_get_args(), __METHOD__);
     // the query construction parameter
     $query = "";
 

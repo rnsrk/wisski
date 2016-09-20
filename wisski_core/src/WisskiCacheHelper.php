@@ -60,7 +60,7 @@ class WisskiCacheHelper {
   static function putCallingBundle($entity_id,$bundle_id) {
   
     // DEBUG, change $entity_id and open up in case you get 'Could not load entities in adapter sparql_1_1_with_pathbuilder because ...'-error
-    // if ($entity_id === 'Albrecht Dürer') ddebug_backtrace();
+    // if ($entity_id === 'Leo') ddebug_backtrace();
     $db = \Drupal::service('database');
     $query = $db->select('wisski_calling_bundles','c')->fields('c')->condition('eid',$entity_id)->execute();
     if ($result = $query->fetch()) {

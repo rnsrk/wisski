@@ -139,10 +139,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 }
                 //here we have a "normal field" so we can assume an array of field values is OK
                 $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
-                //drupal_set_message(serialize($new_field_values));
+                #drupal_set_message(serialize($new_field_values));
                 if (empty($new_field_values)) continue;
                 $info[$id]['bundle'] = $bundleid;
-                //dpm($field_def->getType(),$field_name);
+//                dpm($field_def->getType(),$field_name);
                 if ($field_def->getType() === 'entity_reference') {
                   $field_settings = $field_def->getSettings();
                   $target_bundles = $field_settings['handler_settings']['target_bundles'];
@@ -154,6 +154,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     $target_bundle_id = current($target_bundles);
                   }
                   $target_ids = $new_field_values[$id][$field_name];
+//                  dpm(array('target_ids'=>$target_ids,'target_bundles'=>$target_bundles,'field_def'=>$field_def),'references');
                   if (!is_array($target_ids)) $target_ids = array(array('target_id'=>$target_ids));
                   foreach ($target_ids as $target_id) {
                     $target_id = $target_id['target_id'];
@@ -204,6 +205,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               //drupal_set_message("Das richtige: ".serialize($info));
             } catch (\Exception $e) {
               drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . $e->getMessage()); #because ' . serialize($e));
+              //throw $e;
             }              
           }     
           

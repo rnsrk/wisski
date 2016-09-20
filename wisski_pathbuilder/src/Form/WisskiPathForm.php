@@ -297,7 +297,8 @@ class WisskiPathForm extends EntityForm {
     if (!empty($this->path_array)) {
       $disamb_options = array();
       for($i = 0;$i<count($this->path_array);$i++) {
-        if (!($i % 2) && $this->path_array[$i] !== 'empty') $disamb_options[$i] = $this->t('Step ').$i.': '.$this->path_array[$i];
+        $pos = floor($i / 2);
+        if (($i % 2 === 0) && $this->path_array[$floor] !== 'empty') $disamb_options[$pos] = $this->t('Concept ').$pos.': '.$this->path_array[$i];
       }
       $form['path_content']['disamb'] = array(
         '#type' => 'select',
