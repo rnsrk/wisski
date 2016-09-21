@@ -1,0 +1,84 @@
+<?php
+
+/**
+ * implements hook_schema()
+ */
+function wisski_adapter_sparql11_pb_schema() {
+
+  $schema['wisski_s11_domains'] = array(
+    'description' => 'hold information about domains of triple store properties',
+    'fields' => array(
+      'num' => array(
+        'description' => 'the Serial Number for this pairing',
+        'type' => 'serial',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'property' => array(
+        'description' => 'the uri of the property',
+        'type' => 'varchar',
+        'length' => '2048',
+        'not null' => TRUE,
+      ),
+      'class' => array(
+        'description' => 'the uri of the domain class',
+        'type' => 'varchar',
+        'length' => '2048',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('num'),
+  );
+  
+  $schema['wisski_s11_ranges'] = array(
+    'description' => 'hold information about ranges of triple store properties',
+    'fields' => array(
+      'num' => array(
+        'description' => 'the Serial Number for this pairing',
+        'type' => 'serial',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'property' => array(
+        'description' => 'the uri of the property',
+        'type' => 'varchar',
+        'length' => '2048',
+        'not null' => TRUE,
+      ),
+      'class' => array(
+        'description' => 'the uri of the range class',
+        'type' => 'varchar',
+        'length' => '2048',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('num'),
+  );
+  
+  $schema['wisski_s11_inverses'] = array(
+    'description' => 'hold information about ranges of triple store properties',
+    'fields' => array(
+      'num' => array(
+        'description' => 'the Serial Number for this pairing',
+        'type' => 'serial',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'property' => array(
+        'description' => 'the uri of the property',
+        'type' => 'varchar',
+        'length' => '2048',
+        'not null' => TRUE,
+      ),
+      'inverse' => array(
+        'description' => 'the uri of the inverse property',
+        'type' => 'varchar',
+        'length' => '2048',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('num'),
+  );
+
+  return $schema;
+}
