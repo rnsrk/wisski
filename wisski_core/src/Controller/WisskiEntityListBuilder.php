@@ -95,7 +95,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     if ($this->limit) {
       $query->pager($this->limit);
     }
-    $this->tick('prepare');
+#    $this->tick('prepare');
     if (!empty($this->bundle)) {
       if ($pattern = $this->bundle->getTitlePattern()) {
         foreach ($pattern as $key => $attributes) {
@@ -105,14 +105,14 @@ class WisskiEntityListBuilder extends EntityListBuilder {
         }
       }
       $query->condition('bundle',$this->bundle->id());
-      $this->tick('bundle pattern');
+#      $this->tick('bundle pattern');
       $entity_ids = $query->execute();
-      $this->tick('get ids');
+#      $this->tick('get ids');
       foreach ($entity_ids as $eid) {
         $storage->writeToCache($eid,$this->bundle->id());
       }
       $this->num_entities = count($entity_ids);
-      $this->tick('Caching');
+#      $this->tick('Caching');
       return $entity_ids;
     } else return $query->execute();
     
