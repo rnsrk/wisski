@@ -29,7 +29,8 @@ class FormBase extends EntityForm {
     $form['label'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Adapter Name'),
-      '#default_value' => $engine->getName(),
+      '#default_value' => $adapter->label()? :'',
+      '#attributes' => array('placeholder' => $engine->getName()),
       '#description' => $this->t('The human-readable name of this adapter. This name must be unique.'),
       '#required' => TRUE,
       '#size' => 30,
@@ -107,7 +108,7 @@ class FormBase extends EntityForm {
     
     // the entity must be saved. the engine config bubbles up to the config entity
     $status = $adapter->save();
-    
+ddebug_backtrace();    
     // give log msgs and redirect to collection page
     $edit_link = $adapter->link($this->t('Edit'));
     drupal_set_message($this->t('Created new adapter %label.', ['%label' => $adapter->label()]));

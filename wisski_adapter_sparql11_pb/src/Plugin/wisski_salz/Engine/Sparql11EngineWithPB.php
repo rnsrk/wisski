@@ -673,7 +673,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // We have to modify the path-array in case of subgroups.
     // Usually if we have a subgroup path x0 y0 x1 we have to skip x0 y0 in
     // the paths of the group.
-     
+if (!is_object($path)) {ddebug_backtrace(); return array();}
     $patharraytoget = $path->getPathArray();
     $allpbpaths = $pb->getPbPaths();
     $pbarray = $allpbpaths[$path->id()];
@@ -2602,6 +2602,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // no sub-generations are gathered
     $result = $this->directQuery(
       "SELECT ?property ?super WHERE {"
+        ."?property a owl:ObjectProperty. "
         ."?property rdfs:subPropertyOf ?super. "
         ."FILTER NOT EXISTS {?mid_property rdfs:subPropertyOf+ ?super. ?property rdfs:subPropertyOf ?mid_property.}"
       ."}");
@@ -2634,7 +2635,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     foreach ($results as $row) {
       $classes[$row->class->getUri()] = $row->class->getUri();
     }
-    
+    uksort($classes,'strnatcasecmp');
     \Drupal::cache()->set('wisski_reasoner_classes',$classes);
     
     //find full class hierarchy
