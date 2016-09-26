@@ -36,7 +36,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
 
   //dpm(func_get_args(),__METHOD__); 
     if (!isset($this->limit))
-      $this->limit = \Drupal::config('wisski_core.settings')->get('wisski_max_entities_per_page');
+    $this->limit = \Drupal::config('wisski_core.settings')->get('wisski_max_entities_per_page');
     $this->bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->load($bundle);
     
     $pref_local = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore();
@@ -50,7 +50,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     $request_query = \Drupal::request()->query;
     $grid_type = $request_query->get('type') ? : 'grid';
     $grid_width = $request_query->get('width') ? : 3;
-
+    //dpm($grid_type.' '.$grid_width);
     if ($grid_type === 'table') {
       $header = array('preview_image'=>$this->t('Entity'),'title'=>'','operations'=>$this->t('Operations'));
     }
@@ -75,7 +75,10 @@ class WisskiEntityListBuilder extends EntityListBuilder {
           $build['table']['#rows'][$entity_id] = array(
             'preview_image' => array(
               'data' => array(
-                '#markup' => $input_row['preview_image'],        
+                '#markup' => isset($input_row['preview_image']) 
+                  ? '<a href='.$input_row['url'].'>'.$input_row['preview_image'].'</a>'
+                  : '<a href='.$input_row['url'].'>'.$this->t('No preview available').'</a>'
+                  ,
               ),
             ),
             'title' => array('data' => array(
@@ -99,19 +102,21 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $row = array();
       foreach ($this->getEntityIds() as $entity_id) {
         if ($input_cell = $this->buildRowForId($entity_id)) {
-          $cell = array('data' => array(
+          $cell_data = array(
             '#type' => 'container',
-            'preview_image' => array(
+          );
+          if (isset($input_cell['preview_image'])) {
+            $cell_data['preview_image'] = array(
               '#type' => 'item',
               '#markup' => $input_cell['preview_image'],
-            ),
-            'title' => array(
-              '#type' => 'link',
-              '#title' => $input_cell['label'],
-              '#url' => $input_cell['url'],
-            ),
-          ));
-          $row[$cell_num] = $cell;
+            );
+          }
+          $cell_data['title'] = array(
+            '#type' => 'link',
+            '#title' => $input_cell['label'],
+            '#url' => $input_cell['url'],
+          );
+          $row[$cell_num] = array('data' => $cell_data);
           $cell_num++;
           if ($cell_num == $grid_width) {
             $build['table']['#rows']['row'.$row_num] = $row;
@@ -121,7 +126,8 @@ class WisskiEntityListBuilder extends EntityListBuilder {
           }
         }
       }
-      $build['table']['#rows']['row'.$row_num] = $row;
+      //add the last row
+      if ($cell_num > 0) $build['table']['#rows']['row'.$row_num] = $row;
     }
 
     $build['grid_type'] = $this->getGridTypeBlock();
@@ -256,8 +262,6 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       'url' => $entity_url,
     );
     
-    $row_preview_image = $this->t('No preview available');
-    
     $prev_uri = $this->getPreviewImageUri($entity_id,$this->bundle->id());
     if ($prev_uri) {
       $array = array(
@@ -267,9 +271,8 @@ class WisskiEntityListBuilder extends EntityListBuilder {
         '#title' => $entity_label,
       );
       \Drupal::service('renderer')->renderPlain($array);
-      $row_preview_image = $array['#markup'];
+      $row['preview_image'] = $array['#markup'];
     }
-    $row['preview_image'] = '<a href='.$entity_url->toString().'>'.$row_preview_image.'</a>';
     
     $row['operations'] = $this->getOperationLinks($entity_id);
     return $row;

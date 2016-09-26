@@ -30,7 +30,7 @@ class WisskiTitlePatternForm extends EntityForm {
     $form['#title'] = $this->t('Edit title pattern for bundle %label', array('%label' => $bundle->label()));
 
     $options = $bundle->getPathOptions();
-    dpm($options,'Path Options');
+    //dpm($options,'Path Options');
     $form_storage = $form_state->getStorage();
     if (isset($form_storage['cached_pattern']) && !empty($form_storage['cached_pattern'])) {
       $pattern = $form_storage['cached_pattern'];
@@ -64,7 +64,7 @@ class WisskiTitlePatternForm extends EntityForm {
         if (!empty($selection) && $selection !== 'empty') {
           if (in_array($selection,array('eid','uri.short','uri.long'))) $label = $options[$selection];
           else {
-            dpm($options,$selection);
+            //dpm($options,$selection);
             list($pb_id) = explode('.',$selection);
             $label = $options[$pb_id][$selection];
           }
@@ -339,7 +339,7 @@ class WisskiTitlePatternForm extends EntityForm {
       $form_state->setValue('pattern',$pattern);
     } else {
       foreach ($errors as $error_array) {
-        dpm($error_array,'Errors');
+        //dpm($error_array,'Errors');
         list($element,$error_type,$category) = $error_array;
         $t_error_type = $this->tError($error_type);
         $form_state->setErrorByName('pattern]['.$element,$t_error_type.' '.$category);
