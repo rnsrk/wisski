@@ -23,20 +23,22 @@ class WisskiEntityListBuilder extends EntityListBuilder {
   private $image_height;
   
   private $adapter;
-
+  
   /**
    * {@inheritdoc}
    *
-   * We override ::render() so that we can add our own content above the table.
-   * parent::render() is where EntityListBuilder creates the table using our
-   * buildHeader() and buildRow() implementations.
+   * We override ::render() so that we can change the view type of the list
+   * we avoid ::buildHeader() since we do not necessarily have one.
+   * We also do not use buildRow() but instead introduce buildRowForId() to be able to load info without
+   * having to load all the entities
    */
-  public function render($bundle = '',$entity = NULL) {
-  
+  public function render($bundle = '',$entity=NULL) {
+
+  //dpm(func_get_args(),__METHOD__); 
     if (!isset($this->limit))
       $this->limit = \Drupal::config('wisski_core.settings')->get('wisski_max_entities_per_page');
     $this->bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->load($bundle);
-    $this->entity = $entity;
+    
     $pref_local = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore();
     if (!$pref_local) {
       $build['error'] = array(
@@ -44,9 +46,21 @@ class WisskiEntityListBuilder extends EntityListBuilder {
         '#markup' => $this->t('There is no preferred local store'),
       );
     } else $this->adapter = $pref_local;
+    
+    $request_query = \Drupal::request()->query;
+    $grid_type = $request_query->get('type') ? : 'grid';
+    $grid_width = $request_query->get('width') ? : 3;
+
+    if ($grid_type === 'table') {
+      $header = array('preview_image'=>$this->t('Entity'),'title'=>'','operations'=>$this->t('Operations'));
+    }
+    if ($grid_type === 'grid') {
+      $header = NULL;
+    }
+    
     $build['table'] = array(
       '#type' => 'table',
-      '#header' => $this->buildHeader(),
+      '#header' => $header,
       '#title' => $this->getTitle(),
       '#rows' => array(),
       '#empty' => $this->t('There is no @label yet.', array('@label' => $this->entityType->getLabel())),
@@ -55,12 +69,63 @@ class WisskiEntityListBuilder extends EntityListBuilder {
         'tags' => $this->entityType->getListCacheTags(),
       ],
     );
-    foreach ($this->getEntityIds() as $entity_id) {
-      if ($row = $this->buildRowForId($entity_id)) {
-        $build['table']['#rows'][$entity_id] = $row;
+    if ($grid_type === 'table') {
+      foreach ($this->getEntityIds() as $entity_id) {
+        if ($input_row = $this->buildRowForId($entity_id)) {
+          $build['table']['#rows'][$entity_id] = array(
+            'preview_image' => array(
+              'data' => array(
+                '#markup' => $input_row['preview_image'],        
+              ),
+            ),
+            'title' => array('data' => array(
+              '#type' => 'link',
+              '#title' => $input_row['label'],
+              '#url' => $input_row['url'],
+            )),
+            'operations' => array(
+              'data' => array(
+                '#type' => 'operations',
+                '#links' => $input_row['operations'],
+              ),
+            ),
+          );
+        }
       }
     }
+    if ($grid_type === 'grid') {
+      $row_num = 0;
+      $cell_num = 0;
+      $row = array();
+      foreach ($this->getEntityIds() as $entity_id) {
+        if ($input_cell = $this->buildRowForId($entity_id)) {
+          $cell = array('data' => array(
+            '#type' => 'container',
+            'preview_image' => array(
+              '#type' => 'item',
+              '#markup' => $input_cell['preview_image'],
+            ),
+            'title' => array(
+              '#type' => 'link',
+              '#title' => $input_cell['label'],
+              '#url' => $input_cell['url'],
+            ),
+          ));
+          $row[$cell_num] = $cell;
+          $cell_num++;
+          if ($cell_num == $grid_width) {
+            $build['table']['#rows']['row'.$row_num] = $row;
+            $row_num++;
+            $row = array();
+            $cell_num = 0;
+          }
+        }
+      }
+      $build['table']['#rows']['row'.$row_num] = $row;
+    }
 
+    $build['grid_type'] = $this->getGridTypeBlock();
+    
     // Only add the pager if a limit is specified.
     if ($this->limit) {
       $build['pager'] = array(
@@ -86,7 +151,6 @@ class WisskiEntityListBuilder extends EntityListBuilder {
   protected function getEntityIds() {
 #   dpm($this); 
 #    $this->tick('init');
-#    if (isset($this->entity)) dpm($this->entity);
     $storage = $this->getStorage();
     $query = $storage->getQuery()
       ->sort($this->entityType->getKey('id'));
@@ -114,59 +178,8 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $this->num_entities = count($entity_ids);
 #      $this->tick('Caching');
       return $entity_ids;
-    } else return $query->execute();
-    
+    } else return $query->execute();    
   }
-
-  /**
-   * {@inheritdoc}
-   *
-   * Building the header and content lines for the contact list.
-   *
-   * Calling the parent::buildHeader() adds a column for the possible actions
-   * and inserts the 'edit' and 'delete' links as defined for the entity type.
-   */
-  public function buildHeader() {
-    
-    $header['preview_image'] = $this->t('Entity');
-    $header['title'] = '';
-    return $header + parent::buildHeader();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function buildRow(EntityInterface $entity) {
-#dpm($this);
-#dpm($entity);
-//    dpm($entity->tellMe('id','bundle'));
-//    echo "Hello ".$id;
-    //dpm($entity);
-    //dpm($entity->get('preview_image'));
-    $row_preview_image = $this->t('No preview available');
-    $prev = $entity->get('preview_image')->first();
-    if ($prev) {
-      $prev_id = $prev->target_id;
-      $prev_file = \Drupal::entityManager()->getStorage('file')->load($prev_id);
-      $prev_uri = $prev_file->getFileUri();
-      $prev_mime = $prev_file->getMimeType();
-      if (explode('/',$prev_mime)[0] === 'image') {
-        $row_preview_image = array('data'=>array(
-          '#theme' => 'image',
-          '#uri' => $prev_uri,
-          '#alt' => 'preview '.$entity->label(),
-          '#title' => $entity->label(),
-        ));
-      }
-    }
-    $row['preview_image'] = $row_preview_image;
-    $row['title'] = Link::createFromRoute($entity->label(),'entity.wisski_individual.canonical',array('wisski_bundle'=>$this->bundle->id(),'wisski_individual'=>$entity->id()));
-    $row += parent::buildRow($entity);
-    foreach($row['operations']['data']['#links'] as &$link) {
-      $link['url']->setRouteParameter('wisski_bundle',$this->bundle->id());
-    }
-    return $row;
-  } 
 
   private function getOperationLinks($entity_id) {
   
@@ -190,6 +203,39 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     return $links;
   }
   
+  private function getGridTypeBlock() {
+    
+    $block = array(
+      '#title' => $this->t('Show as ...'),
+      '#type' => 'details',
+      '#open' => FALSE,
+    );
+    $block['table'] = array(
+      '#type' => 'fieldset',
+      'link' => array(
+        '#type' => 'link',
+        '#url' => Url::fromRoute('<current>',array('type'=>'table')),
+        '#title' => $this->t('Table with operation links'),
+      ),
+      '#title' => $this->t('Table'),
+    );
+    $block['grid'] = array(
+      '#type' => 'fieldset',
+      '#title' => $this->t('Grid of width'),
+    );
+    foreach (range(2,10) as $width) {
+      $ops[] = array(
+        'url' => Url::fromRoute('<current>',array('type'=>'grid','width'=>$width)),
+        'title' => $width,
+      );
+    }
+    $block['grid']['links'] = array(
+      '#type' => 'operations',
+      '#links' => $ops,
+    );
+    return $block;
+  }
+  
   /**
    * re-written buildRow since we don't need to load the entity just to make its title
    */
@@ -205,6 +251,11 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     $entity_label = $this->bundle->generateEntityTitle($entity_id,$entity_id);
     $entity_url = Url::fromRoute('entity.wisski_individual.canonical',array('wisski_bundle'=>$this->bundle->id(),'wisski_individual'=>$entity_id));
     
+    $row = array(
+      'label' => $entity_label,
+      'url' => $entity_url,
+    );
+    
     $row_preview_image = $this->t('No preview available');
     
     $prev_uri = $this->getPreviewImageUri($entity_id,$this->bundle->id());
@@ -218,14 +269,9 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       \Drupal::service('renderer')->renderPlain($array);
       $row_preview_image = $array['#markup'];
     }
-    $row['preview_image'] = array('data' => array('#markup'=>'<a href='.$entity_url->toString().'>'.$row_preview_image.'</a>'));
+    $row['preview_image'] = '<a href='.$entity_url->toString().'>'.$row_preview_image.'</a>';
     
-    $row['title'] = Link::fromTextAndUrl($entity_label,$entity_url);
-
-    $row['operations']['data'] = array(
-      '#type' => 'operations',
-      '#links' => $this->getOperationLinks($entity_id),
-    );
+    $row['operations'] = $this->getOperationLinks($entity_id);
     return $row;
   } 
   

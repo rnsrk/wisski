@@ -30,7 +30,7 @@ class WisskiTitlePatternForm extends EntityForm {
     $form['#title'] = $this->t('Edit title pattern for bundle %label', array('%label' => $bundle->label()));
 
     $options = $bundle->getPathOptions();
-    
+    dpm($options,'Path Options');
     $form_storage = $form_state->getStorage();
     if (isset($form_storage['cached_pattern']) && !empty($form_storage['cached_pattern'])) {
       $pattern = $form_storage['cached_pattern'];
@@ -148,6 +148,7 @@ class WisskiTitlePatternForm extends EntityForm {
         'wrapper' => 'wisski-title-table'
       ),
       '#name' => 'new-text-button',
+      '#limit_validation_errors' => array(),
     );
 
     $pattern['max_id'] = $max_id;    
@@ -299,7 +300,7 @@ class WisskiTitlePatternForm extends EntityForm {
       elseif ($attributes['type'] === 'path') {
         if (empty($attributes['name'])) 
           $errors[] = array($row_id,'empty','name');
-        elseif (!preg_match('/^[a-z0-9_]+\.[a-z0-9_]+|uri$/',$attributes['name'])) 
+        elseif (!preg_match('/^([a-z0-9_]+\.[a-z0-9_]+|eid)$/',$attributes['name'])) 
           $errors[] = array($row_id,'invalid','name');
         if (!in_array($attributes['cardinality'],array(-1,1,2,3))) 
           $errors[] = array($row_id.'][cardinality','invalid');
@@ -338,7 +339,7 @@ class WisskiTitlePatternForm extends EntityForm {
       $form_state->setValue('pattern',$pattern);
     } else {
       foreach ($errors as $error_array) {
-//        dpm($error_array,'Errors');
+        dpm($error_array,'Errors');
         list($element,$error_type,$category) = $error_array;
         $t_error_type = $this->tError($error_type);
         $form_state->setErrorByName('pattern]['.$element,$t_error_type.' '.$category);
