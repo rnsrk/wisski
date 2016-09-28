@@ -14,7 +14,7 @@ function wisski_core_generate_title($wisski_individual,$force_new=FALSE) {
   }
   $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($wisski_individual->bundle());
   if ($wisski_individual->isNew()) {
-    return t('New %bundle_label',array('%bundle_label'=>$bundle->label()));
+    return t('New @bundle_label',array('@bundle_label'=>$bundle->label()));
   }
   $title_list = $wisski_individual->get('name')->getValue();
   $fallback_title = $title_list[0]['value'];

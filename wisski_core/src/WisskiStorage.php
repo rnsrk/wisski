@@ -346,6 +346,18 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     //dpm($value,'image fid');
     return $value;
   }
+  
+  public function getPublicUrlFromFileId($file_id) {
+    
+    if ($file_object = File::load($file_id)) {
+      return str_replace(
+        'public:/',																						//standard file uri is public://.../filename.jpg
+        \Drupal::service('stream_wrapper.public')->baseUrl(),	//we want DRUPALHOME/sites/default/.../filename.jpg
+        $file_object->getFileUri()
+      );
+    }
+    return NULL;
+  }
 
   /**
    * This function is called by the Views module.
@@ -508,6 +520,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
       
       if ($success) {
+        $entity->enforceIsNew(FALSE);
         //we have successfully written to this adapter
         \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)->flushTitleCache($entity->id());
       }
@@ -521,13 +534,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     //$entity is iterable itself, iterates over field list
     foreach ($entity as $field_name => $field_item_list) {
       $out[$field_name] = array();
-      $field_type = $field_item->getFieldDefinition()->getType();
       foreach($field_item_list as $field_item) {
         $field_values = $field_item->getValue();
-        if ($field_type === 'image') {
+        if ($field_item->getFieldDefinition()->getType() === 'image') {
           //when loading we assume $target_id to be the file uri
           //this is a workaround since Drupal File IDs do not carry any information when not in drupal context
-          $field_values['target_id'] = File::load($field_values['target_id'])->getFileUri();
+          $field_values['target_id'] = $this->getPublicUrlFromFileId($field_values['target_id']);
         }
         //we transfer the main property name to the adapters
         $out[$field_name]['main_property'] = $field_item->mainPropertyName();
