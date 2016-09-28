@@ -80,16 +80,18 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   protected $cached_titles;
   
-  public function generateEntityTitle($entity_id,$fallback_title='Wisski Individual',$include_bundle=FALSE) {
+  public function generateEntityTitle($entity_id,$fallback_title='Wisski Individual',$include_bundle=FALSE,$force_new=FALSE) {
     
-    $title = $this->getCachedTitle($entity_id);
-    if (isset($title)) {
-      //drupal_set_message('Title from cache');
-      if ($include_bundle) {
-        drupal_set_message('Enhance Title '.$title);
-        $title = $this->label().': '.$title;
-      }    
-      return $title;
+    if (!$force_new) {
+      $title = $this->getCachedTitle($entity_id);
+      if (isset($title)) {
+        //drupal_set_message('Title from cache');
+        if ($include_bundle) {
+          drupal_set_message('Enhance Title '.$title);
+          $title = $this->label().': '.$title;
+        }    
+        return $title;
+      }
     }
     $pattern = $this->getTitlePattern();
     unset($pattern['max_id']);

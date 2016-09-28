@@ -83,6 +83,7 @@ class WisskiHelper {
   public static function getTopBundleIds($get_labels=FALSE) {
     
     $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
+    if (empty($pbs)) return array();
     $parents = array();
     foreach ($pbs as $pb_id => $pb) {
       $pathtree = $pb->getPathTree();

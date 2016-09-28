@@ -107,8 +107,10 @@ class WisskiEntityListBuilder extends EntityListBuilder {
           );
           if (isset($input_cell['preview_image'])) {
             $cell_data['preview_image'] = array(
-              '#type' => 'item',
-              '#markup' => $input_cell['preview_image'],
+              '#type' => 'link',
+              '#title' => $input_cell['preview_image'],
+              '#url' => $input_cell['url'],
+              '#suffix' => '<br/>',
             );
           }
           $cell_data['title'] = array(

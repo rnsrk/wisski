@@ -3,8 +3,9 @@
 use Drupal\wisski_core\WisskiEntityInterface;
 use Drupal\wisski_core\Entity\WisskiEntity;
 
-function wisski_core_generate_title($wisski_individual) {
+function wisski_core_generate_title($wisski_individual,$force_new=FALSE) {
 //ddebug_backtrace();
+  
   if (!($wisski_individual instanceof WisskiEntityInterface)) try {
     $wisski_individual = WisskiEntity::load($wisski_individual);
   } catch (\Exception $e) {
@@ -12,9 +13,12 @@ function wisski_core_generate_title($wisski_individual) {
     return is_string($wisski_individual) ? $wisski_individual : 'WissKI Entity';
   }
   $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($wisski_individual->bundle());
+  if ($wisski_individual->isNew()) {
+    return t('New %bundle_label',array('%bundle_label'=>$bundle->label()));
+  }
   $title_list = $wisski_individual->get('name')->getValue();
   $fallback_title = $title_list[0]['value'];
-  $title = $bundle->generateEntityTitle($wisski_individual->id(),$fallback_title);
+  $title = $bundle->generateEntityTitle($wisski_individual->id(),$fallback_title,FALSE,$force_new);
   return $title;
 }
 

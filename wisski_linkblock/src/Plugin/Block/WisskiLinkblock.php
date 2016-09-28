@@ -60,7 +60,7 @@ class WisskiLinkblock extends BlockBase {
     $out = array();
 
     $individualid = \Drupal::routeMatch()->getParameter('wisski_individual');
-    
+    if ($individualid instanceof \Drupal\wisski_core\Entity\WisskiEntity) $individualid = $individualid->id();
     
     if(empty($individualid)) {
       return $out;

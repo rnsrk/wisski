@@ -26,6 +26,9 @@ class WisskiEntityForm extends ContentEntityForm {
     //dpm($entity);
     $this->copyFormValuesToEntity($entity,$form,$form_state);
     //dpm($entity);
+    if ($entity->isNew()) {
+      wisski_core_generate_title($entity,TRUE);
+    }
     $entity->save();
     $bundle = $entity->get('bundle')->getValue()[0]['target_id'];
     $drupalid = $entity->id();
