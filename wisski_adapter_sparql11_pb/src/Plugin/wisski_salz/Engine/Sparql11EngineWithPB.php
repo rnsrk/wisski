@@ -56,8 +56,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     //see $this->doTheReasoning()
     // and $this->getPropertiesFromCache() / $this->getClassesFromCache
     //the rasoner sets all reasoning based caches i.e. it is sufficient to check, that one of them is set
-    if ($cache = \Drupal::cache()->get('wisski_reasoner_properties')) return TRUE;
-    return FALSE;
+    
+    //if ($cache = \Drupal::cache()->get('wisski_reasoner_properties')) return TRUE;
+    //return FALSE;
+    
+    return $this->isPrepared();
   }
 
   /**
@@ -212,7 +215,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
   public function getClasses() {
   
-    if ($cache = \Drupal::cache()->get('wisski_reasoner_classes')) return $cache->data;
+    $out = $this->retrieve('classes','class');
+    if (!empty($out)) return $out;
     $query = "SELECT DISTINCT ?class WHERE { ?class a owl:Class . }";  
     $result = $this->directQuery($query);
     
@@ -230,7 +234,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
   public function getProperties() {
   
-    if ($cache = \Drupal::cache()->get('wisski_reasoner_properties')) return $cache->data;
+    $out = $this->retrieve('properties','property');
+    if (!empty($out)) return $out;
     $query = "SELECT DISTINCT ?property WHERE { ?property a owl:ObjectProperty . }";  
     $result = $this->directQuery($query);
     
@@ -266,6 +271,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    */
   protected function getPropertiesFromCache($class,$class_after = NULL) {
 
+/* cache version
     $dom_properties = array();
     $cid = 'wisski_reasoner_reverse_domains';
     if ($cache = \Drupal::cache()->get($cid)) {
@@ -278,6 +284,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $rng_properties = $cache->data[$class_after]?:array();
       } else return FALSE;
     } else return $dom_properties;
+    return array_intersect_key($dom_properties,$rng_properties);
+    */
+    
+    //DB version
+    $dom_properties = $this->retrieve('domains','property','class',$class);
+    if (isset($class_after)) $rng_properties = $this->retrieve('ranges','property','class',$class_after);
+    else return $dom_properties;
     return array_intersect_key($dom_properties,$rng_properties);
   }
 
@@ -381,6 +394,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
   protected function getClassesFromCache($property,$property_after = NULL) {
 
+  /* cache version
     $dom_classes = array();
     $cid = 'wisski_reasoner_ranges';
     if ($cache = \Drupal::cache()->get($cid)) {
@@ -393,6 +407,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $dom_classes = $cache->data[$property_after]?:array();
       } else return FALSE;
     } else return $rng_classes;
+    return array_intersect_key($rng_classes,$dom_classes);
+    */
+    
+    //DB version
+    $rng_classes = $this->retrieve('ranges','class','property',$property);
+    if (isset($property_after)) $dom_classes = $this->retrieve('domains','class','property',$property_after);
+    else return $rng_classes;
     return array_intersect_key($rng_classes,$dom_classes);
   }
 
@@ -2590,13 +2611,21 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     $super_properties = array();
     $sub_properties = array();
     
+    //prepare database connection and reasoner tables
+    //if there's something wrong stop working
+    if ($this->prepareTables() === FALSE) return;
+    
     //find properties
     $result = $this->directQuery("SELECT ?property WHERE {?property a owl:ObjectProperty.}");
+    $insert = $this->prepareInsert('properties');
     foreach ($result as $row) {
-      $properties[$row->property->getUri()] = $row->property->getUri();
+      $prop = $row->property->getUri();
+      $properties[$prop] = $prop;
+      $insert->values(array('property' => $prop));
     }
-    $cid = 'wisski_reasoner_properties';
-    \Drupal::cache()->set($cid,$properties);
+    $insert->execute();
+    //$cid = 'wisski_reasoner_properties';
+    //\Drupal::cache()->set($cid,$properties);
     
     //find one step property hierarchy, i.e. properties that are direct children or direct parents to each other
     // no sub-generations are gathered
@@ -2614,29 +2643,38 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       if (!isset($properties[$prop])) $properties[$prop] = $prop;
     }
 
-    $cid = 'wisski_reasoner_sub_properties';
-    \Drupal::cache()->set($cid,$sub_properties);
-    $cid = 'wisski_reasoner_super_properties';
-    \Drupal::cache()->set($cid,$super_properties);
+    //$cid = 'wisski_reasoner_sub_properties';
+    //\Drupal::cache()->set($cid,$sub_properties);
+    //$cid = 'wisski_reasoner_super_properties';
+    //\Drupal::cache()->set($cid,$super_properties);
 
     //now lets find inverses
+    $insert = $this->prepareInsert('inverses');
     $inverses = array();
     $results = $this->directQuery("SELECT ?prop ?inverse WHERE {{?prop owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf ?prop.}}");
     foreach ($results as $row) {
-      $inverses[$row->prop->getUri()] = $row->inverse->getUri();
+      $prop = $row->prop->getUri();
+      $inv = $row->inverse->getUri();
+      $inverses[$prop] = $inv;
+      $insert->values(array('property' => $prop,'inverse'=>$inv));
     }
-    $cid = 'wisski_reasoner_inverse_properties';
-    \Drupal::cache()->set($cid,$inverses);
+    $insert->execute();
+    //$cid = 'wisski_reasoner_inverse_properties';
+    //\Drupal::cache()->set($cid,$inverses);
     
     //now the same things for classes
     //find all classes
+    $insert = $this->prepareInsert('classes');
     $classes = array();
     $results = $this->directQuery("SELECT ?class WHERE {?class a owl:Class.}");
     foreach ($results as $row) {
-      $classes[$row->class->getUri()] = $row->class->getUri();
+      $class = $row->class->getUri();
+      $classes[$class] = $rclass;
+      $insert->values(array('class'=>$class));
     }
-    uksort($classes,'strnatcasecmp');
-    \Drupal::cache()->set('wisski_reasoner_classes',$classes);
+    $insert->execute();
+    //uksort($classes,'strnatcasecmp');
+    //\Drupal::cache()->set('wisski_reasoner_classes',$classes);
     
     //find full class hierarchy
     $super_classes = array();
@@ -2654,8 +2692,8 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       $sub_classes[$super][$sub] = $sub;
     }
     
-    \Drupal::cache()->set('wisski_reasoner_sub_classes',$sub_classes);
-    \Drupal::cache()->set('wisski_reasoner_super_classes',$super_classes);
+    //\Drupal::cache()->set('wisski_reasoner_sub_classes',$sub_classes);
+    //\Drupal::cache()->set('wisski_reasoner_super_classes',$super_classes);
     
     //explicit top level domains
     $domains = array();
@@ -2788,33 +2826,50 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       }
     }
     
-    //for the pathbuilders to work correctly, we also need inverted search
-    $reverse_domains = array();
+    $insert = $this->prepareInsert('domains');
     foreach ($domains as $prop => $classes) {
-      foreach ($classes as $class) $reverse_domains[$class][$prop] = $prop;
+      foreach ($classes as $class) $insert->values(array('property'=>$prop,'class'=>$class));
     }
-    $reverse_ranges = array();
+    $insert->execute();
+    $insert = $this->prepareInsert('ranges');
     foreach ($ranges as $prop => $classes) {
-      foreach ($classes as $class) $reverse_ranges[$class][$prop] = $prop;
+      foreach ($classes as $class) $insert->values(array('property'=>$prop,'class'=>$class));
     }
-    $cid = 'wisski_reasoner_domains';
-    \Drupal::cache()->set($cid,$domains);
-    $cid = 'wisski_reasoner_ranges';
-    \Drupal::cache()->set($cid,$ranges);
-    $cid = 'wisski_reasoner_reverse_domains';
-    \Drupal::cache()->set($cid,$reverse_domains);
-    $cid = 'wisski_reasoner_reverse_ranges';
-    \Drupal::cache()->set($cid,$reverse_ranges);
+    $insert->execute();
+    
+//    //for the pathbuilders to work correctly, we also need inverted search
+//    $reverse_domains = array();
+//    foreach ($domains as $prop => $classes) {
+//      foreach ($classes as $class) $reverse_domains[$class][$prop] = $prop;
+//    }
+//    $reverse_ranges = array();
+//    foreach ($ranges as $prop => $classes) {
+//      foreach ($classes as $class) $reverse_ranges[$class][$prop] = $prop;
+//    }
+//    $cid = 'wisski_reasoner_domains';
+//    \Drupal::cache()->set($cid,$domains);
+//    $cid = 'wisski_reasoner_ranges';
+//    \Drupal::cache()->set($cid,$ranges);
+//    $cid = 'wisski_reasoner_reverse_domains';
+//    \Drupal::cache()->set($cid,$reverse_domains);
+//    $cid = 'wisski_reasoner_reverse_ranges';
+//    \Drupal::cache()->set($cid,$reverse_ranges);
   }
   
   public function getInverseProperty($property_uri) {
-  
+
+  /* cache version
     $inverses = array();
     $cid = 'wisski_reasoner_inverse_properties';
     if ($cache = \Drupal::cache()->get($cid)) {
       $inverses = $cache->data;
       if (isset($properties[$property_uri])) return $inverses[$property_uri];
     }
+    */
+    
+    //DB version
+    $inverse = $this->retrieve('inverses','inverse','property',$property_uri);
+    if (!empty($inverse)) return current($inverse);
     $results = $this->directQuery("SELECT ?inverse WHERE {{<$property_uri> owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf <$property_uri>.}}");
     $inverse = '';
     foreach ($results as $row) {
@@ -2823,6 +2878,182 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     $inverses[$property_uri] = $inverse;
     \Drupal::cache()->set($cid,$inverses);
     return $inverse;
+  }
+  
+  protected function isPrepared() {
+    try {
+      return !empty(\Drupal::service('database')->select($this->adapterId().'_classes','c')->fields('c')->range(0,1)->execute());
+    } catch (\Exception $e) {
+      return FALSE;
+    }
+  }
+  
+  protected function prepareTables() {
+    
+    try {
+      $database = \Drupal::service('database');
+      $schema = $database->schema();
+      $adapter_id = $this->adapterId();
+      foreach (self::getReasonerTableSchema() as $type => $table_schema) {
+        $table_name = $adapter_id.'_'.$type;
+        if ($schema->tableExists($table_name)) {
+          $database->truncate($table_name);
+        } else {
+          $schema->createTable($table_name,$table_schema);
+        }
+      }
+      return TRUE;
+    } catch (\Exception $ex) {}
+    return FALSE;
+  }
+  
+  private function prepareInsert($type) {
+    
+    $fieldS = array();
+    foreach (self::getReasonerTableSchema()[$type]['fields'] as $field_name => $field) {
+      if ($field['type'] !== 'serial') $fields[] = $field_name;
+    }
+    $table_name = $this->adapterId().'_'.$type;
+    return \Drupal::service('database')->insert($table_name)->fields($fields);
+  }
+  
+  public function retrieve($type,$return_field=NULL,$condition_field=NULL,$condition_value=NULL) {
+    
+    $table_name = $this->adapterId().'_'.$type;
+    $query = \Drupal::service('database')
+              ->select($table_name,'t')
+              ->fields('t');
+    if (!is_null($condition_field) && !is_null($condition_value)) {
+      $query = $query->condition($condition_field,$condition_value);
+    }
+    $result = $query->execute();
+    if (!is_null($return_field)) {
+      $result = array_keys($result->fetchAllAssoc($return_field));
+      usort($result,'strnatcasecmp');
+      return array_combine($result,$result);
+    }
+    return $result->fetchAll();
+  }
+  
+  /**
+   * implements hook_schema()
+   */
+  public static function getReasonerTableSchema() {
+
+    $schema['classes'] = array(
+      'description' => 'hold information about triple store classes',
+      'fields' => array(
+        'num' => array(
+          'description' => 'the Serial Number for this class',
+          'type' => 'serial',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ),
+        'class' => array(
+          'description' => 'the uri of the class',
+          'type' => 'varchar',
+          'length' => '2048',
+          'not null' => TRUE,
+        ),
+      ),
+      'primary key' => array('num'),
+    );
+    
+    $schema['properties'] = array(
+      'description' => 'hold information about triple store properties',
+      'fields' => array(
+        'num' => array(
+          'description' => 'the Serial Number for this property',
+          'type' => 'serial',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ),
+        'property' => array(
+          'description' => 'the uri of the property',
+          'type' => 'varchar',
+          'length' => '2048',
+          'not null' => TRUE,
+        ),
+      ),
+      'primary key' => array('num'),
+    );    
+    
+    $schema['domains'] = array(
+      'description' => 'hold information about domains of triple store properties',
+      'fields' => array(
+        'num' => array(
+          'description' => 'the Serial Number for this pairing',
+          'type' => 'serial',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ),
+        'property' => array(
+          'description' => 'the uri of the property',
+          'type' => 'varchar',
+          'length' => '2048',
+          'not null' => TRUE,
+        ),
+        'class' => array(
+          'description' => 'the uri of the domain class',
+          'type' => 'varchar',
+          'length' => '2048',
+          'not null' => TRUE,
+        ),
+      ),
+      'primary key' => array('num'),
+    );
+    
+    $schema['ranges'] = array(
+      'description' => 'hold information about ranges of triple store properties',
+      'fields' => array(
+        'num' => array(
+          'description' => 'the Serial Number for this pairing',
+          'type' => 'serial',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ),
+        'property' => array(
+          'description' => 'the uri of the property',
+          'type' => 'varchar',
+          'length' => '2048',
+          'not null' => TRUE,
+        ),
+        'class' => array(
+          'description' => 'the uri of the range class',
+          'type' => 'varchar',
+          'length' => '2048',
+          'not null' => TRUE,
+        ),
+      ),
+      'primary key' => array('num'),
+    );
+    
+    $schema['inverses'] = array(
+      'description' => 'hold information about ranges of triple store properties',
+      'fields' => array(
+        'num' => array(
+          'description' => 'the Serial Number for this pairing',
+          'type' => 'serial',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ),
+        'property' => array(
+          'description' => 'the uri of the property',
+          'type' => 'varchar',
+          'length' => '2048',
+          'not null' => TRUE,
+        ),
+        'inverse' => array(
+          'description' => 'the uri of the inverse property',
+          'type' => 'varchar',
+          'length' => '2048',
+          'not null' => TRUE,
+        ),
+      ),
+      'primary key' => array('num'),
+    );
+
+    return $schema;
   }
   
 }
