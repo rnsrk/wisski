@@ -797,6 +797,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       
       // no group defined in this pb - return   
       if(empty($groups)) {
+        if ($count) return 0;
         return array();
       }
 
@@ -830,7 +831,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
 #    drupal_set_message("query: " . serialize($query) . " and " . microtime());
     
 #    return;
-
+    //dpm($query,__FUNCTION__.' '.$this->adapterId());
     // ask for the query
     $result = $this->directQuery($query);
     
@@ -841,8 +842,10 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     foreach($result as $thing) {
 
       // if it is a count query, return the integer      
-      if(!empty($count))
+      if(!empty($count)) {
+        //dpm($thing,'Count Thing');
         return $thing->cnt->getValue();
+      }
       
       $uri = $thing->x0->dumpValue("text");
       
@@ -856,9 +859,9 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       
       $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
     }
-#    dpm($outarr, "outarr");
+    //dpm($outarr, "outarr");
 #    return;
-
+    if (empty($outarr) && $count) return 0;
     return $outarr;
   }
 

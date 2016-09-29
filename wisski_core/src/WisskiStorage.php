@@ -41,10 +41,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * {@inheritdoc}
    */
   protected function doLoadMultiple(array $ids = NULL) {
-//  dpm($ids,__METHOD__);
+  //dpm($ids,__METHOD__);
     $entities = array();
     $values = $this->getEntityInfo($ids);
-//  dpm($values,'values');    
+  //dpm($values,'values');    
     foreach ($ids as $id) {
       //@TODO combine this with getEntityInfo
       if (!empty($values[$id])) {
@@ -72,7 +72,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       $ids = array_diff_key($ids,$entity_info);
       if (empty($ids)) return $entity_info;
     }
-    
+
     $adapters = entity_load_multiple('wisski_salz_adapter');
 #    dpm(serialize($adapters));
 #    drupal_set_message("hallo welt");
@@ -80,8 +80,11 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #    dpm($all_field_definitions,'field_definitions before');
     // for every id
     foreach($ids as $id) {
+      //make sure the entity knows its ID at least
+      $info[$id]['eid'] = $id;
       //see if we got bundle information cached. Useful for entity reference and more
       $cached_bundle = WisskiCacheHelper::getCallingBundle($id);
+      if ($cached_bundle) $info[$id]['bundle'] = $cached_bundle;
       // ask all adapters
       foreach($adapters as $aid => $adapter) {
         // if they know that id

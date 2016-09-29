@@ -35,13 +35,14 @@ class Query extends WisskiQueryBase {
     
     // get the adapter
     $engine = $this->getEngine();
-
+    
     if(empty($engine))
       return array();
     
     // get the adapter id
     $adapterid = $engine->adapterId();
-        
+    //dpm($this,__FUNCTION__.' '.$adapterid);
+    
     // if we have not adapter, we may go home, too
     if(empty($adapterid))
       continue;
