@@ -542,7 +542,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getBundleIdsForEntityId($entityid) {
         
     $pb = $this->getPbForThis();
-    
+#    dpm($pb,$this->adapterId().' Pathbuilder');
 #    dpm($entityid, "eid");
 
     $uri = $this->getUriForDrupalId($entityid);    
@@ -567,7 +567,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
       // ask for a bundle from the pb that has this class thing in it
       $groups = $pb->getAllGroups();
-
+      
 #      drupal_set_message("groups: " . count($groups) . " " . serialize($groups));
 
       $i = 0;
@@ -1170,23 +1170,11 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     
     foreach($pbs as $pb) {
       // if there is no adapter set for this pb  
-      if(empty($pb->getAdapterId()))
-        continue;
-        
-      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
-
-      // if we have not adapter, we may go home, too
-      if(empty($adapter))
-        continue;
-      
-      // if he didn't ask for us...    
-      if($this->getConfiguration()['id'] != $adapter->getEngine()->getConfiguration()['id'])
-        continue;
-        
-      // if we get here we have our pathbuilder
-      return $pb;
-      
+      if($adapter_id = $pb->getAdapterId()) {
+        if ($this->adapterId() == $adapter_id) return $pb;
+      }      
     }
+    return NULL;
   }
 
   /**
