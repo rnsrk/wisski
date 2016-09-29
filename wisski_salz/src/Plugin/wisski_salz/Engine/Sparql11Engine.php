@@ -192,7 +192,7 @@ class Sparql11Engine extends EngineBase {
 	* @return @see EasyRdf_Sparql_Client->query
 	*/
 	public function directQuery($query) {
-	  \Drupal::logger('WissKI SPARQL 1.1 adapter query')->debug(htmlentities($query));
+	  \Drupal::logger($this->adapterId().' query')->debug(htmlentities($query));
 		return $this->getEndpoint()->query($query);
 	}
 	

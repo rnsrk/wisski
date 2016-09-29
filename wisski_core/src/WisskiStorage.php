@@ -49,6 +49,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       //@TODO combine this with getEntityInfo
       if (!empty($values[$id])) {
         $entity = $this->create($values[$id]);
+        $entity->enforceIsNew(FALSE);
         $entities[$id] = $entity;
       }
     }

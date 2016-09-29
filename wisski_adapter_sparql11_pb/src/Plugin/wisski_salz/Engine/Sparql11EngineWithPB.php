@@ -653,7 +653,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // if there is nothing, do nothing!
       // I am unsure if that ever could occur
       if(empty($parentpath))
-        continue;
+        return;
       
       // -1 because we don't want to cut our own concept
       $parentcnt = count($parentpath->getPathArray())-1;
@@ -2926,13 +2926,17 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     if (!is_null($condition_field) && !is_null($condition_value)) {
       $query = $query->condition($condition_field,$condition_value);
     }
-    $result = $query->execute();
-    if (!is_null($return_field)) {
-      $result = array_keys($result->fetchAllAssoc($return_field));
-      usort($result,'strnatcasecmp');
-      return array_combine($result,$result);
+    try {
+      $result = $query->execute();
+      if (!is_null($return_field)) {
+        $result = array_keys($result->fetchAllAssoc($return_field));
+        usort($result,'strnatcasecmp');
+        return array_combine($result,$result);
+      }
+      return $result->fetchAll();
+    } catch (\Exception $e) {
+      return FALSE;
     }
-    return $result->fetchAll();
   }
   
   /**
