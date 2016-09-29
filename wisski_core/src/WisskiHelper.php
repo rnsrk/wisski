@@ -87,6 +87,7 @@ class WisskiHelper {
     $parents = array();
     foreach ($pbs as $pb_id => $pb) {
       $pathtree = $pb->getPathTree();
+      if (empty($pathtree)) continue;
       $pbarr = $pb->getPbPaths();
       
       foreach($pathtree as $key => $value) {
