@@ -32,6 +32,8 @@ class WisskiPathbuilderForm extends EntityForm {
     // what entity do we work on?
     $pathbuilder = $this->entity;
 
+#    dpm($pathbuilder->getEntityType());
+
     // Change page title for the edit operation
     if($this->operation == 'edit') {
       $form['#title'] = $this->t('Edit Pathbuilder: @id', array('@id' => $pathbuilder->id()));
@@ -339,14 +341,14 @@ class WisskiPathbuilderForm extends EntityForm {
     $pathtree = array();
     $map = array();
     
-    dpm($paths);
+#    dpm($paths);
     foreach($paths as $key => $path) {
       
       $this_path = $xmldoc->addChild("path");
       
       $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
       
-      dpm($pathob);
+#      dpm($pathob);
       
       foreach($path as $subkey => $value) {
         
@@ -610,6 +612,27 @@ class WisskiPathbuilderForm extends EntityForm {
     
     return $pathform;
   }
+  
+  public function save_and_generate_forms(array $form, FormStateInterface $form_state) {
+    // get the pathbuilder    
+    $pathbuilder = $this->entity;
+ 
+    // fetch the paths
+    $paths = $form_state->getValue('pathbuilder_table');
+    
+    $pathtree = array();
+    $map = array();
+    
+    foreach($paths as $key => $path) {
+      if($pathob->isGroup()) {
+        $pathbuilder->generateBundleForGroup($pathob->id());
+                  
+        if(!in_array($pathob->id(), array_keys($pathbuilder->getMainGroups())))
+          $pathbuilder->generateFieldForSubGroup($pathob->id(), $pathob->getName());  
+      } else
+        $pathbuilder->generateFieldForPath($pathob->id(), $pathob->getName());
+    }
+  }
     
   /**
    * {@inheritdoc}
@@ -652,6 +675,7 @@ class WisskiPathbuilderForm extends EntityForm {
       if(empty($path['enabled']))
         continue;
 
+/*
       if($pathob->isGroup()) {
         $pathbuilder->generateBundleForGroup($pathob->id());
                   
@@ -659,6 +683,7 @@ class WisskiPathbuilderForm extends EntityForm {
           $pathbuilder->generateFieldForSubGroup($pathob->id(), $pathob->getName());  
       } else
         $pathbuilder->generateFieldForPath($pathob->id(), $pathob->getName());
+*/
       
 
     }
