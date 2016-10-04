@@ -641,7 +641,12 @@ class WisskiPathbuilderForm extends EntityForm {
     $pathtree = array();
     $map = array();
     
+    $this->save($form, $form_state);
+    
     foreach($paths as $key => $path) {
+      // generate fields!
+      $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
+
       if($pathob->isGroup()) {
         $pathbuilder->generateBundleForGroup($pathob->id());
                   
@@ -650,6 +655,7 @@ class WisskiPathbuilderForm extends EntityForm {
       } else
         $pathbuilder->generateFieldForPath($pathob->id(), $pathob->getName());
     }
+    
   }
     
   /**
