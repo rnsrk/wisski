@@ -328,6 +328,24 @@ class WisskiPathbuilderForm extends EntityForm {
 #    dpm($form);
     return $form;
   }
+  
+  /**
+   * {@inheritdoc}
+   */
+  protected function actions(array $form, FormStateInterface $form_state) {
+    $element = parent::actions($form, $form_state);
+    $element['#type'] = '#dropbutton';
+    $element['generate'] = array(
+      '#type' => 'submit',
+      '#value' => $this->t('Save and generate bundles and fields'),
+      '#submit' => array('::submitForm','::save_and_generate_forms'),
+      '#weight' => -10,
+      '#dropbutton' => 'save',
+    );
+    $element['submit']['#value'] = $this->t('Save without form generation');
+    $element['submit']['#dropbutton'] = 'save';
+    return $element;
+  }
 
   public function export(array &$form, FormStateInterface $form_state) {
     $xmldoc = new \Symfony\Component\DependencyInjection\SimpleXMLElement("<pathbuilderinterface></pathbuilderinterface>");
