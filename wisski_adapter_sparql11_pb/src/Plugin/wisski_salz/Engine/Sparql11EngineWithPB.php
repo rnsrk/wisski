@@ -2867,7 +2867,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       $inverse = $row->inverse->getUri();
     }
     $inverses[$property_uri] = $inverse;
-    \Drupal::cache()->set($cid,$inverses);
+//    \Drupal::cache()->set($cid,$inverses);
     return $inverse;
   }
   

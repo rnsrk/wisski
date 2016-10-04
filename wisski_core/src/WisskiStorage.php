@@ -95,7 +95,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           // if so - ask for the bundles for that id
           // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
           $bundle_ids = $adapter->getBundleIdsForEntityId($id);
-          drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundle_ids) . ".");
+//          drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundle_ids) . ".");
           if (isset($cached_bundle)) {
             if (in_array($cached_bundle,$bundle_ids)) {
               $bundle_ids = array($cached_bundle);
@@ -185,7 +185,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #                  $value['value'] = $value;
 #                  $value['format'] = 'full_html';
                 }
-                if ($field_def->getType() === 'image') {
+                //we integrate a file handling mechanism that must necessarily also handle
+                //other file based fields e.g. "image"
+                if (in_array('file',$field_def->getFieldStorageDefinition()->getDependencies()['module'])) {
+                  
                   $value = $new_field_values[$id][$field_name];
                   // we assume that $value is an image URI which is to be rplaced by a FileID
                   #drupal_set_message('we got an image to handle. Field name:'.$field_name);
@@ -543,7 +546,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       $out[$field_name] = array();
       foreach($field_item_list as $field_item) {
         $field_values = $field_item->getValue();
-        if ($field_item->getFieldDefinition()->getType() === 'image') {
+        $field_def = $field_item->getFieldDefinition()->getFieldStorageDefinition();
+        if (method_exists($field_def,'getDependencies') && in_array('file',$field_def->getDependencies()['module'])) {
           //when loading we assume $target_id to be the file uri
           //this is a workaround since Drupal File IDs do not carry any information when not in drupal context
           $field_values['target_id'] = $this->getPublicUrlFromFileId($field_values['target_id']);
