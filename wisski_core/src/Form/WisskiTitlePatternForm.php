@@ -29,6 +29,30 @@ class WisskiTitlePatternForm extends EntityForm {
     
     $form['#title'] = $this->t('Edit title pattern for bundle %label', array('%label' => $bundle->label()));
 
+    $form['help'] = array(
+      '#type' => 'details',
+      '#title' => $this->t('Help'),
+      'text' => array('#markup' => $this->t(
+          'Build the pattern that creates titles for entities from this bundle.<br>
+          Click <em>&lt;Add a text block&gt;</em> to insert a fixed portion of text 
+          or select a path from the <em>&lt;Add a path&gt;</em> drop down list to insert an entity-dependent title part. These latter path based parts will be evaluated against the entity and if that yields one ore more results those will be used for the title portion for this row.
+          Having added several rows you can sort them by drag-and-drop on the crosshairs in the front section of each row.<br>
+          <table>
+          <th colspan=2>There are multiple options in each row to influence the pattern creation:</th>
+          <tr><td>ID</td><td>the \'name\' for this title portion. Can be used in the dependencies list of other rows. The crosshair in this section can be used to drag-and-drop the row to another position in the pattern</td></tr>
+          <tr><td>Content</td><td>If you added a textblock this section can be used to insert the text you want to see at this position in the title. If the row reflects a path, then that path\' name will be shown here.</td></tr>
+          <tr><td>Optional</td><td>if the title part is NOT optional, being evaluated to an empty string will result in an invalid title</td></tr>
+          <tr><td>Show #</td><td>select the MAXIMUM number of instances of this path to be shown, \'all\' can be chosen here and means all we can find in the knowledge base (probaly restricted by server or software settings, e.g. timeouts)</td></tr>
+          <tr><td>Delimiter</td><td>Choose a string that will delimit the various instances of results in this path. Only useful if \'Show #\' does not equal 1</td></tr>
+          <tr><td rowspan=2>Dependencies</td><td>Insert a comma seperated list of row IDs as shown in the row head. An ID here means that this row will only show if the row with the given ID does contain something. Adding an exclamation mark "!" right before the row ID means the current row only shows if the referenced row does NOT contain anything</td></tr>
+          <tr><td><b>Example:</b> let \'t1\' have dependencies \'p0,!p2\' then the text from the \'content\' section of row \'t2\' will only show up if the path in row \'p0\' contains something for the entity in question AND path \'p2\' does not contain anything</td></tr>
+          <tr><td>Remove</td><td>removes the row from the pattern</td></tr>
+          </table>
+          The order of the rows will be reflected in the order of text portions in the resulting title string: the higher (closer to the top) a row in the pattern, the earlier its result will show up in the created title.'
+        ),
+      ),
+    );
+
     $options = $bundle->getPathOptions();
     //dpm($options,'Path Options');
     $form_storage = $form_state->getStorage();
