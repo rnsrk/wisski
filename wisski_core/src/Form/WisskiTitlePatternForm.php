@@ -217,9 +217,16 @@ class WisskiTitlePatternForm extends EntityForm {
       }
     }
     
+    $parent_string = '';
+    foreach ($attributes['parents'] as $row_id => $positive) {
+      if (!empty($parent_string)) $parent_string .= ', ';
+      if (!$positive) $parent_string .= '!';
+      $parent_string .= $row_id;
+    }
+    
     $rendered['parents'] = array(
       '#type' => 'textfield',
-      '#default_value' => $attributes['parents'],
+      '#default_value' => $parent_string,
       '#size' => 8,
     );
         
@@ -313,6 +320,7 @@ class WisskiTitlePatternForm extends EntityForm {
       
       if (isset($attributes['parents']) && $attributes['parents'] !== '') {
         $parents = explode(',',$attributes['parents']);
+        unset($attributes['parents']);
         foreach ($parents as $parent) {
           $t_parent = trim($parent);
           $positive = strpos($t_parent,'!') !== 0;
@@ -321,7 +329,7 @@ class WisskiTitlePatternForm extends EntityForm {
           }
           if (array_key_exists($t_parent,$pattern)) {
             $children[$t_parent][$row_id] = $positive;
-            $pattern[$row_id]['dependent'] = !$positive;
+            $pattern[$row_id]['parents'][$t_parent] = $positive;
           }
           else $errors[] = array($row_id.'][parents','invalid');
         }

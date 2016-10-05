@@ -1655,19 +1655,20 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       $groups = $pb->getGroupsForBundle($bundleid);
 
       // for now simply take the first one.    
-      $groups = current($groups);
+      if ($groups = current($groups)) {
 
-      $triples = $this->generateTriplesForPath($pb, $groups, '', NULL, NULL, 0, 0, TRUE);
+        $triples = $this->generateTriplesForPath($pb, $groups, '', NULL, NULL, 0, 0, TRUE);
       
-      $sparql = "INSERT DATA { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " . $triples . " } } ";
-      #dpm($sparql, "spargel");      
-      $result = $this->directUpdate($sparql);
+        $sparql = "INSERT DATA { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " . $triples . " } } ";
+        #dpm($sparql, "spargel");      
+        $result = $this->directUpdate($sparql);
     
-      $uri = explode(" ", $triples, 2);
+        $uri = explode(" ", $triples, 2);
+        
+        $uri = substr($uri[0], 1, -1);
       
-      $uri = substr($uri[0], 1, -1);
-      
-      $uri = $this->getDrupalId($uri);
+        $uri = $this->getDrupalId($uri);
+      }
       
     }
 #    dpm($groups, "bundle");

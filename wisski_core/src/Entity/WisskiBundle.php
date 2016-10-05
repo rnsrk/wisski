@@ -96,17 +96,35 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $pattern = $this->getTitlePattern();
     unset($pattern['max_id']);
     //dpm(array('pattern'=>$pattern,'entity'=>$wisski_individual),__METHOD__);
-    $parts = array();
-    $empty_children = array();
     if (empty($pattern)) {
       return $fallback_title;
     } else {
-      $saved_pattern = $pattern;
-      while ($each = each($pattern)) {
-        list($key,$attributes) = $each; unset($each);
+      //dpm($pattern,__FUNCTION__);
+      $parts = array();
+      $pattern_order = array_keys($pattern);
+      //just to avoid endless runs we introduce an upper bound,
+      //this is possible since per run at most k-1 other elements have to be cycle through before
+      //having seen all parents i.e. $max = sum_{k = 0}^$count k
+      $count = count($pattern);
+      $max = ($count * ($count+1)) / 2;
+      $count = 0;
+      while ($count < $max && list($key,$attributes) = each($pattern)) {
+        $count++;
         unset($pattern[$key]);
-        //if we have a negative dependency
-        if ($attributes['dependent']) continue;
+        reset($pattern);
+        //dpm($pattern,'Hold '.$key);
+        //if we have a dependency make sure we only consider this one, when all dependencies are clear
+        foreach ($attributes['parents'] as $parent => $positive) {
+          //dpm($parts,'Ask for '.$parent.' '.($positive ? 'pos' : 'neg'));
+          if (!isset($parts[$parent])) {
+            $pattern[$key] = $attributes;
+            continue 2;
+          } elseif ($positive) {
+            if ($parts[$parent] === '') continue 2;
+          } else { //if negative
+            if (!empty($parts[$parent])) continue 2;
+          }
+        }
         if ($attributes['type'] === 'path') {
           $name = $attributes['name'];
           if ($name === 'eid') $values = array($entity_id);
@@ -119,11 +137,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           }
           if (empty($values)) {
             if ($attributes['optional'] === FALSE) {
-              $parts[$key] = FALSE;
-            }
-            if (isset($attributes['children'])) {
-              $empty_children += array_keys(array_filter($attributes['children']));
-            }
+              //we detected an invalid title;
+              drupal_set_message('Detected invalid title','error');
+              return $fallback_title;
+            } else $parts[$key] = '';
             continue;
           }
           $part = '';
@@ -145,21 +162,19 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         $parts[$key] = $part;
       }
       //dpm(array('parts'=>$parts,'empty_children'=>$empty_children),'after');
-      $parts = array_diff_key($parts,array_flip($empty_children));
-      if (in_array(FALSE,$parts)) {
-        drupal_set_message('Detected invalid title','error');
-        $title = $fallback_title;
-      } else {
-        $title = implode('',$parts);
-      }
       
+      //reorder the parts according original pattern
+      $title = '';
+      foreach ($pattern_order as $pos) {
+        if (isset($parts[$pos])) $title .= $parts[$pos];
+      }
     }
     $this->setCachedTitle($entity_id,$title);
     //dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
     if ($include_bundle) {
       drupal_set_message('Enhance Title '.$title);
       $title = $this->label().': '.$title;
-    }  
+    }   
     return $title;
   }
   
