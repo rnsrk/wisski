@@ -101,7 +101,12 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     if (empty($pattern)) {
       return $fallback_title;
     } else {
-      foreach ($pattern as $key => $attributes) {
+      $saved_pattern = $pattern;
+      while ($each = each($pattern)) {
+        list($key,$attributes) = $each; unset($each);
+        unset($pattern[$key]);
+        //if we have a negative dependency
+        if ($attributes['dependent']) continue;
         if ($attributes['type'] === 'path') {
           $name = $attributes['name'];
           if ($name === 'eid') $values = array($entity_id);
@@ -117,7 +122,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               $parts[$key] = FALSE;
             }
             if (isset($attributes['children'])) {
-              $empty_children += $attributes['children'];
+              $empty_children += array_keys(array_filter($attributes['children']));
             }
             continue;
           }
@@ -147,6 +152,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       } else {
         $title = implode('',$parts);
       }
+      
     }
     $this->setCachedTitle($entity_id,$title);
     //dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);

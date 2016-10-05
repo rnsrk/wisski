@@ -315,7 +315,14 @@ class WisskiTitlePatternForm extends EntityForm {
         $parents = explode(',',$attributes['parents']);
         foreach ($parents as $parent) {
           $t_parent = trim($parent);
-          if (array_key_exists($t_parent,$pattern)) $children[$t_parent][] = $row_id;
+          $positive = strpos($t_parent,'!') !== 0;
+          if (!$positive) {
+            $t_parent = ltrim($t_parent,'!');
+          }
+          if (array_key_exists($t_parent,$pattern)) {
+            $children[$t_parent][$row_id] = $positive;
+            $pattern[$row_id]['dependent'] = !$positive;
+          }
           else $errors[] = array($row_id.'][parents','invalid');
         }
       }
