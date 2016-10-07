@@ -208,4 +208,21 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     return FALSE;
   }
 
+  /**
+   * Gets the PB object for a given adapter id
+   * @return a pb object
+   */
+  public function getPbForThis() {
+    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    
+    foreach($pbs as $pb) {
+      // if there is no adapter set for this pb  
+      if($adapter_id = $pb->getAdapterId()) {
+        if ($this->adapterId() == $adapter_id) return $pb;
+      }      
+    }
+    return NULL;
+  }
+
+  
 }

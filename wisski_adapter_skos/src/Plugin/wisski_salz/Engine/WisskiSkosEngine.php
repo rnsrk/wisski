@@ -837,7 +837,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     return $outarr;
   }
 
-  public function load($id) {
+  public function loadEntity($id) {
 #    drupal_set_message("b1: $id " . microtime());
         
     $out = array();
@@ -874,7 +874,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     return $out;
   }
   
-  public function loadMultiple($ids = NULL) {
+  public function loadMultipleEntities($ids = NULL) {
 #    dpm($this->getConfiguration());
 #    $this->entity_info = Yaml::parse($this->entity_string);
 #    dpm($this->entity_info,__METHOD__);
@@ -912,7 +912,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
  
 #    dpm($entity_id, "eid");
     
-    $ent = $this->load($entity_id);
+    $ent = $this->loadEntity($entity_id);
 
 #    dpm(!empty($ent), "ent");
 
@@ -1294,7 +1294,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
         // this would speed everything up largely, I think.
         // 
         // for now we assume we know the entity.
-        // $entity = $this->load($eid);
+        // $entity = $this->loadEntity($eid);
 #        drupal_set_message("a4: " . microtime());
         // if there is nothing, continue.
         // if(empty($entity))
@@ -2049,7 +2049,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
         
         // here we should check if we really know the entity by asking the TS for it.
         // this would speed everything up largely, I think.
-        $entity = $this->load($entity_id);
+        $entity = $this->loadEntity($entity_id);
 
         #dpm($entity, "entity!");
         

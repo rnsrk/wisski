@@ -84,7 +84,6 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
    * @see EngineInterface::loadFieldValues()
    */
   public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT);
-
   
   /**
    * @see EngineInterface::loadFieldValues()
@@ -108,5 +107,52 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
    */
   public function writeFieldValues($entity_id,array $field_values,$bundle = NULL);
 
+  /**
+   * this adapter/engine provides two functions for retrieving path alternatives
+   * @TODO bring that to the interface
+   */
+  public function providesFastMode();
+
+  /**
+   * this adapter/engine provides a pre-computed step alternative cache
+   * @TODO bring that to the interface
+   */
+  public function providesCacheMode();
+  
+  /**
+   * returns TRUE if the cache is pre-computed and ready to use, FALSE otherwise
+   */
+  public function isCacheSet();
+  
+  /**
+   * {@inheritdoc}
+   * returns the possible next steps in path creation, if $this->providesFastMode() returns TRUE then this
+   * MUST react fast i.e. in the blink of an eye if $fast_mode = TRUE and it MUST return the complete set of options if $fast_mode=FALSE
+   * otherwise it should ignore the $fast_mode parameter
+   */  
+  public function getPathAlternatives($history = [], $future = [],$fast_mode=FALSE,$empty_uri='empty');
+  
+  public function getPrimitiveMapping($step);
+  
+  /*
+   * Load the image data for a given entity id
+   * @return an array of values?
+   */
+  public function getImagesForEntityId($entityid, $bundleid);
+  
+  public function getDrupalId($uri);
+  
+  public function getUriForDrupalId($id);
+
+  /**
+   * Gets the bundle and loads every individual in the TS
+   * and returns an array of ids if there is something...
+   *
+   */ 
+  public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE);
+  
+  public function loadEntity($id);
+  
+  public function loadMultipleEntities($ids = NULL);
 
 }

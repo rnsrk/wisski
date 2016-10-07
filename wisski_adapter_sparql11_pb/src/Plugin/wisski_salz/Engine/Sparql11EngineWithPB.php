@@ -33,16 +33,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   /******************* BASIC Pathbuilder Support ***********************/
 
   /**
-   * this adapter/engine provides two functions for retrieving path alternatives
-   * @TODO bring that to the interface
+   * {@inheritdoc}
    */
   public function providesFastMode() {
     return TRUE;
   }
   
   /**
-   * this adapter/engine provides a pre-computed step alternative cache
-   * @TODO bring that to the interface
+   * {@inheritdoc}
    */
   public function providesCacheMode() {
   
@@ -865,7 +863,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     return $outarr;
   }
 
-  public function load($id) {
+  public function loadEntity($id) {
 #    drupal_set_message("b1: $id " . microtime());
         
     $out = array();
@@ -900,7 +898,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     return $out;
   }
   
-  public function loadMultiple($ids = NULL) {
+  public function loadMultipleEntities($ids = NULL) {
 #    dpm($this->getConfiguration());
 #    $this->entity_info = Yaml::parse($this->entity_string);
 #    dpm($this->entity_info,__METHOD__);
@@ -938,7 +936,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
  
 #    dpm($entity_id, "eid");
     
-    $ent = $this->load($entity_id);
+    $ent = $this->loadEntity($entity_id);
 
 #    dpm(!empty($ent), "ent");
 
@@ -1162,22 +1160,6 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
   }
   
   /**
-   * Gets the PB object for a given adapter id
-   * @return a pb object
-   */
-  public function getPbForThis() {
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
-    
-    foreach($pbs as $pb) {
-      // if there is no adapter set for this pb  
-      if($adapter_id = $pb->getAdapterId()) {
-        if ($this->adapterId() == $adapter_id) return $pb;
-      }      
-    }
-    return NULL;
-  }
-
-  /**
    * @inheritdoc
    */
   public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundleid_in = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
@@ -1320,7 +1302,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
         // this would speed everything up largely, I think.
         // 
         // for now we assume we know the entity.
-        // $entity = $this->load($eid);
+        // $entity = $this->loadEntity($eid);
 #        drupal_set_message("a4: " . microtime());
         // if there is nothing, continue.
         // if(empty($entity))
@@ -1462,8 +1444,9 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
 
   }
   
-  public function getQueryObject(EntityTypeInterface $entity_type,$condition,array $namespaces) {
   
+  public function getQueryObject(EntityTypeInterface $entity_type,$condition,array $namespaces) {
+    //do NOT copy this to parent, this is namespace dependent  
     return new Query($entity_type,$condition,$namespaces,$this);
   }
   
@@ -2076,7 +2059,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
         
         // here we should check if we really know the entity by asking the TS for it.
         // this would speed everything up largely, I think.
-        $entity = $this->load($entity_id);
+        $entity = $this->loadEntity($entity_id);
 
         #dpm($entity, "entity!");
         

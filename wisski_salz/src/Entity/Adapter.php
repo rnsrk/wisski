@@ -229,5 +229,75 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
 #    drupal_set_message("He called me!");
     return $this->getEngine()->writeFieldValues($entity_id, $field_values,$bundle);
   }
+  
+  /**
+   * this adapter/engine provides two functions for retrieving path alternatives
+   * @TODO bring that to the interface
+   */
+  public function providesFastMode() {
+    return $this->getEngine()->providesFastMode();
+  }
 
+  /**
+   * this adapter/engine provides a pre-computed step alternative cache
+   * @TODO bring that to the interface
+   */
+  public function providesCacheMode() {
+    return $this->getEngine()->providesCacheMode();
+  }
+  
+  /**
+   * returns TRUE if the cache is pre-computed and ready to use, FALSE otherwise
+   */
+  public function isCacheSet() {
+    return $this->getEngine()->isCacheSet();
+  }
+  
+  /**
+   * {@inheritdoc}
+   * returns the possible next steps in path creation, if $this->providesFastMode() returns TRUE then this
+   * MUST react fast i.e. in the blink of an eye if $fast_mode = TRUE and it MUST return the complete set of options if $fast_mode=FALSE
+   * otherwise it should ignore the $fast_mode parameter
+   */  
+  public function getPathAlternatives($history = [], $future = [],$fast_mode=FALSE,$empty_uri='empty') {
+    return $this->getEngine()->getPathAlternatives($history,$future,$fast_mode,$empty_uri);
+  }
+  
+  public function getPrimitiveMapping($step) {
+    return $this->getEngine()->getPrimitiveMapping($step);
+  }
+  
+  /*
+   * Load the image data for a given entity id
+   * @return an array of values?
+   */
+  public function getImagesForEntityId($entityid, $bundleid) {
+    return $this->getEngine()->getImagesForEntityId($entityid, $bundleid);
+  }
+  
+  public function getDrupalId($uri) {
+    return $this->getEngine()->getDrupalId($uri);
+  }
+  
+  public function getUriForDrupalId($id) {
+    return $this->getEngine()->getUriForDrupalId($id);
+  }
+
+  /**
+   * Gets the bundle and loads every individual in the TS
+   * and returns an array of ids if there is something...
+   *
+   */ 
+  public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE) {
+    return $this->getEngine()->loadIndividualsForBundle($bundleid, $pathbuilder, $limit, $offset,$count,$conditions);
+  }
+  
+  public function loadEntity($id) {
+    return $this->getEngine()->load($id);
+  }
+  
+  public function loadMultipleEntities($ids = NULL) {
+    return $this->getEngine()->loadMultiple($ids);
+  }
+  
 }
