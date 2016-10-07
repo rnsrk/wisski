@@ -43,10 +43,12 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         //thus we must reset $count for the dependent_queries
         $this->initializePager();
       }
+      if ($pager) {
+        return $this->pagerQuery($this->range['length'],$this->range['start']);
+      }
       foreach ($this->dependent_queries as $query) {
         //set $query->count = FALSE;
         $query = $query->normalQuery();
-        if ($pager) $query = $query->range($this->range['start'],$this->range['length']);
         $sub_result = $query->execute();
         $result = array_merge($result,$sub_result);
       }
@@ -54,7 +56,32 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     }
   }
   
-   /**
+  protected function pagerQuery($limit,$offset) {
+    
+    $num_queries = count($this->dependent_queries);
+    $running_queries = array();
+    //we now go and ask all sub_queries whether they have enough answers to fill the offset.
+    //If not, the following queries have to fill more
+    foreach ($this->dependent_queries as $key => $query) {
+      $query = $query->count();
+      $sub_count = $query->execute();
+      if ($sub_count * $num_queries < $offset) {
+        //we enlearge the offset for following queries
+        $num_queries--;
+      } else $running_queries[] = $key;
+    }
+    $sub_queries = array_intersect_key($this->dependent_queries,array_flip($running_queries));
+    $results = array();
+    foreach ($sub_queries as $query) {
+      $query = $query->normalQuery();
+      $query->range($offset / $num_queries,$limit);
+      $results = array_merge($results,$query->execute());
+    }
+    asort($results);
+    return array_slice($results,0,$limit);
+  }
+  
+  /**
    * {@inheritdoc}
    */
   public function condition($field, $value = NULL, $operator = NULL, $langcode = NULL) {
