@@ -144,7 +144,7 @@ class WisskiPathForm extends EntityForm {
       $form['mode_selection']['fast_mode'] = array(
         '#type' => 'radios',
         '#options' => array(TRUE => $fast_label,FALSE => $complete_label),
-        '#default_value' => TRUE,
+        '#default_value' => FALSE,
       );
       $form['mode_selection']['fast_description'] = array(
         '#type' => 'item',
@@ -158,7 +158,7 @@ class WisskiPathForm extends EntityForm {
     
     //first, set the default values
     if (!isset($this->path_array)) $this->path_array = $path->isNew() ? array() : $path->getPathArray();
-    $selected_row = -1;
+    $selected_row = 0;
     $fast_mode = FALSE;
     $consistent_change = FALSE;
     
@@ -298,7 +298,7 @@ class WisskiPathForm extends EntityForm {
       $disamb_options = array();
       for($i = 0;$i<count($this->path_array);$i++) {
         $pos = floor($i / 2) + 1;
-        if (($i % 2 === 0) && $this->path_array[$floor] !== 'empty') $disamb_options[$pos] = $this->t('Concept ').$pos.': '.$this->path_array[$i];
+        if (($i % 2 === 0) && $this->path_array[$pos] !== 'empty') $disamb_options[$pos] = $this->t('Concept ').$pos.': '.$this->path_array[$i];
       }
       $form['path_content']['disamb'] = array(
         '#type' => 'select',

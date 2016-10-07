@@ -21,6 +21,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
   
   private $num_entities;
   private $image_height;
+  private $page;
   
   private $adapter;
   
@@ -48,8 +49,10 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     } else $this->adapter = $pref_local;
     
     $request_query = \Drupal::request()->query;
+    //dpm($request_query,'HTTP GET');
     $grid_type = $request_query->get('type') ? : 'grid';
     $grid_width = $request_query->get('width') ? : 3;
+    $this->page = $request_query->get('page') ? : 0;
     //dpm($grid_type.' '.$grid_width);
     if ($grid_type === 'table') {
       $header = array('preview_image'=>$this->t('Entity'),'title'=>'','operations'=>$this->t('Operations'));
@@ -76,8 +79,8 @@ class WisskiEntityListBuilder extends EntityListBuilder {
             'preview_image' => array(
               'data' => array(
                 '#markup' => isset($input_row['preview_image']) 
-                  ? '<a href='.$input_row['url'].'>'.$input_row['preview_image'].'</a>'
-                  : '<a href='.$input_row['url'].'>'.$this->t('No preview available').'</a>'
+                  ? '<a href='.$input_row['url']->toString().'>'.$input_row['preview_image'].'</a>'
+                  : '<a href='.$input_row['url']->toString().'>'.$this->t('No preview available').'</a>'
                   ,
               ),
             ),
@@ -100,7 +103,9 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $row_num = 0;
       $cell_num = 0;
       $row = array();
-      foreach ($this->getEntityIds() as $entity_id) {
+      $ents = $this->getEntityIds();
+      dpm($ents,'list');
+      foreach ($ents as $entity_id) {
         if ($input_cell = $this->buildRowForId($entity_id)) {
           $cell_data = array(
             '#type' => 'container',
@@ -166,6 +171,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     // Only add the pager if a limit is specified.
     if ($this->limit) {
       $query->pager($this->limit);
+      $query->range($this->page*$this->limit,$this->limit);
     }
 #    $this->tick('prepare');
     if (!empty($this->bundle)) {

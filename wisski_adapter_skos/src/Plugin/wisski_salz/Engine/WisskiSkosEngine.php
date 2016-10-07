@@ -14,7 +14,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\wisski_salz\AdapterHelper;
 
-//use Drupal\wisski_adapter_sparql11_pb\Query\Query;
+use Drupal\wisski_adapter_skos\Query\Query;
 use \EasyRdf;
 
 /**
@@ -37,7 +37,7 @@ class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterf
    * @TODO bring that to the interface
    */
   public function providesFastMode() {
-    return TRUE;
+    return FALSE;
   }
   
   /**
@@ -125,50 +125,18 @@ class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterf
   /**
    * @{inheritdoc}
    */
-//  public function getPathAlternatives($history = [], $future = []) {
-//
-//  \Drupal::logger('WissKI SPARQL Client')->debug("normal mode");
-//    if (empty($history) && empty($future)) {
-//      
-//      return $this->getClasses();
-//
-//    } elseif (!empty($history)) {
-//      
-//      $last = array_pop($history);
-//      $next = empty($future) ? NULL : $future[0];
-//
-//      if ($this->isaProperty($last)) {
-//        return $this->nextClasses($last, $next);
-//      } else {
-//        return $this->nextProperties($last, $next);
-//      }
-//    } elseif (!empty($future)) {
-//      $next = $future[0];
-//      if ($this->isaProperty($next))
-//        return $this->getClasses();
-//      else
-//        return $this->getProperties();
-//    } else {
-//      return [];
-//    }
-//
-//    
-//  }
-  
-  /**
-   * @{inheritdoc}
-   */
   public function getPrimitiveMapping($step) {
     
+    \Drupal::logger('wisski sparql '.__FUNCTION__)->debug($step);
     $info = [];
 
     // this might need to be adjusted for other standards than rdf/owl
     $query = 
       "SELECT DISTINCT ?property "
       ."WHERE { "
-        ."?property a owl:DatatypeProperty. "
-        ."?property rdfs:domain ?d_superclass. "
-        ."<$step> rdfs:subClassOf* ?d_superclass. }"
+        ."<$step> a owl:Class. "
+        ."?property rdfs:subPropertyOf rdfs:label. "
+      ."}"
       ;
 
     $result = $this->directQuery($query);
@@ -540,7 +508,7 @@ class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterf
    *
    */
   public function getBundleIdsForEntityId($entityid) {
-        
+    
     $pb = $this->getPbForThis();
 #    dpm($pb,$this->adapterId().' Pathbuilder');
 #    dpm($entityid, "eid");
@@ -557,14 +525,14 @@ class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterf
       $query = "SELECT ?class WHERE { <" . $uri . "> a ?class }";
     else
       $query = "SELECT ?class WHERE { " . $entityid . " a ?class }";
-    
+#    dpm($query);
     $result = $this->directQuery($query);
     
 #    drupal_set_message("res: " . serialize($result));
     
    $out = array();
     foreach($result as $thing) {
-    
+      dpm($thing);   
       // ask for a bundle from the pb that has this class thing in it
       $groups = $pb->getAllGroups();
       
@@ -575,20 +543,24 @@ class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterf
       foreach($groups as $group) {
         // this does not work for subgroups
         #$path_array = $group->getPathArray();
-                
+#        dpm($group);                
 #        $path_array = $this->getClearPathArray($group, $pb);
         $path_array = $this->getClearGroupArray($group, $pb);
         $i++;
- 
+#        dpm($path_array); 
 #        drupal_set_message("p_a " . $i . " " . $group->getName() . " " . serialize($path_array));
         
         if(empty($group) || empty($path_array))
           continue;
+        
+#        dpm($path_array[ count($path_array)-1]);
+#        dpm($thing->class->getUri("text"));
 
         // this checks if the last element is the same
         // however this is evil whenever there are several elements in the path array
         // typically subgroups ask for the first element part.        
-        if($path_array[ count($path_array)-1] == $thing->class->dumpValue("text") || $path_array[0] == $thing->class->dumpValue("text")) {
+        if($path_array[ count($path_array)-1] == $thing->class->getUri() || $path_array[0] == $thing->class->getUri()) {
+#          dpm("found smthg!");
           $pbpaths = $pb->getPbPaths();
           
 #          drupal_set_message(serialize($pbpaths[$group->id()]));
@@ -825,22 +797,22 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
 
     $query .= "}";
     
-    if(is_null($limit) == FALSE && is_null($offset) == FALSE && empty($count))
+    if(is_null($limit) == FALSE && is_null($offset) == FALSE && empty($count)) {
       $query .= " LIMIT $limit OFFSET $offset ";
+    }
      
-#    drupal_set_message("query: " . serialize($query) . " and " . microtime());
+    drupal_set_message("query: " . serialize($query) . " and " . microtime());
     
 #    return;
     //dpm($query,__FUNCTION__.' '.$this->adapterId());
     // ask for the query
     $result = $this->directQuery($query);
-    
     $outarr = array();
 
     // for now simply take the first element
     // later on we need names here!
     foreach($result as $thing) {
-
+      
       // if it is a count query, return the integer      
       if(!empty($count)) {
         //dpm($thing,'Count Thing');
@@ -859,7 +831,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       
       $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
     }
-    //dpm($outarr, "outarr");
+#    dpm($outarr, "outarr");
 #    return;
     if (empty($outarr) && $count) return 0;
     return $outarr;
@@ -896,6 +868,8 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     }
 #    drupal_set_message("b5: " . microtime());
 #    drupal_set_message("load single");
+
+#    dpm($out);
     
     return $out;
   }
@@ -1714,7 +1688,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
    * @param $mode defaults to 'field' - but may be 'group' or 'entity_reference' in special cases
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field') {
-//dpm(func_get_args(), __METHOD__);
+#dpm(func_get_args(), __METHOD__);
     // the query construction parameter
     $query = "";
 

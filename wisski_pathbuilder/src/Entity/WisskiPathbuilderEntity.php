@@ -637,6 +637,9 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
     public function getAllGroups() {
       $groups = array();
       
+      if(empty($this->getPbPaths()))
+        return array();
+      
       // iterate through the paths array
       foreach($this->getPbPaths() as $potpath) {
         $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potpath["id"]);

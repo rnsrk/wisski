@@ -48,19 +48,22 @@
         if(empty($path))
           return NULL;
         
+        // Graph G?
         if($path->getDisamb()) {
-          $sparql = "SELECT * WHERE { GRAPH ?g { ";
+          $sparql = "SELECT * WHERE { ";
           $sparql .= $engine->generateTriplesForPath($pb, $path, NULL, NULL, NULL, NULL, $path->getDisamb(), FALSE);
-          $sparql .= " FILTER regex( ?out, '$string') . } }";        
+          $sparql .= " FILTER regex( STR(?out), '$string') . } ";        
         } else {
-          $sparql = "SELECT * WHERE { GRAPH ?g { ";
+          $sparql = "SELECT * WHERE { ";
           $sparql .= $engine->generateTriplesForPath($pb, $path, NULL, NULL, NULL, NULL, NULL, FALSE);
-          $sparql .= " FILTER regex( ?out, '$string') . } }";
+          $sparql .= " FILTER regex( STR(?out), '$string') . } ";
         }
       }
       
       if(empty($sparql))
         return NULL;
+      
+      $sparql .= "LIMIT 16";
         
 #      drupal_set_message("engine: " . serialize($sparql));
         

@@ -203,7 +203,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
   public function save(array $form, FormStateInterface $form_state) {
 
     // get the input of the field
-    $field_name = $form_state->getValue('field');
+#    $field_name = $form_state->getValue('field');
     // get the input for the path
     $pathid = $form_state->getValue('path');
     
@@ -218,6 +218,8 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     $pbpaths[$pathid]['fieldtype'] = $form_state->getValue('fieldtype');
     $pbpaths[$pathid]['displaywidget'] = $form_state->getValue('displaywidget');
     $pbpaths[$pathid]['formatterwidget'] = $form_state->getValue('formatterwidget');
+    $pbpaths[$pathid]['bundle'] = $form_state->getValue('bundle');
+    $pbpaths[$pathid]['field'] = $form_state->getValue('field');
     
     // save it
     $this->pathbuilder->setPbPaths($pbpaths);
@@ -226,102 +228,10 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 #    drupal_set_message(serialize($pbpaths[$pathid]));
     
 #    drupal_set_message(serialize($this->pathbuilder->getPbPaths()));
-    
-    return;    
-    // it is a field
-    if(!$path->isGroup()) {
-    # --- if it's a field ------------------
 
-      $this->pathbuilder->generateFieldForPath($pathid, $field_name);
-/*      
-      // get the bundle for this pathid
-      $bundle = $this->pathbuilder->getBundle($pathid); #$form_state->getValue('bundle');
-      
-      // this was called field?
-      $field_storage_values = [
-        'field_name' => $field_name,#$values['field_name'],
-        'entity_type' => 'wisski_individual',
-        'type' => 'text',//has to fit the field component type, see below
-        'translatable' => TRUE,
-      ];
-    
-      // this was called instance?
-      $field_values = [
-        'field_name' => $field_name,
-        'entity_type' => 'wisski_individual',
-        'bundle' => $bundle,
-        'label' => $field_name,
-        // Field translatability should be explicitly enabled by the users.
-        'translatable' => FALSE,
-        'disabled' => FALSE,
-      ];
-    
-
-      // get the pbpaths
-      $pbpaths = $this->pathbuilder->getPbPaths();
-      // set the path and the bundle - beware: one is empty!
-      $pbpaths[$this->path]['field'] = $field_name;
-      $pbpaths[$this->path]['bundle'] = $bundle;
-      // save it
-      $this->pathbuilder->setPbPaths($pbpaths);
-      $this->pathbuilder->save();
-    
-      // if the field is already there...
-      if(empty($field_name) || !empty(\Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $field_name)))) {
-        $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->pathbuilder->id()));
-        return;
-      }
-
-      // bundle?
-      $this->entityManager->getStorage('field_storage_config')->create($field_storage_values)->enable()->save();
-
-      // path?
-      $this->entityManager->getStorage('field_config')->create($field_values)->save();
-
-      $view_options = array(
-        'type' => 'text_summary_or_trimmed',//has to fit the field type, see above
-        'settings' => array('trim_length' => '200'),
-        'weight' => 1,//@TODO specify a "real" weight
-      );
-    
-      $view_entity_values = array(
-        'targetEntityType' => 'wisski_individual',
-        'bundle' => $bundle,
-        'mode' => 'default',
-        'status' => TRUE,
-      );
-
-      $display = $this->entityManager->getStorage('entity_view_display')->load('wisski_individual.'.$bundle.'.default');
-      if (is_null($display)) $display = $this->entityManager->getStorage('entity_view_display')->create($view_entity_values);
-      $display->setComponent($field_name,$view_options)->save();
-
-      $form_display = $this->entityManager->getStorage('entity_form_display')->load('wisski_individual.'.$bundle.'.default');
-      if (is_null($form_display)) $form_display = $display = $this->entityManager->getStorage('entity_form_display')->create($view_entity_values);
-      $form_display->setComponent($field_name)->save();
-
-      drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
-      */
-    } else {
-# --- END if its a field -------------------
-# --- if it's a bundle ----------------------
-      $bundle_name = $form_state->getValue('bundle');
-
-      // get the pbpaths
-      $pbpaths = $this->pathbuilder->getPbPaths();
-      // set the the bundle_name to the path
-      $pbpaths[$this->path]['bundle'] = $bundle_name;
-      // save it
-      $this->pathbuilder->setPbPaths($pbpaths);
-      $this->pathbuilder->save();
-
-      $bundle = $this->entityManager->getStorage('wisski_bundle')->create(array('id'=>$bundle_name,'label'=>$bundle_name));
-      $bundle->save();
-      drupal_set_message(t('Created new bundle %bundle for this group',array('%bundle'=>$bundle_name)));
-    }
-# --- END if it's a bundle ----------------
-    
     $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->pathbuilder->id()));
     
+    return;    
   }
 
 }

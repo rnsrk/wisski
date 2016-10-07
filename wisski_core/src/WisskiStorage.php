@@ -95,7 +95,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           // if so - ask for the bundles for that id
           // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
           $bundle_ids = $adapter->getBundleIdsForEntityId($id);
-//          drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundle_ids) . ".");
+#          drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundle_ids) . ".");
           if (isset($cached_bundle)) {
             if (in_array($cached_bundle,$bundle_ids)) {
               $bundle_ids = array($cached_bundle);
@@ -116,6 +116,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             #drupal_set_message("asking for: " . serialize(array_keys($field_definitions)));
             try {
               foreach ($field_definitions as $field_name => $field_def) {
+                
                 if ($field_def instanceof BaseFieldDefinition) {
                   //the bundle key will be set via the loop variable $bundleid
                   if ($field_name === 'bundle') continue;
