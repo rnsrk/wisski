@@ -69,7 +69,7 @@ class Query extends WisskiQueryBase {
       if(isset($this->pager) && !empty($this->range)) {
         $limit = $this->range['length'];
         $offset = $this->range['start'];
-        dpm(array('limit'=>$limit,'offset'=>$offset),'Pager');
+        #dpm(array('limit'=>$limit,'offset'=>$offset),'Pager');
       }
 
       // care about everything...

@@ -104,7 +104,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $cell_num = 0;
       $row = array();
       $ents = $this->getEntityIds();
-      dpm($ents,'list');
+#      dpm($ents,'list');
       foreach ($ents as $entity_id) {
         if ($input_cell = $this->buildRowForId($entity_id)) {
           $cell_data = array(

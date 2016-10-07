@@ -532,7 +532,7 @@ class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterf
     
    $out = array();
     foreach($result as $thing) {
-      dpm($thing);   
+#      dpm($thing);   
       // ask for a bundle from the pb that has this class thing in it
       $groups = $pb->getAllGroups();
       
@@ -801,7 +801,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       $query .= " LIMIT $limit OFFSET $offset ";
     }
      
-    drupal_set_message("query: " . serialize($query) . " and " . microtime());
+#    drupal_set_message("query: " . serialize($query) . " and " . microtime());
     
 #    return;
     //dpm($query,__FUNCTION__.' '.$this->adapterId());
