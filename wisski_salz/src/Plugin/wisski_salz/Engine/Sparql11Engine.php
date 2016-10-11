@@ -202,13 +202,38 @@ class Sparql11Engine extends EngineBase {
 	}
 	
   public function graphInsertionRewrite($query) {
+	  
+	  //dpm($query,'input');
+	  //first gather all variable names
+	  $vars = array();
+	  $variable_regex = '\?\w+';
+	  preg_match_all("/$variable_regex/",$query,$vars);
+	  $this->vars = array_unique($vars[0]);
+	  //dpm($this->vars,'Variables');
+	  //since we introduce new variables for the graphs we must ensure they do not reappear
+	  $count = 0;
+	  $new_query = preg_replace('/(SELECT\s+(?:DISTINCT\s+)?)\*/i','$1'.implode(' ',$this->vars),$query,1,$count);
+	  if ($count) dpm($new_query,'* replacement');
+		$uri_regex = '(?:\<[^\s\<\>\?]+\>|[^\s\<\>\?]+)';	
+		$placeholder_regex = "(?:$uri_regex|$variable_regex)";
+		$triple_regex = "$placeholder_regex\s+$placeholder_regex\s+$placeholder_regex\s*(?:\.|(?=\}))";
+		$new_query = preg_replace_callback("/$triple_regex/",array($this,'graphReplacement'),$new_query);
+		//dpm($new_query,'graph rewrite');
+		return $query;
+	}
 	
-		list($select,$where) = explode('WHERE',$query,2);
-		$from = '';
-		foreach ($this->getAllGraphs() as $graph_uri) {
-			$from .= "FROM <$graph_uri> ";
-		}
-		return $select.$from."WHERE".$where;
+	public function graphReplacement($matches) {
+	  //dpm($matches);
+	  $triple = $matches[0];
+	  static $num = 0;
+	  $graph_name = '?g'.$num;
+	  if (isset($this->vars)) {
+	    while (in_array($graph_name,$this->vars)) {
+	      $graph_name = '?g'.$num++;
+      }
+    }
+    $num++;
+	  return "{{ $triple } UNION {GRAPH $graph_name { $triple }}}";
 	}
 
 	protected $graphs;
