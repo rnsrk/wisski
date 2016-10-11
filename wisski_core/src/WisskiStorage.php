@@ -324,7 +324,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     if (!empty($file_ids)) {
       // if there is one, we must set the field value to the image's FID
       $value = current($file_ids);
-      dpm('replaced '.$file_uri.' with existing file '.$value);
+      //dpm('replaced '.$file_uri.' with existing file '.$value);
       //@TODO find out what to do if there is more than one file with that uri
       $local_file_uri = $file_uri;
     } else {
@@ -334,7 +334,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       $file_ids = $query->execute();
       if (!empty($file_ids)) {
         $value = current($file_ids);
-        dpm('replaced '.$file_uri.' with schemed existing file '.$value);
+        //dpm('replaced '.$file_uri.' with schemed existing file '.$value);
         $local_file_uri = $schemed_uri;
       } else {
         $query = \Drupal::entityQuery('file')->condition('uri',$local_file_uri);
@@ -343,7 +343,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           //we have a local file with the same filename.
           //lets assume this is the file we were looking for
           $value = current($file_ids);
-          dpm('replaced '.$file_uri.' with local file '.$value);
+          //dpm('replaced '.$file_uri.' with local file '.$value);
           //@TODO find out what to do if there is more than one file with that uri
         } else {
           // if we have no managed file with that uri, we try to generate one
@@ -360,7 +360,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             $file = file_save_data($data, $local_file_uri);
             if ($file) {
               $value = $file->id();
-              dpm('replaced '.$file_uri.' with new file '.$value);
+              //dpm('replaced '.$file_uri.' with new file '.$value);
             } else {
               drupal_set_message('Error saving file','error');
               //dpm($data,$file_uri);
