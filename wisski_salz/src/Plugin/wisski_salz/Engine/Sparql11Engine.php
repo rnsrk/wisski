@@ -191,9 +191,40 @@ class Sparql11Engine extends EngineBase {
 	* 
 	* @return @see EasyRdf_Sparql_Client->query
 	*/
-	public function directQuery($query) {
+	public function directQuery($query,$add_graphs=FALSE) {
+	  if ($add_graphs) $query = $this->graphInsertionRewrite($query);
+	  return $this->doQuery($query);
+	}
+	
+	private function doQuery($query) {
 	  \Drupal::logger($this->adapterId().' query')->debug(htmlentities($query));
 		return $this->getEndpoint()->query($query);
+	}
+	
+  public function graphInsertionRewrite($query) {
+	
+		list($select,$where) = explode('WHERE',$query,2);
+		$from = '';
+		foreach ($this->getAllGraphs() as $graph_uri) {
+			$from .= "FROM <$graph_uri> ";
+		}
+		return $select.$from."WHERE".$where;
+	}
+
+	protected $graphs;
+
+	public function getAllGraphs() {
+	
+	  if (isset($this->graphs)) return $this->graphs;
+	  $query = "SELECT DISTINCT ?g WHERE {GRAPH ?g {?s ?p ?o.}}";
+	  $result = $this->doQuery($query);
+	  if (empty($result)) return array();
+	  $out = array();
+	  foreach ($result as $obj) {
+	    $out[] = $obj->g->getUri();
+	  }
+	  $this->graphs = $out;
+	  return $out;
 	}
 	
 	public function isValidUri($uri) {

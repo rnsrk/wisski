@@ -58,3 +58,25 @@ function wisski_trace($dpm=TRUE) {
   }
   return $trace[2];
 }
+
+function wisski_local_store_query($query,$select=NULL) {
+  
+  $adapter = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore();
+  $out = array();
+  foreach ($adapter->getEngine()->directQuery($query) as $obj) {
+    if (isset($select)) {
+      $sub = array();
+      foreach ($select as $prop) {
+        if (property_exists($obj,$prop)) $sub[$prop] = $obj->{$prop}->getUri();
+      }
+      if (!empty($sub)) $out[] = $sub;
+    } else {
+      $sub = array();
+      foreach ((array) $obj as $prop => $val) {
+        $sub[$prop] = $val->getUri();
+      }
+      if (!empty($sub)) $out[] = $sub;
+    }
+  }
+  return $out;
+}

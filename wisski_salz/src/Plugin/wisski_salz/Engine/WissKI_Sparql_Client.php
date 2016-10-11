@@ -109,7 +109,6 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 
 
 
-
 }
 
 

@@ -206,7 +206,13 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   if(is_array($file_uri))
                     $file_uri = $file_uri['target_id'];
                   
-                  $new_field_values[$id][$field_name] = $this->getFileId($file_uri);
+                  $local_uri = '';
+                  $new_field_values[$id][$field_name][] = array(
+                    'target_id' => $this->getFileId($file_uri,$local_uri),
+                    //this is a fallback
+                    //@TODO get the alternative text from the stores
+                    'alt' => substr($local_uri,strrpos($local_uri,'/') + 1),
+                  );
                 }
                 if (isset($new_field_values[$id][$field_name])) {
                   if (!isset($info[$id]) || !isset($info[$id][$field_name])) $info[$id][$field_name] = $new_field_values[$id][$field_name];
@@ -308,6 +314,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
   public function getFileId($file_uri,&$local_file_uri='') {
 #drupal_set_message('Image uri: '.$file_uri);
+  //dpm($file_uri,__FUNCTION__);
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
     $local_file_uri = file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));
@@ -317,40 +324,50 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     if (!empty($file_ids)) {
       // if there is one, we must set the field value to the image's FID
       $value = current($file_ids);
-      //dpm('replaced '.$file_uri.' with existing file '.$value);
+      dpm('replaced '.$file_uri.' with existing file '.$value);
       //@TODO find out what to do if there is more than one file with that uri
       $local_file_uri = $file_uri;
     } else {
-      $query = \Drupal::entityQuery('file')->condition('uri',$local_file_uri);
+      //try it with a "translated" uri in the public;// scheme
+      $schemed_uri = $this->getSchemedUriFromPublicUri($file_uri);
+      $query = \Drupal::entityQuery('file')->condition('uri',$schemed_uri);
       $file_ids = $query->execute();
       if (!empty($file_ids)) {
-        //we have a local file with the same filename.
-        //lets assume this is the file we were looking for
         $value = current($file_ids);
-        //dpm('replaced '.$file_uri.' with existing local file '.$value);
-        //@TODO find out what to do if there is more than one file with that uri
+        dpm('replaced '.$file_uri.' with schemed existing file '.$value);
+        $local_file_uri = $schemed_uri;
       } else {
-        // if we have no managed file with that uri, we try to generate one
-        try {
-          
-          //$file = File::create(array(
-          //  'uri'=>$file_uri,
-          //));
-          //dpm($file,'File Object');
-          //$file->save();
-          
-          $data = file_get_contents($file_uri);
-          //dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
-          $file = file_save_data($data, $local_file_uri);
-          if ($file) {
-            $value = $file->id();
-            //dpm('replaced '.$file_uri.' with new file '.$value);
-          } else {
-            drupal_set_message('Error saving file','error');
-            //dpm($data,$file_uri);
+        $query = \Drupal::entityQuery('file')->condition('uri',$local_file_uri);
+        $file_ids = $query->execute();
+        if (!empty($file_ids)) {
+          //we have a local file with the same filename.
+          //lets assume this is the file we were looking for
+          $value = current($file_ids);
+          dpm('replaced '.$file_uri.' with local file '.$value);
+          //@TODO find out what to do if there is more than one file with that uri
+        } else {
+          // if we have no managed file with that uri, we try to generate one
+          try {
+            
+            //$file = File::create(array(
+            //  'uri'=>$file_uri,
+            //));
+            //dpm($file,'File Object');
+            //$file->save();
+            
+            $data = file_get_contents($file_uri);
+            //dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
+            $file = file_save_data($data, $local_file_uri);
+            if ($file) {
+              $value = $file->id();
+              dpm('replaced '.$file_uri.' with new file '.$value);
+            } else {
+              drupal_set_message('Error saving file','error');
+              //dpm($data,$file_uri);
+            }
+          } catch (EntityStorageException $e) {
+            drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
           }
-        } catch (EntityStorageException $e) {
-          drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
         }
       }
     }
@@ -368,6 +385,15 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       );
     }
     return NULL;
+  }
+  
+  public function getSchemedUriFromPublicUri($file_uri) {
+  
+    return str_replace(
+      \Drupal::service('stream_wrapper.public')->baseUrl(),
+      'public:/',
+      $file_uri
+    );
   }
 
   /**
