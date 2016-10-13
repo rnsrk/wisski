@@ -117,6 +117,10 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       return $this->pbpaths;
     }
     
+    public function hasPbPath($pathid) {
+      return isset($this->pbpaths[$pathid]);
+    }
+    
     public function getPbPath($pathid){
       return $this->pbpaths[$pathid];
     }
@@ -494,52 +498,63 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       // if there is nothing we don't generate anything.
       if(empty($my_group))
         return FALSE;
-              
-      // the name for the bundle is the id of the group
-      $bundle_name = $my_real_group->getName();
+      
+      if (isset($my_group['bundle'])) {
 
-      // generate a 32 char name
-      $bundleid = $this->generateIdForBundle($groupid);
+        $bundleid = $my_group['bundle'];
+        $bundles = \Drupal::entityManager()->getStorage($mode)->loadByProperties(array('id' => $bundleid));
+        if (!empty($bundles)) {
+          $bundle_object = current($bundles);
+          $bundle_name = $bundle_object->label();
+        }
+        drupal_set_message(t('Connected bundle %bundlelabel (%bundleid) with group %groupid.',array('%bundlelabel'=>$bundle_name, '%bundleid'=>$bundleid, '%groupid'=>$groupid)));
+      } else {
+        // the name for the bundle is the id of the group
+        $bundle_name = $my_real_group->getName();
 
-      // if the bundle is already there...
-      if(empty($bundle_name) || !empty(\Drupal::entityManager()->getStorage($mode)->loadByProperties(array('id' => $bundleid)))) {
-        drupal_set_message(t('Bundle %bundle with id %id was already there.',array('%bundle'=>$bundle_name, '%id' => $bundleid)));
-        return;
+        // generate a 32 char name
+        $bundleid = $this->generateIdForBundle($groupid);
+
+        // if the bundle is already there...
+        if(empty($bundle_name) || !empty(\Drupal::entityManager()->getStorage($mode)->loadByProperties(array('id' => $bundleid)))) {
+          drupal_set_message(t('Bundle %bundle with id %id was already there.',array('%bundle'=>$bundle_name, '%id' => $bundleid)));
+          return;
+        }
+
+        // set the the bundle_name to the path
+        $pbpaths[$groupid]['bundle'] = $bundleid;
+
+        // save it
+        $this->setPbPaths($pbpaths);
+        $this->save();
+
+        $bundle = \Drupal::entityManager()->getStorage($mode)->create(array('id'=>$bundleid, 'label'=>$bundle_name));
+        $bundle->save();
+        
+        // disable entity name and uid for now everywhere @TODO perhaps subgroups only?
+        $view_entity_values = array(
+          'targetEntityType' => 'wisski_individual',
+          'bundle' => $bundleid,
+          'mode' => 'default',
+          'status' => TRUE,
+        );
+        
+        $evd = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual.' . $bundleid . '.default');
+        if (is_null($evd)) $evd = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
+        $efd = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual.' . $bundleid . '.default');
+        if (is_null($efd)) $efd = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
+        
+        $evd->removeComponent('name');
+        $evd->removeComponent('uid');
+        $evd->save();
+        
+        $efd->removeComponent('name');
+        $efd->removeComponent('uid');
+        $efd->save();
+        
+        drupal_set_message(t('Created new bundle %bundle for group with id %groupid.',array('%bundle'=>$bundle_name, '%groupid'=>$groupid)));
       }
-
-      // set the the bundle_name to the path
-      $pbpaths[$groupid]['bundle'] = $bundleid;
-
-      // save it
-      $this->setPbPaths($pbpaths);
-      $this->save();
-
-      $bundle = \Drupal::entityManager()->getStorage($mode)->create(array('id'=>$bundleid, 'label'=>$bundle_name));
-      $bundle->save();
       
-      // disable entity name and uid for now everywhere @TODO perhaps subgroups only?
-      
-      $view_entity_values = array(
-        'targetEntityType' => 'wisski_individual',
-        'bundle' => $bundleid,
-        'mode' => 'default',
-        'status' => TRUE,
-      );
-      
-      $evd = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual.' . $bundleid . '.default');
-      if (is_null($evd)) $evd = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
-      $efd = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual.' . $bundleid . '.default');
-      if (is_null($efd)) $efd = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
-      
-      $evd->removeComponent('name');
-      $evd->removeComponent('uid');
-      $evd->save();
-      
-      $efd->removeComponent('name');
-      $efd->removeComponent('uid');
-      $efd->save();
-      
-      drupal_set_message(t('Created new bundle %bundle for group with id %groupid.',array('%bundle'=>$bundle_name, '%groupid'=>$groupid)));
     }
     
     private function addDataToParentInTree($parentid, $data, $tree) {

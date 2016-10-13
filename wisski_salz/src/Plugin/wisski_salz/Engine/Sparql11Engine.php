@@ -198,7 +198,11 @@ class Sparql11Engine extends EngineBase {
 	
 	private function doQuery($query) {
 	  \Drupal::logger($this->adapterId().' query')->debug(htmlentities($query));
-		return $this->getEndpoint()->query($query);
+	  try {
+  		return $this->getEndpoint()->query($query);
+    } catch (\Exception $e) {
+      drupal_set_message('Something went wrong in \''.__FUNCTION__.'\' for adapter "'.$this->adapterId().'"','error');
+    }
 	}
 	
   public function graphInsertionRewrite($query) {

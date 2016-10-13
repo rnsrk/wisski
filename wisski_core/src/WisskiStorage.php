@@ -491,47 +491,51 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #    dpm(serialize($adapters));
 #    drupal_set_message("hallo welt");
 
-    // ask all adapters
+    // ask all adapters and find the writable ones
     foreach($adapters as $aid => $adapter) {
       // we locate all writeable stores
       // then we locate all local stores in these writeable stores
 
-      if($adapter->getEngine()->isWritable()) {
-        if($adapter->getEngine()->isPreferredLocalStore())
-          $local_writeable_adapters[$aid] = $adapter;
-        else
-          $writeable_adapters[$aid] = $adapter;           
-
-      }      
+      if($adapter->getEngine()->isWritable())
+        $writeable_adapters[$aid] = $adapter;
+             
+      if($adapter->getEngine()->isPreferredLocalStore())
+        $local_adapters[$aid] = $adapter;
       
     }
 
-    // if there are local writeable adapters, use them
-    $adapters_to_use = $local_writeable_adapters;
-    
-    // if there were no local adapters, use the writeable
-    if(empty($adapters_to_use))
-      $adapters_to_use = $writeable_adapters;
-      
     // if there are no adapters by now we die...
-    if(empty($adapters_to_use)) {
-      drupal_set_message("There is no storage backend defined.", "error");
+    if(empty($writeable_adapters)) {
+      drupal_set_message("There is no writable storage backend defined.", "error");
       return;
-    }      
+    }
+    
+    // we track if this is a newly created entity, if yes, we want to write it to ALL writeable adapters
+    $created_new = FALSE;
+    
+    //if the entity is new, we need an id
+    if($entity->isNew() && empty($entity->id())) {
+      // in this case we have to add the triples for a new entity
+      // after that it should be the same for edit and for create
       
+#      dpm($entity);
+#      drupal_set_message(serialize($entity->isNew()) . " yay!");
+      foreach ($local_adapters as $adapter) {
+        //first local adapter being able to create an entity (with id) will set it
+        // in most cases there will be at most one local adapter, so we don't have to care about preferences
+        if ($created_new = $adapter->createEntity($entity)) break;
+      }
+      if (!$created_new) {
+        //we should now have created a
+        drupal_set_message("No adapter was able to integrate/create the new entity",'error');
+        return;
+      }
+    }
     
 #    drupal_set_message("lwa: " . serialize($local_writeable_adapters));
 #    drupal_set_message("wa: " . serialize($writeable_adapters));
     
-    foreach($adapters_to_use as $aid => $adapter) {
-      // if it is a new entity
-      if($entity->isNew() && empty($entity->id())) {
-#        dpm($entity);
-#        drupal_set_message(serialize($entity->isNew()) . " yay!");
-        $adapter->createEntity($entity); 
-        // in this case we have to add the triples for a new entity
-        // after that it should be the same for edit and for create
-      }
+    foreach($writeable_adapters as $aid => $adapter) {
       
       // we locate all writeable stores
       // then we locate all local stores in these writeable stores
@@ -539,7 +543,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       $success = FALSE;
 #      drupal_set_message("I ask adapter " . serialize($adapter) . " for id " . serialize($entity->id()) . " and get: " . serialize($adapter->hasEntity($id)));
       // if they know that id
-      if($adapter->hasEntity($entity->id())) {
+      if($created_new || $adapter->hasEntity($entity->id())) {
         
         // perhaps we have to check for the field definitions - we ignore this for now.
         //   $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundle_idid);

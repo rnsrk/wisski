@@ -180,13 +180,30 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   private function gatherTitleValues($eid,$path_id) {
 
-    $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path_id);
-    $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load('my1stpb');
-    //dpm($path,$path_id);
-    $adapters = \Drupal::entityManager()->getStorage('wisski_salz_adapter')->loadMultiple();
     $values = array();
-    foreach ($adapters as $adapter) {
-      $values += $adapter->getEngine()->pathToReturnValue($path, $adapter->getEngine()->getPbForThis(), $eid, 0);
+    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    //we ask all pathbuilders if they know the path
+    foreach ($pbs as $pb_id => $pb) {
+      if ($pb->hasPbPath($path_id)) {
+        // if the PB knows the path we try to load it
+        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path_id);
+        if (empty($path)) {
+          dpm('can\'t load path '.$path_id,$pb_id);
+          continue;
+        }
+#        dpm($path,$path_id);
+        // then we try to load the path's adapter
+        $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
+        if (empty($adapter)) {
+          dpm('can\'t load adapter '.$pb->getAdapterId(),$pb_id);
+          continue;
+        }
+        //finally, having a valid path and adapter, we can ask the adapter for the path's value
+        $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0);
+        if (empty($new_values)) {
+          dpm('don\'t have values for '.$path_id.' in '.$pb_id,$adapter->id());
+        } else $values += $new_values;
+      } else dpm('don\'t know path '.$path_id,$pb_id);
     }
     return $values;
   }

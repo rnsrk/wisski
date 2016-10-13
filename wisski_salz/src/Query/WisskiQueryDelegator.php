@@ -27,7 +27,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       $result = 0;
       foreach ($this->dependent_queries as $adapter_id => $query) {
         $query = $query->count();
-        $sub_result = $query->execute();
+        $sub_result = $query->execute() ? : 0;
         if (is_numeric($sub_result))
           $result += $sub_result;
         else dpm($sub_result,'Wrong result type from '.$adapter_id);
@@ -64,7 +64,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     //If not, the following queries have to fill more
     foreach ($this->dependent_queries as $key => $query) {
       $query = $query->count();
-      $sub_count = $query->execute();
+      $sub_count = $query->execute() ? : 0;
       if ($sub_count * $num_queries < $offset) {
         //we enlearge the offset for following queries
         $num_queries--;

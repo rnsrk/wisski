@@ -219,7 +219,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
     $out = $this->retrieve('classes','class');
     if (!empty($out)) return $out;
-    $query = "SELECT DISTINCT ?class WHERE { ?class a owl:Class . }";  
+    $query = "SELECT DISTINCT ?class WHERE { ?class a owl:Class . FILTER(!isBlank(?class))}";  
     $result = $this->directQuery($query);
     
     if (count($result) > 0) {
@@ -238,7 +238,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
     $out = $this->retrieve('properties','property');
     if (!empty($out)) return $out;
-    $query = "SELECT DISTINCT ?property WHERE { ?property a owl:ObjectProperty . }";  
+    $query = "SELECT DISTINCT ?property WHERE { ?property a owl:ObjectProperty . FILTER(!isBlank(?property))}";  
     $result = $this->directQuery($query);
     
     if (count($result) > 0) {
@@ -696,7 +696,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // We have to modify the path-array in case of subgroups.
     // Usually if we have a subgroup path x0 y0 x1 we have to skip x0 y0 in
     // the paths of the group.
-if (!is_object($path)) {ddebug_backtrace(); return array();}
+if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     $patharraytoget = $path->getPathArray();
     $allpbpaths = $pb->getPbPaths();
     $pbarray = $allpbpaths[$path->id()];
@@ -2648,7 +2648,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     $results = $this->directQuery("SELECT ?class WHERE {?class a owl:Class.}");
     foreach ($results as $row) {
       $class = $row->class->getUri();
-      $classes[$class] = $rclass;
+      $classes[$class] = $class;
       $insert->values(array('class'=>$class));
     }
     $insert->execute();

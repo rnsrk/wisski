@@ -28,7 +28,10 @@ use \EasyRdf;
  */
 class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterface  {
 
-
+  public function directQuery($query) {
+    //ensure graph rewrite
+    return parent::directQuery($query,TRUE);
+  }
 
   /******************* BASIC Pathbuilder Support ***********************/
 
