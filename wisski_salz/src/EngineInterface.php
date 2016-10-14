@@ -123,11 +123,14 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    *     ],
    *   ],
    * ]
+   * @param $pathbuilder a pathbuilder object, that is connected to this adapter
    * @param $bundle the ID of the bundle the entities are in
+   * @param $origignal_values an array of 'old' field values helping the adapter to decide which values to write, if necessary
+   * @param $force_creation set to TRUE if the adapter shall store entity info even if it di not know the entity before
    * @TODO check how to include quantitive restrictions on field values
    * @return TRUE if the entity was successfully saved, FALSE or an error_string otherwise
    */
-  public function writeFieldValues($entity_id,array $field_values,$bundle = NULL);
+  public function writeFieldValues($entity_id,array $field_values,$pathbuilder,$bundle = NULL,$original_values=array(),$force_creation=FALSE);
 
     
   /**

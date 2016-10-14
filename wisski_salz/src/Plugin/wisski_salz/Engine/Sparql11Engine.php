@@ -25,6 +25,8 @@ class Sparql11Engine extends EngineBase {
   protected $read_url;
   protected $write_url;
   
+  protected $graph_rewrite;
+  
   /** Holds the EasyRDF sparql client instance that is used to
    * query the endpoint.
    * It is not set on construction.
@@ -41,6 +43,7 @@ class Sparql11Engine extends EngineBase {
     return parent::defaultConfiguration() + [
       'read_url' => '',
       'write_url' => '',
+      'graph_rewrite' => FALSE,
     ];
   }
 
@@ -49,10 +52,12 @@ class Sparql11Engine extends EngineBase {
    * {@inheritdoc}
    */
   public function setConfiguration(array $configuration) {
+
     // this does not exist
     parent::setConfiguration($configuration);
     $this->read_url = $this->configuration['read_url'];
     $this->write_url = $this->configuration['write_url'];
+    $this->graph_rewrite = $this->configuration['graph_rewrite'];
     $this->store = NULL;
   }
 
@@ -61,10 +66,11 @@ class Sparql11Engine extends EngineBase {
    * {@inheritdoc}
    */
   public function getConfiguration() {
-    return [
+    return array(
       'read_url' => $this->read_url,
-      'write_url' => $this->write_url
-    ] + parent::getConfiguration();
+      'write_url' => $this->write_url,
+      'graph_rewrite' => $this->graph_rewrite,
+    ) + parent::getConfiguration();
   }
 
 
@@ -72,7 +78,7 @@ class Sparql11Engine extends EngineBase {
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    
+
     $form['read_url'] = [
       '#type' => 'textfield',
       '#title' => 'Read URL',
@@ -85,6 +91,13 @@ class Sparql11Engine extends EngineBase {
       '#default_value' => $this->write_url,
       '#description' => 'bla.',
     ];
+    $form['graph_rewrite'] = array(
+      '#type' => 'checkbox',
+      '#title' => 'Use graph independent rewriting',
+      '#default_value' => $this->graph_rewrite,
+      '#return_value' => TRUE,
+      '#description' => 'rewrite queries, so that remote SPARQL storages with non-standard dataset handling do always answer right',
+    );    
     
     return parent::buildConfigurationForm($form, $form_state) + $form;
   }
@@ -97,6 +110,7 @@ class Sparql11Engine extends EngineBase {
     parent::submitConfigurationForm($form, $form_state);
     $this->read_url = $form_state->getValue('read_url');
     $this->write_url = $form_state->getValue('write_url');
+    $this->graph_rewrite = $form_state->getValue('graph_rewrite');
   }
   
 
@@ -191,13 +205,13 @@ class Sparql11Engine extends EngineBase {
 	* 
 	* @return @see EasyRdf_Sparql_Client->query
 	*/
-	public function directQuery($query,$add_graphs=FALSE) {
-	  if ($add_graphs) $query = $this->graphInsertionRewrite($query);
+	public function directQuery($query) {
+	  if ($this->graph_rewrite) $query = $this->graphInsertionRewrite($query);
 	  return $this->doQuery($query);
 	}
 	
 	private function doQuery($query) {
-	  \Drupal::logger($this->adapterId().' query')->debug(htmlentities($query));
+	  \Drupal::logger('QUERY '.$this->adapterId())->debug(htmlentities($query));
 	  try {
   		return $this->getEndpoint()->query($query);
     } catch (\Exception $e) {
@@ -217,13 +231,13 @@ class Sparql11Engine extends EngineBase {
 	  //since we introduce new variables for the graphs we must ensure they do not reappear
 	  $count = 0;
 	  $new_query = preg_replace('/(SELECT\s+(?:DISTINCT\s+)?)\*/i','$1'.implode(' ',$this->vars),$query,1,$count);
-	  if ($count) dpm($new_query,'* replacement');
+	  //if ($count) dpm($new_query,'variable (*) replacement');
 		$uri_regex = '(?:\<[^\s\<\>\?]+\>|[^\s\<\>\?]+)';	
 		$placeholder_regex = "(?:$uri_regex|$variable_regex)";
 		$triple_regex = "$placeholder_regex\s+$placeholder_regex\s+$placeholder_regex\s*(?:\.|(?=\}))";
 		$new_query = preg_replace_callback("/$triple_regex/",array($this,'graphReplacement'),$new_query);
 		//dpm($new_query,'graph rewrite');
-		return $query;
+		return $new_query;
 	}
 	
 	public function graphReplacement($matches) {
@@ -240,22 +254,6 @@ class Sparql11Engine extends EngineBase {
 	  return "{{ $triple } UNION {GRAPH $graph_name { $triple }}}";
 	}
 
-	protected $graphs;
-
-	public function getAllGraphs() {
-	
-	  if (isset($this->graphs)) return $this->graphs;
-	  $query = "SELECT DISTINCT ?g WHERE {GRAPH ?g {?s ?p ?o.}}";
-	  $result = $this->doQuery($query);
-	  if (empty($result)) return array();
-	  $out = array();
-	  foreach ($result as $obj) {
-	    $out[] = $obj->g->getUri();
-	  }
-	  $this->graphs = $out;
-	  return $out;
-	}
-	
 	public function isValidUri($uri) {
 	  
 	  $short_uri = '[a-z]+\:[^\/]+';
@@ -287,6 +285,7 @@ class Sparql11Engine extends EngineBase {
 	* @return @see EasyRdf_Sparql_Client->update
 	*/
 	public function directUpdate($query) {
+    \Drupal::logger('UPDATE '.$this->adapterId())->debug(htmlentities($query));
 		return $this->getEndpoint()->update($query);
 	}
 

@@ -176,14 +176,49 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
 #    return 42;//parent::id();
 #  }
 
+  protected $original_values;
+  
+  public function saveOriginalValues($storage) {
+  
+    $this->original_values = $this->extractFieldData($storage);
+  }
+
   public function getOriginalValues() {
     
+    return $this->original_values;
+  }
+  
+  public function getValues($storage) {
+    
+    return array($this->extractFieldData($storage),$this->original_values);
+  }
+  
+  protected function extractFieldData($storage) {
+    
     $out = array();
-    foreach ($this->values as $field_name => $field_values) {
-      $out[$field_name] = $field_values;
+    //$this is iterable itself, iterates over field list
+    foreach ($this as $field_name => $field_item_list) {
+      $out[$field_name] = array();
+      foreach($field_item_list as $field_item) {
+        $field_values = $field_item->getValue();
+        $field_def = $field_item->getFieldDefinition()->getFieldStorageDefinition();
+        if (method_exists($field_def,'getDependencies') && in_array('file',$field_def->getDependencies()['module'])) {
+          //when loading we assume $target_id to be the file uri
+          //this is a workaround since Drupal File IDs do not carry any information when not in drupal context
+          $field_values['target_id'] = $storage->getPublicUrlFromFileId($field_values['target_id']);
+        }
+        //we transfer the main property name to the adapters
+        $out[$field_name]['main_property'] = $field_item->mainPropertyName();
+        //gathers the ARRAY of field properties for each field list item
+        //e.g. $out[$field_name][] = array(value => 'Hans Wurst', 'format' => 'basic_html');
+        $out[$field_name][] = $field_values;
+      }
+      if (!isset($out[$field_name][0]) || empty($out[$field_name][0])) unset($out[$field_name]);
     }
+    //dpm($this,__METHOD__);
     return $out;
   }
+
   
   public function getFieldDataTypes() {
     $types = array();

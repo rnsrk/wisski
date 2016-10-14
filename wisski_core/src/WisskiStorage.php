@@ -480,11 +480,11 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   protected function doSaveFieldItems(ContentEntityInterface $entity, array $names = []) {
 #    dpm(func_get_args(),__METHOD__);
     
-    list($values,$original_values) = $this->extractFieldData($entity);
+    list($values,$original_values) = $entity->getValues($this);
     $bundle_id = $values['bundle'][0]['target_id'];
 //    dpm(func_get_args()+array('values'=>$values,'bundle'=>$bundle_id),__METHOD__);
     //echo implode(', ',array_keys((array) $entity));
-    $local_writeable_adapters = array();
+    $local_adapters = array();
     $writeable_adapters = array();
 
     $adapters = entity_load_multiple('wisski_salz_adapter');
@@ -513,6 +513,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     // we track if this is a newly created entity, if yes, we want to write it to ALL writeable adapters
     $created_new = FALSE;
     
+    
     //if the entity is new, we need an id
     if($entity->isNew() && empty($entity->id())) {
       // in this case we have to add the triples for a new entity
@@ -532,14 +533,28 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
     }
     
+    //dpm($original_values,'old values');
+    //dpm($values,'new values');
+    $real_new_values = array_diff_key($values,$original_values);
+    //dpm($real_new_values,'Really new values');
+    if (!$created_new) $created_new = !empty($real_new_values);
+    unset($real_new_values);
 #    drupal_set_message("lwa: " . serialize($local_writeable_adapters));
 #    drupal_set_message("wa: " . serialize($writeable_adapters));
+
+    //we load all pathbuilders, check if they know the fields and have writeable adapters
+    $pathbuilders = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
     
-    foreach($writeable_adapters as $aid => $adapter) {
+    foreach($pathbuilders as $pb_id => $pb) {
       
-      // we locate all writeable stores
-      // then we locate all local stores in these writeable stores
-      // and write to them
+      //get the adapter
+      $aid = $pb->getAdapterId();
+      
+      //dpm($writeable_adapters,'Check '.$aid.' from '.$pb_id);
+      //check, if it's writeable, if not we can stop here
+      if (isset($writeable_adapters[$aid])) $adapter = $writeable_adapters[$aid];
+      else continue;
+
       $success = FALSE;
 #      drupal_set_message("I ask adapter " . serialize($adapter) . " for id " . serialize($entity->id()) . " and get: " . serialize($adapter->hasEntity($id)));
       // if they know that id
@@ -548,10 +563,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         // perhaps we have to check for the field definitions - we ignore this for now.
         //   $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundle_idid);
         try {
+          //dpm('Try writing to '.$aid);
           //drupal_set_message(" I ask adapter: " . serialize($adapter));
+          //we force the writable adapter to write values for newly created entities even if unknown to the adapter by now
           //@TODO return correct success code
-          //dpm(array($values, $original_values, strpos($values['f5c052bacc0158d1e0ddf1a666589e6b'][0]['value'],"\r"), strpos($original_values['f5c052bacc0158d1e0ddf1a666589e6b'][0]['value'], "\r")));
-          $adapter_info = $adapter->writeFieldValues($entity->id(), $values, $bundle_id, $original_values);
+          $adapter_info = $adapter->writeFieldValues($entity->id(), $values, $pb, $bundle_id, $original_values,$created_new);
+          dpm(array($values, $original_values),$aid);
           $success = TRUE;
         } catch (\Exception $e) {
           drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e->getMessage()));
@@ -566,32 +583,6 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)->flushTitleCache($entity->id());
       }
     }
-  }
-
-  private function extractFieldData(ContentEntityInterface $entity) {
-    
-    $out = array();
-    $old_values = $entity->getOriginalValues();
-    //$entity is iterable itself, iterates over field list
-    foreach ($entity as $field_name => $field_item_list) {
-      $out[$field_name] = array();
-      foreach($field_item_list as $field_item) {
-        $field_values = $field_item->getValue();
-        $field_def = $field_item->getFieldDefinition()->getFieldStorageDefinition();
-        if (method_exists($field_def,'getDependencies') && in_array('file',$field_def->getDependencies()['module'])) {
-          //when loading we assume $target_id to be the file uri
-          //this is a workaround since Drupal File IDs do not carry any information when not in drupal context
-          $field_values['target_id'] = $this->getPublicUrlFromFileId($field_values['target_id']);
-        }
-        //we transfer the main property name to the adapters
-        $out[$field_name]['main_property'] = $field_item->mainPropertyName();
-        //gathers the ARRAY of field properties for each field list item
-        //e.g. $out[$field_name][] = array(value => 'Hans Wurst', 'format' => 'basic_html');
-        $out[$field_name][] = $field_values;
-      }
-    }
-    //dpm($entity,__METHOD__);
-    return array($out,$old_values);
   }
 
   /**

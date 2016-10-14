@@ -125,7 +125,7 @@ class SPARQL11Adapter {
   * @param when updating a single setting, the value of this setting
   */
   public function setSettings($name, $value = NULL) {
-    
+dpm(func_get_args()+array('this'=>$this),__FUNCTION__);
     if (is_array($name)) {
       $this->settings = $name;
     } elseif (is_string($name) || is_integer($name)) {
@@ -699,7 +699,7 @@ echo ($e->getTraceAsString());
         ->execute();
     } else {
       if(!empty($short_name) && !empty($long_name)) {
-        ddebug_backtrace();
+        //ddebug_backtrace();
         db_update('wisski_salz_sparql11_ontology_namespaces')
           ->fields(array('long_name' => $long_name))
           ->condition('short_name', $short_name, '=')
@@ -761,7 +761,7 @@ echo ($e->getTraceAsString());
 
     // if there is no starting concepst - die.
     if (empty($starting_concept)) {
-      ddebug_backtrace();
+      //ddebug_backtrace();
       throw new InvalidArgumentException('you must specify a starting concept');
     }
     
@@ -806,7 +806,7 @@ echo ($e->getTraceAsString());
         $ind = current($options['uris']);
         // if the one is an empty uri we die here.
         if (trim($ind) === '') {
-          ddebug_backtrace();
+          //ddebug_backtrace();
           throw new InvalidArgumentException('empty URI given');
         }
         // now we know that we just search for one uri
@@ -832,7 +832,7 @@ echo ($e->getTraceAsString());
       // @TODO this should be documented above!!!!
       if (!isset($path['path_array']) || !is_array($path['path_array'])) {
         dpm($path,'wrong path');
-        ddebug_backtrace();
+        //ddebug_backtrace();
         throw new Exception('path_array');
       }
       

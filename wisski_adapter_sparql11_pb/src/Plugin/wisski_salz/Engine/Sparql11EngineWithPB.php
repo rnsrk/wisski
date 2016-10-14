@@ -2015,7 +2015,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 #    drupal_set_message("I add field $field from entity $entity_id that currently has the value $value");
   }
   
-  public function writeFieldValues($entity_id, array $field_values, $bundle=NULL) {
+  public function writeFieldValues($entity_id, array $field_values, $pathbuilder, $bundle=NULL,$old_values=array(),$force_new=FALSE) {
 #    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
     
     // tricky thing here is that the entity_ids that are coming in typically
@@ -2030,208 +2030,85 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     // so I ignore everything and just target the field_ids that are mapped to
     // paths in the pathbuilder.
     
-
-    // this approach will be not fast enough in the future...
-    // the pbs have to have a better mapping of where and how to find fields
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
-    
     $out = array();
     
-#    return $out;
-        
-    // get the adapterid that was loaded
-    // haha, this is the engine-id...
-    //$adapterid = $this->getConfiguration()['id'];
-        
-    foreach($pbs as $pb) {
+#    return $out;                    
       
-      // if we have no adapter for this pb it may go home.
-      if(empty($pb->getAdapterId()))
+    // here we should check if we really know the entity by asking the TS for it.
+    // this would speed everything up largely, I think.
+    $entity = $this->loadEntity($entity_id);
+
+    #dpm($entity, "entity!");
+    
+    // if there is nothing, continue.
+    if(empty($entity) && !$force_new)
+      return;
+    
+    if (!isset($old_values)) {
+      // it would be better to gather this information from the form and not from the ts
+      // there might have been somebody saving in between...
+      // @TODO !!!
+      $old_values = $this->loadFieldValues(array($entity_id), array_keys($field_values), $bundle);
+      if(!empty($old_values))
+        $old_values = $old_values[$entity_id];
+    }
+
+    #drupal_set_message("the old values were: " . serialize($old_values));
+
+    foreach($field_values as $key => $fieldvalue) {
+      #drupal_set_message("key: " . serialize($key) . " fieldvalue is: " . serialize($fieldvalue)); 
+
+      $path = $pathbuilder->getPbEntriesForFid($key);
+
+      if(empty($path)) 
         continue;
         
-      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
+      #drupal_set_message("I am still here: $key");
 
-      // if we have not adapter, we may go home, too
-      if(empty($adapter))
-        continue;
+      $mainprop = $fieldvalue['main_property'];
       
-      // if he didn't ask for us...    
-      if($this->getConfiguration()['id'] != $adapter->getEngine()->getConfiguration()['id'])
-        continue;
-              
-#      foreach($entity_ids as $eid) {
+      unset($fieldvalue['main_property']);
+      
+      foreach($fieldvalue as $key2 => $val) {
+
+        #drupal_set_message(serialize($val[$mainprop]) . " new");
+        #drupal_set_message(serialize($old_values[$key]) . " old");
+
+        // check if there are any old values. If not, delete nothing.
+        if(!empty($old_values)) {
+     
+        #dpm(array('old_values' => $old_values, 'val' => $val));
+          // if they are the same - skip
+          // I don't know why this should be working, but I leave it here...
+          if($val[$mainprop] == $old_values[$key]) 
+            continue;
+          
+          // the real value comparison is this here:
+          if($val[$mainprop] == $old_values[$key][$key2][$mainprop])
+            continue;
+          
+          // if oldvalues are an array and the value is in there - skip
+          if(is_array($old_values[$key]) && !empty($old_values[$key][$key2]) && in_array($val[$mainprop], $old_values[$key][$key2]))
+            continue;
+          
+        // now write to the database
         
-        // here we should check if we really know the entity by asking the TS for it.
-        // this would speed everything up largely, I think.
-        $entity = $this->loadEntity($entity_id);
-
-        #dpm($entity, "entity!");
+        #drupal_set_message($entity_id . "I really write!" . serialize($val[$mainprop])  . " and " . serialize($old_values[$key]) );
+        #return;
         
-        // if there is nothing, continue.
-        if(empty($entity))
-          continue;
-        
-        // it would be better to gather this information from the form and not from the ts
-        // there might have been somebody saving in between...
-        // @TODO !!!
-        $old_values = $this->loadFieldValues(array($entity_id), array_keys($field_values), $bundle);
-
-#        drupal_set_message("the old values for $entity_id were: " . serialize($old_values));
-
-        if(!empty($old_values))
-          $old_values = $old_values[$entity_id];
-
-#        drupal_set_message("the old values were: " . serialize($old_values));
-
-        foreach($field_values as $key => $fieldvalue) {
-          #drupal_set_message("key: " . serialize($key) . " fieldvalue is: " . serialize($fieldvalue)); 
-
-          $path = $pb->getPbEntriesForFid($key);          
-
-          if(empty($path)) 
-            continue;
-            
-          #drupal_set_message("I am still here: $key");
-
-          $mainprop = $fieldvalue['main_property'];
-          
-          unset($fieldvalue['main_property']);
-          
-          foreach($fieldvalue as $key2 => $val) {
-
- #           drupal_set_message(serialize($val[$mainprop]) . " new");
- #           drupal_set_message(serialize($old_values[$key]) . " old");
-
-            // check if there are any old values. If not, delete nothing.
-            if(!empty($old_values)) {
-         
-#dpm(array('old_values' => $old_values, 'val' => $val));
-              // if they are the same - skip
-              // I don't know why this should be working, but I leave it here...
-              if($val[$mainprop] == $old_values[$key]) 
-                continue;
-              
-              // the real value comparison is this here:
-              if($val[$mainprop] == $old_values[$key][$key2][$mainprop])
-                continue;
-              
-              // if oldvalues are an array and the value is in there - skip
-              if(is_array($old_values[$key]) && in_array($val[$mainprop], $old_values[$key][$key2]))
-                continue;
-              
-            // now write to the database
-            
-#            drupal_set_message($entity_id . "I really write!" . serialize($val[$mainprop])  . " and " . serialize($old_values[$key]) );
-#            return;
-            
-              // first delete the old values
-              if(is_array($old_values[$key]))
-                $this->deleteOldFieldValue($entity_id, $key, $old_values[$key][$key2][$mainprop], $pb);
-              else
-                $this->deleteOldFieldValue($entity_id, $key, $old_values[$key], $pb);
-            }
-                  
-            // add the new ones
-            $this->addNewFieldValue($entity_id, $key, $val[$mainprop], $pb); 
-            
-#            drupal_set_message("I would write " . $val[$mainprop] . " to the db and delete " . serialize($old_values[$key]) . " for it.");
-            
-          }
-
-          
-/*          
-          // Bundle is a special case.
-          // If we are asked for a bundle, we first look in the pb cache for the bundle
-          // because it could have been set by 
-          // measures like navigate or something - so the entity is always displayed in 
-          // a correct manor.
-          // If this is not set we just select the first bundle that might be appropriate.
-          // We select this with the first field that is there. @TODO:
-          // There might be a better solution to this.
-          // e.g. knowing what bundle was used for this id etc...
-          // however this would need more tables with mappings that will be slow in case
-          // of a lot of data...
-          if($fieldid == "bundle") {
-            // get all the bundles for the eid from us
-            $bundles = $this->getBundleIdsForEntityId($eid);
-                        
-            if(!empty($bundles)) {
-              // for now we simply take the first one
-              // that might be not so smart
-              // who knows @TODO:
-              foreach($bundles as $bundle) {
-                $out[$eid]['bundle'] = $bundle;
-                break;
-              }
-              continue;
-            }
-          }
-
-          // every other field is an array, we guess
-          // this might be wrong... cardinality?          
-          if(!isset($out[$eid][$fieldid]))
-            $out[$eid][$fieldid] = array();
-
-          // set the bundle
-          // @TODO: This is a hack and might break for multi-federalistic stores
-          $pbarray = $pb->getPbEntriesForFid($fieldid);
-            
-          // if there is no data about this path - how did we get here in the first place?
-          // fields not in sync with pb?
-          if(empty($pbarray["id"]))
-            continue;
-
-          $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["id"]);
-
-          // if there is no path we can skip that
-          if(empty($path))
-            continue;
-
-          // the easy assumption - there already is a bundle.
-          $bundle = $out[$eid]['bundle'];
-
-          // if there is no bundle we have to ask the system for the typical bundle
-          if(empty($bundle)) {
-            
-            // we try to get it from cache
-            $bundle = $pb->getBundleIdForEntityId($eid);
-            
-            // nothing was set up to now - so we use the field and ask the field for the typical bundle
-            if(empty($bundle)) {
-              $bundle = $pb->getBundle($pbarray["id"]);
-              // and store it to the entity.
-              $out[$eid]['bundle'] = $bundle;
-
-              $pb->setBundleIdForEntityId($eid, $bundle);
-
-            }
-          }
-
-          // we ask for the bundle
-          $bundle = $pb->getBundle($pbarray["id"]);
-          
-          // and compare it to the bundle of the entity - if this is not the same, 
-          // we don't have to ask for data.
-          // @TODO: this is a hack - when the engine asks for the correct 
-          // things right away we can remove that here
-          if($bundle != $out[$eid]['bundle']) {
-            continue;
-          }
-          
-          $clearPathArray = $this->getClearPathArray($path, $pb);
-          
-          if(!empty($path)) {
-            // if this is question for a subgroup - handle it otherwise
-            if($pbarray['parent'] > 0 && $path->isGroup()) {
-#              drupal_set_message("I am asking for: " . serialize($this->getClearGroupArray($path, $pb)));
-              $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid));
-               
-            } else // it is a field?
-              $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($clearPathArray, $path->getDatatypeProperty(), $eid));
-          }
-        */
+          // first delete the old values
+          if(is_array($old_values[$key]))
+            $this->deleteOldFieldValue($entity_id, $key, $old_values[$key][$key2][$mainprop], $pathbuilder);
+          else
+            $this->deleteOldFieldValue($entity_id, $key, $old_values[$key], $pathbuilder);
         }
-      #}
+              
+        // add the new ones
+        $this->addNewFieldValue($entity_id, $key, $val[$mainprop], $pathbuilder); 
+        
+        #drupal_set_message("I would write " . $val[$mainprop] . " to the db and delete " . serialize($old_values[$key]) . " for it.");
+        
+      }          
     }
 
 #    drupal_set_message("out: " . serialize($out));

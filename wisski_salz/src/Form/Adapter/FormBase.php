@@ -108,7 +108,7 @@ class FormBase extends EntityForm {
     
     // the entity must be saved. the engine config bubbles up to the config entity
     $status = $adapter->save();
-ddebug_backtrace();    
+    //ddebug_backtrace();    
     // give log msgs and redirect to collection page
     $edit_link = $adapter->link($this->t('Edit'));
     drupal_set_message($this->t('Created new adapter %label.', ['%label' => $adapter->label()]));
