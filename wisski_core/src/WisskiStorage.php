@@ -568,10 +568,11 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           //we force the writable adapter to write values for newly created entities even if unknown to the adapter by now
           //@TODO return correct success code
           $adapter_info = $adapter->writeFieldValues($entity->id(), $values, $pb, $bundle_id, $original_values,$created_new);
-          dpm(array($values, $original_values),$aid);
+          dpm($aid,'Success');
           $success = TRUE;
         } catch (\Exception $e) {
-          drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e->getMessage()));
+          drupal_set_message('Could not write entity into adapter '.$adapter->id() . ' because ' . serialize($e->getMessage()));
+          throw $e;
         }
       } else {
         //drupal_set_message("No, I don't know " . $id . " and I am " . $aid . ".");

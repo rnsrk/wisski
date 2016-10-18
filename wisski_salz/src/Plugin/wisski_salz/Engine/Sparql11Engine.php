@@ -232,7 +232,7 @@ class Sparql11Engine extends EngineBase {
 	  $count = 0;
 	  $new_query = preg_replace('/(SELECT\s+(?:DISTINCT\s+)?)\*/i','$1'.implode(' ',$this->vars),$query,1,$count);
 	  //if ($count) dpm($new_query,'variable (*) replacement');
-		$uri_regex = '(?:\<[^\s\<\>\?]+\>|[^\s\<\>\?]+)';	
+		$uri_regex = '(?:\<[^\s\<\>\?]+\>|\w+\:[^\:\s\<\>\?]+|a)';	
 		$placeholder_regex = "(?:$uri_regex|$variable_regex)";
 		$triple_regex = "$placeholder_regex\s+$placeholder_regex\s+$placeholder_regex\s*(?:\.|(?=\}))";
 		$new_query = preg_replace_callback("/$triple_regex/",array($this,'graphReplacement'),$new_query);

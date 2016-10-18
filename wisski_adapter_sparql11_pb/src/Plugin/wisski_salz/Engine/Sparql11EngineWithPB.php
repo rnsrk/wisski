@@ -14,6 +14,8 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\wisski_salz\AdapterHelper;
 
+use Drupal\wisski_core\Entity\WisskiEntity;
+
 use Drupal\wisski_adapter_sparql11_pb\Query\Query;
 use \EasyRdf;
 
@@ -519,6 +521,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return $id;
   }
   
+  public function setDrupalId($uri,$eid) {
+    
+    AdapterHelper::setDrupalIdForUri($uri,$eid);
+  }
+  
   public function getUriForDrupalId($id) {
     // danger zone: if id already is an uri e.g. due to entity reference
     // we load that. @TODO: I don't like that.
@@ -531,7 +538,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     } else {
       $uri = $id;
     }
-    
+    //dpm($uri,__FUNCTION__.' '.$id);
 #    drupal_set_message("out: " . serialize($uri));
     return $uri;
   }
@@ -1608,9 +1615,10 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
   /**
    * Create a new entity
    * @param $entity an entity object
+   * @param $entity_id the eid to be set for the entity, if NULL and $entity dowes not have an eid, we will try to create one
    * @return TRUE on success
    */
-  public function createEntity($entity) {
+  public function createEntity($entity,$entity_id=NULL) {
     #$uri = $this->getUri($this->getDefaultDataGraphUri());
     
     $bundleid = $entity->bundle();
@@ -1618,7 +1626,15 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
     
     $out = array();
-        
+    
+    //might be empty, but we can use it later
+    $eid = $entity->get('eid')->first() ? : $entity_id;
+    $uri = NULL;
+    
+    //if there is an eid we try to get the entity URI form cache
+    //if there is none $uri will be FALSE
+    if (!empty($eid)) $uri = $this->getUriForDrupalId($eid);
+    
     // get the adapterid that was loaded
     // haha, this is the engine-id...
     //$adapterid = $this->getConfiguration()['id'];
@@ -1643,26 +1659,32 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 
       // for now simply take the first one.    
       if ($groups = current($groups)) {
-
-        $triples = $this->generateTriplesForPath($pb, $groups, '', NULL, NULL, 0, 0, TRUE);
-      
+        
+        $triples = $this->generateTriplesForPath($pb, $groups, '', NULL, $uri, 0, 0, TRUE);
+        dpm(array('eid'=>$eid,'uri'=>$uri,'group'=>$groups->getPathArray()[0],'result'=>$triples),'generateTriplesForPath');
+        
         $sparql = "INSERT DATA { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " . $triples . " } } ";
         #dpm($sparql, "spargel");      
         $result = $this->directUpdate($sparql);
     
-        $uri = explode(" ", $triples, 2);
+        if (empty($uri)) {
         
-        $uri = substr($uri[0], 1, -1);
+          // first adapter to write will create a uri for an unknown entity
+          $uri = explode(" ", $triples, 2);
       
-        $uri = $this->getDrupalId($uri);
+          $uri = substr($uri[0], 1, -1);
+      
+          if (empty($eid)) {
+            $eid = $this->getDrupalId($uri);        
+          }
+        }
       }
       
     }
 #    dpm($groups, "bundle");
         
 #    $entity->set('id',$uri);
-    $entity->set('eid',$uri);
-    
+    $entity->set('eid',$eid);
 #    "INSERT INTO { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " 
     
   }
@@ -1943,7 +1965,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     
     // rename to uri
     $subject_uri = $this->getUriForDrupalId($entity_id);
-        
+
 #    $subject_uri = str_replace("\\", "/", $entity_id);
 
     $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
@@ -2015,7 +2037,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 #    drupal_set_message("I add field $field from entity $entity_id that currently has the value $value");
   }
   
-  public function writeFieldValues($entity_id, array $field_values, $pathbuilder, $bundle=NULL,$old_values=array(),$force_new=FALSE) {
+  public function writeFieldValues($entity_id, array $field_values, $pathbuilder, $bundle_id=NULL,$old_values=array(),$force_new=FALSE) {
 #    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
     
     // tricky thing here is that the entity_ids that are coming in typically
@@ -2041,14 +2063,18 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     #dpm($entity, "entity!");
     
     // if there is nothing, continue.
-    if(empty($entity) && !$force_new)
-      return;
-    
+    if (empty($entity)) {
+      if ($force_new) {
+        $entity = new WisskiEntity(array('eid' => $entity_id,'bundle' => $bundle_id),'wisski_individual',$bundle_id);
+        $this->createEntity($entity,$entity_id);
+      } else return;
+    }
+    //dpm($entity,'Not empty');
     if (!isset($old_values)) {
       // it would be better to gather this information from the form and not from the ts
       // there might have been somebody saving in between...
       // @TODO !!!
-      $old_values = $this->loadFieldValues(array($entity_id), array_keys($field_values), $bundle);
+      $old_values = $this->loadFieldValues(array($entity_id), array_keys($field_values), $bundle_id);
       if(!empty($old_values))
         $old_values = $old_values[$entity_id];
     }
@@ -2057,7 +2083,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 
     foreach($field_values as $key => $fieldvalue) {
       #drupal_set_message("key: " . serialize($key) . " fieldvalue is: " . serialize($fieldvalue)); 
-
+      //dpm($key,'field');
       $path = $pathbuilder->getPbEntriesForFid($key);
 
       if(empty($path)) 
@@ -2102,7 +2128,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
           else
             $this->deleteOldFieldValue($entity_id, $key, $old_values[$key], $pathbuilder);
         }
-              
+dpm(array('$entity_id'=>$entity_id,'$key'=>$key,'value' => $val[$mainprop],'$pathbuilder'=>$pathbuilder),'try writing');
         // add the new ones
         $this->addNewFieldValue($entity_id, $key, $val[$mainprop], $pathbuilder); 
         
