@@ -224,5 +224,38 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     return NULL;
   }
 
+  public function getDrupalId($uri) {
+    #dpm($uri, "uri");
+    
+    if(is_numeric($uri) !== TRUE) {
+      $id = AdapterHelper::getDrupalIdForUri($uri,$this->adapterId());
+    } else {
+      $id = $uri;
+    }
+    return $id;
+  }
+  
+  public function setDrupalId($uri,$eid) {
+    
+    AdapterHelper::setDrupalIdForUri($uri,$eid,$this->adapterId());
+  }
+  
+  public function getUriForDrupalId($id) {
+    // danger zone: if id already is an uri e.g. due to entity reference
+    // we load that. @TODO: I don't like that.
+#    drupal_set_message("in: " . serialize($id));
+#    drupal_set_message("vgl: " . serialize(is_int($id)));
+    if(is_numeric($id) === TRUE) {
+      $uri = AdapterHelper::getUrisForDrupalId($id,$this->adapterId());
+      // just take the first one for now.
+      $uri = current($uri);
+    } else {
+      $uri = $id;
+    }
+    //dpm($uri,__FUNCTION__.' '.$id);
+#    drupal_set_message("out: " . serialize($uri));
+    return $uri;
+  }
+
   
 }

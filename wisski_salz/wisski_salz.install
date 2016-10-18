@@ -26,6 +26,12 @@ function wisski_salz_schema() {
         'length' => '2048',
         'not null' => TRUE,
       ),
+      'adapter_id' => array(
+        'description' => 'the writing adapter\'s id',
+        'type' => 'varchar',
+        'length' => '511',
+#        'not null' => FALSE,
+      ),
     ),
     'primary key' => array('rid'),
     'indexes' => array(

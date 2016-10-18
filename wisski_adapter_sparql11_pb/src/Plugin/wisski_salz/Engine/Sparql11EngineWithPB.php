@@ -510,39 +510,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return $ret;
   }
   
-  public function getDrupalId($uri) {
-    #dpm($uri, "uri");
-    
-    if(is_numeric($uri) !== TRUE) {
-      $id = AdapterHelper::getDrupalIdForUri($uri);
-    } else {
-      $id = $uri;
-    }
-    return $id;
-  }
-  
-  public function setDrupalId($uri,$eid) {
-    
-    AdapterHelper::setDrupalIdForUri($uri,$eid);
-  }
-  
-  public function getUriForDrupalId($id) {
-    // danger zone: if id already is an uri e.g. due to entity reference
-    // we load that. @TODO: I don't like that.
-#    drupal_set_message("in: " . serialize($id));
-#    drupal_set_message("vgl: " . serialize(is_int($id)));
-    if(is_numeric($id) === TRUE) {
-      $uri = AdapterHelper::getUrisForDrupalId($id);
-      // just take the first one for now.
-      $uri = current($uri);
-    } else {
-      $uri = $id;
-    }
-    //dpm($uri,__FUNCTION__.' '.$id);
-#    drupal_set_message("out: " . serialize($uri));
-    return $uri;
-  }
-
   /**
    *
    *
@@ -1660,8 +1627,8 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
       // for now simply take the first one.    
       if ($groups = current($groups)) {
         
-        $triples = $this->generateTriplesForPath($pb, $groups, '', NULL, $uri, 0, 0, TRUE);
-        dpm(array('eid'=>$eid,'uri'=>$uri,'group'=>$groups->getPathArray()[0],'result'=>$triples),'generateTriplesForPath');
+        $triples = $this->generateTriplesForPath($pb, $groups, '', $uri, NULL, 0, 0, TRUE);
+        //dpm(array('eid'=>$eid,'uri'=>$uri,'group'=>$groups->getPathArray()[0],'result'=>$triples),'generateTriplesForPath');
         
         $sparql = "INSERT DATA { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " . $triples . " } } ";
         #dpm($sparql, "spargel");      
@@ -2139,7 +2106,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
           else
             $this->deleteOldFieldValue($entity_id, $key, $old_values[$key], $pathbuilder);
         }
-dpm(array('$entity_id'=>$entity_id,'$key'=>$key,'value' => $val[$mainprop],'$pathbuilder'=>$pathbuilder),'try writing');
+        //dpm(array('$entity_id'=>$entity_id,'$key'=>$key,'value' => $val[$mainprop],'$pathbuilder'=>$pathbuilder),'try writing');
         // add the new ones
         $this->addNewFieldValue($entity_id, $key, $val[$mainprop], $pathbuilder); 
         
