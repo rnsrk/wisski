@@ -1789,6 +1789,17 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         // and typically we don't do a type triple. So we skip the rest.
         if($key == ($startingposition*2) && !empty($subject_in)) {
           $olduri = $subject_in;
+          
+          // if it is a path of length 1
+          // (this means usually a group)
+          // then generate something.
+          if(count($clearPathArray) == 1) {
+            if($write)
+              $query .= "<$olduri> a <$value> . ";
+            else
+              $query .= "?x$localkey a <$value> . ";
+          }
+          
           continue;
         }
         
