@@ -127,8 +127,10 @@ class WisskiTitlePatternForm extends EntityForm {
         ),
       ),
     );
-    foreach ($pattern as $key => $attributes) {
-      $form['pattern'][$key] = $this->renderRow($key,$attributes);
+    if (!empty($pattern)) {
+      foreach ($pattern as $key => $attributes) {
+        $form['pattern'][$key] = $this->renderRow($key,$attributes);
+      }
     }
     $form['path_select_box'] = array(
       '#type' => 'select',
