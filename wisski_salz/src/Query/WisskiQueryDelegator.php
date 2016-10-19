@@ -50,7 +50,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         //set $query->count = FALSE;
         $query = $query->normalQuery();
         $sub_result = $query->execute();
-        $result = array_merge($result,$sub_result);
+        $result = array_unique(array_merge($result,$sub_result));
       }
       return $result;
     }
@@ -75,7 +75,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     foreach ($sub_queries as $query) {
       $query = $query->normalQuery();
       $query->range($offset / $num_queries,$limit);
-      $results = array_merge($results,$query->execute());
+      $results = array_unique(array_merge($results,$query->execute()));
     }
     asort($results);
     return array_slice($results,0,$limit);

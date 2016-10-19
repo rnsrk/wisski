@@ -211,7 +211,7 @@ class Sparql11Engine extends EngineBase {
 	}
 	
 	private function doQuery($query) {
-	  \Drupal::logger('QUERY '.$this->adapterId())->debug(htmlentities($query));
+	  \Drupal::logger('QUERY '.$this->adapterId())->debug('{q}',array('q'=>$query));
 	  try {
   		return $this->getEndpoint()->query($query);
     } catch (\Exception $e) {
@@ -232,10 +232,31 @@ class Sparql11Engine extends EngineBase {
 	  $count = 0;
 	  $new_query = preg_replace('/(SELECT\s+(?:DISTINCT\s+)?)\*/i','$1'.implode(' ',$this->vars),$query,1,$count);
 	  //if ($count) dpm($new_query,'variable (*) replacement');
-		$uri_regex = '(?:\<[^\s\<\>\?]+\>|\w+\:[^\:\s\<\>\?]+|a)';	
+	  
+	  $uri_regex = '(?:\<[^\s\<\>\?]+\>|\w+\:[^\:\s\<\>\?]+|a)';	
 		$placeholder_regex = "(?:$uri_regex|$variable_regex)";
 		$triple_regex = "$placeholder_regex\s+$placeholder_regex\s+$placeholder_regex\s*(?:\.|(?=\}))";
-		$new_query = preg_replace_callback("/$triple_regex/",array($this,'graphReplacement'),$new_query);
+		
+		//if there already is a graph in the query, we must not rewrite that part
+	  $graph_detection_regex = "(GRAPH\s+\?\w+\s+((?:[^{}]+|\{(?2)\})*))";
+	  //preg_split with PREG_SPLIT_DELIM_CAPTURE flag gives us a list of query parts where the GRAPH... parts are 
+	  //divided from the rest, pitily it is not possible to keep preg_split from including the recursive subpatter (?2)
+	  //in the result array
+		$split = preg_split("/$graph_detection_regex/",$new_query,-1,PREG_SPLIT_DELIM_CAPTURE);
+		$new_query = '';
+		$part = current($split);
+		while ($part !== FALSE) {
+		  if (strpos($part,'GRAPH') === 0) {
+		    //GRAPH parts must not be rewritten
+		    $new_query .= $part;
+		    //move pointer one step forward since the recursive subpattern has been captured twice
+		    next($split);
+		  } else {
+		    //outside GRAPH-subpatterns we have to rewrite triples
+		    $new_query .= preg_replace_callback("/$triple_regex/",array($this,'graphReplacement'),$part);
+      }
+      $part = next($split);
+    }
 		//dpm($new_query,'graph rewrite');
 		return $new_query;
 	}
@@ -285,7 +306,7 @@ class Sparql11Engine extends EngineBase {
 	* @return @see EasyRdf_Sparql_Client->update
 	*/
 	public function directUpdate($query) {
-    \Drupal::logger('UPDATE '.$this->adapterId())->debug(htmlentities($query));
+    \Drupal::logger('UPDATE '.$this->adapterId())->debug('{u}',array('u'=>$query));
 		return $this->getEndpoint()->update($query);
 	}
 

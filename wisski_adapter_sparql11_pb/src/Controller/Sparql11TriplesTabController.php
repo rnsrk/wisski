@@ -106,12 +106,12 @@ class Sparql11TriplesTabController extends ControllerBase {
                 $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $remote_entity_id, 'target_uri' => $result->o->getUri() ) );
               }            
             }
-            
+            $graph_uri = isset($result->g) ? $result->g->getUri() : 'DEFAULT';
             $form['out_triples'][] = array(
               Link::fromTextAndUrl($this->t($target_uri), $subjecturi)->toRenderable(),
               Link::fromTextAndUrl($this->t($result->po->getUri()), $predicateuri)->toRenderable(),
               $result->o instanceof \EasyRdf_Resource ? Link::fromTextAndUrl($this->t($result->o->getUri()), $objecturi)->toRenderable() : array('#type' => 'item', '#title' => $result->o->getValue()),
-              array('#type' => 'item', '#title' => $result->g->getUri()),
+              array('#type' => 'item', '#title' => $graph_uri),
               array('#type' => 'item', '#title' => $label),
             );
           }
