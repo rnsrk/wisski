@@ -499,7 +499,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       if(empty($my_group))
         return FALSE;
       
-      if (isset($my_group['bundle'])) {
+      if (!empty($my_group['bundle'])) {
 
         $bundleid = $my_group['bundle'];
         $bundles = \Drupal::entityManager()->getStorage($mode)->loadByProperties(array('id' => $bundleid));
