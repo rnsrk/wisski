@@ -206,6 +206,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   if(is_array($file_uri))
                     $file_uri = $file_uri['target_id'];
                   
+                  if (empty($file_uri)) continue;
                   $local_uri = '';
                   $new_field_values[$id][$field_name][] = array(
                     'target_id' => $this->getFileId($file_uri,$local_uri),
@@ -215,6 +216,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   );
                 }
                 if (isset($new_field_values[$id][$field_name])) {
+                  //dpm($new_field_values[$id][$field_name],$aid.' '.$field_name);
                   if (!isset($info[$id]) || !isset($info[$id][$field_name])) $info[$id][$field_name] = $new_field_values[$id][$field_name];
                   else $info[$id][$field_name] = array_merge($info[$id][$field_name],$new_field_values[$id][$field_name]);
                 }
@@ -315,6 +317,13 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   public function getFileId($file_uri,&$local_file_uri='') {
 #drupal_set_message('Image uri: '.$file_uri);
   //dpm($file_uri,__FUNCTION__);
+    if (empty($file_uri)) return NULL;
+    //first try the cache
+    $cid = 'wisski_file_uri2id_'.md5($file_uri);
+    if ($cache = \Drupal::cache()->get($cid)) {
+      list($file_uri,$local_file_uri) = $cache->data;
+      return $file_uri;
+    }
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
     $local_file_uri = file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));
@@ -372,6 +381,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
     }
     //dpm($value,'image fid');
+    //set cache
+    \Drupal::cache()->set($cid,array($value,$local_file_uri));
     return $value;
   }
   

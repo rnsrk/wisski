@@ -310,7 +310,7 @@ class WisskiPathbuilderForm extends EntityForm {
     $form['export']['export'] = array(
       '#theme' => 'item_list',
 #      '#title' => 'Existing exports',
-      '#items' => $items,
+      '#items' => $items ?: array(),
       '#type' => 'ul',
       '#attributes' => array('class' => 'pb_export'),
     );
