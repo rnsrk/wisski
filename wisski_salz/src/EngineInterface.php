@@ -137,5 +137,4 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * Checks if the engine knows something about the URI.
    */
   public function checkUriExists($uri);
-
 }

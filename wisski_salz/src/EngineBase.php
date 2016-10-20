@@ -159,6 +159,14 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   public function calculateDependencies() {
     return [];
   }
+
+  public function providesCacheMode() {
+    return FALSE;
+  }
+  
+  public function providesFastMode() {
+    return FALSE;
+  }
   
   public function getQueryObject(EntityTypeInterface $entity_type,$condition, array $namespaces) {
     return new Query\Query($entity_type,$condition,$namespaces);
