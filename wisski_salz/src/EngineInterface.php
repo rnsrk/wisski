@@ -137,4 +137,9 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * Checks if the engine knows something about the URI.
    */
   public function checkUriExists($uri);
+  
+  /**
+   * Returns an array of bundle IDs of bundles that contain the entity with the given ID
+   */
+  public function getBundleIdsForEntityId($entity_id);
 }

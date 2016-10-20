@@ -171,10 +171,6 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   public function getQueryObject(EntityTypeInterface $entity_type,$condition, array $namespaces) {
     return new Query\Query($entity_type,$condition,$namespaces);
   }
-
-  public function getBundleIdsForEntityId($entity_id) {
-    return NULL;
-  }
   
   //@TODO overwrite
   public function writeFieldValues($entity_id,array $field_values,$pathbuilder,$bundle = NULL,$original_values=array(),$force_creation=FALSE) {

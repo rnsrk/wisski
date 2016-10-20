@@ -655,7 +655,7 @@ class WisskiPathbuilderForm extends EntityForm {
         if(!in_array($pathob->id(), array_keys($pathbuilder->getMainGroups())))
           $pathbuilder->generateFieldForSubGroup($pathob->id(), $pathob->getName());  
       } else {
-        dpm($pathob->getName(),'Field Name to set');
+        dpm($pathob,'$pathob');
         $pathbuilder->generateFieldForPath($pathob->id(), $pathob->getName());
       }
     }
