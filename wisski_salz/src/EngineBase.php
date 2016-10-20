@@ -227,6 +227,19 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     }
     return NULL;
   }
+  
+  public function getPbsForThis() {
+    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    $pb_array = array();
+    
+    foreach($pbs as $pb) {
+      // if there is no adapter set for this pb  
+      if($adapter_id = $pb->getAdapterId()) {
+        if ($this->adapterId() == $adapter_id) $pb_array[] = $pb;
+      }      
+    }
+    return $pb_array;
+  }
 
   public function getDrupalId($uri) {
     #dpm($uri, "uri");
