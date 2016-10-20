@@ -477,34 +477,35 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    */
   public function getImagesForEntityId($entityid, $bundleid) {
-    $pb = $this->getPbForThis();
+    $pbs = $this->getPbsForThis();
 
+    foreach($pbs as $pb) {
 #    drupal_set_message("yay!" . $entityid . " and " . $bundleid);
     
-    $entityid = $this->getDrupalId($entityid);
+      $entityid = $this->getDrupalId($entityid);
     
-    $ret = array();
+      $ret = array();
     
-    $groups = $pb->getGroupsForBundle($bundleid);
+      $groups = $pb->getGroupsForBundle($bundleid);
     
-    foreach($groups as $group) {
-      $paths = $pb->getImagePathIDsForGroup($group->id());
+      foreach($groups as $group) {
+        $paths = $pb->getImagePathIDsForGroup($group->id());
       
 #      drupal_set_message("paths: " . serialize($paths));
             
-      foreach($paths as $pathid) {
+        foreach($paths as $pathid) {
       
-        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
+          $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
         
 #        drupal_set_message(serialize($path));
         
 #        drupal_set_message("thing: " . serialize($this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $entityid, 0, NULL, 0)));
         
         // position 0 is wrong here, but it will hold for now
-        $ret = array_merge($ret, $this->pathToReturnValue($path, $pb, $entityid, 0, NULL));
-      } 
-    }
-    
+          $ret = array_merge($ret, $this->pathToReturnValue($path, $pb, $entityid, 0, NULL));
+        } 
+      }
+    }    
 #    drupal_set_message("returning: " . serialize($ret));
     
     return $ret;
@@ -517,7 +518,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    */
   public function getBundleIdsForEntityId($entityid) {
         
-    $pb = $this->getPbForThis();
+    $pbs = $this->getPbsForThis();
 #    dpm($pb,$this->adapterId().' Pathbuilder');
 #    dpm($entityid, "eid");
 
@@ -540,47 +541,48 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
    $out = array();
     foreach($result as $thing) {
-    
-      // ask for a bundle from the pb that has this class thing in it
-      $groups = $pb->getAllGroups();
+      foreach($pbs as $pb) {
+      // ask for a bundle from the pb that has this class thing in it	
+        $groups = $pb->getAllGroups();
       
 #      drupal_set_message("groups: " . count($groups) . " " . serialize($groups));
 
-      $i = 0;
+        $i = 0;
       
-      foreach($groups as $group) {
+        foreach($groups as $group) {
         // this does not work for subgroups
         #$path_array = $group->getPathArray();
                 
 #        $path_array = $this->getClearPathArray($group, $pb);
-        $path_array = $this->getClearGroupArray($group, $pb);
-        $i++;
+          $path_array = $this->getClearGroupArray($group, $pb);
+          $i++;
  
 #        drupal_set_message("p_a " . $i . " " . $group->getName() . " " . serialize($path_array));
         
-        if(empty($group) || empty($path_array))
-          continue;
+          if(empty($group) || empty($path_array))
+            continue;
 
         // this checks if the last element is the same
         // however this is evil whenever there are several elements in the path array
         // typically subgroups ask for the first element part.        
-        if($path_array[ count($path_array)-1] == $thing->class->dumpValue("text") || $path_array[0] == $thing->class->dumpValue("text")) {
-          $pbpaths = $pb->getPbPaths();
+          if($path_array[ count($path_array)-1] == $thing->class->dumpValue("text") || $path_array[0] == $thing->class->dumpValue("text")) {
+            $pbpaths = $pb->getPbPaths();
           
 #          drupal_set_message(serialize($pbpaths[$group->id()]));
           
-          if(!empty($pbpaths[$group->id()])) {
-            $elem = $pbpaths[$group->id()];
+            if(!empty($pbpaths[$group->id()])) {
+              $elem = $pbpaths[$group->id()];
             // priorize top groups to the front if the array
 #            dpm($elem);
-            if(empty($elem['parent'])) {
+              if(empty($elem['parent'])) {
 #              dpm("I resort...");
-              $tmpout = $out;
-              $out = array();
+                $tmpout = $out;
+                $out = array();
+                $out[$pbpaths[$group->id()]['bundle']] = $pbpaths[$group->id()]['bundle'];
+                $out = array_merge($out, $tmpout);
+              }
               $out[$pbpaths[$group->id()]['bundle']] = $pbpaths[$group->id()]['bundle'];
-              $out = array_merge($out, $tmpout);
             }
-            $out[$pbpaths[$group->id()]['bundle']] = $pbpaths[$group->id()]['bundle'];
           }
         }
       }
