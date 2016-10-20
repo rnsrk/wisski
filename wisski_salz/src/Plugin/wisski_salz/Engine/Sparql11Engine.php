@@ -20,7 +20,7 @@ use Drupal\Core\Language\LanguageInterface;
  *   description = @Translation("Provides access to a SPARQL endpoint that supports SPARQL 1.1")
  * )
  */
-class Sparql11Engine extends EngineBase {
+abstract class Sparql11Engine extends EngineBase {
 
   protected $read_url;
   protected $write_url;
