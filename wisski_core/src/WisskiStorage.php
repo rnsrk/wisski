@@ -489,7 +489,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * @TODO must be implemented
    */
   protected function doSaveFieldItems(ContentEntityInterface $entity, array $names = []) {
-#    dpm(func_get_args(),__METHOD__);
+    dpm(func_get_args(),__METHOD__);
     
     list($values,$original_values) = $entity->getValues($this);
     $bundle_id = $values['bundle'][0]['target_id'];
@@ -521,46 +521,48 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       return;
     }
     
+    $entity_id = $entity->id();
     // we track if this is a newly created entity, if yes, we want to write it to ALL writeable adapters
-    $created_new = FALSE;
+    $create_new = $entity->isNew() && empty($entity_id);
     
-    
-    //if the entity is new, we need an id
-    if($entity->isNew() && empty($entity->id())) {
-      // in this case we have to add the triples for a new entity
-      // after that it should be the same for edit and for create
+    if (empty($entity_id)) {    
+      foreach($pathbuilders as $pb_id => $pb) {
       
-#      dpm($entity);
-#      drupal_set_message(serialize($entity->isNew()) . " yay!");
-      foreach ($local_adapters as $adapter) {
-        //first local adapter being able to create an entity (with id) will set it
-        // in most cases there will be at most one local adapter, so we don't have to care about preferences
-        if ($created_new = $adapter->createEntity($entity)) break;
+        //get the adapter
+        $aid = $pb->getAdapterId();
+
+        //check, if it's writeable, if not we can stop here
+        if (isset($local_adapters[$aid])) $adapter = $local_adapters[$aid];
+        else continue;
+
+        $entity_id = $adapter->createEntity($entity);
       }
-      if (!$created_new) {
-        //we should now have created a
-        drupal_set_message("No adapter was able to integrate/create the new entity",'error');
-        return;
-      }
+      dpm($entity_id,$aid);
     }
+  
+    if (empty($entity_id)) {
+      drupal_set_message('No local adapter could create the entity','error');
+      return;
+    }
+    
     
     //dpm($original_values,'old values');
     //dpm($values,'new values');
     $real_new_values = array_diff_key($values,$original_values);
     //dpm($real_new_values,'Really new values');
-    if (!$created_new) $created_new = !empty($real_new_values);
+    if (!$create_new) $create_new = !empty($real_new_values);
     unset($real_new_values);
 #    drupal_set_message("lwa: " . serialize($local_writeable_adapters));
 #    drupal_set_message("wa: " . serialize($writeable_adapters));
 
     //we load all pathbuilders, check if they know the fields and have writeable adapters
     $pathbuilders = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
-    
+    dpm(count($local_adapters),'how many');
     foreach($pathbuilders as $pb_id => $pb) {
       
       //get the adapter
       $aid = $pb->getAdapterId();
-      
+
       //dpm($writeable_adapters,'Check '.$aid.' from '.$pb_id);
       //check, if it's writeable, if not we can stop here
       if (isset($writeable_adapters[$aid])) $adapter = $writeable_adapters[$aid];
@@ -569,17 +571,17 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       $success = FALSE;
 #      drupal_set_message("I ask adapter " . serialize($adapter) . " for id " . serialize($entity->id()) . " and get: " . serialize($adapter->hasEntity($id)));
       // if they know that id
-      if($created_new || $adapter->hasEntity($entity->id())) {
+      if($create_new || $adapter->hasEntity($entity_id)) {
         
         // perhaps we have to check for the field definitions - we ignore this for now.
         //   $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundle_idid);
         try {
-          //dpm('Try writing to '.$aid);
+          dpm('Try writing to '.$aid);
           //drupal_set_message(" I ask adapter: " . serialize($adapter));
           //we force the writable adapter to write values for newly created entities even if unknown to the adapter by now
           //@TODO return correct success code
-          $adapter_info = $adapter->writeFieldValues($entity->id(), $values, $pb, $bundle_id, $original_values,$created_new);
-          //dpm($aid,'Success');
+          $adapter_info = $adapter->writeFieldValues($entity_id, $values, $pb, $bundle_id, $original_values,$create_new);
+          dpm($aid,'Success');
           $success = TRUE;
         } catch (\Exception $e) {
           drupal_set_message('Could not write entity into adapter '.$adapter->id() . ' because ' . serialize($e->getMessage()));
@@ -590,9 +592,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
       
       if ($success) {
+        $entity->set('eid',$entity_id);
         $entity->enforceIsNew(FALSE);
         //we have successfully written to this adapter
-        \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)->flushTitleCache($entity->id());
+        \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)->flushTitleCache($entity_id);
       }
     }
   }

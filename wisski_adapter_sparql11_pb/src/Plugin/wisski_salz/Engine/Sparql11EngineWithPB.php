@@ -1583,7 +1583,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
    * Create a new entity
    * @param $entity an entity object
    * @param $entity_id the eid to be set for the entity, if NULL and $entity dowes not have an eid, we will try to create one
-   * @return TRUE on success
+   * @return the Entity ID
    */
   public function createEntity($entity,$entity_id=NULL) {
     #$uri = $this->getUri($this->getDefaultDataGraphUri());
@@ -1597,11 +1597,11 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     //might be empty, but we can use it later
     $eid = $entity->get('eid')->first() ? : $entity_id;
     $uri = NULL;
-    
+    //dpm($eid,$entity_id);
     //if there is an eid we try to get the entity URI form cache
     //if there is none $uri will be FALSE
     if (!empty($eid)) $uri = $this->getUriForDrupalId($eid);
-    
+    else $uri = $this->getUri($this->getDefaultDataGraphUri());
     // get the adapterid that was loaded
     // haha, this is the engine-id...
     //$adapterid = $this->getConfiguration()['id'];
@@ -1619,7 +1619,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         continue;
       
       // if he didn't ask for us...    
-      if($this->getConfiguration()['id'] != $adapter->getEngine()->getConfiguration()['id'])
+      if($this->adapterId() !== $adapter->id())
         continue;
      
       $groups = $pb->getGroupsForBundle($bundleid);
@@ -1653,7 +1653,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 #    $entity->set('id',$uri);
     $entity->set('eid',$eid);
 #    "INSERT INTO { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " 
-    
+    return $eid;
   }
 
   public function getUri($prefix) {
@@ -2017,7 +2017,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
   
   public function writeFieldValues($entity_id, array $field_values, $pathbuilder, $bundle_id=NULL,$old_values=array(),$force_new=FALSE) {
 #    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
-    
+    \Drupal::logger('write to '.$this->adapterId())->debug(serialize(func_get_args()));
     // tricky thing here is that the entity_ids that are coming in typically
     // are somewhere from a store. In case of rdf it is easy - they are uris.
     // In case of csv or something it is more tricky. So I don't wan't to 
@@ -2038,7 +2038,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     // this would speed everything up largely, I think.
     $entity = $this->loadEntity($entity_id);
 
-    #dpm($entity, "entity!");
+    dpm($entity, $this->adapterId());
     
     // if there is nothing, continue.
     if (empty($entity)) {
@@ -2047,7 +2047,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         $this->createEntity($entity,$entity_id);
       } else return;
     }
-    //dpm($entity,'Not empty');
+    dpm($entity, $this->adapterId().' not empty');
     if (!isset($old_values)) {
       // it would be better to gather this information from the form and not from the ts
       // there might have been somebody saving in between...

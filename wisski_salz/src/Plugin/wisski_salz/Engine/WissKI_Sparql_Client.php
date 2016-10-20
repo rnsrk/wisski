@@ -84,6 +84,7 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 				}
 		}
 		$response = $client->request();
+		//if ($type === 'update') dpm($response,$encodedQuery);
 		if ($response->getStatus() == 204) {
 			// No content
 			return $response;
@@ -94,7 +95,7 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 			if (strpos($type, 'application/sparql-results') === 0) {
 				return new EasyRdf_Sparql_Result($response->getBody(), $type);
 			} else {
-				return new EasyRdf_Graph($this->getQueryUri, $response->getBody(), $type);
+				return new EasyRdf_Graph($this->getQueryUri(), $response->getBody(), $type);
 			}
 		} else {
 			$message = __METHOD__.' (line: '.__LINE__.') failed request '.htmlentities($query). "---" . $response->getBody() . "\n\r";
