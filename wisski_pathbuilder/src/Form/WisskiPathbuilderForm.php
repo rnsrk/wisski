@@ -301,7 +301,9 @@ class WisskiPathbuilderForm extends EntityForm {
     file_prepare_directory($export_path, FILE_CREATE_DIRECTORY);
     
     $files = file_scan_directory($export_path, '/.*/');
-    
+
+    $items = array();
+        
     foreach($files as $file) {
     #  $form['export']['export'][] = array('#type' => 'link', '#title' => $file->filename, '#url' => Url::fromUri(file_create_url($file->uri)));
       $items[] = array('#type' => 'link', '#title' => $file->filename, '#url' => Url::fromUri(file_create_url($file->uri)));
@@ -310,7 +312,7 @@ class WisskiPathbuilderForm extends EntityForm {
     $form['export']['export'] = array(
       '#theme' => 'item_list',
 #      '#title' => 'Existing exports',
-      '#items' => $items ?: array(),
+      '#items' => $items,
       '#type' => 'ul',
       '#attributes' => array('class' => 'pb_export'),
     );
