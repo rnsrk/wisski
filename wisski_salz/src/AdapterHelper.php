@@ -8,137 +8,63 @@
 namespace Drupal\wisski_salz;
 
 class AdapterHelper {
-  
+
   /**
-   * Get the Drupal-usable Id for a given URI.
-   * @param uri the URI
-   * @param create_if_not_exists if there is no mapping for the URI generate a
-   *        new Id
-   * @return The ID or NULL if there is no mapping and $create_if_not_exists is
-   *        false.
+   * saves a set of URI mappings with an optional drupal entity id
+   * @param $uris an associative array where the keys are adapter_ids and the values are uris which all mean the same individuum
+   * the mapping denotes that the very adapter is holding information about that very URI
+   * @param $entity_id the drupal ID for the entity that all the uris from $uris identify. If NULL we just save the uri identification without drupal ID matching
    */
-  public static function getDrupalIdForUri($uri, $adapter_id=NULL,$create_if_not_exists = TRUE) {
-    $query = db_select('wisski_salz_id2uri', 'm')
-              ->fields('m', array('eid'))
-              ->condition('uri', $uri);
-    if (isset($adapter_id)) $query->condition('adapter_id',$adapter_id);
-    $row = $query->execute()->fetchObject();
-#dpm(array($row, $uri), "getids");
-    if (!empty($row)) return $row->eid;
-    // create an ID if we are told to do so
-    if ($create_if_not_exists) return self::setDrupalIdForUri($uri, NULL, $adapter_id);
-    return NULL;
-  }
-  
-  /** 
-   * Updates/inserts/deletes a mapping between a URI and a Drupal-usable, 
-   * numeric Id.
-   * @param uri the URI. A string and must not be NULL.
-   * @param eid the entity ID. An entity is always numeric! If NULL and there 
-   *        exists a mapping, the mapping is deleted. If NULL and there is no
-   *        mapping yet, a mapping with a generated entity ID is created.
-   * @param check_exists perform a check first, whether there already exists a
-   *        mapping
-   * @param exists specify whether the function should behave as if there
-   *        already exists a mapping. This parameter is only considered if
-   *        check_exists is FALSE.
-   * @return the set/generated entity ID or NULL if the mapping was deleted
-   */
-  public static function setDrupalIdForUri($uri, $eid = NULL, $adapter_id=NULL) {
-    //dpm(func_get_args(),__FUNCTION__);
+  public static function setSameUris($uris,$entity_id=NULL) {
     
-    //first we check if there is any entry for this URI
-    //we don't use self::getDrupalIdForUri to avoid infinite loops
-    $existing_eids = db_select('wisski_salz_id2uri','m')->fields('m')->condition('uri',$uri)->execute()->fetchAllAssoc('adapter_id');
-    if (!empty($existing_eids)) {
-      // update existing mapping
-      if (isset($adapter_id)) {
-        
-        if (isset($existing_eids[$adapter_id])) {
-          //if we know the uri-adapter combination
-          //we must either update its eid or delete this mapping
-          if ($eid === NULL) {
-            //delete
-            db_delete('wisski_salz_id2uri')
-              ->condition('uri',$uri)
-              ->condition('adapter_id',$adapter_id)
-              ->execute();
-            return NULL;
-          } else {
-            //update
-            db_update('wisski_salz_id2uri')
-              ->fields(array('eid'=>$eid))
-              ->condition('uri',$uri)
-              ->condition('adapter_id',$adapter_id)
-              ->execute();
-            return $eid;
-          }
-        } else {
-          //if the adapter has no entry AND the eid is not set, we believe we shall guess one
-          //this then is the existsing eid from another adapter for that same uri
-          if ($eid === NULL) $eid = current($existing_eids)->eid;
-          db_insert('wisski_salz_id2uri')
-            ->fields(array('eid'=>$eid,'uri'=>$uri,'adapter_id'=>$adapter_id))
-            ->execute();
-          return $eid;
-        }
-      } else {
-        //there is no adapter set
-        if ($eid === NULL) {
-          // delete all mappings for this uri
-          db_delete('wisski_salz_id2uri')->condition('uri', $uri)->execute();
-          return NULL;
-        } else {
-          //update eid for this URI in all existing adapters
-          db_update('wisski_salz_id2uri')->fields(array('eid' => $eid))->condition('uri', $uri)->execute();
-          return $eid;
-        }
-      }
-    } else {
-      //no entry for this uri exists
-      if ($eid === NULL) {
-        // create a mapping and generate a new eid
-        $eid = db_insert('wisski_salz_id2uri')->fields(array('uri' => $uri,'adapter_id'=>$adapter_id))->execute();
-        //immediately update the newly inserted row so that the eid is saved correctly
-        db_update('wisski_salz_id2uri')->fields(array('eid'=>$eid))->condition('rid',$eid)->execute();
-        return $eid;
-      } else {
-        // create a mapping and with a given eid
-        db_insert('wisski_salz_id2uri')->fields(array('uri' => $uri, 'eid' => $eid, 'adapter_id'=>$adapter_id))->execute();
-        return $eid;
-      }
-    }
   }
   
   /**
-   * Get all URIs for the given Drupal-usable id
-   * @param eid the entity ID
-   * @return an array of URIs. If there is no mapping, returns an empty array.
+   * retrieves a set of URI mappings
+   * @param $uri an entity uri (not a Drupal entity ID)
+   * @param $input_adapter_id if set this will be used as a hint where to look for the input URI
+   * @return an associative array where the keys are adapter_ids and the values are uris which all mean the same individuum
+   * the mapping denotes that the very adapter is holding information about that very URI
+   */
+  public static function getSameUris($uri,$input_adapter_id=NULL) {
+  
+  }
+  
+  /**
+   * returns the URI that the given adapter uses to talk about the individual with the input URI i.e. that has that given URI in another adapter
+   * @param $uri the input URI as used in the input adapter
+   * @param $output_adapter_id the ID of the adapter that we want to know the output URI from
+   * @param $input_adapter_id if set this will be used as a hint where to look for the input URI
+   * @return the same-as URI from the output adapter
+   */
+  public static function getSameUri($uri,$output_adapter_id,$input_adapter_id=NULL) {
+  
+  }
+  
+  /**
+   * returns the Drupal ID for a given URI
+   * @param $uri the input URI
+   * @param $create_on_fail if there is no drupal ID for this entity, make one, will only be done if $input_adapter_id is set
+   * @param $input_adapter_id the ID of the adapter that talks about the given URI, will be used as a hint for the standard search
+   * or as the mapped adapter for the URI when a Drupal entity ID is created
+   * @return the entity's Drupal ID
+   */
+  public static function getDrupalIdForUri($uri,$create_on_fail=TRUE,$input_adapter_id=NULL) {
+  
+  }
+  
+  /**
+   * returns a set of URIs that are associated with the given Drupal entity ID
+   * @param $eid the entity's Drupal ID
+   * @param $adapter_id if set the function will return at most one uri namelythe one used in the adapter with this ID
+   * @return an assocative array keyed by adapter ID with the associated URIs as values or | the URI associated with the input adapter
    */
   public static function getUrisForDrupalId($eid,$adapter_id=NULL) {
-    // we preprocess the entity id
-    // one may pass an object with field eid for convienience
-    if (is_object($eid) && isset($eid->eid)) {
-      $eid = $eid->eid;
-    }
-    if (is_integer($eid) || (is_string($eid) && preg_match('/^\d+$/', $eid))) {
-      $query = db_select('wisski_salz_id2uri', 'm')
-        ->fields('m', array('uri'))
-        ->condition('eid', $eid);
-      if (isset($adapter_id)) $query->condition('adapter_id',$adapter_id);
-      $uris = $query->execute()->fetchCol();
-#dpm(array($eid, $uris, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)), "geturis");
-      if (empty($uris)) return array();
-      return $uris;
-    } else {
-      throw new \InvalidArgumentException("bad entity id: $eid");
-    }
-  }
   
+  }
 
   public static function createCanonicalWisskiUri($options) {
     
-
   }
   
   public static function getPreferredLocalStore() {
