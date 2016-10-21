@@ -103,16 +103,10 @@ abstract class ProcessorBase extends PluginBase implements ProcessorInterface {
    * {@inheritdoc}
    */
   public function setConfiguration(array $configuration) {
-    $configuration += [
-      'uuid' => '',
-      'name' => '',
-      'weight' => '0',
-      'settings' => [],
-    ];
     $this->configuration = $configuration + $this->defaultConfiguration();
-    $this->uuid = $configuration['uuid'];
-    $this->name = $configuration['name'];
-    $this->weight = $configuration['weight'];
+    $this->uuid = $this->configuration['uuid'];
+    $this->name = $this->configuration['name'];
+    $this->weight = $this->configuration['weight'];
     return $this;
   }
 
@@ -120,7 +114,13 @@ abstract class ProcessorBase extends PluginBase implements ProcessorInterface {
    * {@inheritdoc}
    */
   public function defaultConfiguration() {
-    return [];
+    $configuration = [
+     'uuid' => '',
+     'name' => '',
+     'weight' => '0',
+     'settings' => [],
+    ];
+    return $configuration;
   }
 
   /**

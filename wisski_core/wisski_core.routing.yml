@@ -110,6 +110,8 @@ entity.wisski_individual.edit_form:
 #    _title: 'Edit entity'
   requirements:
     _entity_access: 'wisski_individual.edit'
+  options:
+    _admin_route: 'TRUE'
 
 entity.wisski_individual.delete_form:
   path: '/wisski/navigate/{wisski_individual}/delete'
@@ -126,6 +128,8 @@ entity.wisski_individual.add:
     _title: 'Add WissKI Entity'
   requirements:
     _entity_create_access: 'wisski_individual'
+  options:
+    _admin_route: 'TRUE'
 
 entity.wisski_bundle.list:
   path: '/admin/structure/wisski_core'

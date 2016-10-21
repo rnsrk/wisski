@@ -65,6 +65,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     foreach ($this->dependent_queries as $key => $query) {
       $query = $query->count();
       $sub_count = $query->execute() ? : 0;
+      $sub_count = (int) $sub_count;
       if ($sub_count * $num_queries < $offset) {
         //we enlearge the offset for following queries
         $num_queries--;

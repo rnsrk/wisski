@@ -115,6 +115,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         //dpm($pattern,'Hold '.$key);
         //if we have a dependency make sure we only consider this one, when all dependencies are clear
         if (!empty($attributes['parents'])) {
+dpm($attributes['parents'], "parents");
           foreach ($attributes['parents'] as $parent => $positive) {
             //dpm($parts,'Ask for '.$parent.' '.($positive ? 'pos' : 'neg'));
             if (!isset($parts[$parent])) {

@@ -55,4 +55,17 @@ infobox:
     - core/jquery
     - core/jquery.ui.tooltip
 
+highlight:
+  version: 1.x
+  css:
+    component:
+      css/highlight.css: {}
+  js:
+    js/highlight.js: {}
+  dependencies:
+    - wisski_apus/annotation
+    - core/drupal
+    - core/drupalSettings
+    - core/jquery
+
 

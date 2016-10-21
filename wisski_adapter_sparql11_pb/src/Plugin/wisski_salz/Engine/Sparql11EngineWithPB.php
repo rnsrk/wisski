@@ -1194,14 +1194,16 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 
 #        drupal_set_message("I've got: " . serialize($got));
         
-        if(empty($out))
+        if (empty($out)) {
           $out = $got;
-        
-        foreach($got as $eid => $value) {
-          if(empty($out[$eid]))
-            $out[$eid] = $got[$eid];
-          else
-            $out[$eid] = array_merge($out[$eid], $got[$eid]);
+        } else {
+          foreach($got as $eid => $value) {
+            if(empty($out[$eid])) {
+              $out[$eid] = $got[$eid];
+            } else {
+              $out[$eid] = array_merge($out[$eid], $got[$eid]);
+            }
+          }
         }
         
 #        drupal_set_message("out after got: " . serialize($out));
@@ -2408,12 +2410,16 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
           'callback' => array($this,'checkboxAjax'),
         ),
       );
+      $classes_n_properties = ((array) $this->getClasses()) + ((array) $this->getProperties());
+      if ($this->getClasses() === FALSE || $this->getProperties() === FALSE) {
+        drupal_set_message($this->t('Bad class and property cache.'));
+      }
       $form['reasoner']['tester'] = array(
         '#type' => 'details',
         '#title' => $this->t('Check reasoning results'),
         'selected_prop' => array(
           '#type' => 'select',
-          '#options' => $this->getClasses() + $this->getProperties(),
+          '#options' => $classes_n_properties,
           '#empty_value' => 'empty',
           '#empty_option' => $this->t('select a class or property'),
           '#ajax' => array(

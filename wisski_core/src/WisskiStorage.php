@@ -84,7 +84,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       //make sure the entity knows its ID at least
       $info[$id]['eid'] = $id;
       
-      //see if we got bundle information cached. Useful for entity reference and more
+      //see if we got bundle information cached. Useful for entity reference and more      
       $cached_bundle = WisskiCacheHelper::getCallingBundle($id);
       if ($cached_bundle) $info[$id]['bundle'] = $cached_bundle;
       
@@ -116,6 +116,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             #drupal_set_message("asking for: " . serialize(array_keys($field_definitions)));
             try {
               foreach ($field_definitions as $field_name => $field_def) {
+dpm(array($adapter->id(), $field_name,$id, $bundleid),'ge1','error');
                 
                 if ($field_def instanceof BaseFieldDefinition) {
                   //the bundle key will be set via the loop variable $bundleid
@@ -124,6 +125,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   //this is a base field and cannot have multiple values
                   //@TODO make sure, we load the RIGHT value
                   $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
+dpm(array($adapter->id(), $field_name,$id, $bundleid, $new_field_values),'gei','error');
+
+if (empty($new_field_values)) continue;
                 
                   $new_field_values = $new_field_values[$id][$field_name];
         

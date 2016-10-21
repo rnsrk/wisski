@@ -18,6 +18,11 @@
         $(this).find('[data-wisski-anno-id], [data-wisski-anno]').each(function() {
         $(this).tooltip({
           items: '[data-wisski-anno-id], [data-wisski-anno]',
+          close: function(event, ui) {
+            console.log("close");
+            event.preventDefault();
+            return false;
+          },
           content: function (callback) {
             var $element = $(this);
             

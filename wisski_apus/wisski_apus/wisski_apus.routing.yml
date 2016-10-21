@@ -25,6 +25,16 @@ wisski_apus.infobox_content:
   options:
     _theme: ajax_base_page
 
+wisski_apus.infobox_labels:
+  path: '/wisski/apus/infobox/labels'
+  defaults:
+    _title: 'Infobox X'
+    _controller: '\Drupal\wisski_apus\Controller\InfoboxController::labels'
+  requirements:
+    _access: 'TRUE'
+  options:
+    _theme: ajax_base_page
+                
 # this is a workaround because drupal caches too aggressively
 wisski_apus.infobox_content.ticket:
   path: '/wisski/apus/infobox/content/{ticket}'
@@ -35,4 +45,14 @@ wisski_apus.infobox_content.ticket:
     _access: 'TRUE'
   options:
     _theme: ajax_base_page
-        
+
+wisski_apus.infobox_labels.ticket:
+  path: '/wisski/apus/infobox/labels/{ticket}'
+  defaults:
+    _title: 'Infobox X'
+    _controller: '\Drupal\wisski_apus\Controller\InfoboxController::labels'
+  requirements:
+    _access: 'TRUE'
+  options:
+    _theme: ajax_base_page
+                
