@@ -137,7 +137,7 @@ console.log("curanno, dialog",dialog.annoDialog.currentAnno);
           }
         };
         // open the dialog
-        dialog.searchEntities('t', saveCallback);
+        dialog.searchEntities(dialog.defaultSearchString, saveCallback);
         // deactivate the link
         e.preventDefault();
         return false;
@@ -285,7 +285,7 @@ console.log("curanno, dialog",dialog.annoDialog.currentAnno);
     
     /** Removes all entries from the entities list or adds the given entities
     * to the list.
-    * If the argument is an array, the items will the appended to the list; 
+    * If the argument is an array, the items will be appended to the list; 
     * otherwise the list will be truncated.
     */
     dialog.showEntities = function (entities, noFocus) {
@@ -310,7 +310,35 @@ console.log("curanno, dialog",dialog.annoDialog.currentAnno);
             )
             .append('<span class="info">?</span>')
             .appendTo(ul);
-          $('<div/>').html(entities[i]['content']).appendTo(ul);
+          var $content = $('<div class="content"/>').appendTo(ul).hide();
+          $content.once('show', function () {;
+            // the target info is fetched via ajax
+            // prepare ajax request settings
+            ajaxSettings = {
+              // TODO: we append a random number as server caches too
+              // aggressively otherwise
+              url: drupalSettings.wisskiApus.infobox.contentCallbackURL + "/" + Math.floor(Math.random() * 10000000),
+              data: {
+                anno: {
+                  target: {
+                    ref: [ entities[i]['uri'] ]
+                  }
+                }
+              },
+              dataType: 'html', // we expect html from the server
+            }
+            // start the request
+            xhr = $.ajax(ajaxSettings)
+                  .done(function (data, status, jqXHR) {
+                    $content.html(data);
+                  })
+                  .fail(function (jqxhr, status, error) {
+                    var errorMsg = "An error occurred while fetching data: (" + status + ") " + error;
+                    $content.html('').text(errorMsg);
+                  });
+          });
+
+         
         }
       }
       // update the accordion and show/hide the "no results" label
@@ -371,7 +399,10 @@ console.log("curanno, dialog",dialog.annoDialog.currentAnno);
     options = options || {};
     
     var dialog;     // the object representing the dialog
-    var $dialog;    // the element of the dialog's content
+    var $dialog,    // the element of the dialog's content
+        $targets,   // the element that holds the target refs info
+        $targetType,// the element that holds the target type
+        $annoInfo;  // the element that holds other annotation info
     var selector;   // an id for the dialog
     // the dialog's default options if nothing is set
     var defaultOptions = {
@@ -402,11 +433,61 @@ console.log("curanno, dialog",dialog.annoDialog.currentAnno);
       if (dialogOptions.embed === 'body') {
         $dialog.hide();
       }
+      
+      /* The dialog structure is as follows: 
+      *  div.wisski-anno-dialog - main element ($main)
+      *  - h3.targets - the accordion title for the div
+      *  - div.targets - holds all annotation targets (this gets cleared up on each call)
+      *  - - h4.target-ref
+      *  - - div.target-ref - holds a single annotation target (multiple: one for each target)
+      *  - h3.target-type
+      *  - div.target-type - holds the target type (only if no target ref is present)
+      *  - h3.anno-info
+      *  - div.anno-info - holds other info about the annotation
+      *  - - div.anno-id - holds the annotation id
+      *  - - div.certainty - holds the certainty that is attributed to the annotation as a whole
+      */
       $dialog.appendTo(dialogOptions.embed);
-      $('<div class="anno-id" />').appendTo($dialog);
-      $('<div class="anno-target-type" />').appendTo($dialog);
-      $('<div class="anno-target-ref" />').appendTo($dialog);
-      $('<div class="anno-certainty" />').appendTo($dialog);
+      $('<h3 class="targets" />').text(Drupal.t('Target information')).appendTo($dialog);
+      $targets =    $('<div class="targets" />').appendTo($dialog);
+      // the target type section is currently hidden
+//      $('<h3 class="target-type" />').text(Drupal.t('Target type')).appendTo($dialog).hide();
+//      $targetType = $('<div class="target-type" />').appendTo($dialog).hide();
+      $('<h3 class="anno-info" />').text(Drupal.t('Annotation')).appendTo($dialog);
+      $annoInfo =   $('<div class="anno-info" />').appendTo($dialog);
+      
+      // build the anno-info section
+      $annoInfo
+        // anno-id
+        .append($('<div class="anno-id">')
+          .append($('<label>').text(Drupal.t('ID') + ':'))
+          .append($('<a class="suppress-link">'))
+        )
+         .append($('<div class="certainty">')
+          .append($('<label>').text(Drupal.t('Certainty') + ':'))
+          .append($('<select>'))
+        );
+      // certainty scale
+      var certaintyScale = {
+        certain : 'certain',
+        uncertain : 'uncertain',
+        speculative : 'speculative',
+      };
+      var $select = $annoInfo.find('.certainty select');
+      $.each(certaintyScale, function(val) {
+        $('<option />').val(val).text(this).appendTo($select);
+      });
+
+      $dialog.accordion({
+        active: 0,
+        collapsible: false,
+        icons: {
+          activeHeader: 'ui-icon-info',
+          header: 'ui-icon-info'
+        },
+        heightStyle: 'fill'
+      });
+
 
     }
 
@@ -428,12 +509,18 @@ console.log("curanno, dialog",dialog.annoDialog.currentAnno);
     */
     dialog.doShow = function (anno) {
       
-      var $main = dialog.$element;
+      var ajaxSettings, xhr;
+
+      var $dialog = dialog.$element,
+          $targets = $dialog.children('div.targets'),
+          $annoId = $dialog.find('div.anno-info .anno-id'),
+          $certainty = $dialog.find('div.anno-info .certainty');
+      
       // refresh dialog / delete old anno info
-      $main.children('div').html('');
+      $targets.html('');
 
       if (!anno) {
-        $main.hide();
+        $dialog.hide();
         return;
       }
 
@@ -442,67 +529,118 @@ console.log("curanno, dialog",dialog.annoDialog.currentAnno);
       }
       // save anno for later reuse
       dialog.currentAnno = anno;
+
       
       // display the annotation id
-      if (!!anno.id) {
-        $('<a class="suppress-link" href="">')
-          .appendTo($main.children('.anno-id'))
-          .text(anno.id)
-          .before($('<label>').text(Drupal.t('ID:')));
+      if (!anno.id) {
+        $annoId.hide();
+      } else {
+        $annoId.children('a').attr('href', anno.id).text(anno.id);
+        $annoId.show();
       }
       
+      // display certainty info for the annotation
+      if (!anno.certainty) {
+        $certainty.hide();
+      } else {
+        var certainty = anno.certainty;
+        $certainty.children('select').prop('selected', anno.certainty);
+        $certainty.show();
+      }
+
+      /*
       // display the target type/class
       if (!!anno.target.type) {
         var typeName = Drupal.wisskiApus.getTargetTypeDisplayName(anno.target.type);
         $('<p>') 
-          .appendTo($main.children('.anno-target-type'))
+          .appendTo($dialog.children('.anno-target-type'))
           .text(typeName)
           .before($('<label>').text(Drupal.t('Class:')));
       }
+      */
 
       // display the referred target(s)
       // TODO: currently this should be only one! eventually extend to multiple targets
-      var $refFrame = $main.children('.anno-target-ref');
+      var $refFrame = $dialog.children('.anno-target-ref');
       var $refs = $('<div class="target-list wisski-anno-entity-list"/>')
-            .appendTo($refFrame)
-            .before($('<label>').text(Drupal.t('Targets:')));
+            .appendTo($targets);
       if (!!anno.target.ref) {
         for (var i in anno.target.ref) {
           var ref = anno.target.ref[i];
           var $title = $('<h3>')
-                .data('anno-target-uri', ref)
-                .text('Title')
+                .attr('data-anno-target-uri', ref)
+                .append($('<span class="label">').text(ref))
                 .appendTo($refs);
           var $content = $('<div>')
                 .appendTo($refs)
                 .append($('<p class="wait throbber">').text(Drupal.t("Loading ...")));
+          var t_edit = Drupal.t('Edit');
           var $edit = $('<a class="suppress-link pick-entity-button" href="">')
-                .text(Drupal.t('Edit'))
-                .addClass('ui-icon')
+                .attr('alt', t_edit).attr('title', t_edit)
+                .append($('<span class="ui-icon ui-icon-pencil">'))
                 .appendTo($title);
           // TODO: fetch the anno label via ajax
 
           // the target info is fetched via ajax
           // prepare ajax request settings
-          var ajaxSettings = {
+          ajaxSettings = {
             // TODO: we append a random number as server caches too
             // aggressively otherwise
             url: drupalSettings.wisskiApus.infobox.contentCallbackURL + "/" + Math.floor(Math.random() * 10000000),
             data: {
-              uri: ref
+              anno: {
+                target: {
+                  ref: [ ref ]
+                }
+              }
             },
             dataType: 'html', // we expect html from the server
           }
           // start the request
-          var xhr = $.ajax(ajaxSettings)
+          xhr = $.ajax(ajaxSettings)
                 .done(function (data, status, jqXHR) {
                   $content.html(data);
                 })
                 .fail(function (jqxhr, status, error) {
-                  var errorMsg = "An error occurred while fetching data: " + error;
+                  var errorMsg = "An error occurred while fetching data: (" + status + ") " + error;
                   $content.html('').text(errorMsg);
                 });
         }
+
+        // the target titles are fetched via ajax
+        // prepare ajax request settings
+        ajaxSettings = {
+          // TODO: we append a random number as server caches too
+          // aggressively otherwise
+          url: drupalSettings.wisskiApus.infobox.labelsCallbackURL + "/" + Math.floor(Math.random() * 10000000),
+          data: {
+            anno: {
+              target: {
+                // anno.target.ref is an array of all uris we want the titles of
+                ref: anno.target.ref
+              }
+            }
+          },
+          dataType: 'json', // we expect html from the server
+        }
+        // start the request
+        xhr = $.ajax(ajaxSettings)
+              .done(function (data, status, jqXHR) {
+                console.log(data);
+                console.log($($refs));
+                for (var uri in data) {
+                  console.log($($refs).find('h3[data-anno-target-uri="' + uri + '"]'));
+                  $($refs).find('h3[data-anno-target-uri="' + uri + '"] span.label').text(data[uri]);
+                }
+              })
+              .fail(function (jqxhr, status, error) {
+                if (window.console) {
+                  var errorMsg = "An error occurred while fetching titles: (" + status + ") " + error;
+                  console.log(errorMsg);
+                }
+              });
+
+
       } else {
         // there is no ref yet, so show an add button
         $('<div class="empty-target-list">')
@@ -511,22 +649,14 @@ console.log("curanno, dialog",dialog.annoDialog.currentAnno);
       }
       // make the refs section an accordion
       $refs.accordion({
-        active: false,
+        active: 0,
         collapsible: true,
         heightStyle: content
       });
       
-      // display certainty info for the annotation
-      if (!!anno.certainty) {
-        $('<p>')
-          .appendTo($main.children('.anno-certainty'))
-          .text(anno.certainty)
-          .before($('<label>').text(Drupal.t('Certainty:')));
-      }
       
-      $main.show();
-
-      
+      $dialog.show();
+      $dialog.accordion('refresh');
 
     };
     

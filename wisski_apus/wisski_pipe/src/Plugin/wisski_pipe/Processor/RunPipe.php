@@ -11,7 +11,6 @@ use Drupal\wisski_pipe\ProcessorInterface;
 use Drupal\wisski_pipe\ProcessorBase;
 use Drupal\wisski_pipe\Entity\Pipe;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * @Processor(
@@ -22,7 +21,6 @@ use Drupal\Core\StringTranslation\StringTranslationTrait;
  * )
  */
 class RunPipe extends ProcessorBase {
-  use StringTranslationTrait;
 
   protected $pipe_id;
 
@@ -34,7 +32,7 @@ class RunPipe extends ProcessorBase {
    */
   public function setConfiguration(array $configuration) {
     parent::setConfiguration($configuration);
-    $this->pipe_id = $configuration['pipe_id'];
+    $this->pipe_id = $this->configuration['pipe_id'];
   }
 
 
@@ -46,6 +44,16 @@ class RunPipe extends ProcessorBase {
       'pipe_id' => $this->pipe_id,
     ) + parent::getConfiguration();
     return $conf;
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public function defaultConfiguration() {
+    return array(
+      'pipe_id' => 0,
+    ) + parent::defaultConfiguration();
   }
 
 
@@ -65,11 +73,11 @@ class RunPipe extends ProcessorBase {
   public function doRun() {
     
     $pipe_id = $this->pipe_id;
-    if ($logger != NULL) $logger->info("Entering nested pipe {id}.", ["id" => $pipe_id]);
+    $this->logInfo("Entering nested pipe {id}.", ["id" => $pipe_id]);
 
     $this->data = \Drupal::service('wisski_pipe.pipe')->run($pipe_id, $this->data, $this->ticket, $this->logger);
 
-    if ($logger != NULL) $logger->info("Exiting nested pipe {id}.", ["id" => $pipe_id]);
+    $this->logInfo("Exiting nested pipe {id}.", ["id" => $pipe_id]);
 
   }
 

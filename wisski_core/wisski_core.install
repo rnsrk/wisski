@@ -31,7 +31,7 @@ function wisski_core_schema() {
       'ent_num' => array(
         'description' => 'Entity Serial Number from wisski_entity_map',
         'type' => 'int',
-        'size' => 'normal',
+        'size' => 'big',
         'not null' => TRUE,
       ),
       'bundle' => array(
@@ -44,13 +44,13 @@ function wisski_core_schema() {
       'ngram' => array(
         'description' => 'n-gram from the title',
         'type' => 'char',
-        'length' => 8,
+        'length' => 128,
         'not null' => TRUE,
       ),
       'n' => array(
         'description' => 'the length of the n-gram',
         'type' => 'int',
-        'size' => 'tiny',
+        'size' => 'normal',
         'not null' => TRUE,
       ),
     ),
@@ -58,13 +58,6 @@ function wisski_core_schema() {
     'indexes' => array(
       'ngrams' => array('ngram','n'),
       'entities' => array('ent_num','bundle'),
-    ),
-    'foreign keys' => array(
-      'ent_num' => array(
-        'wisski_entity_map' => array(
-          'ent_num' => 'num',
-        ),
-      ),
     ),
   );
   

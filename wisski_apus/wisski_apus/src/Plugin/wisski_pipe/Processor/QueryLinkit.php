@@ -9,6 +9,7 @@ namespace Drupal\wisski_apus\Plugin\wisski_pipe\Processor;
 
 use Drupal\wisski_pipe\ProcessorInterface;
 use Drupal\wisski_pipe\ProcessorBase;
+use Drupal\Core\Url;
 
 
 /**
@@ -50,7 +51,7 @@ class QueryLinkit extends ProcessorBase {
       global $base_root;
       foreach ($results as $r) {
         $annos[] = array(
-          'uri' => $base_root . $r['path'],
+          'uri' => strpos($r['path'], '://') ? $r['path'] : URL::fromURI('internal:' . $r['path'], array('absolute' => TRUE))->toString(),
         );
       }
     }

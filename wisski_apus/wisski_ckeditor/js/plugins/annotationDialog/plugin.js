@@ -137,7 +137,6 @@
           // either show an anno or clear dialog
           if (annos.length == 1) {
             // TODO: what if there are multiple selected annotations?
- console.log("ed", editor, editor.document);
             var anno = Drupal.wisskiApus.parseAnnotation(annos[0], editor.document.$);
             myself.dialog.showAnnotation(anno, editor.document.$);
           } else {

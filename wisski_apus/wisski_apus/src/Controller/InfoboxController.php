@@ -11,14 +11,38 @@ use Drupal\Core\Render\HtmlResponse;
 use Drupal\wisski_salz\AdapterHelper;
 use Drupal\wisski_core\WisskiStorage;
 use Drupal\wisski_core\WisskiCacheHelper;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
  
 class InfoboxController extends ControllerBase {
   
   
+  public function labels () {
+
+    $anno = $_GET['anno'];
+    $anno = \Drupal::request()->query->get('anno');
+    $titles = array();
+
+    if (isset($anno['target']['ref'])) {
+      $refs = (array) $anno['target']['ref'];
+      foreach ($refs as $uri) {
+        $entity_id = AdapterHelper::getDrupalIdForUri($uri, NULL, FALSE);
+        $titles[$entity_id] = $uri;
+        $label = WisskiCacheHelper::getEntityTitle($entity_id);
+        $titles[$uri] = $label;
+      }
+    }
+
+    $response = new JsonResponse($titles);
+    return $response;
+
+  }
+
+  
   public function content () {
       
     $anno = $_GET['anno'];
+    $anno = \Drupal::request()->query->get('anno');
     $content = NULL;
     
     if (isset($anno['target']['ref'])) {
@@ -48,8 +72,12 @@ class InfoboxController extends ControllerBase {
     $uri = $anno['target']['ref'];
     // TODO: we currently handle only one entity per annotation
     if (is_array($uri)) $uri = $uri[0];
-file_put_contents('/local/logs/dev8.log',"\n$uri\n", FILE_APPEND);      
     $id = AdapterHelper::getDrupalIdForUri($uri);
+
+    if (!$id) {
+      return $this->t('Unknown URI.');
+    }
+
     
 /*    $indiv = entity_load('wisski_individual', $id);
     $view = entity_view($indiv, 'wisski_individual.infobox');
@@ -58,14 +86,20 @@ file_put_contents('/local/logs/dev8.log',"\n$uri\n", FILE_APPEND);
     
     return $content;
 */    
-file_put_contents('/local/logs/dev8.log',"\n$id\n", FILE_APPEND);      
-    $image = WisskiCacheHelper::getPreviewImage($id);
-file_put_contents('/local/logs/dev8.log',"\n$id\n", FILE_APPEND);      
+    $image = WisskiCacheHelper::getPreviewImageUri($id);
     $label = WisskiCacheHelper::getEntityTitle($id);
-file_put_contents('/local/logs/dev8.log',"\n$id\n", FILE_APPEND);      
+    $uris = AdapterHelper::getUrisForDrupalId($id);
+    // if there is no label we crete a fallback
+    if (!$label) $label = "$id/" . $uris[0] ;
 
 
-    return '<h3>' . $label . '</h3><img src="' . $image . '" />';
+
+    $result =  '<h3>' . $label . '</h3><img src="' . $image . '" /><ul>';
+    foreach ($uris as $uri) {
+      $result .= "<li><a href=\"$uri\">$uri</a></li>";
+    }
+    $result .= "</ul>";
+    return $result;
     return array(
       'label' => array(
         '#value' => '<h3>' . $label . '</h3>',
@@ -85,10 +119,10 @@ file_put_contents('/local/logs/dev8.log',"\n$id\n", FILE_APPEND);
                 '',
       )
     );
+
   }
 
 
 }
 
 
-?>

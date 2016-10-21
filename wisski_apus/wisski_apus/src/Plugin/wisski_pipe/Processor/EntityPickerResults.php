@@ -9,6 +9,7 @@ namespace Drupal\wisski_apus\Plugin\wisski_pipe\Processor;
 
 use Drupal\wisski_pipe\ProcessorInterface;
 use Drupal\wisski_pipe\ProcessorBase;
+use Drupal\wisski_salz\AdapterHelper;
 
 
 /**
@@ -48,13 +49,14 @@ class EntityPickerResults extends ProcessorBase {
           if (preg_match('!node/(\d+)$!u', $anno['uri'], $m)) {
             $label = entity_load('node', $m[1])->label();
           } else {
-            $label ='The label for ' . $anno['uri'];
+            $entity_id = AdapterHelper::getDrupalIdForUri($anno['uri']);
+            $entity = entity_load('wisski_individual', $entity_id);
+            $label =$entity->label();
           }
 
           $entity = array(
             'uri' => $anno['uri'],
             'label' => $label,
-            'content' => 'The content for ' . $anno['uri']
           );
           $entities[] = $entity;
         }

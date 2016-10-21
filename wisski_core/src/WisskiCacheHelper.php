@@ -34,6 +34,16 @@ class WisskiCacheHelper {
       $cid = 'wisski_title.'.$entity_id.'.'.$bundle_id;
       self::putCacheData($cid,$entity_title,$tags);
     }
+
+    // store the title in n-grams table
+    db_delete('wisski_title_n_grams')->condition('ent_num', $entity_id)->condition('bundle', empty($bundle_id) ? "default" : $bundle_id)->execute();
+    db_insert('wisski_title_n_grams')->fields(array(
+        'ent_num' => $entity_id,
+        'bundle' => empty($bundle_id) ? "default" : $bundle_id,
+        'ngram' => $entity_title,
+        'n' => mb_strlen($entity_title),
+      ))->execute();
+
   }
   
   static function getEntityTitle($entity_id,$bundle_id=NULL) {
@@ -48,6 +58,9 @@ class WisskiCacheHelper {
     if (is_null($bundle_id)) $bundle_id = 'default';
     $cid = 'wisski_title.'.$entity_id.'.'.$bundle_id;
     self::flushCacheData($cid);
+
+    db_delete('wisski_title_n_grams')->condition('ent_num', $entity_id)->condition('bundle', empty($bundle_id) ? "default" : $bundle_id)->execute();
+  
   }
   
   static function flushAllEntityTitles($bundle_id=NULL) {
@@ -55,6 +68,9 @@ class WisskiCacheHelper {
     if (is_null($bundle_id)) $tags[] = 'wisski_bundled_titles.default';
     else $tags[] = 'wisski_bundled_titles.'.$bundle_id;
     Cache::invalidateTags($tags);
+
+    db_delete('wisski_title_n_grams')->condition('bundle', empty($bundle_id) ? "default" : $bundle_id)->execute();
+
   }
   
   static function putCallingBundle($entity_id,$bundle_id) {

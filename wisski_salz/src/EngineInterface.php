@@ -37,6 +37,31 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * @return TRUE if the storage handles this entity, FALSE otherwise
    */
   public function hasEntity($entity_id);
+
+  
+  /**
+   * Returns Uris under which the instance given by $uri is known within this
+   * adapter.
+   * @param uri the URI that equivalent URIs should be searched for
+   * @return an array of URIs
+   */
+#  public function getSameUris($uri);
+
+
+  /**
+   * Returns Uris under which the instance given by $uri is known within this
+   * adapter.
+   * @param uri the URI that equivalent URIs should be searched for
+   * @return an array of URIs
+   */
+#  public function getSameUri($uri, $adapter_id);
+
+
+  /**
+   * 
+   */
+#  public function setSameUris($entity_id, $uris);
+
   
   /**
    * Creates a new entity and adds the new id to the given entity object

@@ -48,14 +48,14 @@ class PipeManager {
    * @param pipe_id
    *  The ID of the pipe to be run. 
    * @param data
-   *  The data to be processed. Note that this object may be .
+   *  The data to be processed. Note that this parameter may be of any type.
    * @param logger
    *  Optionally provide a logger that the pipe/processors can log to.
    *
    * @return object
    *  The processed data object
    */
-  public function run($pipe_id, object $data, $ticket = '', LoggerInterface $logger = NULL) {
+  public function run($pipe_id, $data, $ticket = '', LoggerInterface $logger = NULL) {
     
     $pipe = $this->load($pipe_id);
     // if the pipe does not exist, $pipe is NULL, so we provoke

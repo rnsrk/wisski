@@ -275,4 +275,25 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   }
 
   
+  /**
+   * {@inheritdoc}
+   */
+  public function getSameUris($uri) {
+    ;
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getSameUri($uri, $adapter_id) {
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setSameUris($entity_id, $uris) {
+  }
+
 }

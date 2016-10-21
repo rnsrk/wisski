@@ -13,6 +13,8 @@ function wisski_apus_delete_references ($uri) {
 function wisski_apus_page_attachments(array &$page) {
   $content_callback_url = Url::fromRoute('wisski_apus.infobox_content');
   $page['#attached']['drupalSettings']['wisskiApus']['infobox']['contentCallbackURL'] = $content_callback_url->toString();
+  $labels_callback_url = Url::fromRoute('wisski_apus.infobox_labels');
+  $page['#attached']['drupalSettings']['wisskiApus']['infobox']['labelsCallbackURL'] = $labels_callback_url->toString();
   $page['#attached']['library'][] = 'wisski_apus/infobox';
 }
 
