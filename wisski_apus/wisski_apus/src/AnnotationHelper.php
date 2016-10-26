@@ -7,7 +7,6 @@
 namespace Drupal\wisski_apus;
 
 use DOMElement;
-use Drupal\Component\Utility\UrlHelper;
 use Drupal\wisski_salz\AdapterHelper;
 
 class AnnotationHelper {
@@ -42,48 +41,10 @@ class AnnotationHelper {
         return array($id, NULL, NULL);
       }
     }
-    
-    global $base_root, $base_path;
-    $br_len = strlen($base_root);
-    $bp_len = strlen($base_path);
 
-    // otherwise, we try to match the url against a route.
-    // note that it still can begin with a schema if the adapters
-    // didn't match
-
-    // strip off fragment and query parts
-    // keep parts to guess the bundle
-    $parts = UrlHelper::parse($url);
-    $url = $parts['path'];
-
-    // check if it has a schema and remove it if so
-    if (!$check || UrlHelper::isValid($url, TRUE)) {
-      if (substr($url, 0, $br_len) == $base_root) {
-        $url = substr($url, $br_len);
-      }
-    }
-    
-    // check if it has the site's prefix and remove it
-    if (UrlHelper::isValid($url, FALSE)) {
-    #} elseif (UrlHelper::isValid($url, FALSE)) {
-      if (substr($url, 0, $bp_len) == $base_path) {
-        // strip base_path
-        $url = substr($url, $bp_len);
-        // but let path begin with an '/' as the route matcher requires so.
-        if (substr($url, 0, 1) !== '/') $url = '/' . $url;
-
-        try {
-          $route = \Drupal::service('router')->match($url);
-          if ($route['_route'] == 'entity.wisski_individual.canonical') {
-            $bundle = isset($parts['query']['wisski_bundle']) ? $parts['query']['wisski_bundle'] : NULL;
-            return array($route['wisski_individual'], $bundle, $route['_route']);
-          }
-        } catch (\Exception $e) {}
-      }
-    }
-  
-    return array(NULL, NULL, NULL);
-
+    //extractEntityInfoFromRoute normally takes two parameters, but the second, $route_name, defaults to 
+    // 'entity.wisski_individual.canonical' which is exactly what we want here
+    return \Drupal\wisski_salz\AdapterHelper::extractEntityInfoFromRouteUrl($url);
   }
 
 

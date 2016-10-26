@@ -241,59 +241,46 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     return $pb_array;
   }
 
-  public function getDrupalId($uri) {
-    #dpm($uri, "uri");
-    
-    if(is_numeric($uri) !== TRUE) {
-      $id = AdapterHelper::getDrupalIdForUri($uri,$this->adapterId());
-    } else {
-      $id = $uri;
-    }
-    return $id;
-  }
+  public abstract function getDrupalIdForUri($uri,$adapter_id=NULL);
   
   public function setDrupalId($uri,$eid) {
     
-    AdapterHelper::setDrupalIdForUri($uri,$eid,$this->adapterId());
+    $thios->setSameUris(array($this->adapterId()=>$uri),$eid);
   }
-  
+      
   public function getUriForDrupalId($id) {
-    // danger zone: if id already is an uri e.g. due to entity reference
-    // we load that. @TODO: I don't like that.
-#    drupal_set_message("in: " . serialize($id));
-#    drupal_set_message("vgl: " . serialize(is_int($id)));
-    if(is_numeric($id) === TRUE) {
-      $uri = AdapterHelper::getUrisForDrupalId($id,$this->adapterId());
-      // just take the first one for now.
-      $uri = current($uri);
-    } else {
-      $uri = $id;
-    }
-    //dpm($uri,__FUNCTION__.' '.$id);
-#    drupal_set_message("out: " . serialize($uri));
-    return $uri;
+    
+    return \Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($id,$this->adapterId());
+  }
+  
+  /**
+   * here we have to avoid a name clash. getUriForDrupalId was already there and is heavily used.
+   * Thus the somewhat strange name for this function here
+   * essentailly does the same like getUriForDrupalId but initiates an internal query in the preferred local store
+   */
+  public function findUriForDrupalId($id,$adapter_id=NULL) {
+    
+    if (!isset($adapter_id)) $adapter_id = $this->adapterId();
+    $uris = $this->getUrisForDrupalId($id);
+    if (empty($uris) || !isset($uris[$adapter_id])) return NULL;
+    return $uris[$adapter_id];
   }
 
+  public abstract function getUrisForDrupalId($id);
   
   /**
    * {@inheritdoc}
    */
-  public function getSameUris($uri) {
-    ;
-  }
-
+  public abstract function getSameUris($uri);
 
   /**
    * {@inheritdoc}
    */
-  public function getSameUri($uri, $adapter_id) {
-  }
-
+  public abstract function getSameUri($uri, $adapter_id);
 
   /**
    * {@inheritdoc}
    */
-  public function setSameUris($entity_id, $uris) {
-  }
-
+  public abstract function setSameUris($uris, $entity_id);
+  
 }

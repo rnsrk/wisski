@@ -8,8 +8,11 @@
 namespace Drupal\wisski_salz\Plugin\wisski_salz\Engine;
 
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\wisski_salz\EngineBase;
 use Drupal\Core\Language\LanguageInterface;
+
+use Drupal\wisski_salz\EngineBase;
+use Drupal\wisski_salz\AdapterHelper;
+
 
 /**
  * Wiki implementation of an external entity storage client.
@@ -310,15 +313,109 @@ abstract class Sparql11Engine extends EngineBase {
 		return $this->getEndpoint()->update($query);
 	}
 
+	/**
+	 * this is not a true alias for {@see self::getDrupalIdForUri}
+	 * since it is the internal function that needs EXTERNAL information, i.e. from the AdapterHelper
+	 * while getDrupalIdForUri works fully internally but is only working correctly for the preferred Local Store
+	 * Additionally, this function here does a format check, too, finding out whether we already have an EID
+	 * in this case it just returns the input
+	 */
+	public function getDrupalId($uri) {
+	  
+	  if (is_numeric($uri)) {
+	    //danger zone, we assume a numeric $uri to be an entity ID itself
+	    return $uri;
+	  }
+	  return AdapterHelper::getDrupalIdForUri($uri);
+	}
 
+  public function getDrupalIdForUri($uri,$adapter_id=NULL) {
+    
+    $entity_uri = $this->getSameUri($uri,AdapterHelper::getDrupalAdapterNameAlias());
+    if (empty($entity_uri)) return NULL;
+    return AdapterHelper::extractIdFromWisskiUri($entity_uri);
+  }
+  
+  public function getUrisForDrupalId($id) {
+    
+    $entity_uri = AdapterHelper::generateWisskiuriFromId($id);
+    return $this->getSameUris($entity_uri);
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function getSameUris($uri) {
+    
+    $prop = $this->getOriginatesProperty();
+    $query = "SELECT DISTINCT ?uri ?adapter WHERE {<$uri> owl:sameAs ?uri. ?uri <$prop> ?adapter. }";
+    $results = $this->directQuery($query);
+    
+    $out = array();
+    if (empty($results)) return array();
+    foreach ($results as $obj) {
+       $out[$obj->adapter->dunpValue('text')] = $obj->uri->getUri();
+    }
+    return $out;
+  }
 
-	public function getPathArray($path) {
-		
-		
+  /**
+   * {@inheritdoc}
+   */
+  public function getSameUri($uri, $adapter_id) {
+  
+    $prop = $this->getOriginatesProperty();
+    $query = "SELECT DISTINCT ?uri WHERE {<$uri> owl:sameAs ?uri. ?uri <$prop> '".$this->escapeSparqlLiteral($adapter_id)."'. }";
+    $results = $this->directQuery($query);
+    if (empty($results)) return NULL;
+    foreach ($results as $obj) {
+      return $obj->uri->getUri();
+    }
+    return NULL;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setSameUris($uris, $entity_id) {
+    
+    $uris[AdapterHelper::getDrupalAdapterNameAlias()] = AdapterHelper::generateWisskiUriFromId($entity_id);
+    $graph = $this->getDefaultDataGraphUri();
+    $orig_prop = $this->getOriginatesProperty();
+    $origin = "<$orig_prop> a owl:AnnotationProperty. ";
+    $same = '';
+    foreach ($uris as $adapter_id => $first) {
+      $origin .= "<$first> <$orig_prop> '".$this->escapeSparqlLiteral($adapter_id)."'. ";
+      foreach ($uris as $second) {
+        if ($first !== $second) {
+          $same .= "<$first> owl:sameAs <$second>. ";
+        }
+      }
+    }
+    if (!empty($same)) {  
+      try {
+        $this->directUpdate("INSERT DATA { GRAPH <$graph> { $origin $same }}");
+        return TRUE;
+      } catch (\Exception $e) {
+        \Drupal::logger(__METHOD__)->error($e->getMessage());
+      }
+    }
+    return FALSE;
+  }
+  
+  public function getOriginatesProperty() {
+    
+    return $this->getDefaultDataGraphUri()."originatesFrom";
+  }
+
+  public function getDefaultDataGraphUri() {
+    // here we should return a default graph for this store.
+    return "graf://dr.acula/";
+  }
+  
+	public function getPathArray($path) {		
 		
 	}
-	
-
 	
   /** Builds a sparql query from a given path and execute it.
 	*

@@ -1664,12 +1664,6 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     return uniqid($prefix);
   }
   
-  public function getDefaultDataGraphUri() {
-    // here we should return a default graph for this store.
-    return "graf://dr.acula/";
-  }
-  
-  
   /**
    * Generate the triple part for the statements (excluding any Select/Insert or
    * whatever). This should be used for any pattern generation. Everything else

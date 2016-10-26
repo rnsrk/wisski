@@ -45,7 +45,7 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * @param uri the URI that equivalent URIs should be searched for
    * @return an array of URIs
    */
-#  public function getSameUris($uri);
+  public function getSameUris($uri);
 
 
   /**
@@ -54,13 +54,15 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * @param uri the URI that equivalent URIs should be searched for
    * @return an array of URIs
    */
-#  public function getSameUri($uri, $adapter_id);
-
+  public function getSameUri($uri, $adapter_id);
 
   /**
-   * 
+   * saves a set of URI mappings with an optional drupal entity id.
+   * @param $uris an associative array where the keys are adapter_ids and the values are uris which all mean the same individuum
+   * the mapping denotes that the very adapter is holding information about that very URI
+   * @param $entity_id the drupal ID for the entity that all the uris from $uris identify. If NULL we just save the uri identification without drupal ID matching
    */
-#  public function setSameUris($entity_id, $uris);
+  public function setSameUris($uris, $entity_id);
 
   
   /**
