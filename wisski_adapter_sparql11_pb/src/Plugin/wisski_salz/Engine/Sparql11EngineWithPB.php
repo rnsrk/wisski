@@ -532,8 +532,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     if(!empty($url["scheme"]))
       $query = "SELECT ?class WHERE { <" . $uri . "> a ?class }";
-    else
+    else {
+      //it is possible, that we got an entity URI instead of an entity ID here, so try that one first
+      $url = parse_url($entityid);
+      if (!empty($url['scheme'])) $entityid = '<'.$entityid.'>';
       $query = "SELECT ?class WHERE { " . $entityid . " a ?class }";
+    }
     
     $result = $this->directQuery($query);
     
