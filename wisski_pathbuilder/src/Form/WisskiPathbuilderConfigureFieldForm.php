@@ -84,7 +84,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         '#default_value' => empty($pbpath['bundle']) ? '' : $pbpath['bundle'],
 #      '#disabled' => true,
         '#description' => $this->t("Name of the bundle."),
-        '#required' => true,
+#        '#required' => true,
       );
     }
     
@@ -96,7 +96,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         '#default_value' => empty($pbpath['field']) ? '' : $pbpath['field'],
 #      '#disabled' => true,
         '#description' => $this->t("ID of the mapped Field."),
-        '#required' => true,
+#        '#required' => true,
       );
       
       $formatter_types = \Drupal::service('plugin.manager.field.formatter')->getDefinitions();
