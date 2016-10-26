@@ -1076,7 +1076,8 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 #    drupal_set_message(serialize($this));
     
     $result = $this->directQuery($sparql);
-    
+if ($path->getID() == 31) dpm(array(serialize($result), $sparql, $path));
+
     $out = array();
     foreach($result as $thing) {
 #      drupal_set_message("thing is: " . serialize($thing));
@@ -1695,9 +1696,11 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
    * @param $mode defaults to 'field' - but may be 'group' or 'entity_reference' in special cases
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field') {
-//dpm(func_get_args(), __METHOD__);
     // the query construction parameter
     $query = "";
+
+\Drupal::logger('testung')->debug($path->getID() . ":".serialize(array($primitiveValue, $subject_in, $object_in,$disambposition,$startingposition, $write,$op,$mode)));
+
 
     // if we disamb on ourself, return.
     if($disambposition == 0 && !empty($object_in)) return "";
@@ -1764,12 +1767,15 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
           // if it is a path of length 1
           // (this means usually a group)
           // then generate something.
-          if(count($clearPathArray) == 1) {
-            if($write)
+          //if(count($clearPathArray) == 1) {
+          //  if($write)
               $query .= "<$olduri> a <$value> . ";
-            else
-              $query .= "?x$localkey a <$value> . ";
-          }
+          //  else
+          //    $query .= "?x$localkey a <$value> . ";
+          //}
+          // FIX for the if clauses above: we must not generate a variable even
+          // in ask mode, otherwise we may generate bogus distinct triples for
+          // every instance of class $value.
           
           continue;
         }
@@ -1852,6 +1858,8 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
       }
     }
 
+
+\Drupal::logger('testung')->debug($path->getID() . ":".htmlentities($query));
     // get the primitive for this path if any    
     $primitive = $path->getDatatypeProperty();
     
@@ -1901,7 +1909,8 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         $query .= " ?out . ";
     }
 
-#    dpm($query);
+    dpm($query);
+\Drupal::logger('testung')->debug($path->getID() . ":".htmlentities($query));
 
     return $query;
   }
