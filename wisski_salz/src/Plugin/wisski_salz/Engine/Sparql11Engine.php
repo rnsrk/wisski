@@ -317,7 +317,7 @@ abstract class Sparql11Engine extends EngineBase {
 	    //danger zone, we assume a numeric $uri to be an entity ID itself
 	    return $uri;
 	  }
-	  return AdapterHelper::getDrupalIdForUri($uri);
+	  return AdapterHelper::getDrupalIdForUri($uri,TRUE,$this->adapterId());
 	}
 
   public function getDrupalIdForUri($uri,$adapter_id=NULL) {
@@ -339,7 +339,7 @@ abstract class Sparql11Engine extends EngineBase {
   public function getSameUris($uri) {
     
     $prop = $this->getOriginatesProperty();
-    $query = "SELECT DISTINCT ?uri ?adapter WHERE {<$uri> owl:sameAs ?uri. ?uri <$prop> ?adapter. }";
+    $query = "SELECT DISTINCT ?uri ?adapter WHERE {VALUES ?same_as {".implode(' ',$this->getSameAsProperties())."}GRAPH <$prop> {<$uri> ?same_as ?uri. ?uri <$prop> ?adapter. }}";
     $results = $this->directQuery($query);
     
     $out = array();
@@ -356,7 +356,7 @@ abstract class Sparql11Engine extends EngineBase {
   public function getSameUri($uri, $adapter_id) {
   
     $prop = $this->getOriginatesProperty();
-    $query = "SELECT DISTINCT ?uri WHERE {<$uri> owl:sameAs ?uri. ?uri <$prop> '".$this->escapeSparqlLiteral($adapter_id)."'. }";
+    $query = "SELECT DISTINCT ?uri WHERE {VALUES ?same_as {".implode(' ',$this->getSameAsProperties())."} GRAPH <$prop> {<$uri> ?same_as ?uri. ?uri <$prop> '".$this->escapeSparqlLiteral($adapter_id)."'.}}";
     $results = $this->directQuery($query);
     if (empty($results)) return NULL;
     foreach ($results as $obj) {
@@ -371,7 +371,7 @@ abstract class Sparql11Engine extends EngineBase {
   public function setSameUris($uris, $entity_id) {
     
     $uris[AdapterHelper::getDrupalAdapterNameAlias()] = AdapterHelper::generateWisskiUriFromId($entity_id);
-    $graph = $this->getDefaultDataGraphUri();
+    //we use the originates property as name fot the graph for sameAs info
     $orig_prop = $this->getOriginatesProperty();
     $origin = "<$orig_prop> a owl:AnnotationProperty. ";
     $same = '';
@@ -379,13 +379,15 @@ abstract class Sparql11Engine extends EngineBase {
       $origin .= "<$first> <$orig_prop> '".$this->escapeSparqlLiteral($adapter_id)."'. ";
       foreach ($uris as $second) {
         if ($first !== $second) {
-          $same .= "<$first> owl:sameAs <$second>. ";
+          foreach ($this->getSameAsProperties() as $prop) {
+            $same .= "<$first> $prop <$second>. ";
+          }
         }
       }
     }
     if (!empty($same)) {  
       try {
-        $this->directUpdate("INSERT DATA { GRAPH <$graph> { $origin $same }}");
+        $this->directUpdate("INSERT DATA { GRAPH <$orig_prop> { $origin $same }}");
         return TRUE;
       } catch (\Exception $e) {
         \Drupal::logger(__METHOD__)->error($e->getMessage());
