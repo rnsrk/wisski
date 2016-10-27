@@ -33,7 +33,7 @@ class AdapterHelper {
   public static function setSameUris($uris,$entity_id=NULL) {
     
     $drupal_aid = self::getDrupalAdapterNameAlias();
-    if (array_key_exists($uris,$drupal_aid)) {
+    if (array_key_exists($drupal_aid, $uris)) {
       //if we know the eid from the array, set it here
       if (empty($entity_id)) $entity_id = $uris[$drupal_aid];
       //do not save the URI-ified EID to the database

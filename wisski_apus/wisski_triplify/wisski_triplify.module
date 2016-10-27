@@ -7,7 +7,7 @@ function wisski_triplify_wisski_individual_view(array &$build, EntityInterface $
 #dpm("begin triplify", "aa");
 #  $success = (new TriplifyManager())->triplify($entity);
 #dpm($success);
-  $success = (new TriplifyManager())->triplify($entity);
+#  $success = (new TriplifyManager())->triplify($entity);
   
 }
 

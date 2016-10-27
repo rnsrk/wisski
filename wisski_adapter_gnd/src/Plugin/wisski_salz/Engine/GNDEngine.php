@@ -265,6 +265,7 @@ class GndEngine extends EngineBase implements PathbuilderEngineInterface {
     if(!empty($main_property)) {
       $main_property = $main_property->getMainPropertyName();
     }
+dpm($main_property, 'löä');    
     
 #     drupal_set_message("mp: " . serialize($main_property) . "for field " . serialize($field_id));
 #    if (in_array($main_property,$property_ids)) {
@@ -274,6 +275,7 @@ class GndEngine extends EngineBase implements PathbuilderEngineInterface {
 
     if(!empty($field_id) && empty($bundleid_in)) {
       drupal_set_message("Es wurde $field_id angefragt und bundle ist aber leer.", "error");
+      dpm(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
       return;
     }
     
@@ -323,27 +325,19 @@ class GndEngine extends EngineBase implements PathbuilderEngineInterface {
         }
       } else {
         
-        $uri = AdapterHelper::getUrisForDrupalId($eid)[0];
-        $data = $this->fetchData($uri);
-
-        foreach ($paths as $path) {
-          $pa = $path->getPathArray();
-          $pa[] = $path->getDatatypeProperty();
-          $data_walk = $data;
-          do {
-            $step = array_shift($pa);
-            if (isset($data_walk[$step])) {
-              $data_walk = $data_walk[$step];
-            } else {
-              continue 2; // go to the next path
+        if (empty($paths)) {
+          $out[$eid][$field_id] = NULL;              
+        } else {
+          
+          foreach ($paths as $key => $path) {
+            $values = $this->pathToReturnValue($path, $pbs[$key], $eid, 0, $main_property);
+            if (!empty($values)) {
+              foreach ($values as $v) {
+                $out[$eid][$field_id][] = $v;
+              }
             }
-          } while (!empty($pa));
-          // now data_walk contains only the values
-          foreach ($data_walk as $value) {
-            $out[$eid][$field_id][] = array($main_property => $value);
           }
         }
-
       }
     }
     
@@ -354,12 +348,35 @@ class GndEngine extends EngineBase implements PathbuilderEngineInterface {
 
   public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL) {
     $field_id = $pb->getPbPath($path->getID())["field"];
-    $values = $this->loadPropertyValuesForField($field_id, (array) $main_property, (array) $eid);
-    if (empty($values) || !isset($values[$eid]) || !isset($values[$eid][$field_id])) {
-      return array();
-    } else {
-      return $values[$eid][$field_id];
+dpm($main_property, 'mp');
+
+    $uri = AdapterHelper::getUrisForDrupalId($eid)[0];
+    $data = $this->fetchData($uri);
+
+    $pa = $path->getPathArray();
+    $pa[] = $path->getDatatypeProperty();
+    $data_walk = $data;
+    do {
+#dpm($data_walk, 'walk');
+      $step = array_shift($pa);
+      if (isset($data_walk[$step])) {
+        $data_walk = $data_walk[$step];
+      } else {
+        continue 2; // go to the next path
+      }
+    } while (!empty($pa));
+#dpm($data_walk, 'wale');
+    // now data_walk contains only the values
+    $out = array();
+    foreach ($data_walk as $value) {
+      if (empty($main_property)) {
+        $out[] = $value;
+      } else {
+        $out[] = array($main_property => $value);
+      }
     }
+    
+    return $out;
 
   }
 
@@ -411,5 +428,49 @@ class GndEngine extends EngineBase implements PathbuilderEngineInterface {
     return new Query($entity_type,$condition,$namespaces);
   }
 
+	/**
+	 * this is not a true alias for {@see self::getDrupalIdForUri}
+	 * since it is the internal function that needs EXTERNAL information, i.e. from the AdapterHelper
+	 * while getDrupalIdForUri works fully internally but is only working correctly for the preferred Local Store
+	 * Additionally, this function here does a format check, too, finding out whether we already have an EID
+	 * in this case it just returns the input
+	 */
+	public function getDrupalId($uri) {
+	  if (is_numeric($uri)) {
+	    //danger zone, we assume a numeric $uri to be an entity ID itself
+	    return $uri;
+	  }
+    return NULL;
+	}
+
+  public function getDrupalIdForUri($uri,$adapter_id=NULL) {
+    return NULL;
+  }
+  
+  public function getUrisForDrupalId($id) {
+    return array();
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function getSameUris($uri) {
+    return array();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getSameUri($uri, $adapter_id) {
+    return NULL;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setSameUris($uris, $entity_id) {
+    return FALSE;
+  }
+  
 
 } 
