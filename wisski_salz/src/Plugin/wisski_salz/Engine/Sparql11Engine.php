@@ -14,15 +14,6 @@ use Drupal\wisski_salz\EngineBase;
 use Drupal\wisski_salz\AdapterHelper;
 
 
-/**
- * Wiki implementation of an external entity storage client.
- *
- * @Engine(
- *   id = "sparql11",
- *   name = @Translation("Sparql 1.1"),
- *   description = @Translation("Provides access to a SPARQL endpoint that supports SPARQL 1.1")
- * )
- */
 abstract class Sparql11Engine extends EngineBase {
 
   protected $read_url;
