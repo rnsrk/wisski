@@ -184,6 +184,8 @@ entity.wisski_bundle.delete_title_form:
 
 wisski.menu:
   path: '/admin/config/wisski'
+  defaults:
+    _title: 'WissKI'
   requirements:
     _permission: 'administer wisski'
 
