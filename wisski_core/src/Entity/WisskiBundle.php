@@ -223,8 +223,16 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       );
       //find all paths from all active pathbuilders
       $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
-      $paths = array();
+#      $paths = array();
       foreach ($pbs as $pb_id => $pb) {
+        $paths = $pb->getAllPathsForBundleId($this->id(), TRUE);
+        
+#        dpm($bundleid);
+        
+        foreach($paths as $path) {
+          $options[$pb_id][$pb_id.'.'.$path->id()] = $path->getName();
+        }
+/*
         $pb_paths = $pb->getAllPaths();
         foreach ($pb_paths as $path) {
           $path_id = $path->getID();
@@ -232,6 +240,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             $options[$pb_id][$pb_id.'.'.$path_id] = $path->getName();
           }
         }
+*/
       }
     }
     return $options;

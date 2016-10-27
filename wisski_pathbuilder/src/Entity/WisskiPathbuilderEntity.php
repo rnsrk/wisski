@@ -692,6 +692,52 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       
       return $paths; 
     }
+
+    public function getAllPathsForBundleId($bundleid, $recursive) {
+      $groups = $this->getGroupsForBundle($bundleid);
+      
+      $paths = array();
+      
+      foreach($groups as $group) {
+        $paths = array_merge($paths, $this->getAllPathsForGroupId($group->id(), $recursive));
+      }
+      
+      return $paths;
+    }
+
+    public function getAllPathsForGroupId($groupid, $recursive) {
+      $paths = array();
+            
+      $subgps = $this->getPathsAndGroupsForGroupId($groupid);
+        
+      foreach($subgps as $subgp) {
+    
+        if($subgp->getType() == "Path")
+          $paths[] = $subgp;
+        else { // it is a group        
+          if($recursive) {
+            $paths = array_merge($paths, $this->getAllPathsForGroupId($subgp->id(), $recursive));
+          }
+        }
+      }
+      
+      return $paths;
+      
+    }
+    
+    public function getPathsAndGroupsForGroupId($groupid) {
+      $allpaths = $this->getPbPaths();
+      
+      $paths = array();
+      
+      foreach($allpaths as $path) {
+        if($path['parent'] == $groupid) 
+          $paths[] = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
+      }
+      
+      return $paths;
+      
+    }
     
     /**
      *
