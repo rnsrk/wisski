@@ -5,3 +5,5 @@ package: WissKI
 version: 0.1-dev
 type: module
 configure: wisski_core.wisski_core
+dependencies:
+  - inline_entity_form
