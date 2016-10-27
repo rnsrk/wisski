@@ -493,7 +493,7 @@ if (empty($new_field_values)) continue;
    * @TODO must be implemented
    */
   protected function doSaveFieldItems(ContentEntityInterface $entity, array $names = []) {
-    dpm(func_get_args(),__METHOD__);
+    //dpm(func_get_args(),__METHOD__);
     
     list($values,$original_values) = $entity->getValues($this);
     $bundle_id = $values['bundle'][0]['target_id'];
@@ -563,7 +563,7 @@ if (empty($new_field_values)) continue;
 #    drupal_set_message("lwa: " . serialize($local_writeable_adapters));
 #    drupal_set_message("wa: " . serialize($writeable_adapters));
 
-    dpm(count($local_adapters),'how many');
+//    dpm(count($local_adapters),'how many');
     foreach($pathbuilders as $pb_id => $pb) {
       
       //get the adapter
@@ -582,12 +582,12 @@ if (empty($new_field_values)) continue;
         // perhaps we have to check for the field definitions - we ignore this for now.
         //   $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundle_idid);
         try {
-          dpm('Try writing to '.$aid);
+          //dpm('Try writing to '.$aid);
           //drupal_set_message(" I ask adapter: " . serialize($adapter));
           //we force the writable adapter to write values for newly created entities even if unknown to the adapter by now
           //@TODO return correct success code
           $adapter_info = $adapter->writeFieldValues($entity_id, $values, $pb, $bundle_id, $original_values,$create_new);
-          dpm($aid,'Success');
+          //dpm($aid,'Success');
           $success = TRUE;
         } catch (\Exception $e) {
           drupal_set_message('Could not write entity into adapter '.$adapter->id() . ' because ' . serialize($e->getMessage()));
