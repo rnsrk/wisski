@@ -135,7 +135,7 @@ class AdapterHelper {
     $query = db_select('wisski_salz_id2uri','m')
       ->fields('m')
       ->condition('uri',$uri);
-    if (isset($input_adapter_id)) $query->condition('input_adapter_id',$input_adapter_id);
+    if (isset($input_adapter_id)) $query->condition('adapter_id',$input_adapter_id);
     $ids = $query->execute()->fetchAllAssoc('eid');
     
     //if we have exactly one result for the eid return it

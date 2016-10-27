@@ -213,7 +213,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   public function getPathOptions() {
     
-    $options = $this->path_options;
+    $options = &$this->path_options;
     //if we already gathered the data, we can stop here
     if (empty($options)) {
       $options = array(
@@ -238,7 +238,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           $path_id = $path->getID();
           if ($this->id() === $pb->getBundle($path_id)) {
             $options[$pb_id][$pb_id.'.'.$path_id] = $path->getName();
-          }
+          } 
         }
 */
       }
