@@ -297,9 +297,15 @@ class TriplifyStandard extends ProcessorBase {
     if ($this->write_adapter !== NULL) {
       $adapter = entity_load('wisski_salz_adapter', $this->write_adapter);
       if ($graph_uri && $adapter) {
+        $this->logInfo("Dropping text graph <{g}>", array('g' => $graph_uri));
+        $delete_query = "DROP GRAPH <$graph_uri>";
+dpm($delete_query);
+#        $adapter->getEngine()->directUpdate($delete_query);
         $triple_str = join("\n  ", $triples);
-        $query = "INSERT DATA { GRAPH <$graph_uri> {\n  $triple_str\n} }";
-        $adapter->getEngine()->directUpdate($query);
+        $this->logInfo("Inserting {c} triples into text graph <{g}>: {t}", array('g' => $graph_uri, 'c' => count($triples), 't' => $triple_str));
+        $insert_query = "INSERT DATA { GRAPH <$graph_uri> {\n  $triple_str\n} }";
+dpm($insert_query);        
+#        $adapter->getEngine()->directUpdate($insert_query);
       }
     }
 
@@ -328,10 +334,11 @@ class TriplifyStandard extends ProcessorBase {
 
       foreach ((array) $anno->target->ref as $ref_uri) {
         
-dpm($entity_infos, $ref_uri);        
+#dpm($entity_infos, $ref_uri);
         if (isset($entity_infos[$ref_uri])) {
           $entity_id = $entity_infos[$ref_uri][0];
           $ref_uri = AdapterHelper::getUrisForDrupalId($entity_id, $this->write_adapter)[0];
+if (!$ref_uri) dpm(array($entity_id, AdapterHelper::getUrisForDrupalId($entity_id, $this->write_adapter), AdapterHelper::getUrisForDrupalId($entity_id)),'lölö');
           // TODO: we could also get the bundle/class from [1] and use it as $clazz
         }
 
@@ -340,7 +347,7 @@ dpm($entity_infos, $ref_uri);
         if (!empty($clazz)) {
           $triples = "<$ref_uri> a <$clazz> .\n";
         }
-          
+ 
         // generate triples for the reference statement
         // init the reference property to the default
         if (!empty($doc_inst)) {
@@ -349,9 +356,9 @@ dpm($entity_infos, $ref_uri);
             $ref_prop = $ref_props[$clazz];
           }
           if ($ref_prop['inverse']) {
-            $triples[] = "<$ref_uri> " . $ref_prop['property'] . " <$doc_inst> .\n";
+            $triples[] = "<$ref_uri> " . $ref_prop['property'] . " <$doc_inst> .";
           } else {
-            $triples[] = "<$doc_inst> " . $ref_prop['property'] . " <$ref_uri> .\n";
+            $triples[] = "<$doc_inst> " . $ref_prop['property'] . " <$ref_uri> .";
           }
         }
 

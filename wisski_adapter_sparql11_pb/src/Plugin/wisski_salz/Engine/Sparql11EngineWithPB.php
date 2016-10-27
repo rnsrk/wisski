@@ -1080,7 +1080,6 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 #    drupal_set_message(serialize($this));
     
     $result = $this->directQuery($sparql);
-//if ($path->getID() == 31) dpm(array(serialize($result), $sparql, $path));
 
     $out = array();
     foreach($result as $thing) {
@@ -1697,9 +1696,6 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     // the query construction parameter
     $query = "";
 
-\Drupal::logger('testung')->debug($path->getID() . ":".serialize(array($primitiveValue, $subject_in, $object_in,$disambposition,$startingposition, $write,$op,$mode)));
-
-
     // if we disamb on ourself, return.
     if($disambposition == 0 && !empty($object_in)) return "";
 
@@ -1907,9 +1903,6 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         $query .= " ?out . ";
     }
 
-    //dpm($query);
-//\Drupal::logger('testung')->debug($path->getID() . ":".htmlentities($query));
-
     return $query;
   }
   
@@ -2048,8 +2041,6 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     // here we should check if we really know the entity by asking the TS for it.
     // this would speed everything up largely, I think.
     $entity = $this->loadEntity($entity_id);
-
-    dpm($entity, $this->adapterId());
     
     // if there is nothing, continue.
     if (empty($entity)) {
@@ -2058,7 +2049,6 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         $this->createEntity($entity,$entity_id);
       } else return;
     }
-    dpm($entity, $this->adapterId().' not empty');
     if (!isset($old_values)) {
       // it would be better to gather this information from the form and not from the ts
       // there might have been somebody saving in between...
