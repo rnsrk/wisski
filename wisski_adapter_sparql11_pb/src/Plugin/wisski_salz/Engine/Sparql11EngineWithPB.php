@@ -1080,7 +1080,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 #    drupal_set_message(serialize($this));
     
     $result = $this->directQuery($sparql);
-if ($path->getID() == 31) dpm(array(serialize($result), $sparql, $path));
+//if ($path->getID() == 31) dpm(array(serialize($result), $sparql, $path));
 
     $out = array();
     foreach($result as $thing) {
@@ -1907,8 +1907,8 @@ if ($path->getID() == 31) dpm(array(serialize($result), $sparql, $path));
         $query .= " ?out . ";
     }
 
-    dpm($query);
-\Drupal::logger('testung')->debug($path->getID() . ":".htmlentities($query));
+    //dpm($query);
+//\Drupal::logger('testung')->debug($path->getID() . ":".htmlentities($query));
 
     return $query;
   }
