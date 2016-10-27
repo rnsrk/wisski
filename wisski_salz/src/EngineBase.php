@@ -119,6 +119,13 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
       '#default_value' => $this->isPreferredLocalStore(),
       '#description' => $this->t('Is this Adapter the preferred local store?'),
     ];
+    
+    $form['sameAsFunctions'] = array(
+      '#type'=> 'textarea',
+      '#title'=> $this->t('"Same As" property'),
+      '#description' => $this->t('The property this store uses to mark two URIs as meaning the same (Drupal) entity'),
+      '#default_value' => implode("\n",$this->getSameAsProperties()),
+    );
 
     return $form;
   }

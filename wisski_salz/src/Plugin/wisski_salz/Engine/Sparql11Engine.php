@@ -393,6 +393,11 @@ abstract class Sparql11Engine extends EngineBase {
     }
     return FALSE;
   }
+
+  public function getSameAsProperties() {
+    
+    return array('owl:sameAs');
+  }
   
   public function getOriginatesProperty() {
     

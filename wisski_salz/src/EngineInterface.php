@@ -63,6 +63,8 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * @param $entity_id the drupal ID for the entity that all the uris from $uris identify. If NULL we just save the uri identification without drupal ID matching
    */
   public function setSameUris($uris, $entity_id);
+  
+  public function getSameAsProperties();
 
   
   /**
