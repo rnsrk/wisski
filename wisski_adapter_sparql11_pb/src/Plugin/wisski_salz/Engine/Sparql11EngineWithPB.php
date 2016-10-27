@@ -1595,6 +1595,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
    */
   public function createEntity($entity,$entity_id=NULL) {
     #$uri = $this->getUri($this->getDefaultDataGraphUri());
+    //dpm(func_get_args(),__FUNCTION__);
     
     $bundleid = $entity->bundle();
 
@@ -1603,7 +1604,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     $out = array();
     
     //might be empty, but we can use it later
-    $eid = $entity->get('eid')->first() ? : $entity_id;
+    $eid = $entity->get('eid')->first()->value ? : $entity_id;
     $uri = NULL;
     //dpm($eid,$entity_id);
     //if there is an eid we try to get the entity URI form cache
@@ -1615,7 +1616,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     //$adapterid = $this->getConfiguration()['id'];
         
     foreach($pbs as $pb) {
-#      drupal_set_message("a2: " . microtime());
+      //drupal_set_message("a2: " . microtime());
       // if we have no adapter for this pb it may go home.
       if(empty($pb->getAdapterId()))
         continue;
@@ -1629,7 +1630,8 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
       // if he didn't ask for us...    
       if($this->adapterId() !== $adapter->id())
         continue;
-     
+      
+      //dpm('I can create',$adapter->id());
       $groups = $pb->getGroupsForBundle($bundleid);
 
       // for now simply take the first one.    
@@ -1647,18 +1649,18 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
           // first adapter to write will create a uri for an unknown entity
           $uri = explode(" ", $triples, 2);
       
-          $uri = substr($uri[0], 1, -1);
-      
-          if (empty($eid)) {
-            $eid = $this->getDrupalId($uri);        
-          }
+          $uri = substr($uri[0], 1, -1);  
         }
-      }
-      
+      }     
     }
 #    dpm($groups, "bundle");
         
 #    $entity->set('id',$uri);
+
+    if (empty($eid)) {
+      $eid = $this->getDrupalId($uri);
+    }
+    //dpm($eid,$adapter->id().' made ID');
     $entity->set('eid',$eid);
 #    "INSERT INTO { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " 
     return $eid;

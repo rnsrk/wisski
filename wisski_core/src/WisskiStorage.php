@@ -525,23 +525,27 @@ if (empty($new_field_values)) continue;
       return;
     }
     
+    //we load all pathbuilders, check if they know the fields and have writeable adapters
+    $pathbuilders = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    
     $entity_id = $entity->id();
     // we track if this is a newly created entity, if yes, we want to write it to ALL writeable adapters
     $create_new = $entity->isNew() && empty($entity_id);
     
     if (empty($entity_id)) {    
+      //dpm(array($writeable_adapters,$pathbuilders),'Empty ID');
       foreach($pathbuilders as $pb_id => $pb) {
       
         //get the adapter
         $aid = $pb->getAdapterId();
 
         //check, if it's writeable, if not we can stop here
-        if (isset($local_adapters[$aid])) $adapter = $local_adapters[$aid];
+        if (isset($writeable_adapters[$aid])) $adapter = $writeable_adapters[$aid];
         else continue;
 
         $entity_id = $adapter->createEntity($entity);
       }
-      dpm($entity_id,$aid);
+      //dpm($entity_id,$aid);
     }
   
     if (empty($entity_id)) {
@@ -559,8 +563,6 @@ if (empty($new_field_values)) continue;
 #    drupal_set_message("lwa: " . serialize($local_writeable_adapters));
 #    drupal_set_message("wa: " . serialize($writeable_adapters));
 
-    //we load all pathbuilders, check if they know the fields and have writeable adapters
-    $pathbuilders = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
     dpm(count($local_adapters),'how many');
     foreach($pathbuilders as $pb_id => $pb) {
       
