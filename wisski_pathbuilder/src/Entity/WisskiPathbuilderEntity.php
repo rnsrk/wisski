@@ -498,17 +498,29 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       // if there is nothing we don't generate anything.
       if(empty($my_group))
         return FALSE;
+        
+      $bundleid = NULL;
       
+      // if there is a bundle it still might be not there due to table clashes etc.
       if (!empty($my_group['bundle'])) {
 
+        // try to load it
         $bundleid = $my_group['bundle'];
         $bundles = \Drupal::entityManager()->getStorage($mode)->loadByProperties(array('id' => $bundleid));
+
         if (!empty($bundles)) {
           $bundle_object = current($bundles);
           $bundle_name = $bundle_object->label();
+          drupal_set_message(t('Connected bundle %bundlelabel (%bundleid) with group %groupid.',array('%bundlelabel'=>$bundle_name, '%bundleid'=>$bundleid, '%groupid'=>$groupid)));
+        } else {
+          drupal_set_message(t('Could not connect bundle with id %bundleid with group %groupid. Generating new one.',array('%bundleid'=>$bundleid, '%groupid'=>$groupid)));
+          // if there was nothing, reset the bundleid as it is wrong.
+          $bundleid = NULL;
         }
-        drupal_set_message(t('Connected bundle %bundlelabel (%bundleid) with group %groupid.',array('%bundlelabel'=>$bundle_name, '%bundleid'=>$bundleid, '%groupid'=>$groupid)));
-      } else {
+      }
+      
+      // if we have a bundleid here, we can stop - if not we have to generate one.
+      if(empty($bundleid)) {
         // the name for the bundle is the id of the group
         $bundle_name = $my_real_group->getName();
 

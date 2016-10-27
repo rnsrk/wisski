@@ -646,6 +646,17 @@ class WisskiPathbuilderForm extends EntityForm {
     $this->save($form, $form_state);
     
     foreach($paths as $key => $path) {
+    
+      if($path['enabled'] == 0) 
+        continue;
+      
+      if(!empty($path['parent']) && $paths[$path['parent']]['enabled'] == 0) {
+        // take it with us if the parent is disabled down the tree
+        $paths[$key]['enabled'] = 0;
+        continue;
+      }
+      
+
       // generate fields!
       $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
 
