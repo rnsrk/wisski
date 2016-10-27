@@ -129,6 +129,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         }
         if ($attributes['type'] === 'path') {
           $name = $attributes['name'];
+                    
           if ($name === 'eid') $values = array($entity_id);
           elseif ($name === 'uri.long' || $name === 'uri.short') {
             $values = array($this->getUriString($entity_id,$name));
@@ -137,6 +138,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             list($pb_id,$path_id) = explode('.',$attributes['name']);
             $values = $this->gatherTitleValues($entity_id,$path_id);
           }
+          
           if (empty($values)) {
             if ($attributes['optional'] === FALSE) {
               //we detected an invalid title;
@@ -201,8 +203,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           //dpm('can\'t load adapter '.$pb->getAdapterId(),$pb_id);
           continue;
         }
+        
         //finally, having a valid path and adapter, we can ask the adapter for the path's value
-        $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0);
+        $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, FALSE);
+        
         if (empty($new_values)) {
           //dpm('don\'t have values for '.$path_id.' in '.$pb_id,$adapter->id());
         } else $values += $new_values;
@@ -226,8 +230,6 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #      $paths = array();
       foreach ($pbs as $pb_id => $pb) {
         $paths = $pb->getAllPathsForBundleId($this->id(), TRUE);
-        
-#        dpm($bundleid);
         
         foreach($paths as $path) {
           $options[$pb_id][$pb_id.'.'.$path->id()] = $path->getName();

@@ -982,7 +982,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
   
   }
 */
-  public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL) {
+  public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL, $relative = TRUE) {
 #    dpm("ptrv");
     if(!$path->isGroup())
       $primitive = $path->getDatatypeProperty();
@@ -1055,8 +1055,9 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 #          return;
         }
       } else
-        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, 0, FALSE, NULL, 'field');
-#      dpm($sparql, $path->getName());
+        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, 0, FALSE, NULL, 'field', $relative);
+
+
     } else {
       drupal_set_message("No EID for data. Error. ", 'error');
     }
@@ -1074,10 +1075,6 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     }
 */    
     $sparql .= " } ";
-
-    
-#    drupal_set_message("spq: " . serialize($sparql));
-#    drupal_set_message(serialize($this));
     
     $result = $this->directQuery($sparql);
 
@@ -1379,7 +1376,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
             
             #$tmp = $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid, 0, $main_property, $path->getDisamb());
             // @TODO: ueberarbeiten
-            drupal_set_message("danger zone!");
+#            drupal_set_message("danger zone!");
             $tmp = $this->pathToReturnValue($path, $pb, $eid, 0, $main_property);            
 
             foreach($tmp as $key => $item) {
@@ -1692,9 +1689,11 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
    * @param $startingposition From where on the path should be generated in means
    *              of concepts from the beginning.
    * @param $write Is this a write or a read-request?
+   * @param $op How should it be compared to other data
+   * @param $relative should it be relative to the other groups?
    * @param $mode defaults to 'field' - but may be 'group' or 'entity_reference' in special cases
    */
-  public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field') {
+  public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE) {
     // the query construction parameter
     $query = "";
 
@@ -1718,8 +1717,12 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     } else {
       $countdiff = 0;
     }  
-#    $countdiff = 0;
-#    dpm($clearPathArray, "cpa");
+
+    // if it is not relative we take the while tree
+    if(!$relative) {
+      $countdiff = 0;
+      $clearPathArray = $path->getPathArray();
+    }
     
     // old uri pointer
     $olduri = NULL;
@@ -1855,7 +1858,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     }
 
 
-\Drupal::logger('testung')->debug($path->getID() . ":".htmlentities($query));
+#\Drupal::logger('testung')->debug($path->getID() . ":".htmlentities($query));
     // get the primitive for this path if any    
     $primitive = $path->getDatatypeProperty();
     
