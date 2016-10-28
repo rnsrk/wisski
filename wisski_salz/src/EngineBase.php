@@ -18,6 +18,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
 
   protected $is_writable;
   protected $is_preferred_local_store;
+  protected $same_as_properties;
 
   /**
    * {@inheritdoc}
@@ -57,6 +58,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     return [
       'is_writable' => TRUE,
       'is_preferred_local_store' => FALSE,
+      'same_as_properties' => $this->defaultSameAsProperties(),
     ];
   }
 
@@ -74,7 +76,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     
     $this->is_writable = $this->configuration['is_writable'];
     $this->is_preferred_local_store = $this->configuration['is_preferred_local_store'];
-    
+    $this->same_as_properties = $this->configuration['same_as_properties'];
   }
 
 
@@ -87,6 +89,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
       'id' => $this->getPluginId(),
       'is_writable' => $this->isWritable(),
       'is_preferred_local_store' => $this->isPreferredLocalStore(),
+      'same_as_properties' => $this->getSameAsProperties(),
     ] + $this->configuration;
     // this does not exist
      #+ parent::getConfiguration();
@@ -120,11 +123,13 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
       '#description' => $this->t('Is this Adapter the preferred local store?'),
     ];
     
-    $form['sameAsFunctions'] = array(
+    $form['sameAsProperties'] = array(
       '#type'=> 'textarea',
-      '#title'=> $this->t('"Same As" property'),
-      '#description' => $this->t('The property this store uses to mark two URIs as meaning the same (Drupal) entity'),
-      '#default_value' => implode("\n",$this->getSameAsProperties()),
+      '#title'=> $this->t('"Same As" properties'),
+      '#description' => $this->t('The properties this store uses to mark two URIs as meaning the same (Drupal) entity. ALL of them will be used at the same time when saving a matching pair.'),
+      '#prefix' => '<div id=wisski-same-as>',
+      '#suffix' => '</div>',
+      '#default_value' => implode(",\n",$this->getSameAsProperties()),
     );
 
     return $form;
@@ -144,18 +149,21 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     
     $is_preferred = $form_state->getValue('isPreferredLocalStore');
-    $is_writable = $form_state->getValue('isWritable');
-    
     if($is_preferred)
       $this->setPreferredLocalStore();
     else
       $this->unsetPreferredLocalStore();
-      
+    
+    
+    $is_writable = $form_state->getValue('isWritable');
     if($is_writable)
       $this->setWritable();
     else
       $this->setReadOnly();
       
+    $same_as_properties = $form_state->getValue('sameAsProperties');
+    $this->same_as_properties = preg_split('/[\s,]+/',$same_as_properties);
+    
     #return FALSE;
   }
   
@@ -211,6 +219,18 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   public function unsetPreferredLocalStore() {
     $this->is_preferred_local_store = FALSE;
   }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function getSameAsProperties() {
+    return $this->same_as_properties;
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public abstract function defaultSameAsProperties();
   
   /**
    * {@inheritdoc}

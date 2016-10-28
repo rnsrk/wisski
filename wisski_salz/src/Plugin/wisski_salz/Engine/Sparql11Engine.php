@@ -73,6 +73,8 @@ abstract class Sparql11Engine extends EngineBase {
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
 
+    $form = parent::buildConfigurationForm($form, $form_state);
+    
     $form['read_url'] = [
       '#type' => 'textfield',
       '#title' => 'Read URL',
@@ -91,11 +93,38 @@ abstract class Sparql11Engine extends EngineBase {
       '#default_value' => $this->graph_rewrite,
       '#return_value' => TRUE,
       '#description' => 'rewrite queries, so that remote SPARQL storages with non-standard dataset handling do always answer right',
-    );    
+    );
     
-    return parent::buildConfigurationForm($form, $form_state) + $form;
+    
+    $form['same_as_properties'] = array('#type'=>'container');
+    $form['same_as_properties']['sameAsProperties'] = $form['sameAsProperties'];
+    unset($form['sameAsProperties']);
+    $form['same_as_properties']['available_same_as_properties'] = array(
+      '#type' => 'select',
+      '#title' => 'Add standard sameAs property',
+      '#options' => $this->standardSameAsProperties(),
+      '#empty_option' => ' - '.$this->t('select').' - ',
+      '#ajax' => array(
+        'wrapper' => 'wisski-same-as',
+        'callback' => array($this,'sameAsCallback'),
+      ),
+    );
+    
+    $selection = $form_state->getUserInput();
+    
+    if (isset($selection['available_same_as_properties']) && $input = $selection['available_same_as_properties']) {
+      $value = $selection['sameAsProperties'];
+      $value = $value ? $value.",\n".$input : $input;
+      $form['same_as_properties']['sameAsProperties']['#value'] = $value;
+    }
+    
+    return $form;
   }
 
+  public function sameAsCallback(array $form, FormStateInterface $form_state) {
+    
+    return $form['same_as_properties']['sameAsProperties'];
+  }
 
   /**
    * {@inheritdoc}
@@ -105,9 +134,24 @@ abstract class Sparql11Engine extends EngineBase {
     $this->read_url = $form_state->getValue('read_url');
     $this->write_url = $form_state->getValue('write_url');
     $this->graph_rewrite = $form_state->getValue('graph_rewrite');
+    
   }
   
-
+  /**
+   * returns a list of well-known RDF properties saying that two individuals are (mostly) the same
+   * provides a selection for the user to choose from
+   */
+  public function standardSameAsProperties() {
+  
+    return array(
+      'http://www.w3.org/2002/07/owl#sameAs' => 'owl:sameAs',
+      'http://www.w3.org/2004/02/skos/core#closeMatch' => 'skos:closeMatch',
+      'http://www.w3.org/2004/02/skos/core#exactMatch' => 'skos:exactMatch',
+      'http://www.w3.org/2004/02/skos/core#broadMatch' => 'skos:broadMatch',
+      'http://www.w3.org/2004/02/skos/core#narrowMatch' => 'skos:narrowMatch',
+      'http://www.w3.org/2004/02/skos/core#relatedMatch' => 'skos:relatedMatch',
+    );
+  }
   
   //*** Implementation of the EngineInterface methods ***//
   
@@ -380,6 +424,10 @@ abstract class Sparql11Engine extends EngineBase {
       foreach ($uris as $second) {
         if ($first !== $second) {
           foreach ($this->getSameAsProperties() as $prop) {
+            if (strpos($prop,'/') !== FALSE) {
+              //ensure we have a full uri in < >
+              $prop = '<'.trim($prop,'<>').'>';
+            }
             $same .= "<$first> $prop <$second>. ";
           }
         }
@@ -396,9 +444,9 @@ abstract class Sparql11Engine extends EngineBase {
     return FALSE;
   }
 
-  public function getSameAsProperties() {
+  public function defaultSameAsProperties() {
     
-    return array('owl:sameAs');
+    return array('http://www.w3.org/2002/07/owl#sameAs');
   }
   
   public function getOriginatesProperty() {

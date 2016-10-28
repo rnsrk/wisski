@@ -64,7 +64,17 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    */
   public function setSameUris($uris, $entity_id);
   
+  /**
+   * returns an array of adapter-specific properties to be used in the setSameUris and getSameUris functions
+   * of this adapter, these may be user-manipulated
+   */
   public function getSameAsProperties();
+  
+  /**
+   * returns an arrayof adapter-specific properties to be used in the setSameUris and getSameUris functions
+   * of this adapter, these may be hard-coded an MUST NOT be user-manipulable
+   */
+  public function defaultSameAsProperties();
 
   
   /**
