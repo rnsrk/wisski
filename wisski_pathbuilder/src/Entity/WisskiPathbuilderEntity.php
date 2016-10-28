@@ -720,8 +720,8 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
     public function getAllPathsForGroupId($groupid, $recursive) {
       $paths = array();
             
-      $subgps = $this->getPathsAndGroupsForGroupId($groupid);
-        
+      $subgps = array_filter($this->getPathsAndGroupsForGroupId($groupid));
+      
       foreach($subgps as $subgp) {
     
         if($subgp->getType() == "Path")
