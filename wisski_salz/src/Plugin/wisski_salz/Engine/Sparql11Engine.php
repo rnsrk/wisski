@@ -382,8 +382,17 @@ abstract class Sparql11Engine extends EngineBase {
    */
   public function getSameUris($uri) {
     
-    $prop = $this->getOriginatesProperty();
-    $query = "SELECT DISTINCT ?uri ?adapter WHERE {VALUES ?same_as {".implode(' ',$this->getSameAsProperties())."}GRAPH <$prop> {<$uri> ?same_as ?uri. ?uri <$prop> ?adapter. }}";
+    $orig_prop = $this->getOriginatesProperty();
+    
+    $same_props = $this->getSameAsProperties();
+    if ($prop = current($same_props)) {
+      $values = "VALUES ?same_as { ".$this->ensurePointyBrackets($prop);
+      while ($prop = next($same_props)) {
+        $values .= " ".$this->ensurePointyBrackets($prop);
+      }
+      $values .= " }";
+    } else throw new \Exception('There is no sameAs property set for this adapter');
+    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> {<$uri> ?same_as ?uri. ?uri <$orig_prop> ?adapter. }}";
     $results = $this->directQuery($query);
     
     $out = array();
@@ -399,8 +408,16 @@ abstract class Sparql11Engine extends EngineBase {
    */
   public function getSameUri($uri, $adapter_id) {
   
-    $prop = $this->getOriginatesProperty();
-    $query = "SELECT DISTINCT ?uri WHERE {VALUES ?same_as {".implode(' ',$this->getSameAsProperties())."} GRAPH <$prop> {<$uri> ?same_as ?uri. ?uri <$prop> '".$this->escapeSparqlLiteral($adapter_id)."'.}}";
+    $orig_prop = $this->getOriginatesProperty();
+    $same_props = $this->getSameAsProperties();
+    if ($prop = current($same_props)) {
+      $values = "VALUES ?same_as { ".$this->ensurePointyBrackets($prop);
+      while ($prop = next($same_props)) {
+        $values .= " ".$this->ensurePointyBrackets($prop);
+      }
+      $values .= " }";
+    } else throw new \Exception('There is no sameAs property set for this adapter');
+    $query = "SELECT DISTINCT ?uri WHERE { $values GRAPH <$orig_prop> {<$uri> ?same_as ?uri. ?uri <$orig_prop> '".$this->escapeSparqlLiteral($adapter_id)."'.}}";
     $results = $this->directQuery($query);
     if (empty($results)) return NULL;
     foreach ($results as $obj) {
@@ -424,11 +441,7 @@ abstract class Sparql11Engine extends EngineBase {
       foreach ($uris as $second) {
         if ($first !== $second) {
           foreach ($this->getSameAsProperties() as $prop) {
-            if (strpos($prop,'/') !== FALSE) {
-              //ensure we have a full uri in < >
-              $prop = '<'.trim($prop,'<>').'>';
-            }
-            $same .= "<$first> $prop <$second>. ";
+            $same .= "<$first> ".$this->ensurePointyBrackets($prop)." <$second>. ";
           }
         }
       }
@@ -442,6 +455,15 @@ abstract class Sparql11Engine extends EngineBase {
       }
     }
     return FALSE;
+  }
+  
+  public function ensurePointyBrackets($uri) {
+    
+    if (strpos($uri,'/') !== FALSE) {
+      //ensure we have a full uri in < >
+      $uri = '<'.trim($uri,'<>').'>';
+    }
+    return $uri;
   }
 
   public function defaultSameAsProperties() {
