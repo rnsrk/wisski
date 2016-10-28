@@ -247,10 +247,13 @@ class WisskiTitlePatternForm extends EntityForm {
     }
     
     $parent_string = '';
-    foreach ($attributes['parents'] as $row_id => $positive) {
-      if (!empty($parent_string)) $parent_string .= ', ';
-      if (!$positive) $parent_string .= '!';
-      $parent_string .= $row_id;
+    
+    if (!empty($attributes['parents'])) {
+      foreach ($attributes['parents'] as $row_id => $positive) {
+        if (!empty($parent_string)) $parent_string .= ', ';
+        if (!$positive) $parent_string .= '!';
+        $parent_string .= $row_id;
+      }
     }
     
     $rendered['parents'] = array(
