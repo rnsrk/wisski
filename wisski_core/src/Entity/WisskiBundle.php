@@ -81,7 +81,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   protected $cached_titles;
   
   public function generateEntityTitle($entity_id,$fallback_title='Wisski Individual',$include_bundle=FALSE,$force_new=FALSE) {
-    
+/*    
     if (!$force_new) {
       $title = $this->getCachedTitle($entity_id);
       if (isset($title)) {
@@ -92,10 +92,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         }    
         return $title;
       }
-    }
+    }*/
     $pattern = $this->getTitlePattern();
     unset($pattern['max_id']);
-    //dpm(array('pattern'=>$pattern,'entity'=>$wisski_individual),__METHOD__);
+    //dpm(array('pattern'=>$pattern,'entity'=>$entity_id,'fallback'=>$fallback_title),__METHOD__);
     if (empty($pattern)) {
       return $fallback_title;
     } else {
@@ -103,7 +103,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       $parts = array();
       $pattern_order = array_keys($pattern);
       //just to avoid endless runs we introduce an upper bound,
-      //this is possible since per run at most k-1 other elements have to be cycle through before
+      //this is possible since per run at most k-1 other elements have to be cycled through before
       //having seen all parents i.e. $max = sum_{k = 0}^$count k
       $count = count($pattern);
       $max = ($count * ($count+1)) / 2;
@@ -137,6 +137,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           else {
             list($pb_id,$path_id) = explode('.',$attributes['name']);
             $values = $this->gatherTitleValues($entity_id,$path_id);
+            //dpm($values,'gathered values for '.$path_id);
           }
           
           if (empty($values)) {
@@ -166,7 +167,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         
         $parts[$key] = $part;
       }
-      //dpm(array('parts'=>$parts,'empty_children'=>$empty_children),'after');
+      //dpm(array('parts'=>$parts),'after');
       
       //reorder the parts according original pattern
       $title = '';
@@ -175,7 +176,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       }
     }
     $this->setCachedTitle($entity_id,$title);
-    //dpm(func_get_args()+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
+    //dpm(array_combine(['$entity_id','$fallback_title','$include_bundle','$force_new'],func_get_args())+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
     if ($include_bundle) {
       drupal_set_message('Enhance Title '.$title);
       $title = $this->label().': '.$title;
@@ -206,6 +207,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         
         //finally, having a valid path and adapter, we can ask the adapter for the path's value
         $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, FALSE);
+        \Drupal::logger($pb_id.' '.$path_id.' '.__FUNCTION__)->debug("{out}",array('out'=>serialize($new_values)));
         
         if (empty($new_values)) {
           //dpm('don\'t have values for '.$path_id.' in '.$pb_id,$adapter->id());
