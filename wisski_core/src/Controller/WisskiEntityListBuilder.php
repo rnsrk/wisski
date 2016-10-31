@@ -289,13 +289,13 @@ class WisskiEntityListBuilder extends EntityListBuilder {
   } 
   
   public function getPreviewImageUri($entity_id,$bundle_id) {
-/*    
+    
     if ($preview = WisskiCacheHelper::getPreviewImageUri($entity_id)) {
       \Drupal::logger('wisski_preview_image')->debug('From Cache '.$preview);
       if ($preview === '') return NULL;
       return $preview;
     }
-*/    
+    
     if (!isset($this->adapter)) return NULL;
     
     if (empty(\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($entity_id,$this->adapter->id()))) return NULL;
