@@ -1027,7 +1027,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     if(!empty($eid)) {
       // rename to uri
       $eid = $this->getUriForDrupalId($eid);
-    
+      
 #      $eid = str_replace("\\", "/", $eid);
 #      $url = parse_url($eid);
       if($path->isGroup()) {
@@ -1273,7 +1273,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         continue;
       
       // if he didn't ask for us...    
-      if($this->getConfiguration()['id'] != $adapter->getEngine()->getConfiguration()['id'])
+      if($this->adapterId() != $adapter->id())
         continue;
       
       // if we find any data, we set this to true.

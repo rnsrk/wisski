@@ -81,7 +81,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   protected $cached_titles;
   
   public function generateEntityTitle($entity_id,$fallback_title='Wisski Individual',$include_bundle=FALSE,$force_new=FALSE) {
-/*    
+    
     if (!$force_new) {
       $title = $this->getCachedTitle($entity_id);
       if (isset($title)) {
@@ -92,7 +92,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         }    
         return $title;
       }
-    }*/
+    }
     $pattern = $this->getTitlePattern();
     unset($pattern['max_id']);
     //dpm(array('pattern'=>$pattern,'entity'=>$entity_id,'fallback'=>$fallback_title),__METHOD__);
@@ -204,11 +204,11 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           //dpm('can\'t load adapter '.$pb->getAdapterId(),$pb_id);
           continue;
         }
-        
-        //finally, having a valid path and adapter, we can ask the adapter for the path's value
-        $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, FALSE);
-        \Drupal::logger($pb_id.' '.$path_id.' '.__FUNCTION__)->debug("{out}",array('out'=>serialize($new_values)));
-        
+        if (\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($eid,$adapter->id())) {
+          //finally, having a valid path and adapter, we can ask the adapter for the path's value
+          $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, FALSE);
+          \Drupal::logger($pb_id.' '.$path_id.' '.__FUNCTION__)->debug('Entity '.$eid."{out}",array('out'=>serialize($new_values)));
+        }  
         if (empty($new_values)) {
           //dpm('don\'t have values for '.$path_id.' in '.$pb_id,$adapter->id());
         } else $values += $new_values;

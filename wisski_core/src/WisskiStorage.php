@@ -90,12 +90,14 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       
       // ask all adapters
       foreach($adapters as $aid => $adapter) {
+        //drupal_set_message("Does $aid know $id ?");
         // if they know that id
         if($adapter->hasEntity($id)) {
+          //drupal_set_message("yes it does");
           // if so - ask for the bundles for that id
           // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
           $bundle_ids = $adapter->getBundleIdsForEntityId($id);
-#          drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundle_ids) . ".");
+          #drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundle_ids) . ".");
           if (isset($cached_bundle)) {
             if (in_array($cached_bundle,$bundle_ids)) {
               $bundle_ids = array($cached_bundle);
@@ -152,6 +154,7 @@ if (empty($new_field_values)) continue;
                 //here we have a "normal field" so we can assume an array of field values is OK
                 $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
                 #drupal_set_message(serialize($new_field_values));
+                //dpm(array('field'=>$field_name,'values'=>$new_field_values),$adapter->id());
                 if (empty($new_field_values)) continue;
                 $info[$id]['bundle'] = $bundleid;
 //                dpm($field_def->getType(),$field_name);

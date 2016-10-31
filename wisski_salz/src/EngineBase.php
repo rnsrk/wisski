@@ -289,7 +289,10 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     
     if (!isset($adapter_id)) $adapter_id = $this->adapterId();
     $uris = $this->getUrisForDrupalId($id);
-    if (empty($uris) || !isset($uris[$adapter_id])) return NULL;
+    if (empty($uris) || !isset($uris[$adapter_id])) {
+      //throw new \Exception('No uri for '.$id.' in '.$adapter_id);
+      return NULL;
+    }
     return $uris[$adapter_id];
   }
 

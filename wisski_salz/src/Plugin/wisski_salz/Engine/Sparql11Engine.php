@@ -361,7 +361,9 @@ abstract class Sparql11Engine extends EngineBase {
 	    //danger zone, we assume a numeric $uri to be an entity ID itself
 	    return $uri;
 	  }
-	  return AdapterHelper::getDrupalIdForUri($uri,TRUE,$this->adapterId());
+	  $id = AdapterHelper::getDrupalIdForUri($uri,TRUE,$this->adapterId());
+	  if (empty($id)) throw new \Exception('This URI '.$uri.' has no associated ID in '.$this->adapterId());
+	  return $id;
 	}
 
   public function getDrupalIdForUri($uri,$adapter_id=NULL) {
@@ -373,7 +375,7 @@ abstract class Sparql11Engine extends EngineBase {
   
   public function getUrisForDrupalId($id) {
     
-    $entity_uri = AdapterHelper::generateWisskiuriFromId($id);
+    $entity_uri = AdapterHelper::generateWisskiUriFromId($id);
     return $this->getSameUris($entity_uri);
   }
   

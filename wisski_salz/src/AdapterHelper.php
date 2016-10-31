@@ -31,7 +31,7 @@ class AdapterHelper {
    * @return TRUE on success, FALSE otherwise
    */
   public static function setSameUris($uris,$entity_id=NULL) {
-    
+    //dpm($uris,__FUNCTION__.' '.$entity_id);
     $drupal_aid = self::getDrupalAdapterNameAlias();
     if (array_key_exists($drupal_aid, $uris)) {
       //if we know the eid from the array, set it here
@@ -51,14 +51,30 @@ class AdapterHelper {
         return FALSE;
       }
     }
-    $set_uris = $cached->fetchAllAssoc('uri');
+    $rows = $cached->fetchAllAssoc('adapter_id');
     foreach ($uris as $aid => $uri) {
       if (empty($aid)) throw new \Exception('Empty adapter id in '.serialize($uris));
-      if (isset($set_uris[$uri]) && $row = $set_uris[$uri]) {
-        if ($row->adapter_id !== $aid || $row->eid !== $entity_id) {
+      if (isset($rows[$aid]) && $row = $rows[$aid]) {
+        //in this case we have info from this adapter
+        //is it for the given URI?
+        if ($row->uri === $uri) {
+          if ($row->eid !== $entity_id) {
+            //we consider this an EID update for this matching
+            db_update('wisski_salz_id2uri')
+              ->fields(array('eid'=>$entity_id))
+              ->condition('rid',$row->rid)
+              ->execute();
+          }
+        } elseif ($row->eid === $entity_id) {
+          //this is a URI update for this matching
           db_update('wisski_salz_id2uri')
-            ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
+            ->fields(array('uri'=>$uri))
             ->condition('rid',$row->rid)
+            ->execute();
+        } else {
+          //this is a completely new matching for this adapter
+          db_insert('wisski_salz_id2uri')
+            ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
             ->execute();
         }
       } else {
@@ -193,7 +209,7 @@ class AdapterHelper {
    * @return an assocative array keyed by adapter ID with the associated URIs as values or | the URI associated with the input adapter
    */
   public static function getUrisForDrupalId($eid,$adapter_id=NULL) {
-    
+    //dpm($eid,__FUNCTION__.' '.$adapter_id);
     $query = db_select('wisski_salz_id2uri','m')
       ->fields('m',array('adapter_id','uri'))
       ->condition('eid',$eid);
@@ -205,7 +221,7 @@ class AdapterHelper {
     }
     if (isset($adapter_id)) {
       $same_uri = self::getPreferredLocalStore(TRUE)->findUriForDrupalId($eid,$adapter_id);
-      self::setSameuris(array($adapter_id=>$same_uri),$eid);
+      self::setSameUris(array($adapter_id=>$same_uri),$eid);
       return $same_uri;
     } else {
       $same_uris = self::getPreferredLocalStore(TRUE)->getUrisForDrupalId($eid);
