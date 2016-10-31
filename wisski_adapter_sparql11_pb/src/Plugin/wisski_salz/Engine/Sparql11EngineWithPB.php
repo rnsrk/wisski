@@ -479,22 +479,22 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getImagesForEntityId($entityid, $bundleid) {
     $pbs = $this->getPbsForThis();
 
+    $entityid = $this->getDrupalId($entityid);
+    
+    $ret = array();
+      
     foreach($pbs as $pb) {
 #    drupal_set_message("yay!" . $entityid . " and " . $bundleid);
-    
-      $entityid = $this->getDrupalId($entityid);
-    
-      $ret = array();
     
       $groups = $pb->getGroupsForBundle($bundleid);
     
       foreach($groups as $group) {
         $paths = $pb->getImagePathIDsForGroup($group->id());
-      
+    
 #      drupal_set_message("paths: " . serialize($paths));
             
         foreach($paths as $pathid) {
-      
+    
           $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
         
 #        drupal_set_message(serialize($path));
@@ -502,12 +502,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #        drupal_set_message("thing: " . serialize($this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $entityid, 0, NULL, 0)));
         
         // position 0 is wrong here, but it will hold for now
-          $ret = array_merge($ret, $this->pathToReturnValue($path, $pb, $entityid, 0, NULL));
+          $new_ret = $this->pathToReturnValue($path, $pb, $entityid, 0, NULL);
+          //if (!empty($new_ret)) dpm($pb->id().' '.$pathid.' '.$entitid,'News');
+          $ret = array_merge($ret, $new_ret);
+          
         } 
       }
     }    
 #    drupal_set_message("returning: " . serialize($ret));
-    
+    //dpm($ret,__FUNCTION__);
     return $ret;
   }
   

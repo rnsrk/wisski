@@ -289,18 +289,20 @@ class WisskiEntityListBuilder extends EntityListBuilder {
   } 
   
   public function getPreviewImageUri($entity_id,$bundle_id) {
-    
+/*    
     if ($preview = WisskiCacheHelper::getPreviewImageUri($entity_id)) {
       \Drupal::logger('wisski_preview_image')->debug('From Cache '.$preview);
       if ($preview === '') return NULL;
       return $preview;
     }
-    
+*/    
     if (!isset($this->adapter)) return NULL;
+    
+    if (empty(\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($entity_id,$this->adapter->id()))) return NULL;
     
     $images = $this->adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
     if (empty($images)) {
-      \Drupal::logger('wisski_preview_image')->debug('No preview images available form adapter');
+      \Drupal::logger('wisski_preview_image')->debug('No preview images available from adapter '.$this->adapter->id());
       WisskiCacheHelper::putPreviewImageUri($entity_id,'');
       return NULL;
     }
@@ -313,11 +315,11 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     $preview_uri = $image_style->buildUri($output_uri);
 #    dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
     if ($image_style->createDerivative($output_uri,$preview_uri)) {
-#      drupal_set_message('Style did it - uri is ' . $preview_uri);
+      drupal_set_message('Style did it - uri is ' . $preview_uri);
       WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
       return $preview_uri;
     } else {
-#      dpm("style didnt do it with " . $entity_id);
+      drupal_set_message("style didnt do it with " . $entity_id);
       WisskiCacheHelper::putPreviewImageUri($entity_id,$output_uri);
       return $output_uri;
     }
