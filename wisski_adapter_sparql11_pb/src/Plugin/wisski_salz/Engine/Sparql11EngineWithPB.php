@@ -501,9 +501,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         
 #        drupal_set_message("thing: " . serialize($this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $entityid, 0, NULL, 0)));
         
-        // position 0 is wrong here, but it will hold for now
-          $new_ret = $this->pathToReturnValue($path, $pb, $entityid, 0, NULL);
-          //if (!empty($new_ret)) dpm($pb->id().' '.$pathid.' '.$entitid,'News');
+          // this has to be an absulte path - otherwise subgroup images won't load.
+          $new_ret = $this->pathToReturnValue($path, $pb, $entityid, 0, NULL, FALSE);
+#          if (!empty($new_ret)) dpm($pb->id().' '.$pathid.' '.$entitid,'News');
           $ret = array_merge($ret, $new_ret);
           
         } 
