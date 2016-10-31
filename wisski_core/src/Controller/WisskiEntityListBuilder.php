@@ -315,11 +315,11 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     $preview_uri = $image_style->buildUri($output_uri);
 #    dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
     if ($image_style->createDerivative($output_uri,$preview_uri)) {
-      drupal_set_message('Style did it - uri is ' . $preview_uri);
+//      drupal_set_message('Style did it - uri is ' . $preview_uri);
       WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
       return $preview_uri;
     } else {
-      drupal_set_message("style didnt do it with " . $entity_id);
+//      drupal_set_message("style didnt do it with " . $entity_id);
       WisskiCacheHelper::putPreviewImageUri($entity_id,$output_uri);
       return $output_uri;
     }
