@@ -3,6 +3,15 @@
 use Drupal\wisski_core\WisskiEntityInterface;
 use Drupal\wisski_core\Entity\WisskiEntity;
 
+use Drupal\wisski_core\WisskiCacheHelper;
+
+function wisski_core_cache_flush() {
+
+  WisskiCacheHelper::flushAllEntityTitles();
+  WisskiCacheHelper::flushPreviewImageUri();
+  drupal_set_message('Flushed the cache');
+}
+
 function wisski_core_generate_title($wisski_individual,$force_new=FALSE) {
 //ddebug_backtrace();
   
