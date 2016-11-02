@@ -105,11 +105,14 @@ class WisskiCacheHelper {
   
   static function preparePreviewImages(array $entity_ids) {
     
-    $query = db_select('wisski_preview_images','p')
+    if (empty($entity_ids)) self::$gathered_preview_images = array();
+    else {
+      $query = db_select('wisski_preview_images','p')
               ->fields('p',array('eid','image_uri'))
               ->condition('eid',$entity_ids,'IN')
               ->execute();
-    self::$gathered_preview_images = $query->fetchAllKeyed(0);
+      self::$gathered_preview_images = $query->fetchAllKeyed(0);
+    }
     //dpm(array($entity_ids,self::$gathered_preview_images),__FUNCTION__);
   }
   
