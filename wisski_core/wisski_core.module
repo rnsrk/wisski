@@ -63,10 +63,14 @@ function wisski_tick($name='') {
   
   static $wisski_timestamp;
   $now = microtime(TRUE)*1000;
-  $diff = ceil($now-$wisski_timestamp);
-  if (!empty($name)) dpm($diff.' ms',$name);
-  $wisski_timestamp = $now;
-  return $diff;
+  if (empty($name)) {
+    if (!isset($wisski_timestamp)) $wisski_timestamp = $now;
+  } else {
+    $diff = ceil($now-$wisski_timestamp);
+    if (!empty($name)) dpm($diff.' ms',$name);
+    $wisski_timestamp = $now;
+    return $diff;
+  }
 }
 
 

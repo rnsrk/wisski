@@ -101,21 +101,49 @@ class WisskiCacheHelper {
     self::flushCacheData($cid);
   }
   
-  static function putPreviewImageUri($entity_id,$preview_image_uri) {
+  static $gathered_preview_images;
   
-    $cid = 'wisski_preview_image.'.$entity_id;
-    self::putCacheData($cid,$preview_image_uri);
+  static function preparePreviewImages(array $entity_ids) {
+    
+    $query = db_select('wisski_preview_images','p')
+              ->fields('p',array('eid','image_uri'))
+              ->condition('eid',$entity_ids,'IN')
+              ->execute();
+    self::$gathered_preview_images = $query->fetchAllKeyed(0);
+    //dpm(array($entity_ids,self::$gathered_preview_images),__FUNCTION__);
+  }
+  
+  static function putPreviewImageUri($entity_id,$preview_image_uri) {
+
+    //dpm($preview_image_uri,__FUNCTION__.' '.$entity_id);
+    self::flushPreviewImageUri($entity_id);
+    db_insert('wisski_preview_images')->fields(array('eid'=>$entity_id,'image_uri'=>$preview_image_uri))->execute();
   }
   
   static function getPreviewImageUri($entity_id) {
-    
-    $cid = 'wisski_preview_image.'.$entity_id;
-    return self::getCacheData($cid);
+    //dpm(self::$gathered_preview_images,'GPI '.$entity_id);
+
+    if (isset(self::$gathered_preview_images)) {
+
+      if (isset(self::$gathered_preview_images[$entity_id])) {
+        $return = self::$gathered_preview_images[$entity_id];
+        return $return;
+      }
+    } else {
+      $query = db_select('wisski_preview_images','p')->fields('p',array('image_uri'))->condition('eid',$entity_id)->execute();
+      $result = $query->fetchCol();
+      if (!empty($result)) return current($result);
+    }
+    return NULL;
   }
   
+  /**
+   * if $entity_id is NULL, we will truncate the table
+   */
   static function flushPreviewImageUri($entity_id) {
     
-    $cid = 'wisski_preview_image.'.$entity_id;
-    self::flushCacheData($cid);
+    if (is_null($entity_id)) db_truncate('wisski_preview_images');
+    else db_delete('wisski_preview_images')->condition('eid',$entity_id)->execute();
   }
+
 }

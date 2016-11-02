@@ -83,6 +83,29 @@ function wisski_core_schema() {
       'bid' => array(array('bid',128)),
     ),
   );
+  
+  $schema['wisski_preview_images'] = array(
+    
+    'description' => 'Caches the URI of the preview image for individuals',
+    'fields' => array(
+      'eid' => array(
+        'description' => 'Entity ID',
+        'type' => 'varchar',
+        'length' => 1023,
+        'not null' => TRUE,
+      ),
+      'image_uri' => array(
+        'description' => 'image URI',
+        'type' => 'varchar',
+        'length' => 1023,
+        'not null' => TRUE,
+      ),
+    ),
+    'indexes' => array(
+      'eid' => array(array('eid',128)),
+      'bid' => array(array('image_uri',128)),
+    ),
+  );
   //dpm($schema);
   return $schema;
 }

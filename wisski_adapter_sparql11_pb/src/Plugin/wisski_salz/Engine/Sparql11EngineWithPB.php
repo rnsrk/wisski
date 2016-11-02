@@ -842,7 +842,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
       
       // store the bundleid to the bundle-cache as it might be important
       // for subsequent queries.
-      $pathbuilder->setBundleIdForEntityId($uriname, $bundleid);
+//      $pathbuilder->setBundleIdForEntityId($uriname, $bundleid);
 
       $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
     }

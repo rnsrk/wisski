@@ -36,6 +36,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
   public function render($bundle = '',$entity=NULL) {
 
   //dpm(func_get_args(),__METHOD__); 
+    
     if (!isset($this->limit))
     $this->limit = \Drupal::config('wisski_core.settings')->get('wisski_max_entities_per_page');
     $this->bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->load($bundle);
@@ -74,8 +75,13 @@ class WisskiEntityListBuilder extends EntityListBuilder {
         'tags' => $this->entityType->getListCacheTags(),
       ],
     );
+    $entities = $this->getEntityIds();
+    
+    WisskiCacheHelper::preparePreviewImages($entities);
+    
     if ($grid_type === 'table') {
-      foreach ($this->getEntityIds() as $entity_id) {
+      foreach ($entities as $entity_id) {
+        
         if ($input_row = $this->buildRowForId($entity_id)) {
           $build['table']['#rows'][$entity_id] = array(
             'preview_image' => array(
@@ -105,9 +111,9 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $row_num = 0;
       $cell_num = 0;
       $row = array();
-      $ents = $this->getEntityIds();
 #      dpm($ents,'list');
-      foreach ($ents as $entity_id) {
+      
+      foreach ($entities as $entity_id) {
         if ($input_cell = $this->buildRowForId($entity_id)) {
           $cell_data = array(
             '#type' => 'container',
@@ -133,12 +139,12 @@ class WisskiEntityListBuilder extends EntityListBuilder {
             $row = array();
             $cell_num = 0;
           }
-        }
-      }
+        }  
+      }  
       //add the last row
       if ($cell_num > 0) $build['table']['#rows']['row'.$row_num] = $row;
     }
-
+    
     $build['grid_type'] = $this->getGridTypeBlock();
     
     // Only add the pager if a limit is specified.
@@ -156,7 +162,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    */
   protected function getEntityIds() {
 #   dpm($this); 
-    //wisski_tick();
+
     $storage = $this->getStorage();
     $query = $storage->getQuery()
       ->sort($this->entityType->getKey('id'));
@@ -166,7 +172,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $query->pager($this->limit);
       $query->range($this->page*$this->limit,$this->limit);
     }
-    //wisski_tick('prepare');
+
     if (!empty($this->bundle)) {
       if ($pattern = $this->bundle->getTitlePattern()) {
         foreach ($pattern as $key => $attributes) {
@@ -176,14 +182,14 @@ class WisskiEntityListBuilder extends EntityListBuilder {
         }
       }
       $query->condition('bundle',$this->bundle->id());
-      //wisski_tick('bundle pattern');
+
       $entity_ids = $query->execute();
-      //wisski_tick('get ids');
+
       foreach ($entity_ids as $eid) {
         $storage->writeToCache($eid,$this->bundle->id());
       }
       $this->num_entities = count($entity_ids);
-      //wisski_tick('Caching');
+
       return $entity_ids;
     } else return $query->execute();    
   }
@@ -254,16 +260,18 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     //    echo "Hello ".$id;
     //dpm($entity);
     //dpm($entity->get('preview_image'));
-    
+
     $entity_label = $this->bundle->generateEntityTitle($entity_id,$entity_id);
+
     $entity_url = Url::fromRoute('entity.wisski_individual.canonical',array('wisski_bundle'=>$this->bundle->id(),'wisski_individual'=>$entity_id));
-    
+
     $row = array(
       'label' => $entity_label,
       'url' => $entity_url,
     );
     
     $prev_uri = $this->getPreviewImageUri($entity_id,$this->bundle->id());
+
     if ($prev_uri) {
       $array = array(
         '#theme' => 'image',
@@ -276,27 +284,36 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     }
     
     $row['operations'] = $this->getOperationLinks($entity_id);
+
     return $row;
   } 
   
   public function getPreviewImageUri($entity_id,$bundle_id) {
     
-    if ($preview = WisskiCacheHelper::getPreviewImageUri($entity_id)) {
-      \Drupal::logger('wisski_preview_image')->debug('From Cache '.$preview);
-      if ($preview === '') return NULL;
+    $preview = WisskiCacheHelper::getPreviewImageUri($entity_id);
+    //dpm($preview,__FUNCTION__.' '.$entity_id);
+    if ($preview) {
+      //do not log anything here, it is a performance sink
+      //\Drupal::logger('wisski_preview_image')->debug('From Cache '.$preview);
+      if ($preview === 'none') return NULL;
       return $preview;
     }
-    
+
     if (!isset($this->adapter)) return NULL;
     
-    if (empty(\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($entity_id,$this->adapter->id()))) return NULL;
-    
+    if (empty(\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($entity_id,$this->adapter->id()))) {
+      \Drupal::logger('wisski_preview_image')->debug($this->adapter->id().' does not know the entity '.$entity_id);
+      WisskiCacheHelper::putPreviewImageUri($entity_id,'none');
+      return NULL;
+    }
+
     $images = $this->adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
     if (empty($images)) {
       \Drupal::logger('wisski_preview_image')->debug('No preview images available from adapter '.$this->adapter->id());
-      WisskiCacheHelper::putPreviewImageUri($entity_id,'');
+      WisskiCacheHelper::putPreviewImageUri($entity_id,'none');
       return NULL;
     }
+
     \Drupal::logger('wisski_preview_image')->debug('Images from dapter: '.serialize($images));
     $input_uri = current($images);
     $output_uri = '';
@@ -304,14 +321,16 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     $this->storage->getFileId($input_uri,$output_uri);
     $image_style = $this->getPreviewStyle();
     $preview_uri = $image_style->buildUri($output_uri);
-#    dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
+    //dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
     if ($image_style->createDerivative($output_uri,$preview_uri)) {
-//      drupal_set_message('Style did it - uri is ' . $preview_uri);
+      //drupal_set_message('Style did it - uri is ' . $preview_uri);
       WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
+
       return $preview_uri;
     } else {
-//      drupal_set_message("style didnt do it with " . $entity_id);
+      //drupal_set_message("style didnt do it with " . $entity_id);
       WisskiCacheHelper::putPreviewImageUri($entity_id,$output_uri);
+
       return $output_uri;
     }
   }
