@@ -303,7 +303,7 @@ class AdapterHelper {
     $url = $parts['path'];
 
     // check if it has a schema and remove it if so
-    if (!$check || UrlHelper::isValid($url, TRUE)) {
+    if (UrlHelper::isValid($url, TRUE)) {
       if (substr($url, 0, $br_len) == $base_root) {
         $url = substr($url, $br_len);
       }
