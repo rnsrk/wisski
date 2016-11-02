@@ -168,8 +168,11 @@ class AdapterHelper {
       return key($ids);
     }
     
+    $local_adapter = self::getPreferredLocalStore();
+    if (empty($input_adapter_id)) $input_adapter_id = $local_adapter->id();
+    
     //if we have nothing cached, ask the store for backup
-    $id = self::getPreferredLocalStore(TRUE)->getDrupalIdForUri($uri,$input_adapter_id);
+    $id = $local_adapter->getEngine()->getDrupalIdForUri($uri,$input_adapter_id);
     
     //if the store knows the answer, return it
     if (!is_null($id)) {
@@ -184,8 +187,6 @@ class AdapterHelper {
       //dpm('fail','don\'t create');
       return NULL;
     }
-    
-    if (empty($input_adapter_id)) $input_adapter_id = self::getPreferredLocalStore()->id();
     
     //eid creation works by inserting data and retrieving the newly set line number as eid
     $id = db_insert('wisski_salz_id2uri')
