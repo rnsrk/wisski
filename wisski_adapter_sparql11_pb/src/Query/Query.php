@@ -10,14 +10,6 @@ use Drupal\wisski_salz\AdapterHelper;
 
 class Query extends WisskiQueryBase {
 
-  protected $then = 0;
-    
-  protected function tick($name='') {
-    $now = microtime(TRUE)*1000;
-    dpm(ceil($now-$this->then).' ms',$name);
-    $this->then = $now;
-  }
-
   #private $parent_engine;
 
   #public function __construct(EntityTypeInterface $entity_type,$condition,array $namespaces,Sparql11EngineWithPB $parent_engine) {
@@ -31,7 +23,7 @@ class Query extends WisskiQueryBase {
    */
   public function execute() {
 
-#    $this->tick('init query');
+#    wisski_tick('init query');
     
     // get the adapter
     $engine = $this->getEngine();
@@ -49,7 +41,7 @@ class Query extends WisskiQueryBase {
     
     // get all pbs
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
-    
+wisski_tick('Prepared '.$adapterid);
     $ents = array();
     // iterate through all pbs
     foreach($pbs as $pb) {
@@ -70,11 +62,11 @@ class Query extends WisskiQueryBase {
         $limit = $this->range['length'];
         $offset = $this->range['start'];
       }
-
+wisski_tick('prepared '.$pb->id());
       // care about everything...
       if($this->isFieldQuery()) {
         
-    #    $this->tick("field query");
+        wisski_tick("field query");
         
         $eidquery = NULL;
         $bundlequery = NULL;
@@ -121,7 +113,7 @@ class Query extends WisskiQueryBase {
           }
         }
         
-     #   $this->tick("field query half");
+        wisski_tick("field query half");
         
         foreach($this->condition->conditions() as $condition) {
           $field = $condition['field'];
@@ -146,12 +138,12 @@ class Query extends WisskiQueryBase {
         }
       }
 
-      #$this->tick("afterprocessing");
+      wisski_tick("afterprocessing");
       
       // if this is a path query act upon it accordingly
       if($this->isPathQuery()) {
         
-      #  $this->tick("path query");
+        wisski_tick("path query");
         
         // construct the query
         $query = "";
@@ -210,7 +202,7 @@ class Query extends WisskiQueryBase {
           $out[] = $entity_id;
           \Drupal::entityManager()->getStorage('wisski_individual')->writeToCache($entity_id,$bundle_id);
         }
-                  
+wisski_tick('path query out');                  
         return $out;        
       }
     

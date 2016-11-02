@@ -59,6 +59,17 @@ function wisski_trace($dpm=TRUE) {
   return $trace[2];
 }
 
+function wisski_tick($name='') {
+  
+  static $wisski_timestamp;
+  if (empty($name) && !isset($wisski_timestamp)) $wisski_timestamp = microtime(TRUE)*1000;
+  else {$now = microtime(TRUE)*1000;
+    dpm(ceil($now-$wisski_timestamp).' ms',$name);
+    $wisski_timestamp = $now;
+  }
+}
+
+
 function wisski_local_store_query($query,$select=NULL) {
   
   $adapter = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore();

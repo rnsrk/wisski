@@ -51,4 +51,6 @@ abstract class WisskiQueryBase extends QueryBase implements QueryInterface, Quer
   public function isPathQuery() {
     return $this->query_column_type === self::PATH_QUERY;
   }
+  
+
 }

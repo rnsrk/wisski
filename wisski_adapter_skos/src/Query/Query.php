@@ -31,7 +31,7 @@ class Query extends WisskiQueryBase {
    */
   public function execute() {
 
-#    $this->tick('init query');
+#    wisski_tick('init query');
     
     // get the adapter
     $engine = $this->getEngine();
@@ -75,7 +75,7 @@ class Query extends WisskiQueryBase {
       // care about everything...
       if($this->isFieldQuery()) {
         
-    #    $this->tick("field query");
+    #    wisski_tick("field query");
         
         $eidquery = NULL;
         $bundlequery = NULL;
@@ -122,7 +122,7 @@ class Query extends WisskiQueryBase {
           }
         }
         
-     #   $this->tick("field query half");
+     #   wisski_tick("field query half");
         
         foreach($this->condition->conditions() as $condition) {
           $field = $condition['field'];
@@ -147,12 +147,12 @@ class Query extends WisskiQueryBase {
         }
       }
 
-      #$this->tick("afterprocessing");
+      #wisski_tick("afterprocessing");
       
       // if this is a path query act upon it accordingly
       if($this->isPathQuery()) {
         
-      #  $this->tick("path query");
+      #  wisski_tick("path query");
         
         // construct the query
         $query = "";
