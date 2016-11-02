@@ -145,13 +145,14 @@ class WisskiCacheHelper {
     return NULL;
   }
   
-  /**
-   * if $entity_id is NULL, we will truncate the table
-   */
   static function flushPreviewImageUri($entity_id) {
     
-    if (is_null($entity_id)) db_truncate('wisski_preview_images');
-    else db_delete('wisski_preview_images')->condition('eid',$entity_id)->execute();
+    db_delete('wisski_preview_images')->condition('eid',$entity_id)->execute();
+  }
+  
+  static function flushAllPreviewImageUris() {
+    
+    db_truncate('wisski_preview_images')->execute();
   }
 
 }

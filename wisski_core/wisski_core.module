@@ -8,7 +8,7 @@ use Drupal\wisski_core\WisskiCacheHelper;
 function wisski_core_cache_flush() {
 
   WisskiCacheHelper::flushAllEntityTitles();
-  WisskiCacheHelper::flushPreviewImageUri(NULL);
+  WisskiCacheHelper::flushAllPreviewImageUris();
   drupal_set_message('Flushed the cache');
 }
 
