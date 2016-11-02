@@ -36,6 +36,11 @@ class WisskiCacheHelper {
     }
 
     // store the title in n-grams table
+    // we chop off titles that are too long
+    // TODO: make this better
+    if (mb_strlen($entity_title) > 128) {
+      $entity_title = mb_substr($entity_title, 0, 128);
+    }
     db_delete('wisski_title_n_grams')->condition('ent_num', $entity_id)->condition('bundle', empty($bundle_id) ? "default" : $bundle_id)->execute();
     db_insert('wisski_title_n_grams')->fields(array(
         'ent_num' => $entity_id,
