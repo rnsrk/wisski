@@ -58,7 +58,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   
   protected function pagerQuery($limit,$offset) {
     
-    wisski_tick();
+    //wisski_tick();
     $num_queries = count($this->dependent_queries);
     $running_queries = array();
     //we now go and ask all sub_queries whether they have enough answers to fill the offset.
@@ -74,18 +74,18 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     }
     $sub_queries = array_intersect_key($this->dependent_queries,array_flip($running_queries));
     $results = array();
-    wisski_tick('Count');
+    //wisski_tick('Count');
     foreach ($sub_queries as $key => $query) {
       $query = $query->normalQuery();
       $query->range($offset / $num_queries,$limit);
       $new_results = $query->execute();
-      wisski_tick('query '.$key);
+      //wisski_tick('query '.$key);
       $results = array_unique(array_merge($results,$new_results));
-      wisski_tick('rest '.$key);
+      //wisski_tick('rest '.$key);
     }
-    wisski_tick('Gather');
+    //wisski_tick('Gather');
     asort($results);
-    wisski_tick('sort');
+    //wisski_tick('sort');
     return array_slice($results,0,$limit);
   }
   

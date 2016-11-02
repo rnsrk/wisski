@@ -41,7 +41,7 @@ class Query extends WisskiQueryBase {
     
     // get all pbs
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
-wisski_tick('Prepared '.$adapterid);
+//wisski_tick('Prepared '.$adapterid);
     $ents = array();
     // iterate through all pbs
     foreach($pbs as $pb) {
@@ -62,11 +62,11 @@ wisski_tick('Prepared '.$adapterid);
         $limit = $this->range['length'];
         $offset = $this->range['start'];
       }
-wisski_tick('prepared '.$pb->id());
+//wisski_tick('prepared '.$pb->id());
       // care about everything...
       if($this->isFieldQuery()) {
         
-        wisski_tick("field query");
+        //wisski_tick("field query");
         
         $eidquery = NULL;
         $bundlequery = NULL;
@@ -109,11 +109,12 @@ wisski_tick('prepared '.$pb->id());
             if(in_array($bundlequery, $bundleids))
               $giveback =  array($thing['eid']);
 #            drupal_set_message(serialize($giveback) . "I give back for ask $eidquery");
+            //wisski_tick('Field query out 1');
             return $giveback;
           }
         }
         
-        wisski_tick("field query half");
+        //wisski_tick("field query half");
         
         foreach($this->condition->conditions() as $condition) {
           $field = $condition['field'];
@@ -127,23 +128,25 @@ wisski_tick('prepared '.$pb->id());
 #  	        drupal_set_message("I go and look for : " . serialize($value) . " and " . serialize($limit) . " and " . serialize($offset) . " and " . $this->count);
             if($this->count) {
 #   	         drupal_set_message("I give back to you: " . serialize($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE)));
+              //wisski_tick('Field query out 2');
               return $pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE, $this->condition->conditions());
             }
             
 #            dpm($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()), 'out!');
 #            dpm(array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions())), "muhaha!");
 #            return;           
+            //wisski_tick('Field query out 3');
             return array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()));
           }
         }
       }
 
-      wisski_tick("afterprocessing");
+      //wisski_tick("afterprocessing");
       
       // if this is a path query act upon it accordingly
       if($this->isPathQuery()) {
         
-        wisski_tick("path query");
+        //wisski_tick("path query");
         
         // construct the query
         $query = "";
@@ -202,7 +205,7 @@ wisski_tick('prepared '.$pb->id());
           $out[] = $entity_id;
           \Drupal::entityManager()->getStorage('wisski_individual')->writeToCache($entity_id,$bundle_id);
         }
-wisski_tick('path query out');                  
+        //wisski_tick('path query out');                  
         return $out;        
       }
     

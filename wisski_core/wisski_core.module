@@ -62,11 +62,11 @@ function wisski_trace($dpm=TRUE) {
 function wisski_tick($name='') {
   
   static $wisski_timestamp;
-  if (empty($name) && !isset($wisski_timestamp)) $wisski_timestamp = microtime(TRUE)*1000;
-  else {$now = microtime(TRUE)*1000;
-    dpm(ceil($now-$wisski_timestamp).' ms',$name);
-    $wisski_timestamp = $now;
-  }
+  $now = microtime(TRUE)*1000;
+  $diff = ceil($now-$wisski_timestamp);
+  if (!empty($name)) dpm($diff.' ms',$name);
+  $wisski_timestamp = $now;
+  return $diff;
 }
 
 

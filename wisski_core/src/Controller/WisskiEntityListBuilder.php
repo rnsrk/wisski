@@ -150,22 +150,13 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     return $build;
   }
 
-  protected $then = 0;
-
-  protected function tick($name='') {
-    
-    $now = microtime(TRUE)*1000;
-    if (!empty($name)) dpm(ceil($now-$this->then).' ms',$name);
-    $this->then = $now;
-  }
-  
   /**
    * {@inheritdoc}
    * We only load entities form the specified bundle
    */
   protected function getEntityIds() {
 #   dpm($this); 
-    wisski_tick();
+    //wisski_tick();
     $storage = $this->getStorage();
     $query = $storage->getQuery()
       ->sort($this->entityType->getKey('id'));
@@ -175,7 +166,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $query->pager($this->limit);
       $query->range($this->page*$this->limit,$this->limit);
     }
-    wisski_tick('prepare');
+    //wisski_tick('prepare');
     if (!empty($this->bundle)) {
       if ($pattern = $this->bundle->getTitlePattern()) {
         foreach ($pattern as $key => $attributes) {
@@ -185,14 +176,14 @@ class WisskiEntityListBuilder extends EntityListBuilder {
         }
       }
       $query->condition('bundle',$this->bundle->id());
-      wisski_tick('bundle pattern');
+      //wisski_tick('bundle pattern');
       $entity_ids = $query->execute();
-      wisski_tick('get ids');
+      //wisski_tick('get ids');
       foreach ($entity_ids as $eid) {
         $storage->writeToCache($eid,$this->bundle->id());
       }
       $this->num_entities = count($entity_ids);
-      wisski_tick('Caching');
+      //wisski_tick('Caching');
       return $entity_ids;
     } else return $query->execute();    
   }

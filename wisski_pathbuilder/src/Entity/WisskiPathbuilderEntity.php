@@ -170,11 +170,11 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      * Set the Bundle id for a given entity
      */
     public function setBundleIdForEntityId($eid, $bundleid) {
-      
+      wisski_tick();
       $cid = $this->generateCid($eid);
-      
+      wisski_tick('cid');
       \Drupal::cache()->set($cid, $bundleid);
-      
+      wisski_tick('cached '.$eid);
       return TRUE;
       
     }

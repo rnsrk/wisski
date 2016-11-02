@@ -747,7 +747,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
    *
    */ 
   public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE) {
-    
+
     $conds = array();
     // see if we have any conditions
     foreach($conditions as $cond) {
@@ -766,7 +766,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         $conds[] = $path;
       }
     }
-    
+
     // build the query
     if(!empty($count))
       $query = "SELECT (COUNT(?x0) as ?cnt) WHERE {";
@@ -818,8 +818,9 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 #    return;
     //dpm($query,__FUNCTION__.' '.$this->adapterId());
     // ask for the query
+
     $result = $this->directQuery($query);
-    
+
     $outarr = array();
 
     // for now simply take the first element
@@ -836,16 +837,19 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
       
       #$uri = str_replace('/','\\',$uri);
       // this is no uri anymore - rename this variable.
+      
       $uriname = $this->getDrupalId($uri);
-          
+      
       // store the bundleid to the bundle-cache as it might be important
       // for subsequent queries.
       $pathbuilder->setBundleIdForEntityId($uriname, $bundleid);
-      
+
       $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
     }
     //dpm($outarr, "outarr");
-#    return;
+
+    #    return;
+
     if (empty($outarr) && $count) return 0;
     return $outarr;
   }
