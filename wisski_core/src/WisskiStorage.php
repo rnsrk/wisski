@@ -366,7 +366,7 @@ if (empty($new_field_values)) continue;
           if (file_destination($local_file_uri,FILE_EXISTS_ERROR) === FALSE) {
             $file = File::create([
               'uri' => $local_file_uri,
-              'uid' => \Drupa::currentUser()->id(),
+              'uid' => \Drupal::currentUser()->id(),
               'status' => FILE_STATUS_PERMANENT,
             ]);
             $file->save();
