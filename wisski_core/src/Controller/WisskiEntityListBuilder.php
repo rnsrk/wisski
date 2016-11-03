@@ -328,10 +328,10 @@ class WisskiEntityListBuilder extends EntityListBuilder {
 
       return $preview_uri;
     } else {
-      //drupal_set_message("style didnt do it with " . $entity_id);
-      WisskiCacheHelper::putPreviewImageUri($entity_id,$output_uri);
+      drupal_set_message("Could not create a preview image for $input_uri. Probably its MIME-Type is wrong or the type is not allowed by your Imge Toolkit","error");
+      WisskiCacheHelper::putPreviewImageUri($entity_id,NULL);
 
-      return $output_uri;
+      return NULL;
     }
   }
   
