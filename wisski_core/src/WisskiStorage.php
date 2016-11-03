@@ -369,6 +369,7 @@ if (empty($new_field_values)) continue;
               'uid' => \Drupal::currentUser()->id(),
               'status' => FILE_STATUS_PERMANENT,
             ]);
+            $file->setFileName(drupal_basename($local_file_uri));
             $file->save();
             $value = $file->id();
           } else {
