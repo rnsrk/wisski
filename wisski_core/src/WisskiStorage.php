@@ -333,7 +333,7 @@ if (empty($new_field_values)) continue;
     }
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
-    if ($this->isLocalFileUri($file_uri) $local_file_uri = $file_uri;
+    if ($this->isLocalFileUri($file_uri)) $local_file_uri = $file_uri;
     else $local_file_uri = file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));
     // we now check for an existing 'file managed' with that uri
     $query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
