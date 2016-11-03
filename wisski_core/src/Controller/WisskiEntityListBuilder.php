@@ -38,7 +38,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
   //dpm(func_get_args(),__METHOD__); 
     
     if (!isset($this->limit))
-    $this->limit = \Drupal::config('wisski_core.settings')->get('wisski_max_entities_per_page');
+      $this->limit = \Drupal::config('wisski_core.settings')->get('wisski_max_entities_per_page');
     $this->bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->load($bundle);
 
     $build['#title'] = isset($this->bundle) ? $this->bundle->label() : $this->t('WissKI Entities');
@@ -355,6 +355,13 @@ class WisskiEntityListBuilder extends EntityListBuilder {
           'width' => isset($w) ? $w : 100,
           'height' => isset($h) ? $h : 100,
           'upscale' => FALSE,
+        ),
+      );
+      $image_style->addImageEffect($config);
+      $config = array(
+        'id' => 'image_convert',
+        'data' => array(
+          'extension' => 'JPEG',
         ),
       );
       $image_style->addImageEffect($config);
