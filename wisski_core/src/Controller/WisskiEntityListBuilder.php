@@ -361,7 +361,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $config = array(
         'id' => 'image_convert',
         'data' => array(
-          'extension' => 'JPEG',
+          'extension' => 'jpeg',
         ),
       );
       $image_style->addImageEffect($config);
