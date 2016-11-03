@@ -363,26 +363,30 @@ if (empty($new_field_values)) continue;
           //@TODO find out what to do if there is more than one file with that uri
         } else {
           // if we have no managed file with that uri, we try to generate one
-          try {
-            
-            //$file = File::create(array(
-            //  'uri'=>$file_uri,
-            //));
-            //dpm($file,'File Object');
-            //$file->save();
-            
-            $data = file_get_contents($file_uri);
-            //dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
-            $file = file_save_data($data, $local_file_uri);
-            if ($file) {
-              $value = $file->id();
-              //dpm('replaced '.$file_uri.' with new file '.$value);
-            } else {
-              drupal_set_message('Error saving file','error');
-              //dpm($data,$file_uri);
+          if (file_destination($local_file_uri,FILE_EXISTS_ERROR) === FALSE) {
+            $file = File::create([
+              'uri' => $local_file_uri,
+              'uid' => \Drupa::currentUser()->id(),
+              'status' => FILE_STATUS_PERMANENT,
+            ]);
+            $file->save();
+            $value = $file->id();
+          } else {
+            try {
+
+              $data = file_get_contents($file_uri);
+              //dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
+              $file = file_save_data($data, $local_file_uri);
+              if ($file) {
+                $value = $file->id();
+                //dpm('replaced '.$file_uri.' with new file '.$value);
+              } else {
+                drupal_set_message('Error saving file','error');
+                //dpm($data,$file_uri);
+              }
+            } catch (EntityStorageException $e) {
+              drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
             }
-          } catch (EntityStorageException $e) {
-            drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
           }
         }
       }
