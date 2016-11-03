@@ -333,8 +333,7 @@ if (empty($new_field_values)) continue;
     }
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
-    if ($this->isLocalFileUri($file_uri)) $local_file_uri = $file_uri;
-    else $local_file_uri = file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));
+    $local_file_uri = $this->ensureSchemedPublicFileUri($file_uri);
     // we now check for an existing 'file managed' with that uri
     $query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
     $file_ids = $query->execute();
@@ -394,10 +393,18 @@ if (empty($new_field_values)) continue;
     return $value;
   }
 
-  public function isLocalFileUri($file_uri) {
-    if (strpos($file_uri,\Drupal::service('stream_wrapper.public')->baseUrl()) === 0) return TRUE;
-    if (strpos($file_uri,'public:/') === 0) return TRUE;
-    return FALSE;
+  /**
+   * returns a file URI starting with public://
+   * if the input URI already looks like this we return unchanged, a full file path
+   + to the file directory will be renamed accordingly
+   * every other uri will be renamed by a hash function
+   */
+  public function ensureSchemedPublicFileUri($file_uri) {
+    if (strpos($file_uri,'public:/') === 0) return $file_uri;
+    if (strpos($file_uri,\Drupal::service('stream_wrapper.public')->baseUrl()) === 0) {
+      return $this->getSchemedUriFromPublicUri($file_uri);
+    }
+    return file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));    
   }
   
   public function getPublicUrlFromFileId($file_id) {
