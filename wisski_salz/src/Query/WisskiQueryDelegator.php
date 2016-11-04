@@ -54,6 +54,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       }
       self::$cached_result = $result;
       dpm('we got '.count($result).' entities');
+      dpm($result);
       return count($result);
     } else {
       $pager = FALSE;
@@ -176,7 +177,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    */
   public function pager($limit = 10, $element = NULL) {
     parent::pager($limit,$element);
-    foreach ($this->dependent_queries as $query) $query->pager($limit,$element);
+    //foreach ($this->dependent_queries as $query) $query->pager($limit,$element);
     return $this;
   }
 
@@ -185,7 +186,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    */
   public function range($start = NULL, $length = NULL) {
     parent::range($start,$length);
-    foreach ($this->dependent_queries as $query) $query->range($start,$length);
+    //foreach ($this->dependent_queries as $query) $query->range($start,$length);
     return $this;
   }
 
