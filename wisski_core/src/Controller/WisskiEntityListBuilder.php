@@ -34,11 +34,9 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * having to load all the entities
    */
   public function render($bundle = '',$entity=NULL) {
-
-  //dpm(func_get_args(),__METHOD__); 
     
-    if (!isset($this->limit))
-      $this->limit = \Drupal::config('wisski_core.settings')->get('wisski_max_entities_per_page');
+    //if (!isset($this->limit))
+    $this->limit = \Drupal::config('wisski_core.settings')->get('wisski_max_entities_per_page');
     $this->bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->load($bundle);
 
     $build['#title'] = isset($this->bundle) ? $this->bundle->label() : $this->t('WissKI Entities');

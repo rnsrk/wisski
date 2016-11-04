@@ -370,9 +370,9 @@ if (empty($new_field_values)) continue;
               'status' => FILE_STATUS_PERMANENT,
             ]);
             $file->setFileName(drupal_basename($local_file_uri));
-            //$mime_type = \Drupal::service('file.mime_type.guesser')->guess($local_file_uri);
-            //dpm($mime_type,'MIME');
-            //$file->setMimeType($mime_type);
+            $mime_type = \Drupal::service('file.mime_type.guesser')->guess($local_file_uri);
+            dpm($mime_type,'MIME');
+            $file->setMimeType($mime_type);
             $file->save();
             $value = $file->id();
           } else {
