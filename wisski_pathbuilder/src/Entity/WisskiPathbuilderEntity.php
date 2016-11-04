@@ -457,11 +457,19 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       // use medium as standard display
       // user can change this lateron      
       if(strpos($pbpaths[$pathid]['fieldtype'], 'image') !== FALSE) {
-        $display_options = array(
-          'type' => $pbpaths[$pathid]['formatterwidget'],
-          'settings' => array('image_style' => 'medium'),
-          'weight' => $pbpaths[$pathid]['weight'],
-        );
+        if(strpos($pbpaths[$pathid]['formatterwidget'], 'wisski_iip_image') !== FALSE) {
+          $display_options = array(
+            'type' => $pbpaths[$pathid]['formatterwidget'],
+            'settings' => array('colorbox_node_style' => 'medium', 'colorbox_image_style' => 'large'),
+            'weight' => $pbpaths[$pathid]['weight'],
+          );
+        } else {
+          $display_options = array(
+            'type' => $pbpaths[$pathid]['formatterwidget'],
+            'settings' => array('image_style' => 'medium'),
+            'weight' => $pbpaths[$pathid]['weight'],
+          );
+        }
       } else {
 
         $display_options = array(
