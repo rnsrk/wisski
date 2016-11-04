@@ -452,12 +452,24 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         'mode' => 'default',
         'status' => TRUE,
       );
-      
-      $display_options = array(
-        'type' => $pbpaths[$pathid]['formatterwidget'],
-        'settings' => array(),
-        'weight' => $pbpaths[$pathid]['weight'],
-      );
+
+      // Special case for images
+      // use medium as standard display
+      // user can change this lateron      
+      if(strpos($pbpaths[$pathid]['fieldtype'], 'image') !== FALSE) {
+        $display_options = array(
+          'type' => $pbpaths[$pathid]['formatterwidget'],
+          'settings' => array('image_style' => 'medium'),
+          'weight' => $pbpaths[$pathid]['weight'],
+        );
+      } else {
+
+        $display_options = array(
+          'type' => $pbpaths[$pathid]['formatterwidget'],
+          'settings' => array(),
+          'weight' => $pbpaths[$pathid]['weight'],
+        );
+      }
 
       // find the current display elements
       $display = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual' . '.'.$bundle.'.default');
