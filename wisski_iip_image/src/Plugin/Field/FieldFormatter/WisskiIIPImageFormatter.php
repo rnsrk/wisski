@@ -85,7 +85,29 @@
       }
 
       foreach ($files as $delta => $file) {
- 
+        
+        // in case of prerendered files - use these paths.        
+        $prerendered_paths = \Drupal::config('wisski_iip_image.settings')->get('wisski_iip_image_prerendered_path');
+        
+        // if there are paths
+        if(!empty($prerendered_paths)) {
+          $mainbreak = FALSE;
+          
+          // try if any of them has files
+          foreach($prerendered_paths as $prerendered_path) {
+            $image_uri = $prerendered_path . $file->getFilename();
+            
+            // if we find anything break here
+            if(file_exists($image_uri)) {
+              $mainbreak = TRUE;
+            }
+          }
+          // continue with next image
+          if($mainbreak)
+            continue;
+          // if we did not find anything we generate a derivative
+        }
+                
         $image_uri = ImageStyle::load('wisski_pyramid')->buildUri($file->getFileUri());
 
         if(!file_exists($image_uri))
