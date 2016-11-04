@@ -11,19 +11,31 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    * dependent query gets the same conditions etc.
    */
   private $dependent_queries = array();
+  
+  /**
+   * we cache the results since we cannot perform standard count queries. It is always possible that multiple adapters 
+   * return same entities. That means they would be counted more often than once, which would result in wrong numbers
+   * in a count query. So we perform a normal query every time and, if asked for the actual results we can return the cache
+   */
+  protected static $cached_result = NULL;
 
   public function __construct(EntityTypeInterface $entity_type,$condition,array $namespaces) {
     parent::__construct($entity_type,$condition,$namespaces);
     $adapters = entity_load_multiple('wisski_salz_adapter');
+    $preferred_queries = array();
+    $other_queries = array();
     foreach ($adapters as $adapter) {
       $query = $adapter->getQueryObject($this->entityType,$this->condition,$this->namespaces);
-      $this->dependent_queries[$adapter->id()] = $query;
+      if ($adapter->getEngine()->isPreferredLocalStore()) $preferred_queries[$adapter->id()] = $query;
+      else $other_queries[$adapter->id()] = $query;
     }
+    $this->dependent_queries = array_merge($preferred_queries,$other_queries);
   }
   
   public function execute() {
 #dpm($this,__METHOD__);
     if ($this->count) {
+      /*
       $result = 0;
       foreach ($this->dependent_queries as $adapter_id => $query) {
         $query = $query->count();
@@ -32,9 +44,18 @@ class WisskiQueryDelegator extends WisskiQueryBase {
           $result += $sub_result;
         else dpm($sub_result,'Wrong result type from '.$adapter_id);
       }
-      return $result;
-    } else {
+      return $result;*/
       $result = array();
+      foreach ($this->dependent_queries as $query) {
+        //set $query->count = FALSE;
+        $query = $query->normalQuery();
+        $sub_result = $query->execute();
+        $result = array_unique(array_merge($result,$sub_result));
+      }
+      self::$cached_result = $result;
+      dpm('we got '.count($result).' entities');
+      return count($result);
+    } else {
       $pager = FALSE;
       if ($this->pager) {
         $pager = TRUE;
@@ -43,6 +64,13 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         //thus we must reset $count for the dependent_queries
         $this->initializePager();
       }
+      if (isset(self::$cached_result)) {
+        //dpm('Had it cached');
+        if ($pager) return array_slice(self::$cached_result,$this->range['start'],$this->range['length']);
+        else return self::$cached_result;
+      }
+      $result = array();
+      
       if ($pager) {
         return $this->pagerQuery($this->range['length'],$this->range['start']);
       }
@@ -56,6 +84,33 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     }
   }
   
+  protected function pagerQuery($limit,$offset) {
+
+    //old version below
+    //wisski_tick();
+    
+    $results = array();
+    $act_offset = $offset;
+    $act_limit = $limit;
+    foreach ($this->dependent_queries as $key => $query) {
+      $query = $query->normalQuery();
+      $query->range($act_offset,$act_limit);
+      $new_results = $query->execute();
+      $res_count = count($new_results);
+      $results = array_unique(array_merge($results,$new_results));
+      if ($res_count === 0) {
+        $query->count;
+        $res_count = $query->execute();
+      }
+      if ($res_count < $act_limit) {
+        $act_limit = $act_limit - $res_count;
+        $act_offset = $act_offset - $res_count;
+      } else break;
+    }
+    
+    return array_slice($results,0,$limit);
+  }
+/*  
   protected function pagerQuery($limit,$offset) {
     
     //wisski_tick();
@@ -88,7 +143,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     //wisski_tick('sort');
     return array_slice($results,0,$limit);
   }
-  
+*/  
   /**
    * {@inheritdoc}
    */
