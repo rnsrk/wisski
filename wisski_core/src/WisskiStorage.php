@@ -331,9 +331,14 @@ if (empty($new_field_values)) continue;
       list($file_uri,$local_file_uri) = $cache->data;
       return $file_uri;
     }
+    
+    dpm($file_uri, "fu");
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
     $local_file_uri = $this->ensureSchemedPublicFileUri($file_uri);
+    
+    dpm($local_file_uri, "lofu");
+    
     // we now check for an existing 'file managed' with that uri
     $query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
     $file_ids = $query->execute();
@@ -344,17 +349,21 @@ if (empty($new_field_values)) continue;
       //@TODO find out what to do if there is more than one file with that uri
       $local_file_uri = $file_uri;
     } else {
+      dpm("else1");
       //try it with a "translated" uri in the public;// scheme
       $schemed_uri = $this->getSchemedUriFromPublicUri($file_uri);
       $query = \Drupal::entityQuery('file')->condition('uri',$schemed_uri);
       $file_ids = $query->execute();
       if (!empty($file_ids)) {
+        dpm("else2");
         $value = current($file_ids);
         //dpm('replaced '.$file_uri.' with schemed existing file '.$value);
         $local_file_uri = $schemed_uri;
       } else {
+        dpm("else3");
         $query = \Drupal::entityQuery('file')->condition('uri',$local_file_uri);
         $file_ids = $query->execute();
+        dpm($file_ids, "fids");
         if (!empty($file_ids)) {
           //we have a local file with the same filename.
           //lets assume this is the file we were looking for
@@ -377,7 +386,7 @@ if (empty($new_field_values)) continue;
             $value = $file->id();
           } else {
             try {
-
+              dpm("else4");
               $data = file_get_contents($file_uri);
               //dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
               $file = file_save_data($data, $local_file_uri);
@@ -412,7 +421,9 @@ if (empty($new_field_values)) continue;
     if (strpos($file_uri,\Drupal::service('stream_wrapper.public')->baseUrl()) === 0) {
       return $this->getSchemedUriFromPublicUri($file_uri);
     }
-    return file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));    
+    // this is evil in case it is not .tif or .jpeg but something with . in the name...
+#    return file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));    
+    return file_default_scheme().'://'.md5($file_uri);    
   }
   
   public function getPublicUrlFromFileId($file_id) {
