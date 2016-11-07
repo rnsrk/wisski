@@ -91,13 +91,22 @@ function wisski_local_store_query($query,$select=NULL) {
     if (isset($select)) {
       $sub = array();
       foreach ($select as $prop) {
-        if (property_exists($obj,$prop)) $sub[$prop] = $obj->{$prop}->getUri();
+        if (property_exists($obj,$prop)) {
+          $val = $obj->{$prop};
+          if (method_exists($val,'getUri'))
+            $sub[$prop] = $val->getUri();
+          else
+            $sub[$prop] = $val->dumpValue('text');
+        }
       }
       if (!empty($sub)) $out[] = $sub;
     } else {
       $sub = array();
       foreach ((array) $obj as $prop => $val) {
-        $sub[$prop] = $val->getUri();
+        if (method_exists($val,'getUri'))
+          $sub[$prop] = $val->getUri();
+        else
+          $sub[$prop] = $val->dumpValue('text');
       }
       if (!empty($sub)) $out[] = $sub;
     }

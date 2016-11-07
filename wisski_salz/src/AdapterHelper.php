@@ -8,6 +8,7 @@
 namespace Drupal\wisski_salz;
 
 use \Drupal\Component\Utility\UrlHelper;
+use \Drupal\wisski_salz\Entity\Adapter;
 
 class AdapterHelper {
 
@@ -203,29 +204,53 @@ class AdapterHelper {
     return NULL;
   }
   
+  public static function getUrisForDrupalId($eid,$adapter_id=NULL) {
+    
+    $result = self::doGetUrisForDrupalId($eid,$adapter_id);
+//    dpm(array('$eid'=>$eid,'$adapter_id'=>isset($adapter_id)? $adapter_id : 'NULL')+array('return'=>$result),__FUNCTION__);
+    return $result;
+  }
+  
   /**
    * returns a set of URIs that are associated with the given Drupal entity ID
+   * if there is no URI set for the given adapter, we will always try to create one.
    * @param $eid the entity's Drupal ID
    * @param $adapter_id if set the function will return at most one uri namely the one used in the adapter with this ID
    * @return an assocative array keyed by adapter ID with the associated URIs as values or | the URI associated with the input adapter
    */
-  public static function getUrisForDrupalId($eid,$adapter_id=NULL) {
+  public static function doGetUrisForDrupalId($eid,$adapter_id=NULL) {
+
     //dpm($eid,__FUNCTION__.' '.$adapter_id);
     $query = db_select('wisski_salz_id2uri','m')
       ->fields('m',array('adapter_id','uri'))
       ->condition('eid',$eid);
     if (isset($adapter_id)) $query->condition('adapter_id',$adapter_id);
     $out = $query->execute();
-    if (!empty($out)) {
-      if (isset($adapter_id)) return $out->fetchField(1);
-      return $out->fetchAllKeyed();
+    //dpm($out,'From DB');
+    if (isset($adapter_id)) {
+      $return = $out->fetchField(1);
+      //var_dump($return);
+      //dpm($return ? $return : 'FALSE','Single adapter');
+      if ($return !== FALSE) return $return;
+    } else {
+      $return = $out->fetchAllKeyed();
+      //dpm($return,'Multiple adapters');
+      if (!empty($return)) return $return;
     }
     if (isset($adapter_id)) {
+    
       $same_uri = self::getPreferredLocalStore(TRUE)->findUriForDrupalId($eid,$adapter_id);
-      self::setSameUris(array($adapter_id=>$same_uri),$eid);
+      //dpm($same_uri,'From Store with adapter '.$adapter_id);
+      if (empty($same_uri)) {
+        //create on fail
+        $same_uri = Adapter::load($adapter_id)->getEngine()->generateFreshIndividualUri();
+      }
+      $old_uris = self::getUrisForDrupalId($eid);
+      self::setSameUris($old_uris + array($adapter_id=>$same_uri),$eid);
       return $same_uri;
     } else {
       $same_uris = self::getPreferredLocalStore(TRUE)->getUrisForDrupalId($eid);
+      //dpm($same_uris,'From Store, no adapter');
       self::setSameUris($same_uris,$eid);
       return $same_uris;
     }

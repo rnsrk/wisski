@@ -65,6 +65,12 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
   public function setSameUris($uris, $entity_id);
   
   /**
+   * creates an individual URI that can be used in this very engine to
+   * identitfy an individual
+   */
+  public function generateFreshIndividualUri();
+  
+  /**
    * returns an array of adapter-specific properties to be used in the setSameUris and getSameUris functions
    * of this adapter, these may be user-manipulated
    */

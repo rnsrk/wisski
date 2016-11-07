@@ -357,6 +357,7 @@ abstract class Sparql11Engine extends EngineBase {
 	 */
 	public function getDrupalId($uri) {
 	  
+	  if (empty($uri)) return FALSE;
 	  if (is_numeric($uri)) {
 	    //danger zone, we assume a numeric $uri to be an entity ID itself
 	    return $uri;
@@ -400,7 +401,7 @@ abstract class Sparql11Engine extends EngineBase {
     $out = array();
     if (empty($results)) return array();
     foreach ($results as $obj) {
-       $out[$obj->adapter->dunpValue('text')] = $obj->uri->getUri();
+       $out[$obj->adapter->dumpValue('text')] = $obj->uri->getUri();
     }
     return $out;
   }
@@ -457,6 +458,10 @@ abstract class Sparql11Engine extends EngineBase {
       }
     }
     return FALSE;
+  }
+  
+  public function generateFreshIndividualUri() {
+    return uniqid($this->getDefaultDataGraphUri());
   }
   
   public function ensurePointyBrackets($uri) {

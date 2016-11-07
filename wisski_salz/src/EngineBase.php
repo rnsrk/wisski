@@ -313,4 +313,9 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
    */
   public abstract function setSameUris($uris, $entity_id);
   
+  /**
+   * {@inheritdoc}
+   */
+  public abstract function generateFreshIndividualUri();
+  
 }
