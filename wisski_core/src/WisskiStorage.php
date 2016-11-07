@@ -332,12 +332,9 @@ if (empty($new_field_values)) continue;
       return $file_uri;
     }
     
-    dpm($file_uri, "fu");
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
     $local_file_uri = $this->ensureSchemedPublicFileUri($file_uri);
-    
-    dpm($local_file_uri, "lofu");
     
     // we now check for an existing 'file managed' with that uri
     $query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
@@ -349,21 +346,21 @@ if (empty($new_field_values)) continue;
       //@TODO find out what to do if there is more than one file with that uri
       $local_file_uri = $file_uri;
     } else {
-      dpm("else1");
+
       //try it with a "translated" uri in the public;// scheme
       $schemed_uri = $this->getSchemedUriFromPublicUri($file_uri);
       $query = \Drupal::entityQuery('file')->condition('uri',$schemed_uri);
       $file_ids = $query->execute();
       if (!empty($file_ids)) {
-        dpm("else2");
+
         $value = current($file_ids);
         //dpm('replaced '.$file_uri.' with schemed existing file '.$value);
         $local_file_uri = $schemed_uri;
       } else {
-        dpm("else3");
+
         $query = \Drupal::entityQuery('file')->condition('uri',$local_file_uri);
         $file_ids = $query->execute();
-        dpm($file_ids, "fids");
+
         if (!empty($file_ids)) {
           //we have a local file with the same filename.
           //lets assume this is the file we were looking for
@@ -380,13 +377,13 @@ if (empty($new_field_values)) continue;
             ]);
             $file->setFileName(drupal_basename($local_file_uri));
             $mime_type = \Drupal::service('file.mime_type.guesser')->guess($local_file_uri);
-            dpm($mime_type,'MIME');
+
             $file->setMimeType($mime_type);
             $file->save();
             $value = $file->id();
           } else {
             try {
-              dpm("else4");
+
               $data = file_get_contents($file_uri);
               //dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
               $file = file_save_data($data, $local_file_uri);

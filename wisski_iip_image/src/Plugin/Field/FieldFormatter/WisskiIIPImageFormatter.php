@@ -109,7 +109,7 @@
         }
                 
         $image_uri = ImageStyle::load('wisski_pyramid')->buildUri($file->getFileUri());
-
+        
         if(!file_exists($image_uri))
           $image_style->createDerivative($file->getFileUri(),$image_uri);
 
