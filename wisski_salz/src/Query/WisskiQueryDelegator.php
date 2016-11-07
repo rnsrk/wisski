@@ -53,8 +53,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         $result = array_unique(array_merge($result,$sub_result));
       }
       self::$cached_result = $result;
-      dpm('we got '.count($result).' entities');
-      dpm($result);
+      #dpm('we got '.count($result).' entities');
+      #dpm($result);
       return count($result);
     } else {
       $pager = FALSE;
