@@ -22,6 +22,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
   private $num_entities;
   private $image_height;
   private $page;
+  private $there_is_more = FALSE;
   
   private $adapter;
   
@@ -147,16 +148,41 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       if ($cell_num > 0) $build['table']['#rows']['row'.$row_num] = $row;
     }
     
-    $build['more_button'] = array(
-      '#type' => 'button',
-      '#value' => $this->t('Load More'),
-      '#ajax' => array(
-        'wrapper' => 'wisski-entity-list',
-        'callback' => array($this,'loadMoreButton'),
-      ),
-      '#submit' => array(),
-      '#limit_validation_errors' => array(),
+    $build['custom_pager']['#type'] = 'container';
+    $build['custom_pager']['#attributes']['class'] = 'text-align-center';
+    
+    $build['custom_pager']['first_link'] = array(
+      '#type' => 'link',
+      '#title' => '<<'.$this->t('First'),
+      '#url' => Url::fromRoute('<current>',array('page'=>0)),
+      '#suffix' => '&nbsp;&nbsp;',
     );
+    
+    if ($this->page <= 1) {
+      $build['custom_pager']['first_link']['#attributes']['class'] = 'invisible';
+    }
+
+    $build['custom_pager']['back_link'] = array(
+      '#type' => 'link',
+      '#title' => '<'.$this->t('Previous'),
+      '#url' => Url::fromRoute('<current>',array('page'=>$this->page-1)),
+      '#suffix' => '&nbsp;&nbsp;',
+    );
+    
+    if ($this->page < 1) {
+      $build['custom_pager']['back_link']['#attributes']['class'] = 'invisible';
+    }
+    
+    $build['custom_pager']['next_link'] = array(
+      '#type' => 'link',
+      '#title' => $this->t('Next').'>',
+      '#url' => Url::fromRoute('<current>',array('page'=>$this->page+1)),
+    );
+    
+    if ($this->there_is_more === FALSE) {
+      $build['custom_pager']['next_link']['#attributes']['class'] = 'invisible';
+    }
+
     
     $build['grid_type'] = $this->getGridTypeBlock();
     
@@ -169,13 +195,6 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     
 //    dpm($build);
     return $build;
-  }
-
-  public function loadMoreButton(array $form, \Drupal\Core\Form\FormStateInterface $form_state) {
-    
-    dpm(__FUNCTION__);
-    $this->page++;
-    return $form['table'];
   }
 
   /**
@@ -192,7 +211,8 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     // Only add the pager if a limit is specified.
     if ($this->limit) {
       $query->pager($this->limit);
-      $query->range($this->page*$this->limit,$this->limit);
+      //we query for one more, so we know if we must show the Next button of the pager
+      $query->range($this->page*$this->limit,$this->limit+1);
     }
     //dpm($query);
     if (!empty($this->bundle)) {
@@ -210,10 +230,16 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       foreach ($entity_ids as $eid) {
         $storage->writeToCache($eid,$this->bundle->id());
       }
-      $this->num_entities = count($entity_ids);
-
-      return $entity_ids;
-    } else return $query->execute();    
+      
+      $return = $entity_ids;
+    } else $return = $query->execute();
+    $this->num_entities = count($return);
+    if ($this->limit && $this->limit < $this->num_entities) {
+      $this->there_is_more = TRUE;
+      $this->num_entities--;
+      array_pop($return);
+    }
+    return $return;
   }
 
   private function getOperationLinks($entity_id) {
