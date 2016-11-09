@@ -40,9 +40,10 @@ class AdapterHelper {
       //do not save the URI-ified EID to the database
       unset($uris[$drupal_aid]);
     }
-    $cached = db_select('wisski_salz_id2uri','m')->fields('m')->condition('uri',$uris,'IN')->execute();
-    if (is_null($entity_id)) {
-      $set_ids = $cached->fetchAllAssoc('eid');
+    $cached = db_select('wisski_salz_id2uri','m')->fields('m',array('rid','uri','eid','adapter_id'))->condition('uri',$uris,'IN')->execute();
+    //fetch the 'eid' column into $set_ids
+    $set_ids = $cached->fetchCol(2);
+    if (is_null($entity_id)) {  
       if (count($set_ids) === 1) {
         $entity_id = key($set_ids);
       } else {
@@ -51,6 +52,9 @@ class AdapterHelper {
         }
         return FALSE;
       }
+    } elseif (!in_array($entity_id,$set_ids)) {
+      drupal_set_message('There are multiple entities connected with those uris','error');    
+      return FALSE;
     }
     $rows = $cached->fetchAllAssoc('adapter_id');
     foreach ($uris as $aid => $uri) {

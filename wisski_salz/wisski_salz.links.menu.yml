@@ -11,4 +11,3 @@ wisski_salz.admin.overview1:
   parent: system.admin_config
   route_name: wisski_salz.admin.overview1
   weight: -99
-           

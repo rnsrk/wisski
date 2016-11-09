@@ -52,10 +52,10 @@
 
 # -- end old routes --
 
-wisski.display_settings:
+wisski.config_menu:
   path: '/admin/config/wisski/display_settings'
   defaults:
-    _form: '\Drupal\wisski_core\Form\WisskiDisplaySettingsForm'
+    _form: '\Drupal\wisski_core\Form\WisskiConfigForm'
   requirements:
     _permission: 'administer wisski bundles'
 

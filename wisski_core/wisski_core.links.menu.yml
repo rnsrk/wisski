@@ -36,11 +36,11 @@ wisski.search_entities:
   route_name: search.view_wisski_search
   weight: 10
 
-wisski.display_settings:
-  title: 'WissKI Display Settings'
-  description: 'Specify display configurations'
+wisski.config_menu:
+  title: 'WissKI Configuration'
+  description: 'Specify display configurations, Flush caches etc.'
   parent: wisski.content
-  route_name: wisski.display_settings
+  route_name: wisski.config_menu
   weight: 50
 
 wisski.wisski_ontology:
