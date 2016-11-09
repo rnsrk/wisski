@@ -33,9 +33,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   }
   
   public function execute() {
-#dpm($this,__METHOD__);
+  
+    //dpm($this,__METHOD__);
     if ($this->count) {
-      /*
+  /*      
       $result = 0;
       foreach ($this->dependent_queries as $adapter_id => $query) {
         $query = $query->count();
@@ -63,7 +64,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         //initializePager() generates a clone of $this with $count = TRUE
         //this is then passed to the dependent_queries which are NOT cloned
         //thus we must reset $count for the dependent_queries
-        $this->initializePager();
+        //$this->initializePager();
       }
       if (isset(self::$cached_result)) {
         //dpm('Had it cached');

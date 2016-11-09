@@ -72,8 +72,12 @@ class WisskiEntityListBuilder extends EntityListBuilder {
         'contexts' => $this->entityType->getListCacheContexts(),
         'tags' => $this->entityType->getListCacheTags(),
       ],
+      '#prefix' => '<div id="wisski-entity-list">',
+      '#suffix' => '</div>',
     );
+    
     $entities = $this->getEntityIds();
+    //dpm($entities,'Entities to load');
     
     WisskiCacheHelper::preparePreviewImages($entities);
     
@@ -143,21 +147,35 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       if ($cell_num > 0) $build['table']['#rows']['row'.$row_num] = $row;
     }
     
+    $build['more_button'] = array(
+      '#type' => 'button',
+      '#value' => $this->t('Load More'),
+      '#ajax' => array(
+        'wrapper' => 'wisski-entity-list',
+        'callback' => array($this,'loadMoreButton'),
+      ),
+      '#submit' => array(),
+      '#limit_validation_errors' => array(),
+    );
+    
     $build['grid_type'] = $this->getGridTypeBlock();
     
-    // Only add the pager if a limit is specified.
+/*    // Only add the pager if a limit is specified.
     if ($this->limit) {
       $build['pager'] = array(
         '#type' => 'pager',
       );
-    }
+    }*/
+    
+//    dpm($build);
     return $build;
   }
 
-  public function tableCallback(array $form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  public function loadMoreButton(array $form, \Drupal\Core\Form\FormStateInterface $form_state) {
     
-    dpm(func_get_args(),__FUNCTION__);
-    return '<h1> kaboom </h1>';
+    dpm(__FUNCTION__);
+    $this->page++;
+    return $form['table'];
   }
 
   /**
@@ -165,7 +183,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * We only load entities from the specified bundle
    */
   protected function getEntityIds() {
-#   dpm($this); 
+   //dpm($this,__METHOD__); 
 
     $storage = $this->getStorage();
     $query = $storage->getQuery()
@@ -176,11 +194,11 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $query->pager($this->limit);
       $query->range($this->page*$this->limit,$this->limit);
     }
-
+    //dpm($query);
     if (!empty($this->bundle)) {
       if ($pattern = $this->bundle->getTitlePattern()) {
         foreach ($pattern as $key => $attributes) {
-          if ($attributes['type'] === 'field' && !$attributes['optional']) {
+          if ($attributes['type'] === 'path' && !$attributes['optional']) {
             $query->condition($attributes['name']);
           }
         }

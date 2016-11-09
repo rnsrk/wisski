@@ -49,11 +49,13 @@ class AdapterHelper {
       } else {
         if (count($set_ids) > 1) {
           drupal_set_message('There are multiple entities connected with those uris','error');
+          dpm($set_ids,'multiple IDs');
         }
         return FALSE;
       }
-    } elseif (!in_array($entity_id,$set_ids)) {
-      drupal_set_message('There are multiple entities connected with those uris','error');    
+    } elseif (!empty($set_ids) && !in_array($entity_id,$set_ids)) {
+      drupal_set_message('There are already entities connected with those uris','error');
+      dpm($set_ids+array('new'=>$entity_id),'IDs');
       return FALSE;
     }
     $rows = $cached->fetchAllAssoc('adapter_id');
@@ -151,7 +153,8 @@ class AdapterHelper {
    * @return the entity's Drupal ID
    */
   public static function getDrupalIdForUri($uri,$create_on_fail=TRUE,$input_adapter_id=NULL) {
-
+  
+    //drupal_set_message($uri);
     //dpm(func_get_args(),__FUNCTION__);
     $query = db_select('wisski_salz_id2uri','m')
       ->fields('m')
@@ -162,6 +165,7 @@ class AdapterHelper {
     //if we have exactly one result for the eid return it
     if (count($ids) === 1) {
       //dpm(key($ids),'from DB');
+      //drupal_set_message(key($ids));
       return key($ids);
     }
     
