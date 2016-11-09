@@ -558,6 +558,12 @@ if (empty($new_field_values)) continue;
       return;
     }
     
+    if($diff = array_diff_key($local_adapters,$writeable_adapters)) {
+      if (count($diff) === 1)
+        drupal_set_message('The preferred local store '.key($diff).' is not writeable','warning');
+      else drupal_set_message('The preferred local stores '.implode(', ',array_keys($diff)).' are not writeable','warning');
+    }
+    
     //we load all pathbuilders, check if they know the fields and have writeable adapters
     $pathbuilders = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
     
@@ -591,11 +597,12 @@ if (empty($new_field_values)) continue;
     //dpm($values,'new values');
     $real_new_values = array_diff_key($values,$original_values);
     //dpm($real_new_values,'Really new values');
+    
     if (!$create_new) $create_new = !empty($real_new_values);
     unset($real_new_values);
 #    drupal_set_message("lwa: " . serialize($local_writeable_adapters));
 #    drupal_set_message("wa: " . serialize($writeable_adapters));
-
+    //dpm($create_new ? 'Gotta create' : 'don\'t create');
 //    dpm(count($local_adapters),'how many');
     foreach($pathbuilders as $pb_id => $pb) {
       
@@ -620,7 +627,7 @@ if (empty($new_field_values)) continue;
           //we force the writable adapter to write values for newly created entities even if unknown to the adapter by now
           //@TODO return correct success code
           $adapter_info = $adapter->writeFieldValues($entity_id, $values, $pb, $bundle_id, $original_values,$create_new);
-          //dpm($aid,'Success');
+          //dpm('Success',$aid);
           $success = TRUE;
         } catch (\Exception $e) {
           drupal_set_message('Could not write entity into adapter '.$adapter->id() . ' because ' . serialize($e->getMessage()));

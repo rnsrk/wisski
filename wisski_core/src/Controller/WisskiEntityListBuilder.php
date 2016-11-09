@@ -154,9 +154,15 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     return $build;
   }
 
+  public function tableCallback(array $form, \Drupal\Core\Form\FormStateInterface $form_state) {
+    
+    dpm(func_get_args(),__FUNCTION__);
+    return '<h1> kaboom </h1>';
+  }
+
   /**
    * {@inheritdoc}
-   * We only load entities form the specified bundle
+   * We only load entities from the specified bundle
    */
   protected function getEntityIds() {
 #   dpm($this); 

@@ -174,6 +174,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       foreach ($pattern_order as $pos) {
         if (isset($parts[$pos])) $title .= $parts[$pos];
       }
+      if (empty(trim($title)) $title = $fallback_title;
     }
     $this->setCachedTitle($entity_id,$title);
     //dpm(array_combine(['$entity_id','$fallback_title','$include_bundle','$force_new'],func_get_args())+array('pattern'=>$pattern,'result'=>$title),__METHOD__);

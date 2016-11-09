@@ -2056,6 +2056,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     
     // if there is nothing, continue.
     if (empty($entity)) {
+      dpm('empty entity',__FUNCTION__);
       if ($force_new) {
         $entity = new WisskiEntity(array('eid' => $entity_id,'bundle' => $bundle_id),'wisski_individual',$bundle_id);
         $this->createEntity($entity,$entity_id);
@@ -2070,17 +2071,21 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         $old_values = $old_values[$entity_id];
     }
 
-    #drupal_set_message("the old values were: " . serialize($old_values));
-
+    //drupal_set_message("the old values were: " . serialize($old_values));
+    //dpm($old_values,'old values');
+    //dpm($field_values,'new values');
+    
     foreach($field_values as $key => $fieldvalue) {
       #drupal_set_message("key: " . serialize($key) . " fieldvalue is: " . serialize($fieldvalue)); 
       //dpm($key,'field');
       $path = $pathbuilder->getPbEntriesForFid($key);
 
-      if(empty($path)) 
+      if(empty($path)) {
+        //drupal_set_message("I leave here: $key");
         continue;
+      }
         
-      #drupal_set_message("I am still here: $key");
+      drupal_set_message("I am still here: $key");
 
       $mainprop = $fieldvalue['main_property'];
       
@@ -2088,7 +2093,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
       
       foreach($fieldvalue as $key2 => $val) {
 
-        #drupal_set_message(serialize($val[$mainprop]) . " new");
+        drupal_set_message(serialize($val[$mainprop]) . " new");
         #drupal_set_message(serialize($old_values[$key]) . " old");
 
         // check if there are any old values. If not, delete nothing.
@@ -2110,7 +2115,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
           
         // now write to the database
         
-        #drupal_set_message($entity_id . "I really write!" . serialize($val[$mainprop])  . " and " . serialize($old_values[$key]) );
+        drupal_set_message($entity_id . "I really write!" . serialize($val[$mainprop])  . " and " . serialize($old_values[$key]) );
         #return;
         
           // first delete the old values
@@ -2119,7 +2124,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
           else
             $this->deleteOldFieldValue($entity_id, $key, $old_values[$key], $pathbuilder);
         }
-        //dpm(array('$entity_id'=>$entity_id,'$key'=>$key,'value' => $val[$mainprop],'$pathbuilder'=>$pathbuilder),'try writing');
+        dpm(array('$entity_id'=>$entity_id,'$key'=>$key,'value' => $val[$mainprop],'$pathbuilder'=>$pathbuilder),'try writing');
         // add the new ones
         $this->addNewFieldValue($entity_id, $key, $val[$mainprop], $pathbuilder); 
         
