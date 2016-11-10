@@ -8,12 +8,13 @@ use Drupal\image\Entity\ImageStyle;
 function wisski_iip_image_preprocess_colorbox_formatter(&$variables) {
   $iu = $variables['image']['#uri'];
 
-  $prerendered_path = \Drupal::config('wisski_iip_image.settings')->get('wisski_iip_image_prerendered_path');
+  $prerendered_paths = \Drupal::config('wisski_iip_image.settings')->get('wisski_iip_image_prerendered_path');
 
   $nuri = NULL;
   if(!empty($prerendered_paths)) {
     foreach($prerendered_paths as $prerendered_path) {
       $nuri = $prerendered_path . $variables['image']['#alt'];
+
       if(file_exists($nuri))
         break;
       $nuri = NULL;
