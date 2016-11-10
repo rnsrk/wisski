@@ -36,16 +36,19 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   
     //dpm($this,__METHOD__);
     if ($this->count) {
-  /*      
+  
       $result = 0;
       foreach ($this->dependent_queries as $adapter_id => $query) {
         $query = $query->count();
         $sub_result = $query->execute() ? : 0;
+        //dpm($adapter_id.' counted '.$sub_result);
         if (is_numeric($sub_result))
           $result += $sub_result;
         else dpm($sub_result,'Wrong result type from '.$adapter_id);
       }
-      return $result;*/
+      //dpm('we counted '.$result);
+      return $result;
+      /*
       $result = array();
       foreach ($this->dependent_queries as $query) {
         //set $query->count = FALSE;
@@ -56,7 +59,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       self::$cached_result = $result;
       #dpm('we got '.count($result).' entities');
       #dpm($result);
-      return count($result);
+      return count($result);*/
     } else {
       $pager = FALSE;
       if ($this->pager) {
@@ -64,7 +67,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         //initializePager() generates a clone of $this with $count = TRUE
         //this is then passed to the dependent_queries which are NOT cloned
         //thus we must reset $count for the dependent_queries
-        //$this->initializePager();
+        $this->initializePager();
       }
       if (isset(self::$cached_result)) {
         //dpm('Had it cached');
@@ -99,14 +102,17 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       $query->range($act_offset,$act_limit);
       $new_results = $query->execute();
       $res_count = count($new_results);
+      //dpm($res_count,$key.' '.$act_offset.' '.$act_limit);
       $results = array_unique(array_merge($results,$new_results));
       if ($res_count === 0) {
-        $query->count;
+        $query->count();
         $res_count = $query->execute();
-      }
-      if ($res_count < $act_limit) {
-        $act_limit = $act_limit - $res_count;
+        if (!is_numeric($res_count)) $res_count = 0;
+        //dpm($res_count,$key.' full count');
         $act_offset = $act_offset - $res_count;
+      } elseif ($res_count < $act_limit) {
+        $act_limit = $act_limit - $res_count;
+        $act_offset = 0;
       } else break;
     }
     

@@ -148,6 +148,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       if ($cell_num > 0) $build['table']['#rows']['row'.$row_num] = $row;
     }
     
+    /*
     $build['custom_pager']['#type'] = 'container';
     $build['custom_pager']['#attributes']['class'] = 'text-align-center';
     
@@ -182,16 +183,16 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     if ($this->there_is_more === FALSE) {
       $build['custom_pager']['next_link']['#attributes']['class'] = 'invisible';
     }
-
+    */
     
     $build['grid_type'] = $this->getGridTypeBlock();
     
-/*    // Only add the pager if a limit is specified.
+    // Only add the pager if a limit is specified.
     if ($this->limit) {
       $build['pager'] = array(
         '#type' => 'pager',
       );
-    }*/
+    }
     
 //    dpm($build);
     return $build;
@@ -212,7 +213,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     if ($this->limit) {
       $query->pager($this->limit);
       //we query for one more, so we know if we must show the Next button of the pager
-      $query->range($this->page*$this->limit,$this->limit+1);
+      $query->range($this->page*$this->limit,$this->limit);
     }
     //dpm($query);
     if (!empty($this->bundle)) {
@@ -234,11 +235,13 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $return = $entity_ids;
     } else $return = $query->execute();
     $this->num_entities = count($return);
+    /*
     if ($this->limit && $this->limit < $this->num_entities) {
       $this->there_is_more = TRUE;
       $this->num_entities--;
       array_pop($return);
     }
+    */
     return $return;
   }
 
