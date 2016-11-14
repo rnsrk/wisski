@@ -177,10 +177,15 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    */
   public function writeFieldValues($entity_id,array $field_values,$pathbuilder,$bundle = NULL,$original_values=array(),$force_creation=FALSE);
 
-    
   /**
    * Checks if the engine knows something about the URI.
    */
   public function checkUriExists($uri);
   
+  
+  /**
+   * Checks if the URI is in a valid syntax for this very adapter
+   * @return TRUE if yes, FALSE otherwise
+   */
+  public function isValidUri($uri);
 }

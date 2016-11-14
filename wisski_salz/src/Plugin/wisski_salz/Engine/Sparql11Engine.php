@@ -348,6 +348,17 @@ abstract class Sparql11Engine extends EngineBase {
 		return $this->getEndpoint()->update($query);
 	}
 
+	public function checkUriExists($uri) {
+	  
+	  //dpm($this,__FUNCTION__);
+	  if ($this->isValidUri("<$uri>")) {
+  	  $query = "ASK {{<$uri> ?p ?o.} UNION {?s ?p <$uri>.}}";
+  	  $result = $this->directQuery($query);
+  	  return $result->isTrue();
+	  }
+	  return FALSE;
+	}
+
 	/**
 	 * this is not a true alias for {@see self::getDrupalIdForUri}
 	 * since it is the internal function that needs EXTERNAL information, i.e. from the AdapterHelper

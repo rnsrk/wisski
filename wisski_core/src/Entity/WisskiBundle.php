@@ -48,12 +48,27 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   use StringTranslationTrait;
   
+  /** constants to identify empty title reaction types */
+  const DONT_SHOW = 1;
+  const FALLBACK_TITLE = 2;
+  
   /**
    * The field based pattern for the entity title generation.
    * A serialized array.
    * @var string
    */
   protected $title_pattern = '';
+  
+  /**
+   * The way in which to react on the detection of an invalid title
+   * defaults to fallback title
+   */
+  protected $on_empty = self::FALLBACK_TITLE;
+  
+  /**
+   * The fallback title that may be shown when an entity title cannot be resolved
+   */
+  protected $fallback_title = 'WissKI Entity';
   
   /**
    * The pager limit for the bundle based entity list
@@ -306,6 +321,29 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       $this->title_pattern = $input;
       $this->flushTitleCache(); 
     }
+  }
+
+  public function onEmpty() {
+    
+    return $this->on_empty;
+  }
+  
+  public function setOnEmpty($type) {
+    
+    if ($type === self::FALLBACK_TITLE || $type === self::DONT_SHOW) {
+      $this->on_empty = $type;
+    }
+  }
+  
+  public function getFallbackTitle() {
+    
+    return $this->fallback_title;
+  }
+  
+  public function setFallbackTitle($fallback_title) {
+    
+    if (is_string($fallback_title) && !empty($fallback_title))
+      $this->fallback_title = $fallback_title;
   }
 
   public function getPagerLimit() {

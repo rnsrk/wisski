@@ -10,6 +10,7 @@ use Drupal\Core\Render\Element;
 use Drupal\Core\Ajax\AjaxResponse;
 
 use Drupal\wisski_core\WisskiHelper;
+use Drupal\wisski_core\Entity\WisskiBundle;
 
 class WisskiTitlePatternForm extends EntityForm {
 
@@ -20,7 +21,7 @@ class WisskiTitlePatternForm extends EntityForm {
    */
   public function form(array $form, FormStateInterface $form_state) {
   
-//    dpm(func_get_args(),__METHOD__);
+    //dpm(func_get_args(),__METHOD__);
     
     $form = parent::form($form, $form_state);
     
@@ -28,7 +29,6 @@ class WisskiTitlePatternForm extends EntityForm {
     $form['#entity'] = $bundle = $this->entity;
     
     $form['#title'] = $this->t('Edit title pattern for bundle %label', array('%label' => $bundle->label()));
-
 
     $options = $bundle->getPathOptions();
     //dpm($options,'Path Options');
@@ -44,6 +44,7 @@ class WisskiTitlePatternForm extends EntityForm {
       $max_id = $pattern['max_id'];
       unset($pattern['max_id']);
     }
+    
     $count = count($pattern)-1;
 
     //if user added or removed a new title element, find out the type and add a template with standard values
@@ -85,6 +86,9 @@ class WisskiTitlePatternForm extends EntityForm {
           //this may not happen
           drupal_set_message($this->t('Please choose a path to add'),'error');
         }
+      } elseif ($trigger === 'on_empty_selection') {
+        $on_empty_selection = $form_state->getUserInput()['on_empty_selection'];
+        //dpm($on_empty_selection,'sel');
       } else {
         $xpl = explode(':',$trigger);
         if ($xpl[0] === 'remove' && isset($xpl[1])) {
@@ -132,7 +136,12 @@ class WisskiTitlePatternForm extends EntityForm {
         $form['pattern'][$key] = $this->renderRow($key,$attributes);
       }
     }
-    $form['path_select_box'] = array(
+    
+    $form['add_element'] = array(
+      '#type' => 'fieldset',
+      '#title' => $this->t('Add a title element'),
+    );
+    $form['add_element']['path_select_box'] = array(
       '#type' => 'select',
       '#options' => $options,
       '#title' => $this->t('Add a path'),
@@ -142,8 +151,9 @@ class WisskiTitlePatternForm extends EntityForm {
         'callback' => 'Drupal\wisski_core\Form\WisskiTitlePatternForm::ajaxResponse',
         'wrapper' => 'wisski-title-table'
       ),
+      //'#limit_validation_errors' => array(),
     );
-    $form['new_text'] = array(
+    $form['add_element']['new_text'] = array(
       '#type' => 'button',
       '#value' => $this->t('Add a text block'),
       '#ajax' => array(
@@ -153,6 +163,57 @@ class WisskiTitlePatternForm extends EntityForm {
       '#name' => 'new-text-button',
       '#limit_validation_errors' => array(),
     );
+
+    $on_empty_options = array(
+      WisskiBundle::DONT_SHOW => $this->t('Do not show the entity in the navigate list'),
+      WisskiBundle::FALLBACK_TITLE => $this->t('Show a generic title'),
+    );
+    
+    if (!isset($on_empty_selection)) $on_empty_selection = WisskiBundle::FALLBACK_TITLE;
+    
+    $form['on_empty'] = array(
+      '#type' => 'fieldset',
+      '#title' => $this->t('Reaction on Empty title'),
+      '#prefix' => '<div id=\'wisski-fallback-title\'>',
+      '#suffix' => '</div>',
+      'notice' => array(
+        '#type' => 'item',
+        '#markup' => $this->t('What to do if an entity\'s title is resolved to an empty string')
+      ),
+      'on_empty_selection' => array(
+        '#type' => 'radios',
+        '#options' => $on_empty_options,
+        '#default_value' => $bundle->onEmpty(),
+        //'#value' => $on_empty_selection,
+        '#ajax' => array(
+          'wrapper' => 'wisski-fallback-title',
+          'callback' => array($this,'onEmptyCallback'),
+          //'callback' => '\Drupal\wisski_core\Form\WisskiTitlePatternForm::onEmptyCallback',
+          'event' => 'change',
+        ),
+        '#limit_validation_errors' => array(),
+        //'#name' => 'on_empty_selection',
+      ),
+    );
+    
+    $form['on_empty']['textfield'] = array(
+      '#name' => 'on_empty_fallback_title',
+      
+    );
+    
+    if ($on_empty_selection == WisskiBundle::FALLBACK_TITLE) {
+	    $form['on_empty']['textfield'] = array(
+        '#type' => 'textfield',
+        '#default_value' => $bundle->getFallbackTitle(),
+        '#title' => $this->t('Fallback Title'),    
+      );
+    } else {    
+  	  $form['on_empty']['textfield'] = array(
+        '#type' => 'hidden',
+        //'#markup' => 'empty',
+      );
+    }
+    
     
     $form['help'] = array(
       '#type' => 'details',
@@ -299,10 +360,16 @@ class WisskiTitlePatternForm extends EntityForm {
   /**
    * AJAX response for Field Selection
    */
-  public function ajaxResponse(array &$form, FormStateInterface $form_state) {
+  public static function ajaxResponse(array &$form, FormStateInterface $form_state) {
 
 	  //dpm($form_state->getStorage()['cached_pattern'],'Cached Pattern');
   	return $form['pattern'];
+  }
+  
+  public function onEmptyCallback(array &$form, FormStateInterface $form_state) {
+    
+    \Drupal::logger('Wisski AJAX '.__FUNCTION__)->debug($form_state->getTriggeringElement()['#name']);
+  	return $form['on_empty'];
   }
 
   /**
@@ -412,9 +479,14 @@ class WisskiTitlePatternForm extends EntityForm {
     
     /** @var  \Drupal\wisski_core\WisskiBundleInterface $bundle */
     $bundle = $this->entity;
+    
     $pattern = $form_state->getValue('pattern');
     
     $bundle->setTitlePattern($pattern);
+    
+    $values = $form_state->getValues();
+    dpm($values);
+    
     $bundle->save();
     
     drupal_set_message(t('The title pattern for bundle %name has been updated.', array('%name' => $bundle->label())));

@@ -32,6 +32,8 @@ class AdapterHelper {
    * @return TRUE on success, FALSE otherwise
    */
   public static function setSameUris($uris,$entity_id=NULL) {
+  
+    if (empty($uris)) return TRUE;
     //dpm($uris,__FUNCTION__.' '.$entity_id);
     $drupal_aid = self::getDrupalAdapterNameAlias();
     if (array_key_exists($drupal_aid, $uris)) {
@@ -40,27 +42,35 @@ class AdapterHelper {
       //do not save the URI-ified EID to the database
       unset($uris[$drupal_aid]);
     }
-    $cached = db_select('wisski_salz_id2uri','m')->fields('m',array('rid','uri','eid','adapter_id'))->condition('uri',$uris,'IN')->execute();
+    $set_ids = db_select('wisski_salz_id2uri','m')
+      ->fields('m',array('rid','uri','eid','adapter_id'))
+      ->condition('uri',$uris,'IN')
+      ->execute()
+      ->fetchCol(2);
     //fetch the 'eid' column into $set_ids
-    $set_ids = $cached->fetchCol(2);
+    //dpm($set_ids,'set IDs');
     if (is_null($entity_id)) {  
       if (count($set_ids) === 1) {
         $entity_id = key($set_ids);
       } else {
         if (count($set_ids) > 1) {
           drupal_set_message('There are multiple entities connected with those uris','error');
-          dpm($set_ids,'multiple IDs');
+          //dpm($set_ids,'multiple IDs');
         }
         return FALSE;
       }
     } elseif (!empty($set_ids) && !in_array($entity_id,$set_ids)) {
       drupal_set_message('There are already entities connected with those uris','error');
-      dpm($set_ids+array('new'=>$entity_id),'IDs');
+      //dpm($set_ids+array('new'=>$entity_id),'IDs');
       return FALSE;
     }
-    $rows = $cached->fetchAllAssoc('adapter_id');
+    $rows = db_select('wisski_salz_id2uri','m')
+      ->fields('m',array('rid','uri','eid','adapter_id'))
+      ->condition('uri',$uris,'IN')
+      ->execute()
+      ->fetchAllAssoc('adapter_id');
+    //dpm($rows,'matchings from DB');
     foreach ($uris as $aid => $uri) {
-      if (empty($aid)) throw new \Exception('Empty adapter id in '.serialize($uris));
       if (isset($rows[$aid]) && $row = $rows[$aid]) {
         //in this case we have info from this adapter
         //is it for the given URI?
@@ -144,6 +154,13 @@ class AdapterHelper {
     return $same_uri;
   }
   
+  public static function getDrupalIdForUri($uri,$create_on_fail=TRUE,$input_adapter_id=NULL) {
+  
+    $id = self::doGetDrupalIdForUri($uri,$create_on_fail,$input_adapter_id);
+    //dpm(array_combine(array('$uri','$create_on_fail','$input_adapter_id'),func_get_args())+array('result'=>$id),__FUNCTION__);
+    return $id;
+  }
+  
   /**
    * returns the Drupal ID for a given URI
    * @param $uri the input URI
@@ -152,7 +169,7 @@ class AdapterHelper {
    * or as the mapped adapter for the URI when a Drupal entity ID is created, for entity creation the preferred local store will be used when no adapter is set
    * @return the entity's Drupal ID
    */
-  public static function getDrupalIdForUri($uri,$create_on_fail=TRUE,$input_adapter_id=NULL) {
+  public static function doGetDrupalIdForUri($uri,$create_on_fail=TRUE,$input_adapter_id=NULL) {
   
     //drupal_set_message($uri);
     //dpm(func_get_args(),__FUNCTION__);
@@ -178,16 +195,29 @@ class AdapterHelper {
     }
     
     $local_adapter = self::getPreferredLocalStore();
-    if (empty($input_adapter_id)) $input_adapter_id = $local_adapter->id();
+    if (empty($input_adapter_id)) $adapter_id = $local_adapter->id();
+    else $adapter_id = $input_adapter_id;
     
     //if we have nothing cached, ask the store for backup
-    $id = $local_adapter->getEngine()->getDrupalIdForUri($uri,$input_adapter_id);
+    $id = $local_adapter->getEngine()->getDrupalIdForUri($uri,$adapter_id);
     
     //if the store knows the answer, return it
     if (!is_null($id)) {
       //dpm($id,'from local store');
-      self::setSameUris(array($input_adapter_id=>$uri),$id);
+      self::setSameUris(array($adapter_id=>$uri),$id);
       return $id;
+    }
+  
+    //possibly another adapter knows this uri already, then the EID MUST be the same
+    //this will only help, if an input adapter was set
+    if (!empty($input_adapter_id)) {
+      $id = self::getDrupalIdForUri($uri,FALSE);
+      if (!is_null($id)) {
+        //we know the correct ID now and must connect it with the given adapter
+        //dpm($id,'From another store');
+        self::setSameUris(array($input_adapter_id=>$uri),$id);
+        return $id;
+      }
     }
     
     //we have not been successfull by now
@@ -200,6 +230,10 @@ class AdapterHelper {
     //eid creation works by inserting data and retrieving the newly set line number as eid
     $id = db_insert('wisski_salz_id2uri')
       ->fields(array('uri'=>$uri,'adapter_id'=>$input_adapter_id))
+      ->execute();
+    db_update('wisski_salz_id2uri')
+      ->fields(array('eid'=>$id))
+      ->condition('rid',$id)
       ->execute();
     
     //don't forget to inform the services about the new id
@@ -215,7 +249,7 @@ class AdapterHelper {
   public static function getUrisForDrupalId($eid,$adapter_id=NULL) {
     
     $result = self::doGetUrisForDrupalId($eid,$adapter_id);
-//    dpm(array('$eid'=>$eid,'$adapter_id'=>isset($adapter_id)? $adapter_id : 'NULL')+array('return'=>$result),__FUNCTION__);
+    //dpm(array('$eid'=>$eid,'$adapter_id'=>isset($adapter_id)? $adapter_id : 'NULL')+array('return'=>$result),__FUNCTION__);
     return $result;
   }
   
@@ -229,31 +263,48 @@ class AdapterHelper {
   public static function doGetUrisForDrupalId($eid,$adapter_id=NULL) {
 
     //dpm($eid,__FUNCTION__.' '.$adapter_id);
+    //first try the DB
     $query = db_select('wisski_salz_id2uri','m')
       ->fields('m',array('adapter_id','uri'))
       ->condition('eid',$eid);
     if (isset($adapter_id)) $query->condition('adapter_id',$adapter_id);
     $out = $query->execute();
     //dpm($out,'From DB');
+    //if we get an answer from DB return it
     if (isset($adapter_id)) {
+      //with adapter given, we only want the URI field returned
       $return = $out->fetchField(1);
       //var_dump($return);
       //dpm($return ? $return : 'FALSE','Single adapter');
       if ($return !== FALSE) return $return;
     } else {
+      //with unspecified adapter, we want an associative array keyed by adapter with URIs as values
       $return = $out->fetchAllKeyed();
       //dpm($return,'Multiple adapters');
       if (!empty($return)) return $return;
     }
-    if (isset($adapter_id)) {
     
+    //if we had no info from the DB
+    if (isset($adapter_id)) {
+      //try the local store backup
+      //first we gather the matchings for other adapters, we can possibly find URIs there that fit our input adapter
+      $old_uris = self::getUrisForDrupalId($eid);
+      
       $same_uri = self::getPreferredLocalStore(TRUE)->findUriForDrupalId($eid,$adapter_id);
       //dpm($same_uri,'From Store with adapter '.$adapter_id);
+      
       if (empty($same_uri)) {
-        //create on fail
-        $same_uri = Adapter::load($adapter_id)->getEngine()->generateFreshIndividualUri();
+        //if there was none, we try to find out whether the adapter knows any of the other URIs assocaited with
+        //the EID
+        $adapter = Adapter::load($adapter_id);
+        foreach ($old_uris as $old_uri) {
+          if ($adapter->checkUriExists($old_uri)) $same_uri = $old_uri;
+        }
+        if (empty($same_uri)) {
+          //create on fail
+          $same_uri = Adapter::load($adapter_id)->getEngine()->generateFreshIndividualUri();
+        }
       }
-      $old_uris = self::getUrisForDrupalId($eid);
       self::setSameUris($old_uris + array($adapter_id=>$same_uri),$eid);
       return $same_uri;
     } else {
