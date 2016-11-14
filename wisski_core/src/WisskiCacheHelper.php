@@ -78,6 +78,14 @@ class WisskiCacheHelper {
 
   }
   
+  static function getEntitiesWithEmptyTitle($bundle_id = NULL) {
+    
+    $empties = array('','NULL','FALSE');
+    $query = db_select('wisski_title_n_grams','n')->fields('n',array('ent_num'))->condition('ngram',$empties,'IN');
+    if (!is_null($bundle_id)) $query->condition('bundle',$bundle_id);
+    return $query->execute()->fetchCol();
+  }
+  
   static function putCallingBundle($entity_id,$bundle_id) {
   
     // DEBUG, change $entity_id and open up in case you get 'Could not load entities in adapter sparql_1_1_with_pathbuilder because ...'-error

@@ -13,11 +13,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   private $dependent_queries = array();
   
   /**
-   * we cache the results since we cannot perform standard count queries. It is always possible that multiple adapters 
-   * return same entities. That means they would be counted more often than once, which would result in wrong numbers
-   * in a count query. So we perform a normal query every time and, if asked for the actual results we can return the cache
+   * we cache a list of entity IDs whose corresponding entites have an empty title in the cache table
+   * those MUST be deleted from the view
    */
-  protected static $cached_result = NULL;
+  protected static $empties;
 
   public function __construct(EntityTypeInterface $entity_type,$condition,array $namespaces) {
     parent::__construct($entity_type,$condition,$namespaces);
@@ -34,7 +33,18 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   
   public function execute() {
   
-    //dpm($this,__METHOD__);
+    if (!isset($empties)) {
+      foreach($this->condition->conditions() as $connd) {
+        if ($cond['field'] === 'bundle') {
+          $bundle_id = $cond['value'];
+          break;
+        }
+      }
+      //it is allowed to have an empty $bundle_id here
+      self::$empties = \Drupal\wisski_core\WisskiCacheHelper::getEntitiesWithEmptyTitle($bundle_id);
+      //dpm(self::$empties,'Empty titled Entities');
+    }  
+    
     if ($this->count) {
   
       $result = 0;
@@ -47,19 +57,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         else dpm($sub_result,'Wrong result type from '.$adapter_id);
       }
       //dpm('we counted '.$result);
+      if (!empty(self::$empties)) $result -= count(self::$empties);
       return $result;
-      /*
-      $result = array();
-      foreach ($this->dependent_queries as $query) {
-        //set $query->count = FALSE;
-        $query = $query->normalQuery();
-        $sub_result = $query->execute();
-        $result = array_unique(array_merge($result,$sub_result));
-      }
-      self::$cached_result = $result;
-      #dpm('we got '.count($result).' entities');
-      #dpm($result);
-      return count($result);*/
     } else {
       $pager = FALSE;
       if ($this->pager) {
@@ -68,11 +67,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         //this is then passed to the dependent_queries which are NOT cloned
         //thus we must reset $count for the dependent_queries
         $this->initializePager();
-      }
-      if (isset(self::$cached_result)) {
-        //dpm('Had it cached');
-        if ($pager) return array_slice(self::$cached_result,$this->range['start'],$this->range['length']);
-        else return self::$cached_result;
       }
       $result = array();
       
@@ -85,10 +79,51 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         $sub_result = $query->execute();
         $result = array_unique(array_merge($result,$sub_result));
       }
+      if (!empty(self::$empties)) $result = array_diff($result,$empties);
       return $result;
     }
   }
   
+  protected function pagerQuery($limit,$offset) {
+  
+    //old versions below  
+    $queries = $this->dependent_queries;
+    $query = array_shift($queries);
+    $act_offset = $offset;
+    $act_limit = $limit;
+    $results = array();
+    while (!empty($query)) {
+      $query = $query->normalQuery();
+      $query->range($act_offset,$act_limit);
+      $new_results = $query->execute();
+      $res_count = count($new_results);
+      if (!empty(self::$empties)) $new_results = array_diff($new_results,self::$empties);
+      $post_res_count = count($new_results);      
+      //dpm($post_res_count,$act_offset.' '.$act_limit);
+      $results = array_unique(array_merge($results,$new_results));
+      if ($res_count === 0) {
+        $query->count();
+        $res_count = $query->execute();
+        if (!is_numeric($res_count)) $res_count = 0;
+        //dpm($res_count,$key.' full count');
+        $act_offset = $act_offset - $res_count;
+        if ($act_offset < 0) $act_offset = 0;
+        $query = array_shift($queries);
+      } elseif ($post_res_count < $res_count) {
+        $act_limit = $act_limit - $post_res_count;
+        if ($act_limit < 1) break;
+        $act_offset = $act_offset + $res_count;
+        //don't load a new query, this one may have more
+      } elseif ($res_count < $act_limit) {
+        $act_limit = $act_limit - $res_count;
+        $act_offset = 0;
+        $query = array_shift($queries);
+      } else break;
+    }
+    return $results;
+  }
+
+/*
   protected function pagerQuery($limit,$offset) {
 
     //old version below
@@ -101,8 +136,9 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       $query = $query->normalQuery();
       $query->range($act_offset,$act_limit);
       $new_results = $query->execute();
+      if (!empty(self::$empties)) $new_results = array_diff($new_results,self::$empties);
       $res_count = count($new_results);
-      //dpm($res_count,$key.' '.$act_offset.' '.$act_limit);
+      dpm($res_count,$key.' '.$act_offset.' '.$act_limit);
       $results = array_unique(array_merge($results,$new_results));
       if ($res_count === 0) {
         $query->count();
@@ -118,6 +154,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     
     return array_slice($results,0,$limit);
   }
+*/  
+
 /*  
   protected function pagerQuery($limit,$offset) {
     

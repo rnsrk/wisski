@@ -17,3 +17,9 @@ wisski_core.wisski_bundle.*:
     title_pattern:
       type: string
       label: 'Title Pattern'
+    on_empty:
+      type: number
+      label: 'on Empty Title'
+    fallback_title:
+      type: string
+      label: 'Entity Fallback Title'

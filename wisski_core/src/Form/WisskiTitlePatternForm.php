@@ -27,6 +27,7 @@ class WisskiTitlePatternForm extends EntityForm {
     
     /** @var \Drupal\media_entity\MediaBundleInterface $bundle */
     $form['#entity'] = $bundle = $this->entity;
+    //dpm($bundle,__METHOD__);
     
     $form['#title'] = $this->t('Edit title pattern for bundle %label', array('%label' => $bundle->label()));
 
@@ -202,13 +203,13 @@ class WisskiTitlePatternForm extends EntityForm {
     );
     
     if ($on_empty_selection == WisskiBundle::FALLBACK_TITLE) {
-	    $form['on_empty']['textfield'] = array(
+	    $form['on_empty']['on_empty_textfield'] = array(
         '#type' => 'textfield',
         '#default_value' => $bundle->getFallbackTitle(),
         '#title' => $this->t('Fallback Title'),    
       );
     } else {    
-  	  $form['on_empty']['textfield'] = array(
+  	  $form['on_empty']['on_empty_textfield'] = array(
         '#type' => 'hidden',
         //'#markup' => 'empty',
       );
@@ -480,12 +481,17 @@ class WisskiTitlePatternForm extends EntityForm {
     /** @var  \Drupal\wisski_core\WisskiBundleInterface $bundle */
     $bundle = $this->entity;
     
+    //dpm(array($bundle,$form_state->getValues()),__METHOD__);
+    
     $pattern = $form_state->getValue('pattern');
     
     $bundle->setTitlePattern($pattern);
     
-    $values = $form_state->getValues();
-    dpm($values);
+    $on_empty = $form_state->getValue('on_empty_selection');
+    $bundle->setOnEmpty($on_empty);
+    
+    $fallback = $form_state->getValue('on_empty_textfield');
+    $bundle->setFallbackTitle($fallback);
     
     $bundle->save();
     

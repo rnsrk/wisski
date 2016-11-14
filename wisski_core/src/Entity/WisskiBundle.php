@@ -28,6 +28,15 @@ use Drupal\wisski_core\WisskiCacheHelper;
  *   },
  *   admin_permission = "administer wisski_core",
  *   config_prefix = "wisski_bundle",
+ *   config_export = {
+ *     "id",
+ *     "label",
+ *     "title_pattern",
+ *     "on_empty",
+ *     "fallback_title",
+ *     "pager_limit",
+ *   },
+ *
  *   bundle_of = "wisski_individual",
  *   entity_keys = {
  *     "id" = "id",
@@ -95,7 +104,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   protected $cached_titles;
   
-  public function generateEntityTitle($entity_id,$fallback_title='Wisski Individual',$include_bundle=FALSE,$force_new=FALSE) {
+  public function generateEntityTitle($entity_id,$include_bundle=FALSE,$force_new=FALSE) {
     
     if (!$force_new) {
       $title = $this->getCachedTitle($entity_id);
@@ -112,7 +121,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     unset($pattern['max_id']);
     //dpm(array('pattern'=>$pattern,'entity'=>$entity_id,'fallback'=>$fallback_title),__METHOD__);
     if (empty($pattern)) {
-      return $fallback_title;
+      if ($this->onEmpty() == self::FALLBACK_TITLE)
+        return $this->fallback_title;
+      else return FALSE;
     } else {
       //dpm($pattern,__FUNCTION__);
       $parts = array();
@@ -189,11 +200,15 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       foreach ($pattern_order as $pos) {
         if (isset($parts[$pos])) $title .= $parts[$pos];
       }
-      if (empty(trim($title))) $title = $fallback_title;
+      if (empty(trim($title))) {
+        if ($this->onEmpty() == self::FALLBACK_TITLE)
+          $title = $this->fallback_title;
+        else $title = FALSE;
+      }
     }
     $this->setCachedTitle($entity_id,$title);
     //dpm(array_combine(['$entity_id','$fallback_title','$include_bundle','$force_new'],func_get_args())+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
-    if ($include_bundle) {
+    if ($include_bundle && $title !== FALSE) {
       drupal_set_message('Enhance Title '.$title);
       $title = $this->label().': '.$title;
     }   
@@ -330,7 +345,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   public function setOnEmpty($type) {
     
-    if ($type === self::FALLBACK_TITLE || $type === self::DONT_SHOW) {
+    $type = intval($type);
+    if ($type == self::FALLBACK_TITLE || $type == self::DONT_SHOW) {
       $this->on_empty = $type;
     }
   }

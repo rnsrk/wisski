@@ -203,8 +203,8 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * We only load entities from the specified bundle
    */
   protected function getEntityIds() {
-   //dpm($this,__METHOD__); 
-
+    //dpm($this,__METHOD__); 
+  
     $storage = $this->getStorage();
     $query = $storage->getQuery()
       ->sort($this->entityType->getKey('id'));
@@ -212,7 +212,6 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     // Only add the pager if a limit is specified.
     if ($this->limit) {
       $query->pager($this->limit);
-      //we query for one more, so we know if we must show the Next button of the pager
       $query->range($this->page*$this->limit,$this->limit);
     }
     //dpm($query);
@@ -312,7 +311,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     //dpm($entity);
     //dpm($entity->get('preview_image'));
 
-    $entity_label = $this->bundle->generateEntityTitle($entity_id,$entity_id);
+    $entity_label = $this->bundle->generateEntityTitle($entity_id);
 
     $entity_url = Url::fromRoute('entity.wisski_individual.canonical',array('wisski_bundle'=>$this->bundle->id(),'wisski_individual'=>$entity_id));
 

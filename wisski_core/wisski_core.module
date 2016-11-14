@@ -25,9 +25,7 @@ function wisski_core_generate_title($wisski_individual,$force_new=FALSE) {
   if ($wisski_individual->isNew()) {
     return html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
   }
-  $title_list = $wisski_individual->get('name')->getValue();
-  $fallback_title = $title_list[0]['value'];
-  $title = $bundle->generateEntityTitle($wisski_individual->id(),$fallback_title,FALSE,$force_new);
+  $title = $bundle->generateEntityTitle($wisski_individual->id(),FALSE,$force_new);
   return $title;
 }
 
@@ -40,9 +38,7 @@ function wisski_core_generate_title_with_bundle($wisski_individual) {
     return is_string($wisski_individual) ? $wisski_individual : 'WissKI Entity';
   }
   $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($wisski_individual->bundle());
-  $title_list = $wisski_individual->get('name')->getValue();
-  $fallback_title = $title_list[0]['value'];
-  $title = $bundle->generateEntityTitle($wisski_individual->id(),$fallback_title,TRUE);
+  $title = $bundle->generateEntityTitle($wisski_individual->id(),TRUE);
   return $title;
 }
 
