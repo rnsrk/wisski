@@ -194,13 +194,17 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
     return array($this->extractFieldData($storage),$this->original_values);
   }
   
-  protected function extractFieldData($storage) {
+  protected function extractFieldData($storage,$save_field_properties=FALSE) {
     
     $out = array();
     //$this is iterable itself, iterates over field list
     foreach ($this as $field_name => $field_item_list) {
       $out[$field_name] = array();
-      foreach($field_item_list as $field_item) {
+      foreach($field_item_list as $weight => $field_item) {
+        if (strpos($field_name,'f') === 0) {
+          //dpm($field_item,$field_name.' '.$weight);
+          //dpm($field_item->getProperties(),'format');
+        }
         $field_values = $field_item->getValue();
         $field_def = $field_item->getFieldDefinition()->getFieldStorageDefinition();
         if (method_exists($field_def,'getDependencies') && in_array('file',$field_def->getDependencies()['module'])) {
@@ -216,7 +220,7 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
       }
       if (!isset($out[$field_name][0]) || empty($out[$field_name][0])) unset($out[$field_name]);
     }
-    //dpm($this,__METHOD__);
+    dpm($out,__METHOD__);
     return $out;
   }
 

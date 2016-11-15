@@ -106,6 +106,46 @@ function wisski_core_schema() {
       'bid' => array(array('image_uri',128)),
     ),
   );
+  
+  $schema['wisski_entity_field_properties'] = array(
+  
+    'description' => 'Saves secondary field data for WissKI Entities. This includes all the field properties that are set by the user',
+    'fields' => array(
+      'eid' => array(
+        'description' => 'Entity ID',
+        'type' => 'varchar',
+        'length' => 1023,
+        'not null' => TRUE,
+      ),
+      'bid' => array(
+        'description' => 'bundle name / ID',
+        'type' => 'varchar',
+        'length' => 1023,
+        'not null' => TRUE,
+      ),
+      'fid' => array(
+        'description' => 'field name / ID',
+        'type' => 'varchar',
+        'length' => 1023,
+        'not null' => TRUE,
+      ),
+      'delta' => array(
+        'description' => 'field item weight',
+        'type' => 'int',
+      ),
+      'main_value' => array(
+        'description' => 'The field value for this entity. i.e. the value for this field\'s main property',
+        'type' => 'varchar',
+        'not null' => TRUE,
+      ),
+      'properties' => array(
+        'description' => 'array of field properties',
+        'type' => 'varchar',
+        'serialize' => TRUE,
+      ),
+    ),
+  );
+  
   //dpm($schema);
   return $schema;
 }
