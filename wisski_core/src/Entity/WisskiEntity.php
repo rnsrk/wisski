@@ -189,9 +189,9 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
     return $this->original_values;
   }
   
-  public function getValues($storage) {
+  public function getValues($storage,$save_field_properties=FALSE) {
     
-    return array($this->extractFieldData($storage),$this->original_values);
+    return array($this->extractFieldData($storage,$save_field_properties),$this->original_values);
   }
   
   protected function extractFieldData($storage,$save_field_properties=FALSE) {
@@ -200,6 +200,14 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
     //$this is iterable itself, iterates over field list
     foreach ($this as $field_name => $field_item_list) {
       $out[$field_name] = array();
+      if ($save_field_properties) {
+        //clear the field values for this field in entity in bundle
+        db_delete('wisski_entity_field_properties')
+          ->condition('eid',$this->id())
+          ->condition('bid',$this->bundle())
+          ->condition('fid',$field_name)
+          ->execute();
+      }
       foreach($field_item_list as $weight => $field_item) {
         if (strpos($field_name,'f') === 0) {
           //dpm($field_item,$field_name.' '.$weight);
@@ -212,11 +220,25 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
           //this is a workaround since Drupal File IDs do not carry any information when not in drupal context
           $field_values['target_id'] = $storage->getPublicUrlFromFileId($field_values['target_id']);
         }
+        $main_property = $field_item->mainPropertyName();
         //we transfer the main property name to the adapters
-        $out[$field_name]['main_property'] = $field_item->mainPropertyName();
+        $out[$field_name]['main_property'] = $main_property;
         //gathers the ARRAY of field properties for each field list item
         //e.g. $out[$field_name][] = array(value => 'Hans Wurst', 'format' => 'basic_html');
-        $out[$field_name][] = $field_values;
+        $out[$field_name][$weight] = $field_values;
+        if ($save_field_properties) {
+          $fields_to_save = array(
+            'eid' => $this->id(),
+            'bid' => $this->bundle(),
+            'fid' => $field_name,
+            'delta' => $weight,
+            'ident' => isset($field_values['wisskiDisamb']) ? $field_values['wisskiDisamb'] : $field_values[$main_property],
+            'properties' => serialize($field_values),
+          );
+          db_insert('wisski_entity_field_properties')
+            ->fields($fields_to_save)
+            ->execute();
+        }
       }
       if (!isset($out[$field_name][0]) || empty($out[$field_name][0])) unset($out[$field_name]);
     }
@@ -224,15 +246,6 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
     return $out;
   }
 
-  public function extractFieldProperties(\Drupal\Core\Field\FieldItemInterface $field_item) {
-    
-    $properties = array();
-    foreach ($field_item->getProperties() as $name => $values) {
-      dpm($values,$name);
-    }
-    return $properties;
-  }
-  
   public function getFieldDataTypes() {
     $types = array();
 

@@ -133,8 +133,8 @@ function wisski_core_schema() {
         'description' => 'field item weight',
         'type' => 'int',
       ),
-      'main_value' => array(
-        'description' => 'The field value for this entity. i.e. the value for the main property',
+      'ident' => array(
+        'description' => 'A string that identifies this field item, will mostly be the disamb/group URI',
         'type' => 'varchar',
         'length' => 1023,
         'not null' => TRUE,

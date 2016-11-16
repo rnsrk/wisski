@@ -26,6 +26,8 @@ use Drupal\Core\Entity\EntityManagerInterface;
  
 use Drupal\Core\Cache\CacheBackendInterface;
 
+use Drupal\Component\Utility\NestedArray;
+
 /**
  * Test Storage that returns a Singleton Entity, so we can see what the FieldItemInterface does
  */
@@ -118,6 +120,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             #drupal_set_message("asking for: " . serialize(array_keys($field_definitions)));
             try {
               foreach ($field_definitions as $field_name => $field_def) {
+              
+                $main_property = $field_def->getFieldStorageDefinition()->getMainPropertyName();
 #dpm(array($adapter->id(), $field_name,$id, $bundleid),'ge1','error');
                 
                 if ($field_def instanceof BaseFieldDefinition) {
@@ -153,6 +157,7 @@ if (empty($new_field_values)) continue;
                 }
                 //here we have a "normal field" so we can assume an array of field values is OK
                 $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
+                
                 #drupal_set_message(serialize($new_field_values));
                 //dpm(array('field'=>$field_name,'values'=>$new_field_values),$adapter->id());
                 if (empty($new_field_values)) continue;
@@ -223,6 +228,27 @@ if (empty($new_field_values)) continue;
                   );
                 }
                 if (isset($new_field_values[$id][$field_name])) {
+                  //try finding the weights and sort the values accordingly
+                  $cached_field_values = db_select('wisski_entity_field_properties','f')
+                    ->fields('f',array('ident','delta','properties'))
+                    ->condition('eid',$id)
+                    ->condition('bid',$bundleid)
+                    ->condition('fid',$field_name)
+                    ->execute()
+                    ->fetchAllAssoc('ident');
+                  if (!empty($cached_field_values)) {
+                    dpm($cached_field_values,'cached values');
+                    $head = array();
+                    $tail = array();
+                    foreach ($new_field_values[$id][$field_name] as $delta => $nfv) {
+                      $ident = isset($nfv['wisskiDisamb']) ? $nfv['wisskiDisamb'] : $nfv[$main_property];
+                      if (isset($cached_field_values[$ident])) {
+                        //dpm(array($nfv,$cached_field_values[$ident]),'merge with cache');
+                        $head[$cached_field_values[$ident]->delta] = $nfv + unserialize($cached_field_values[$ident]->properties);
+                      } else $tail[$delta] = $nfv;
+                    }
+                    $new_field_values[$id][$field_name] = array_merge($head,$tail);
+                  }
                   //dpm($new_field_values[$id][$field_name],$aid.' '.$field_name);
                   if (!isset($info[$id]) || !isset($info[$id][$field_name])) $info[$id][$field_name] = $new_field_values[$id][$field_name];
                   else $info[$id][$field_name] = array_merge($info[$id][$field_name],$new_field_values[$id][$field_name]);
@@ -528,7 +554,8 @@ if (empty($new_field_values)) continue;
   protected function doSaveFieldItems(ContentEntityInterface $entity, array $names = []) {
     //dpm(func_get_args(),__METHOD__);
     
-    list($values,$original_values) = $entity->getValues($this);
+    //gather values with property caching
+    list($values,$original_values) = $entity->getValues($this,TRUE);
     $bundle_id = $values['bundle'][0]['target_id'];
 //    dpm(func_get_args()+array('values'=>$values,'bundle'=>$bundle_id),__METHOD__);
     //echo implode(', ',array_keys((array) $entity));
