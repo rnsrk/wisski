@@ -2,41 +2,45 @@
 
 namespace Drupal\wisski_core\Form;
 
-use Drupal\Core\Entity\EntityForm;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
-use Drupal\Core\Ajax\AjaxResponse;
 
 use Drupal\Core\Form\FormBase;
 
 use Drupal\wisski_core\WisskiHelper;
 use Drupal\wisski_core\Entity\WisskiBundle;
 
-class WisskiTitlePatternForm extends EntityForm {
+
+/**
+ * This is mostly a copy of WisskiTitlePatternForm, it was not easily done to use an EntityForm without an entity thus
+ * we had to clone the class
+ */
+class WisskiDefaultTitlePatternForm extends FormBase {
 
   private $path_options;
+  
+  public function getFormId() {
+    
+    return 'wisski_default_title_form';
+  }
   
   /**
    * {@inheritdoc}
    */
-  public function form(array $form, FormStateInterface $form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     
-    $form = parent::form($form, $form_state);
     
-    /** @var \Drupal\media_entity\MediaBundleInterface $bundle */
-    $form['#entity'] = $bundle = $this->entity;
-    //dpm($bundle,__METHOD__);
     
-    $form['#title'] = $this->t('Edit title pattern for bundle %label', array('%label' => $bundle->label()));
+    $form['#title'] = $this->t('Edit the default title pattern');
 
-    $options = $bundle->getPathOptions();
+    $options = WisskiBundle::defaultPathOptions();
     //dpm($options,'Path Options');
     $form_storage = $form_state->getStorage();
     if (isset($form_storage['cached_pattern']) && !empty($form_storage['cached_pattern'])) {
       $pattern = $form_storage['cached_pattern'];
     } else {
-      $pattern = $bundle->getTitlePattern();
+      $pattern = \Drupal::config('wisski_core.settings')->get('wisski_default_title_pattern');
+      if (empty($pattern)) $pattern = array();
     }
 
     $max_id = -1;
@@ -118,7 +122,7 @@ class WisskiTitlePatternForm extends EntityForm {
       //'#theme' => 'table__menu_overview',
       '#caption' => $this->t('Title Pattern'),
       '#header' => $header,
-      '#empty' => $this->t('This bundle has no title pattern, yet'),
+      '#empty' => $this->t('There is no title pattern yet'),
       '#prefix' => '<div id=\'wisski-title-table\'>',
       '#suffix' => '</div>',
       '#tabledrag' => array(
@@ -164,64 +168,12 @@ class WisskiTitlePatternForm extends EntityForm {
       '#limit_validation_errors' => array(),
     );
 
-    $on_empty_options = array(
-      WisskiBundle::DEFAULT_PATTERN => $this->t('Use the global default pattern see %link',array('%link'=>\Drupal\Core\Link::createFromRoute('here','wisski.config_menu')->toString())),
-      WisskiBundle::DONT_SHOW => $this->t('Do not show the entity in the navigate list'),
-      WisskiBundle::FALLBACK_TITLE => $this->t('Show a generic title'),
-    );
-    
-    if (!isset($on_empty_selection)) $on_empty_selection = WisskiBundle::DEFAULT_PATTERN;
-    
-    $form['on_empty'] = array(
-      '#type' => 'fieldset',
-      '#title' => $this->t('Reaction on Empty title'),
-      '#prefix' => '<div id=\'wisski-fallback-title\'>',
-      '#suffix' => '</div>',
-      'notice' => array(
-        '#type' => 'item',
-        '#markup' => $this->t('What to do if an entity\'s title is resolved to an empty string')
-      ),
-      'on_empty_selection' => array(
-        '#type' => 'radios',
-        '#options' => $on_empty_options,
-        '#default_value' => $bundle->onEmpty(),
-        //'#value' => $on_empty_selection,
-        '#ajax' => array(
-          'wrapper' => 'wisski-fallback-title',
-          'callback' => array($this,'onEmptyCallback'),
-          //'callback' => '\Drupal\wisski_core\Form\WisskiTitlePatternForm::onEmptyCallback',
-          'event' => 'change',
-        ),
-        '#limit_validation_errors' => array(),
-        //'#name' => 'on_empty_selection',
-      ),
-    );
-    
-    $form['on_empty']['textfield'] = array(
-      '#name' => 'on_empty_fallback_title',
-      
-    );
-    
-    if ($on_empty_selection == WisskiBundle::FALLBACK_TITLE) {
-	    $form['on_empty']['on_empty_textfield'] = array(
-        '#type' => 'textfield',
-        '#default_value' => $bundle->getFallbackTitle(),
-        '#title' => $this->t('Fallback Title'),    
-      );
-    } else {    
-  	  $form['on_empty']['on_empty_textfield'] = array(
-        '#type' => 'hidden',
-        //'#markup' => 'empty',
-      );
-    }
-    
-    
     $form['help'] = array(
       '#type' => 'details',
       '#weight' => 10000,
       '#title' => $this->t('Help'),
       'text' => array('#markup' => $this->t(
-          'Build the pattern that creates titles for entities from this bundle.<br>
+          'Build the default pattern that creates titles for entities from bundles who have no distinct pattern defined on their own.<br>
           Click <em>&lt;Add a text block&gt;</em> to insert a fixed portion of text 
           or select a path from the <em>&lt;Add a path&gt;</em> drop down list to insert an entity-dependent title part. These latter path based parts will be evaluated against the entity and if that yields one ore more results those will be used for the title portion for this row.
           Having added several rows you can sort them by drag-and-drop on the crosshairs in the front section of each row.<br>
@@ -246,8 +198,19 @@ class WisskiTitlePatternForm extends EntityForm {
     $form_storage['cached_pattern'] = $pattern;
     $form_state->setStorage($form_storage);
 
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => $this->t('Save pattern'),
+      '#submit' => array("::submitForm","::save"),
+    );
+/*    $form['delete'] = array(
+      '#value' => t('Delete pattern'),
+      '#type' => 'submit',
+      '#limit_validation_errors' => array(),
+      '#submit' => array("::deletePattern"),
+    );*/
 //dpm(drupal_render($form['path_select_box']));
-    return $form;
+    return $form ;
   }
   
   /**
@@ -373,24 +336,6 @@ class WisskiTitlePatternForm extends EntityForm {
   	return $form['on_empty'];
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  protected function actions(array $form, FormStateInterface $form_state) {
-    $actions['submit'] = array(
-      '#type' => 'submit',
-      '#value' => $this->t('Save pattern'),
-      '#submit' => array("::submitForm","::save"),
-    );
-    $actions['delete'] = array(
-      '#value' => t('Delete pattern'),
-      '#type' => 'submit',
-      '#limit_validation_errors' => array(),
-      '#submit' => array("::deletePattern"),
-    );
-    return $actions;
-  }
-
   public function validateForm(array &$form, FormStateInterface $form_state) {
 
     $pattern = $form_state->getValue('pattern');
@@ -476,33 +421,18 @@ class WisskiTitlePatternForm extends EntityForm {
   /**
    * {@inheritdoc}
    */
-  public function save(array $form, FormStateInterface $form_state) {
-    
-    /** @var  \Drupal\wisski_core\WisskiBundleInterface $bundle */
-    $bundle = $this->entity;
-    
-    //dpm(array($bundle,$form_state->getValues()),__METHOD__);
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     
     $pattern = $form_state->getValue('pattern');
     
-    $bundle->setTitlePattern($pattern);
+    $config = $this->configFactory()->getEditable('wisski_core.settings');
+    $config->set('wisski_default_title_pattern',$pattern);
+    $config->save();
     
-    $on_empty = $form_state->getValue('on_empty_selection');
-    $bundle->setOnEmpty($on_empty);
-    
-    $fallback = $form_state->getValue('on_empty_textfield');
-    $bundle->setFallbackTitle($fallback);
-    
-    $bundle->save();
-    
-    drupal_set_message(t('The title pattern for bundle %name has been updated.', array('%name' => $bundle->label())));
+    drupal_set_message(t('The default title pattern has been updated.'));
 
-    $form_state->setRedirectUrl($bundle->urlInfo('edit-form'));
+    $form_state->setRedirect('wisski.config_menu');
   }
-  
-  public function deletePattern(array $form, FormStateInterface $form_state) {
-    $form_state->setRedirectUrl($this->entity->urlInfo('delete-title-form'));
-  }  
   
   public function containsCycle($array,&$cycle) {
     $out = self::cycle_detection($array);

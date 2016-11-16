@@ -60,6 +60,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   /** constants to identify empty title reaction types */
   const DONT_SHOW = 1;
   const FALLBACK_TITLE = 2;
+  const DEFAULT_PATTERN = 3;
   
   /**
    * The field based pattern for the entity title generation.
@@ -72,7 +73,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    * The way in which to react on the detection of an invalid title
    * defaults to fallback title
    */
-  protected $on_empty = self::FALLBACK_TITLE;
+  protected $on_empty = self::DEFAULT_PATTERN;
   
   /**
    * The fallback title that may be shown when an entity title cannot be resolved
@@ -102,6 +103,11 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     }
   }
   
+  public function getDefaultPattern() {
+    
+    return \Drupal::config('wisski_core.settings')->get('wisski_default_title_pattern');
+  }
+  
   protected $cached_titles;
   
   public function generateEntityTitle($entity_id,$include_bundle=FALSE,$force_new=FALSE) {
@@ -120,98 +126,133 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $pattern = $this->getTitlePattern();
     unset($pattern['max_id']);
     //dpm(array('pattern'=>$pattern,'entity'=>$entity_id,'fallback'=>$fallback_title),__METHOD__);
+    
     if (empty($pattern)) {
+      //try the default pattern
+      if ($this->onEmpty() == self::DEFAULT_PATTERN) $pattern = $this->getDefaultPattern();
+    }
+    
+    if (empty($pattern)) {
+      //if we still have no pattern, we have to decide on a fallback
       if ($this->onEmpty() == self::FALLBACK_TITLE)
         return $this->fallback_title;
       else return FALSE;
-    } else {
-      //dpm($pattern,__FUNCTION__);
-      $parts = array();
-      $pattern_order = array_keys($pattern);
-      //just to avoid endless runs we introduce an upper bound,
-      //this is possible since per run at most k-1 other elements have to be cycled through before
-      //having seen all parents i.e. $max = sum_{k = 0}^$count k
-      $count = count($pattern);
-      $max = ($count * ($count+1)) / 2;
-      $count = 0;
-      while ($count < $max && list($key,$attributes) = each($pattern)) {
-        $count++;
-        unset($pattern[$key]);
-        reset($pattern);
-        //dpm($pattern,'Hold '.$key);
-        //if we have a dependency make sure we only consider this one, when all dependencies are clear
-        if (!empty($attributes['parents'])) {
-          foreach ($attributes['parents'] as $parent => $positive) {
-            //dpm($parts,'Ask for '.$parent.' '.($positive ? 'pos' : 'neg'));
-            if (!isset($parts[$parent])) {
-              $pattern[$key] = $attributes;
-              continue 2;
-            } elseif ($positive) {
-              if ($parts[$parent] === '') continue 2;
-            } else { //if negative
-              if (!empty($parts[$parent])) continue 2;
-            }
-          }
-        }
-        if ($attributes['type'] === 'path') {
-          $name = $attributes['name'];
-                    
-          if ($name === 'eid') $values = array($entity_id);
-          elseif ($name === 'uri.long' || $name === 'uri.short') {
-            $values = array($this->getUriString($entity_id,$name));
-          }
-          else {
-            list($pb_id,$path_id) = explode('.',$attributes['name']);
-            $values = $this->gatherTitleValues($entity_id,$path_id);
-            //dpm($values,'gathered values for '.$path_id);
-          }
-          
-          if (empty($values)) {
-            if ($attributes['optional'] === FALSE) {
-              //we detected an invalid title;
-              drupal_set_message('Detected invalid title','error');
-              return $fallback_title;
-            } else $parts[$key] = '';
-            continue;
-          }
-          $part = '';
-          $cardinality = $attributes['cardinality'];
-          if ($cardinality < 0 || $cardinality > count($values)) $cardinality = count($values);
-          $delimiter = $attributes['delimiter'];
-          $i = 0;
-          foreach ($values as $value) {
-            if ($i >= $cardinality) break;
-#dpm($value, 'get');
-            $part .= $value;
-            if (++$i < $cardinality) $part .= $delimiter;
-          } 
-        }
-        if ($attributes['type'] === 'text') {
-          $part = $attributes['label'];
-        }
-        //if (!empty($attributes['children'])){dpm($part,'Part');dpm($parts,'Parts '.$key);}
-        
-        $parts[$key] = $part;
-      }
-      //dpm(array('parts'=>$parts),'after');
-      
-      //reorder the parts according original pattern
-      $title = '';
-      foreach ($pattern_order as $pos) {
-        if (isset($parts[$pos])) $title .= $parts[$pos];
-      }
-      if (empty(trim($title))) {
-        if ($this->onEmpty() == self::FALLBACK_TITLE)
-          $title = $this->fallback_title;
-        else $title = FALSE;
-      }
     }
+    
+    //now do the work
+    $title = $this->applyTitlePattern($pattern,$entity_id);
+    
     $this->setCachedTitle($entity_id,$title);
     //dpm(array_combine(['$entity_id','$fallback_title','$include_bundle','$force_new'],func_get_args())+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
     if ($include_bundle && $title !== FALSE) {
       drupal_set_message('Enhance Title '.$title);
       $title = $this->label().': '.$title;
     }   
+    return $title;
+  }
+  
+  /**
+   * Applies the title pattern to generate the entity title,
+   * this is a seperate function since we want to be able to apply it again in case we end up with an empty title
+   */
+  private function applyTitlePattern($pattern,$entity_id) {
+    
+    //dpm($pattern,__FUNCTION__);
+    
+    // just in case...
+    if (empty($pattern)) return FALSE;
+    
+    $parts = array();
+    $pattern_order = array_keys($pattern);
+    //just to avoid infinite loops we introduce an upper bound,
+    //this is possible since per run at most k-1 other elements have to be cycled through before
+    //having seen all parents i.e. $max = sum_{k = 0}^$count k
+    $count = count($pattern);
+    $max = ($count * ($count+1)) / 2;
+    $count = 0;
+    while ($count < $max && list($key,$attributes) = each($pattern)) {
+      $count++;
+      unset($pattern[$key]);
+      reset($pattern);
+      //dpm($pattern,'Hold '.$key);
+      //if we have a dependency make sure we only consider this one, when all dependencies are clear
+      if (!empty($attributes['parents'])) {
+        foreach ($attributes['parents'] as $parent => $positive) {
+          //dpm($parts,'Ask for '.$parent.' '.($positive ? 'pos' : 'neg'));
+          if (!isset($parts[$parent])) {
+            $pattern[$key] = $attributes;
+            continue 2;
+          } elseif ($positive) {
+            if ($parts[$parent] === '') continue 2;
+          } else { //if negative
+            if (!empty($parts[$parent])) continue 2;
+          }
+        }
+      }
+      if ($attributes['type'] === 'path') {
+        $name = $attributes['name'];
+        
+        switch ($name) {
+          case 'eid':
+            $values = array($entity_id);
+            break;
+          case 'uri.long':
+          case 'uri.short':
+            $values = array($this->getUriString($entity_id,$name));
+            break;
+          case 'bundle_label':
+            $values = array($this->label());
+            break;
+          case 'bundle_id':
+            $values = array($this->id());
+            break;
+          default: {
+            list($pb_id,$path_id) = explode('.',$attributes['name']);
+            $values = $this->gatherTitleValues($entity_id,$path_id);
+            //dpm($values,'gathered values for '.$path_id);
+          }
+        }
+        if (empty($values)) {
+          if ($attributes['optional'] === FALSE) {
+            //we detected an invalid title;
+            drupal_set_message('Detected invalid title','error');
+            return $fallback_title;
+          } else $parts[$key] = '';
+          continue;
+        }
+        $part = '';
+        $cardinality = $attributes['cardinality'];
+        if ($cardinality < 0 || $cardinality > count($values)) $cardinality = count($values);
+        $delimiter = $attributes['delimiter'];
+        $i = 0;
+        foreach ($values as $value) {
+          if ($i >= $cardinality) break;
+          #dpm($value, 'get');
+          $part .= $value;
+          if (++$i < $cardinality) $part .= $delimiter;
+        } 
+      }
+      if ($attributes['type'] === 'text') {
+        $part = $attributes['label'];
+      }
+      //if (!empty($attributes['children'])){dpm($part,'Part');dpm($parts,'Parts '.$key);}
+      
+      $parts[$key] = $part;
+    }
+    //dpm(array('parts'=>$parts),'after');
+    
+    //reorder the parts according original pattern
+    $title = '';
+    foreach ($pattern_order as $pos) {
+      if (isset($parts[$pos])) $title .= $parts[$pos];
+    }
+    if (empty(trim($title))) {
+      switch ($this->onEmpty()) {
+        case self::FALLBACK_TITLE: return $this->fallback_title;
+        case self::DEFAULT_PATTERN: return $this->applyTitlePattern($this->getDefaultPattern(),$entity_id);
+        default: return FALSE;
+      }
+    }
     return $title;
   }
   
@@ -248,16 +289,23 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     return $values;
   }
   
+  public static function defaultPathOptions() {
+    
+    return array(
+      'eid' => t('Entity\'s Drupal ID'),
+      'uri.long' => t('Full URI'),
+      'uri.short' => t('Short URI'),
+      'bundle_label' => t('The bundle\'s label'),
+      'bid' => t('The bundle\'s ID'),
+    );    
+  }
+  
   public function getPathOptions() {
     
     $options = &$this->path_options;
     //if we already gathered the data, we can stop here
     if (empty($options)) {
-      $options = array(
-        'eid' => $this->t('Entity\'s Drupal ID'),
-        'uri.long' => $this->t('Full URI'),
-        'uri.short' => $this->t('Short URI'),
-      );
+      $options = self::defaultPathOptions();
       //find all paths from all active pathbuilders
       $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
 #      $paths = array();
@@ -346,9 +394,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   public function setOnEmpty($type) {
     
     $type = intval($type);
-    if ($type == self::FALLBACK_TITLE || $type == self::DONT_SHOW) {
+    if ($type == self::DEFAULT_PATTERN || $type == self::FALLBACK_TITLE || $type == self::DONT_SHOW) {
       $this->on_empty = $type;
-    }
+    } else drupal_set_message('Invalid fallback type for title pattern');
   }
   
   public function getFallbackTitle() {

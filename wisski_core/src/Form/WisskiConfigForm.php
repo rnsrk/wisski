@@ -24,10 +24,56 @@ class WisskiConfigForm extends FormBase {
     }
   
     $settings = $this->configFactory()->getEditable('wisski_core.settings');
-    
+
     $form['#wisski_settings'] = $settings;
     
-    $form['pager_max'] = array(
+    $form['bundles'] = array(
+      '#type' => 'fieldset',
+      '#title' => $this->t('WissKI Bundles'),
+    );
+    $form['bundles']['disclaimer'] = array(
+      '#type' => 'item',
+      '#markup' => $this->t('This links to Drupal\'s standard configuration pages.'),
+    );
+    $form['bundles']['form_link'] = array(
+      '#type' => 'link',
+      '#title' => $this->t('Go to WissKI bundle settings page'),
+      '#url' => Url::fromRoute('entity.wisski_bundle.list'),
+    );
+    
+    $form['default_title_pattern'] = array(
+      '#type' => 'fieldset',
+      '#title' => $this->t('Change default entity title pattern'),
+    );
+    $form['default_title_pattern']['disclaimer'] = array(
+      '#type' => 'item',
+      '#markup' => $this->t('The default pattern as the default pattern for all bundles having no other one specified. It may also be used as a fallback for empty titles.'),
+    );
+    $form['default_title_pattern']['form_link'] = array(
+      '#type' => 'link',
+      '#title' => $this->t('Go to title generation page'),
+      '#url' => Url::fromRoute('wisski.default_title_pattern_form'),
+    );
+    
+    $form['flush'] = array(
+      '#type' => 'details',
+      '#title' => $this->t('Flush WissKI caches'),
+    );
+    $form['flush']['disclaimer'] = array(
+      '#type' => 'item',
+      '#markup' => $this->t('This will flush the \'wisski_salz_id2uri\' database table but keep the local store info untouched'),
+    );
+    $form['flush']['id2uri'] = array(
+      '#type' => 'link',
+      '#title' => $this->t('Flush EntityID - URI matching table'),
+      '#url' => Url::fromRoute('<current>',array('q'=>'flush')),
+    );
+    
+    $subform = array(
+      '#type' => 'fieldset',
+      '#title' => $this->t('Miscellaneous Settings'),
+    );
+    $subform['pager_max'] = array(
       '#type' => 'number',
       '#default_value' => $settings->get('wisski_max_entities_per_page'),
       '#min' => 1,
@@ -35,34 +81,23 @@ class WisskiConfigForm extends FormBase {
       '#step' => 1,
       '#title' => $this->t('Maximum number of entities displayed per list page'),
     );
-    $form['preview_image'] = array('#tree'=>TRUE);
-    $form['preview_image']['max_width'] = array(
+    $subform['preview_image'] = array('#tree'=>TRUE);
+    $subform['preview_image']['max_width'] = array(
       '#type' => 'number',
       '#default_value' => $settings->get('wisski_preview_image_max_width_pixel'),
       '#min' => 10,
       '#step' => 1,
       '#title' => $this->t('Maximum width of entity list preview images in pixels'),
     );
-    $form['preview_image']['max_height'] = array(
+    $subform['preview_image']['max_height'] = array(
       '#type' => 'number',
       '#default_value' => $settings->get('wisski_preview_image_max_height_pixel'),
       '#min' => 10,
       '#step' => 1,
       '#title' => $this->t('Maximum height of entity list preview images in pixels'),
     );
-    $form['flush'] = array(
-      '#type' => 'details',
-      '#title' => $this->t('Flush WissKI caches'),
-    );
-    $form['flush']['disclaimer'] = array(
-      '#type' => 'item',
-      '#markup' => $this->t('Thia will flush the \'wisski_salz_id2uri\' database table but keep the local store info untouched'),
-    );
-    $form['flush']['id2uri'] = array(
-      '#type' => 'link',
-      '#title' => $this->t('Flush EntityID - URI matching table'),
-      '#url' => Url::fromRoute('<current>',array('q'=>'flush')),
-    );
+    $form['subform'] = $subform;
+    
     $form['submit'] = array(
       '#type' => 'submit',
       '#value' => $this->t('Save'),

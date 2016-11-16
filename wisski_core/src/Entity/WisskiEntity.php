@@ -224,6 +224,14 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
     return $out;
   }
 
+  public function extractFieldProperties(\Drupal\Core\Field\FieldItemInterface $field_item) {
+    
+    $properties = array();
+    foreach ($field_item->getProperties() as $name => $values) {
+      dpm($values,$name);
+    }
+    return $properties;
+  }
   
   public function getFieldDataTypes() {
     $types = array();

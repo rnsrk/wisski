@@ -34,7 +34,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   public function execute() {
   
     if (!isset($empties)) {
-      foreach($this->condition->conditions() as $connd) {
+      $bundle_id = NULL;
+      foreach($this->condition->conditions() as $cond) {
         if ($cond['field'] === 'bundle') {
           $bundle_id = $cond['value'];
           break;
@@ -282,6 +283,5 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   public function conditionAggregateGroupFactory($conjunction = 'AND') {
     return new ConditionAggregate($conjunction, $this);
   }
-  
   
 }

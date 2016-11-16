@@ -134,13 +134,14 @@ function wisski_core_schema() {
         'type' => 'int',
       ),
       'main_value' => array(
-        'description' => 'The field value for this entity. i.e. the value for this field\'s main property',
+        'description' => 'The field value for this entity. i.e. the value for the main property',
         'type' => 'varchar',
+        'length' => 1023,
         'not null' => TRUE,
       ),
       'properties' => array(
         'description' => 'array of field properties',
-        'type' => 'varchar',
+        'type' => 'text',
         'serialize' => TRUE,
       ),
     ),
