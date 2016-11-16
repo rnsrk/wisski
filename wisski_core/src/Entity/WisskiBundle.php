@@ -111,7 +111,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   protected $cached_titles;
   
   public function generateEntityTitle($entity_id,$include_bundle=FALSE,$force_new=FALSE) {
-    
+
     if (!$force_new) {
       $title = $this->getCachedTitle($entity_id);
       if (isset($title)) {
@@ -123,27 +123,14 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         return $title;
       }
     }
+    
     $pattern = $this->getTitlePattern();
-    unset($pattern['max_id']);
-    //dpm(array('pattern'=>$pattern,'entity'=>$entity_id,'fallback'=>$fallback_title),__METHOD__);
-    
-    if (empty($pattern)) {
-      //try the default pattern
-      if ($this->onEmpty() == self::DEFAULT_PATTERN) $pattern = $this->getDefaultPattern();
-    }
-    
-    if (empty($pattern)) {
-      //if we still have no pattern, we have to decide on a fallback
-      if ($this->onEmpty() == self::FALLBACK_TITLE)
-        return $this->fallback_title;
-      else return FALSE;
-    }
     
     //now do the work
     $title = $this->applyTitlePattern($pattern,$entity_id);
     
     $this->setCachedTitle($entity_id,$title);
-    //dpm(array_combine(['$entity_id','$fallback_title','$include_bundle','$force_new'],func_get_args())+array('pattern'=>$pattern,'result'=>$title),__METHOD__);
+    
     if ($include_bundle && $title !== FALSE) {
       drupal_set_message('Enhance Title '.$title);
       $title = $this->label().': '.$title;
@@ -159,8 +146,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     
     //dpm($pattern,__FUNCTION__);
     
+    unset($pattern['max_id']);
+    
     // just in case...
-    if (empty($pattern)) return FALSE;
+    if (empty($pattern)) return $this->createFallbackTitle($entity_id);;
     
     $parts = array();
     $pattern_order = array_keys($pattern);
@@ -191,7 +180,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       }
       if ($attributes['type'] === 'path') {
         $name = $attributes['name'];
-        
+        unset($values);
         switch ($name) {
           case 'eid':
             $values = array($entity_id);
@@ -216,7 +205,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           if ($attributes['optional'] === FALSE) {
             //we detected an invalid title;
             drupal_set_message('Detected invalid title','error');
-            return $fallback_title;
+            return $this->createFallbackTitle($entity_id);
           } else $parts[$key] = '';
           continue;
         }
@@ -246,14 +235,21 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     foreach ($pattern_order as $pos) {
       if (isset($parts[$pos])) $title .= $parts[$pos];
     }
-    if (empty(trim($title))) {
-      switch ($this->onEmpty()) {
-        case self::FALLBACK_TITLE: return $this->fallback_title;
-        case self::DEFAULT_PATTERN: return $this->applyTitlePattern($this->getDefaultPattern(),$entity_id);
-        default: return FALSE;
-      }
-    }
+    
+    if (empty(trim($title))) return $this->createFallbackTitle($entity_id);
+
+    //dpm(func_get_args()+array('result'=>$title),__METHOD__);
     return $title;
+  }
+  
+  public function createFallbackTitle($entity_id) {
+    
+    switch ($this->onEmpty()) {
+      case self::FALLBACK_TITLE: return $this->fallback_title;
+      case self::DEFAULT_PATTERN: return $this->applyTitlePattern($this->getDefaultPattern(),$entity_id);
+      case self::DONT_SHOW:
+      default: return FALSE;
+    }
   }
   
   public function gatherTitleValues($eid,$path_id) {
