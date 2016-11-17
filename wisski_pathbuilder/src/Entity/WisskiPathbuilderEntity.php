@@ -426,18 +426,53 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       $this->setPbPaths($pbpaths);
       
       $this->save();
-    
-      // if the field is already there...
-      if(empty($field_name) || 
-         !empty(\Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $fieldid)))) {
-        drupal_set_message(t('Field %bundle with id %id was already there.',array('%bundle'=>$field_name, '%id' => $fieldid)));
-  #      $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->id()));
-        return;
+
+      //if there were problems with the field name, should not happen
+      if(empty($field_name)) {
+        drupal_set_message(t('Cannot create field for path %path_id without field name',array('5path_id'=>$pathid)),'error');
       }
+    
+      $create_fs = FALSE;
+      // if the field is already there...
+      $field_storage = \Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $fieldid));
+      if (!empty($field_storage)) {
+        $field_storage = current($field_storage);
+        drupal_set_message(t('Field %bundle with id %id was already there.',array('%bundle'=>$field_name, '%id' => $fieldid)));
+        //dpm($field_storage,'storage');
+        if ($field_storage->getType() != $field_storage_values['type']) {
+          $field_storage->delete();
+          drupal_set_message(t('Field %bundle with id %id had to be deleted and recreated.',array('%bundle'=>$field_name, '%id' => $fieldid)), 'warning');
+          $create_fs = TRUE;
+        }
+      } else $create_fs = TRUE;
+      
+      if ($create_fs) {
+        drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
+        $field_storage = \Drupal::entityManager()->getStorage('field_storage_config')->create($field_storage_values)->enable();
+      }
+              
+      $card = $pbpaths[$pathid]['cardinality'] ? : \Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+      $field_storage->setCardinality($card);
+      $field_storage->save();
 
-      \Drupal::entityManager()->getStorage('field_storage_config')->create($field_storage_values)->enable()->save();
-
-      \Drupal::entityManager()->getStorage('field_config')->create($field_values)->save();
+      $create_fo = FALSE;
+      $field_object = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(array('field_name'=>$fieldid));
+      if (!empty($field_object)) {
+        $field_object = current($field_object);
+        //dpm($field_object,'field');
+        if ($field_object->bundle() != $field_values['bundle'] || $field_object->getType() != $field_values['type']) {
+          $field_object->delete();
+          $create_fo = TRUE;
+        }
+      } else $create_fo = TRUE;
+      
+      if ($create_fo) {
+        $field_object = \Drupal::entityManager()->getStorage('field_config')->create($field_values);
+      }
+      
+      //@TODO make it possible to set the $required value
+      //$field_object->setRequired($required);
+      $field_object->save();
 
       $view_options = array(
         // this might also be formatterwidget - I am unsure here. @TODO
@@ -491,7 +526,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       // setComponent enables them
       $form_display->setComponent($fieldid, $view_options)->save();
 
-      drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
+      
     }
     
     /**

@@ -714,9 +714,11 @@ class WisskiPathbuilderForm extends EntityForm {
     $pathtree = array();
     $map = array();
     
+    // regardless of what it is - we have to save it properly to the pbpaths
+    $pbpaths = $pathbuilder->getPbPaths();
+    
     foreach($paths as $key => $path) {
 #      $pathtree = array_merge($pathtree, $this->recursive_build_tree(array($key => $path)));
-
       
       if(!empty($path['parent'])) { // it has parents... we have to add it somewhere
         $map[$path['parent']]['children'][$path['id']] = array('id' => $path['id'], 'children' => array());
@@ -726,13 +728,8 @@ class WisskiPathbuilderForm extends EntityForm {
         $map[$path['id']] = &$pathtree[$path['id']];
       }
             
-      // regardless of what it is - we have to save it properly to the pbpaths
-      $pbpaths = $pathbuilder->getPbPaths();
+      $pbpaths[$path['id']] = \Drupal\wisski_core\WisskiHelper::array_merge_nonempty($pbpaths[$path['id']],$path); #array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array(), 'bundle' => $path['bundle'], 'field' => $path['field']);
       
-      $pbpaths[$path['id']] = $path; #array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array(), 'bundle' => $path['bundle'], 'field' => $path['field']);
-      // save the path
-      $pathbuilder->setPbPaths($pbpaths);
-
       // generate fields!
       $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
       
@@ -750,15 +747,17 @@ class WisskiPathbuilderForm extends EntityForm {
       } else
         $pathbuilder->generateFieldForPath($pathob->id(), $pathob->getName());
 */
-      
 
     }
     
+    // save the path
+    $pathbuilder->setPbPaths($pbpaths);
+    
     // for now it is equal which create mode is called.
 #    if($form_state->getValue('create_mode') == "0") {
-    $pbpaths = $pathbuilder->getPbPaths();
+/*    $pbpaths = $pathbuilder->getPbPaths();
 
-/*    
+  
     $allgroupsandpaths = $pathbuilder->getAllGroupsAndPaths();
 
     foreach($allgroupsandpaths as $path) {
@@ -775,9 +774,9 @@ class WisskiPathbuilderForm extends EntityForm {
       } else
         $pathbuilder->generateFieldForPath($path->id(), $path->getName());
     }
-*/      
+      
     #}
-
+*/
     // save the tree
     $pathbuilder->setPathTree($pathtree);
 
