@@ -555,7 +555,6 @@ if (empty($new_field_values)) continue;
     //dpm(func_get_args(),__METHOD__);
     
     //gather values with property caching
-    list($values,$original_values) = $entity->getValues($this,TRUE);
     $bundle_id = $values['bundle'][0]['target_id'];
 //    dpm(func_get_args()+array('values'=>$values,'bundle'=>$bundle_id),__METHOD__);
     //echo implode(', ',array_keys((array) $entity));
@@ -619,6 +618,7 @@ if (empty($new_field_values)) continue;
       return;
     }
     
+    list($values,$original_values) = $entity->getValues($this,TRUE);
     
     //dpm($original_values,'old values');
     //dpm($values,'new values');
