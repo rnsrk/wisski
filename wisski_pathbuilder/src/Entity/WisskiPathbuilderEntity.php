@@ -451,7 +451,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         $field_storage = \Drupal::entityManager()->getStorage('field_storage_config')->create($field_storage_values)->enable();
       }
               
-      $card = $pbpaths[$pathid]['cardinality'] ? : \Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+      $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : \Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
       $field_storage->setCardinality($card);
       $field_storage->save();
 
