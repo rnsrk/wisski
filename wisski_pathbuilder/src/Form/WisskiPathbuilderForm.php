@@ -75,7 +75,15 @@ class WisskiPathbuilderForm extends EntityForm {
     // is set more directly at the top. Furthermore in the create mode
     // the table is unnecessary.
     if($this->operation == 'edit') { 	   
-      $header = array($this->t("Title"), $this->t("Path"), array('data' => $this->t("Enabled"), 'class' => array('checkbox')), $this->t('Cardinality'),"Weight", array('data' => $this->t('Operations'), 'colspan' => 11));
+      $header = array(
+        $this->t("Title"),
+        $this->t("Path"),
+        array('data' => $this->t("Enabled"),'class' => array('checkbox')),
+        $this->t('Field&nbsp;Type'),
+        $this->t('Cardinality'),
+        "Weight",
+        array('data' => $this->t('Operations'),'colspan' => 11)
+      );
      
       $form['pathbuilder_table'] = array(
         '#type' => 'table',
@@ -148,6 +156,7 @@ class WisskiPathbuilderForm extends EntityForm {
         $form['pathbuilder_table'][$path->id()]['enabled'] = $pathform['enabled'];
         $form['pathbuilder_table'][$path->id()]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
 
+        $form['pathbuilder_table'][$path->id()]['field_type_informative'] = $pathform['field_type_informative'];
         $form['pathbuilder_table'][$path->id()]['cardinality'] = $pathform['cardinality'];
         
         $form['pathbuilder_table'][$path->id()]['weight'] = $pathform['weight'];
@@ -583,10 +592,16 @@ class WisskiPathbuilderForm extends EntityForm {
       '#title_display' => 'invisible',
       '#default_value' => $enabled
     );
-    drupal_set_message('cardinality '.$cardinality);
+
+    $field_type_label = $fieldtype ? \Drupal::service('plugin.manager.field.field_type')->getDefinition($fieldtype)['label'] : '';
+    $pathform['field_type_informative'] = array(
+      '#type' => 'item',
+      '#markup' => $field_type_label,
+    );
+
     $pathform['cardinality'] = array(
       '#type' => 'item',
-      '#markup' => "<div>$cardinality</div>",
+      '#markup' => \Drupal\wisski_pathbuilder\Form\WisskiPathbuilderConfigureFieldForm::cardinalityOptions()[$cardinality],
       '#title' => $this->t('Field Cardinality'),
       '#title_display' => 'attribute',
     );
