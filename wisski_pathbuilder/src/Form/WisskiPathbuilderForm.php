@@ -75,7 +75,7 @@ class WisskiPathbuilderForm extends EntityForm {
     // is set more directly at the top. Furthermore in the create mode
     // the table is unnecessary.
     if($this->operation == 'edit') { 	   
-      $header = array("title", "Path", array('data' => $this->t("Enabled"), 'class' => array('checkbox')), "Weight", array('data' => $this->t('Operations'), 'colspan' => 11));
+      $header = array($this->t("Title"), $this->t("Path"), array('data' => $this->t("Enabled"), 'class' => array('checkbox')), $this->t('Cardinality'),"Weight", array('data' => $this->t('Operations'), 'colspan' => 11));
      
       $form['pathbuilder_table'] = array(
         '#type' => 'table',
@@ -110,6 +110,7 @@ class WisskiPathbuilderForm extends EntityForm {
 
       // get all paths belonging to the respective pathbuilder
       foreach($pathbuilder->getPathTree() as $grouparray) {
+        
         $pathforms = array_merge($pathforms, $this->recursive_render_tree($grouparray));
       }
     
@@ -147,8 +148,10 @@ class WisskiPathbuilderForm extends EntityForm {
         $form['pathbuilder_table'][$path->id()]['enabled'] = $pathform['enabled'];
         $form['pathbuilder_table'][$path->id()]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
 
+        $form['pathbuilder_table'][$path->id()]['cardinality'] = $pathform['cardinality'];
+        
         $form['pathbuilder_table'][$path->id()]['weight'] = $pathform['weight'];
-      
+        
         // an array of links that can be selected in the dropdown operations list
         $links = array();
         $links['edit'] = array(
@@ -487,7 +490,7 @@ class WisskiPathbuilderForm extends EntityForm {
     // first we have to get any additional fields because we just got the tree-part
     // and not the real data-fields
     $pbpath = $this->entity->getPbPath($grouparray['id']);
-
+    
     // if we did not get something, stop.
     if(empty($pbpath))
       return array();
@@ -495,7 +498,9 @@ class WisskiPathbuilderForm extends EntityForm {
     // merge it into the grouparray    
     $grouparray = array_merge($grouparray, $pbpath);
     
-    $pathform[$grouparray['id']] = $this->pb_render_path($grouparray['id'], $grouparray['enabled'], $grouparray['weight'], $depth, $parent, $grouparray['bundle'], $grouparray['field'], $grouparray['fieldtype'], $grouparray['displaywidget'], $grouparray['formatterwidget']);
+    if (!isset($grouparray['cardinality'])) $grouparray['cardinality'] = -1;
+    
+    $pathform[$grouparray['id']] = $this->pb_render_path($grouparray['id'], $grouparray['enabled'], $grouparray['weight'], $depth, $parent, $grouparray['bundle'], $grouparray['field'], $grouparray['fieldtype'], $grouparray['displaywidget'], $grouparray['formatterwidget'], $grouparray['cardinality']);
     
     if(is_null($pathform[$grouparray['id']])) {
       unset($pathform[$grouparray['id']]);
@@ -534,7 +539,7 @@ class WisskiPathbuilderForm extends EntityForm {
     return (intval($a['weight']['#default_value']) < intval($b['weight']['#default_value'])) ? -1 : 1;
   }
   
-  private function pb_render_path($pathid, $enabled, $weight, $depth, $parent, $bundle, $field, $fieldtype, $displaywidget, $formatterwidget) {
+  private function pb_render_path($pathid, $enabled, $weight, $depth, $parent, $bundle, $field, $fieldtype, $displaywidget, $formatterwidget,$cardinality) {
     $path = entity_load('wisski_path', $pathid);
 
     if(is_null($path))
@@ -577,6 +582,13 @@ class WisskiPathbuilderForm extends EntityForm {
       '#title' => $this->t('Enable @title path', array('@title' => $path->getName())),
       '#title_display' => 'invisible',
       '#default_value' => $enabled
+    );
+    drupal_set_message('cardinality '.$cardinality);
+    $pathform['cardinality'] = array(
+      '#type' => 'item',
+      '#markup' => "<div>$cardinality</div>",
+      '#title' => $this->t('Field Cardinality'),
+      '#title_display' => 'attribute',
     );
 
     $pathform['weight'] = array(
