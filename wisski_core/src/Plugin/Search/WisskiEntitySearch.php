@@ -60,7 +60,7 @@ class WisskiEntitySearch extends SearchPluginBase {
           $group = $group->condition($path_id,$search_string,$operator);
         }
         $query->condition($group);
-        //dpm($query);
+        #dpm($query);
       }
       $results = $query->execute();
     }
@@ -360,12 +360,15 @@ class WisskiEntitySearch extends SearchPluginBase {
     
     $vals = $form_state->getValues();
     dpm($vals,__FUNCTION__.'::values');
-    $keys = '';
+    $keys = array();
     foreach($vals['advanced']['paths'] as $bundle_id => $paths) {
       $return[$bundle_id]['query_type'] = $paths['query_type']['selection'];
       unset($paths['query_type']);
       foreach ($paths as $path_parameters) {
-        if ($path_parameters['input_field']) $keys[] = $return[$bundle_id]['paths'][] = array($path_parameters['path_selection'],trim($path_parameters['input_field']),$path_parameters['operator']);
+        if ($path_parameters['input_field']) {
+          $keys[] = trim($path_parameters['input_field']);
+          $return[$bundle_id]['paths'][] = array($path_parameters['path_selection'],trim($path_parameters['input_field']),$path_parameters['operator']);
+        }
       }
     }
     $return['bundles'] = array_filter($vals['advanced']['bundles']['select_bundles']);

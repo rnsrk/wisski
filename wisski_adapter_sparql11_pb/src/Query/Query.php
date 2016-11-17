@@ -58,8 +58,8 @@ class Query extends WisskiQueryBase {
         continue;
       
       // init pager-things
-      if(isset($this->pager) || !empty($this->range)) {
-        //dpm($this->range,'limits '.__CLASS__);
+      if(!empty($this->pager) || !empty($this->range)) {
+        #dpm(array($this->pager, $this->range),'limits '.__CLASS__);
         $limit = $this->range['length'];
         $offset = $this->range['start'];
       } //else dpm($this,'no limits');
