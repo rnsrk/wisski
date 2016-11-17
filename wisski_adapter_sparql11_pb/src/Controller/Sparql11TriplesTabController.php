@@ -112,7 +112,10 @@ class Sparql11TriplesTabController extends ControllerBase {
                 $got_target_url = FALSE;
               }
               $object_text = $result->o->getUri();
-            } else $object_text = $result->o->getValue();
+            } else {
+              $got_target_url = FALSE;
+              $object_text = $result->o->getValue();
+            }
             $graph_uri = isset($result->g) ? $result->g->getUri() : 'DEFAULT';
             $form['out_triples'][] = array(
               Link::fromTextAndUrl($target_uri, $subjecturi)->toRenderable(),
