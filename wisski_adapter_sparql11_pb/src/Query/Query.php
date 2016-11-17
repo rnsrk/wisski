@@ -58,8 +58,8 @@ class Query extends WisskiQueryBase {
         continue;
       
       // init pager-things
-      if(isset($this->pager) || !empty($this->range)) {
-        //dpm($this->range,'limits '.__CLASS__);
+      if(!empty($this->pager) || !empty($this->range)) {
+        #dpm(array($this->pager, $this->range),'limits '.__CLASS__);
         $limit = $this->range['length'];
         $offset = $this->range['start'];
       } //else dpm($this,'no limits');
@@ -186,6 +186,11 @@ class Query extends WisskiQueryBase {
             if(empty($path))
               continue;
 
+            // TODO: next line is crap if you have multiple conditions!
+            // for every path the generate...() will reuse ?x0, ?x1, ...
+            // so that we have a wrong query.
+            // also OR is not repsected
+
             $query .= $pbadapter->getEngine()->generateTriplesForPath($pb, $path, $value, NULL, NULL, 0, 0, FALSE, $op);
           }
         }
@@ -195,7 +200,7 @@ class Query extends WisskiQueryBase {
           return array();
       
         $query = "SELECT * WHERE { " . $query . " }";
-#        dpm($query, 'query');        
+        dpm(htmlentities($query), 'query');        
         $result = $pbadapter->getEngine()->directQuery($query);
         
         $out = array();

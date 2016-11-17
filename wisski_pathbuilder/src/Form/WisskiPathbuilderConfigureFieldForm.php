@@ -13,6 +13,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Url;
+use Drupal\Core\Field\FieldStorageDefinitionInterface;
 
 /**
  * Class WisskiPathbuilderForm
@@ -183,6 +184,15 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         '#description' => $this->t("Formatter for the field - If there is any."),
 #        '#required' => true,
       );
+      
+      $unlimited = FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+      dpm($pbpath);
+      $form['cardinality'] = array(
+        '#type' => 'select',
+        '#title' => $this->t('Cardinality'),
+        '#default_value' => (empty($pbpath['cardinality']) ? $unlimited : $pbpath['cardinality']),
+        '#options' => self::cardinalityOptions(),
+      );
     }
     
 #    drupal_set_message("ft: " . serialize($ftvalue) . " dis " . serialize($listdisplay) . " for " . serialize($listform));
@@ -220,6 +230,8 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     $pbpaths[$pathid]['formatterwidget'] = $form_state->getValue('formatterwidget');
     $pbpaths[$pathid]['bundle'] = $form_state->getValue('bundle');
     $pbpaths[$pathid]['field'] = $form_state->getValue('field');
+    $pbpaths[$pathid]['cardinality'] = $form_state->getValue('cardinality');
+
     
     // save it
     $this->pathbuilder->setPbPaths($pbpaths);
@@ -232,6 +244,19 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->pathbuilder->id()));
     
     return;    
+  }
+
+
+  public static function cardinalityOptions() {
+    $unlimited = FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+    return array(
+      $unlimited => t('Unlimited'), // TODO: use the t method somehow
+      '1' => '1',
+      '2' => '2',
+      '3' => '3',
+      '4' => '4',
+      '5' => '5',
+    );
   }
 
 }

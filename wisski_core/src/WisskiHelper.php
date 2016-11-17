@@ -92,7 +92,7 @@ class WisskiHelper {
       
       foreach($pathtree as $key => $value) {
         if(!empty($pbarr[$key]['bundle']))
-          $parents[$key] = $pbarr[$key]['bundle'];
+          $parents[] = $pbarr[$key]['bundle'];
       }
 #      $parent_id = $pb->getParentBundleId($bundle_id);
 #      if ($parent_id) {
@@ -101,7 +101,7 @@ class WisskiHelper {
 #        } else $parents[$parent_id] = $parent_id;
 #      }
     }
-    return $parents;
+    return array_unique($parents);
   }
   
 }
