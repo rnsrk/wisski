@@ -556,6 +556,8 @@ if (empty($new_field_values)) continue;
     
     //gather values with property caching
     $bundle_id = $values['bundle'][0]['target_id'];
+    if (empty($bundle_id)) $bundle_id = $entity->bundle();
+    
 //    dpm(func_get_args()+array('values'=>$values,'bundle'=>$bundle_id),__METHOD__);
     //echo implode(', ',array_keys((array) $entity));
     $local_adapters = array();
@@ -668,7 +670,10 @@ if (empty($new_field_values)) continue;
         $entity->set('eid',$entity_id);
         $entity->enforceIsNew(FALSE);
         //we have successfully written to this adapter
-        \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)->flushTitleCache($entity_id);
+        
+        $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id);
+        //dpm($bundle,'Wrote '.$entity_id.' to '.$bundle_id);
+        if ($bundle) $bundle->flushTitleCache($entity_id);
       }
     }
   }
