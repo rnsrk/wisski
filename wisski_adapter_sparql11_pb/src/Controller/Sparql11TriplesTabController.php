@@ -95,22 +95,29 @@ class Sparql11TriplesTabController extends ControllerBase {
             $subjecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $target_uri ) );
 
             $predicateuri = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->po->getUri() ) );
-
+            
             if($result->o instanceof \EasyRdf_Resource) {
-              $existing_bundles = $e->getBundleIdsForEntityId($result->o->getUri());
+              try {
               
-              if(empty($existing_bundles))
-                $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->o->getUri() ) );
-              else {
-                $remote_entity_id = $e->getDrupalId($result->o->getUri());              
-                $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $remote_entity_id, 'target_uri' => $result->o->getUri() ) );
-              }            
-            }
+                $existing_bundles = $e->getBundleIdsForEntityId($result->o->getUri());
+                
+                if(empty($existing_bundles))
+                  $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->o->getUri() ) );
+                else {
+                  $remote_entity_id = $e->getDrupalId($result->o->getUri());              
+                  $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $remote_entity_id, 'target_uri' => $result->o->getUri() ) );
+                }
+                $got_target_url = TRUE;
+              } catch (\Symfony\Component\Routing\Exception\InvalidParameterException $ex) {
+                $got_target_url = FALSE;
+              }
+              $object_text = $result->o->getUri();
+            } else $object_text = $result->o->getValue();
             $graph_uri = isset($result->g) ? $result->g->getUri() : 'DEFAULT';
             $form['out_triples'][] = array(
-              Link::fromTextAndUrl($this->t($target_uri), $subjecturi)->toRenderable(),
-              Link::fromTextAndUrl($this->t($result->po->getUri()), $predicateuri)->toRenderable(),
-              $result->o instanceof \EasyRdf_Resource ? Link::fromTextAndUrl($this->t($result->o->getUri()), $objecturi)->toRenderable() : array('#type' => 'item', '#title' => $result->o->getValue()),
+              Link::fromTextAndUrl($target_uri, $subjecturi)->toRenderable(),
+              Link::fromTextAndUrl($result->po->getUri(), $predicateuri)->toRenderable(),
+              $got_target_url ? Link::fromTextAndUrl($object_text, $objecturi)->toRenderable() : array('#type' => 'item', '#title' => $object_text),
               array('#type' => 'item', '#title' => $graph_uri),
               array('#type' => 'item', '#title' => $label),
             );

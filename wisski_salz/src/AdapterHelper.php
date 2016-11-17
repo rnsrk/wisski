@@ -155,7 +155,7 @@ class AdapterHelper {
   }
   
   public static function getDrupalIdForUri($uri,$create_on_fail=TRUE,$input_adapter_id=NULL) {
-  
+    
     $id = self::doGetDrupalIdForUri($uri,$create_on_fail,$input_adapter_id);
     //dpm(array_combine(array('$uri','$create_on_fail','$input_adapter_id'),func_get_args())+array('result'=>$id),__FUNCTION__);
     return $id;
@@ -248,6 +248,17 @@ class AdapterHelper {
   
   public static function getUrisForDrupalId($eid,$adapter_id=NULL) {
     
+    
+    if (!is_numeric($eid)) {
+      //we probably got a URI as input, check that and return the input if it's valid
+      //otherwise we cant do anything
+      //use this block in other functions, too, if there is the probability of getting wrong inputs
+      if (isset($adapter_id)) {
+        $adapter = Adapter::load($adapter_id);      
+        if ($adapter && $adapter->getEngine()->isValidUri($eid)) return $eid;
+      }
+      return FALSE;
+    }
     $result = self::doGetUrisForDrupalId($eid,$adapter_id);
     //dpm(array('$eid'=>$eid,'$adapter_id'=>isset($adapter_id)? $adapter_id : 'NULL')+array('return'=>$result),__FUNCTION__);
     return $result;
