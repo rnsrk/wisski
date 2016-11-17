@@ -452,18 +452,27 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       }
               
       $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : \Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+      dpm($field_storage->id(),'ID before');
       $field_storage->setCardinality($card);
       $field_storage->save();
+      dpm($field_storage->id(), 'ID after');
 
       $create_fo = FALSE;
       $field_object = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(array('field_name'=>$fieldid));
       if (!empty($field_object)) {
         $field_object = current($field_object);
         //dpm($field_object,'field');
-        if ($field_object->bundle() != $field_values['bundle'] || $field_object->getType() != $field_values['type']) {
-          $field_object->delete();
+        if ($field_object->getTargetBundle() != $field_values['bundle']) {
           $create_fo = TRUE;
+          dpm(array($field_object->bundle(),$field_values['bundle']),'severe bundle differences');
+        } 
+        if ($field_object->getType() != $field_storage_values['type']) {
+          $create_fo = TRUE;
+          dpm(array($field_object->getType(),$field_storage_values['type']),'severe type differences');
         }
+        
+        if ($create_fo) $field_object->delete();
+        
       } else $create_fo = TRUE;
       
       if ($create_fo) {
