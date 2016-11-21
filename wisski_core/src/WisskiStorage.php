@@ -237,7 +237,7 @@ if (empty($new_field_values)) continue;
                     ->execute()
                     ->fetchAllAssoc('ident');
                   if (!empty($cached_field_values)) {
-                    dpm($cached_field_values,'cached values');
+#                    dpm($cached_field_values,'cached values');
                     $head = array();
                     $tail = array();
                     foreach ($new_field_values[$id][$field_name] as $delta => $nfv) {
@@ -555,6 +555,7 @@ if (empty($new_field_values)) continue;
     //dpm(func_get_args(),__METHOD__);
     
     //gather values with property caching
+    list($values,$original_values) = $entity->getValues($this,TRUE);
     $bundle_id = $values['bundle'][0]['target_id'];
     if (empty($bundle_id)) $bundle_id = $entity->bundle();
     
@@ -619,8 +620,6 @@ if (empty($new_field_values)) continue;
       drupal_set_message('No local adapter could create the entity','error');
       return;
     }
-    
-    list($values,$original_values) = $entity->getValues($this,TRUE);
     
     //dpm($original_values,'old values');
     //dpm($values,'new values');

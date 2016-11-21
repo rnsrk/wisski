@@ -242,7 +242,7 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
       }
       if (!isset($out[$field_name][0]) || empty($out[$field_name][0])) unset($out[$field_name]);
     }
-    dpm($out,__METHOD__);
+#    dpm($out,__METHOD__);
     return $out;
   }
 
