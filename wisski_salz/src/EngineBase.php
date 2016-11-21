@@ -115,7 +115,6 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
 #      '#description' => $this->t('Is this Adapter readable?'),
 #    ];
     
-    
     $form['isPreferredLocalStore'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Preferred Local Store'),
@@ -123,10 +122,26 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
       '#description' => $this->t('Is this Adapter the preferred local store?'),
     ];
     
+    $real_preferred = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore(FALSE,TRUE);
+    if ($real_preferred instanceof \Drupal\wisski_salz\AdapterInterface)  {
+      if ($this->adapterId() !== $real_preferred->id()) {
+        $form['isPreferredLocalStore_disclaimer'] = array(
+          '#type' => 'fieldset',
+          '#attributes' => array('class' => array('messages','messages--warning')),
+          'item' => array(
+            '#type' => 'item',
+            '#markup' => $this->t('The adapter "%adapter" is the preferred local store at the moment. This will be changed if you set this here as the preferred local',array('%adapter'=>$real_preferred->link())),
+          ),
+        );
+        $this->old_preferred_store = $real_preferred;
+        $form_state->setStorage(array('old_preferred_store' => $real_preferred));
+      }
+    }
+        
     $form['sameAsProperties'] = array(
       '#type'=> 'textarea',
       '#title'=> $this->t('"Same As" properties'),
-      '#description' => $this->t('The properties this store uses to mark two URIs as meaning the same (Drupal) entity. ALL of them will be used at the same time when saving a matching pair.'),
+      '#description' => $this->t('The properties this store uses to mark two URIs as meaning the same (Drupal) entity. ALL of them will be used at the same time when saving a matching pair. Make sure these are symmetric.'),
       '#prefix' => '<div id=wisski-same-as>',
       '#suffix' => '</div>',
       '#default_value' => implode(",\n",$this->getSameAsProperties()),
@@ -149,11 +164,16 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     
     $is_preferred = $form_state->getValue('isPreferredLocalStore');
-    if($is_preferred)
+    if($is_preferred) {
       $this->setPreferredLocalStore();
+      if (isset($this->old_preferred_store)) {
+        $pref = $this->old_preferred_store;
+        $pref->getEngine()->unsetPreferredLocalStore();
+        $pref->save();
+      }
+    }
     else
       $this->unsetPreferredLocalStore();
-    
     
     $is_writable = $form_state->getValue('isWritable');
     if($is_writable)
@@ -164,10 +184,13 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     $same_as_properties = $form_state->getValue('sameAsProperties');
     $this->same_as_properties = preg_split('/[\s,]+/',$same_as_properties);
     
+    //dpm($this,__FUNCTION__);
+    
+    \Drupal\wisski_salz\AdapterHelper::resetPreferredLocalStore();
+    
     #return FALSE;
   }
   
-
   /**
    * {@inheritdoc}
    */
@@ -214,10 +237,13 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   
   public function setPreferredLocalStore() {
     $this->is_preferred_local_store = TRUE;
+    //dpm($this,$this->adapterId().' '.__FUNCTION__);
   }
   
   public function unsetPreferredLocalStore() {
+    
     $this->is_preferred_local_store = FALSE;
+    //dpm($this,$this->adapterId().' '.__FUNCTION__);
   }
   
   /**

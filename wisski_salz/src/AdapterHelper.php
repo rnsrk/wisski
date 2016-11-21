@@ -330,27 +330,41 @@ class AdapterHelper {
     
   }
   
-  public static function getPreferredLocalStore($retrieve_engine=FALSE) {
+  public static function getPreferredLocalStore($retrieve_engine=FALSE,$ignore_errors=FALSE,$ignore_cache=FALSE) {
 
-    $cid = 'wisski_salz_preferred_local_store';
-    if ($cache = \Drupal::cache()->get($cid)) {
-      $adapter =  $cache->data;
-      if ($retrieve_engine) return $adapter->getEngine();
-      else return $adapter;
+    if (!$ignore_cache) {
+      $cid = 'wisski_salz_preferred_local_store';
+      if ($cache = \Drupal::cache()->get($cid)) {
+        $adapter_id =  $cache->data;
+        $adapter = Adapter::load($adapter_id);
+        if ($retrieve_engine) return $adapter->getEngine();
+        else return $adapter;
+      }
     }
     //since there is (or at least should be) only one preferred local store, we can stop on first sight
     //TODO: decide what to do if there is none (e.g. return NULL or return any from the list)
-    foreach (\Drupal::entityManager()->getStorage('wisski_salz_adapter')->loadMultiple() as $adapter) {
+    $adapters = Adapter::loadMultiple();
+    foreach ($adapters as $adapter) {
       $engine = $adapter->getEngine();
       if ($engine->isPreferredLocalStore()) {
-        \Drupal::cache()->set($cid,$adapter);
+        \Drupal::cache()->set($cid,$adapter->id());
         if ($retrieve_engine) return $engine;
         else return $adapter;
       }
     }
     
-    //if we reach here, there is no preferred local store, this is bad so we can
-    throw new \Exception('There is no preferred local store set');
+    //if we reach here, there is no preferred local store
+    if (!$ignore_errors) {
+      //throw new \Exception('There is no preferred local store set');
+      $link = \Drupal\Core\Link::createFromRoute(t('here',array(),array('context'=> 'There is no preferred local store set. Please specify one ')),'entity.wisski_salz_adapter.collection');
+      drupal_set_message(t('There is no preferred local store set. Please specify one %here',array('%here' => $link->toString())),'error');
+    }
+  }
+  
+  public static function resetPreferredLocalStore() {
+    
+    \Drupal::cache()->delete('wisski_salz_preferred_local_store');
+    self::getPreferredLocalStore(FALSE,TRUE,TRUE);
   }
   
   /**
