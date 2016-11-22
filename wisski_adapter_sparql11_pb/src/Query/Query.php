@@ -151,22 +151,24 @@ class Query extends WisskiQueryBase {
       
       // we count 
       $i = 0;
+dpm($this->condition, "c1");
       
       // TODO: this does not handle nested conditions, ie.
       // it does only handle OR/AND(cond1, cond2, ...) where
       // where condn must be a path
       foreach($this->condition->conditions() as $condition) {
+dpm($condition, "c22");
 
-        $each_condition_group = $condition['field']->conditions();
-        $conjunction = strtoupper($condition['field']->getConjunction());
+        $each_condition_group = $condition['field'];
+        $conjunction = strtoupper($each_condition_group->getConjunction());
         
-        foreach($each_condition_group as $cond) {
+        foreach($each_condition_group->conditions() as $cond) {
 
           // condition groups may be and'ed or or'ed
 
           $value = $cond['value'];
           $op = $cond['operator'];
-                      
+
           // save the bundle for the bundle cache    
           if($cond['field'] == 'bundle') {
             $bundle_id = $value;
@@ -231,7 +233,7 @@ dpm($query, 'query');
         $entity_id = AdapterHelper::getDrupalIdForUri($hit->x0->getUri());
         $ents[$entity_id] = $entity_id;
 #dpm($hit, 'hit');
-        \Drupal::entityManager()->getStorage('wisski_individual')->writeToCache($entity_id,$bundle_id);
+#        \Drupal::entityManager()->getStorage('wisski_individual')->writeToCache($entity_id,$bundle_id);
       }
       //wisski_tick('path query out');                  
     }

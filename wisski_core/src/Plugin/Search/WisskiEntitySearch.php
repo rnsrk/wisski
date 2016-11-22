@@ -42,38 +42,46 @@ class WisskiEntitySearch extends SearchPluginBase {
     //dpm($this,__METHOD__);
     $results = array();
     if ($this->isSearchExecutable()) {
-      $query = \Drupal::entityQuery('wisski_individual');
-      $query->setPathQuery();
       $parameters = $this->getParameters();
-      dpm($parameters,__FUNCTION__.'::parameters');
       foreach ($parameters['bundles'] as $bundle_id) {
         if (!isset($parameters[$bundle_id])) continue;
         
+        $query = \Drupal::entityQuery('wisski_individual');
+        $query->setPathQuery();
         switch ($parameters[$bundle_id]['query_type']) {
-          case 'AND': $group = $query->andConditionGroup(); break;
-          case 'OR' : 
-          default: $group = $query->orConditionGroup();
+          case 'AND': 
+            $group = $query->andConditionGroup();
+            break;
+          case 'OR': 
+          default: 
+            $group = $query->orConditionGroup();
         }
-        $qroup = $group->condition('bundle',$bundle_id);
+//        $qroup = $group->condition('bundle',$bundle_id);
         foreach ($parameters[$bundle_id]['paths'] as list($path_id,$search_string,$operator)) {
           //dpm($operator.' '.$search_string,'Setting condition');
           $group = $group->condition($path_id,$search_string,$operator);
         }
         $query->condition($group);
         #dpm($query);
+        $results[$bundle_id] = $query->execute();
       }
-      $results = $query->execute();
     }
-    dpm($results,__METHOD__.'::results');
     $return = array();
-    foreach ($results as $entity_id) {
-      $title = \Drupal\wisski_core\WisskiCacheHelper::getEntityTitle($entity_id);
-      if (is_null($title)) $title = $entity_id;
-      $return[] = array(
-        'link' => Url::fromRoute('entity.wisski_individual.canonical',array('wisski_individual'=>$entity_id))->toString(),
-        'type' => 'Wisski Entity',
-        'title' => $title,
-      );
+    foreach ($results as $bundle_id => $entity_ids) {
+      $bundle = entity_load('wisski_bundle', $bundle_id);
+      foreach ($entity_ids as $entity_id) {
+        $title = wisski_core_generate_title($entity_id);
+        if (is_null($title)) $title = $entity_id;
+        $return[] = array(
+          'link' => Url::fromRoute(
+            'entity.wisski_individual.canonical',
+            array('wisski_individual' => $entity_id),
+            array('query' => array('wisski_bundle' => $bundle_id))
+          )->toString(),
+          'type' => $bundle->label(),
+          'title' => $title,
+        );
+      }
     }
     return $return;
   }
@@ -239,8 +247,9 @@ class WisskiEntitySearch extends SearchPluginBase {
           $list = each($bundle_path_defaults);
           $def_input = '';
           $def_operator = '=';
-          if ($list) list(,list($path_id,$def_input,$def_operator)) = $list;
-          else {
+          if ($list) {
+            list( , list($path_id, $def_input, $def_operator)) = $list;
+          } else {
             $list = each($bundle_path_options);
             if ($list) list($path_id) = $list;
           }

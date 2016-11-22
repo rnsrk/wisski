@@ -1768,7 +1768,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         $uri = $this->getUri($datagraphuri);
       }
 
-      $localvar = "?" . (is_array($variable_prefixes) ? $variable_prefixes[$localkey] . "x" . $localkey : ($variable_prefixes . "x" . $localkey));
+      $localvar = "?" . (is_array($variable_prefixes) ? (isset($variable_prefixes[$localkey]) ? $variable_prefixes[$localkey] : "") : $variable_prefixes) . "x" . $localkey;
       
       if($localkey % 2 == 0) {
         // if it is the first element and we have a subject_in
@@ -1887,43 +1887,49 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
       
       $query .= "<$primitive> ";
 
-      $outvar = "?" . (is_array($variable_prefixes) ? $variable_prefixes["out"] . "out" : ($variable_prefixes . "out"));
+      $outvar = "?" . (is_array($variable_prefixes) ? (isset($variable_prefixes["out"]) ? $variable_prefixes["out"] : "") : $variable_prefixes) . "out";
       
       if(!empty($primitiveValue)) {
         
         // we have to escape it otherwise the sparql query may break
         $primitiveValue = $this->escapeSparqlLiteral($primitiveValue);
 
+/* putting there the literal directly is not a good idea as 
+  there may be problems with matching lang and datatype
         if($op == '=') 
           $query .= "'" . $primitiveValue . "' . ";
         else {
-          $regex = null;
-          if($op == '<>')
-            $op = '!=';
-          if($op == 'STARTS_WITH') {
-            $regex = true;
-            $primitiveValue = '^' . $this->escapeSparqlRegex($primitiveValue);
-          }
-          
-          if($op == 'ENDS_WITH') {
-            $regex = true;
-            $primitiveValue = $this->escapeSparqlRegex($primitiveValue) . '$';
-          }
-          
-          if($op == 'CONTAINS') {
-            $regex = true;
-            $primitiveValue = $this->escapeSparqlRegex($primitiveValue);
-          }
-          
-        
-          if($regex || $op == 'BETWEEN' || $op == 'IN' || $op == 'NOT IN') {
-            $query .= " $outvar . FILTER ( regex ( $outvar, \"" . $primitiveValue . '", "i" ) ) . ';
-          } else {
-            // we have to use STR() otherwise we may get into trouble with
-            // datatype and lang comparisons
-            $query .= " $outvar . FILTER ( STR($outvar) \"" . $op . ' "' . $primitiveValue . '" ) . ';
-          }
+  Instead we compare it to the STR()-value 
+
+*/
+
+        $regex = null;
+        if($op == '<>')
+          $op = '!=';
+        if($op == 'STARTS_WITH') {
+          $regex = true;
+          $primitiveValue = '^' . $this->escapeSparqlRegex($primitiveValue);
         }
+        
+        if($op == 'ENDS_WITH') {
+          $regex = true;
+          $primitiveValue = $this->escapeSparqlRegex($primitiveValue) . '$';
+        }
+        
+        if($op == 'CONTAINS') {
+          $regex = true;
+          $primitiveValue = $this->escapeSparqlRegex($primitiveValue);
+        }
+        
+      
+        if($regex || $op == 'BETWEEN' || $op == 'IN' || $op == 'NOT IN') {
+          $query .= " $outvar . FILTER ( regex ( $outvar, \"" . $primitiveValue . '", "i" ) ) . ';
+        } else {
+          // we have to use STR() otherwise we may get into trouble with
+          // datatype and lang comparisons
+          $query .= " $outvar . FILTER ( STR($outvar) " . $op . ' "' . $primitiveValue . '" ) . ';
+        }
+ //       }
       } else {
         $query .= " $outvar . ";
       }
