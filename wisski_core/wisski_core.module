@@ -9,37 +9,34 @@ function wisski_core_cache_flush() {
 
   WisskiCacheHelper::flushAllEntityTitles();
   WisskiCacheHelper::flushAllPreviewImageUris();
-  drupal_set_message('Flushed the cache');
+  drupal_set_message(t('Flushed WissKI specific caches'));
 }
 
 function wisski_core_generate_title($wisski_individual,$force_new=FALSE) {
-//ddebug_backtrace();
-  
-  if (!($wisski_individual instanceof WisskiEntityInterface)) try {
-    $wisski_individual = WisskiEntity::load($wisski_individual);
-  } catch (\Exception $e) {
-    drupal_set_message('Error when loading individual','error');
-    return is_string($wisski_individual) ? $wisski_individual : 'WissKI Entity';
-  }
-  $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($wisski_individual->bundle());
-  if ($wisski_individual->isNew()) {
-    return html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
-  }
-  $title = $bundle->generateEntityTitle($wisski_individual->id(),FALSE,$force_new);
-  return $title;
-}
 
-function wisski_core_generate_title_with_bundle($wisski_individual) {
-//ddebug_backtrace();
-  if (!($wisski_individual instanceof WisskiEntityInterface)) try {
-    $wisski_individual = WisskiEntity::load($wisski_individual);
-  } catch (\Exception $e) {
-    drupal_set_message('Error when loading individual','error');
-    return is_string($wisski_individual) ? $wisski_individual : 'WissKI Entity';
+//  ddebug_backtrace();
+  
+  if ($wisski_individual instanceof WisskiEntityInterface) {
+    if ($wisski_individual->isNew()) $create_form_title = TRUE;
+    $entity_id = $wisski_individual->id();
+    $bundle_id = $wisski_individual->bundle();
+  } else {
+    $entity_id = $wisski_individual;
+    $bundle_id = WisskiCacheHelper::getCallingBundle($wisski_individual);
   }
-  $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($wisski_individual->bundle());
-  $title = $bundle->generateEntityTitle($wisski_individual->id(),TRUE);
+  $title = '';
+  if (!empty($bundle_id)) {
+    if ($bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)) {
+      if ($create_form_title) $title = html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
+      else $title = $bundle->generateEntityTitle($entity_id,FALSE,$force_new);
+    }
+  }
+  if (empty($title)) {
+    $title = \Drupal::service('entity_type.manager')->getDefinition('wisski_individual')->getLabel().' '.$entity_id;
+    drupal_set_message(t('No title could be generated for this entity'),'warning');
+  }
   return $title;
+  
 }
 
 function wisski_core_flush_title_caches($bundle_ids=NULL,$entity_ids=NULL) {

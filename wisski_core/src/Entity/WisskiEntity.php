@@ -12,6 +12,8 @@ use Drupal\wisski_core\WisskiEntityInterface;
 
 //keep for later use
 // *		 "views_data" = "Drupal\wisski_core\WisskiEntityViewsData",
+
+
 /**
  * Defines the entity class.
  *
@@ -270,4 +272,5 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
   
     return !empty($this->enforceIsNew);
   }
+  
 }

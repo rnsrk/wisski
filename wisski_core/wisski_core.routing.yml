@@ -209,8 +209,3 @@ wisski.test_form:
     _form: '\Drupal\wisski_core\Form\WisskiTestForm'
   requirements:
     _access: 'TRUE'
-
-
-route_callbacks:
-  - 'wisski.routes::routes'
-
