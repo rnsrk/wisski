@@ -326,6 +326,16 @@ class AdapterHelper {
     }
   }
 
+  public static function getFreshDrupalId() {
+    
+    $res = db_select('wisski_salz_id2uri','u')
+      ->fields('u',array('eid'))
+      ->orderBy('eid','DESC')
+      ->execute()->fetch();
+    if (empty($res)) return 1;
+    else return $res->eid + 1;
+  }
+
   public static function createCanonicalWisskiUri($options) {
     
   }

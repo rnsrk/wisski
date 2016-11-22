@@ -13,6 +13,11 @@ class WisskiEntityForm extends ContentEntityForm {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildForm($form,$form_state);
     $form['#title'] = $this->t('Edit').' '.wisski_core_generate_title($this->entity,TRUE);
+    if (empty($this->entity->id())) {
+      $fresh_id = AdapterHelper::getFreshDrupalId();
+      $this->entity->set('eid',$fresh_id);
+      //dpm($this->entity->id(),'set '.$fresh_id);
+    }
     $this->entity->saveOriginalValues($this->entityManager->getStorage('wisski_individual'));
     # drupal_set_message("Form is built.");
     //@TODO extend form
@@ -24,6 +29,7 @@ class WisskiEntityForm extends ContentEntityForm {
   public function save(array $form, FormStateInterface $form_state) {
     
     $entity = $this->getEntity();
+    
     $this->copyFormValuesToEntity($entity,$form,$form_state);
     $entity->save();
     $bundle = $entity->get('bundle')->getValue()[0]['target_id'];
