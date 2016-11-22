@@ -38,7 +38,7 @@ function wisski_core_schema() {
         'description' => 'Bundle Name',
         'type' => 'varchar',
         'length' => 64,
-        'not null' => FALSE,
+        'not null' => TRUE,
         'default' => 'default',
       ),
       'ngram' => array(
