@@ -1608,7 +1608,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     $out = array();
     
     //might be empty, but we can use it later
-    $eid = $entity->get('eid')->first()->value ? : $entity_id;
+    $eid = $entity->id() ? : $entity_id;
     $uri = NULL;
     //dpm($eid,$entity_id);
     //if there is an eid we try to get the entity URI form cache
