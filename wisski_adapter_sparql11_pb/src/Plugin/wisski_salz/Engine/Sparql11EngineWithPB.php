@@ -1699,8 +1699,12 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
    * @param $op How should it be compared to other data
    * @param $relative should it be relative to the other groups?
    * @param $mode defaults to 'field' - but may be 'group' or 'entity_reference' in special cases
+   * @param $relative
+   * @param $variable_prefixes string|array if string, this will be used to prefix all variables
+   *              if array, the variable of index i will be prefixed with the value of key i.
+   *              The variable ?out will be prefixed with the key "out".
    */
-  public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE) {
+  public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array()) {
     // the query construction parameter
     $query = "";
 
@@ -1735,6 +1739,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     $olduri = NULL;
     // old key pointer
     $oldkey = NULL;
+    $oldvar = NULL;
     
     // if the old uri is empty we assume there is no uri and we have to
     // generate one in write mode. In ask mode we make variable-questions
@@ -1762,6 +1767,8 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
       if($write) {
         $uri = $this->getUri($datagraphuri);
       }
+
+      $localvar = "?" . (is_array($variable_prefixes) ? $variable_prefixes[$localkey] . "x" . $localkey : ($variable_prefixes . "x" . $localkey));
       
       if($localkey % 2 == 0) {
         // if it is the first element and we have a subject_in
@@ -1795,7 +1802,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
           if($write) 
             $query .= "<$uri> a <$value> . ";
           else
-            $query .= "?x$localkey a <$value> . ";
+            $query .= "$localvar a <$value> . ";
         }
         
         // magic function
@@ -1809,28 +1816,28 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
               if(!empty($olduri))
                 $query .= "<$olduri> ";
               else
-                $query .= "?x$oldkey ";
+                $query .= "$oldvar ";
           
               $query .= "<$prop> ";
                     
               if(!empty($uri))
                 $query .= "<$uri> . ";
               else
-                $query .= "?x$localkey . ";
+                $query .= "$localvar . ";
             } else { // if there is an inverse, make a union
               $query .= "{ { ";
               // Forward query part
               if(!empty($olduri))
                 $query .= "<$olduri> ";
               else
-                $query .= "?x$oldkey ";
+                $query .= "$oldvar ";
           
               $query .= "<$prop> ";
                     
               if(!empty($uri))
                 $query .= "<$uri> . ";
               else
-                $query .= "?x$localkey . ";
+                $query .= "$localvar . ";
               
               $query .= " } UNION { ";
 
@@ -1839,26 +1846,28 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
               if(!empty($uri))
                 $query .= "<$uri> ";
               else
-                $query .= "?x$localkey "; 
+                $query .= "$localvar "; 
           
               $query .= "<$inverse> ";
 
               if(!empty($olduri))
                 $query .= "<$olduri> . ";
               else
-                $query .= "?x$oldkey . ";
+                $query .= "$oldvar . ";
                             
               $query .= " } } . "; 
             }
           }
         }
          
-         // if this is the disamb, we may break.
-         if($localkey == ($disambposition*2) && !empty($object_in))
-           break;
+        // if this is the disamb, we may break.
+        if($localkey == ($disambposition*2) && !empty($object_in)) {
+          break;
+        }
           
-         $olduri = $uri;
-         $oldkey = $localkey;
+        $olduri = $uri;
+        $oldkey = $localkey;
+        $oldvar = $localvar;
       } else {
         $prop = $value;
       }
@@ -1870,12 +1879,15 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     $primitive = $path->getDatatypeProperty();
     
     if(!empty($primitive) && empty($object_in) && !$path->isGroup()) {
-      if(!empty($olduri))
+      if(!empty($olduri)) {
         $query .= "<$olduri> ";
-      else
-        $query .= "?x$oldkey ";
+      } else {
+        $query .= "$oldvar ";
+      }
       
       $query .= "<$primitive> ";
+
+      $outvar = "?" . (is_array($variable_prefixes) ? $variable_prefixes["out"] . "out" : ($variable_prefixes . "out"));
       
       if(!empty($primitiveValue)) {
         
@@ -1890,29 +1902,31 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
             $op = '!=';
           if($op == 'STARTS_WITH') {
             $regex = true;
-            $primitiveValue = '^' . $primitiveValue;
+            $primitiveValue = '^' . $this->escapeSparqlRegex($primitiveValue);
           }
           
           if($op == 'ENDS_WITH') {
             $regex = true;
-            $primitiveValue = '' . $primitiveValue . '$';
+            $primitiveValue = $this->escapeSparqlRegex($primitiveValue) . '$';
           }
           
           if($op == 'CONTAINS') {
             $regex = true;
-            $primitiveValue = '' . $primitiveValue . '", "i';
+            $primitiveValue = $this->escapeSparqlRegex($primitiveValue);
           }
           
         
-          if($regex || $op == 'BETWEEN' || $op == 'IN' || $op == 'NOT IN')
-            $query .= ' ?out . FILTER ( regex ( ?out, "' . $this->escapeSparqlRegex($primitiveValue) . '" ) ) . ';
-          else
+          if($regex || $op == 'BETWEEN' || $op == 'IN' || $op == 'NOT IN') {
+            $query .= " $outvar . FILTER ( regex ( $outvar, \"" . $primitiveValue . '", "i" ) ) . ';
+          } else {
             // we have to use STR() otherwise we may get into trouble with
             // datatype and lang comparisons
-            $query .= ' ?out . FILTER ( STR(?out) ' . $op . ' "' . $primitiveValue . '" ) . ';
+            $query .= " $outvar . FILTER ( STR($outvar) \"" . $op . ' "' . $primitiveValue . '" ) . ';
+          }
         }
-      } else
-        $query .= " ?out . ";
+      } else {
+        $query .= " $outvar . ";
+      }
     }
 
     return $query;
