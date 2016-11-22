@@ -2072,65 +2072,165 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     }
 
     //drupal_set_message("the old values were: " . serialize($old_values));
-    //dpm($old_values,'old values');
-    //dpm($field_values,'new values');
+#    dpm($old_values,'old values');
+#    dpm($field_values,'new values');
+
     
-    foreach($field_values as $key => $fieldvalue) {
-      #drupal_set_message("key: " . serialize($key) . " fieldvalue is: " . serialize($fieldvalue)); 
-      //dpm($key,'field');
-      $path = $pathbuilder->getPbEntriesForFid($key);
+    foreach($field_values as $field_id => $field_items) {
+      #drupal_set_message("key: " . serialize($field_id) . " fieldvalue is: " . serialize($field_items)); 
+      //dpm($field_id,'field');
+      $path = $pathbuilder->getPbEntriesForFid($field_id);
+      
+      $old_value = isset($old_values[$field_id]) ? $old_values[$field_id] : array();
 
       if(empty($path)) {
-        //drupal_set_message("I leave here: $key");
+        //drupal_set_message("I leave here: $field_id");
         continue;
       }
         
-      drupal_set_message("I am still here: $key");
+#      drupal_set_message("I am still here: $field_id");
 
-      $mainprop = $fieldvalue['main_property'];
+      $mainprop = $field_items['main_property'];
       
-      unset($fieldvalue['main_property']);
+      unset($field_items['main_property']);
       
-      foreach($fieldvalue as $key2 => $val) {
+      // TODO: how to handle fields with multiple equal values that are no entity reference?
+      // for the moment we do not handle this. we assume that fields other than entity reference
+      // do not contains the same value twice!
+
+      // check if we have to delete some values
+      // we go thru the old values and search for an equal value in the new 
+      // values array
+      // as we do this we also keep track of values that haven't changed so that we
+      // do not have to write them again.
+
+      $remain_values = array();
+
+      // TODO $val is not set: iterate over fieldvalue!
+      if (!empty($old_value)) {
+        $delete_values = array();
+        if (!is_array($old_value)) {
+          // $old_value contains the value directly
+          $delete_values[] = $old_value;
+          foreach ($field_items as $new_item) {
+            if (empty($new_item)) continue; // empty field item due to cardinality, see else branch
+            if ($old_value == $new_item[$mainprop]) {
+              $remain_values[$new_item[$mainprop]] = $new_item[$mainprop];
+              $delete_values = array();
+              break;
+            }
+          }
+        } else {
+          // $old_value is an array of arrays resembling field list items and
+          // containing field property => value pairs
+          foreach ($old_value as $old_item) {
+            if (!is_array($old_item) || empty($old_item)) {
+              // this may be the case if 
+              // - it contains key "main_property"... (not an array)
+              // - it is an empty field that is there because of the 
+              // field's cardinality (empty)
+              continue;
+            }
+            $delete = TRUE;
+            foreach ($field_items as $new_item) {
+              if (empty($new_item)) continue; // empty field item due to cardinality
+              if ($old_item[$mainprop] == $new_item[$mainprop]) {
+                $remain_values[$new_item[$mainprop]] = $new_item[$mainprop];
+                $delete = FALSE;
+                break;
+              }
+            }
+            if ($delete) {
+              $delete_values[] = $old_item[$mainprop];
+            }
+          }
+          if ($delete_values) {
+            foreach ($delete_values as $val) {
+              $this->deleteOldFieldValue($entity_id, $field_id, $val, $pathbuilder);
+            }
+          }
+        }
+      }
+      
+      // now we write all the new values
+      foreach ($field_items as $new_item) {
+        if (!isset($remain_values[$new_item[$mainprop]])) {
+          $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder); 
+        }
+      }
+      
+
+/* --- WRITE LOOP: this whole loop does not seem to work correctly on changes
+      foreach($field_items as $field_id2 => $val) {
 
         drupal_set_message(serialize($val[$mainprop]) . " new");
-        #drupal_set_message(serialize($old_values[$key]) . " old");
+        #drupal_set_message(serialize($old_values[$field_id]) . " old");
 
         // check if there are any old values. If not, delete nothing.
         if(!empty($old_values)) {
      
-        #dpm(array('old_values' => $old_values, 'val' => $val));
+#        dpm(array('popel','old_values' => $old_values, 'val' => $val, $mainprop, $field_id, $field_id2), 'popelchen', 'error');
+/* this section doesn't handle multiple values correctly
           // if they are the same - skip
           // I don't know why this should be working, but I leave it here...
-          if($val[$mainprop] == $old_values[$key]) 
+          if($val[$mainprop] == $old_values[$field_id]) 
             continue;
           
           // the real value comparison is this here:
-          if($val[$mainprop] == $old_values[$key][$key2][$mainprop])
+          if($val[$mainprop] == $old_values[$field_id][$field_id2][$mainprop])
             continue;
           
           // if oldvalues are an array and the value is in there - skip
-          if(is_array($old_values[$key]) && !empty($old_values[$key][$key2]) && in_array($val[$mainprop], $old_values[$key][$key2]))
+          if(is_array($old_values[$field_id]) && !empty($old_values[$field_id][$field_id2]) && in_array($val[$mainprop], $old_values[$field_id][$field_id2]))
             continue;
-          
-        // now write to the database
         
-        drupal_set_message($entity_id . "I really write!" . serialize($val[$mainprop])  . " and " . serialize($old_values[$key]) );
-        #return;
+          // there comes a replacement:
+*/      
+/*
+        // for each value we check all the old values if we find a corresponding one
+        // this also handles the case where there is only a change in sequence
+        
+          if (is_array($old_values[$field_id])) {
+            $skip = FALSE;
+            foreach ($old_values[$field_id] as $field_id2 => $values) {
+              if ($field_id2 == 'main_property') continue;
+              if ($values[$mainprop] = $val[$mainprop]) {
+  dpm(array($val[$mainprop], $values[$mainprop], $val, $old_values), "skip", 'error');
+                $skip = TRUE;
+                break;
+              }
+            }
+            if ($skip) {
+              continue;
+            }
+          }
+
+          
+          // now write to the database
+          
+          drupal_set_message($entity_id . "I really write!" . serialize($val[$mainprop])  . " and " . serialize($old_values[$field_id]) );
+          #return;
         
           // first delete the old values
-          if(is_array($old_values[$key]))
-            $this->deleteOldFieldValue($entity_id, $key, $old_values[$key][$key2][$mainprop], $pathbuilder);
-          else
-            $this->deleteOldFieldValue($entity_id, $key, $old_values[$key], $pathbuilder);
+          // Martin: do we always delete values???
+          if(is_array($old_values[$field_id])) {
+            $this->deleteOldFieldValue($entity_id, $field_id, $old_values[$field_id][$field_id2][$mainprop], $pathbuilder);
+          } else {
+            $this->deleteOldFieldValue($entity_id, $field_id, $old_values[$field_id], $pathbuilder);
+          }
+
         }
-        dpm(array('$entity_id'=>$entity_id,'$key'=>$key,'value' => $val[$mainprop],'$pathbuilder'=>$pathbuilder),'try writing');
+
+        dpm(array('$entity_id'=>$entity_id,'$field_id'=>$field_id,'value' => $val[$mainprop],'$pathbuilder'=>$pathbuilder),'try writing');
         // add the new ones
-        $this->addNewFieldValue($entity_id, $key, $val[$mainprop], $pathbuilder); 
+        $this->addNewFieldValue($entity_id, $field_id, $val[$mainprop], $pathbuilder); 
         
-        #drupal_set_message("I would write " . $val[$mainprop] . " to the db and delete " . serialize($old_values[$key]) . " for it.");
+        #drupal_set_message("I would write " . $val[$mainprop] . " to the db and delete " . serialize($old_values[$field_id]) . " for it.");
         
       }          
+    }
+ --- END WRITE LOOP */
+   
     }
 
 #    drupal_set_message("out: " . serialize($out));

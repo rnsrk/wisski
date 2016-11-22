@@ -22,7 +22,7 @@ class TriplifyManager {
       'f72ca3e589be8d883a01bd215aff9cc2' => array('text' => 'value', 'constraints' => array('property:format' => 'full_html'), 'pipe' => "triplify_babberle"),
     );
 
-    $doc_inst = AdapterHelper::getUrisForDrupalId($entity->id())[0];
+    $doc_inst = AdapterHelper::generateWisskiUriFromId($entity->id());
 
     if (empty($doc_inst)) return array();
     
@@ -64,14 +64,10 @@ class TriplifyManager {
           );
           $pipe_result = \Drupal::service('wisski_pipe.pipe')->run($pipeId, $data, $ticket, \Drupal::logger('triplify'));
 
-dpm(array($pipeId, $data, $pipe_result));          
         }
-
 
       }
     }
-
-
     
   }
 
