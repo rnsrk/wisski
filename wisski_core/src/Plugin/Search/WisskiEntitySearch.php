@@ -43,30 +43,47 @@ class WisskiEntitySearch extends SearchPluginBase {
     $results = array();
     if ($this->isSearchExecutable()) {
       $parameters = $this->getParameters();
-      foreach ($parameters['bundles'] as $bundle_id) {
-        if (!isset($parameters[$bundle_id])) continue;
+      if (isset($parameters['entity_title']) && $string = $parameters['entity_title']) {
         
-        $query = \Drupal::entityQuery('wisski_individual');
-        $query->setPathQuery();
-        switch ($parameters[$bundle_id]['query_type']) {
-          case 'AND': 
-            $group = $query->andConditionGroup();
-            break;
-          case 'OR': 
-          default: 
-            $group = $query->orConditionGroup();
+        $select = \Drupal::service('database')
+            ->select('wisski_title_n_grams','w');
+        $rows = $select
+            ->fields('w', array('ent_num', 'bundle'))
+            ->condition('ngram', "%" . $select->escapeLike($string) . "%", 'LIKE')
+            ->execute()
+            ->fetchAll();
+dpm($rows);
+        
+        foreach ($rows as $row) {
+          $results[$row->bundle][] = $row->ent_num;
         }
-// we don't need to set the bundle as condition
-// the bundle is already an implicit condition through
-// the paths
-//        $qroup = $group->condition('bundle',$bundle_id);
-        foreach ($parameters[$bundle_id]['paths'] as list($path_id,$search_string,$operator)) {
-          //dpm($operator.' '.$search_string,'Setting condition');
-          $group = $group->condition($path_id,$search_string,$operator);
+
+      } else {
+        foreach ($parameters['bundles'] as $bundle_id) {
+          if (!isset($parameters[$bundle_id])) continue;
+          
+          $query = \Drupal::entityQuery('wisski_individual');
+          $query->setPathQuery();
+          switch ($parameters[$bundle_id]['query_type']) {
+            case 'AND': 
+              $group = $query->andConditionGroup();
+              break;
+            case 'OR': 
+            default: 
+              $group = $query->orConditionGroup();
+          }
+  // we don't need to set the bundle as condition
+  // the bundle is already an implicit condition through
+  // the paths
+  //        $qroup = $group->condition('bundle',$bundle_id);
+          foreach ($parameters[$bundle_id]['paths'] as list($path_id,$search_string,$operator)) {
+            //dpm($operator.' '.$search_string,'Setting condition');
+            $group = $group->condition($path_id,$search_string,$operator);
+          }
+          $query->condition($group);
+          #dpm($query);
+          $results[$bundle_id] = $query->execute();
         }
-        $query->condition($group);
-        #dpm($query);
-        $results[$bundle_id] = $query->execute();
       }
     }
     $return = array();
@@ -373,21 +390,23 @@ class WisskiEntitySearch extends SearchPluginBase {
     $vals = $form_state->getValues();
     dpm($vals,__FUNCTION__.'::values');
     $keys = array();
-    foreach($vals['advanced']['paths'] as $bundle_id => $paths) {
-      $return[$bundle_id]['query_type'] = $paths['query_type']['selection'];
-      unset($paths['query_type']);
-      foreach ($paths as $path_parameters) {
-        if ($path_parameters['input_field']) {
-          $keys[] = trim($path_parameters['input_field']);
-          $return[$bundle_id]['paths'][] = array($path_parameters['path_selection'],trim($path_parameters['input_field']),$path_parameters['operator']);
+    if (isset($vals['advanced']) && isset($vals['advanced']['paths']) && !empty($vals['advanced']['paths'])) {
+      foreach($vals['advanced']['paths'] as $bundle_id => $paths) {
+        $return[$bundle_id]['query_type'] = $paths['query_type']['selection'];
+        unset($paths['query_type']);
+        foreach ($paths as $path_parameters) {
+          if ($path_parameters['input_field']) {
+            $keys[] = trim($path_parameters['input_field']);
+            $return[$bundle_id]['paths'][] = array($path_parameters['path_selection'],trim($path_parameters['input_field']),$path_parameters['operator']);
+          }
         }
       }
     }
     $return['bundles'] = array_filter($vals['advanced']['bundles']['select_bundles']);
     $return['entity_title'] = $vals['entity_title'];
     // 'keys' must be set for the Search Plugin, don't know why
-    $return['keys'] = implode(', ',$keys);
-    return $return;    
+    $return['keys'] = $vals['entity_title'] ? : implode(', ',$keys);
+    return $return;
   }
 
   public function replaceSelectBoxes(array $form,FormStateInterface $form_state) {

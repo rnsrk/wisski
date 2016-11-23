@@ -31,25 +31,5 @@ class WisskiTitleAutocompletion {
     } 
 
     return new JsonResponse($matches);
-
-
-    
-
-    //dpm(func_get_args(),__METHOD__);
-    $matches = array();
-    if ($string) {
-      $bundles = \Drupal\wisski_core\Entity\WisskiBundle::loadMultiple();
-      foreach ($bundles as $bundle) {
-        $titles = $bundle->getCachedTitles();
-        foreach ($titles as $title) {
-          if (strpos($title,$string) !== FALSE) {
-            $matches[] = array('value' => $title, 'label' => $title);
-          }
-        }
-        //Early return on the first matches to avoid excessive loading
-        if (!empty($matches)) return new JsonResponse($matches);
-      }
-    }
-    return new JsonResponse($matches);
   }
 }
