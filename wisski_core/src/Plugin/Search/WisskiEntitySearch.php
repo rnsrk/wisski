@@ -56,6 +56,9 @@ class WisskiEntitySearch extends SearchPluginBase {
           default: 
             $group = $query->orConditionGroup();
         }
+// we don't need to set the bundle as condition
+// the bundle is already an implicit condition through
+// the paths
 //        $qroup = $group->condition('bundle',$bundle_id);
         foreach ($parameters[$bundle_id]['paths'] as list($path_id,$search_string,$operator)) {
           //dpm($operator.' '.$search_string,'Setting condition');
@@ -98,7 +101,7 @@ class WisskiEntitySearch extends SearchPluginBase {
     $form['entity_title'] = array(
       '#type' => 'textfield',
       '#autocomplete_route_name' => 'wisski.titles.autocomplete',
-      '#autocomplete_route_parameters' => isset($selected_bundles)?array('bundles'=>$selected_bundles):array(),
+      '#autocomplete_route_parameters' => isset($selected_bundles) ? array('bundles' => $selected_bundles) : array(),
       '#default_value' => '',
       '#title' => $this->t('Search by Entity Title'),
       '#description' => $this->t('Finds titles from the cache table'),

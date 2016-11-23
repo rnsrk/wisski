@@ -34,7 +34,7 @@ class Query extends WisskiQueryBase {
     
     // get the adapter id
     $adapterid = $engine->adapterId();
-    
+
     // if we have not adapter, we may go home, too
     if (empty($adapterid))
       continue;
@@ -151,14 +151,13 @@ class Query extends WisskiQueryBase {
       
       // we count 
       $i = 0;
-dpm($this->condition, "c1");
       
       // TODO: this does not handle nested conditions, ie.
       // it does only handle OR/AND(cond1, cond2, ...) where
-      // where condn must be a path
+      // condn must be a path
+      // this is sufficient for Drupal Search but might not suffice for
+      // more elaborate searches
       foreach($this->condition->conditions() as $condition) {
-dpm($condition, "c22");
-
         $each_condition_group = $condition['field'];
         $conjunction = strtoupper($each_condition_group->getConjunction());
         
@@ -208,7 +207,6 @@ dpm($condition, "c22");
           }
           $query .= $querypart;
 
-
           $i++;
 
         }
@@ -219,21 +217,18 @@ dpm($condition, "c22");
 
       }
         
-      // if no query was constructed - there is nothing to search.     
+      // if no query was constructed - there is nothing to search.    
+      // this may be the case when all paths belong to other engines.
       if(empty($query))
         return array();
     
-      $query = "SELECT DISTINCT ?x0 WHERE { " . $query . " }";
-dpm($query, 'query');        
+      $query = "SELECT DISTINCT ?x0 WHERE { $query }";
       $result = $engine->directQuery($query);
     
       foreach($result as $hit) {
-#          $entity_id = str_replace('/', '\\', $hit->c0_x0->getUri());
         if (!isset($hit->x0)) continue;
         $entity_id = AdapterHelper::getDrupalIdForUri($hit->x0->getUri());
         $ents[$entity_id] = $entity_id;
-#dpm($hit, 'hit');
-#        \Drupal::entityManager()->getStorage('wisski_individual')->writeToCache($entity_id,$bundle_id);
       }
       //wisski_tick('path query out');                  
     }
