@@ -246,6 +246,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     //dpm($this,$this->adapterId().' '.__FUNCTION__);
   }
   
+  
   /**
    * {@inheritdoc}
    */
@@ -253,11 +254,13 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     return $this->same_as_properties;
   }
   
+  
   /**
    * {@inheritdoc}
    */
   public abstract function defaultSameAsProperties();
   
+
   /**
    * {@inheritdoc}
    */

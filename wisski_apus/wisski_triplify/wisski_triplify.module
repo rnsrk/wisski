@@ -13,11 +13,11 @@ function wisski_triplify_wisski_individual_view(array &$build, EntityInterface $
 
 
 function wisski_triplify_wisski_individual_update(EntityInterface $entity) {
-  $success = (new TriplifyManager())->triplify($entity);
+#  $success = (new TriplifyManager())->triplify($entity);
 }
 
 function wisski_triplify_wisski_individual_insert(EntityInterface $entity) {
-  $success = (new TriplifyManager())->triplify($entity);
+#  $success = (new TriplifyManager())->triplify($entity);
 }
 
 
