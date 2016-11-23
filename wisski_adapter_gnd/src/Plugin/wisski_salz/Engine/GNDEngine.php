@@ -411,66 +411,9 @@ dpm($main_property, 'mp');
   }
 
 
-  public function providesCacheMode() {
-    return FALSE;
-  }
-
-
-  public function providesFastMode() {
-    return FALSE;
-  }
-
-  public function providesDatatypeProperty() {
-	  return TRUE;
-	}
-
   public function getQueryObject(EntityTypeInterface $entity_type,$condition, array $namespaces) {
     return new Query($entity_type,$condition,$namespaces);
   }
 
-	/**
-	 * this is not a true alias for {@see self::getDrupalIdForUri}
-	 * since it is the internal function that needs EXTERNAL information, i.e. from the AdapterHelper
-	 * while getDrupalIdForUri works fully internally but is only working correctly for the preferred Local Store
-	 * Additionally, this function here does a format check, too, finding out whether we already have an EID
-	 * in this case it just returns the input
-	 */
-	public function getDrupalId($uri) {
-	  if (is_numeric($uri)) {
-	    //danger zone, we assume a numeric $uri to be an entity ID itself
-	    return $uri;
-	  }
-    return NULL;
-	}
-
-  public function getDrupalIdForUri($uri,$adapter_id=NULL) {
-    return NULL;
-  }
-  
-  public function getUrisForDrupalId($id) {
-    return array();
-  }
-  
-  /**
-   * {@inheritdoc}
-   */
-  public function getSameUris($uri) {
-    return array();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getSameUri($uri, $adapter_id) {
-    return NULL;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setSameUris($uris, $entity_id) {
-    return FALSE;
-  }
-  
 
 } 
