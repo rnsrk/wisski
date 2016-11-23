@@ -16,6 +16,7 @@ function wisski_core_generate_title($wisski_individual,$force_new=FALSE) {
 
 //  ddebug_backtrace();
   
+  $create_form_title = FALSE;
   if ($wisski_individual instanceof WisskiEntityInterface) {
     if ($wisski_individual->isNew()) $create_form_title = TRUE;
     $entity_id = $wisski_individual->id();
