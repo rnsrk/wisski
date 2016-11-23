@@ -123,19 +123,32 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     
     if($path->getType() == "Path") {
       $bundle_id = $pbpath['bundle'];
-      $bundle_label = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)->label();
+      if ($bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)) {
+        $bundle_label = $bundle->label();
+      } else {
+        drupal_set_message($this->t('There is no group/bundle specified for this path'),'error');
+        $bundle_label = '';
+      }
       //@TODO fill the field options array with existing fields in the given bundle
       $field_options = array();
       $bundle_fields = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(array('bundle' => $bundle_id));
       foreach ($bundle_fields as $bundle_field) {
-        $field_options[$bundle_field->getName()] = $bundle_field->getLabel().' ('.$bundle_field->getName().')';
+        $field_name = $bundle_field->getName();
+        $field_options[$field_name] = $bundle_field->getLabel().' ('.$field_name.')';
+        $bundle_fields[$field_name] = $bundle_field;
       }
       $default_value = empty($pbpath['field']) ? '' : $pbpath['field'];
-      $form['choose_field'] = array(
-        '#type' => 'fieldset',
+      $form['field_form'] = array(
+        '#type' => 'container',
         '#title' => $this->t('Field'),
+        '#prefix' => '<div id="wisski-field-values">',
+        '#suffix' => '</div>',
       );
-      $form['choose_field']['select_field'] = array(
+      $form['field_form']['choose_field'] = array(
+        '#type' => 'fieldset',
+        '#title' => $this->t('Choose field'),
+      );
+      $form['field_form']['choose_field']['select_field'] = array(
         '#type' => 'select',
         '#description' => $this->t('Select an existing field from bundle %bundle_label',array('%bundle_label' => $bundle_label.' ('.$bundle_id.')')),
         '#options' => $field_options,
@@ -143,27 +156,59 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         '#empty_option' => ' - '.$this->t('select').' - ',
         '#empty_value' => '0',
         '#ajax' => array(
-          'wrapper' => 'wisski-field-field',
+          'wrapper' => 'wisski-field-values',
           'callback' => array($this,'fieldCallback'),
         ),
       );
-      $value = $default_value;
+      $selected_field_name = $default_value;
       $trigger = $form_state->getTriggeringElement();
-      if ($trigger['#name'] == 'select_field') {
-        $value = $form_state->getValue('select_field') ? : '';
+      //dpm($trigger);
+      if ($trigger['#name'] == 'select_field' || $trigger['#name'] == 'field') {
+        $selected_field_name = $form_state->getValue($trigger['#name']) ? : '';
       }
-      $form['choose_field']['field'] = array(
+      $form['field_form']['choose_field']['field'] = array(
         '#type' => 'textfield',
         '#maxlength' => 255,
         '#description' => $this->t('Insert field ID'),
         '#default_value' => $default_value,
-        '#value' => $value,
+        '#value' => $selected_field_name,
 #      '#disabled' => true,
         '#description' => $this->t("ID of the mapped Field."),
 #        '#required' => true,
-        '#prefix' => '<div id="wisski-field-field">',
-        '#suffix' => '</div>',
+        '#ajax' => array(
+          'wrapper' => 'wisski-field-values',
+          'callback' => array($this,'fieldCallback'),
+        ),        
       );
+      
+      if ($selected_field_name != $default_value) {
+        $form['field_form']['disclaimer'] = array(
+          '#type' => 'fieldset',
+          '#attributes' => array('class' => array('messages','messages--warning')),
+          'item' => array(
+            '#markup' => $this->t('Changing the field properties below will result in changes EVERYWHERE the field is used. This will also affect all other pathbuilders using the same field and bundle'),
+          ),
+        );
+      }
+      
+      if (isset($bundle_fields[$selected_field_name])) {
+        $selected_field = $bundle_fields[$selected_field_name];
+        $selected_field_values = array(
+          'field_type' => $selected_field->getType(),
+          'formatter' => \Drupal::entityManager()
+            ->getStorage('entity_view_display')
+            ->load('wisski_individual' . '.'.$bundle_id.'.default')
+            ->getComponent($selected_field_name)
+            ['type'],
+          'widget' => \Drupal::entityManager()
+            ->getStorage('entity_form_display')
+            ->load('wisski_individual' . '.'.$bundle_id.'.default')
+            ->getComponent($selected_field_name)
+            ['type'],
+          'cardinality' => $selected_field->getFieldStorageDefinition()->getCardinality(),
+        );
+        //dpm($selected_field_values,'SFV');
+      }
       
       $formatter_types = \Drupal::service('plugin.manager.field.formatter')->getDefinitions();
       $widget_types = \Drupal::service('plugin.manager.field.widget')->getDefinitions();
@@ -182,7 +227,8 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
       
       $ftvalue = NULL;
       // check if we are in ajax-mode, then there is something in form-state
-      $ftvalue = $form_state->getValue('fieldtype');
+      if (isset($selected_field_values))
+      $ftvalue = $selected_field_values['field_type'];//$form_state->getValue('fieldtype');
             
       // what is the current (default) value for the display of this field from
       // the database if there is nothing in form_state?
@@ -204,7 +250,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
       }
       
       // do something for ajax      
-      $form['display'] = array(
+      $display = array(
         '#type' => 'markup',
         '#prefix' => '<div id="wisski_display">',
         '#suffix' => '</div>',
@@ -212,11 +258,12 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         '#tree' => FALSE,
       );
       
-      $form['display']['fieldtype'] = array(
+      $display['fieldtype'] = array(
         '#type' => 'select',
         '#maxlength' => 255,
         '#title' => $this->t('Type of the field that should be generated.'),
         '#default_value' => $ftvalue,
+        '#value' => isset($selected_field_values) ? $selected_field_values['field_type'] : $ftvalue,
 #      '#disabled' => true,
         '#options' => $listft,
         '#description' => $this->t("Type for the Field (Textfield, Image, ...)"),
@@ -228,7 +275,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         ),
       );
         
-      $form['display']['displaywidget'] = array(
+      $display['displaywidget'] = array(
         '#type' => 'select',
         '#maxlength' => 255,
         '#title' => $this->t('Type of form display for field'),
@@ -238,8 +285,9 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         '#description' => $this->t("Widget for the Field - If there is any."),
 #        '#required' => true,
       );
+      if (isset($selected_field_values['widget'])) $display['displaywidget']['#value'] = $selected_field_values['widget'];
        
-      $form['display']['formatterwidget'] = array(
+      $display['formatterwidget'] = array(
         '#type' => 'select',
         '#maxlength' => 255,
         '#title' => $this->t('Type of formatter for field'),
@@ -249,15 +297,20 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         '#description' => $this->t("Formatter for the field - If there is any."),
 #        '#required' => true,
       );
+      if (isset($selected_field_values['formatter'])) $display['formatterwidget']['#value'] = $selected_field_values['formatter'];
       
       $unlimited = FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
       //dpm($pbpath);  
-      $form['cardinality'] = array(
+      $display['cardinality'] = array(
         '#type' => 'select',
         '#title' => $this->t('Cardinality'),
         '#default_value' => (empty($pbpath['cardinality']) ? $unlimited : $pbpath['cardinality']),
         '#options' => self::cardinalityOptions(),
       );
+      if (isset($selected_field_values['cardinality'])) $display['cardinality']['#value'] = $selected_field_values['cardinality'];
+      
+      $form['field_form']['display'] = $display;
+
     }
     
 #    drupal_set_message("ft: " . serialize($ftvalue) . " dis " . serialize($listdisplay) . " for " . serialize($listform));
@@ -269,7 +322,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
    * {@inheritdoc}
    */
   public function ajaxPathData(array $form, array $form_state) {
-    return $form['display'];
+    return $form['field_form']['display'];
   }
   
   /**
@@ -282,7 +335,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
   
   public function fieldCallback(array $form, FormStateInterface $form_state) {
     
-    return $form['choose_field']['field'];
+    return $form['field_form'];
   }
 
   /**
