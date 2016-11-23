@@ -84,6 +84,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
       foreach (WisskiHelper::getTopBundleIds(TRUE) as $bundle_id => $bundle_info) {
         $bundle_options[$bundle_id] = $bundle_info['label'].' ('.$bundle_info['path_id'].' in '.$bundle_info['pathbuilder'].')';
       }
+      $default_value = empty($pbpath['bundle']) ? '' : $pbpath['bundle'];
       //dpm($bundle_options,'Bundle Options');
       $form['choose_bundle'] = array(
         '#type' => 'fieldset',
@@ -93,24 +94,27 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         '#type' => 'select',
         '#description' => $this->t('Choose from the list of existing bundles'),
         '#options' => $bundle_options,
+        '#default_value' => $default_value,
+        '#empty_option' => ' - '.$this->t('select').' - ',
+        '#empty_value' => '0',
         '#ajax' => array(
           'wrapper' => 'wisski-bundle-field',
           'callback' => array($this,'bundleCallback'),
         ),
       );
-      $default_value = empty($pbpath['bundle']) ? '' : $pbpath['bundle'];
-      $value = FALSE;
+      
+      $value = $default_value;
       $trigger = $form_state->getTriggeringElement();
       if ($trigger['#name'] == 'select_bundle') {
-        $value = $form_state->getValue('select_bundle');
+        $value = $form_state->getValue('select_bundle') ? : '';
       }
       $form['choose_bundle']['bundle'] = array(
         '#type' => 'textfield',
         '#maxlength' => 255,
         '#default_value' => $default_value,
-        '#value' => isset($value) ? $value : $default_value,
+        '#value' => $value,
 #      '#disabled' => true,
-        '#description' => $this->t('Set bundle ID'),
+        '#description' => $this->t('Insert bundle ID'),
 #        '#required' => true,
         '#prefix' => '<div id="wisski-bundle-field">',
         '#suffix' => '</div>',
@@ -118,14 +122,47 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     }
     
     if($path->getType() == "Path") {
-      $form['field'] = array(
+      $bundle_id = $pbpath['bundle'];
+      $bundle_label = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)->label();
+      //@TODO fill the field options array with existing fields in the given bundle
+      $field_options = array();
+      $bundle_fields = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(array('bundle' => $bundle_id));
+      foreach ($bundle_fields as $bundle_field) {
+        $field_options[$bundle_field->getName()] = $bundle_field->getLabel().' ('.$bundle_field->getName().')';
+      }
+      $default_value = empty($pbpath['field']) ? '' : $pbpath['field'];
+      $form['choose_field'] = array(
+        '#type' => 'fieldset',
+        '#title' => $this->t('Field'),
+      );
+      $form['choose_field']['select_field'] = array(
+        '#type' => 'select',
+        '#description' => $this->t('Select an existing field from bundle %bundle_label',array('%bundle_label' => $bundle_label.' ('.$bundle_id.')')),
+        '#options' => $field_options,
+        '#default_value' => $default_value,
+        '#empty_option' => ' - '.$this->t('select').' - ',
+        '#empty_value' => '0',
+        '#ajax' => array(
+          'wrapper' => 'wisski-field-field',
+          'callback' => array($this,'fieldCallback'),
+        ),
+      );
+      $value = $default_value;
+      $trigger = $form_state->getTriggeringElement();
+      if ($trigger['#name'] == 'select_field') {
+        $value = $form_state->getValue('select_field') ? : '';
+      }
+      $form['choose_field']['field'] = array(
         '#type' => 'textfield',
         '#maxlength' => 255,
-        '#title' => $this->t('Field'),
-        '#default_value' => empty($pbpath['field']) ? '' : $pbpath['field'],
+        '#description' => $this->t('Insert field ID'),
+        '#default_value' => $default_value,
+        '#value' => $value,
 #      '#disabled' => true,
         '#description' => $this->t("ID of the mapped Field."),
 #        '#required' => true,
+        '#prefix' => '<div id="wisski-field-field">',
+        '#suffix' => '</div>',
       );
       
       $formatter_types = \Drupal::service('plugin.manager.field.formatter')->getDefinitions();
@@ -214,7 +251,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
       );
       
       $unlimited = FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
-      dpm($pbpath);
+      //dpm($pbpath);  
       $form['cardinality'] = array(
         '#type' => 'select',
         '#title' => $this->t('Cardinality'),
@@ -241,6 +278,11 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
   public function bundleCallback(array $form, FormStateInterface $form_state) {
     
     return $form['choose_bundle']['bundle'];
+  }
+  
+  public function fieldCallback(array $form, FormStateInterface $form_state) {
+    
+    return $form['choose_field']['field'];
   }
 
   /**
