@@ -32,7 +32,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-    dpm($entity->label(),$entity->id());
+    //dpm($entity->label(),$entity->id());
     //dpm($this->type);
     // in case of navigate and create - exclude all non-top-groups
     if($this->type == self::NAVIGATE || $this->type == self::CREATE) {

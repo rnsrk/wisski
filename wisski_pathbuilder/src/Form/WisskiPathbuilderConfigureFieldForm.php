@@ -15,6 +15,8 @@ use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Url;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 
+use Drupal\wisski_core\WisskiHelper;
+
 /**
  * Class WisskiPathbuilderForm
  * 
@@ -78,14 +80,40 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($this->path);
 
     if($path->getType() != "Path") {
-      $form['bundle'] = array(
+      $bundle_options = array();
+      foreach (WisskiHelper::getTopBundleIds(TRUE) as $bundle_id => $bundle_info) {
+        $bundle_options[$bundle_id] = $bundle_info['label'].' ('.$bundle_info['path_id'].' in '.$bundle_info['pathbuilder'].')';
+      }
+      //dpm($bundle_options,'Bundle Options');
+      $form['choose_bundle'] = array(
+        '#type' => 'fieldset',
+        '#title' => $this->t('Bundle'),
+      );
+      $form['choose_bundle']['select_bundle'] = array(
+        '#type' => 'select',
+        '#description' => $this->t('Choose from the list of existing bundles'),
+        '#options' => $bundle_options,
+        '#ajax' => array(
+          'wrapper' => 'wisski-bundle-field',
+          'callback' => array($this,'bundleCallback'),
+        ),
+      );
+      $default_value = empty($pbpath['bundle']) ? '' : $pbpath['bundle'];
+      $value = FALSE;
+      $trigger = $form_state->getTriggeringElement();
+      if ($trigger['#name'] == 'select_bundle') {
+        $value = $form_state->getValue('select_bundle');
+      }
+      $form['choose_bundle']['bundle'] = array(
         '#type' => 'textfield',
         '#maxlength' => 255,
-        '#title' => $this->t('bundle'),
-        '#default_value' => empty($pbpath['bundle']) ? '' : $pbpath['bundle'],
+        '#default_value' => $default_value,
+        '#value' => isset($value) ? $value : $default_value,
 #      '#disabled' => true,
-        '#description' => $this->t("Name of the bundle."),
+        '#description' => $this->t('Set bundle ID'),
 #        '#required' => true,
+        '#prefix' => '<div id="wisski-bundle-field">',
+        '#suffix' => '</div>',
       );
     }
     
@@ -205,6 +233,14 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
    */
   public function ajaxPathData(array $form, array $form_state) {
     return $form['display'];
+  }
+  
+  /**
+   *
+   */
+  public function bundleCallback(array $form, FormStateInterface $form_state) {
+    
+    return $form['choose_bundle']['bundle'];
   }
 
   /**

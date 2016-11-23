@@ -434,9 +434,16 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
     
       $create_fs = FALSE;
       // if the field is already there...
-      $field_storage = \Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $fieldid));
-      if (!empty($field_storage)) {
-        $field_storage = current($field_storage);
+      $field_storages = \Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(
+        array(
+          'field_name' => $fieldid,
+          //'entity_type' => $mode,
+        )
+      );
+
+      if (!empty($field_storages)) {
+        if (count($field_storages) > 1) drupal_set_message('There are multiple field storages for this field name: '.$field_name,'warning');
+        $field_storage = current($field_storages);
         drupal_set_message(t('Field %bundle with id %id was already there.',array('%bundle'=>$field_name, '%id' => $fieldid)));
         //dpm($field_storage,'storage');
         if ($field_storage->getType() != $field_storage_values['type']) {
@@ -452,27 +459,28 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       }
               
       $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : \Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
-      dpm($field_storage->id(),'ID before');
+      //dpm($field_storage->id(),'ID before');
       $field_storage->setCardinality($card);
       $field_storage->save();
-      dpm($field_storage->id(), 'ID after');
+      //dpm($field_storage->id(), 'ID after');
 
       $create_fo = FALSE;
-      $field_object = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(array('field_name'=>$fieldid));
-      if (!empty($field_object)) {
-        $field_object = current($field_object);
-        //dpm($field_object,'field');
-        if ($field_object->getTargetBundle() != $field_values['bundle']) {
-          $create_fo = TRUE;
-          dpm(array($field_object->bundle(),$field_values['bundle']),'severe bundle differences');
-        } 
-        if ($field_object->getType() != $field_storage_values['type']) {
-          $create_fo = TRUE;
-          dpm(array($field_object->getType(),$field_storage_values['type']),'severe type differences');
-        }
-        
-        if ($create_fo) $field_object->delete();
-        
+      $field_objects = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(
+        array(
+          'field_name'=>$fieldid,
+          'bundle' => $bundle,
+          'entity_type' => $mode,
+        )
+      );
+      if (!empty($field_objects)) {
+        foreach ($field_objects as $field_object) {
+          //dpm($field_object,'field');
+          if ($field_object->getType() != $field_storage_values['type']) {
+            $create_fo = TRUE;
+            //dpm(array($field_object->getType(),$field_storage_values['type']),'severe type differences');
+            $field_object->delete();
+          }
+        }      
       } else $create_fo = TRUE;
       
       if ($create_fo) {
