@@ -41,7 +41,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
 
       // only show top groups
       if(!in_array($entity->id, $parents)) {
-        drupal_set_message('Bundle '.$entity->id().' is not shown here since it is not a top bundle');
+        //drupal_set_message('Bundle '.$entity->id().' is not shown here since it is not a top bundle');
         return array();
       }
     }
