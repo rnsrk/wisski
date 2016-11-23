@@ -1894,6 +1894,10 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         // we have to escape it otherwise the sparql query may break
         $primitiveValue = $this->escapeSparqlLiteral($primitiveValue);
 
+        if ($write) {
+          $query .= "\"$primitiveValue\"";
+        } else {
+
 /* putting there the literal directly is not a good idea as 
   there may be problems with matching lang and datatype
         if($op == '=') 
@@ -1903,33 +1907,33 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 
 */
 
-        $regex = null;
-        if($op == '<>')
-          $op = '!=';
-        if($op == 'STARTS_WITH') {
-          $regex = true;
-          $primitiveValue = '^' . $this->escapeSparqlRegex($primitiveValue);
-        }
+          $regex = null;
+          if($op == '<>')
+            $op = '!=';
+          if($op == 'STARTS_WITH') {
+            $regex = true;
+            $primitiveValue = '^' . $this->escapeSparqlRegex($primitiveValue);
+          }
+          
+          if($op == 'ENDS_WITH') {
+            $regex = true;
+            $primitiveValue = $this->escapeSparqlRegex($primitiveValue) . '$';
+          }
+          
+          if($op == 'CONTAINS') {
+            $regex = true;
+            $primitiveValue = $this->escapeSparqlRegex($primitiveValue);
+          }
+          
         
-        if($op == 'ENDS_WITH') {
-          $regex = true;
-          $primitiveValue = $this->escapeSparqlRegex($primitiveValue) . '$';
+          if($regex || $op == 'BETWEEN' || $op == 'IN' || $op == 'NOT IN') {
+            $query .= " $outvar . FILTER ( regex ( $outvar, \"" . $primitiveValue . '", "i" ) ) . ';
+          } else {
+            // we have to use STR() otherwise we may get into trouble with
+            // datatype and lang comparisons
+            $query .= " $outvar . FILTER ( STR($outvar) " . $op . ' "' . $primitiveValue . '" ) . ';
+          }
         }
-        
-        if($op == 'CONTAINS') {
-          $regex = true;
-          $primitiveValue = $this->escapeSparqlRegex($primitiveValue);
-        }
-        
-      
-        if($regex || $op == 'BETWEEN' || $op == 'IN' || $op == 'NOT IN') {
-          $query .= " $outvar . FILTER ( regex ( $outvar, \"" . $primitiveValue . '", "i" ) ) . ';
-        } else {
-          // we have to use STR() otherwise we may get into trouble with
-          // datatype and lang comparisons
-          $query .= " $outvar . FILTER ( STR($outvar) " . $op . ' "' . $primitiveValue . '" ) . ';
-        }
- //       }
       } else {
         $query .= " $outvar . ";
       }
