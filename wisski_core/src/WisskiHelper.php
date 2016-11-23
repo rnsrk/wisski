@@ -80,7 +80,7 @@ class WisskiHelper {
    * @param $get_labels useless
    * @return returns a list of top bundle ids
    */
-  public static function getTopBundleIds($get_labels=FALSE) {
+  public static function getTopBundleIds($get_full_info=FALSE) {
     
     $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
     if (empty($pbs)) return array();
@@ -91,8 +91,18 @@ class WisskiHelper {
       $pbarr = $pb->getPbPaths();
       
       foreach($pathtree as $key => $value) {
-        if(!empty($pbarr[$key]['bundle']))
-          $parents[] = $pbarr[$key]['bundle'];
+        if(!empty($pbarr[$key]['bundle'])) {
+          $bundle_id = $pbarr[$key]['bundle'];
+          if ($get_full_info) {
+            $parents[$bundle_id] = array(
+              'label' => \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)->label(),
+              'pathbuilder' => $pb_id,
+              'path_id' => $key,
+            );
+          } else {
+            $parents[$bundle_id] = $bundle_id;
+          }
+        }
       }
 #      $parent_id = $pb->getParentBundleId($bundle_id);
 #      if ($parent_id) {
@@ -101,7 +111,7 @@ class WisskiHelper {
 #        } else $parents[$parent_id] = $parent_id;
 #      }
     }
-    return array_unique($parents);
+    return $parents;
   }
   
 }
