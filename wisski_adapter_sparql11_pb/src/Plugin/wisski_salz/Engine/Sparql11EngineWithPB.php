@@ -1954,7 +1954,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
   }
   
   public function addNewFieldValue($entity_id, $fieldid, $value, $pb) {
-#    drupal_set_message("I get: " . $entity_id, " with fid " . $fieldid . " and value " . $value);
+    drupal_set_message("I get: " . $entity_id.  " with fid " . $fieldid . " and value " . $value . ' for pb ' . $pb->id());
 #    drupal_set_message(serialize($this->getUri("smthg")));
     $datagraphuri = $this->getDefaultDataGraphUri();
 
@@ -2186,6 +2186,9 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
           }
         }
       }
+      
+dpm($field_items, 'asas');
+dpm($remain_values, 'asa');
       
       // now we write all the new values
       foreach ($field_items as $new_item) {

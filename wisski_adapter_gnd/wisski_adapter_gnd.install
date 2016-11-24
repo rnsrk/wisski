@@ -20,6 +20,12 @@ function wisski_adapter_gnd_schema() {
         'length' => '2048',
         'not null' => TRUE,
       ),
+      'field' => array(
+        'description' => 'the field',
+        'type' => 'varchar',
+        'length' => '128',
+        'not null' => TRUE,
+      ),
      'value' => array(
         'description' => 'field values',
         'type' => 'text',
