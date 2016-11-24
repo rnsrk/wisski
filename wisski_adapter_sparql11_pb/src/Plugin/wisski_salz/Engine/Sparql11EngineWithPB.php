@@ -1769,7 +1769,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
       }
 
       $localvar = "?" . (is_array($variable_prefixes) ? (isset($variable_prefixes[$localkey]) ? $variable_prefixes[$localkey] : "") : $variable_prefixes) . "x" . $localkey;
-      
+#      dpm($localkey, "localkey");      
       if($localkey % 2 == 0) {
         // if it is the first element and we have a subject_in
         // then we have to replace the first element with subject_in
@@ -1882,7 +1882,12 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
       if(!empty($olduri)) {
         $query .= "<$olduri> ";
       } else {
-        $query .= "$oldvar ";
+        // if we initialized with a nearly empty path oldvar is empty.
+        // in this case we assume x at the startingposition
+        if(empty($oldvar))
+          $query .= "?" . (is_array($variable_prefixes) ? (isset($variable_prefixes[$localkey]) ? $variable_prefixes[$localkey] : "") : $variable_prefixes) . "x" . $startingposition;
+        else
+          $query .= "$oldvar ";
       }
       
       $query .= "<$primitive> ";
