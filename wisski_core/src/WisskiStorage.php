@@ -552,7 +552,7 @@ if (empty($new_field_values)) continue;
    * @TODO must be implemented
    */
   protected function doSaveFieldItems(ContentEntityInterface $entity, array $names = []) {
-    //dpm(func_get_args(),__METHOD__);
+#    dpm(func_get_args(),__METHOD__);
     
     //gather values with property caching
     list($values,$original_values) = $entity->getValues($this,TRUE);
@@ -655,7 +655,7 @@ if (empty($new_field_values)) continue;
           //we force the writable adapter to write values for newly created entities even if unknown to the adapter by now
           //@TODO return correct success code
           $adapter_info = $adapter->writeFieldValues($entity_id, $values, $pb, $bundle_id, $original_values,$create_new);
-          //dpm('Success',$aid);
+#          dpm('Success',$aid);
           $success = TRUE;
         } catch (\Exception $e) {
           drupal_set_message('Could not write entity into adapter '.$adapter->id() . ' because ' . serialize($e->getMessage()));
