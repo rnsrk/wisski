@@ -82,7 +82,7 @@ class WisskiPathbuilderForm extends EntityForm {
         $this->t('Field&nbsp;Type'),
         $this->t('Cardinality'),
         "Weight",
-        array('data' => $this->t('Operations'),'colspan' => 11)
+        array('data' => $this->t('Operations'),'colspan' => 11),
       );
      
       $form['pathbuilder_table'] = array(
@@ -231,6 +231,7 @@ class WisskiPathbuilderForm extends EntityForm {
         $form['pathbuilder_table'][$path->id()]['displaywidget'] = $pathform['displaywidget'];
         $form['pathbuilder_table'][$path->id()]['formatterwidget'] = $pathform['formatterwidget'];
 #      drupal_set_message(serialize($form['pathbuilder_table'][$path->id()]));
+#        dpm($form['pathbuilder_table'][$path->id()],'Path '.$path->id());
       }
     }
     
@@ -634,9 +635,10 @@ class WisskiPathbuilderForm extends EntityForm {
     );
 
     $pathform['field'] = array(
-#      '#type' => 'value',
-      '#type' => 'hidden',
+      '#type' => 'value',
+#      '#type' => 'hidden',
       '#value' => $field,
+      '#markup' => $field,
     );
     
     $pathform['fieldtype'] = array(
