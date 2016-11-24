@@ -261,6 +261,13 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   public abstract function defaultSameAsProperties();
   
 
+  public function isValidUri($uri) {
+	  $short_uri = '[a-z]+\:[^\/]+';
+	  //see RFC3986, simplified
+	  $long_uri = '\<[a-z][a-z0-9\-\.\+]*\:(\/\/)?[^\/]+(\/[^\/]+)*(\/|#)[^\/]+\/?\>';
+	  return preg_match("/^($short_uri|$long_uri)$/",$uri);
+  }
+
   /**
    * {@inheritdoc}
    */

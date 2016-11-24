@@ -24,10 +24,10 @@ abstract class NonWritableEngineBase extends EngineBase {
   }
 
   public function defaultConfiguration() {
-    #return parent::defaultConfiguration() + 
-    return [
-      'is_writable' => TRUE,
+    return parent::defaultConfiguration() + [
+      'is_writable' => FALSE,
       'is_preferred_local_store' => FALSE,
+      'same_as_properties' => array(),
     ];
   }
 
@@ -69,12 +69,12 @@ abstract class NonWritableEngineBase extends EngineBase {
     $form['isWritable'] = 
     array(
       '#default_value' => 0,
-      '#enabled' => FALSE,
+      '#disabled' => TRUE,
     ) + $form['isWritable'];
     
     $form['sameAsProperties'] = array(
       '#default_value' => '',
-      '#enabled' => FALSE,
+      '#disabled' => TRUE,
     ) + $form['sameAsProperties'];
 
     return $form;
@@ -118,11 +118,6 @@ abstract class NonWritableEngineBase extends EngineBase {
     return array();
   }
   
-  /**
-   * {@inheritdoc}
-   */
-  public abstract function checkUriExists ($uri);
-
 
   /**
    * {@inheritdoc}

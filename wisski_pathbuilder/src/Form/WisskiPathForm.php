@@ -391,8 +391,9 @@ class WisskiPathForm extends EntityForm {
      
        
     // add the path to its tree if it was not there already
-    if(is_null($pb->getPbPath($path->id())))
+    if($pb->hasPbPath($path->id())) {
       $pb->addPathToPathTree($path->id(), 0, $path->isGroup());
+    }
       
     // save the pb
     $status = $pb->save();

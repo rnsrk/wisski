@@ -122,7 +122,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
     }
     
     public function getPbPath($pathid){
-      return $this->pbpaths[$pathid];
+      return $this->pbpaths[$pathid] ?: NULL;
     }
     
     public function setPbPaths($paths){

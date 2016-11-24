@@ -1769,6 +1769,12 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
       }
 
       $localvar = "?" . (is_array($variable_prefixes) ? (isset($variable_prefixes[$localkey]) ? $variable_prefixes[$localkey] : "") : $variable_prefixes) . "x" . $localkey;
+      if (empty($oldvar)) {
+        // this is a hack but i don't get the if's below
+        // and when there should be set $oldvar
+        // TODO: fix this!
+        $oldvar = "?" . (is_array($variable_prefixes) ? (isset($variable_prefixes[$localkey]) ? $variable_prefixes[$localkey] : "") : $variable_prefixes) . "x" . $localkey;
+      }
 #      dpm($localkey, "localkey");      
       if($localkey % 2 == 0) {
         // if it is the first element and we have a subject_in

@@ -13,7 +13,7 @@ use Drupal\wisski_adapter_gnd\Query\Query;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity; 
 use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity; 
 use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
-use Drupal\wisski_salz\EngineBase;
+use Drupal\wisski_salz\NonWritableEngineBase;
 use Drupal\wisski_salz\AdapterHelper;
 use DOMDocument;
 use EasyRdf_Graph;
@@ -29,7 +29,7 @@ use EasyRdf_Literal;
  *   description = @Translation("Provides access to the Gemeinsame Normdatei of the Deutsche Nationalbibliothek")
  * )
  */
-class GndEngine extends EngineBase implements PathbuilderEngineInterface {
+class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterface {
   
   protected $uriPattern  = "!^http://d-nb.info/gnd/(\w+)$!u";
   protected $fetchTemplate = "http://d-nb.info/gnd/{id}/about/lds";
@@ -179,7 +179,15 @@ class GndEngine extends EngineBase implements PathbuilderEngineInterface {
 
   }
 
-  
+
+  /**
+   * {@inheritdoc}
+   */
+  public function checkUriExists ($uri) {
+    return !empty($this->fetchData($uri));
+  }
+
+
   /**
    * {@inheritdoc} 
    */
@@ -192,7 +200,7 @@ class GndEngine extends EngineBase implements PathbuilderEngineInterface {
     $uri = $this->getUriForDrupalId($id);
     $data = $this->fetchData($uri);
     
-    $pbs = array($this->getPbForThis());
+    $pbs = $this->getPbsForThis();
     $bundle_ids = array();
     foreach($pbs as $key => $pb) {
       $groups = $pb->getMainGroups();
@@ -413,6 +421,10 @@ dpm($main_property, 'mp');
 
   public function getQueryObject(EntityTypeInterface $entity_type,$condition, array $namespaces) {
     return new Query($entity_type,$condition,$namespaces);
+  }
+
+  public function providesDatatypeProperty() {
+    return TRUE;
   }
 
 

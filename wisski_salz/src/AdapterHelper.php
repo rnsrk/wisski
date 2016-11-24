@@ -207,7 +207,7 @@ class AdapterHelper {
       self::setSameUris(array($adapter_id=>$uri),$id);
       return $id;
     }
-  
+    
     //possibly another adapter knows this uri already, then the EID MUST be the same
     //this will only help, if an input adapter was set
     if (!empty($input_adapter_id)) {
@@ -264,6 +264,7 @@ class AdapterHelper {
     return $result;
   }
   
+
   /**
    * returns a set of URIs that are associated with the given Drupal entity ID
    * if there is no URI set for the given adapter, we will always try to create one.
@@ -316,7 +317,9 @@ class AdapterHelper {
           $same_uri = Adapter::load($adapter_id)->getEngine()->generateFreshIndividualUri();
         }
       }
-      self::setSameUris($old_uris + array($adapter_id=>$same_uri),$eid);
+      if (!empty($same_uri)) {
+        self::setSameUris($old_uris + array($adapter_id=>$same_uri),$eid);
+      }
       return $same_uri;
     } else {
       $same_uris = self::getPreferredLocalStore(TRUE)->getUrisForDrupalId($eid);
@@ -336,14 +339,11 @@ class AdapterHelper {
     else return $res->eid + 1;
   }
 
-  public static function createCanonicalWisskiUri($options) {
-    
-  }
   
   public static function getPreferredLocalStore($retrieve_engine=FALSE,$ignore_errors=FALSE,$ignore_cache=FALSE) {
 
+    $cid = 'wisski_salz_preferred_local_store';
     if (!$ignore_cache) {
-      $cid = 'wisski_salz_preferred_local_store';
       if ($cache = \Drupal::cache()->get($cid)) {
         $adapter_id =  $cache->data;
         $adapter = Adapter::load($adapter_id);

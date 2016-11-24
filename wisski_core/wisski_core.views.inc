@@ -1,6 +1,7 @@
 <?php
 
 function wisski_core_views_data() {
+
 /*
   $data = array();
   $entity_info = entity_get_info();

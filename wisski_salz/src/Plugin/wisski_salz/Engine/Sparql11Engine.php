@@ -313,20 +313,6 @@ abstract class Sparql11Engine extends EngineBase {
 	  return "{{ $triple } UNION {GRAPH $graph_name { $triple }}}";
 	}
 
-	public function isValidUri($uri) {
-	  
-	  $short_uri = '[a-z]+\:[^\/]+';
-	  //see RFC3986, simplified
-	  $long_uri = '\<[a-z][a-z0-9\-\.\+]*\:(\/\/)?[^\/]+(\/[^\/]+)*(\/|#)[^\/]+\/?\>';
-	  return preg_match("/^($short_uri|$long_uri)$/",$uri);
-	  try {
-	    $this->directQuery("ASK { <$uri> ?p ?o.}");
-	    return TRUE;
-	  } catch (\Exception $e) {
-	    \Drupal::logger('WissKI SPARQL 1.1 adapter')->debug('Invalid URI: '.$uri);
-	  }
-	  return FALSE;
-	}
 	
 	/**
 	 * returns TRUE if this engine provides a kind of datatype that shall be used for the end of pathbuilder paths

@@ -672,29 +672,31 @@ class WisskiPathbuilderForm extends EntityForm {
     
     $this->save($form, $form_state);
     
-    foreach($paths as $key => $path) {
-    
-      if($path['enabled'] == 0) 
-        continue;
+    if (!empty($paths)) {
+      foreach($paths as $key => $path) {
       
-      if(!empty($path['parent']) && $paths[$path['parent']]['enabled'] == 0) {
-        // take it with us if the parent is disabled down the tree
-        $paths[$key]['enabled'] = 0;
-        continue;
-      }
-      
+        if($path['enabled'] == 0) 
+          continue;
+        
+        if(!empty($path['parent']) && $paths[$path['parent']]['enabled'] == 0) {
+          // take it with us if the parent is disabled down the tree
+          $paths[$key]['enabled'] = 0;
+          continue;
+        }
+        
 
-      // generate fields!
-      $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
+        // generate fields!
+        $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
 
-      if($pathob->isGroup()) {
-        $pathbuilder->generateBundleForGroup($pathob->id());
-                  
-        if(!in_array($pathob->id(), array_keys($pathbuilder->getMainGroups())))
-          $pathbuilder->generateFieldForSubGroup($pathob->id(), $pathob->getName());  
-      } else {
+        if($pathob->isGroup()) {
+          $pathbuilder->generateBundleForGroup($pathob->id());
+                    
+          if(!in_array($pathob->id(), array_keys($pathbuilder->getMainGroups())))
+            $pathbuilder->generateFieldForSubGroup($pathob->id(), $pathob->getName());  
+        } else {
 #        dpm($pathob,'$pathob');
-        $pathbuilder->generateFieldForPath($pathob->id(), $pathob->getName());
+          $pathbuilder->generateFieldForPath($pathob->id(), $pathob->getName());
+        }
       }
     }
     
@@ -717,37 +719,39 @@ class WisskiPathbuilderForm extends EntityForm {
     // regardless of what it is - we have to save it properly to the pbpaths
     $pbpaths = $pathbuilder->getPbPaths();
     
-    foreach($paths as $key => $path) {
+    if (!empty($paths)) {
+      foreach($paths as $key => $path) {
 #      $pathtree = array_merge($pathtree, $this->recursive_build_tree(array($key => $path)));
-      
-      if(!empty($path['parent'])) { // it has parents... we have to add it somewhere
-        $map[$path['parent']]['children'][$path['id']] = array('id' => $path['id'], 'children' => array());
-        $map[$path['id']] = &$map[$path['parent']]['children'][$path['id']];
-      } else { // it has no parent - so it is a main thing
-        $pathtree[$path['id']] = array('id' => $path['id'], 'children' => array());
-        $map[$path['id']] = &$pathtree[$path['id']];
+        
+        if(!empty($path['parent'])) { // it has parents... we have to add it somewhere
+          $map[$path['parent']]['children'][$path['id']] = array('id' => $path['id'], 'children' => array());
+          $map[$path['id']] = &$map[$path['parent']]['children'][$path['id']];
+        } else { // it has no parent - so it is a main thing
+          $pathtree[$path['id']] = array('id' => $path['id'], 'children' => array());
+          $map[$path['id']] = &$pathtree[$path['id']];
+        }
+              
+        $pbpaths[$path['id']] = \Drupal\wisski_core\WisskiHelper::array_merge_nonempty($pbpaths[$path['id']],$path); #array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array(), 'bundle' => $path['bundle'], 'field' => $path['field']);
+        
+        // generate fields!
+        $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
+        
+        // check if enabled - if not, we don't create fields
+        
+        if(empty($path['enabled']))
+          continue;
+
+  /*
+        if($pathob->isGroup()) {
+          $pathbuilder->generateBundleForGroup($pathob->id());
+                    
+          if(!in_array($pathob->id(), array_keys($pathbuilder->getMainGroups())))
+            $pathbuilder->generateFieldForSubGroup($pathob->id(), $pathob->getName());  
+        } else
+          $pathbuilder->generateFieldForPath($pathob->id(), $pathob->getName());
+  */
+
       }
-            
-      $pbpaths[$path['id']] = \Drupal\wisski_core\WisskiHelper::array_merge_nonempty($pbpaths[$path['id']],$path); #array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array(), 'bundle' => $path['bundle'], 'field' => $path['field']);
-      
-      // generate fields!
-      $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
-      
-      // check if enabled - if not, we don't create fields
-      
-      if(empty($path['enabled']))
-        continue;
-
-/*
-      if($pathob->isGroup()) {
-        $pathbuilder->generateBundleForGroup($pathob->id());
-                  
-        if(!in_array($pathob->id(), array_keys($pathbuilder->getMainGroups())))
-          $pathbuilder->generateFieldForSubGroup($pathob->id(), $pathob->getName());  
-      } else
-        $pathbuilder->generateFieldForPath($pathob->id(), $pathob->getName());
-*/
-
     }
     
     // save the path

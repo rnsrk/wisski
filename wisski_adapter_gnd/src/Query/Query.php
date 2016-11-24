@@ -12,8 +12,7 @@ class Query extends WisskiQueryBase {
 
 
   public function execute() {
-dpm($this,'query');
-    return array(8=>8);
+    return array();
   }
   
   /**
