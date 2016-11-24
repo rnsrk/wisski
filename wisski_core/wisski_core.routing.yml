@@ -71,7 +71,7 @@ entity.wisski_individual.list:
   path: '/wisski/navigate'
   defaults:
     _controller: '\Drupal\wisski_core\Controller\WisskiEntityListController::listing'
-    _title: 'WissKI Entities'
+    _title: 'Browse WissKI Entities'
   requirements:
     _permission: 'view wisski content'
 
@@ -79,7 +79,7 @@ entity.wisski_individual_create.list:
   path: '/wisski/create'
   defaults:
     _controller: '\Drupal\wisski_core\Controller\WisskiEntityListController::listing'
-    _title: 'WissKI Entities'
+    _title: 'Create WissKI Entity'
   requirements:
     _permission: 'view wisski content'
 
