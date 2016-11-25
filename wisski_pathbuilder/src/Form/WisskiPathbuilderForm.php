@@ -783,6 +783,7 @@ class WisskiPathbuilderForm extends EntityForm {
       
     #}
 */
+    dpm(array('old' => $pathbuilder->getPathTree(),'new' => $pathtree, 'form paths' => $paths),'Path trees');
     // save the tree
     $pathbuilder->setPathTree($pathtree);
 

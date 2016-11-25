@@ -395,10 +395,11 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       }
       
       
-      $fieldid = $this->generateIdForField($pathid);
       // get the pbpaths
       $pbpaths = $this->getPbPaths();
 
+      $fieldid = $pbpaths[$pathid]['field'] ? : $this->generateIdForField($pathid);
+      
       // this was called field?
       $field_storage_values = [
         'field_name' => $fieldid,#$values['field_name'],
@@ -700,6 +701,22 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       $this->setPbPaths($pbpaths);
       
       return true;      
+    }
+    
+    public function removePath($path_id) {
+      
+      $path_tree = $this->getPathTree();
+      if (isset($path_tree[$path_id])) {
+        unset($path_tree[$path_id]);
+        $this->setPathTree($path_tree);
+      }
+           
+      $pb_paths = $this->getPbPaths();
+      if (isset($pb_paths[$path_id])) {
+        unset($pb_paths[$path_id]);
+        $this->setPbPaths($pb_paths);
+      }
+      
     }
 
     /**

@@ -47,7 +47,8 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-  
+
+    dpm($this->pathbuilder,'before edit');  
     $form = parent::form($form, $form_state);
 
     $form['pathbuilder'] = array(
@@ -352,14 +353,13 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 
     // load the path
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
-    
+    dpm(array($path,$form_state->getValues()),'before edit');
     // get the pbpaths
     $pbpaths = $this->pathbuilder->getPbPaths();
     // set the path and the bundle - beware: one is empty!
     $pbpaths[$pathid]['fieldtype'] = $form_state->getValue('fieldtype');
     $pbpaths[$pathid]['displaywidget'] = $form_state->getValue('displaywidget');
     $pbpaths[$pathid]['formatterwidget'] = $form_state->getValue('formatterwidget');
-    $pbpaths[$pathid]['bundle'] = $form_state->getValue('bundle');
     $pbpaths[$pathid]['field'] = $form_state->getValue('field');
     $pbpaths[$pathid]['cardinality'] = $form_state->getValue('cardinality');
 
@@ -367,7 +367,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     // save it
     $this->pathbuilder->setPbPaths($pbpaths);
     $this->pathbuilder->save();
-    
+    dpm($this->pathbuilder,'after edit');
 #    drupal_set_message(serialize($pbpaths[$pathid]));
     
 #    drupal_set_message(serialize($this->pathbuilder->getPbPaths()));

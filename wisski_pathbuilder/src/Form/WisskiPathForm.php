@@ -50,7 +50,7 @@ class WisskiPathForm extends EntityForm {
     // load the pb entity this path currently is attached to 
     // we found this out by the url we're coming from!
     $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($wisski_pathbuilder);
-
+dpm($pb,'before edit');
     // load the adapter of the pb
     $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
     
@@ -391,12 +391,13 @@ class WisskiPathForm extends EntityForm {
      
        
     // add the path to its tree if it was not there already
-    if($pb->hasPbPath($path->id())) {
+    if(!$pb->hasPbPath($path->id())) {
       $pb->addPathToPathTree($path->id(), 0, $path->isGroup());
     }
       
     // save the pb
     $status = $pb->save();
+    dpm($pb,'after edit');
 
     $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder' => $pbid));
   }
