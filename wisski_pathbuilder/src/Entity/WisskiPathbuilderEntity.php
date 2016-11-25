@@ -42,6 +42,16 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
   class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuilderInterface {
   
     /**
+     * represents the "generate/connect no field please" option in the path['field'] entry
+     */
+    const CONNECT_NO_FIELD = '1ae353e47a8aa3fc995220848780758a';
+    
+    /**
+     * represents the "generate fresh field please" option in the path['field'] entry
+     */
+    const GENERATE_NEW_FIELD = 'ea6cd7a9428f121a9a042fe66de406eb';
+    
+    /**
      * The ID of the PB
      *
      * @var string
@@ -398,7 +408,13 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       // get the pbpaths
       $pbpaths = $this->getPbPaths();
 
-      $fieldid = $pbpaths[$pathid]['field'] ? : $this->generateIdForField($pathid);
+      $fieldid = $pbpaths[$pathid]['field'];
+      
+      //don't go on if the user whishes not to
+      if ($fieldid === self::CONNECT_NO_FIELD) return;
+      
+      //create a new field if the user whishes to
+      if ($fieldid === self::GENERATE_NEW_FIELD) $this->generateIdForField($pathid);
       
       // this was called field?
       $field_storage_values = [
@@ -694,7 +710,10 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       if($is_group) {
         $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => '', 'fieldtype' => '', 'displaywidget' => '', 'formatterwidget' => '');
       } else {
-        $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => '', 'fieldtype' => 'string', 'displaywidget' => 'string_textfield', 'formatterwidget' => 'string');
+        //these are the OLD default values, which make the PB create a textfield for every path
+        //$pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => '', 'fieldtype' => 'string', 'displaywidget' => 'string_textfield', 'formatterwidget' => 'string');
+        //these new values keep the defaults for fieldtype, formatter and widget but will not result ion a generated field automatically
+        $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => self::CONNECT_NO_FIELD, 'fieldtype' => 'string', 'displaywidget' => 'string_textfield', 'formatterwidget' => 'string');
       }
       
       $this->setPathTree($pathtree);
