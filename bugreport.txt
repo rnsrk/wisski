@@ -1,7 +1,4 @@
 Pathbuilder:
-	"use existing path" macht Unsinn: wenn man in einem PB einen Pfad
+	(1) "use existing path" macht Unsinn: wenn man in einem PB einen Pfad
 	 anlegt, im anderen wiederverwendet, in einem der beiden löscht,
-	 verschwindet er aus beiden. Soweit schon unintuitiv aber nicht ganz
-	 daneben. Legt amn dann einen neuen Pfad mit dem alten Namen in
-	 einem der beiden PBs an, schreibt er den automatisch im anderen
-	 wieder dazu. Das sorgt für mächtig Verwirrung.
+	 verschwindet er aus beiden.
