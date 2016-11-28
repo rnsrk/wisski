@@ -28,7 +28,9 @@ class WisskiEntityListBuilder extends EntityListBuilder {
   
   /**
    * {@inheritdoc}
-   *
+   * We show our entity list either as a grid of a given width e.g. three entities wide
+   * or as a single-entity-wide table with additional action buttons, which provide
+   * e.g. direct edit or delete actions.
    * We override ::render() so that we can change the view type of the list
    * we avoid ::buildHeader() since we do not necessarily have one.
    * We also do not use buildRow() but instead introduce buildRowForId() to be able to load info without
@@ -50,12 +52,15 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       );
     } else $this->adapter = $pref_local;
     
+    //gather the page attributes from the request, this resembles a REST query
     $request_query = \Drupal::request()->query;
     //dpm($request_query,'HTTP GET');
     $grid_type = $request_query->get('type') ? : 'grid';
     $grid_width = $request_query->get('width') ? : 3;
     $this->page = $request_query->get('page') ? : 0;
     //dpm($grid_type.' '.$grid_width);
+    
+    //if we have a real table, we need a header
     if ($grid_type === 'table') {
       $header = array('preview_image'=>$this->t('Entity'),'title'=>'','operations'=>$this->t('Operations'));
     }
@@ -63,6 +68,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $header = NULL;
     }
     
+    //the 'table' element will be used in both types
     $build['table'] = array(
       '#type' => 'table',
       '#header' => $header,
@@ -77,17 +83,22 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       '#suffix' => '</div>',
     );
     
+    //collect the entities to show in this list and...
     $entities = $this->getEntityIds();
     //dpm($entities,'Entities to load');
     
+    //...let the CacheHelper prepare for the preview image request
+    //this speeds up things a little
     WisskiCacheHelper::preparePreviewImages($entities);
     
     if ($grid_type === 'table') {
+      //now, if we have a table
       foreach ($entities as $entity_id) {
         
         if ($input_row = $this->buildRowForId($entity_id)) {
           $build['table']['#rows'][$entity_id] = array(
             'preview_image' => array(
+              //we want the preview image to be a correct link to the entity
               'data' => array(
                 '#markup' => isset($input_row['preview_image']) 
                   ? '<a href='.$input_row['url']->toString().'>'.$input_row['preview_image'].'</a>'
@@ -96,11 +107,13 @@ class WisskiEntityListBuilder extends EntityListBuilder {
               ),
             ),
             'title' => array('data' => array(
+              //the title shall also be a link
               '#type' => 'link',
               '#title' => $input_row['label'],
               '#url' => $input_row['url'],
             )),
             'operations' => array(
+              //the operations multibutton normally containing view, edit, and delete
               'data' => array(
                 '#type' => 'operations',
                 '#links' => $input_row['operations'],
@@ -111,13 +124,18 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       }
     }
     if ($grid_type === 'grid') {
+      //in case we have the grid view, we need some additional computation
+      //so we keep the row number and the number of the cel in the row
       $row_num = 0;
       $cell_num = 0;
+      //in every "round" we fill the $row array with single render-element-cells for each entity
       $row = array();
 #      dpm($ents,'list');
       
       foreach ($entities as $entity_id) {
         if ($input_cell = $this->buildRowForId($entity_id)) {
+          //each shown cell shall consist of the preview image and the entity title
+          //each as a link to the entity page
           $cell_data = array(
             '#type' => 'container',
           );
@@ -135,16 +153,20 @@ class WisskiEntityListBuilder extends EntityListBuilder {
             '#url' => $input_cell['url'],
           );
           $row[$cell_num] = array('data' => $cell_data);
+          //prepare for the next entity in the same row
           $cell_num++;
           if ($cell_num == $grid_width) {
+            //if the row is full, "print" the row
             $build['table']['#rows']['row'.$row_num] = $row;
+            //and then we have to proceed with the first [0] entity
+            //in the nxt row
             $row_num++;
             $row = array();
             $cell_num = 0;
           }
         }  
       }  
-      //add the last row
+      //add the last row that might not have been filled to the full extent
       if ($cell_num > 0) $build['table']['#rows']['row'.$row_num] = $row;
     }
     
@@ -185,6 +207,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     }
     */
     
+    //this adds a box for the selection of the grid size
     $build['grid_type'] = $this->getGridTypeBlock();
     
     // Only add the pager if a limit is specified.
@@ -205,6 +228,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
   protected function getEntityIds() {
     //dpm($this,__METHOD__); 
   
+    //get us a WisskiQueryDelegator object and give it a sort key
     $storage = $this->getStorage();
     $query = $storage->getQuery()
       ->sort($this->entityType->getKey('id'));
@@ -217,17 +241,22 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     //dpm($query);
     if (!empty($this->bundle)) {
       if ($pattern = $this->bundle->getTitlePattern()) {
+        //add the title parts to the query, non-optional parts must not be empty
         foreach ($pattern as $key => $attributes) {
           if ($attributes['type'] === 'path' && !$attributes['optional']) {
             $query->condition($attributes['name']);
           }
         }
       }
+      //add the bunlde condition
       $query->condition('bundle',$this->bundle->id());
 
+      //execute the query
       $entity_ids = $query->execute();
 
       foreach ($entity_ids as $eid) {
+        //we expect the user to load one of the entites in the near future
+        //so we cache this bundle here as the calling bundle for the entity
         $storage->writeToCache($eid,$this->bundle->id());
       }
       
@@ -266,6 +295,12 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     return $links;
   }
   
+  /**
+   * this provides a render element containing links that re-style the
+   * list view, so either a table or a grid of given width will be shown.
+   * The links aim to the <current> route i.e. the page already shown and add
+   * query parameters
+   */
   private function getGridTypeBlock() {
     
     $block = array(
@@ -311,8 +346,11 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     //dpm($entity);
     //dpm($entity->get('preview_image'));
 
+    //let the bundle generate the entity title (normally from the title pattern)
     $entity_label = $this->bundle->generateEntityTitle($entity_id);
 
+    //create a link to the entity's "canonical" route, link templates
+    //do not work here, again
     $entity_url = Url::fromRoute('entity.wisski_individual.canonical',array('wisski_bundle'=>$this->bundle->id(),'wisski_individual'=>$entity_id));
 
     $row = array(
@@ -320,26 +358,35 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       'url' => $entity_url,
     );
     
+    //get the preview image URI and...
     $prev_uri = $this->getPreviewImageUri($entity_id,$this->bundle->id());
 
     if ($prev_uri) {
+      //...render the image
       $array = array(
         '#theme' => 'image',
         '#uri' => $prev_uri,
         '#alt' => 'preview '.$entity_label,
         '#title' => $entity_label,
       );
+      //really, render it, so we have HTML-Markup that can be put between <a href=...></a> tags
       \Drupal::service('renderer')->renderPlain($array);
       $row['preview_image'] = $array['#markup'];
     }
     
+    //add the OP-links to the element
     $row['operations'] = $this->getOperationLinks($entity_id);
 
     return $row;
   } 
   
+  /**
+   * this gathers the URI i.e. some public:// or remote path to this entity's
+   * preview image
+   */
   public function getPreviewImageUri($entity_id,$bundle_id) {
     
+    //first try the cache
     $preview = WisskiCacheHelper::getPreviewImageUri($entity_id);
     //dpm($preview,__FUNCTION__.' '.$entity_id);
     if ($preview) {
@@ -349,6 +396,9 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       return $preview;
     }
 
+    //if the cache had nothing try the adapters
+    //for this purpose we need the entity URIs, which are stored in the local
+    //store, so if there is none, stop here
     if (!isset($this->adapter)) return NULL;
     
     if (empty(\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($entity_id,$this->adapter->id()))) {
@@ -357,6 +407,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       return NULL;
     }
 
+    //ask the local adapter for any image for this entity
     $images = $this->adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
     if (empty($images)) {
       \Drupal::logger('wisski_preview_image')->debug('No preview images available from adapter '.$this->adapter->id());
@@ -365,17 +416,28 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     }
 
     \Drupal::logger('wisski_preview_image')->debug('Images from dapter: '.serialize($images));
+    //if there is at least one, take the first of them
+    //@TODO, possibly we can try something mor sophisticated to find THE preview image
     $input_uri = current($images);
+    
+    //now we have to ensure there is the correct image file on our server
+    //and we get a derivate in preview size and we have this derivates URI
+    //as the desired output
     $output_uri = '';
+    
     //get a correct image uri in $output_uri, by saving a file there
     $this->storage->getFileId($input_uri,$output_uri);
+    
+    //try to get the WissKI preview image style
     $image_style = $this->getPreviewStyle();
+    
+    //process the image with the style
     $preview_uri = $image_style->buildUri($output_uri);
     //dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
     if ($image_style->createDerivative($output_uri,$preview_uri)) {
       //drupal_set_message('Style did it - uri is ' . $preview_uri);
       WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
-
+      //we got the image resized and can output the derivates URI
       return $preview_uri;
     } else {
       drupal_set_message("Could not create a preview image for $input_uri. Probably its MIME-Type is wrong or the type is not allowed by your Imge Toolkit","error");
@@ -385,29 +447,51 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     }
   }
   
+  //cache the style in this object in case it will be used for multiple entites
   private $image_style;
   
+  /**
+   * loads and - if necessary - in advance generates the 'wisski_preview' ImageStyle
+   * object
+   * the style resizes - mostly downsizes - the image and converts it to JPG
+   */
   private function getPreviewStyle() {
-    
+
+    //cached?    
     if (isset($this->image_style)) return $this->image_style;
+    
+    //if not, try to load 'wisski_preview'
     $image_style_name = 'wisski_preview';
 
     $image_style = ImageStyle::load($image_style_name);
     if (is_null($image_style)) {
+      //if it's not there we generate one
+      
+      //first create the container object with correct name and label
       $values = array('name'=>$image_style_name,'label'=>'Wisski Preview Image Style');
       $image_style = ImageStyle::create($values);
+      
+      //then gather and set the default values, those might have been set by 
+      //the user
+      //@TODO tell the user that changing the settings after the style has
+      //been created will not result in newly resized images
       $settings = \Drupal::config('wisski_core.settings');
       $w = $settings->get('wisski_preview_image_max_width_pixel');
       $h = $settings->get('wisski_preview_image_max_height_pixel');
       $config = array(
         'id' => 'image_scale',
         'data' => array(
+          //set width and height and disallow upscale
+          //we believe 100px to be an ordinary preview size
           'width' => isset($w) ? $w : 100,
           'height' => isset($h) ? $h : 100,
           'upscale' => FALSE,
         ),
       );
+      //add the resize effect to the style
       $image_style->addImageEffect($config);
+      
+      //configure and add the JPG conversion
       $config = array(
         'id' => 'image_convert',
         'data' => array(
