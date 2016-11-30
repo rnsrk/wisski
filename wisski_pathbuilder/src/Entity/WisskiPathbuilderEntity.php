@@ -386,12 +386,12 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         $mode = 'wisski_individual';
       }
       
-      
       // if the field is already there...
-      if(empty($field_name) || 
-         !empty(\Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $field_name)))) {
+      if(empty($field_name)) { # || I Just don't get why dorian does this here... field_name is nothing that we can find in there... 
+         #!empty(\Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $field_name)))) {
         drupal_set_message(t('Field %bundle with id %id was already there.',array('%bundle'=>$field_name, '%id' => $field_name)));
   #      $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->id()));
+
         // get the pbpaths
         $pbpaths = $this->getPbPaths();
         // set the path and the bundle - beware: one is empty!
@@ -399,11 +399,10 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         $pbpaths[$pathid]['bundle'] = $bundle;
         // save it
         $this->setPbPaths($pbpaths);
-      
-        $this->save();
+        // do this accumulated in one session.      
+        # $this->save();
         return;
-      }
-      
+      }      
       
       // get the pbpaths
       $pbpaths = $this->getPbPaths();
@@ -414,7 +413,13 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       if ($fieldid === self::CONNECT_NO_FIELD) return;
       
       //create a new field if the user whishes to
-      if ($fieldid === self::GENERATE_NEW_FIELD) $this->generateIdForField($pathid);
+      if ($fieldid === self::GENERATE_NEW_FIELD || empty($fieldid)) $fieldid = $this->generateIdForField($pathid);
+      
+      // danger catch!
+      #if(empty($fieldid)) {
+      #  drupal_set_message('I did not find a fieldid for path ' . $pathid . ' with name ' . $field_name, "error");
+      #  return;
+      #}
       
       // this was called field?
       $field_storage_values = [
@@ -442,13 +447,14 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       // save it
       $this->setPbPaths($pbpaths);
       
-      $this->save();
+      // don't save anymore, save all at once.      
+#      $this->save();
 
       //if there were problems with the field name, should not happen
       if(empty($field_name)) {
         drupal_set_message(t('Cannot create field for path %path_id without field name',array('5path_id'=>$pathid)),'error');
       }
-    
+
       $create_fs = FALSE;
       // if the field is already there...
       $field_storages = \Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(
@@ -470,9 +476,12 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         }
       } else $create_fs = TRUE;
       
+            
       if ($create_fs) {
         drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
         $field_storage = \Drupal::entityManager()->getStorage('field_storage_config')->create($field_storage_values)->enable();
+      } else { // if everything is there - why not skip? By Mark: I am unsure if this is a good idea.
+        return;
       }
               
       $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : \Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
@@ -580,7 +589,6 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       
       // which group should I handle?
       $my_group = $pbpaths[$groupid];
-      $my_real_group = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($groupid);
       
       // if there is nothing we don't generate anything.
       if(empty($my_group))
@@ -608,6 +616,9 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       
       // if we have a bundleid here, we can stop - if not we have to generate one.
       if(empty($bundleid)) {
+      
+        $my_real_group = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($groupid);
+      
         // the name for the bundle is the id of the group
         $bundle_name = $my_real_group->getName();
 

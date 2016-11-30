@@ -674,9 +674,11 @@ class WisskiPathbuilderForm extends EntityForm {
     
     $this->save($form, $form_state);
     
+#    dpm($paths, "paths");
+    
     if (!empty($paths)) {
       foreach($paths as $key => $path) {
-      
+        
         if($path['enabled'] == 0) 
           continue;
         
@@ -686,10 +688,11 @@ class WisskiPathbuilderForm extends EntityForm {
           continue;
         }
         
-
+#        drupal_set_message($path['id']);
+        
         // generate fields!
         $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
-
+        
         if($pathob->isGroup()) {
           $pathbuilder->generateBundleForGroup($pathob->id());
                     
@@ -699,7 +702,9 @@ class WisskiPathbuilderForm extends EntityForm {
 #        dpm($pathob,'$pathob');
           $pathbuilder->generateFieldForPath($pathob->id(), $pathob->getName());
         }
+        
       }
+      $pathbuilder->save();
     }
     
   }
@@ -783,7 +788,7 @@ class WisskiPathbuilderForm extends EntityForm {
       
     #}
 */
-    dpm(array('old' => $pathbuilder->getPathTree(),'new' => $pathtree, 'form paths' => $paths),'Path trees');
+#    dpm(array('old' => $pathbuilder->getPathTree(),'new' => $pathtree, 'form paths' => $paths),'Path trees');
     // save the tree
     $pathbuilder->setPathTree($pathtree);
 
