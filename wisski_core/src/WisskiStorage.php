@@ -28,6 +28,8 @@ use Drupal\Core\Cache\CacheBackendInterface;
 
 use Drupal\Component\Utility\NestedArray;
 
+use Drupal\image\Entity\ImageStyle;
+
 /**
  * Test Storage that returns a Singleton Entity, so we can see what the FieldItemInterface does
  */
@@ -210,7 +212,7 @@ if (empty($new_field_values)) continue;
                   #  $component = $evd->getComponent($field_name);
                   #  dpm($component['type'],$field_name);
                   #}
-                  
+                  #dpm($value, "value");
                   // $value must be the image uri
                   $file_uri = current($value);
                   
@@ -220,12 +222,15 @@ if (empty($new_field_values)) continue;
                   
                   if (empty($file_uri)) continue;
                   $local_uri = '';
-                  $new_field_values[$id][$field_name][] = array(
+                  // by mark: this seems wrong to me... however I am unsure
+#                  $new_field_values[$id][$field_name][] = array(
+                  $new_field_values[$id][$field_name] = array(
                     'target_id' => $this->getFileId($file_uri,$local_uri),
                     //this is a fallback
                     //@TODO get the alternative text from the stores
                     'alt' => substr($local_uri,strrpos($local_uri,'/') + 1),
                   );
+                  
                 }
                 if (isset($new_field_values[$id][$field_name])) {
                   //try finding the weights and sort the values accordingly
@@ -348,8 +353,8 @@ if (empty($new_field_values)) continue;
   }
 
   public function getFileId($file_uri,&$local_file_uri='') {
-#drupal_set_message('Image uri: '.$file_uri);
-  //dpm($file_uri,__FUNCTION__);
+    #drupal_set_message('Image uri: '.$file_uri);
+    #dpm($file_uri,__FUNCTION__);
     if (empty($file_uri)) return NULL;
     //first try the cache
     $cid = 'wisski_file_uri2id_'.md5($file_uri);
@@ -401,10 +406,12 @@ if (empty($new_field_values)) continue;
               'uid' => \Drupal::currentUser()->id(),
               'status' => FILE_STATUS_PERMANENT,
             ]);
+
             $file->setFileName(drupal_basename($local_file_uri));
             $mime_type = \Drupal::service('file.mime_type.guesser')->guess($local_file_uri);
 
             $file->setMimeType($mime_type);
+
             $file->save();
             $value = $file->id();
           } else {
@@ -413,6 +420,7 @@ if (empty($new_field_values)) continue;
               $data = file_get_contents($file_uri);
               //dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
               $file = file_save_data($data, $local_file_uri);
+
               if ($file) {
                 $value = $file->id();
                 //dpm('replaced '.$file_uri.' with new file '.$value);
@@ -444,9 +452,23 @@ if (empty($new_field_values)) continue;
     if (strpos($file_uri,\Drupal::service('stream_wrapper.public')->baseUrl()) === 0) {
       return $this->getSchemedUriFromPublicUri($file_uri);
     }
+
+    $original_path = file_default_scheme() . '://wisski_original/';
+
+    file_prepare_directory($original_path, FILE_CREATE_DIRECTORY);
+
     // this is evil in case it is not .tif or .jpeg but something with . in the name...
 #    return file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));    
-    return file_default_scheme().'://'.md5($file_uri);    
+    // this is also evil, because many modules can't handle public:// :/
+    // to make it work we added a directory.
+    return file_default_scheme().'://wisski_original/'.md5($file_uri);    
+    // external uri doesn't work either
+    // this is just a documentation of what I've tried...
+#    return \Drupal::service('stream_wrapper.public')->baseUrl() . '/' . md5($file_uri);
+#    return \Drupal::service('file_system')->realpath( file_default_scheme().'://'.md5($file_uri) );
+#    return \Drupal::service('stream_wrapper.public')->getExternalUrl() . '/' . md5($file_uri);
+#    return str_replace('/foko2014/', '', file_url_transform_relative(file_create_url(file_default_scheme().'://'.md5($file_uri))));
+
   }
   
   public function getPublicUrlFromFileId($file_id) {
@@ -454,7 +476,7 @@ if (empty($new_field_values)) continue;
     if ($file_object = File::load($file_id)) {
       return str_replace(
         'public:/',																						//standard file uri is public://.../filename.jpg
-        \Drupal::service('stream_wrapper.public')->baseUrl(),	//we want DRUPALHOME/sites/default/.../filename.jpg
+        \Drupal::service('stream_wrapper.pub')->baseUrl(),	//we want DRUPALHOME/sites/default/.../filename.jpg
         $file_object->getFileUri()
       );
     }
