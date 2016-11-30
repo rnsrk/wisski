@@ -27,25 +27,51 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     }
     return $header;
   }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function getEntityIds() {
+
+    // only get topids
+    $topIds = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
+    
+    $query = $this->getStorage()->getQuery()->sort($this->entityType->getKey('id'));
+
+    if($this->type == self::NAVIGATE || $this->type == self::CREATE) {
+      // add a condition for the topids    
+      $query->condition('id', array_values($topIds), 'IN');
+    }
+    
+    // Only add the pager if a limit is specified.
+    if ($this->limit) {
+      $query->pager($this->limit);
+    }
+
+    return $query->execute();
+  }
 
   /**
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-    //dpm($entity->label(),$entity->id());
-    //dpm($this->type);
-    // in case of navigate and create - exclude all non-top-groups
+    
+    // old: in case of navigate and create - exclude all non-top-groups
+    // we don't need to do this here anymore, because we do this in
+    // the entity query above.
+    /*
     if($this->type == self::NAVIGATE || $this->type == self::CREATE) {
       // get all top groups from pbs
       $parents = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();    
 
       // only show top groups
       if(!in_array($entity->id, $parents)) {
-        //drupal_set_message('Bundle '.$entity->id().' is not shown here since it is not a top bundle');
+        drupal_set_message('Bundle '.$entity->id().' is not shown here since it is not a top bundle');
+        return false;
         return array();
       }
     }
-
+    */
     switch ($this->type) {
       case self::NAVIGATE: return $this->buildNavigateRow($entity);
       case self::CREATE: return $this->buildCreateRow($entity);
