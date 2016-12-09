@@ -14,6 +14,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Url;
 
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity as Pathbuilder;
+
 /**
  * Class WisskiPathbuilderForm
  * 
@@ -231,7 +233,7 @@ class WisskiPathbuilderForm extends EntityForm {
         $form['pathbuilder_table'][$path->id()]['displaywidget'] = $pathform['displaywidget'];
         $form['pathbuilder_table'][$path->id()]['formatterwidget'] = $pathform['formatterwidget'];
 #      drupal_set_message(serialize($form['pathbuilder_table'][$path->id()]));
-#        dpm($form['pathbuilder_table'][$path->id()],'Path '.$path->id());
+        #dpm($form['pathbuilder_table'][$path->id()],'Path '.$path->id());
       }
     }
     
@@ -472,6 +474,7 @@ class WisskiPathbuilderForm extends EntityForm {
         'disamb' => html_entity_decode((string)$path->disamb),
         'description' => html_entity_decode((string)$path->description),
         'type' => (((int)$path->is_group) === 1) ? 'Group' : 'Path', 
+#        'field' => Pathbuilder::GENERATE_NEW_FIELD,
       );
       
       $path_in_wisski = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::create($pathdata);
@@ -485,6 +488,7 @@ class WisskiPathbuilderForm extends EntityForm {
       
       $pbpaths[$path_in_wisski->id()]['enabled'] = html_entity_decode((string)$path->enabled);
       $pbpaths[$path_in_wisski->id()]['weight'] = html_entity_decode((string)$path->weight);
+      $pbpaths[$path_in_wisski->id()]['field'] = html_entity_decode((string)Pathbuilder::GENERATE_NEW_FIELD);
       
       $pb->setPbPaths($pbpaths);
       
@@ -627,7 +631,11 @@ class WisskiPathbuilderForm extends EntityForm {
       '#type' => 'hidden',
       '#value' => $parent,
     );
-    
+
+    // all this information is not absolutely necessary for the pb - so we skip it here.
+    // if we don't do this max_input_vars and max_input_nesting overflows
+
+    /*    
     $pathform['bundle'] = array(
 #      '#type' => 'value',
       '#type' => 'hidden',
@@ -658,7 +666,7 @@ class WisskiPathbuilderForm extends EntityForm {
       '#type' => 'hidden',
       '#value' => $formatterwidget,
     );
-    
+    */    
     return $pathform;
   }
   
@@ -737,57 +745,22 @@ class WisskiPathbuilderForm extends EntityForm {
           $pathtree[$path['id']] = array('id' => $path['id'], 'children' => array());
           $map[$path['id']] = &$pathtree[$path['id']];
         }
-              
-        $pbpaths[$path['id']] = \Drupal\wisski_core\WisskiHelper::array_merge_nonempty($pbpaths[$path['id']],$path); #array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array(), 'bundle' => $path['bundle'], 'field' => $path['field']);
         
-        // generate fields!
-        $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
+        // mark: I don't know what dorian wanted to do here. If somebody can explain to me
+        // it might be useful - as long as nobody can, revert.      
+        #$pbpaths[$path['id']] = \Drupal\wisski_core\WisskiHelper::array_merge_nonempty($pbpaths[$path['id']],$path); #array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array(), 'bundle' => $path['bundle'], 'field' => $path['field']);
         
-        // check if enabled - if not, we don't create fields
-        
-        if(empty($path['enabled']))
-          continue;
-
-  /*
-        if($pathob->isGroup()) {
-          $pathbuilder->generateBundleForGroup($pathob->id());
-                    
-          if(!in_array($pathob->id(), array_keys($pathbuilder->getMainGroups())))
-            $pathbuilder->generateFieldForSubGroup($pathob->id(), $pathob->getName());  
-        } else
-          $pathbuilder->generateFieldForPath($pathob->id(), $pathob->getName());
-  */
-
+        // this works, but for performance reason we try to have nothing in the pathbuilder
+        // overview what not absolutely has to be there.
+        #$pbpaths[$path['id']] = $path;
+        $pbpaths[$path['id']] = array_merge($pbpaths[$path['id']], $path);
       }
     }
+
     
     // save the path
     $pathbuilder->setPbPaths($pbpaths);
     
-    // for now it is equal which create mode is called.
-#    if($form_state->getValue('create_mode') == "0") {
-/*    $pbpaths = $pathbuilder->getPbPaths();
-
-  
-    $allgroupsandpaths = $pathbuilder->getAllGroupsAndPaths();
-
-    foreach($allgroupsandpaths as $path) {
-    
-      // check if enabled - if not, we don't create fields
-      if(empty($pbpaths[$path->id()]['enabled']))
-        continue;
-
-      if($path->isGroup()) {
-        $pathbuilder->generateBundleForGroup($path->id());
-                  
-        if(!in_array($path->id(), array_keys($pathbuilder->getMainGroups())))
-          $pathbuilder->generateFieldForSubGroup($path->id(), $path->getName());  
-      } else
-        $pathbuilder->generateFieldForPath($path->id(), $path->getName());
-    }
-      
-    #}
-*/
 #    dpm(array('old' => $pathbuilder->getPathTree(),'new' => $pathtree, 'form paths' => $paths),'Path trees');
     // save the tree
     $pathbuilder->setPathTree($pathtree);
