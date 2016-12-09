@@ -290,10 +290,23 @@ class WisskiPathbuilderForm extends EntityForm {
     
     $form['import']['import'] = array(
       '#type' => 'textfield',
-      '#title' => 'Pathbuilder Definition Import',
+      '#title' => $this->t('Pathbuilder Definition Import'),
       '#description' => $this->t('Path to a pathbuilder definition file.'),
 #      '#default_value' => $pathbuilder->getCreateMode(),
 #      '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
+    );
+    
+    $field_options = array(
+      Pathbuilder::CONNECT_NO_FIELD => $this->t('Do not create fields and bundles'),
+      Pathbuilder::GENERATE_NEW_FIELD => $this->t('Create new fields and bundles'),
+    );
+    
+    $form['import']['import_mode'] = array(
+      '#type' => 'select',
+      '#title' => $this->t('Set default mode to'),
+      '#description' => $this->t('What should the fields and groups mode be set to?'),
+      '#options' => $field_options,
+      '#default_value' => Pathbuilder::GENERATE_NEW_FIELD,
     );
     
     $form['import']['importbutton'] = array(
@@ -430,6 +443,8 @@ class WisskiPathbuilderForm extends EntityForm {
     
     $importfile = $form_state->getValue('import');
 
+    $importmode = $form_state->getValue('import_mode');
+
     $xmldoc = new \Symfony\Component\DependencyInjection\SimpleXMLElement($importfile, 0, TRUE);
     
     $pb = $this->entity;
@@ -488,7 +503,7 @@ class WisskiPathbuilderForm extends EntityForm {
       
       $pbpaths[$path_in_wisski->id()]['enabled'] = html_entity_decode((string)$path->enabled);
       $pbpaths[$path_in_wisski->id()]['weight'] = html_entity_decode((string)$path->weight);
-      $pbpaths[$path_in_wisski->id()]['field'] = html_entity_decode((string)Pathbuilder::GENERATE_NEW_FIELD);
+      $pbpaths[$path_in_wisski->id()]['field'] = html_entity_decode((string)$importmode);
       
       $pb->setPbPaths($pbpaths);
       
