@@ -263,8 +263,14 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         return;
       }
       
+      //don't go on if the user whishes not to
+      if ($bundle === self::CONNECT_NO_FIELD) return;
       
-      $fieldid = $this->generateIdForField($pathid);
+      //create a new field if the user whishes to
+      if ($bundle === self::GENERATE_NEW_FIELD || empty($bundle)) $fieldid = $this->generateIdForField($pathid);      
+
+      // this is old
+      //$fieldid = $this->generateIdForField($pathid);
       
       $type = $this->getCreateMode(); //'field_collection'
       
@@ -596,8 +602,14 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         
       $bundleid = NULL;
       
+      //don't go on if the user whishes not to
+      if ($my_group['bundle'] === self::CONNECT_NO_FIELD) return;
+      
+#      //create a new field if the user whishes to
+#      if ($my_group['bundle'] === self::GENERATE_NEW_FIELD || empty($bundle)) $fieldid = $this->generateIdForField($pathid);
+      
       // if there is a bundle it still might be not there due to table clashes etc.
-      if (!empty($my_group['bundle'])) {
+      if (!empty($my_group['bundle']) && $my_group['bundle'] !== self::GENERATE_NEW_FIELD) {
 
         // try to load it
         $bundleid = $my_group['bundle'];

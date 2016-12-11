@@ -48,7 +48,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-
+  
     //dpm($this->pathbuilder,'before edit');  
     $form = parent::form($form, $form_state);
 
@@ -81,17 +81,27 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     $pbpath = $this->pathbuilder->getPbPath($this->path);
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($this->path);
     //dpm($pbpath,'Path');
+#    return $form;
     if($path->getType() != "Path") {
       $bundle_options = array();
       foreach (WisskiHelper::getTopBundleIds(TRUE) as $bundle_id => $bundle_info) {
         $bundle_options[$bundle_id] = $bundle_info['label'].' ('.$bundle_info['path_id'].' in '.$bundle_info['pathbuilder'].')';
       }
+#      return $form;
+      $bundle_options += array(
+        Pathbuilder::CONNECT_NO_FIELD => $this->t('Do not connect a bundle'),
+        Pathbuilder::GENERATE_NEW_FIELD => $this->t('Create a new bundle for this group'),
+      );
+      
+#      dpm($pbpath); return;
       $default_value = empty($pbpath['bundle']) ? '' : $pbpath['bundle'];
       //dpm($bundle_options,'Bundle Options');
       $form['choose_bundle'] = array(
         '#type' => 'fieldset',
         '#title' => $this->t('Bundle'),
       );
+#      dpm($default_value);
+#      return $form;
       $form['choose_bundle']['select_bundle'] = array(
         '#type' => 'select',
         '#description' => $this->t('Choose from the list of existing bundles'),
@@ -104,7 +114,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
           'callback' => array($this,'bundleCallback'),
         ),
       );
-      
+#      return $form;
       $value = $default_value;
       $trigger = $form_state->getTriggeringElement();
       if ($trigger['#name'] == 'select_bundle') {
@@ -128,7 +138,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
       if ($bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)) {
         $bundle_label = $bundle->label();
       } else {
-        drupal_set_message($this->t('There is no group/bundle specified for this path'),'error');
+        drupal_set_message($this->t('There is no group/bundle specified for this path'),'warning');
         $bundle_label = '';
       }
       //@TODO fill the field options array with existing fields in the given bundle
@@ -143,7 +153,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         Pathbuilder::CONNECT_NO_FIELD => $this->t('Do not connect a field'),
         Pathbuilder::GENERATE_NEW_FIELD => $this->t('Create a new field for this path'),
       );
-      $default_value = empty($pbpath['field']) ? '' : $pbpath['field'];
+      $default_value = empty($pbpath['field']) ? Pathbuilder::GENERATE_NEW_FIELD : $pbpath['field'];
       $form['field_form'] = array(
         '#type' => 'container',
         '#title' => $this->t('Field'),
@@ -372,7 +382,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 
     // load the path
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
-    dpm(array($path,$form_state->getValues()),'before edit');
+    #dpm(array($path,$form_state->getValues()),'before edit');
     // get the pbpaths
     $pbpaths = $this->pathbuilder->getPbPaths();
     // set the path and the bundle - beware: one is empty!
@@ -380,13 +390,14 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     $pbpaths[$pathid]['displaywidget'] = $form_state->getValue('displaywidget');
     $pbpaths[$pathid]['formatterwidget'] = $form_state->getValue('formatterwidget');
     $pbpaths[$pathid]['field'] = $form_state->getValue('field');
+    $pbpaths[$pathid]['bundle'] = $form_state->getValue('bundle');
     $pbpaths[$pathid]['cardinality'] = $form_state->getValue('cardinality');
 
     
     // save it
     $this->pathbuilder->setPbPaths($pbpaths);
     $this->pathbuilder->save();
-    dpm($this->pathbuilder,'after edit');
+    #dpm($this->pathbuilder,'after edit');
 #    drupal_set_message(serialize($pbpaths[$pathid]));
     
 #    drupal_set_message(serialize($this->pathbuilder->getPbPaths()));

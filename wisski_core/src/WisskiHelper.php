@@ -2,6 +2,8 @@
 
 namespace Drupal\wisski_core;
 
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity as Pathbuilder;
+
 /**
  * a class that holds static convenient methods to be used by the Wisski modules
  */
@@ -91,7 +93,7 @@ class WisskiHelper {
       $pbarr = $pb->getPbPaths();
       
       foreach($pathtree as $key => $value) {
-        if(!empty($pbarr[$key]['bundle'])) {
+        if(!empty($pbarr[$key]['bundle']) && $pbarr[$key]['bundle'] != Pathbuilder::CONNECT_NO_FIELD && $pbarr[$key]['bundle'] != Pathbuilder::GENERATE_NEW_FIELD) {
           $bundle_id = $pbarr[$key]['bundle'];
           if ($get_full_info) {
             $parents[$bundle_id] = array(
