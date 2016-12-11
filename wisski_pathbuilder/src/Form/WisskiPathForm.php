@@ -50,7 +50,7 @@ class WisskiPathForm extends EntityForm {
     // load the pb entity this path currently is attached to 
     // we found this out by the url we're coming from!
     $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($wisski_pathbuilder);
-dpm($pb,'before edit');
+#dpm($pb,'before edit');
     // load the adapter of the pb
     $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
     
@@ -64,7 +64,7 @@ dpm($pb,'before edit');
   }
 
   public function form(array $form, FormStateInterface $form_state) {
-  
+#    return array();
     $path = $this->entity;
         
     // the name for this path
@@ -143,9 +143,11 @@ dpm($pb,'before edit');
       //the reasoning mode for step alternatives
       $form['mode_selection']['fast_mode'] = array(
         '#type' => 'radios',
-        '#options' => array(TRUE => $fast_label,FALSE => $complete_label),
-        '#default_value' => FALSE,
+        '#options' => array(1 => $fast_label, 0 => $complete_label),
+        '#default_value' => 0,
       );
+      
+#      dpm($form['mode_selection']['fast_mode']);
       $form['mode_selection']['fast_description'] = array(
         '#type' => 'item',
         '#markup' => $fast_text,
@@ -163,7 +165,7 @@ dpm($pb,'before edit');
     $consistent_change = FALSE;
     
     //dpm($this->path_array,'Before');
-    
+        
     //now let's see if someone triggered a change on those
     if ($trigger = $form_state->getTriggeringElement()) {
     
@@ -198,7 +200,7 @@ dpm($pb,'before edit');
       }
       
     }
-    
+#    return $form;
     $last_row = count($this->path_array) - 1;
     //dpm($this->path_array,'After');
     
@@ -212,7 +214,8 @@ dpm($pb,'before edit');
       '#type' => 'table',
       '#header' => array('step' => $this->t('Step'),'ops' => $this->t('Edit')),
     );
-    
+#    dpm($this->path_array);
+#    return $form;
     for ($current_row = 0;$current_row <= count($this->path_array);$current_row++) {
       
       if (isset($this->path_array[$current_row]) && $this->path_array[$current_row] != 'empty') {
@@ -222,13 +225,22 @@ dpm($pb,'before edit');
         $path_element = 'empty';
         $element_options = array();
       }
+      
       $is_current = $current_row === $selected_row;
       if ($is_current) {
         $history = array_slice($this->path_array,0,$current_row);
         $future = $consistent_change ? array_slice($this->path_array,$current_row+1) : array();
         $element_options = $this->engine->getPathAlternatives($history,$future,$fast_mode); 
-        //dpm($element_options,'options');
+        #dpm($element_options,'options');
+        #dpm($future, "fm");
       }
+
+      // if the engine has no ontology, it currently returns false which is evil as options      
+      if($element_options === FALSE) {
+        drupal_set_message($this->t("No path options for this path could be evaluated. Probably the ontology is missing in your store!"), "error");
+        $element_options = array();
+      }
+      
       $form_path_elem['select_box'] = array(
         '#type' => 'select',
         '#name' => 'select_box_'.$current_row,
@@ -260,6 +272,7 @@ dpm($pb,'before edit');
         }
         else $operations['remove'] = $this->t('Remove');
       }
+      
       $form_path_elem['operations'] = array(
         '#type' => 'select',
         '#options' => $operations,
@@ -276,9 +289,11 @@ dpm($pb,'before edit');
           'data-wisski-trigger-type' => 'operations',
         ),
       );
+
       $form['path_content']['path_array'][$current_row] = $form_path_elem;
+
     }
-    //dpm($path);
+
     if ($this->engine->providesDatatypeProperty() && !empty($this->path_array[$last_row]) && $this->path_array[$last_row] !== 'empty') {
       $options = $this->engine->getPrimitiveMapping($this->path_array[$last_row]);
       if (!empty($options)) {
