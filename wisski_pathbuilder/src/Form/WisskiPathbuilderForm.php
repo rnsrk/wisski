@@ -230,9 +230,12 @@ class WisskiPathbuilderForm extends EntityForm {
           $form['pathbuilder_table'][$path->id()]['bundle'] = $pathform['bundle'];
         if(!empty($pathform['field']))
           $form['pathbuilder_table'][$path->id()]['field'] = $pathform['field'];
-        $form['pathbuilder_table'][$path->id()]['fieldtype'] = $pathform['fieldtype'];
-        $form['pathbuilder_table'][$path->id()]['displaywidget'] = $pathform['displaywidget'];
-        $form['pathbuilder_table'][$path->id()]['formatterwidget'] = $pathform['formatterwidget'];
+        if(!empty($pathform['fieldtype']))
+          $form['pathbuilder_table'][$path->id()]['fieldtype'] = $pathform['fieldtype'];
+        if(!empty($pathform['displaywidget']))
+          $form['pathbuilder_table'][$path->id()]['displaywidget'] = $pathform['displaywidget'];
+        if(!empty($pathform['formatterwidget']))
+          $form['pathbuilder_table'][$path->id()]['formatterwidget'] = $pathform['formatterwidget'];
 #      drupal_set_message(serialize($form['pathbuilder_table'][$path->id()]));
         #dpm($form['pathbuilder_table'][$path->id()],'Path '.$path->id());
       }
