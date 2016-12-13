@@ -226,9 +226,10 @@ class WisskiPathbuilderForm extends EntityForm {
 
         $form['pathbuilder_table'][$path->id()]['id'] = $pathform['id'];
         $form['pathbuilder_table'][$path->id()]['parent'] = $pathform['parent'];
-      
-        $form['pathbuilder_table'][$path->id()]['bundle'] = $pathform['bundle'];
-        $form['pathbuilder_table'][$path->id()]['field'] = $pathform['field'];
+        if(!empty($pathform['bundle']))
+          $form['pathbuilder_table'][$path->id()]['bundle'] = $pathform['bundle'];
+        if(!empty($pathform['field']))
+          $form['pathbuilder_table'][$path->id()]['field'] = $pathform['field'];
         $form['pathbuilder_table'][$path->id()]['fieldtype'] = $pathform['fieldtype'];
         $form['pathbuilder_table'][$path->id()]['displaywidget'] = $pathform['displaywidget'];
         $form['pathbuilder_table'][$path->id()]['formatterwidget'] = $pathform['formatterwidget'];
