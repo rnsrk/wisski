@@ -872,7 +872,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       $paths = array();
       
       foreach($allpaths as $path) {
-        if($path['parent'] == $groupid) 
+        if($path['parent'] === $groupid) 
           $paths[] = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
       }
       
