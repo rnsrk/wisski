@@ -623,12 +623,14 @@ class WisskiPathbuilderForm extends EntityForm {
     $field_type_label = $fieldtype ? \Drupal::service('plugin.manager.field.field_type')->getDefinition($fieldtype)['label'] : '';
     $pathform['field_type_informative'] = array(
       '#type' => 'item',
+      '#value' => $fieldtype,
       '#markup' => $field_type_label,
     );
 
     $pathform['cardinality'] = array(
       '#type' => 'item',
       '#markup' => \Drupal\wisski_pathbuilder\Form\WisskiPathbuilderConfigureFieldForm::cardinalityOptions()[$cardinality],
+      '#value' => $cardinality,
       '#title' => $this->t('Field Cardinality'),
       '#title_display' => 'attribute',
     );
@@ -724,10 +726,21 @@ class WisskiPathbuilderForm extends EntityForm {
         $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
         
         if($pathob->isGroup()) {
+          // save the original bundle id because
+          // if it is overwritten in create process
+          // we won't have it anymore.
+          $pbpaths = $pathbuilder->getPbPaths();
+                
+          // which group should I handle?
+          $my_group = $pbpaths[$pathob->id()];
+          
+          // original bundle
+          $ori_bundle = $my_group['bundle'];
+          
           $pathbuilder->generateBundleForGroup($pathob->id());
                     
           if(!in_array($pathob->id(), array_keys($pathbuilder->getMainGroups())))
-            $pathbuilder->generateFieldForSubGroup($pathob->id(), $pathob->getName());  
+            $pathbuilder->generateFieldForSubGroup($pathob->id(), $pathob->getName(), $ori_bundle);  
         } else {
 #        dpm($pathob,'$pathob');
           $pathbuilder->generateFieldForPath($pathob->id(), $pathob->getName());
@@ -775,6 +788,9 @@ class WisskiPathbuilderForm extends EntityForm {
         // this works, but for performance reason we try to have nothing in the pathbuilder
         // overview what not absolutely has to be there.
         #$pbpaths[$path['id']] = $path;
+#        dpm($pbpaths[$path['id']], 'old');
+#        dpm($path, 'new');
+#        dpm(array_merge($pbpaths[$path['id']], $path), 'merged');
         $pbpaths[$path['id']] = array_merge($pbpaths[$path['id']], $path);
       }
     }

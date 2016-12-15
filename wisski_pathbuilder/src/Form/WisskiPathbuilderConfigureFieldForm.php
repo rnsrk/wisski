@@ -138,7 +138,8 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
       if ($bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)) {
         $bundle_label = $bundle->label();
       } else {
-        drupal_set_message($this->t('There is no group/bundle specified for this path'),'warning');
+        if($bundle_id !== Pathbuilder::CONNECT_NO_FIELD && $bundle_id !== Pathbuilder::GENERATE_NEW_FIELD) 
+          drupal_set_message($this->t('There is no group/bundle specified for this path'),'warning');
         $bundle_label = '';
       }
       //@TODO fill the field options array with existing fields in the given bundle
@@ -153,7 +154,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         Pathbuilder::CONNECT_NO_FIELD => $this->t('Do not connect a field'),
         Pathbuilder::GENERATE_NEW_FIELD => $this->t('Create a new field for this path'),
       );
-      $default_value = empty($pbpath['field']) ? Pathbuilder::GENERATE_NEW_FIELD : $pbpath['field'];
+      $default_value = empty($pbpath['field']) ? '' : $pbpath['field'];
       $form['field_form'] = array(
         '#type' => 'container',
         '#title' => $this->t('Field'),

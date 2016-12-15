@@ -412,9 +412,11 @@ class WisskiPathForm extends EntityForm {
       
     // save the pb
     $status = $pb->save();
-    dpm($pb,'after edit');
+#    dpm($pb,'after edit');
 
-    $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder' => $pbid));
+#    $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder' => $pbid));
+
+    $form_state->setRedirect('entity.wisski_pathbuilder.configure_field_form',array('wisski_pathbuilder' => $pbid, 'wisski_path' => $path->id()));
   }
  
 

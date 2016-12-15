@@ -236,8 +236,8 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      * sub group if it was not already there. 
      *
      */
-    public function generateFieldForSubGroup($pathid, $field_name) {
-#      drupal_set_message("I am generating Fields for path " . $pathid . " and got " . $field_name . ". ");
+    public function generateFieldForSubGroup($pathid, $field_name, $orig_bundle) {
+      #drupal_set_message("I am generating Fields for path " . $pathid . " and got " . $field_name . ". ");
 
       // get the bundle for this pathid
       $bundle = $this->getBundle($pathid); #$form_state->getValue('bundle');
@@ -262,12 +262,12 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
 #        $this->save();
         return;
       }
-      
+                  
       //don't go on if the user whishes not to
-      if ($bundle === self::CONNECT_NO_FIELD) return;
+      if ($orig_bundle === self::CONNECT_NO_FIELD) return;
       
       //create a new field if the user whishes to
-      if ($bundle === self::GENERATE_NEW_FIELD || empty($bundle)) $fieldid = $this->generateIdForField($pathid);      
+      if ($orig_bundle === self::GENERATE_NEW_FIELD || empty($bundle)) $fieldid = $this->generateIdForField($pathid);      
 
       // this is old
       //$fieldid = $this->generateIdForField($pathid);
@@ -368,7 +368,6 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      *
      */
     public function generateFieldForPath($pathid, $field_name) {
-
       // get the bundle for this pathid
       $bundle = $this->getBundle($pathid); #$form_state->getValue('bundle');
 
@@ -445,6 +444,9 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         'translatable' => FALSE,
         'disabled' => FALSE,
       ];
+      
+#      dpm($field_storage_values, 'fsv');
+#      dpm($field_values, 'fv');
     
 
       // set the path and the bundle - beware: one is empty!
@@ -481,21 +483,21 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
           $create_fs = TRUE;
         }
       } else $create_fs = TRUE;
-      
             
       if ($create_fs) {
         drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
+        dpm($field_storage_values, 'fsv boc');
         $field_storage = \Drupal::entityManager()->getStorage('field_storage_config')->create($field_storage_values)->enable();
       } else { // if everything is there - why not skip? By Mark: I am unsure if this is a good idea.
-        return;
+      //   return;
       }
-              
+                    
       $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : \Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
       //dpm($field_storage->id(),'ID before');
       $field_storage->setCardinality($card);
       $field_storage->save();
       //dpm($field_storage->id(), 'ID after');
-
+      
       $create_fo = FALSE;
       $field_objects = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(
         array(
@@ -504,6 +506,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
           'entity_type' => $mode,
         )
       );
+
       if (!empty($field_objects)) {
         foreach ($field_objects as $field_object) {
           //dpm($field_object,'field');
@@ -573,9 +576,8 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual' . '.'.$bundle.'.default');
       if (is_null($form_display)) $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
       // setComponent enables them
-      $form_display->setComponent($fieldid, $view_options)->save();
+      $form_display->setComponent($fieldid, $view_options)->save();      
 
-      
     }
     
     /**
