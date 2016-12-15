@@ -486,7 +486,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
             
       if ($create_fs) {
         drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
-        dpm($field_storage_values, 'fsv boc');
+#        dpm($field_storage_values, 'fsv boc');
         $field_storage = \Drupal::entityManager()->getStorage('field_storage_config')->create($field_storage_values)->enable();
       } else { // if everything is there - why not skip? By Mark: I am unsure if this is a good idea.
       //   return;
