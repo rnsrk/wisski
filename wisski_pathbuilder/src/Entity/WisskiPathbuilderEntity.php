@@ -267,7 +267,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       if ($orig_bundle === self::CONNECT_NO_FIELD) return;
       
       //create a new field if the user whishes to
-      if ($orig_bundle === self::GENERATE_NEW_FIELD || empty($bundle)) $fieldid = $this->generateIdForField($pathid);
+      if ($orig_bundle === self::GENERATE_NEW_FIELD || empty($bundle) || empty($orig_bundle)) $fieldid = $this->generateIdForField($pathid);
       else $fieldid = $orig_bundle;
 
 
