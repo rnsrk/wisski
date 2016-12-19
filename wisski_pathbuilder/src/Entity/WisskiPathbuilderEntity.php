@@ -170,6 +170,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
         return $data;
       }
       else {
+#        dpm("nothing in cache!");
         return NULL;
 #        $data = my_module_complicated_calculation();
 #        \Drupal::cache()->set($cid, $data);
@@ -180,7 +181,7 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
      * Set the Bundle id for a given entity
      */
     public function setBundleIdForEntityId($eid, $bundleid) {
-
+#      dpm(serialize($eid), "eid");
       $cid = $this->generateCid($eid);
       \Drupal::cache()->set($cid, $bundleid);
       return TRUE;

@@ -841,8 +841,8 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
       $uriname = $this->getDrupalId($uri);
       
       // store the bundleid to the bundle-cache as it might be important
-      // for subsequent queries.
-//      $pathbuilder->setBundleIdForEntityId($uriname, $bundleid);
+      // for subsequent queries.      
+      $pathbuilder->setBundleIdForEntityId($uriname, $bundleid);
 
       $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
     }

@@ -80,15 +80,20 @@ class WisskiLinkblock extends BlockBase {
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
     
     $dataout = array();
-    
+#return $out;
     foreach($pbs as $datapb) {
+    
+      // skip the own one...
+      if($pb == $datapb)
+        continue;
+    
       $bundleid = $datapb->getBundleIdForEntityId($individualid);
-        
+       # dpm($datapb);
       $groups = $datapb->getGroupsForBundle($bundleid);
     
       foreach($groups as $group) {
         $linkgroup = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($group->id());
-        
+
         if(!empty($linkgroup)) {
 
           $allpbpaths = $pb->getPbPaths();
@@ -98,12 +103,16 @@ class WisskiLinkblock extends BlockBase {
                     
           foreach($pbtree[$linkgroup->id()]['children'] as $child) {
             $childid = $child['id'];
+
+            // better catch these.            
+            if(empty($childid))
+              continue;
             
             $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($childid);
             
 #            $adapters = \Drupal\wisski_salz\Entity\WisskiSalzAdapter
             $adapters = entity_load_multiple('wisski_salz_adapter');            
-
+            
             foreach($adapters as $adapter) {
               $engine = $adapter->getEngine();
 
@@ -125,8 +134,7 @@ class WisskiLinkblock extends BlockBase {
         #dpm($linkgroup);
       }
     }
-    
-    
+
     // cache for 2 seconds so subsequent queries seem to be fast
     $out[]['#cache']['max-age'] = 2;
     // this does not work
@@ -142,20 +150,25 @@ class WisskiLinkblock extends BlockBase {
       $out[] = [ '#markup' => '<h3>' . $path->getName() . '</h3>'];
       
       foreach($dataarray['data'] as $data) {
-        
-#        dpm($data);
       
         $url = $data['wisskiDisamb'];
-#        dpm($url);
-        $entity_id = AdapterHelper::getDrupalIdForUri($url);
+        if(!empty($url)) {
+
+          $entity_id = AdapterHelper::getDrupalIdForUri($url);
       
-        $url = 'wisski/navigate/' . $entity_id . '/view';
+          $url = 'wisski/navigate/' . $entity_id . '/view';
       
-        $out[] = array(
-          '#type' => 'link',
-          '#title' => $data['target_id'],
-          '#url' => Url::fromUri('internal:/' . $url),
-        );
+          $out[] = array(
+            '#type' => 'link',
+            '#title' => $data['target_id'],
+            '#url' => Url::fromUri('internal:/' . $url),
+          );
+        } else {
+          $out[] = array(
+            '#type' => 'item',
+            '#markup' =>  $data['target_id'],
+          );
+        }
         
       }  
     }

@@ -32,7 +32,7 @@ class AdapterHelper {
    * @return TRUE on success, FALSE otherwise
    */
   public static function setSameUris($uris,$entity_id=NULL) {
-  
+
     if (empty($uris)) return TRUE;
     //dpm($uris,__FUNCTION__.' '.$entity_id);
     $drupal_aid = self::getDrupalAdapterNameAlias();
@@ -155,7 +155,12 @@ class AdapterHelper {
   }
   
   public static function getDrupalIdForUri($uri,$create_on_fail=TRUE,$input_adapter_id=NULL) {
-    
+    // this should not happen! 
+    if(is_null($uri)) {
+      drupal_set_message("URI may not be empty in getDrupalIdForUri.", "error");
+#      ddebug_backtrace();
+      return;
+    }
     $id = self::doGetDrupalIdForUri($uri,$create_on_fail,$input_adapter_id);
     //dpm(array_combine(array('$uri','$create_on_fail','$input_adapter_id'),func_get_args())+array('result'=>$id),__FUNCTION__);
     return $id;
@@ -170,9 +175,9 @@ class AdapterHelper {
    * @return the entity's Drupal ID
    */
   public static function doGetDrupalIdForUri($uri,$create_on_fail=TRUE,$input_adapter_id=NULL) {
-  
-    //drupal_set_message($uri);
-    //dpm(func_get_args(),__FUNCTION__);
+   
+    #drupal_set_message($uri);
+#    dpm(func_get_args(),__FUNCTION__);
     $query = db_select('wisski_salz_id2uri','m')
       ->fields('m')
       ->condition('uri',$uri);
