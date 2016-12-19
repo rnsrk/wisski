@@ -84,16 +84,23 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 #    return $form;
     if($path->getType() != "Path") {
       $bundle_options = array();
-      foreach (WisskiHelper::getTopBundleIds(TRUE) as $bundle_id => $bundle_info) {
-        $bundle_options[$bundle_id] = $bundle_info['label'].' ('.$bundle_info['path_id'].' in '.$bundle_info['pathbuilder'].')';
+
+      // this was a buggy approach
+#      foreach (WisskiHelper::getAllBundleIds(TRUE) as $bundle_id => $bundle_info) {
+#        $bundle_options[$bundle_id] = $bundle_info['label'].' ('.$bundle_info['path_id'].' in '.$bundle_info['pathbuilder'].')';
+#      }
+
+      $all_bundles = \Drupal\wisski_core\Entity\WisskiBundle::loadMultiple();
+      foreach($all_bundles as $bundle_id => $bundle_info) {
+        $bundle_options[$bundle_id] = $bundle_info->label;
       }
-#      return $form;
+      
       $bundle_options += array(
         Pathbuilder::CONNECT_NO_FIELD => $this->t('Do not connect a bundle'),
         Pathbuilder::GENERATE_NEW_FIELD => $this->t('Create a new bundle for this group'),
       );
       
-#      dpm($pbpath); return;
+#      dpm($pbpath);
       $default_value = empty($pbpath['bundle']) ? '' : $pbpath['bundle'];
       //dpm($bundle_options,'Bundle Options');
       $form['choose_bundle'] = array(

@@ -1705,6 +1705,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
    *              The variable ?out will be prefixed with the key "out".
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array()) {
+    dpm(func_get_args(), "generateTriplesForPath");
     // the query construction parameter
     $query = "";
 
