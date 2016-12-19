@@ -100,7 +100,7 @@ class WisskiLinkblock extends BlockBase {
           $pbtree = $pb->getPathTree();
           
           // if there is nothing, then don't show up!
-          if(empty($allpbpaths) || !isset($allpbpaths[$linkgroup->id()]));
+          if(empty($allpbpaths) || !isset($allpbpaths[$linkgroup->id()]))
             return NULL;
           
           $pbarray = $allpbpaths[$linkgroup->id()];
