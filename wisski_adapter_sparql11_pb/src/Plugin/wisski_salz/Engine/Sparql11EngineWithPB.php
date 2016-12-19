@@ -1954,7 +1954,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
   }
   
   public function addNewFieldValue($entity_id, $fieldid, $value, $pb) {
-    drupal_set_message("I get: " . $entity_id.  " with fid " . $fieldid . " and value " . $value . ' for pb ' . $pb->id());
+#    drupal_set_message("I get: " . $entity_id.  " with fid " . $fieldid . " and value " . $value . ' for pb ' . $pb->id());
 #    drupal_set_message(serialize($this->getUri("smthg")));
     $datagraphuri = $this->getDefaultDataGraphUri();
 
@@ -2187,8 +2187,8 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         }
       }
       
-dpm($field_items, 'asas');
-dpm($remain_values, 'asa');
+#dpm($field_items, 'asas');
+#dpm($remain_values, 'asa');
       
       // now we write all the new values
       foreach ($field_items as $new_item) {
@@ -2280,6 +2280,7 @@ dpm($remain_values, 'asa');
   // -------------------------------- Ontologie thingies ----------------------
 
   public function addOntologies($iri = NULL) { 
+ #   dpm($iri, "1");
     if (empty($iri)) {
       //load all ontologies
       $query = "SELECT ?ont WHERE {?ont a owl:Ontology}";
@@ -2299,7 +2300,7 @@ dpm($remain_values, 'asa');
 
     // check if the Ontology is already there
     $result = $this->directQuery("ASK {<$iri> a owl:Ontology}");
-    
+#    dpm($result, "res");
    /* if (!$ok) { // we've got something weired.
       drupal_set_message("Store is not requestable.", 'error');
       return;
@@ -2315,6 +2316,7 @@ dpm($remain_values, 'asa');
 
     // if we get here we may load the ontology
     $query = "LOAD <$iri> INTO GRAPH <$iri>";
+#    dpm($query, "query");
     $result = $this->directUpdate($query);
 
     // everything worked?  
