@@ -181,8 +181,15 @@ class WisskiLinkblock extends BlockBase {
   }
 
   public function getCacheTags() {
+  
+    $node = \Drupal::routeMatch()->getParameter('wisski_individual');
+        
+    // if the node is an object, reduce it to its id
+    if(!is_int($node))
+      $node = $node->id();
+    
     //With this when your node change your block will rebuild
-    if ($node = \Drupal::routeMatch()->getParameter('wisski_individual')) {
+    if ($node) {
       //if there is node add its cachetag
       return Cache::mergeTags(parent::getCacheTags(), array('wisski_individual:' . $node));
     } else {
