@@ -1243,9 +1243,9 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 #    drupal_set_message("2");
 #   
 #    drupal_set_message("muha: " . serialize($field_id));
-    $main_property = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);#->getItemDefinition()->mainPropertyName();
-    if(!empty($main_property))
-      $main_property = $main_property->getMainPropertyName();
+    $field_storage_config = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);#->getItemDefinition()->mainPropertyName();
+    if(!empty($field_storage_config))
+      $main_property = $field_storage_config->getMainPropertyName();
 #     drupal_set_message("mp: " . serialize($main_property) . "for field " . serialize($field_id));
 #    if (in_array($main_property,$property_ids)) {
 #      return $this->loadFieldValues($entity_ids,array($field_id),$language);
@@ -1412,12 +1412,25 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
               continue;
             }
 #              drupal_set_message("pa: " . serialize($path->getPathArray()) . " cpa: " . serialize($clearPathArray) . " cga: " . serialize($this->getClearGroupArray($par, $pb)));
-            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property));#(count($this->getClearGroupArray($par, $pb))-1), $main_property, $path->getDisamb()));                        
+            
+            $tmp = $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property);            
+            
+            if ($main_property == 'target_id') {
+              foreach($tmp as $key => $item) {
+                $tmp[$key]["target_id"] = $this->getDrupalId($item["target_id"]);
+              }
+            }
+          
+
+
+            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);        
 #            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $eid, count($path->getPathArray()) - count($clearPathArray), $main_property, $path->getDisamb()));#(count($this->getClearGroupArray($par, $pb))-1), $main_property, $path->getDisamb()));
 #            drupal_set_message("smthg: " . serialize($out[$eid][$field_id]));
+          
+            // 
           }
 #          drupal_set_message("bla: " . serialize($out[$eid][$field_id]));
-
+          
 #            drupal_set_message($path->getDisamb());
 #              drupal_set_message("I loaded: " . serialize($out));
         }
@@ -1429,6 +1442,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 
 #    drupal_set_message("out: for " . serialize(func_get_args()) . " is: " . serialize($out));
 
+#dpm($out);
     return $out;
 
 
@@ -1445,150 +1459,216 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     // this is a hack and will break if there are several for one field
     $pbarray = $pb->getPbEntriesForFid($fieldid);
     
+    // get path/field-related config
+    // and do some checks to ensure that we are acting on a
+    // well configured field
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['id']);
-
-    if(empty($path))
+    if(empty($path)) {
       return;
+    }
+
+    // this is an important distinction till now!
+    // TODO: maybe we can combine reference delete and value delete
+    $is_reference = $path->isGroup() ? : ($pbarray['fieldtype'] == 'entity_reference');
+
+    if ($is_reference) {
+      // delete a reference
+      // this differs from normal field values as there is no literal
+      // and the entity has to be matched to the uri
       
+      $subject_uri = $this->getUriForDrupalId($entity_id);
+      if (empty($subject_uri)) {
+        // the adapter doesn't know of this entity. some other adapter needs
+        // to handle it and we can skip it.
+        return;
+      }
+      $subject_uris = array($subject_uri);
+      
+      // value is the Drupal id of the referenced entity
+      $object_uri = $this->getUriForDrupalId($value);
+      if (empty($object_uri)) {
+        // the adapter doesn't know of this entity. some other adapter needs
+        // to handle it and we can skip it.
+        return;
+      }
+
+      $path_array = $path->getPathArray();
+
+      if (count($path_array) < 3) {
+        // This should never occur as it would mean that someone is deleting a
+        // reference on a path with no triples!
+        drupal_set_message("Bad path: trying to delete a ref with a too short path.", 'error');
+        return;
+      }
+      elseif (count($path_array) == 3) {
+        // we have the spacial case where subject and object uri are directly
+        // linked in a triple <subj> <prop> <obj> / <obj> <inverse> <subj>.
+        // So we know which triples to delete and can skip costly search for 
+        // the right triple.
+
+        // nothing to do!
+      }
+      else {
+        // in all other cases we need to readjust the subject uri to cut the 
+        // right triples.
+
+        $pathcnt = 0;
+        $parent = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['parent']);
+        if (empty($parent)) {
+          // lonesome path!?
+        }
+        else {
+          // we cannot use clearPathArray() here as path is a group and 
+          // the function would chop off too much
+          $parent_path_array = $parent->getPathArray();
+          $pathcnt = count($parent_path_array) - 1;
+        }
+
+        // we have to set disamb manually to the last instance
+        // otherwise generateTriplesForPath() won't produce right triples
+        $disamb = (count($path_array) - 1) / 2;
+        // the var that interests us is the one before disamb
+        $subject_var = "x" . ($disamb - 1);
+
+        // build up a select query that get us 
+        $select  = "SELECT DISTINCT ?$subject_var WHERE {";
+        $select .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $object_uri, $disamb, $pathcnt, FALSE, NULL, 'entity_reference');
+        $select .= "}";
+        
+        $result = $this->directQuery($select);
+
+        if ($result->numRows() == 0) {
+          // there is no relation any more. has been deleted before!?
+          return;
+        }
+        
+        // reset subjects
+        $subject_uris = array();
+        foreach ($result as $row) {
+          $subject_uris[] = $row->{$subject_var}->getUri();
+        }
+
+      }
+      
+      $prop = $path_array[count($path_array) - 2];
+      $inverse = $this->getInverseProperty($prop);
+
+      $delete  = "DELETE DATA {\n";
+      foreach ($subject_uris as $subject_uri) {
+        $delete .= "  <$subject_uri> <$prop> <$object_uri> .\n";
+        $delete .= "  <$object_uri> <$inverse> <$subject_uri> .\n";
+      }
+      $delete .= ' }';
+dpm(array($subject_uris, $delete), 'del');
+
+      $result = $this->directUpdate($delete);    
+
+    }
+    else {
+      // delete normal field value
 #   if(!drupal_validate_utf8($value)) {
 #     $value = utf8_encode($value);
 #   }
 
-    $clearPathArray = $this->getClearPathArray($path, $pb);
+      $clearPathArray = $this->getClearPathArray($path, $pb);
 #    dpm($clearPathArray);
 #    $group = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['parent']);
-    
+      
 #    $path_array = $path->getPathArray();
-    
-    $diff = count($path->getPathArray()) - count($clearPathArray);
-    
+      
+      $diff = count($path->getPathArray()) - count($clearPathArray);
+      
 #    $sparql = "SELECT DISTINCT * WHERE { GRAPH ?g {";
-    $sparql = "SELECT DISTINCT * WHERE {";
-    foreach($clearPathArray as $key => $step) {
+      $sparql = "SELECT DISTINCT * WHERE {";
+      foreach($clearPathArray as $key => $step) {
 #    for($i=(count($path->getPathArray())-1);$i>= (count($path->getPathArray())-count($clearPathArray)-1); $i--) {
-      if($key % 2 == 0) 
-        $sparql .= "?x" . ($key+$diff) . " a <$step> . ";
-      else
-        $sparql .= '?x' . ($key+$diff-1) . " <$step> ?x" . ($key+$diff+1) . " . ";    
-    }
-    
-    $primitive = $path->getDatatypeProperty();
-    
-    // dorian special case -> "empty" @TODO - this is evil!
-    if(!empty($primitive) && $primitive != "empty") {
-      if(empty($value)) {
-        $sparql .= "?x" . ($key+$diff) . " <$primitive> ?out . ";
-      } else {
-        $sparql .= "?x" . ($key+$diff) . " <$primitive> '" . $this->escapeSparqlLiteral($value) ."' . ";
+        if($key % 2 == 0) 
+          $sparql .= "?x" . ($key+$diff) . " a <$step> . ";
+        else
+          $sparql .= '?x' . ($key+$diff-1) . " <$step> ?x" . ($key+$diff+1) . " . ";    
       }
-    }
-    
-    if(!empty($entity_id)) {
-      // rename to uri
-      $eid = $this->getUriForDrupalId($entity_id);    
-#      $eid = str_replace("\\", "/", $entity_id);
-      $url = parse_url($eid);
       
-      if(!empty($url["scheme"]))
-        $sparql .= " FILTER (?x$diff = <$eid> ) . ";
-      else
-        $sparql .= " FILTER (?x$diff = \"$eid\" ) . ";
-    }
-    
-#    $sparql .= " } }";
-    $sparql .= " }";
-    $result = $this->directQuery($sparql);
-
-#    drupal_set_message("I query: " . $sparql);
-
-#    drupal_set_message(serialize($result));
-
-    $outarray = array();
-
-    foreach($result as $key => $thing) {
-      $outarray[$key] = array();
+      $primitive = $path->getDatatypeProperty();
       
-#      drupal_set_message("thing is: " . serialize($thing));
-      
-#      for($i=(count($clearPathArray)-1);$i>= 0; $i--) {
-
-      for($i=$diff; $i<count($clearPathArray)+$diff; $i++) {
-        $name = "x" . $i;
-        if($i % 2 == 0) {
-#          $name = "x" . $i; 
-#          drupal_set_message("name is: " . $name);
-          $outarray[$key][$i] = $thing->{$name}->dumpValue("text");
-        } else {
-          $outarray[$key][$i] = $clearPathArray[($i-$diff)];
-        }
-      }
-
-/*
-      for($i=(count($path->getPathArray())-1);$i>= (count($path->getPathArray())-count($clearPathArray)-1); $i--) {
-        $name = "x" . $i;
-        if($i % 2 == 0) {
-#          $name = "x" . $i; 
-#          drupal_set_message("name is: " . $name);
-          $outarray[$key][$i] = $thing->{$name}->dumpValue("text");
-        } else {
-          $outarray[$key][$i] = $clearPathArray[$i];
-        }
-      }
- */     
-#      drupal_set_message("my outarr1 is: " . serialize($outarray));
-      
-      ksort($outarray[$key]);
-   #     drupal_set_message("we got something!");
-  #    $name = 'x' . (count($clearPathArray)-1);
-      if(!empty($primitive))
+      // dorian special case -> "empty" @TODO - this is evil!
+      if(!empty($primitive) && $primitive != "empty") {
         if(empty($value)) {
-          $outarray[$key]["primitive"] = $primitive;
-          $outarray[$key]["out"] = $thing->out->getValue();
+          $sparql .= "?x" . ($key+$diff) . " <$primitive> ?out . ";
         } else {
-          $outarray[$key]["primitive"] = $primitive;
-          $outarray[$key]["out"] = $value;
+          $sparql .= "?x" . ($key+$diff) . " <$primitive> '" . $this->escapeSparqlLiteral($value) ."' . ";
         }
-     # else
-     #   $out[] = $thing->$name->dumpValue("text");
-#    }
-
-#      drupal_set_message("my outarr is: " . serialize($outarray));
-    
-#    drupal_set_message("spq: " . serialize($sparql));
-#    drupal_set_message(serialize($this));
-    
-        
-    // add graph handling
-      $sparqldelete = "DELETE DATA { " ;
- 
-      $arr = $outarray[$key];
-#      dpm($path->getDisamb()); 
-      $i=0;
-      
-      // is there a disamb?
-      if($path->getDisamb() > 0 && isset($arr[($path->getDisamb()-2)*2])) {
-        $i = ($path->getDisamb()-2)*2;
-        
-        $sparqldelete .= "<" . $arr[$i++] . "> ";
-        $sparqldelete .= "<" . $arr[$i++] . "> ";
-        $sparqldelete .= "<" . $arr[$i++] . "> ";
-      } else { // no disamb - cut in the end!
-        // -3 because out and primitive
-        $maxi = count($arr)-3;
-        
-        $sparqldelete .= "<" . $arr[$maxi] . "> ";
-        $sparqldelete .= "<" . $arr['primitive'] . "> ";
-        $sparqldelete .= "'" . $this->escapeSparqlLiteral($arr['out']) . "' ";
       }
       
-      $sparqldelete .= " } ";
+      if(!empty($entity_id)) {
+        // rename to uri
+        $eid = $this->getUriForDrupalId($entity_id);    
+#      $eid = str_replace("\\", "/", $entity_id);
+        $url = parse_url($eid);
+        
+        if(!empty($url["scheme"]))
+          $sparql .= " FILTER (?x$diff = <$eid> ) . ";
+        else
+          $sparql .= " FILTER (?x$diff = \"$eid\" ) . ";
+      }
       
-      $result = $this->directUpdate($sparqldelete);    
-    
-#    drupal_set_message("delete query: " . htmlentities($sparqldelete));
-    
+      $sparql .= " }";
+
+      $result = $this->directQuery($sparql);
+  dpm(array($sparql, $result));
+
+      $outarray = array();
+
+      foreach($result as $key => $thing) {
+        $outarray[$key] = array();
+        
+        for($i=$diff; $i<count($clearPathArray)+$diff; $i++) {
+          $name = "x" . $i;
+          if($i % 2 == 0) {
+            $outarray[$key][$i] = $thing->{$name}->dumpValue("text");
+          } else {
+            $outarray[$key][$i] = $clearPathArray[($i-$diff)];
+          }
+        }
+
+        ksort($outarray[$key]);
+        if(!empty($primitive)) {
+          if(empty($value)) {
+            $outarray[$key]["primitive"] = $primitive;
+            $outarray[$key]["out"] = $thing->out->getValue();
+          } else {
+            $outarray[$key]["primitive"] = $primitive;
+            $outarray[$key]["out"] = $value;
+          }
+        }
+
+      // add graph handling
+        $sparqldelete = "DELETE DATA { " ;
+   
+        $arr = $outarray[$key];
+        $i=0;
+        
+        // is there a disamb?
+        if($path->getDisamb() > 0 && isset($arr[($path->getDisamb()-2)*2])) {
+          $i = ($path->getDisamb()-2)*2;
+          
+          $sparqldelete .= "<" . $arr[$i++] . "> ";
+          $sparqldelete .= "<" . $arr[$i++] . "> ";
+          $sparqldelete .= "<" . $arr[$i++] . "> ";
+        } else { // no disamb - cut in the end!
+          // -3 because out and primitive
+          $maxi = count($arr)-3;
+          
+          $sparqldelete .= "<" . $arr[$maxi] . "> ";
+          $sparqldelete .= "<" . $arr['primitive'] . "> ";
+          $sparqldelete .= "'" . $this->escapeSparqlLiteral($arr['out']) . "' ";
+        }
+        
+        $sparqldelete .= " } ";
+        
+        $result = $this->directUpdate($sparqldelete);    
+      }
     }
-#    drupal_set_message("I delete field $field from entity $entity_id that currently has the value $value");
+
   }
 
   /**
@@ -1664,7 +1744,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     if (empty($eid)) {
       $eid = $this->getDrupalId($uri);
     }
-    //dpm($eid,$adapter->id().' made ID');
+#    dpm($eid,$adapter->id().' made ID');
     $entity->set('eid',$eid);
 #    "INSERT INTO { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " 
     return $eid;
@@ -1708,7 +1788,6 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     dpm(func_get_args(), "generateTriplesForPath");
     // the query construction parameter
     $query = "";
-
     // if we disamb on ourself, return.
     if($disambposition == 0 && !empty($object_in)) return "";
 
@@ -1751,11 +1830,13 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 #    dpm($clearPathArray, "cpa");
 #    dpm($key+$countdiff, "diff");
 #    dpm($startingposition, "start");
+if ($object_in) dpm(array(func_get_args(), $countdiff, $clearPathArray, $startingposition, $subject_in), __METHOD__);
     
     // iterate through the given path array
     foreach($clearPathArray as $key => $value) {
       
       $localkey = $key+$countdiff;
+if ($object_in) dpm(array($key,$localkey), "localkey");      
       
       // skip anything that is smaller than $startingposition.
       if($localkey < ($startingposition*2)) 
@@ -1776,7 +1857,6 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         // TODO: fix this!
         $oldvar = "?" . (is_array($variable_prefixes) ? (isset($variable_prefixes[$localkey]) ? $variable_prefixes[$localkey] : "") : $variable_prefixes) . "x" . $localkey;
       }
-#      dpm($localkey, "localkey");      
       if($localkey % 2 == 0) {
         // if it is the first element and we have a subject_in
         // then we have to replace the first element with subject_in
@@ -2069,7 +2149,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
   
   public function writeFieldValues($entity_id, array $field_values, $pathbuilder, $bundle_id=NULL,$old_values=array(),$force_new=FALSE) {
 #    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
-    \Drupal::logger('write to '.$this->adapterId())->debug(serialize(func_get_args()));
+dpm($field_values, __METHOD__);    
     // tricky thing here is that the entity_ids that are coming in typically
     // are somewhere from a store. In case of rdf it is easy - they are uris.
     // In case of csv or something it is more tricky. So I don't wan't to 
@@ -2092,7 +2172,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     
     // if there is nothing, continue.
     if (empty($entity)) {
-      dpm('empty entity',__FUNCTION__);
+#      dpm('empty entity',__FUNCTION__);
       if ($force_new) {
         $entity = new WisskiEntity(array('eid' => $entity_id,'bundle' => $bundle_id),'wisski_individual',$bundle_id);
         $this->createEntity($entity,$entity_id);
@@ -2114,7 +2194,6 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     
     foreach($field_values as $field_id => $field_items) {
       #drupal_set_message("key: " . serialize($field_id) . " fieldvalue is: " . serialize($field_items)); 
-      //dpm($field_id,'field');
       $path = $pathbuilder->getPbEntriesForFid($field_id);
       
       $old_value = isset($old_values[$field_id]) ? $old_values[$field_id] : array();
@@ -2188,9 +2267,6 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         }
       }
       
-#dpm($field_items, 'asas');
-#dpm($remain_values, 'asa');
-      
       // now we write all the new values
       foreach ($field_items as $new_item) {
         if (!isset($remain_values[$new_item[$mainprop]])) {
@@ -2234,7 +2310,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
             foreach ($old_values[$field_id] as $field_id2 => $values) {
               if ($field_id2 == 'main_property') continue;
               if ($values[$mainprop] = $val[$mainprop]) {
-  dpm(array($val[$mainprop], $values[$mainprop], $val, $old_values), "skip", 'error');
+#  dpm(array($val[$mainprop], $values[$mainprop], $val, $old_values), "skip", 'error');
                 $skip = TRUE;
                 break;
               }
@@ -2260,7 +2336,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 
         }
 
-        dpm(array('$entity_id'=>$entity_id,'$field_id'=>$field_id,'value' => $val[$mainprop],'$pathbuilder'=>$pathbuilder),'try writing');
+#        dpm(array('$entity_id'=>$entity_id,'$field_id'=>$field_id,'value' => $val[$mainprop],'$pathbuilder'=>$pathbuilder),'try writing');
         // add the new ones
         $this->addNewFieldValue($entity_id, $field_id, $val[$mainprop], $pathbuilder); 
         

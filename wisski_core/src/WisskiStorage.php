@@ -577,7 +577,9 @@ if (empty($new_field_values)) continue;
 #    dpm(func_get_args(),__METHOD__);
     
     //gather values with property caching
-    list($values,$original_values) = $entity->getValues($this,TRUE);
+    // set second param of getValues to FALSE: we must not write
+    // field values to cache now as there may be no eid yet (on create)
+    list($values,$original_values) = $entity->getValues($this,FALSE);
     $bundle_id = $values['bundle'][0]['target_id'];
     if (empty($bundle_id)) $bundle_id = $entity->bundle();
     
@@ -643,8 +645,8 @@ if (empty($new_field_values)) continue;
       return;
     }
     
-    //dpm($original_values,'old values');
-    //dpm($values,'new values');
+    dpm($original_values,'old values');
+    dpm($values,'new values');
     $real_new_values = array_diff_key($values,$original_values);
     //dpm($real_new_values,'Really new values');
     
@@ -691,6 +693,14 @@ if (empty($new_field_values)) continue;
         $entity->set('eid',$entity_id);
         $entity->enforceIsNew(FALSE);
         //we have successfully written to this adapter
+
+        // write values and weights to cache table
+        // we reuse the getValues function and set the second param to true
+        // as we are not interested in the values we discard them
+        $entity->getValues($this, TRUE);
+        // TODO: eventually there should be a seperate function for the field caching
+
+
         
         $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id);
         //dpm($bundle,'Wrote '.$entity_id.' to '.$bundle_id);

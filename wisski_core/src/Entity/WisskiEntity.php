@@ -93,7 +93,8 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
       ->setDescription(t('The bundle.'))
       ->setSetting('target_type', 'wisski_bundle')
       ->setReadOnly(TRUE);
-
+    
+    // TODO: wisski entities are not translatable. do we thus need the lang code?
     $fields['langcode'] = BaseFieldDefinition::create('language')
       ->setLabel(t('Language code'))
       ->setDescription(t('Language code.'))
