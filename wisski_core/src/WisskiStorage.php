@@ -646,8 +646,8 @@ if (empty($new_field_values)) continue;
       return;
     }
     
-    dpm($original_values,'old values');
-    dpm($values,'new values');
+    #dpm($original_values,'old values');
+    #dpm($values,'new values');
     $real_new_values = array_diff_key($values,$original_values);
     //dpm($real_new_values,'Really new values');
     

@@ -1559,7 +1559,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         $delete .= "  <$object_uri> <$inverse> <$subject_uri> .\n";
       }
       $delete .= ' }';
-dpm(array($subject_uris, $delete), 'del');
+#dpm(array($subject_uris, $delete), 'del');
 
       $result = $this->directUpdate($delete);    
 
@@ -1614,7 +1614,7 @@ dpm(array($subject_uris, $delete), 'del');
       $sparql .= " }";
 
       $result = $this->directQuery($sparql);
-  dpm(array($sparql, $result));
+  #dpm(array($sparql, $result));
 
       $outarray = array();
 
@@ -1774,7 +1774,7 @@ dpm(array($subject_uris, $delete), 'del');
    *              1 means disamb on the first concept, 2 on the second concept
    *              and so on.
    * @param $startingposition From where on the path should be generated in means
-   *              of concepts from the beginning.
+   *              of concepts from the beginning (warning: not like disamb! 0 means start here!).
    * @param $write Is this a write or a read-request?
    * @param $op How should it be compared to other data
    * @param $relative should it be relative to the other groups?
@@ -1785,7 +1785,7 @@ dpm(array($subject_uris, $delete), 'del');
    *              The variable ?out will be prefixed with the key "out".
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array()) {
-#    dpm(func_get_args(), "generateTriplesForPath");
+    #dpm(func_get_args(), "generateTriplesForPath");
     // the query construction parameter
     $query = "";
     // if we disamb on ourself, return.
@@ -1830,13 +1830,13 @@ dpm(array($subject_uris, $delete), 'del');
 #    dpm($clearPathArray, "cpa");
 #    dpm($key+$countdiff, "diff");
 #    dpm($startingposition, "start");
-if ($object_in) dpm(array(func_get_args(), $countdiff, $clearPathArray, $startingposition, $subject_in), __METHOD__);
+#if ($object_in) dpm(array(func_get_args(), $countdiff, $clearPathArray, $startingposition, $subject_in), __METHOD__);
     
     // iterate through the given path array
     foreach($clearPathArray as $key => $value) {
       
       $localkey = $key+$countdiff;
-if ($object_in) dpm(array($key,$localkey), "localkey");      
+#if ($object_in) dpm(array($key,$localkey), "localkey");      
       
       // skip anything that is smaller than $startingposition.
       if($localkey < ($startingposition*2)) 
@@ -1882,7 +1882,7 @@ if ($object_in) dpm(array($key,$localkey), "localkey");
         
         // if the key is the disambpos
         // and we have an object
-        if($localkey == ($disambposition*2) && !empty($object_in)) {
+        if($localkey == (($disambposition-1)*2) && !empty($object_in)) {
           $uri = $object_in;
         } else {
           // if it is not the disamb-case we add type-triples        
@@ -1948,7 +1948,7 @@ if ($object_in) dpm(array($key,$localkey), "localkey");
         }
          
         // if this is the disamb, we may break.
-        if($localkey == ($disambposition*2) && !empty($object_in)) {
+        if($localkey == (($disambposition-1)*2) && !empty($object_in)) {
           break;
         }
           
@@ -2061,6 +2061,7 @@ if ($object_in) dpm(array($key,$localkey), "localkey");
     if($path->getDisamb()) {
       $sparql = "SELECT * WHERE { GRAPH ?g { ";
 #      $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, 0, FALSE);
+      // starting position one before disamb because disamb counts the number of concepts, startin position however starts from zero
       $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE);
       $sparql .= " } }";
       
@@ -2070,7 +2071,7 @@ if ($object_in) dpm(array($key,$localkey), "localkey");
   
       if(!empty($disambresult))
         $disambresult = current($disambresult);      
-#      drupal_set_message("rais: " . serialize($result));
+#      drupal_set_message("rais: " . serialize($disambresult));
     }
     
     // rename to uri
@@ -2092,16 +2093,16 @@ if ($object_in) dpm(array($key,$localkey), "localkey");
         $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, NULL, TRUE);
       else {
  #       drupal_set_message("disamb: " . serialize($disambresult) . " miau " . $path->getDisamb());
-        if(empty($disambresult) || empty($disambresult->{"x" . $path->getDisamb()*2}) )
+        if(empty($disambresult) || empty($disambresult->{"x" . ($path->getDisamb()-1)*2}) )
           $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, NULL, TRUE);
         else
-          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . $path->getDisamb()*2}->dumpValue("text"), $path->getDisamb(), NULL, TRUE);
+          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . ($path->getDisamb()-1)*2}->dumpValue("text"), (($path->getDisamb()-1)*2), NULL, TRUE);
       }
     }
     $sparql .= " } } ";
   
        
- #   dpm($sparql, "I would do: ");
+    #dpm($sparql, "I would do: ");
  
    
 #    drupal_set_message("I would do: " . ($sparql));
