@@ -51,36 +51,45 @@
         // Graph G?
         if($path->getDisamb()) {
           $sparql = "SELECT * WHERE { ";
-          $sparql .= $engine->generateTriplesForPath($pb, $path, NULL, NULL, NULL, NULL, $path->getDisamb(), FALSE);
-          $sparql .= " FILTER regex( STR(?out), '$string') . } ";        
+          // in case of disamb go for -1
+          $sparql .= $engine->generateTriplesForPath($pb, $path, NULL, NULL, NULL, NULL, $path->getDisamb() -1, FALSE);
+          //$sparql .= " FILTER regex( STR(?out), '$string') . } ";        
+          // martin said contains is faster ;D
+          $sparql .= " FILTER CONTAINS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
+#          $sparql .= " FILTER STRSTARTS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
+#          $sparql .= " FILTER CONTAINS(?out, '" . $engine->escapeSparqlLiteral($string) . "') . } ";
         } else {
           $sparql = "SELECT * WHERE { ";
           $sparql .= $engine->generateTriplesForPath($pb, $path, NULL, NULL, NULL, NULL, NULL, FALSE);
-          $sparql .= " FILTER regex( STR(?out), '$string') . } ";
+#          $sparql .= " FILTER regex( STR(?out), '$string') . } ";
+          $sparql .= " FILTER CONTAINS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
+#          $sparql .= " FILTER STRSTARTS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
+#          $sparql .= " FILTER CONTAINS(?out, '" . $engine->escapeSparqlLiteral($string) . "') . } ";
         }
       }
       
       if(empty($sparql))
         return NULL;
       
-      $sparql .= "LIMIT 16";
-        
+      $sparql .= "LIMIT 10";
+      
 #      drupal_set_message("engine: " . serialize($sparql));
-        
+#      dpm(microtime());        
       $result = $engine->directQuery($sparql);
+#      dpm(microtime());
       $matches = array();
       $i=0;
       foreach($result as $key => $thing) {
         $matches[] = array('value' => $thing->out->getValue(), 'label' => $thing->out->getValue());
         $i++;
         
-        if($i > 15) {
+        if($i > 9) {
           $matches[] = array('label' => "More hits were found, continue typing...");
           break;
         }
       }
-      
-#      drupal_set_message("result: " . serialize($result)); //"sparql is: " . serialize($sparql));
+
+#      dpm($matches, "out");
             
       return new JsonResponse($matches);
     }
