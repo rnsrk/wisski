@@ -199,10 +199,17 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
   }
   
   protected function extractFieldData($storage,$save_field_properties=FALSE) {
-    
+#    dpm("calling extractfieldData with sfp: " . serialize($save_field_properties));
+#    dpm(func_get_args(), "extractFieldData");
+#    dpm($this, "this");
+#    return array();
     $out = array();
+
     //$this is iterable itself, iterates over field list
     foreach ($this as $field_name => $field_item_list) {
+#      dpm($field_name, "fieldname");
+#      dpm($field_item_list, "fielditem");
+
       $out[$field_name] = array();
       if ($save_field_properties) {
         //clear the field values for this field in entity in bundle
@@ -212,11 +219,16 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
           ->condition('fid',$field_name)
           ->execute();
       }
+      
       foreach($field_item_list as $weight => $field_item) {
-        if (strpos($field_name,'f') === 0) {
-          //dpm($field_item,$field_name.' '.$weight);
-          //dpm($field_item->getProperties(),'format');
-        }
+#        dpm($weight, "weight");
+#        dpm($field_item, "field item");
+#        if (strpos($field_name,'f') === 0) {
+#          dpm($field_item,$field_name.' '.$weight);
+#          dpm($field_item->getProperties(),'format');
+#        }
+      
+        
         $field_values = $field_item->getValue();
         $field_def = $field_item->getFieldDefinition()->getFieldStorageDefinition();
         if (method_exists($field_def,'getDependencies') && in_array('file',$field_def->getDependencies()['module'])) {
@@ -230,7 +242,7 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
         //gathers the ARRAY of field properties for each field list item
         //e.g. $out[$field_name][] = array(value => 'Hans Wurst', 'format' => 'basic_html');
         $out[$field_name][$weight] = $field_values;
-        if ($save_field_properties) {
+        if ($save_field_properties && !empty($this->id())) {
           $fields_to_save = array(
             'eid' => $this->id(),
             'bid' => $this->bundle(),
@@ -239,6 +251,10 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
             'ident' => isset($field_values['wisskiDisamb']) ? $field_values['wisskiDisamb'] : $field_values[$main_property],
             'properties' => serialize($field_values),
           );
+#          dpm($this->id(), "this!");
+#          dpm($this->id, "thisid");
+#          return $out;
+#          dpm($fields_to_save, "fields to save");
           db_insert('wisski_entity_field_properties')
             ->fields($fields_to_save)
             ->execute();

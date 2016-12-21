@@ -1785,7 +1785,7 @@ dpm(array($subject_uris, $delete), 'del');
    *              The variable ?out will be prefixed with the key "out".
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array()) {
-    dpm(func_get_args(), "generateTriplesForPath");
+#    dpm(func_get_args(), "generateTriplesForPath");
     // the query construction parameter
     $query = "";
     // if we disamb on ourself, return.
@@ -2149,7 +2149,7 @@ if ($object_in) dpm(array($key,$localkey), "localkey");
   
   public function writeFieldValues($entity_id, array $field_values, $pathbuilder, $bundle_id=NULL,$old_values=array(),$force_new=FALSE) {
 #    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
-dpm($field_values, __METHOD__);    
+#dpm($field_values, __METHOD__);    
     // tricky thing here is that the entity_ids that are coming in typically
     // are somewhere from a store. In case of rdf it is easy - they are uris.
     // In case of csv or something it is more tricky. So I don't wan't to 

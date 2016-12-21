@@ -11,15 +11,25 @@ use \Drupal\wisski_salz\AdapterHelper;
 class WisskiEntityForm extends ContentEntityForm {
 
   public function buildForm(array $form, FormStateInterface $form_state) {
+
     $form = parent::buildForm($form,$form_state);
     $form['#title'] = $this->t('Edit').' '.wisski_core_generate_title($this->entity,TRUE);
+
+    // this code here is evil!!!
+    // whenever you have subentities (referenced by entity reference)
+    // no new ids are generated because it takes the oldest one in store (e.g. 12) and simply adds one (= 13).
+    // this is nonsense because it does this for all new ones, so everything is 13 after this.
+    // We really don't know the id we will be getting - so stop this here!
+    /*
     if (empty($this->entity->id())) {
       $fresh_id = AdapterHelper::getFreshDrupalId();
       $this->entity->set('eid',$fresh_id);
       //dpm($this->entity->id(),'set '.$fresh_id);
     }
+    */
+    
     $this->entity->saveOriginalValues($this->entityManager->getStorage('wisski_individual'));
-    # drupal_set_message("Form is built.");
+
     //@TODO extend form
     //dpm($this->getEntity());
 #    dpm($form,__METHOD__);

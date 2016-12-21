@@ -500,7 +500,7 @@ if (empty($new_field_values)) continue;
     $definitions = $storage_definitions ? : \Drupal::getContainer()->get('entity.manager')->getFieldStorageDefinitions($this->entityTypeId);
     if (!empty($definitions)) {
       if (\Drupal::moduleHandler()->moduleExists('devel')) {
-        dpm($definitions,__METHOD__);
+        #dpm($definitions,__METHOD__);
       } else drupal_set_message('Non-empty call to '.__METHOD__);
     }
     return NULL;
@@ -575,14 +575,15 @@ if (empty($new_field_values)) continue;
    */
   protected function doSaveFieldItems(ContentEntityInterface $entity, array $names = []) {
 #    dpm(func_get_args(),__METHOD__);
-    
+#    return;
+    #dpm($entity->id(), "entitydata1");
     //gather values with property caching
     // set second param of getValues to FALSE: we must not write
     // field values to cache now as there may be no eid yet (on create)
     list($values,$original_values) = $entity->getValues($this,FALSE);
     $bundle_id = $values['bundle'][0]['target_id'];
     if (empty($bundle_id)) $bundle_id = $entity->bundle();
-    
+    #dpm($entity->id(), "entitydata2");
 //    dpm(func_get_args()+array('values'=>$values,'bundle'=>$bundle_id),__METHOD__);
     //echo implode(', ',array_keys((array) $entity));
     $local_adapters = array();
@@ -619,7 +620,7 @@ if (empty($new_field_values)) continue;
     
     //we load all pathbuilders, check if they know the fields and have writeable adapters
     $pathbuilders = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
-    
+    #dpm($entity->id(), "entitydata");
     $entity_id = $entity->id();
     // we track if this is a newly created entity, if yes, we want to write it to ALL writeable adapters
     $create_new = $entity->isNew() && empty($entity_id);
