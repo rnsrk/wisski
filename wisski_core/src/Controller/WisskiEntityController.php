@@ -27,10 +27,16 @@ class WIsskiEntityController extends ControllerBase {
   }
   
   public function add(WisskiBundleInterface $wisski_bundle) {
-    
+    #dpm(microtime(), "before");
     $entity = $this->entityManager()->getStorage('wisski_individual')->create(array(
       'bundle' => $wisski_bundle->id(),
     ));
-    return $this->entityFormBuilder()->getForm($entity);
+    #dpm(microtime(), "in");
+    
+    $form = $this->entityFormBuilder()->getForm($entity);
+    
+    #dpm(microtime(), "after");
+    
+    return $form;
   }
 }

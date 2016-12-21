@@ -1705,7 +1705,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
    *              The variable ?out will be prefixed with the key "out".
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array()) {
-    dpm(func_get_args(), "generateTriplesForPath");
+#    dpm(func_get_args(), "generateTriplesForPath");
     // the query construction parameter
     $query = "";
 
@@ -2092,7 +2092,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     
     // if there is nothing, continue.
     if (empty($entity)) {
-      dpm('empty entity',__FUNCTION__);
+      #dpm('empty entity',__FUNCTION__);
       if ($force_new) {
         $entity = new WisskiEntity(array('eid' => $entity_id,'bundle' => $bundle_id),'wisski_individual',$bundle_id);
         $this->createEntity($entity,$entity_id);
