@@ -27,7 +27,8 @@ class WisskiEntityForm extends ContentEntityForm {
       //dpm($this->entity->id(),'set '.$fresh_id);
     }
     */
-    
+
+#    dpm($form,__METHOD__);    
     $this->entity->saveOriginalValues($this->entityManager->getStorage('wisski_individual'));
 
     //@TODO extend form
@@ -37,9 +38,10 @@ class WisskiEntityForm extends ContentEntityForm {
   }
 
   public function save(array $form, FormStateInterface $form_state) {
-    
+#    dpm($form, "form");
+#    dpm($form_state, "fs");
     $entity = $this->getEntity();
-    
+        
     $this->copyFormValuesToEntity($entity,$form,$form_state);
     $entity->save();
     $bundle = $entity->get('bundle')->getValue()[0]['target_id'];

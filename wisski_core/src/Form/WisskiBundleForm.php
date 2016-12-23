@@ -71,11 +71,11 @@ class WisskiBundleForm extends EntityForm {
   /**
    * {@inheritdoc}
    */
-//  protected function copyFormValuesToEntity(EntityInterface $entity, array $form, FormStateInterface $form_state) {
-//    /** @var \Drupal\wisski_core\WisskiBundleInterface $entity */
-//    parent::copyFormValuesToEntity($entity, $form, $form_state);
-//    
-//  }
+#  protected function copyFormValuesToEntity(EntityInterface $entity, array $form, FormStateInterface $form_state) {
+#    /** @var \Drupal\wisski_core\WisskiBundleInterface $entity */
+#    parent::copyFormValuesToEntity($entity, $form, $form_state);
+#    
+#  }
   
 
   /**

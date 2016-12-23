@@ -135,7 +135,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
 #dpm(array($adapter->id(), $field_name,$id, $bundleid, $new_field_values),'gei','error');
 
-if (empty($new_field_values)) continue;
+                  if (empty($new_field_values)) continue;
                 
                   $new_field_values = $new_field_values[$id][$field_name];
         
@@ -241,18 +241,30 @@ if (empty($new_field_values)) continue;
                     ->condition('fid',$field_name)
                     ->execute()
                     ->fetchAllAssoc('ident');
+#                  dpm($cached_field_values, "cached values");
                   if (!empty($cached_field_values)) {
 #                    dpm($cached_field_values,'cached values');
                     $head = array();
                     $tail = array();
+
                     foreach ($new_field_values[$id][$field_name] as $delta => $nfv) {
-                      $ident = isset($nfv['wisskiDisamb']) ? $nfv['wisskiDisamb'] : $nfv[$main_property];
+                      // this would be smarter, however currently the storage can't
+                      // store the disamb so this is pointless...
+                      //$ident = isset($nfv['wisskiDisamb']) ? $nfv['wisskiDisamb'] : $nfv[$main_property];
+                      $ident = $nfv[$main_property];
+#                      dpm($ident);
+#                      dpm($cached_field_values);
                       if (isset($cached_field_values[$ident])) {
-                        //dpm(array($nfv,$cached_field_values[$ident]),'merge with cache');
+#                        dpm(array($nfv,$cached_field_values[$ident]),'merge with cache');
                         $head[$cached_field_values[$ident]->delta] = $nfv + unserialize($cached_field_values[$ident]->properties);
                       } else $tail[$delta] = $nfv;
                     }
+                    // do a ksort, because array_merge will resort anyway!
+                    ksort($head);
+                    ksort($tail);                    
+
                     $new_field_values[$id][$field_name] = array_merge($head,$tail);
+
                   }
                   //dpm($new_field_values[$id][$field_name],$aid.' '.$field_name);
                   if (!isset($info[$id]) || !isset($info[$id][$field_name])) $info[$id][$field_name] = $new_field_values[$id][$field_name];
@@ -680,6 +692,12 @@ if (empty($new_field_values)) continue;
           //we force the writable adapter to write values for newly created entities even if unknown to the adapter by now
           //@TODO return correct success code
           $adapter_info = $adapter->writeFieldValues($entity_id, $values, $pb, $bundle_id, $original_values,$create_new);
+
+          // By Mark: perhaps it would be smarter to give the writeFieldValues the entity
+          // object because it could make changes to it
+          // e.g. which uris were used for reference (disamb) etc.
+          // as long as it is like now you can't promote uris back to the storage.
+
 #          dpm('Success',$aid);
           $success = TRUE;
         } catch (\Exception $e) {

@@ -342,14 +342,12 @@ class WisskiPathForm extends EntityForm {
   protected function copyFormValuesToEntity(EntityInterface $entity, array $form, FormStateInterface $form_state) {
     
     $values = $form_state->getValues();
-
+    
     //From parent, not sure what this is necessary for
     if ($this->entity instanceof EntityWithPluginCollectionInterface) {
       // Do not manually update values represented by plugin collections.
       $values = array_diff_key($values, $this->entity->getPluginCollections());
     }
-
-    //dpm($values,__METHOD__.'::values');
 
     $path_array = array();
     

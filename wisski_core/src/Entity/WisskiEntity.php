@@ -221,13 +221,6 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
       }
       
       foreach($field_item_list as $weight => $field_item) {
-#        dpm($weight, "weight");
-#        dpm($field_item, "field item");
-#        if (strpos($field_name,'f') === 0) {
-#          dpm($field_item,$field_name.' '.$weight);
-#          dpm($field_item->getProperties(),'format');
-#        }
-      
         
         $field_values = $field_item->getValue();
         $field_def = $field_item->getFieldDefinition()->getFieldStorageDefinition();
@@ -243,17 +236,19 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
         //e.g. $out[$field_name][] = array(value => 'Hans Wurst', 'format' => 'basic_html');
         $out[$field_name][$weight] = $field_values;
         if ($save_field_properties && !empty($this->id())) {
+
           $fields_to_save = array(
             'eid' => $this->id(),
             'bid' => $this->bundle(),
             'fid' => $field_name,
             'delta' => $weight,
-            'ident' => isset($field_values['wisskiDisamb']) ? $field_values['wisskiDisamb'] : $field_values[$main_property],
+            'ident' => $field_values[$main_property], 
+            // this formerly was in here
+            // the problem however is that this could never be written, because we don't know what is the disamb...
+            #isset($field_values['wisskiDisamb']) ? $field_values['wisskiDisamb'] : $field_values[$main_property],
             'properties' => serialize($field_values),
           );
-#          dpm($this->id(), "this!");
-#          dpm($this->id, "thisid");
-#          return $out;
+
 #          dpm($fields_to_save, "fields to save");
           db_insert('wisski_entity_field_properties')
             ->fields($fields_to_save)
