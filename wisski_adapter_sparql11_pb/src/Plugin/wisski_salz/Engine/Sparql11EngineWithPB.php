@@ -679,7 +679,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // We have to modify the path-array in case of subgroups.
     // Usually if we have a subgroup path x0 y0 x1 we have to skip x0 y0 in
     // the paths of the group.
-if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
+    if (!is_object($path) || !is_object($pb)) {
+      drupal_set_message('getClearPathArray found no path or no pathbuilder. Error!', 'error');
+      return array();
+    }
+    
     $patharraytoget = $path->getPathArray();
     $allpbpaths = $pb->getPbPaths();
     $pbarray = $allpbpaths[$path->id()];
@@ -1454,7 +1458,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
     return new Query($entity_type,$condition,$namespaces,$this);
   }
   
-  public function deleteOldFieldValue($entity_id, $fieldid, $value, $pb) {
+  public function deleteOldFieldValue($entity_id, $fieldid, $value, $pb, $count = 0) {
     // get the pb-entry for the field
     // this is a hack and will break if there are several for one field
     $pbarray = $pb->getPbEntriesForFid($fieldid);
@@ -1563,62 +1567,110 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 
       $result = $this->directUpdate($delete);    
 
-    }
-    else {
-      // delete normal field value
-#   if(!drupal_validate_utf8($value)) {
-#     $value = utf8_encode($value);
-#   }
-
+    } else {
+    
+      $subject_uri = $this->getUriForDrupalId($entity_id);
       $clearPathArray = $this->getClearPathArray($path, $pb);
-#    dpm($clearPathArray);
-#    $group = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['parent']);
-      
-#    $path_array = $path->getPathArray();
       
       $diff = count($path->getPathArray()) - count($clearPathArray);
+          
+      // delete normal field value
+      $sparql = "SELECT DISTINCT * WHERE { ";
+
+      // I am unsure if this is correct
+      // probably it needs to be relative - but I am unsure
+      //$triples = $this->generateTriplesForPath($pb, $path, $value, $eid, NULL, 0, $diff, FALSE);
+      // make a query without the value - this is necessary
+      // because we have to think of the weight.
+      $triples = $this->generateTriplesForPath($pb, $path, '', $subject_uri, NULL, 0, $diff, FALSE);
       
-#    $sparql = "SELECT DISTINCT * WHERE { GRAPH ?g {";
-      $sparql = "SELECT DISTINCT * WHERE {";
-      foreach($clearPathArray as $key => $step) {
-#    for($i=(count($path->getPathArray())-1);$i>= (count($path->getPathArray())-count($clearPathArray)-1); $i--) {
-        if($key % 2 == 0) 
-          $sparql .= "?x" . ($key+$diff) . " a <$step> . ";
-        else
-          $sparql .= '?x' . ($key+$diff-1) . " <$step> ?x" . ($key+$diff+1) . " . ";    
-      }
+      $sparql .= $triples;
       
-      $primitive = $path->getDatatypeProperty();
+      $sparql .= " }";
       
-      // dorian special case -> "empty" @TODO - this is evil!
-      if(!empty($primitive) && $primitive != "empty") {
-        if(empty($value)) {
-          $sparql .= "?x" . ($key+$diff) . " <$primitive> ?out . ";
-        } else {
-          $sparql .= "?x" . ($key+$diff) . " <$primitive> '" . $this->escapeSparqlLiteral($value) ."' . ";
+      $result = $this->directQuery($sparql);
+#      dpm(array($sparql, $result), "find data");
+
+      $outarray = array();
+#      dpm($result, "result");
+#      dpm($count, "count");
+
+      $loc_count = 0;
+      $break = FALSE;
+      
+      $position = NULL;
+      $the_thing = NULL;
+      
+      foreach($result as $key => $thing) {
+#        dpm(serialize($key === $count), "key " . $key . " count " . $count);
+#        dpm(serialize($thing->out == $value), "key1 " . $thing->out . " count1 " . $value);
+        // Easy case - it is at the "normal position"
+        if($key === $count && $thing->out == $value) {
+          $the_thing = $thing;
+          $position = $count;
+          break;
+        }
+        
+        // not so easy case - it is somewhere else 
+        if($thing->out == $value) {
+          $position = $key;
+          $the_thing = $thing;
+          if($key >= $count)
+            break;
         }
       }
       
-      if(!empty($entity_id)) {
-        // rename to uri
-        $eid = $this->getUriForDrupalId($entity_id);    
-#      $eid = str_replace("\\", "/", $entity_id);
-        $url = parse_url($eid);
-        
-        if(!empty($url["scheme"]))
-          $sparql .= " FILTER (?x$diff = <$eid> ) . ";
-        else
-          $sparql .= " FILTER (?x$diff = \"$eid\" ) . ";
+      if(is_null($position)) {
+        drupal_set_message("I could not find the old value '" . $value . "' and thus could not delete it. ","error");
+        return;
       }
       
-      $sparql .= " }";
+      // for fuseki we need graph
+      $delete  = "DELETE DATA {\n";
 
-      $result = $this->directQuery($sparql);
-  #dpm(array($sparql, $result));
+      // the datatype-property is not directly connected to the group-part
+      if(count($clearPathArray) >= 3) {
+        $prop = $clearPathArray[1];
+        $inverse = $this->getInverseProperty($prop);
 
-      $outarray = array();
+        $name = "x" . ($diff +2);
+        $object_uri = $the_thing->{$name}->getUri();
 
+        $delete .= "  <$subject_uri> <$prop> <$object_uri> .\n";
+        $delete .= "  <$object_uri> <$inverse> <$subject_uri> .\n";
+
+      } else {
+        $primitive = $path->getDatatypeProperty();
+        
+        if(!empty($primitive)) {
+          if(empty($value)) {
+          
+            $delete .= "  <$subject_uri> <$prop> '$value' .\n";
+                        
+          } else {
+            drupal_set_message("No Primitive was set for path " . $path->id() . " and the path length was too short!", "error");
+            return; 
+          }
+        }
+      }
+      
+      $delete .= ' }';
+      
+#      dpm($delete, "delete query");
+      $result = $this->directUpdate($delete);
+
+      /*
       foreach($result as $key => $thing) {
+        
+        if($count !== $loc_count) {
+          $loc_count++;
+          continue;
+        }
+        
+        if($count === $loc_count) {
+          $break = TRUE;
+        }
+      
         $outarray[$key] = array();
         
         for($i=$diff; $i<count($clearPathArray)+$diff; $i++) {
@@ -1664,9 +1716,11 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         }
         
         $sparqldelete .= " } ";
+        dpm($sparqldelete, "delete query");
+        $result = $this->directUpdate($sparqldelete);
         
-        $result = $this->directUpdate($sparqldelete);    
-      }
+        $loc_count++;
+      }*/
     }
 
   }
@@ -1777,9 +1831,8 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
    *              of concepts from the beginning (warning: not like disamb! 0 means start here!).
    * @param $write Is this a write or a read-request?
    * @param $op How should it be compared to other data
-   * @param $relative should it be relative to the other groups?
    * @param $mode defaults to 'field' - but may be 'group' or 'entity_reference' in special cases
-   * @param $relative
+   * @param $relative should it be relative to the other groups?
    * @param $variable_prefixes string|array if string, this will be used to prefix all variables
    *              if array, the variable of index i will be prefixed with the value of key i.
    *              The variable ?out will be prefixed with the key "out".
@@ -1809,7 +1862,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
       $countdiff = 0;
     }  
 
-    // if it is not relative we take the while tree
+    // if it is not relative we take the whole tree
     if(!$relative) {
       $countdiff = 0;
       $clearPathArray = $path->getPathArray();
@@ -1831,7 +1884,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
 #    dpm($key+$countdiff, "diff");
 #    dpm($startingposition, "start");
 #if ($object_in) dpm(array(func_get_args(), $countdiff, $clearPathArray, $startingposition, $subject_in), __METHOD__);
-    
+    #dpm(array(func_get_args(), $countdiff, $clearPathArray, $startingposition, $subject_in), __METHOD__);    
     // iterate through the given path array
     foreach($clearPathArray as $key => $value) {
       
@@ -2035,7 +2088,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
   }
   
   public function addNewFieldValue($entity_id, $fieldid, $value, $pb) {
-#    drupal_set_message("I get: " . $entity_id.  " with fid " . $fieldid . " and value " . $value . ' for pb ' . $pb->id());
+    drupal_set_message("I get: " . $entity_id.  " with fid " . $fieldid . " and value " . $value . ' for pb ' . $pb->id());
 #    drupal_set_message(serialize($this->getUri("smthg")));
     $datagraphuri = $this->getDefaultDataGraphUri();
 
@@ -2198,7 +2251,8 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
       $path = $pathbuilder->getPbEntriesForFid($field_id);
       
       $old_value = isset($old_values[$field_id]) ? $old_values[$field_id] : array();
-
+      #dpm($old_value, "old value");
+      
       if(empty($path)) {
         //drupal_set_message("I leave here: $field_id");
         continue;
@@ -2210,18 +2264,109 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
       
       unset($field_items['main_property']);
       
-      // TODO: how to handle fields with multiple equal values that are no entity reference?
-      // for the moment we do not handle this. we assume that fields other than entity reference
-      // do not contains the same value twice!
-
       // check if we have to delete some values
       // we go thru the old values and search for an equal value in the new 
       // values array
       // as we do this we also keep track of values that haven't changed so that we
       // do not have to write them again.
 
-      $remain_values = array();
+      $write_values = $field_items;
+      
+      // TODO $val is not set: iterate over fieldvalue!
+      // if there are old values
+      if (!empty($old_value)) {
+        // we might want to delete some
+        $delete_values = $old_value;
+        
+        // if it is not an array there are no values, so we can savely stop
+        if (!is_array($old_value)) {
+          $delete_values = array($mainprop => $old_value);
+          
+          // $old_value contains the value directly
+          foreach ($field_items as $key => $new_item) {
+            if (empty($new_item)) { // empty field item due to cardinality, see else branch
+              unset($write_values[$key]);
+              continue;
+            }
+            // if the old value is somwhere in the new item
+            if ($old_value == $new_item[$mainprop]) {
+              // we unset the write value at this key because this doesn't have to be written
+              unset($write_values[$key]);
+              // we reset the things we need to delete
+              $delete_values = array();
+            }
+          }
+          
+          
+          /*
+          foreach ($field_items as $new_item) {
+            if (empty($new_item)) continue; // empty field item due to cardinality, see else branch
+            if ($old_value == $new_item[$mainprop]) {
+              $remain_values[$new_item[$mainprop]] = $new_item[$mainprop];
+              $delete_values = array();
+              break;
+            }
+          }
+          */
+        } else {
+          // $old_value is an array of arrays resembling field list items and
+          // containing field property => value pairs
+          
+          foreach ($old_value as $old_key => $old_item) {
+            if (!is_array($old_item) || empty($old_item)) {
+              // this may be the case if 
+              // - it contains key "main_property"... (not an array)
+              // - it is an empty field that is there because of the 
+              // field's cardinality (empty)
+              unset($delete_values[$old_key]);
+              continue;
+            }
+            
+            $maincont = FALSE;
+            
+            foreach ($write_values as $key => $new_item) {
+              if (empty($new_item)) {
+                unset($write_values[$key]);
+                continue; // empty field item due to cardinality
+              }
+              if ($old_item[$mainprop] == $new_item[$mainprop]) {
+                // if we find the item in the old values we don't have to write it.
+                unset($write_values[$key]);
+                // and we don't have to delete it
+                unset($delete_values[$old_key]);
+                
+                $maincont = TRUE;
+                break;
+              }
+            }
+            
+            // if we found something we continue in the old values
+            if($maincont)
+              continue;
+          }
+        }
 
+        #dpm($delete_values, "we have to delete");
+        if (!empty($delete_values)) {
+          foreach ($delete_values as $key => $val) {
+            #dpm($val, "delete");
+            $this->deleteOldFieldValue($entity_id, $field_id, $val[$mainprop], $pathbuilder, $key);
+          }
+        }
+      }
+      
+      #dpm($write_values, "we have to write");
+      // now we write all the new values
+      foreach ($write_values as $new_item) {
+        $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder); 
+      }
+
+      
+
+      
+/* --- WRITE LOOP: This whole write loop works incorrectly when it comes to the same thing in the fields */
+      /*
+      $remain_values = array();
       // TODO $val is not set: iterate over fieldvalue!
       if (!empty($old_value)) {
         $delete_values = array();
@@ -2239,7 +2384,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
         } else {
           // $old_value is an array of arrays resembling field list items and
           // containing field property => value pairs
-          foreach ($old_value as $old_item) {
+          foreach ($old_value as $old_key => $old_item) {
             if (!is_array($old_item) || empty($old_item)) {
               // this may be the case if 
               // - it contains key "main_property"... (not an array)
@@ -2248,7 +2393,8 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
               continue;
             }
             $delete = TRUE;
-            foreach ($field_items as $new_item) {
+            
+            foreach ($field_items as $key => $new_item) {
               if (empty($new_item)) continue; // empty field item due to cardinality
               if ($old_item[$mainprop] == $new_item[$mainprop]) {
                 $remain_values[$new_item[$mainprop]] = $new_item[$mainprop];
@@ -2274,7 +2420,7 @@ if (!is_object($path) || !is_object($pb)) {ddebug_backtrace(); return array();}
           $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder); 
         }
       }
-      
+      */
 
 /* --- WRITE LOOP: this whole loop does not seem to work correctly on changes
       foreach($field_items as $field_id2 => $val) {

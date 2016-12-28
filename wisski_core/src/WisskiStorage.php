@@ -240,25 +240,53 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     ->condition('bid',$bundleid)
                     ->condition('fid',$field_name)
                     ->execute()
-                    ->fetchAllAssoc('ident');
+                    ->fetchAllAssoc('delta');
+                    // this is evil because same values will be killed then... we go for weight instead.
+#                    ->fetchAllAssoc('ident');
 #                  dpm($cached_field_values, "cached values");
                   if (!empty($cached_field_values)) {
 #                    dpm($cached_field_values,'cached values');
                     $head = array();
                     $tail = array();
 
-                    foreach ($new_field_values[$id][$field_name] as $delta => $nfv) {
+                    // there is no delta as a key in this array :( 
+                    foreach ($new_field_values[$id][$field_name] as $nfv) {
                       // this would be smarter, however currently the storage can't
                       // store the disamb so this is pointless...
                       //$ident = isset($nfv['wisskiDisamb']) ? $nfv['wisskiDisamb'] : $nfv[$main_property];
-                      $ident = $nfv[$main_property];
-#                      dpm($ident);
-#                      dpm($cached_field_values);
-                      if (isset($cached_field_values[$ident])) {
+                      
+                      // this was a good approach, however it is not correct when you have
+                      // the same value several times
+                      //$ident = $nfv[$main_property];
+                      #dpm($new_field_values[$id][$field_name], "nfv");
+                      #dpm($cached_field_values, "cachedvalues");
+                      #dpm($main_property, "mainprop");
+                      //if (isset($cached_field_values[$ident])) {
+                      
+                      // store the found item
+                      $found_cached_field_value = NULL;
+                      
+                      // iterate through the cached values and delete
+                      // anything we find from the cache to correct the weight
+                      foreach($cached_field_values as $key => $cached_field_value) {
+                        #dpm($cached_field_value->ident, "cfv === ");
+                        #dpm($nfv[$main_property], "nfv === ");
+                        if($cached_field_value->ident === $nfv[$main_property]) {
+                          unset($cached_field_values[$key]);
+                          $found_cached_field_value = $cached_field_value;
+                          break;
+                        }
+                      }
+                      
+                      // if we found something go for it...
+                      if (isset($found_cached_field_value)) {
+                        #dpm($found_cached_field_value, "I found");
 #                        dpm(array($nfv,$cached_field_values[$ident]),'merge with cache');
-                        $head[$cached_field_values[$ident]->delta] = $nfv + unserialize($cached_field_values[$ident]->properties);
+                        $head[$found_cached_field_value->delta] = $nfv + unserialize($found_cached_field_value->properties);
                       } else $tail[$delta] = $nfv;
                     }
+                    
+                    #dpm($head, "head");
                     // do a ksort, because array_merge will resort anyway!
                     ksort($head);
                     ksort($tail);                    
