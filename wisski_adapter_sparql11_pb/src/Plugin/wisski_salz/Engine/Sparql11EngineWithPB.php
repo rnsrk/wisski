@@ -171,11 +171,48 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       "SELECT DISTINCT ?property "
       ."WHERE { "
         ."?property a owl:DatatypeProperty. "
-        ."?property rdfs:domain ?d_superclass. "
-        ."<$step> rdfs:subClassOf* ?d_superclass. }"
+#        ."?property rdfs:domain ?d_superclass. "
+#        ."<$step> rdfs:subClassOf* ?d_superclass. }"
       ;
+      
+      // By Mark: TODO: Please check this. I have absolutely
+      // no idea what this does, I just copied it from below
+      // and I really really hope that Dorian did know what it
+      // does and it will work forever.      
+      $query .= 
+        "{"
+          ."{?d_def_prop rdfs:domain ?d_def_class.}"
+          ." UNION "
+          ."{"
+            ."?d_def_prop owl:inverseOf ?inv. "
+            ."?inv rdfs:range ?d_def_class. "
+          ."}"
+        ."} "
+        ."<$step> rdfs:subClassOf* ?d_def_class. "
+        ."{"
+          ."{?d_def_prop rdfs:subPropertyOf* ?property.}"
+          ." UNION "
+          ."{ "
+            ."?property rdfs:subPropertyOf+ ?d_def_prop. "
+            ." FILTER NOT EXISTS {"
+              ."{ "
+                ."?mid_prop rdfs:subPropertyOf+ ?d_def_prop. "
+                ."?property rdfs:subPropertyOf* ?mid_prop. "
+              ."}"
+              ."{"
+                ."{?mid_prop rdfs:domain ?any_domain.}"
+                ." UNION "
+                ."{ "
+                  ."?mid_prop owl:inverseOf ?mid_inv. "
+                  ."?mid_inv rdfs:range ?any_range. "
+                ."}"
+              ."}"
+            ."}"
+          ."}"
+        ."}}";
 
     $result = $this->directQuery($query);
+#    dpm($result, 'res');
 
     if (count($result) == 0) return array();
     
