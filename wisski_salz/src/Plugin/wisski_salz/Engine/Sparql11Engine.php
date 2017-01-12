@@ -331,7 +331,13 @@ abstract class Sparql11Engine extends EngineBase {
 	*/
 	public function directUpdate($query) {
     \Drupal::logger('UPDATE '.$this->adapterId())->debug('{u}',array('u'=>$query));
-		return $this->getEndpoint()->update($query);
+    try {
+  		return $this->getEndpoint()->update($query);
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('UPDATE '.$this->adapterId())->error('{exception}', array('exception' => $e));
+      return NULL;
+    }
 	}
 
 	public function checkUriExists($uri) {

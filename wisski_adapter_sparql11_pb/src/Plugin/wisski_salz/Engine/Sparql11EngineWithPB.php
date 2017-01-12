@@ -1031,7 +1031,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 */
   public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL, $relative = TRUE) {
-#    dpm("ptrv");
+#dpm(func_get_args(), "ptrv");
     if(!$path->isGroup())
       $primitive = $path->getDatatypeProperty();
     else
@@ -1102,9 +1102,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #        if(count($path->getPathArray()) > 3)
 #          return;
         }
-      } else
+      }
+      else {
         $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, 0, FALSE, NULL, 'field', $relative);
-
+      }
 
     } else {
       drupal_set_message("No EID for data. Error. ", 'error');
@@ -1146,18 +1147,21 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #          if($main_property == "target_id")
 #            $outvalue = $this->getDrupalId($outvalue);
           
-          if(is_null($disamb) == TRUE)
+          if(is_null($disamb) == TRUE) {
             $out[] = array($main_property => $outvalue);
+          }
           else {
 #            drupal_set_message("disamb: " . serialize($disamb));
 #            dpm($thing);
 #            drupal_set_message("pa: " . serialize($thing));
           #  drupal_set_message("res: " . serialize($result));
             $disambname = 'x'.$disamb;
-            if(!isset($thing->{$disambname}))
+            if(!isset($thing->{$disambname})) {
               $out[] = array($main_property => $outvalue);
-            else
+            }
+            else {
               $out[] = array($main_property => $outvalue, 'wisskiDisamb' => $thing->{$disambname}->dumpValue("text"));
+            }
           }
         }
       } else {
@@ -1457,9 +1461,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             $tmp = $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property);            
             
             if ($main_property == 'target_id') {
+$oldtmp = $tmp;
               foreach($tmp as $key => $item) {
-                $tmp[$key]["target_id"] = $this->getDrupalId($item["target_id"]);
+                $tmp[$key]["original_target_id"] = $item["target_id"];
+                $tmp[$key]["target_id"] = $this->getDrupalId(isset($item['wisskiDisamb']) ? $item["wisskiDisamb"] : $item["target_id"]);
               }
+#dpm([$oldtmp,$tmp], 'target_id_rewrite');                
             }
           
 

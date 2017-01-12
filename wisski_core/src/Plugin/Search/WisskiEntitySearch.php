@@ -90,7 +90,12 @@ dpm($rows);
     foreach ($results as $bundle_id => $entity_ids) {
       $bundle = entity_load('wisski_bundle', $bundle_id);
       foreach ($entity_ids as $entity_id) {
-        $title = wisski_core_generate_title($entity_id);
+        // we also give the bundle id as we know it here and the bundle id is
+        // mandatory for title creation and there my be cases
+        // in which neither a title nor a bundle id have been cached for the
+        // entity. this would prevent WissKI from generating and displaying the
+        // right title.
+        $title = wisski_core_generate_title($entity_id, FALSE, $bundle_id);
         if (is_null($title)) $title = $entity_id;
         $return[] = array(
           'link' => Url::fromRoute(
@@ -145,7 +150,6 @@ dpm($rows);
         }
       }
     } else {
-      $bundle_count = \Drupal::entityQuery('wisski_bundle')->count()->execute();
       // don't load only bundle_limit amount of bundles
       #$bundle_ids = \Drupal::entityQuery('wisski_bundle')->range(0,$this->bundle_limit)->execute();
       // load all
@@ -172,6 +176,7 @@ dpm($rows);
         else $selection[$bundle_id] = 0;
       }
     }
+    $bundle_count = \Drupal::entityQuery('wisski_bundle')->count()->execute();
     
     //dpm($selection,'selection');
     $storage['paths'] = $paths;

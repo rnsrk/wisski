@@ -69,19 +69,16 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   protected function getEntityInfo(array $ids,$cached = FALSE) {
 
-#    $bundles = $this->entityManager->getBundleInfo('wisski_individual');
-//    dpm($bundles);
     $entity_info = &$this->entity_info;
     if ($cached) {
       $ids = array_diff_key($ids,$entity_info);
       if (empty($ids)) return $entity_info;
+      // if there remain entities that were not in cache, $ids now only 
+      // contains their ids and we load these in the remaining procedure.
     }
 
     $adapters = entity_load_multiple('wisski_salz_adapter');
-#    dpm(serialize($adapters));
-#    drupal_set_message("hallo welt");
     $info = array();
-#    dpm($all_field_definitions,'field_definitions before');
     // for every id
     foreach($ids as $id) {
     
@@ -94,14 +91,11 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       
       // ask all adapters
       foreach($adapters as $aid => $adapter) {
-        //drupal_set_message("Does $aid know $id ?");
         // if they know that id
         if($adapter->hasEntity($id)) {
-          //drupal_set_message("yes it does");
           // if so - ask for the bundles for that id
           // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
           $bundle_ids = $adapter->getBundleIdsForEntityId($id);
-          #drupal_set_message("Yes, I know " . $id . " and I am " . $aid . ". The bundles are " . serialize($bundle_ids) . ".");
           if (isset($cached_bundle)) {
             if (in_array($cached_bundle,$bundle_ids)) {
               $bundle_ids = array($cached_bundle);
@@ -112,14 +106,11 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           }
           $bundle_ids = array_slice($bundle_ids,0,1);
           foreach($bundle_ids as $bundleid) {
-#            dpm($field_definitions,'Field defs for '.$bundleid);
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
 #            $view_ids = \Drupal::entityQuery('entity_view_display')
 #              ->condition('id', 'wisski_individual.' . $bundleid . '.', 'STARTS_WITH')
 #              ->execute();
 #            $entity_view_displays = \Drupal::entityManager()->getStorage('entity_view_display')->loadMultiple($view_ids);
-#            drupal_set_message("I am asking for " . $id . " and I am " . $aid. " and I think my bundle is: " . serialize($bundleid));
-            #drupal_set_message("asking for: " . serialize(array_keys($field_definitions)));
             try {
               foreach ($field_definitions as $field_name => $field_def) {
               
@@ -160,11 +151,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 //here we have a "normal field" so we can assume an array of field values is OK
                 $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
                 
-                #drupal_set_message(serialize($new_field_values));
-                //dpm(array('field'=>$field_name,'values'=>$new_field_values),$adapter->id());
                 if (empty($new_field_values)) continue;
                 $info[$id]['bundle'] = $bundleid;
-//                dpm($field_def->getType(),$field_name);
                 if ($field_def->getType() === 'entity_reference') {
                   $field_settings = $field_def->getSettings();
                   $target_bundles = $field_settings['handler_settings']['target_bundles'];
@@ -176,7 +164,6 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     $target_bundle_id = current($target_bundles);
                   }
                   $target_ids = $new_field_values[$id][$field_name];
-//                  dpm(array('target_ids'=>$target_ids,'target_bundles'=>$target_bundles,'field_def'=>$field_def),'references');
                   if (!is_array($target_ids)) $target_ids = array(array('target_id'=>$target_ids));
                   foreach ($target_ids as $target_id) {
                     $target_id = $target_id['target_id'];
@@ -190,35 +177,35 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 // no format can be retrieved from storage
                 $hack_type = $field_def->getType();
                 if ($hack_type == 'text_with_summary' || $hack_type == 'text_long') {
-                   foreach($new_field_values as &$xid) {
+                  foreach($new_field_values as &$xid) {
                     foreach($xid as &$xfieldname) {
                       foreach ($xfieldname as &$xindex) {
-                         $xindex['format'] = 'full_html';
-                       }
-                     }
-                   }
+                        $xindex['format'] = 'full_html';
+                      }
+                    }
+                  }
 #                  $value['value'] = $value;
 #                  $value['format'] = 'full_html';
                 }
+
                 //we integrate a file handling mechanism that must necessarily also handle
                 //other file based fields e.g. "image"
+                //
+                // the if test is a hack. there does not seem to be an easy way
+                // to determine if a field is file-based. this test tests
+                // whether the field depends on the file module. NOTE: there
+                // may be other reasons why a field depends on file than
+                // because it handles files
                 if (in_array('file',$field_def->getFieldStorageDefinition()->getDependencies()['module'])) {
                   
                   $value = $new_field_values[$id][$field_name];
                   // we assume that $value is an image URI which is to be rplaced by a FileID
-                  #drupal_set_message('we got an image to handle. Field name:'.$field_name);
-                  //dpm($value,'image_info');dpm($entity_info[$id],'current info');
-                  #foreach ($entity_view_displays as $evd) {
-                  #  $component = $evd->getComponent($field_name);
-                  #  dpm($component['type'],$field_name);
-                  #}
-                  #dpm($value, "value");
                   // $value must be the image uri
                   $file_uri = current($value);
                   
                   // temporary hack - if the file_uri is an array the data might be in the target_id                  
                   if(is_array($file_uri))
-                    $file_uri = $file_uri['target_id'];
+                    $file_uri = $file_uri['original_target_id'];
                   
                   if (empty($file_uri)) continue;
                   $local_uri = '';
@@ -232,8 +219,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   );
                   
                 }
+
+                //try finding the weights and sort the values accordingly
                 if (isset($new_field_values[$id][$field_name])) {
-                  //try finding the weights and sort the values accordingly
                   $cached_field_values = db_select('wisski_entity_field_properties','f')
                     ->fields('f',array('ident','delta','properties'))
                     ->condition('eid',$id)
@@ -243,9 +231,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     ->fetchAllAssoc('delta');
                     // this is evil because same values will be killed then... we go for weight instead.
 #                    ->fetchAllAssoc('ident');
-#                  dpm($cached_field_values, "cached values");
                   if (!empty($cached_field_values)) {
-#                    dpm($cached_field_values,'cached values');
                     $head = array();
                     $tail = array();
 
@@ -258,9 +244,6 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                       // this was a good approach, however it is not correct when you have
                       // the same value several times
                       //$ident = $nfv[$main_property];
-                      #dpm($new_field_values[$id][$field_name], "nfv");
-                      #dpm($cached_field_values, "cachedvalues");
-                      #dpm($main_property, "mainprop");
                       //if (isset($cached_field_values[$ident])) {
                       
                       // store the found item
@@ -269,8 +252,6 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                       // iterate through the cached values and delete
                       // anything we find from the cache to correct the weight
                       foreach($cached_field_values as $key => $cached_field_value) {
-                        #dpm($cached_field_value->ident, "cfv === ");
-                        #dpm($nfv[$main_property], "nfv === ");
                         if($cached_field_value->ident === $nfv[$main_property]) {
                           unset($cached_field_values[$key]);
                           $found_cached_field_value = $cached_field_value;
@@ -280,13 +261,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                       
                       // if we found something go for it...
                       if (isset($found_cached_field_value)) {
-                        #dpm($found_cached_field_value, "I found");
-#                        dpm(array($nfv,$cached_field_values[$ident]),'merge with cache');
                         $head[$found_cached_field_value->delta] = $nfv + unserialize($found_cached_field_value->properties);
                       } else $tail[$delta] = $nfv;
                     }
                     
-                    #dpm($head, "head");
                     // do a ksort, because array_merge will resort anyway!
                     ksort($head);
                     ksort($tail);                    
@@ -294,14 +272,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     $new_field_values[$id][$field_name] = array_merge($head,$tail);
 
                   }
-                  //dpm($new_field_values[$id][$field_name],$aid.' '.$field_name);
                   if (!isset($info[$id]) || !isset($info[$id][$field_name])) $info[$id][$field_name] = $new_field_values[$id][$field_name];
                   else $info[$id][$field_name] = array_merge($info[$id][$field_name],$new_field_values[$id][$field_name]);
                 }
               }
-              //drupal_set_message("Das richtige: ".serialize($info));
             } catch (\Exception $e) {
-              drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . $e->getMessage()); #because ' . serialize($e));
+              drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . $e->getMessage());
               //throw $e;
             }              
           }     
@@ -394,14 +370,14 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
   public function getFileId($file_uri,&$local_file_uri='') {
     #drupal_set_message('Image uri: '.$file_uri);
-    #dpm($file_uri,__FUNCTION__);
     if (empty($file_uri)) return NULL;
     //first try the cache
     $cid = 'wisski_file_uri2id_'.md5($file_uri);
-    if ($cache = \Drupal::cache()->get($cid)) {
-      list($file_uri,$local_file_uri) = $cache->data;
-      return $file_uri;
-    }
+#    if ($cache = \Drupal::cache()->get($cid)) {
+#      list($file_uri,$local_file_uri) = $cache->data;
+#dpm([$file_uri,$local_file_uri],__FUNCTION__ . __LINE__);
+#      return $file_uri;
+#    }
     
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
@@ -457,7 +433,15 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           } else {
             try {
 
-              $data = file_get_contents($file_uri);
+              $tmp = explode("/", $file_uri);
+              $tmp[count($tmp) - 1] = urlencode($tmp[count($tmp) - 1]);
+              $tmp[count($tmp) - 1] = str_replace("+", "%20", $tmp[count($tmp) - 1]);
+              $file_uri = join('/', $tmp);
+
+              $data = @file_get_contents($file_uri);
+              if (empty($data)) 
+              drupal_set_message($this->t('Could not create file with uri %uri.',array('%uri'=>$file_uri,)),'error');
+
               //dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
               $file = file_save_data($data, $local_file_uri);
 
@@ -516,7 +500,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     if ($file_object = File::load($file_id)) {
       return str_replace(
         'public:/',																						//standard file uri is public://.../filename.jpg
-        \Drupal::service('stream_wrapper.pub')->baseUrl(),	//we want DRUPALHOME/sites/default/.../filename.jpg
+        \Drupal::service('stream_wrapper.public')->baseUrl(),	//we want DRUPALHOME/sites/default/.../filename.jpg
         $file_object->getFileUri()
       );
     }
