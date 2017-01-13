@@ -12,10 +12,9 @@ function wisski_core_cache_flush() {
   drupal_set_message(t('Flushed WissKI specific caches'));
 }
 
-function wisski_core_generate_title($wisski_individual,$force_new=FALSE) {
+function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $override_bundle_id = NULL) {
 
 //  ddebug_backtrace();
-  
   $create_form_title = FALSE;
   if ($wisski_individual instanceof WisskiEntityInterface) {
     if ($wisski_individual->isNew()) $create_form_title = TRUE;
@@ -24,6 +23,9 @@ function wisski_core_generate_title($wisski_individual,$force_new=FALSE) {
   } else {
     $entity_id = $wisski_individual;
     $bundle_id = WisskiCacheHelper::getCallingBundle($wisski_individual);
+  }
+  if ($override_bundle_id !== NULL) {
+    $bundle_id = $override_bundle_id;
   }
   $title = '';
   if (!empty($bundle_id)) {

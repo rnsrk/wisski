@@ -221,19 +221,27 @@ class Query extends WisskiQueryBase {
         // we directly access the entity table.
         // TODO: this is a hack but faster than talking with the AdapterHelper
         if ($operator == 'IN' || $operator = "=") {
-          $values = (array) $value;
-          $query = \Drupal::database()->select('wisski_salz_id2uri', 't')
-            ->distinct()
-            ->fields('t', array('eid', 'uri'))
-            ->condition('adapter_id', $this->getEngine()->adapterId())
-            ->condition('eid', $values, 'IN');
-          $eids = $query->execute()->fetchAllKeyed();
-          $entity_ids = $this->join($conjunction, $entity_ids, $eids);
-          if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
-            // the condition evaluated to an empty set of entities 
-            // and we have to AND; so the result set will be empty.
-            // The rest of the conditions can be skipped 
-            return array('', array());
+          if (!empty($value)) {
+            $values = (array) $value;
+            $query = \Drupal::database()->select('wisski_salz_id2uri', 't')
+              ->distinct()
+              ->fields('t', array('eid', 'uri'))
+              ->condition('adapter_id', $this->getEngine()->adapterId())
+              ->condition('eid', $values, 'IN');
+            $eids = $query->execute()->fetchAllKeyed();
+            $entity_ids = $this->join($conjunction, $entity_ids, $eids);
+            if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
+              // the condition evaluated to an empty set of entities 
+              // and we have to AND; so the result set will be empty.
+              // The rest of the conditions can be skipped 
+              return array('', array());
+            }
+          }
+          else {
+            // if no value is given, then condition is always true.
+            // this may be the case when a field's mere existence is checked;
+            // as the eid always exists, this is true for every entity
+            // => do nothing
           }
         }
         else {
