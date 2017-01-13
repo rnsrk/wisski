@@ -1123,15 +1123,21 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
 */    
     $sparql .= " } ";
-    
+
     $result = $this->directQuery($sparql);
 
     $out = array();
     foreach($result as $thing) {
-#      drupal_set_message("thing is: " . serialize($thing));
+      
+      // if $thing is just a true or not true statement
+      if($thing == new \StdClass()) {
+        // we continue
+        continue;
+      }
+      
 #      $name = 'x' . (count($patharray)-1);
       $name = 'x' . (count($path->getPathArray())-1);
-      if(!empty($primitive)) {
+      if(!empty($primitive) && $primitive != "empty") {
         if(empty($main_property)) {
           $out[] = $thing->out->getValue();
         } else {
@@ -1164,7 +1170,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         if(empty($main_property)) {
           $out[] = $thing->{$name}->dumpValue("text");
         } else { 
-        
           $outvalue = $thing->{$name}->dumpValue("text");
           
 #          if($main_property == "target_id")
@@ -2054,8 +2059,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #\Drupal::logger('testung')->debug($path->getID() . ":".htmlentities($query));
     // get the primitive for this path if any    
     $primitive = $path->getDatatypeProperty();
+
+    if( (empty($primitive) || $primitive == "empty") && !$path->isGroup()) {
+      drupal_set_message("There is no primitive Datatype for Path " . $path->id(), "error");
+    }
     
-    if(!empty($primitive) && empty($object_in) && !$path->isGroup()) {
+    if(!empty($primitive) && !($primitive == "empty") && empty($object_in) && !$path->isGroup()) {
       if(!empty($olduri)) {
         $query .= "<$olduri> ";
       } else {
