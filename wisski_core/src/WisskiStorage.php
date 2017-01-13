@@ -432,10 +432,17 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             $value = $file->id();
           } else {
             try {
-
+              
+              // we have to encode the image url, 
+              // see http://php.net/manual/en/function.file-get-contents.php
+              // NOTE: although the docs say we must use urlencode(), the docs
+              // for urlencode() and rawurlencode() specify that rawurlencode
+              // must be used for url path part.
+              // TODO: this encode hack only works properly if the file name 
+              // is the last part of the URL and if only the filename contains
+              // disallowed chars. 
               $tmp = explode("/", $file_uri);
-              $tmp[count($tmp) - 1] = urlencode($tmp[count($tmp) - 1]);
-              $tmp[count($tmp) - 1] = str_replace("+", "%20", $tmp[count($tmp) - 1]);
+              $tmp[count($tmp) - 1] = rawurlencode($tmp[count($tmp) - 1]);
               $file_uri = join('/', $tmp);
 
               $data = @file_get_contents($file_uri);
