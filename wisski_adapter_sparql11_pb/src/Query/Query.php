@@ -406,8 +406,6 @@ class Query extends WisskiQueryBase {
       }
     }
 
-#   \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded {result}', array('query' => $select, 'result' => $result));
-
     return $return;
 
   }
@@ -499,7 +497,9 @@ class Query extends WisskiQueryBase {
     }
     $vars['out'] = "c${i}_";
     
-    $query_part = $this->getEngine()->generateTriplesForPath($pb, $path, $value, NULL, NULL, 0, 0, FALSE, $operator, 'field', TRUE, $vars);
+    // arg 11 ($relative) must be FALSE, otherwise fields of subgroups yield
+    // the entities of the subgroup
+    $query_part = $this->getEngine()->generateTriplesForPath($pb, $path, $value, NULL, NULL, 0, 0, FALSE, $operator, 'field', FALSE, $vars);
 
 #dpm(array($path->id(), $path->getPathArray(), $vars, $query_part), __METHOD__);
 #\Drupal::logger('query path cond')->debug("path ".$path->id() ." {v} qc {d} qp $query_part", array("d"=>join(";", $path->getPathArray()), "v"=>join("/", $vars)));

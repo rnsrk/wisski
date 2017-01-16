@@ -135,7 +135,7 @@ function wisski_core_schema() {
       ),
       'ident' => array(
         'description' => 'A string that identifies this field item, will mostly be the disamb/group URI',
-        'type' => 'varchar',
+        'type' => 'text',
         'length' => 1023,
         'not null' => TRUE,
       ),

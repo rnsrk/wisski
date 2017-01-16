@@ -2141,7 +2141,7 @@ $oldtmp = $tmp;
   }
   
   public function addNewFieldValue($entity_id, $fieldid, $value, $pb) {
-    drupal_set_message("I get: " . $entity_id.  " with fid " . $fieldid . " and value " . $value . ' for pb ' . $pb->id());
+#    drupal_set_message("I get: " . $entity_id.  " with fid " . $fieldid . " and value " . $value . ' for pb ' . $pb->id());
 #    drupal_set_message(serialize($this->getUri("smthg")));
     $datagraphuri = $this->getDefaultDataGraphUri();
 

@@ -180,7 +180,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   foreach($new_field_values as &$xid) {
                     foreach($xid as &$xfieldname) {
                       foreach ($xfieldname as &$xindex) {
-                        $xindex['format'] = 'full_html';
+#                        $xindex['format'] = 'full_html';
                       }
                     }
                   }
@@ -212,7 +212,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   // by mark: this seems wrong to me... however I am unsure
 #                  $new_field_values[$id][$field_name][] = array(
                   $new_field_values[$id][$field_name] = array(
-                    'target_id' => $this->getFileId($file_uri,$local_uri),
+                    'target_id' => $this->getFileId($file_uri,$local_uri, $id),
                     //this is a fallback
                     //@TODO get the alternative text from the stores
                     'alt' => substr($local_uri,strrpos($local_uri,'/') + 1),
@@ -262,7 +262,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                       // if we found something go for it...
                       if (isset($found_cached_field_value)) {
                         $head[$found_cached_field_value->delta] = $nfv + unserialize($found_cached_field_value->properties);
-                      } else $tail[$delta] = $nfv;
+                      } else $tail[] = $nfv;
                     }
                     
                     // do a ksort, because array_merge will resort anyway!
@@ -368,16 +368,15 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     return $entity_info;
   }
 
-  public function getFileId($file_uri,&$local_file_uri='') {
+  public function getFileId($file_uri,&$local_file_uri='', $entity_id = 0) {
     #drupal_set_message('Image uri: '.$file_uri);
     if (empty($file_uri)) return NULL;
     //first try the cache
     $cid = 'wisski_file_uri2id_'.md5($file_uri);
-#    if ($cache = \Drupal::cache()->get($cid)) {
-#      list($file_uri,$local_file_uri) = $cache->data;
-#dpm([$file_uri,$local_file_uri],__FUNCTION__ . __LINE__);
-#      return $file_uri;
-#    }
+    if ($cache = \Drupal::cache()->get($cid)) {
+      list($file_uri,$local_file_uri) = $cache->data;
+      return $file_uri;
+    }
     
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
@@ -415,7 +414,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           //dpm('replaced '.$file_uri.' with local file '.$value);
           //@TODO find out what to do if there is more than one file with that uri
         } else {
-          // if we have no managed file with that uri, we try to generate one
+
+          $file = NULL;
+          // if we have no managed file with that uri, we try to generate one.
+          // in the if test we test whether there exists on the server a file 
+          // called $local_file_uri: file_destination() with 2nd param returns
+          // FALSE if there is such a file!
           if (file_destination($local_file_uri,FILE_EXISTS_ERROR) === FALSE) {
             $file = File::create([
               'uri' => $local_file_uri,
@@ -430,6 +434,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
             $file->save();
             $value = $file->id();
+            
           } else {
             try {
               
@@ -446,8 +451,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               $file_uri = join('/', $tmp);
 
               $data = @file_get_contents($file_uri);
-              if (empty($data)) 
-              drupal_set_message($this->t('Could not create file with uri %uri.',array('%uri'=>$file_uri,)),'error');
+              if (empty($data)) { 
+                drupal_set_message($this->t('Could not fetch file with uri %uri.',array('%uri'=>$file_uri,)),'error');
+              }
 
               //dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
               $file = file_save_data($data, $local_file_uri);
@@ -459,9 +465,19 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 drupal_set_message('Error saving file','error');
                 //dpm($data,$file_uri);
               }
-            } catch (EntityStorageException $e) {
+            }
+            catch (EntityStorageException $e) {
               drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
             }
+          }
+
+          if (!empty($file)) {
+            // we have to register the usage of this file entity otherwise 
+            // Drupal will complain that it can't refer to this file when 
+            // saving the WissKI individual
+            // (it is unclear to me why Drupal bothers about that...)
+            \Drupal::service('file.usage')->add($file, 'wisski_core', 'wisski_individual', $entity_id);
+\Drupal::logger('arty')->debug("then,$value,$entity_id,$local_file_uri,$file_uri");
           }
         }
       }

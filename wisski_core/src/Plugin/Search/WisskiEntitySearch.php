@@ -52,7 +52,6 @@ class WisskiEntitySearch extends SearchPluginBase {
             ->condition('ngram', "%" . $select->escapeLike($string) . "%", 'LIKE')
             ->execute()
             ->fetchAll();
-dpm($rows);
         
         foreach ($rows as $row) {
           $results[$row->bundle][] = $row->ent_num;
@@ -393,7 +392,6 @@ dpm($rows);
   public function buildSearchUrlQuery(FormStateInterface $form_state) {
     
     $vals = $form_state->getValues();
-    dpm($vals,__FUNCTION__.'::values');
     $keys = array();
     if (isset($vals['advanced']) && isset($vals['advanced']['paths']) && !empty($vals['advanced']['paths'])) {
       foreach($vals['advanced']['paths'] as $bundle_id => $paths) {
