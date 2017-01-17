@@ -1616,7 +1616,8 @@ $oldtmp = $tmp;
 
       $result = $this->directUpdate($delete);    
 
-    } else {
+    } // end reference branch
+    else {  // no reference
     
       $subject_uri = $this->getUriForDrupalId($entity_id);
       $clearPathArray = $this->getClearPathArray($path, $pb);
@@ -1670,7 +1671,16 @@ $oldtmp = $tmp;
       }
       
       if(is_null($position)) {
-        drupal_set_message("I could not find the old value '" . $value . "' and thus could not delete it. ","error");
+        drupal_set_message($this->t(
+            "For path %name (%id): Could not find old value '@v' and thus could not delete it.", 
+            array(
+              '%name' => $path->getName(),
+              '%id' => $path->id(),
+              '@v' => $value
+            )
+          ),
+          "error"
+        );
         return;
       }
       
@@ -1688,16 +1698,26 @@ $oldtmp = $tmp;
         $delete .= "  <$subject_uri> <$prop> <$object_uri> .\n";
         $delete .= "  <$object_uri> <$inverse> <$subject_uri> .\n";
 
-      } else {
+      }
+      else {
         $primitive = $path->getDatatypeProperty();
         
         if(!empty($primitive)) {
-          if(empty($value)) {
-          
-            $delete .= "  <$subject_uri> <$prop> '$value' .\n";
-                        
-          } else {
-            drupal_set_message("No Primitive was set for path " . $path->id() . " and the path length was too short!", "error");
+          if(!empty($value)) {
+            $value = $this->escapeSparqlLiteral($value);
+            $delete .= "  <$subject_uri> <$primitive> '$value' .\n";
+#dpm([$primitive, $value, $fieldid,$delete], __METHOD__.__LINE__);
+          }
+          else {
+            drupal_set_message($this->t(
+                "Path %name (%id) has primitive but no value given.",
+                array(
+                  '%name' => $path->getName(),
+                  '%id' => $path->id()
+                )
+              ),
+              "error"
+            );
             return; 
           }
         }
@@ -1705,71 +1725,8 @@ $oldtmp = $tmp;
       
       $delete .= ' }';
       
-#      dpm($delete, "delete query");
       $result = $this->directUpdate($delete);
 
-      /*
-      foreach($result as $key => $thing) {
-        
-        if($count !== $loc_count) {
-          $loc_count++;
-          continue;
-        }
-        
-        if($count === $loc_count) {
-          $break = TRUE;
-        }
-      
-        $outarray[$key] = array();
-        
-        for($i=$diff; $i<count($clearPathArray)+$diff; $i++) {
-          $name = "x" . $i;
-          if($i % 2 == 0) {
-            $outarray[$key][$i] = $thing->{$name}->dumpValue("text");
-          } else {
-            $outarray[$key][$i] = $clearPathArray[($i-$diff)];
-          }
-        }
-
-        ksort($outarray[$key]);
-        if(!empty($primitive)) {
-          if(empty($value)) {
-            $outarray[$key]["primitive"] = $primitive;
-            $outarray[$key]["out"] = $thing->out->getValue();
-          } else {
-            $outarray[$key]["primitive"] = $primitive;
-            $outarray[$key]["out"] = $value;
-          }
-        }
-
-      // add graph handling
-        $sparqldelete = "DELETE DATA { " ;
-   
-        $arr = $outarray[$key];
-        $i=0;
-        
-        // is there a disamb?
-        if($path->getDisamb() > 0 && isset($arr[($path->getDisamb()-2)*2])) {
-          $i = ($path->getDisamb()-2)*2;
-          
-          $sparqldelete .= "<" . $arr[$i++] . "> ";
-          $sparqldelete .= "<" . $arr[$i++] . "> ";
-          $sparqldelete .= "<" . $arr[$i++] . "> ";
-        } else { // no disamb - cut in the end!
-          // -3 because out and primitive
-          $maxi = count($arr)-3;
-          
-          $sparqldelete .= "<" . $arr[$maxi] . "> ";
-          $sparqldelete .= "<" . $arr['primitive'] . "> ";
-          $sparqldelete .= "'" . $this->escapeSparqlLiteral($arr['out']) . "' ";
-        }
-        
-        $sparqldelete .= " } ";
-        dpm($sparqldelete, "delete query");
-        $result = $this->directUpdate($sparqldelete);
-        
-        $loc_count++;
-      }*/
     }
 
   }

@@ -68,6 +68,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * @return array keyed by entity id containing entity field info
    */
   protected function getEntityInfo(array $ids,$cached = FALSE) {
+$rand = rand();
 
     $entity_info = &$this->entity_info;
     if ($cached) {
@@ -124,7 +125,6 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   //this is a base field and cannot have multiple values
                   //@TODO make sure, we load the RIGHT value
                   $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
-#dpm(array($adapter->id(), $field_name,$id, $bundleid, $new_field_values),'gei','error');
 
                   if (empty($new_field_values)) continue;
                 
@@ -184,40 +184,39 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                       }
                     }
                   }
-#                  $value['value'] = $value;
-#                  $value['format'] = 'full_html';
+#                 $value['value'] = $value;
+#                 $value['format'] = 'full_html';
                 }
 
-                //we integrate a file handling mechanism that must necessarily also handle
-                //other file based fields e.g. "image"
+                // we integrate a file handling mechanism that must necessarily
+                // also handle other file based fields e.g. "image"
                 //
-                // the if test is a hack. there does not seem to be an easy way
-                // to determine if a field is file-based. this test tests
+                // the is_file test is a hack. there doesn't seem to be an easy
+                // way to determine if a field is file-based. this test tests
                 // whether the field depends on the file module. NOTE: there
                 // may be other reasons why a field depends on file than
-                // because it handles files
-                if (in_array('file',$field_def->getFieldStorageDefinition()->getDependencies()['module'])) {
+                // handling files
+                $is_file = in_array('file',$field_def->getFieldStorageDefinition()->getDependencies()['module']);
+                $has_values = !empty($new_field_values[$id][$field_name]);
+                if ($is_file && $has_values) {
                   
-                  $value = $new_field_values[$id][$field_name];
-                  // we assume that $value is an image URI which is to be rplaced by a FileID
-                  // $value must be the image uri
-                  $file_uri = current($value);
-                  
-                  // temporary hack - if the file_uri is an array the data might be in the target_id                  
-                  if(is_array($file_uri))
-                    $file_uri = $file_uri['original_target_id'];
-                  
-                  if (empty($file_uri)) continue;
-                  $local_uri = '';
-                  // by mark: this seems wrong to me... however I am unsure
-#                  $new_field_values[$id][$field_name][] = array(
-                  $new_field_values[$id][$field_name] = array(
-                    'target_id' => $this->getFileId($file_uri,$local_uri, $id),
-                    //this is a fallback
-                    //@TODO get the alternative text from the stores
-                    'alt' => substr($local_uri,strrpos($local_uri,'/') + 1),
-                  );
-                  
+                  foreach ($new_field_values[$id][$field_name] as $key => &$properties_array) {
+                    // we assume that $value is an image URI which is to be
+                    // replaced by a File entity ID
+                    // we use the special property original_target_id as the
+                    // loadPropertyValuesForField()/pathToReturnValues()
+                    // replaces the URI with the corresp. file entity id.
+                    if (!isset($properties_array['original_target_id'])) continue;
+                    $file_uri = $properties_array['original_target_id'];
+                    
+                    $local_uri = '';
+                    $properties_array = array(
+                      'target_id' => $this->getFileId($file_uri,$local_uri, $id),
+                      //this is a fallback
+                      //@TODO get the alternative text from the stores
+                      'alt' => substr($local_uri,strrpos($local_uri,'/') + 1),
+                    );
+                  }
                 }
 
                 //try finding the weights and sort the values accordingly
@@ -477,7 +476,6 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             // saving the WissKI individual
             // (it is unclear to me why Drupal bothers about that...)
             \Drupal::service('file.usage')->add($file, 'wisski_core', 'wisski_individual', $entity_id);
-\Drupal::logger('arty')->debug("then,$value,$entity_id,$local_file_uri,$file_uri");
           }
         }
       }
@@ -508,7 +506,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #    return file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));    
     // this is also evil, because many modules can't handle public:// :/
     // to make it work we added a directory.
-    return file_default_scheme().'://wisski_original/'.md5($file_uri);    
+    return file_default_scheme().'://wisski_original/'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));    
     // external uri doesn't work either
     // this is just a documentation of what I've tried...
 #    return \Drupal::service('stream_wrapper.public')->baseUrl() . '/' . md5($file_uri);
