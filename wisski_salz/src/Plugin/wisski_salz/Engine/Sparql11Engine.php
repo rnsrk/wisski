@@ -335,7 +335,7 @@ abstract class Sparql11Engine extends EngineBase {
   		return $this->getEndpoint()->update($query);
     }
     catch (\Exception $e) {
-      \Drupal::logger('UPDATE '.$this->adapterId())->error('{exception}', array('exception' => $e));
+      \Drupal::logger('UPDATE '.$this->adapterId())->error('{exception}', array('exception' => (string) $e));
       return NULL;
     }
 	}
