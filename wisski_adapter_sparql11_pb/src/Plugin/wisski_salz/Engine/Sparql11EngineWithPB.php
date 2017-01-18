@@ -75,7 +75,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    */  
   public function getPathAlternatives($history = [], $future = [],$fast_mode=FALSE,$empty_uri='empty') {
 
-    \Drupal::logger('WissKI path alternatives: '.($fast_mode ? 'fast mode' : "normal mode"))->debug('History: '.serialize($history)."\n".'Future: '.serialize($future));
+#    \Drupal::logger('WissKI path alternatives: '.($fast_mode ? 'fast mode' : "normal mode"))->debug('History: '.serialize($history)."\n".'Future: '.serialize($future));
     
     $search_properties = NULL;
     
@@ -115,7 +115,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }
     }
     
-    \Drupal::logger('WissKI next '.($search_properties ? 'properties' : 'classes'))->debug('Last: '.$last.', Next: '.$next);
+#    \Drupal::logger('WissKI next '.($search_properties ? 'properties' : 'classes'))->debug('Last: '.$last.', Next: '.$next);
     //$search_properties is TRUE if and only if last and next are valid URIs and no owl:Class-es
     if ($search_properties) {
       $return = $this->nextProperties($last,$next,$fast_mode);
@@ -295,7 +295,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function nextProperties($class=NULL,$class_after = NULL,$fast_mode=FALSE) {
 
     if (!isset($class) && !isset($class_after)) return $this->getProperties();
-    \Drupal::logger(__METHOD__)->debug('class: '.$class.', class_after: '.$class_after);
+#    \Drupal::logger(__METHOD__)->debug('class: '.$class.', class_after: '.$class_after);
     $output = $this->getPropertiesFromCache($class,$class_after);
     if ($output === FALSE) {
       //drupal_set_message('none in cache');
@@ -423,7 +423,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function nextClasses($property=NULL,$property_after = NULL,$fast_mode=FALSE) {
     
     if (!isset($property) && !isset($property_after)) return $this->getClasses();
-    \Drupal::logger(__METHOD__)->debug('property: '.$property.', property_after: '.$property_after);
+#    \Drupal::logger(__METHOD__)->debug('property: '.$property.', property_after: '.$property_after);
     $output = $this->getClassesFromCache($property,$property_after);
     if ($output === FALSE) {
       //drupal_set_message('none in cache');
@@ -709,6 +709,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
   
   /**
+   * This is Obsolete!
+   *
    * Gets the common part of a group or path
    * that is clean from subgroup-fragments
    */
@@ -974,64 +976,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     return !empty($ent);
   }
-/* 
-  public function groupToReturnValue($group, $primitive = NULL, $eid = NULL) {
-    $sparql = "SELECT DISTINCT * WHERE { ";
-
-    $sparql .= $this->generateTriplesForPath($pb, $group, '', NULL, NULL, 0, 0, TRUE);
-*/
-/*
-    foreach($patharray as $key => $step) {
-      if($key % 2 == 0) 
-        $sparql .= "?x$key a <$step> . ";
-      else
-        $sparql .= '?x' . ($key-1) . " <$step> ?x" . ($key+1) . " . ";    
-    }
-    
-    if(!empty($primitive)) {
-      $sparql .= "?x$key <$primitive> ?out . ";
-    }
-*/
-/*    
-    if(!empty($eid)) {
-      // rename to uri
-      $eid = $this->getUriForDrupalId($eid);
-    
-#      $eid = str_replace("\\", "/", $eid);
-      $url = parse_url($eid);
-      
-      if(!empty($url["scheme"]))
-        $sparql .= " FILTER (?x0 = <$eid> ) . ";
-      else
-        $sparql .= " FILTER (?x0 = \"$eid\" ) . ";
-    }
-    
-    $sparql .= " } ";
-
-    
-#    drupal_set_message("spq: " . serialize($sparql));
-#    drupal_set_message(serialize($this));
-    
-    $result = $this->directQuery($sparql);
-    
-#    drupal_set_message(serialize($result));
-    
-    $out = array();
-    foreach($result as $thing) {
- #     drupal_set_message("we got something!");
-      $name = 'x' . (count($patharray)-1);
-      if(!empty($primitive))
-        $out[] = $thing->out->getValue();
-      else
-        $out[] = $thing->$name->dumpValue("text");
-    }
-    
-    return $out;
   
-  }
-*/
+  /**
+   * The elemental data aggregation function
+   * fetches the data for display purpose
+   */
   public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL, $relative = TRUE) {
-#dpm(func_get_args(), "ptrv");
+
     if(!$path->isGroup())
       $primitive = $path->getDatatypeProperty();
     else
@@ -1039,38 +990,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
     $disamb = $path->getDisamb();
     
-#    drupal_set_message("pa: " . serialize($patharray) . " disamb: " . $disamb . " and eid " . $eid); 
-#    dpm($path, "path");
-    #dpm($pb, "pb");
-#    dpm($eid, "eid");
-    
     // also
     if($disamb > 0)
       $disamb = ($disamb-1)*2;
     else
       $disamb = NULL;
-      
-#    drupal_set_message(" after pa: " . serialize($patharray) . " disamb: $disamb and " . serialize(is_null($disamb))); 
-
-#  dpm("yay!");  
 
     $sparql = "SELECT DISTINCT * WHERE { ";
-
-#    $sparql .= $this->generateTriplesForPath($pb, $path, $primitive, , NULL, 0, 0, TRUE);
-
-/*
-    foreach($patharray as $key => $step) {
-      if($key % 2 == 0) 
-        $sparql .= "?x$key a <$step> . ";
-      else
-        $sparql .= '?x' . ($key-1) . " <$step> ?x" . ($key+1) . " . ";    
-    }
-    
-    if(!empty($primitive)) {
-      $sparql .= "?x$key <$primitive> ?out . ";
-    }
-*/
-
 
     if(!empty($eid)) {
       // rename to uri
@@ -1078,51 +1004,22 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
 #      $eid = str_replace("\\", "/", $eid);
 #      $url = parse_url($eid);
+      
+      $starting_position = count($path->getPathArray()) - count($pb->getRelativePath($path));
+      
+      // if the path is a group it has to be a subgroup and thus entity reference.
       if($path->isGroup()) {
-        $pbarray = $pb->getPbPaths();
-        $parentpathid = $pbarray[$path->id()]["parent"];
-        
-        // if there is a parent path
-        if(!empty($parentpathid)) {
-          
-          // load the parent path
-          $parentpath = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($parentpathid);
-          
-          $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, floor(count($parentpath->getPathArray())/2), FALSE, NULL, 'entity_reference'); 
-          
-#          dpm($sparql, $path->getName());
-          
-#          if(count($parentpath->getPathArray()) > 2)
-#           return;
-        } else {
-          // assume we start from zero
-          $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, 0, FALSE, NULL, 'entity_reference');
-#        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, floor(count($path->getPathArray())/2), FALSE, NULL, 'entity_reference');
-#        dpm($sparql, $path->getName());
-#        if(count($path->getPathArray()) > 3)
-#          return;
-        }
+        // it is the same as field - so entity_reference is basic shit here
+        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0,  ($starting_position/2), FALSE, NULL, 'entity_reference');
       }
       else {
-        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, 0, FALSE, NULL, 'field', $relative);
+        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, ($starting_position/2), FALSE, NULL, 'field', $relative);
       }
 
     } else {
       drupal_set_message("No EID for data. Error. ", 'error');
     }
-/*      
-      if(!empty($url["scheme"]))
-        if(!empty($position))
-          $sparql .= " FILTER (?x$position = <$eid> ) . ";
-        else
-          $sparql .= " FILTER (?x0 = <$eid> ) . ";
-      else
-        if(!empty($position))
-          $sparql .= " FILTER (?x$position = \"$eid\" ) . ";
-        else
-          $sparql .= " FILTER (?x0 = \"$eid\" ) . ";
-    }
-*/    
+
     $sparql .= " } ";
 
     $result = $this->directQuery($sparql);
@@ -1157,10 +1054,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             $out[] = array($main_property => $outvalue);
           }
           else {
-#            drupal_set_message("disamb: " . serialize($disamb));
-#            dpm($thing);
-#            drupal_set_message("pa: " . serialize($thing));
-          #  drupal_set_message("res: " . serialize($result));
             $disambname = 'x'.$disamb;
             if(!isset($thing->{$disambname})) {
               $out[] = array($main_property => $outvalue);
@@ -1782,8 +1675,9 @@ $oldtmp = $tmp;
    */
   public function createEntity($entity,$entity_id=NULL) {
     #$uri = $this->getUri($this->getDefaultDataGraphUri());
-    //dpm(func_get_args(),__FUNCTION__);
-    
+#    dpm(func_get_args(),__FUNCTION__);
+#    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()));
+        
     $bundleid = $entity->bundle();
 
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
@@ -1801,6 +1695,8 @@ $oldtmp = $tmp;
     // get the adapterid that was loaded
     // haha, this is the engine-id...
     //$adapterid = $this->getConfiguration()['id'];
+
+#    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()) . " gets id: " . $eid . " and uri: " . $uri);
         
     foreach($pbs as $pb) {
       //drupal_set_message("a2: " . microtime());
@@ -1824,11 +1720,12 @@ $oldtmp = $tmp;
       // for now simply take the first one.    
       if ($groups = current($groups)) {
         
-        $triples = $this->generateTriplesForPath($pb, $groups, '', $uri, NULL, 0, 0, TRUE);
+        $triples = $this->generateTriplesForPath($pb, $groups, '', $uri, NULL, 0, ((count($groups->getPathArray())-1)/2), TRUE, NULL, 'group_creation');
         //dpm(array('eid'=>$eid,'uri'=>$uri,'group'=>$groups->getPathArray()[0],'result'=>$triples),'generateTriplesForPath');
         
         $sparql = "INSERT DATA { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " . $triples . " } } ";
-        #dpm($sparql, "spargel");      
+#        \Drupal::logger('WissKIsaveProcess')->debug('sparql writing in create: ' . htmlentities($sparql));
+        
         $result = $this->directUpdate($sparql);
     
         if (empty($uri)) {
@@ -1887,35 +1784,29 @@ $oldtmp = $tmp;
    *              The variable ?out will be prefixed with the key "out".
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array()) {
-    #dpm(func_get_args(), "generateTriplesForPath");
+#     \Drupal::logger('WissKIsaveProcess')->debug('generate: ' . serialize(func_get_args()));
     // the query construction parameter
     $query = "";
     // if we disamb on ourself, return.
     if($disambposition == 0 && !empty($object_in)) return "";
 
-    // get the clearArray of this path, we skip anything that is in upper groups.
-    if($mode == 'field')
-      $clearPathArray = $this->getClearPathArray($path, $pb);
-    if($mode == 'entity_reference')
-      $clearPathArray = $path->getPathArray();  
-
-#    dpm($path->id() . ' and ' . $path->isGroup() . ' yay!');    
-#    dpm($clearPathArray, "cpa!");
-#    dpm($mode, "mode!");
     
-    // in case of disamb etc. we have to add the countdiff
-    // first check if there is any real clearpath
-    if(count($clearPathArray) > 2) {
-      $countdiff = count($path->getPathArray()) - count($clearPathArray);
-    } else {
-      $countdiff = 0;
-    }  
-
-    // if it is not relative we take the whole tree
-    if(!$relative) {
-      $countdiff = 0;
+    // we get the sub-section for this path
+    $clearPathArray = array();
+    if($relative) {
+      // in case of group creations we just need the " bla1 a type " triple
+      if($mode == 'group_creation') 
+        $clearPathArray = $pb->getRelativePath($path, FALSE);
+      else // in any other case we need the relative path
+        $clearPathArray = $pb->getRelativePath($path);
+    } else { // except some special cases.
       $clearPathArray = $path->getPathArray();
     }
+     
+    // the RelativePath will be keyed like the normal path array
+    // meaning that it will not necessarily start at 0
+        
+ #   \Drupal::logger('WissKIsaveProcess')->debug('countdiff ' . $countdiff . ' cpa ' . serialize($clearPathArray) . ' generate ' . serialize(func_get_args()));
     
     // old uri pointer
     $olduri = NULL;
@@ -1928,79 +1819,76 @@ $oldtmp = $tmp;
     
     // get the default datagraphuri    
     $datagraphuri = $this->getDefaultDataGraphUri();
-
-#    dpm($clearPathArray, "cpa");
-#    dpm($key+$countdiff, "diff");
-#    dpm($startingposition, "start");
-#if ($object_in) dpm(array(func_get_args(), $countdiff, $clearPathArray, $startingposition, $subject_in), __METHOD__);
-    #dpm(array(func_get_args(), $countdiff, $clearPathArray, $startingposition, $subject_in), __METHOD__);    
+    
+    $first = TRUE;
+    
     // iterate through the given path array
     foreach($clearPathArray as $key => $value) {
       
-      $localkey = $key+$countdiff;
-#if ($object_in) dpm(array($key,$localkey), "localkey");      
+      if($first) {
+        if($key > ($startingposition *2)) {
+          drupal_set_message("Starting Position is set to a wrong value.", "error");
+          \Drupal::logger('WissKIsaveProcess')->debug('ERROR: ' . serialize($clearPathArray) . ' generate ' . serialize(func_get_args()));
+          \Drupal::logger('WissKIsaveProcess')->debug('ERROR: ' . serialize(debug_backtrace()[1]['function']) . ' and ' . serialize(debug_backtrace()[2]['function']));
+        }
+      }
       
+      $first = false;
+            
       // skip anything that is smaller than $startingposition.
-      if($localkey < ($startingposition*2)) 
+      if($key < ($startingposition*2)) 
         continue;
       
       // basic initialisation
       $uri = NULL;
-      
-      // if we may write, we generate uris
-      if($write) {
-        $uri = $this->getUri($datagraphuri);
-      }
-
-      $localvar = "?" . (is_array($variable_prefixes) ? (isset($variable_prefixes[$localkey]) ? $variable_prefixes[$localkey] : "") : $variable_prefixes) . "x" . $localkey;
+            
+      // basic initialisation for all queries
+      $localvar = "?" . (is_array($variable_prefixes) ? (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "") : $variable_prefixes) . "x" . $key;
       if (empty($oldvar)) {
         // this is a hack but i don't get the if's below
         // and when there should be set $oldvar
         // TODO: fix this!
-        $oldvar = "?" . (is_array($variable_prefixes) ? (isset($variable_prefixes[$localkey]) ? $variable_prefixes[$localkey] : "") : $variable_prefixes) . "x" . $localkey;
+        $oldvar = "?" . (is_array($variable_prefixes) ? (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "") : $variable_prefixes) . "x" . $key;
       }
-      if($localkey % 2 == 0) {
+      
+      if($key % 2 == 0) {
         // if it is the first element and we have a subject_in
         // then we have to replace the first element with subject_in
         // and typically we don't do a type triple. So we skip the rest.
         if($key == ($startingposition*2) && !empty($subject_in)) {
           $olduri = $subject_in;
           
-          // if it is a path of length 1
-          // (this means usually a group)
-          // then generate something.
-          //if(count($clearPathArray) == 1) {
-          //  if($write)
-              $query .= "<$olduri> a <$value> . ";
-          //  else
-          //    $query .= "?x$localkey a <$value> . ";
-          //}
-          // FIX for the if clauses above: we must not generate a variable even
-          // in ask mode, otherwise we may generate bogus distinct triples for
-          // every instance of class $value.
-          
+          $query .= "<$olduri> a <$value> . ";
+
           continue;
         }
         
         // if the key is the disambpos
         // and we have an object
-        if($localkey == (($disambposition-1)*2) && !empty($object_in)) {
+        if($key == (($disambposition-1)*2) && !empty($object_in)) {
           $uri = $object_in;
         } else {
+                  
           // if it is not the disamb-case we add type-triples        
-          if($write) 
+          if($write) {
+            // generate a new uri
+            $uri = $this->getUri($datagraphuri);
             $query .= "<$uri> a <$value> . ";
+          }
           else
             $query .= "$localvar a <$value> . ";
         }
         
         // magic function
-        if($localkey > 0 && !empty($prop)) { 
+        if($key > 0 && !empty($prop)) {
+        
           if($write) {
+              
             $query .= "<$olduri> <$prop> <$uri> . ";
           } else {
+                      
             $inverse = $this->getInverseProperty($prop);
-            // if there is an inverse, don't do any unions
+            // if there is not an inverse, don't do any unions
             if(empty($inverse)) {
               if(!empty($olduri))
                 $query .= "<$olduri> ";
@@ -2050,7 +1938,7 @@ $oldtmp = $tmp;
         }
          
         // if this is the disamb, we may break.
-        if($localkey == (($disambposition-1)*2) && !empty($object_in)) {
+        if($key == (($disambposition-1)*2) && !empty($object_in)) {
           break;
         }
           
@@ -2136,7 +2024,7 @@ $oldtmp = $tmp;
         $query .= " $outvar . ";
       }
     }
-
+#    \Drupal::logger('WissKIsaveProcess')->debug('erg generate: ' . htmlentities($query));
     return $query;
   }
   
@@ -2148,106 +2036,48 @@ $oldtmp = $tmp;
     $pbarray = $pb->getPbEntriesForFid($fieldid);
     
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['id']);
-    #dpm($entity_id, "I add!");
-#    drupal_set_message("smthg: " . serialize($this->generateTriplesForPath($pb, $path, NULL, "http://test.me/12", "http://argh.el/235", 2, TRUE)));
 
     if(empty($path))
       return;
       
-#    $entity_id = $this->getUriForDrupalId($entity_id);
-      
-#    if(!drupal_validate_utf8($value)) {
-#      $value = utf8_encode($value);
-#    }
-
-#    $clearPathArray = $this->getClearPathArray($path, $pb);
-#    $path->setDisamb(1);
-#    $path->save();
-
     if($path->getDisamb()) {
       $sparql = "SELECT * WHERE { GRAPH ?g { ";
-#      $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, 0, FALSE);
+
       // starting position one before disamb because disamb counts the number of concepts, startin position however starts from zero
       $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE);
       $sparql .= " } }";
-      
-#     drupal_set_message("query: " . serialize($sparql) . " disamb on: " . $path->getDisamb());
-      
+            
       $disambresult = $this->directQuery($sparql);
   
       if(!empty($disambresult))
         $disambresult = current($disambresult);      
-#      drupal_set_message("rais: " . serialize($disambresult));
     }
     
     // rename to uri
     $subject_uri = $this->getUriForDrupalId($entity_id);
 
-#    $subject_uri = str_replace("\\", "/", $entity_id);
-
     $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
-#    drupal_set_message(serialize($path), "I would do: ");
-#    drupal_set_message(serialize($eid
-#    drupal_set_message("subj: " . serialize($subject_uri) . " obj: " . serialize($this->getUriForDrupalId($value)));
 
-#    $position = 
+    // 1.) A -> B -> C -> D -> E (l: 9) and 2.) C -> D -> E (l: 5) is the relative, then
+    // 1 - 2 is 4 / 2 is 2 - which already is the starting point.
+    $start = ((count($path->getPathArray()) - (count($pb->getRelativePath($path))))/2);
 
     if($path->isGroup()) {
-      $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value), (count($path->getPathArray())-1)/2, NULL, TRUE, '', 'entity_reference');
+      $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value), (count($path->getPathArray())+1)/2, $start, TRUE, '', 'entity_reference');
     } else {
       if(empty($path->getDisamb()))
-        $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, NULL, TRUE);
+        $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE);
       else {
  #       drupal_set_message("disamb: " . serialize($disambresult) . " miau " . $path->getDisamb());
         if(empty($disambresult) || empty($disambresult->{"x" . ($path->getDisamb()-1)*2}) )
-          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, NULL, TRUE);
+          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE);
         else
-          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . ($path->getDisamb()-1)*2}->dumpValue("text"), (($path->getDisamb()-1)*2), NULL, TRUE);
+          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . ($path->getDisamb()-1)*2}->dumpValue("text"), (($path->getDisamb()-1)*2), $start, TRUE);
       }
     }
     $sparql .= " } } ";
-  
+#     \Drupal::logger('WissKIsaveProcess')->debug('sparql writing in add: ' . htmlentities($sparql));
        
-    #dpm($sparql, "I would do: ");
- 
-   
-#    drupal_set_message("I would do: " . ($sparql));
-/*
-
-    $clearPathArray = $this->getClearPathArray($path, $pb);
-
-    $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
-    $olduri = NULL;
-    $prop = NULL;
-    foreach($clearPathArray as $key => $step) {
-      if($key == 0 && !empty($entity_id)) {
-        $eid = str_replace("\\", "/", $entity_id);
-        $url = parse_url($eid);
-
-        $olduri = $eid;
-        continue;
-      }
-        
-      $uri = $this->getUri($datagraphuri);
-      if($key % 2 == 0) {
-        $sparql .= "<$uri> a <$step> . ";
-        if($key > 0) 
-          $sparql .= "<$olduri> <$prop> <$uri> . ";    
-        $olduri = $uri;
-      } else {
-        $prop = $step;
-      }
-    }
-    
-    $primitive = $path->getDatatypeProperty();
-    if(!empty($primitive)) {
-      $sparql .= "<$olduri> <$primitive> '$value' . ";
-    }
-        
-    $sparql .= " } }";
-
-    drupal_set_message("I do: " . htmlentities($sparql));
-*/
     $result = $this->directUpdate($sparql);
     
     
@@ -2256,7 +2086,8 @@ $oldtmp = $tmp;
   
   public function writeFieldValues($entity_id, array $field_values, $pathbuilder, $bundle_id=NULL,$old_values=array(),$force_new=FALSE) {
 #    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
-#dpm($field_values, __METHOD__);    
+#    dpm(func_get_args(), __METHOD__);    
+#    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()));
     // tricky thing here is that the entity_ids that are coming in typically
     // are somewhere from a store. In case of rdf it is easy - they are uris.
     // In case of csv or something it is more tricky. So I don't wan't to 
@@ -2275,21 +2106,26 @@ $oldtmp = $tmp;
       
     // here we should check if we really know the entity by asking the TS for it.
     // this would speed everything up largely, I think.
-    $entity = $this->loadEntity($entity_id);
+    $init_entity = $this->loadEntity($entity_id);
     
     // if there is nothing, continue.
-    if (empty($entity)) {
+    if (empty($init_entity)) {
 #      dpm('empty entity',__FUNCTION__);
       if ($force_new) {
         $entity = new WisskiEntity(array('eid' => $entity_id,'bundle' => $bundle_id),'wisski_individual',$bundle_id);
         $this->createEntity($entity,$entity_id);
       } else return;
     }
-    if (!isset($old_values)) {
+    
+    if(empty($entity) && !empty($init_entity))
+      $entity = $init_entity;
+    
+    if (!isset($old_values) && !empty($init_entity)) {
       // it would be better to gather this information from the form and not from the ts
       // there might have been somebody saving in between...
       // @TODO !!!
       $old_values = $this->loadFieldValues(array($entity_id), array_keys($field_values), $bundle_id);
+      
       if(!empty($old_values))
         $old_values = $old_values[$entity_id];
     }
@@ -2349,18 +2185,6 @@ $oldtmp = $tmp;
               $delete_values = array();
             }
           }
-          
-          
-          /*
-          foreach ($field_items as $new_item) {
-            if (empty($new_item)) continue; // empty field item due to cardinality, see else branch
-            if ($old_value == $new_item[$mainprop]) {
-              $remain_values[$new_item[$mainprop]] = $new_item[$mainprop];
-              $delete_values = array();
-              break;
-            }
-          }
-          */
         } else {
           // $old_value is an array of arrays resembling field list items and
           // containing field property => value pairs

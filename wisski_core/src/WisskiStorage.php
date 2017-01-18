@@ -621,6 +621,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * @TODO must be implemented
    */
   protected function doSaveFieldItems(ContentEntityInterface $entity, array $names = []) {
+#    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()));
 #    dpm(func_get_args(),__METHOD__);
 #    return;
     #dpm($entity->id(), "entitydata1");
@@ -672,6 +673,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     // we track if this is a newly created entity, if yes, we want to write it to ALL writeable adapters
     $create_new = $entity->isNew() && empty($entity_id);
     
+    
     if (empty($entity_id)) {    
       //dpm(array($writeable_adapters,$pathbuilders),'Empty ID');
       foreach($pathbuilders as $pb_id => $pb) {
@@ -684,6 +686,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         else continue;
 
         $entity_id = $adapter->createEntity($entity);
+
+        $create_new = false;      
       }
       //dpm($entity_id,$aid);
     }
@@ -693,13 +697,16 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       return;
     }
     
+    
     #dpm($original_values,'old values');
     #dpm($values,'new values');
+    /*
     $real_new_values = array_diff_key($values,$original_values);
     //dpm($real_new_values,'Really new values');
     
     if (!$create_new) $create_new = !empty($real_new_values);
     unset($real_new_values);
+    */
 #    drupal_set_message("lwa: " . serialize($local_writeable_adapters));
 #    drupal_set_message("wa: " . serialize($writeable_adapters));
     //dpm($create_new ? 'Gotta create' : 'don\'t create');

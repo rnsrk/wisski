@@ -1093,6 +1093,44 @@ use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
       
       return FALSE;   
     }
+    
+    /**
+     * Get the relative path part for the path
+     * The parameter with_start_connection declares if the
+     * connection to the parent path should be provided from this 
+     * relative point.
+     *
+     * @return False if not found, the path if there is one
+     */
+    public function getRelativePath($path, $with_start_connection = TRUE) {
+      if(empty($path))
+        return;
+      
+      $path_array = $path->getPathArray();
+      
+      $allpbpaths = $this->getPbPaths();
+      $pbarray = $allpbpaths[$path->id()];
+      
+      // main path - so return everything.
+      if(empty($pbarray['parent']))
+        return $path_array;
+      
+      $parentpath = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["parent"]);
+      
+      $parent_path_array = $parentpath->getPathArray();
+      
+      $parent_count = count($parent_path_array);
+      
+      if(!$with_start_connection)
+        $parent_count += 2;
+      
+      for($i=0; $i < ($parent_count -1); $i++) {
+        unset($path_array[$i]);
+      }
+      
+      return $path_array;
+      
+    }
                         
   } 
               

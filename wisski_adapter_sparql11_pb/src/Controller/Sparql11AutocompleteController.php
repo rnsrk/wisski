@@ -59,8 +59,9 @@
 #          $sparql .= " FILTER STRSTARTS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
 #          $sparql .= " FILTER CONTAINS(?out, '" . $engine->escapeSparqlLiteral($string) . "') . } ";
         } else {
+          $starting_position = count($path->getPathArray()) - count($pb->getRelativePath($path));
           $sparql = "SELECT * WHERE { ";
-          $sparql .= $engine->generateTriplesForPath($pb, $path, NULL, NULL, NULL, NULL, NULL, FALSE);
+          $sparql .= $engine->generateTriplesForPath($pb, $path, NULL, NULL, NULL, NULL, $starting_position, FALSE);
 #          $sparql .= " FILTER regex( STR(?out), '$string') . } ";
           $sparql .= " FILTER CONTAINS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
 #          $sparql .= " FILTER STRSTARTS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
