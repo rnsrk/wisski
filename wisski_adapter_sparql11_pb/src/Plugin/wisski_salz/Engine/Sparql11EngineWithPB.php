@@ -2065,7 +2065,7 @@ $oldtmp = $tmp;
         if(empty($disambresult) || empty($disambresult->{"x" . ($path->getDisamb()-1)*2}) )
           $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE);
         else
-          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . ($path->getDisamb()-1)*2}->dumpValue("text"), ($path->getDisamb()-1), $start, TRUE);
+          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . ($path->getDisamb()-1)*2}->dumpValue("text"), $path->getDisamb(), $start, TRUE);
       }
     }
     $sparql .= " } } ";
