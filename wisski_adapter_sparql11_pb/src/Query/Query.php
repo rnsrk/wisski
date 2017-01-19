@@ -73,7 +73,6 @@ class Query extends WisskiQueryBase {
     }
 
     #\Drupal::logger('query adapter ' . $this->getEngine()->adapterId())->debug('query result is {result}', array('result' => serialize($return)));
-
     return $return;
 
   }
@@ -198,7 +197,7 @@ class Query extends WisskiQueryBase {
       $value = $cond['value'];
       $operator = $cond['operator'];
 #\Drupal::logger('query path cond')->debug("$ij::$field::$value::$operator::$conjunction");     
-      
+
       // we dispatch over the field
 
       if ($field instanceof ConditionInterface) {
@@ -381,7 +380,6 @@ class Query extends WisskiQueryBase {
     }
     
     $result = $engine = $this->getEngine()->directQuery($select);
-    
     $adapter_id = $this->getEngine()->adapterId();
     \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded {result}', array('query' => $select, 'result' => $result));
     if ($result->numRows() == 0) {
@@ -429,14 +427,16 @@ class Query extends WisskiQueryBase {
             // subqueries.
             // only the first var x0 get to be the same so that everything maps
             // to the same entity
-            $vars[0] = "";
+            // NOTE: we set the first var to x0 although it's not x0
+            $starting_position = $pb->getRelativeStartingPosition($group, FALSE);
             $i = $this->varCounter++;
-            for ($j = count($engine->getClearPathArray($group, $pb)); $j > 0; $j--) {
-              $vars[$j] = "c${i}_";
+            $vars[$starting_position] = 'x0';
+            for ($j = count($group->getPathArray()); $j > $starting_position; $j--) {
+              $vars[$j] = "c${i}_x$j";
             }
-            $vars['out'] = "c${i}_";
-            
-            $query_parts[] = $engine->generateTriplesForPath($pb, $group, '', NULL, NULL, 0, 0, FALSE, '=', 'field', TRUE, $vars);
+            $vars['out'] = "c${i}_out";
+
+            $query_parts[] = $engine->generateTriplesForPath($pb, $group, '', NULL, NULL, 0, $starting_position, FALSE, '=', 'field', TRUE, $vars);
            
           }
         }
@@ -490,18 +490,18 @@ class Query extends WisskiQueryBase {
     // subqueries.
     // only the first var x0 get to be the same so that everything maps
     // to the same entity
-    $vars[0] = "";
+    $starting_position = $pb->getRelativeStartingPosition($group, FALSE);
+    $vars[$starting_position] = "x0";
     $i = $this->varCounter++;
-    for ($j = count($path->getPathArray()); $j > 0; $j--) {
-      $vars[$j] = "c${i}_";
+    for ($j = count($path->getPathArray()); $j > $starting_position; $j--) {
+      $vars[$j] = "c${i}_x$j";
     }
-    $vars['out'] = "c${i}_";
+    $vars['out'] = "c${i}_out";
     
     // arg 11 ($relative) must be FALSE, otherwise fields of subgroups yield
     // the entities of the subgroup
-    $query_part = $this->getEngine()->generateTriplesForPath($pb, $path, $value, NULL, NULL, 0, 0, FALSE, $operator, 'field', FALSE, $vars);
+    $query_part = $this->getEngine()->generateTriplesForPath($pb, $path, $value, NULL, NULL, 0, $starting_position, FALSE, $operator, 'field', FALSE, $vars);
 
-#dpm(array($path->id(), $path->getPathArray(), $vars, $query_part), __METHOD__);
 #\Drupal::logger('query path cond')->debug("path ".$path->id() ." {v} qc {d} qp $query_part", array("d"=>join(";", $path->getPathArray()), "v"=>join("/", $vars)));
     return $query_part;
     

@@ -227,6 +227,10 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
         if (!empty($field_values) && method_exists($field_def,'getDependencies') && in_array('file',$field_def->getDependencies()['module'])) {
           //when loading we assume $target_id to be the file uri
           //this is a workaround since Drupal File IDs do not carry any information when not in drupal context
+          if (!isset($field_values['target_id'])) {
+#dpm(func_get_args(), __METHOD__.__LINE__);
+            continue;
+          }
           $field_values['target_id'] = $storage->getPublicUrlFromFileId($field_values['target_id']);
         }
         $main_property = $field_item->mainPropertyName();
