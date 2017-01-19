@@ -1138,7 +1138,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
   public function getRelativeStartingPosition($path, $with_start_connection = TRUE) {
     $path_length = count($path->getPathArray());
     $relative_path_length = count($this->getRelativePath($path, $with_start_connection));
-    $starting_position = $path_length - $relative_path_length;
+    $starting_position = ($path_length - $relative_path_length) / 2;
     return $starting_position;
   }
 } 
