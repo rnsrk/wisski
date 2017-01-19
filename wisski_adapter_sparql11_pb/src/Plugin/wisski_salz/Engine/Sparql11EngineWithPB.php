@@ -1513,9 +1513,8 @@ $oldtmp = $tmp;
     else {  // no reference
     
       $subject_uri = $this->getUriForDrupalId($entity_id);
-      $clearPathArray = $this->getClearPathArray($path, $pb);
-      
-      $diff = count($path->getPathArray()) - count($clearPathArray);
+      $starting_position = $pb->getRelativeStartingPosition($path, TRUE);
+      $clearPathArray = $pb->getRelativePath($path, TRUE);
           
       // delete normal field value
       $sparql = "SELECT DISTINCT * WHERE { ";
@@ -1525,14 +1524,13 @@ $oldtmp = $tmp;
       //$triples = $this->generateTriplesForPath($pb, $path, $value, $eid, NULL, 0, $diff, FALSE);
       // make a query without the value - this is necessary
       // because we have to think of the weight.
-      $triples = $this->generateTriplesForPath($pb, $path, '', $subject_uri, NULL, 0, $diff, FALSE);
+      $triples = $this->generateTriplesForPath($pb, $path, '', $subject_uri, NULL, 0, $starting_position, FALSE);
       
       $sparql .= $triples;
       
       $sparql .= " }";
       
       $result = $this->directQuery($sparql);
-#      dpm(array($sparql, $result), "find data");
 
       $outarray = array();
 #      dpm($result, "result");
@@ -1545,8 +1543,6 @@ $oldtmp = $tmp;
       $the_thing = NULL;
       
       foreach($result as $key => $thing) {
-#        dpm(serialize($key === $count), "key " . $key . " count " . $count);
-#        dpm(serialize($thing->out == $value), "key1 " . $thing->out . " count1 " . $value);
         // Easy case - it is at the "normal position"
         if($key === $count && $thing->out == $value) {
           $the_thing = $thing;
@@ -1582,10 +1578,10 @@ $oldtmp = $tmp;
 
       // the datatype-property is not directly connected to the group-part
       if(count($clearPathArray) >= 3) {
-        $prop = $clearPathArray[1];
+        $prop = array_values($clearPathArray)[1];
         $inverse = $this->getInverseProperty($prop);
 
-        $name = "x" . ($diff +2);
+        $name = "x" . ($starting_position * 2 +2);
         $object_uri = $the_thing->{$name}->getUri();
 
         $delete .= "  <$subject_uri> <$prop> <$object_uri> .\n";
@@ -1598,6 +1594,7 @@ $oldtmp = $tmp;
         if(!empty($primitive)) {
           if(!empty($value)) {
             $value = $this->escapeSparqlLiteral($value);
+            // Evil: no datatype or lang check!
             $delete .= "  <$subject_uri> <$primitive> '$value' .\n";
 #dpm([$primitive, $value, $fieldid,$delete], __METHOD__.__LINE__);
           }
