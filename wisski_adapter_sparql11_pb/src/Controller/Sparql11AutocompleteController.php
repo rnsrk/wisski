@@ -59,7 +59,7 @@
 #          $sparql .= " FILTER STRSTARTS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
 #          $sparql .= " FILTER CONTAINS(?out, '" . $engine->escapeSparqlLiteral($string) . "') . } ";
         } else {
-          $starting_position = count($path->getPathArray()) - count($pb->getRelativePath($path));
+          $starting_position = (count($path->getPathArray()) - count($pb->getRelativePath($path)))/2;
           $sparql = "SELECT * WHERE { ";
           $sparql .= $engine->generateTriplesForPath($pb, $path, NULL, NULL, NULL, NULL, $starting_position, FALSE);
 #          $sparql .= " FILTER regex( STR(?out), '$string') . } ";
