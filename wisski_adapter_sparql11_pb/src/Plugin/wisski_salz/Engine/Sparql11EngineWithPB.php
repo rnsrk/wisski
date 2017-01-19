@@ -1766,9 +1766,8 @@ $oldtmp = $tmp;
    * @param $op How should it be compared to other data
    * @param $mode defaults to 'field' - but may be 'group' or 'entity_reference' in special cases
    * @param $relative should it be relative to the other groups?
-   * @param $variable_prefixes string|array if string, this will be used to prefix all variables
-   *              if array, the variable of index i will be prefixed with the value of key i.
-   *              The variable ?out will be prefixed with the key "out".
+   * @param $variables the variable of index i will be set to the value of key i.
+   *              The variable ?out will be set to the key "out".
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array()) {
 #     \Drupal::logger('WissKIsaveProcess')->debug('generate: ' . serialize(func_get_args()));
@@ -1797,8 +1796,6 @@ $oldtmp = $tmp;
     
     // old uri pointer
     $olduri = NULL;
-    // old key pointer
-    $oldkey = NULL;
     $oldvar = NULL;
     
     // if the old uri is empty we assume there is no uri and we have to
@@ -1810,8 +1807,10 @@ $oldtmp = $tmp;
     $first = TRUE;
     
     // iterate through the given path array
+    $localkey = 0;
     foreach($clearPathArray as $key => $value) {
-      
+      $localkey = $key;
+
       if($first) {
         if($key > ($startingposition *2)) {
           drupal_set_message("Starting Position is set to a wrong value.", "error");
@@ -1830,12 +1829,12 @@ $oldtmp = $tmp;
       $uri = NULL;
             
       // basic initialisation for all queries
-      $localvar = "?" . (is_array($variable_prefixes) ? (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "") : $variable_prefixes) . "x" . $key;
+      $localvar = "?" . (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "x" . $key);
       if (empty($oldvar)) {
         // this is a hack but i don't get the if's below
         // and when there should be set $oldvar
         // TODO: fix this!
-        $oldvar = "?" . (is_array($variable_prefixes) ? (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "") : $variable_prefixes) . "x" . $key;
+        $oldvar = "?" . (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "x" . $key);
       }
       
       if($key % 2 == 0) {
@@ -1930,7 +1929,6 @@ $oldtmp = $tmp;
         }
           
         $olduri = $uri;
-        $oldkey = $localkey;
         $oldvar = $localvar;
       } else {
         $prop = $value;
@@ -1953,14 +1951,14 @@ $oldtmp = $tmp;
         // if we initialized with a nearly empty path oldvar is empty.
         // in this case we assume x at the startingposition
         if(empty($oldvar))
-          $query .= "?" . (is_array($variable_prefixes) ? (isset($variable_prefixes[$localkey]) ? $variable_prefixes[$localkey] : "") : $variable_prefixes) . "x" . $startingposition;
+          $query .= "?" . (isset($variable_prefixes[$localkey]) ? $variable_prefixes[$localkey] : "x" . $startingposition);
         else
           $query .= "$oldvar ";
       }
       
       $query .= "<$primitive> ";
 
-      $outvar = "?" . (is_array($variable_prefixes) ? (isset($variable_prefixes["out"]) ? $variable_prefixes["out"] : "") : $variable_prefixes) . "out";
+      $outvar = "?" . (isset($variable_prefixes["out"]) ? $variable_prefixes["out"] : "out");
       
       if(!empty($primitiveValue)) {
         
