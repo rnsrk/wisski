@@ -81,6 +81,11 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
   public function createEntity($entity);
   
   /**
+   * @see EngineInterface::deleteEntity()
+   */
+  public function deleteEntity($entity);
+  
+  /**
    * @see EngineInterface::loadFieldValues()
    */
   public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT);

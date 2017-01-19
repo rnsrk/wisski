@@ -90,6 +90,13 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * @return TRUE on success, false else.
    */
   public function createEntity($entity);
+  
+  /**
+   * Deletes an existing entity
+   * @param $entity the given entity
+   * @return TRUE on success, false else.
+   */
+  public function deleteEntity($entity);
 
 
   /**

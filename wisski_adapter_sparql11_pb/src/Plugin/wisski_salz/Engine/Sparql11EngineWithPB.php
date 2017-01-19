@@ -1625,6 +1625,36 @@ $oldtmp = $tmp;
   }
 
   /**
+   * Delete an entity
+   * @param $entity an entity object
+   * @return True or false if it did not work
+   */
+  public function deleteEntity($entity) {
+    $eid = $entity->id();
+    
+    if(empty($eid)) {
+      drupal_set_message("This entity could not be deleted as it has no eid.", "error");
+      return;
+    }
+    
+    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    
+    //if there is an eid we try to get the entity URI form cache
+    //if there is none $uri will be FALSE
+    $uri = $this->getUriForDrupalId($eid);
+    
+    $sparql = "DELETE { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o } } " . 
+              "WHERE { { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o . FILTER ( <$uri> = ?s ) } } " .
+              "UNION { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o . FILTER ( <$uri> = ?o ) } } }";
+    #\Drupal::logger('WissKIsaveProcess')->debug('sparql deleting: ' . htmlentities($sparql));
+    
+    $result = $this->directUpdate($sparql);
+
+    return $result;
+  
+  }
+
+  /**
    * Create a new entity
    * @param $entity an entity object
    * @param $entity_id the eid to be set for the entity, if NULL and $entity dowes not have an eid, we will try to create one

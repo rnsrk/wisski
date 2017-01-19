@@ -773,6 +773,56 @@ $rand = rand();
    * @TODO must be implemented
    */
   protected function doDeleteFieldItems($entities) {
+
+    $local_adapters = array();
+    $writeable_adapters = array();
+
+    $adapters = entity_load_multiple('wisski_salz_adapter');
+
+    foreach($adapters as $aid => $adapter) {
+      // we locate all writeable stores
+      // then we locate all local stores in these writeable stores
+
+      if($adapter->getEngine()->isWritable())
+        $writeable_adapters[$aid] = $adapter;
+             
+      if($adapter->getEngine()->isPreferredLocalStore())
+        $local_adapters[$aid] = $adapter;
+      
+    }
+
+    // if there are no adapters by now we die...
+    if(empty($writeable_adapters)) {
+      drupal_set_message("There is no writable storage backend defined.", "error");
+      return;
+    }
+    
+    if($diff = array_diff_key($local_adapters,$writeable_adapters)) {
+      if (count($diff) === 1)
+        drupal_set_message('The preferred local store '.key($diff).' is not writeable','warning');
+      else drupal_set_message('The preferred local stores '.implode(', ',array_keys($diff)).' are not writeable','warning');
+    }
+    
+    //we load all pathbuilders, check if they know the fields and have writeable adapters
+    $pathbuilders = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+
+    foreach($pathbuilders as $pb_id => $pb) {
+    
+      //get the adapter
+      $aid = $pb->getAdapterId();
+
+      //check, if it's writeable, if not we can stop here
+      if (isset($writeable_adapters[$aid])) $adapter = $writeable_adapters[$aid];
+      else continue;
+
+      foreach($entities as $entity)
+        $return = $adapter->deleteEntity($entity);
+    }
+  
+    if (empty($return)) {
+      drupal_set_message('No local adapter could delete the entity','error');
+      return;
+    }
   }
 
   /**

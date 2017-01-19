@@ -197,6 +197,13 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
   /**
    * {@inheritdoc}
    */
+  public function deleteEntity($entity) {
+    return $this->getEngine()->deleteEntity($entity);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
     return $this->getEngine()->loadFieldValues($entity_ids, $field_ids, $bundle,$language);
   }
