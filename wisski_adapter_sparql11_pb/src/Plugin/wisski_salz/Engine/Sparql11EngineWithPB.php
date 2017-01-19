@@ -1047,7 +1047,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             $outvalue = (string)$outvalue->format('Y-m-d\TH:i:s.u');;
           }
           
-#          if($main_property == "target_id")
+#          if($path->isGroup() && $main_property == "target_id")
 #            $outvalue = $this->getDrupalId($outvalue);
           
           if(is_null($disamb) == TRUE) {
@@ -1069,7 +1069,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         } else { 
           $outvalue = $thing->{$name}->dumpValue("text");
           
-#          if($main_property == "target_id")
+#          if($path->isGroup() && $main_property == "target_id")
 #            $outvalue = $this->getDrupalId($outvalue);
         
           if(is_null($disamb) == TRUE)
