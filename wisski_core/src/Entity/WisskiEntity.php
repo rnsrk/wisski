@@ -24,6 +24,7 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *   handlers = {
  *		 "storage" = "Drupal\wisski_core\WisskiStorage",
  *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
+ *             "views_data" = "Drupal\wisski_core\WisskiEntityViewsData",
  *     "list_builder" = "Drupal\wisski_core\Controller\WisskiEntityListBuilder",
  *     "list_controller" = "Drupal\wisski_core\Controller\WisskiEntityListController",
  *     "form" = {
