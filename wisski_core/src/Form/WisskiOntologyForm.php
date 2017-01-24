@@ -127,7 +127,7 @@ class WisskiOntologyForm extends FormBase {
           );
         
           $ns = "";
-#          $ns = $engine->getNamespaces();
+          $ns = $engine->getNamespaces();
               
           $tablens = "<table><tr><th>Short Name</th><th>URI</th></tr>";
           foreach($ns as $key => $value) {

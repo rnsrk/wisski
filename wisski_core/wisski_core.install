@@ -146,6 +146,25 @@ function wisski_core_schema() {
       ),
     ),
   );
+
+  $schema['wisski_core_ontology_namespaces'] = array(
+  
+    'description' => 'Saves the namespaces on ontology load.',
+    'fields' => array(
+      'short_name' => array(
+        'description' => 'Short name of the namespace.',
+        'type' => 'varchar',
+        'length' => 1023,
+        'not null' => TRUE,
+      ),
+      'long_name' => array(
+        'description' => 'Full URI of the namespace.',
+        'type' => 'text',
+        'length' => 1023,
+        'not null' => TRUE,
+      ),
+    ),
+  );
   
   //dpm($schema);
   return $schema;
