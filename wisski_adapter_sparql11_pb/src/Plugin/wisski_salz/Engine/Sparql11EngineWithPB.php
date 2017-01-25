@@ -2546,13 +2546,13 @@ $oldtmp = $tmp;
   }
   
   private function putNamespace($short_name,$long_name) {
-    $result = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
+    $result = db_select('wisski_core_ontology_namespaces','ns')
               ->fields('ns')
               ->condition('short_name',$short_name,'=')
               ->execute()
               ->fetchAssoc();
     if (empty($result)) {
-      db_insert('wisski_salz_sparql11_ontology_namespaces')
+      db_insert('wisski_core_ontology_namespaces')
               ->fields(array('short_name' => $short_name,'long_name' => $long_name))
               ->execute();
     } else {
@@ -2562,7 +2562,7 @@ $oldtmp = $tmp;
                                                                                                            
   public function getNamespaces() {
     $ns = array();
-    $db_spaces = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
+    $db_spaces = db_select('wisski_core_ontology_namespaces','ns')
                   ->fields('ns')
                   ->execute()
                   ->fetchAllAssoc('short_name');

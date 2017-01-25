@@ -216,11 +216,21 @@ class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
 #    return $this->weight;
 #  }
   
-  public function printPath(){
+  public function printPath($namespaces){
     $out = "";
       
     foreach($this->getPathArray() as $step) {
-      $out .= empty($out) ? $step : ' -> ' . $step;
+    
+      $nsout = NULL;
+      foreach($namespaces as $short => $long) {
+        if(strpos($step, $long) !== FALSE)
+          $nsout = str_replace($long, $short . ':', $step);
+      }
+    
+      if(empty($nsout))
+        $out .= empty($out) ? $step : ' -> ' . $step;
+      else
+        $out .= empty($out) ? $nsout : ' -> ' . $nsout;
     }
         
     return $out;
