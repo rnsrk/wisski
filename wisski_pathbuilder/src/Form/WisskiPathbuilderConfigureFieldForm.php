@@ -80,7 +80,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 #    $element = $this->recursive_find_element($tree, $this->path);
     $pbpath = $this->pathbuilder->getPbPath($this->path);
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($this->path);
-    //dpm($pbpath,'Path');
+    dpm($pbpath,'Path');
 #    return $form;
     if($path->getType() != "Path") {
       $bundle_options = array();
@@ -142,6 +142,13 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     
     if($path->getType() == "Path") {
       $bundle_id = $pbpath['bundle'];
+      if (empty($bundle_id)) {
+        $current = $pbpath;
+        while (empty($bundle_id) && $current['id'] !== $current['parent']) {
+          $current = $this->pathbuilder->getPbPath($current['parent']);
+          $bundle_id = $current['bundle'];
+        }
+      }
       if ($bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)) {
         $bundle_label = $bundle->label();
       } else {
@@ -352,7 +359,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     }
     
 #    drupal_set_message("ft: " . serialize($ftvalue) . " dis " . serialize($listdisplay) . " for " . serialize($listform));
-    
+dpm($form);    
     return $form;
   }
   
