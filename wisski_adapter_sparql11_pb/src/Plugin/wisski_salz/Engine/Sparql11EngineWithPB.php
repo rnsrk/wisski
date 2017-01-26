@@ -259,13 +259,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $out = $this->retrieve('classes','class');
     if (!empty($out)) return $out;
     $query = "SELECT DISTINCT ?class WHERE {"
-       ."{?class a owl:Class} "
-       ."UNION "
-       ."{?class a rdfs:Class} "
-       ."UNION "
-       ."{?ind a ?class. ?class a ?type} "
-       ."FILTER(!isBlank(?class))"
-      ."}";  
+      ."{"
+        ."{?class a owl:Class} "
+        ."UNION "
+        ."{?class a rdfs:Class} "
+        ."UNION "
+        ."{?ind a ?class. ?class a ?type} "
+      ."}"
+      ."FILTER(!isBlank(?class))"
+    ."}";  
     $result = $this->directQuery($query);
     
     if (count($result) > 0) {
@@ -284,7 +286,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
     $out = $this->retrieve('properties','property');
     if (!empty($out)) return $out;
-    $query = "SELECT DISTINCT ?property WHERE { ?property a owl:ObjectProperty . FILTER(!isBlank(?property))}";  
+    $query = "SELECT DISTINCT ?property WHERE { "
+      ."{"
+        ."{?property a owl:ObjectProperty .} "
+        ."UNION "
+        ."{?property a rdf:Property .} "
+      ."} "
+      ."FILTER(!isBlank(?property))"
+    ."}";  
     $result = $this->directQuery($query);
     
     if (count($result) > 0) {
@@ -345,7 +354,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getPropertiesFromStore($class=NULL,$class_after = NULL,$fast_mode=FALSE) {
 
     $query = "SELECT DISTINCT ?property WHERE {"
-      ."?property a owl:ObjectProperty. ";
+//      ."?property a owl:ObjectProperty. "
+        ;
     if ($fast_mode) {  
       if (isset($class)) $query .= "?property rdfs:domain <$class>. ";
       if (isset($class_after)) $query .= "?property rdfs:range <$class_after>.";
@@ -468,7 +478,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getClassesFromStore($property=NULL,$property_after = NULL,$fast_mode=FALSE) {
   
     $query = "SELECT DISTINCT ?class WHERE {"
-      ."?class a owl:Class. ";
+      //."?class a owl:Class. "
+      ;
     if ($fast_mode) {  
       if (isset($property)) $query .= "<$property> rdfs:range ?class. ";
       if (isset($property_after)) $query .= "<$property_after> rdfs:domain ?class. ";
@@ -2736,7 +2747,7 @@ $oldtmp = $tmp;
     if ($this->prepareTables() === FALSE) return;
     
     //find properties
-    $result = $this->directQuery("SELECT ?property WHERE {?property a owl:ObjectProperty.}");
+    $result = $this->directQuery("SELECT ?property WHERE {{?property a owl:ObjectProperty.} UNION {?property a rdf:Property}}");
     $insert = $this->prepareInsert('properties');
     foreach ($result as $row) {
       $prop = $row->property->getUri();
@@ -2751,7 +2762,7 @@ $oldtmp = $tmp;
     // no sub-generations are gathered
     $result = $this->directQuery(
       "SELECT ?property ?super WHERE {"
-        ."?property a owl:ObjectProperty. "
+        ."{{?property a owl:ObjectProperty.} UNION {?property a rdf:Property}} "
         ."?property rdfs:subPropertyOf ?super. "
         ."FILTER NOT EXISTS {?mid_property rdfs:subPropertyOf+ ?super. ?property rdfs:subPropertyOf ?mid_property.}"
       ."}");
@@ -2786,7 +2797,7 @@ $oldtmp = $tmp;
     //find all classes
     $insert = $this->prepareInsert('classes');
     $classes = array();
-    $results = $this->directQuery("SELECT ?class WHERE {?class a owl:Class.}");
+    $results = $this->directQuery("SELECT ?class WHERE {{?class a owl:Class.} UNION {?class a rdfs:Class}}");
     foreach ($results as $row) {
       $class = $row->class->getUri();
       $classes[$class] = $class;
@@ -2803,7 +2814,7 @@ $oldtmp = $tmp;
       ."?class rdfs:subClassOf+ ?super. "
       ."FILTER (!isBlank(?class)) "
       ."FILTER (!isBlank(?super)) "
-      ."?super a owl:Class. "
+      ."{{?super a owl:Class.} UNION {?super a rdfs:Class}} "
     ."}");
     foreach ($results as $row) {
       $sub = $row->class->getUri();
@@ -2846,7 +2857,7 @@ $oldtmp = $tmp;
     
     //clear up, avoid DatatypeProperties
     $ranges = array_intersect_key($ranges,$properties);    
-    
+
     //take all properties with no super property
     $top_properties = array_diff_key($properties,$super_properties);
 
@@ -2854,13 +2865,19 @@ $oldtmp = $tmp;
     //check if they all have domains and ranges set
     $dom_check = array_diff_key($top_properties,$domains);
     if (!empty($dom_check)) {
-      drupal_set_message('No domains for top-level properties: '.implode(', ',$dom_check),'error');
+      drupal_set_message('No domains for top-level properties: '.implode(', ',$dom_check),'error');;
       $valid_definitions = FALSE;
+      //foreach($dom_check as $dom) {
+      //  $domains[$dom] = ['TOPCLASS'=>'TOPCLASS'];
+      //}
     }
     $rng_check = array_diff_key($top_properties,$ranges);
     if (!empty($rng_check)) {
       drupal_set_message('No ranges for top-level properties: '.implode(', ',$rng_check),'error');
       $valid_definitions = FALSE;
+      //foreach ($rng_check as $rng) {
+      //  $ranges[$rng] = ['TOPCLASS'=>'TOPCLASS'];
+      //}
     }
     
     //set of properties where the domains and ranges are not fully set
