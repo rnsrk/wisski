@@ -2814,7 +2814,7 @@ $oldtmp = $tmp;
       ."?class rdfs:subClassOf+ ?super. "
       ."FILTER (!isBlank(?class)) "
       ."FILTER (!isBlank(?super)) "
-      ."{{?super a owl:Class.} UNION {?super a rdfs:Class}} "
+      ."{{?super a owl:Class.} UNION {?super a rdfs:Class.}} "
     ."}");
     foreach ($results as $row) {
       $sub = $row->class->getUri();
