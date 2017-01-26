@@ -258,7 +258,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
     $out = $this->retrieve('classes','class');
     if (!empty($out)) return $out;
-    $query = "SELECT DISTINCT ?class WHERE { ?class a owl:Class . FILTER(!isBlank(?class))}";  
+    $query = "SELECT DISTINCT ?class WHERE {"
+       ."{?class a owl:Class} "
+       ."UNION "
+       ."{?class a rdfs:Class} "
+       ."UNION "
+       ."{?ind a ?class. ?class a ?type} "
+       ."FILTER(!isBlank(?class))"
+      ."}";  
     $result = $this->directQuery($query);
     
     if (count($result) > 0) {
