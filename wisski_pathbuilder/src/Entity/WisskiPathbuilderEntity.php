@@ -165,12 +165,25 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     $cid = $this->generateCid($eid);
     
     $data = NULL;
+        
+#    drupal_set_message(serialize(\Drupal::cache()->get($cid)));
     if ($cache = \Drupal::cache()->get($cid)) {
       $data = $cache->data;
       return $data;
     }
     else {
-#        dpm("nothing in cache!");
+    
+      $bundle_from_uri = \Drupal::request()->query->get('wisski_bundle');
+
+      if(!empty($bundle_from_uri)) {
+        // cache resolving was not successfull
+        // so we write it to the cache
+        $this->setBundleIdForEntityId($eid, $bundle_from_uri);
+        
+        return $bundle_from_uri;
+      }
+
+      drupal_set_message("No Bundle found for $eid - error.", "error");    
       return NULL;
 #        $data = my_module_complicated_calculation();
 #        \Drupal::cache()->set($cid, $data);
@@ -181,7 +194,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
    * Set the Bundle id for a given entity
    */
   public function setBundleIdForEntityId($eid, $bundleid) {
-#      dpm(serialize($eid), "eid");
+#      dpm(serialize($eid), "setbundleid");
     $cid = $this->generateCid($eid);
     \Drupal::cache()->set($cid, $bundleid);
     return TRUE;
