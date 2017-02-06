@@ -1149,6 +1149,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
    * Gets the starting position for the relative path part
    */
   public function getRelativeStartingPosition($path, $with_start_connection = TRUE) {
+if (!$path) \Drupal::logger('bad wisski')->error(array_reduce(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 7), function($a, $b) {return "$a<br/>".$b['function'];}, ""));
     $path_length = count($path->getPathArray());
     $relative_path_length = count($this->getRelativePath($path, $with_start_connection));
     $starting_position = ($path_length - $relative_path_length) / 2;

@@ -5,6 +5,7 @@ namespace Drupal\wisski_core\Plugin\views\query;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\query\QueryPluginBase;
+use Drupal\views\ResultRow;
 use Drupal\views\ViewExecutable;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -24,9 +25,17 @@ class WisskiIndividualQuery extends QueryPluginBase {
   /**
    * The EntityQuery object used for the query.
    *
-   * @var \Drupal\Core\Entity\Query\QueryInterface
+   * @var \Drupal\Core\Entity\Query\QueryInterface, \Drupal\wisski_salz\Query\WissKIQueryDelegator in our case
    */
   public $query;
+  
+  /**
+   * The fields that should be returned explicitly by the query in the
+   * ResultRow objects
+   * 
+   * @var array, keys and values are the field IDs
+   */
+  public $fields = [];
 
   
   /**
@@ -34,11 +43,9 @@ class WisskiIndividualQuery extends QueryPluginBase {
    */
   public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
     parent::init($view, $display, $options);
-$bt = array_map(function($a){ return (isset($a['class'])?$a['class']:'').(isset($a['type'])?$a['type']:'').$a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
-\Drupal::logger('wefq')->debug(__FUNCTION__.":".__CLASS__.":".join('<br/>', $bt));
-
     $this->query = \Drupal::entityTypeManager()->getStorage('wisski_individual')->getQuery();
     $this->tables = array();
+    $this->pager = $view->pager;
   }
 
   function option_definition() {
@@ -117,33 +124,38 @@ $bt = array_map(function($a){ return (isset($a['class'])?$a['class']:'').(isset(
    * Builds the necessary info to execute the query.
    */
   function build(ViewExecutable $view) {
-$bt = array_map(function($a){ return (isset($a['class'])?$a['class']:'').(isset($a['type'])?$a['type']:'').$a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
-\Drupal::logger('wefq')->debug(__FUNCTION__.":".__CLASS__.":".join('<br/>', $bt));
-    $view->init_pager($view);
+    $view->initPager();
 
     // Let the pager modify the query to add limits.
-    $this->pager->query();
-
+    $this->pager = $view->pager;
+    if ($this->pager) {
+      $this->pager->query();
+    }
     $count_query = clone $this->query;
     $count_query->count(true);
 
-    $view->build_info['efq_query'] = $this->query;
-    $view->build_info['count_query'] = $count_query;
+    $view->build_info['wisski_query'] = $this->query;
+    $view->build_info['wisski_count_query'] = $count_query;
   }
+
 
   /**
    * This is used by the style row plugins for node view and comment view.
    */
-  function add_field($base_table, $base_field) {
+  function addField($base_table, $base_field) {
+dpm(func_get_args(),__METHOD__);
+    $this->fields[$base_field] = $base_field;
     return $base_field;
   }
 
-  /**
-   * This is used by the field field handler.
-   */
-  function ensure_table($table) {
-    return $table;
+
+  /** This function is called by Drupal\views\Plugin\views\HandlerBase
+  * maybe we should eventually break up the inheritance from there/QueryPluginBase if possible.
+  */
+  public function ensureTable($t, $r) {
+    // do nothing
   }
+
 
   /**
    * Executes the query and fills the associated view object with according
@@ -153,10 +165,10 @@ $bt = array_map(function($a){ return (isset($a['class'])?$a['class']:'').(isset(
    * $view->pager['current_page'].
    */
   function execute(ViewExecutable $view) {
-$bt = array_map(function($a){ return (isset($a['class'])?$a['class']:'').(isset($a['type'])?$a['type']:'').$a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
-\Drupal::logger('wefq')->debug(__FUNCTION__.":".__CLASS__.":".join('<br/>', $bt));
-    $query = $view->build_info['efq_query'];
-    $count_query = $view->build_info['count_query'];
+wisski_tick();
+wisski_tick("begin exec views");
+    $query = $view->build_info['wisski_query'];
+    $count_query = $view->build_info['wisski_count_query'];
     $args = $view->build_info['query_args'];
 
     $query->addMetaData('view', $view);
@@ -174,37 +186,23 @@ $bt = array_map(function($a){ return (isset($a['class'])?$a['class']:'').(isset(
 
     // Determine if the query entity type is local or remote.
     $remote = FALSE;
-    $entity_controller = entity_get_controller($this->entity_type);
-    if (module_exists('remote_entity') &&
-        is_a($entity_controller, 'RemoteEntityAPIDefaultController')) {
-
-      // We're dealing with a remote entity so get the fully loaded list of
-      // entities from its query class instead of EntityFieldQuery.
-      $remote = TRUE;
-      $remote_query = $entity_controller->getRemoteEntityQuery();
-      $remote_query->buildFromEFQ($query);
-      $remote_entities = $entity_controller->executeRemoteEntityQuery($remote_query);
-    }
+    
 
     // if we are using the pager, calculate the total number of results
-    if ($this->pager->use_pager()) {
+    if ($this->pager && $this->pager->usePager()) {
       try {
 
         //  Fetch number of pager items differently based on data locality.
-        if ($remote) {
-          // Count the number of items already received in the remote query.
-          $this->pager->total_items = count($remote_entities);
-        }
-        else /* !$remote */ {
-          // Execute the local count query.
-          $this->pager->total_items = $count_query->execute();
-        }
+        // Execute the local count query.
+wisski_tick("pre exec pager");
+        $this->pager->total_items = $count_query->execute();
+wisski_tick("post exec pager");
 
         if (!empty($this->pager->options['offset'])) {
           $this->pager->total_items -= $this->pager->options['offset'];
         }
 
-        $this->pager->update_page_info();
+        $this->pager->updatePageInfo();
       }
       catch (Exception $e) {
         if (!empty($view->simpletest)) {
@@ -222,61 +220,56 @@ $bt = array_map(function($a){ return (isset($a['class'])?$a['class']:'').(isset(
     }
 
     // Let the pager set limit and offset.
-    $this->pager->pre_execute($query, $args);
+    if ($this->pager) {
+      $this->pager->preExecute($query);
+    }
 
     if (!empty($this->limit) || !empty($this->offset)) {
       // We can't have an offset without a limit, so provide a very large limit instead.
-      $limit  = intval(!empty($this->limit) ? $this->limit : 999999);
+      $limit  = intval(!empty($this->limit) ? $this->limit : 999999999);
       $offset = intval(!empty($this->offset) ? $this->offset : 0);
 
       // Set the range for the query.
-      if ($remote) {
-        // The remote query was already executed so slice the results as necessary.
-        $remote_entities = array_slice($remote_entities, $offset, $limit, TRUE);
-      }
-      else /* !$remote */ {
-        // Set the range on the local query.
-        $query->range($offset, $limit);
-      }
+      // Set the range on the local query.
+      $query->range($offset, $limit);
     }
 
     $view->result = array();
     try {
 
-      // Populate the result array.
-      if ($remote) {
 
-        // Give each entity its ID and add it to the result array.
-        foreach ($remote_entities as $entity_id => $entity) {
-            $entity->entity_id = $entity_id;
-            $entity->entity_type = $this->entity_type;
-            $view->result[] = $entity;
+wisski_tick("pre exec views");
+      // Execute the local query.
+      $entity_ids = $query->execute();
+wisski_tick("post exec views");
+
+      // Load each entity, give it its ID, and then add to the result array.
+      // This is later used for field rendering
+      $i = 0;
+      foreach (entity_load_multiple("wisski_individual", $entity_ids) as $entity_id => $entity) {
+        // TODO: we must not load the whole entity. this is way too costly!
+        #$entity->entity_id = $entity_id;
+        #$entity->entity_type = $entity_type;
+        $values = ['eid' => $entity_id];
+        if (isset($this->fields['title'])) {
+          $values['title'] = wisski_core_generate_title($entity);
         }
+        $row = new ResultRow($values);
+        $row->index = $i++;
+        $row->_entity = $entity;
+        $view->result[] = $row;
       }
-      else /* !$remote */ {
-
-        // Execute the local query.
-        $results = $query->execute();
-
-        // Load each entity, give it its ID, and then add to the result array.
-        foreach ($results as $entity_type => $ids) {
-          // This is later used for field rendering
-          foreach (entity_load($entity_type, array_keys($ids)) as $entity_id => $entity) {
-            $entity->entity_id = $entity_id;
-            $entity->entity_type = $entity_type;
-            $view->result[] = $entity;
-          }
+      
+      if ($this->pager) {
+        $this->pager->postExecute($view->result);
+        if ($this->pager->usePager()) {
+          $view->total_rows = $this->pager->getTotalItems();
         }
-      }
-
-      $this->pager->post_execute($view->result);
-      if ($this->pager->use_pager()) {
-        $view->total_rows = $this->pager->get_total_items();
       }
     }
     catch (Exception $e) {
       // Show the full exception message in Views admin.
-      if (!empty($view->live_preview)) {
+      if (!empty($view->preview)) {
         drupal_set_message($e->getMessage(), 'error');
       }
       else {
@@ -286,6 +279,8 @@ $bt = array_map(function($a){ return (isset($a['class'])?$a['class']:'').(isset(
     }
 
     $view->execute_time = microtime(true) - $start;
+dpm([microtime(true) - $start, $view->result],'result '.__METHOD__);    
+wisski_tick("end exec views");
   }
 
   function get_result_entities($results, $relationship = NULL) {

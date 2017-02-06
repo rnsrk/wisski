@@ -20,6 +20,8 @@ abstract class Sparql11Engine extends EngineBase {
   protected $write_url;
   
   protected $graph_rewrite;
+
+  protected $defaultGraph;
   
   /** Holds the EasyRDF sparql client instance that is used to
    * query the endpoint.
@@ -38,6 +40,7 @@ abstract class Sparql11Engine extends EngineBase {
       'read_url' => '',
       'write_url' => '',
       'graph_rewrite' => FALSE,
+      'default_graph' => 'graf://dr.acula/',
     ];
   }
 
@@ -52,6 +55,7 @@ abstract class Sparql11Engine extends EngineBase {
     $this->read_url = $this->configuration['read_url'];
     $this->write_url = $this->configuration['write_url'];
     $this->graph_rewrite = $this->configuration['graph_rewrite'];
+    $this->defaultGraph = $this->configuration['default_graph'];
     $this->store = NULL;
   }
 
@@ -64,6 +68,7 @@ abstract class Sparql11Engine extends EngineBase {
       'read_url' => $this->read_url,
       'write_url' => $this->write_url,
       'graph_rewrite' => $this->graph_rewrite,
+      'default_graph' => $this->defaultGraph,
     ) + parent::getConfiguration();
   }
 
@@ -94,6 +99,14 @@ abstract class Sparql11Engine extends EngineBase {
       '#return_value' => TRUE,
       '#description' => 'rewrite queries, so that remote SPARQL storages with non-standard dataset handling do always answer right',
     );
+    $form['default_graph'] = [
+      '#type' => 'textfield',
+      '#title' => 'Default Graph URI',
+      '#default_value' => $this->default_graph,
+      '#description' => 'Graph URI that is used to store triples in by default. May also be used as a base for new entity URIs.',
+    ];
+
+
     
     
     $form['same_as_properties'] = array('#type'=>'container');
@@ -134,6 +147,7 @@ abstract class Sparql11Engine extends EngineBase {
     $this->read_url = $form_state->getValue('read_url');
     $this->write_url = $form_state->getValue('write_url');
     $this->graph_rewrite = $form_state->getValue('graph_rewrite');
+    $this->defaultGraph = $form_state->getValue('default_graph');
     
   }
   
@@ -249,7 +263,7 @@ abstract class Sparql11Engine extends EngineBase {
 	}
 	
 	private function doQuery($query) {
-	  \Drupal::logger('QUERY '.$this->adapterId())->debug('{q}',array('q'=>$query));
+	  if (WISSKI_DEVEL) \Drupal::logger('QUERY '.$this->adapterId())->debug('{q}',array('q'=>$query));
 	  try {
   		return $this->getEndpoint()->query($query);
     } catch (\Exception $e) {
@@ -330,7 +344,7 @@ abstract class Sparql11Engine extends EngineBase {
 	* @return @see EasyRdf_Sparql_Client->update
 	*/
 	public function directUpdate($query) {
-    \Drupal::logger('UPDATE '.$this->adapterId())->debug('{u}',array('u'=>$query));
+    if (WISSKI_DEVEL) \Drupal::logger('UPDATE '.$this->adapterId())->debug('{u}',array('u'=>$query));
     try {
   		return $this->getEndpoint()->update($query);
     }
@@ -488,6 +502,7 @@ abstract class Sparql11Engine extends EngineBase {
 
   public function getDefaultDataGraphUri() {
     // here we should return a default graph for this store.
+    return $this->defaultGraph;
     return "graf://dr.acula/";
   }
   

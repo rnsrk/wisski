@@ -402,7 +402,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     if (!isset($this->adapter)) return NULL;
     
     if (empty(\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($entity_id,$this->adapter->id()))) {
-      \Drupal::logger('wisski_preview_image')->debug($this->adapter->id().' does not know the entity '.$entity_id);
+      if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug($this->adapter->id().' does not know the entity '.$entity_id);
       WisskiCacheHelper::putPreviewImageUri($entity_id,'none');
       return NULL;
     }
@@ -410,12 +410,12 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     //ask the local adapter for any image for this entity
     $images = $this->adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
     if (empty($images)) {
-      \Drupal::logger('wisski_preview_image')->debug('No preview images available from adapter '.$this->adapter->id());
+      if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug('No preview images available from adapter '.$this->adapter->id());
       WisskiCacheHelper::putPreviewImageUri($entity_id,'none');
       return NULL;
     }
 
-    \Drupal::logger('wisski_preview_image')->debug('Images from dapter: '.serialize($images));
+    if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug('Images from dapter: '.serialize($images));
     //if there is at least one, take the first of them
     //@TODO, possibly we can try something mor sophisticated to find THE preview image
     $input_uri = current($images);

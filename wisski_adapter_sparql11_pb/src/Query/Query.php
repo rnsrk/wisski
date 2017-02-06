@@ -33,6 +33,7 @@ class Query extends WisskiQueryBase {
     // NOTE: this is not thread-safe... shouldn't bother!
     $this->varCounter = 0;
 
+dpm($this->condition,__METHOD__);
     // compile the condition clauses into
     // sparql graph patterns and
     // a list of entity ids that the pattern should be restricted to
@@ -58,8 +59,8 @@ class Query extends WisskiQueryBase {
     else {
       // there are conditions left and found entities.
       // this can only occur if the conjunction of $this->condition is OR
-      // we must not use count directly
       list($limit, $offset) = $this->getPager();
+      // we must not use count directly (3rd param, see above)
       $entity_ids_too = $this->buildAndExecSparql($where_clause, NULL, FALSE, $limit, $offset);
       // combine the resulting entities with the ones already found.
       // we have to OR them: an AND conjunction would have been resolved in 
@@ -71,6 +72,7 @@ class Query extends WisskiQueryBase {
       }
       $return = $this->count ? count($entity_ids) : array_keys($entity_ids);
     }
+dpm([$limit, $offset], 'pager');
 
     #\Drupal::logger('query adapter ' . $this->getEngine()->adapterId())->debug('query result is {result}', array('result' => serialize($return)));
     return $return;
@@ -217,34 +219,13 @@ class Query extends WisskiQueryBase {
       elseif ($field == "eid") {
         // directly ask Drupal's entity id.
 
-        // we directly access the entity table.
-        // TODO: this is a hack but faster than talking with the AdapterHelper
-        if ($operator == 'IN' || $operator = "=") {
-          if (!empty($value)) {
-            $values = (array) $value;
-            $query = \Drupal::database()->select('wisski_salz_id2uri', 't')
-              ->distinct()
-              ->fields('t', array('eid', 'uri'))
-              ->condition('adapter_id', $this->getEngine()->adapterId())
-              ->condition('eid', $values, 'IN');
-            $eids = $query->execute()->fetchAllKeyed();
-            $entity_ids = $this->join($conjunction, $entity_ids, $eids);
-            if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
-              // the condition evaluated to an empty set of entities 
-              // and we have to AND; so the result set will be empty.
-              // The rest of the conditions can be skipped 
-              return array('', array());
-            }
-          }
-          else {
-            // if no value is given, then condition is always true.
-            // this may be the case when a field's mere existence is checked;
-            // as the eid always exists, this is true for every entity
-            // => do nothing
-          }
-        }
-        else {
-          $this->missingImplMsg("Operator $operator in eid field query", array('condition' => $condition));
+        $eids = $this->executeEntityIdCondition($operator, $value);
+        $entity_ids = $this->join($conjunction, $entity_ids, $eids);
+        if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
+          // the condition evaluated to an empty set of entities 
+          // and we have to AND; so the result set will be empty.
+          // The rest of the conditions can be skipped 
+          return array('', array());
         }
 
       }
@@ -252,6 +233,19 @@ class Query extends WisskiQueryBase {
         // the bundle is being mapped to pb groups
 
         $query_parts[] = $this->makeBundleCondition($operator, $value);
+
+      }
+      elseif ($field == "title") {
+        // directly ask Drupal's entity id.
+
+        $eids = $this->executeEntityTitleCondition($operator, $value);
+        $entity_ids = $this->join($conjunction, $entity_ids, $eids);
+        if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
+          // the condition evaluated to an empty set of entities 
+          // and we have to AND; so the result set will be empty.
+          // The rest of the conditions can be skipped 
+          return array('', array());
+        }
 
       }
       elseif (in_array($field, $skip_field_ids)) {
@@ -381,7 +375,7 @@ class Query extends WisskiQueryBase {
     
     $result = $engine = $this->getEngine()->directQuery($select);
     $adapter_id = $this->getEngine()->adapterId();
-    \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded {result}', array('query' => $select, 'result' => $result));
+    if (WISSKI_DEVEL) \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded {result}', array('query' => $select, 'result' => $result));
     if ($result->numRows() == 0) {
       $return = $count ? 0 : array();
     }
@@ -407,7 +401,98 @@ class Query extends WisskiQueryBase {
     return $return;
 
   }
+  
 
+  protected function executeEntityIdCondition($operator, $value) {
+    $entity_ids = NULL;
+    if (empty($value)) {
+      // if no value is given, then condition is always true.
+      // this may be the case when a field's mere existence is checked;
+      // as the eid always exists, this is true for every entity
+      // => do nothing
+    }
+    else {
+      // we directly access the entity table.
+      // TODO: this is a hack but faster than talking with the AdapterHelper
+      if ($operator == 'IN' || $operator == "=") {
+        $values = (array) $value;
+        $query = \Drupal::database()->select('wisski_salz_id2uri', 't')
+          ->distinct()
+          ->fields('t', array('eid', 'uri'))
+          ->condition('adapter_id', $this->getEngine()->adapterId())
+          ->condition('eid', $values, 'IN');
+        $entity_ids = $query->execute()->fetchAllKeyed();
+      }
+      elseif ($operator == 'BETWEEN') {
+        $values = (array) $value;
+        $query = \Drupal::database()->select('wisski_salz_id2uri', 't')
+          ->distinct()
+          ->fields('t', array('eid', 'uri'))
+          ->condition('adapter_id', $this->getEngine()->adapterId())
+          ->condition('eid', $values, 'BETWEEN');
+        $entity_ids = $query->execute()->fetchAllKeyed();
+      }
+      else {
+        $this->missingImplMsg("Operator $operator in eid field query", array('condition' => $condition));
+      }
+    }
+    return $entity_ids;
+  }
+
+
+  protected function executeEntityTitleCondition($operator, $value) {
+    $entity_ids = NULL;
+    if (empty($value)) {
+      // if no value is given, then condition is always true.
+      // this may be the case when a field's mere existence is checked;
+      // as the title always exists, this is true for every entity
+      // => do nothing
+    }
+    else {
+      // we directly access the title cache table. this is the only way to
+      // effeciently query the title. However, this may not always return 
+      // all expected entity ids as 
+      // - a title may not yet been written to the table.
+      // NOTE: This query is not aware of bundle conditions that may sort out
+      // titles that are associated with "wrong" bundles.
+      // E.g: an entity X is of bundle A and B. A query on bundle A and title 
+      // pattern xyz is issued. xyz matches entity title, but for bundle B.
+      // The query will still deliver X as it matches both conditions
+      // seperately, but not combined!
+
+      // first fetch all entity ids that match the title pattern
+      $select = \Drupal::service('database')
+          ->select('wisski_title_n_grams','w')
+          ->fields('w', array('ent_num'));
+      if ($operator == '=' || $operator == "!=") {
+        $select->condition('ngram', $value, $operator);
+      }
+      elseif ($operator == 'CONTAINS' || $operator == "STARTS_WITH") {
+        $select->condition('ngram', ($operator == 'CONTAINS' ? "%" : "") . $select->escapeLike($value) . "%", 'LIKE');
+      }
+      else {
+        $this->missingImplMsg("Operator $operator in title field query", array('condition' => $condition));
+        return $entity_ids; // NULL
+      }
+
+      $rows = $select
+          ->execute()
+          ->fetchAll();
+        
+      foreach ($rows as $row) {
+        $entity_ids[$row->ent_num] = $row->ent_num;
+      }
+
+      // now fetch the uris for the eids as we have to return both
+      $query = \Drupal::database()->select('wisski_salz_id2uri', 't')
+        ->distinct()
+        ->fields('t', array('eid', 'uri'))
+        ->condition('adapter_id', $this->getEngine()->adapterId())
+        ->condition('eid', $entity_ids, 'IN');
+      $entity_ids = $query->execute()->fetchAllKeyed();
+    }
+    return $entity_ids;
+  }
 
   
   protected function makeBundleCondition($operator, $value) {
@@ -490,7 +575,7 @@ class Query extends WisskiQueryBase {
     // subqueries.
     // only the first var x0 get to be the same so that everything maps
     // to the same entity
-    $starting_position = $pb->getRelativeStartingPosition($group, FALSE);
+    $starting_position = $pb->getRelativeStartingPosition($path, FALSE);
     $vars[$starting_position] = "x0";
     $i = $this->varCounter++;
     for ($j = count($path->getPathArray()); $j > $starting_position; $j--) {

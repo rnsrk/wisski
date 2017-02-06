@@ -5,6 +5,9 @@ use Drupal\wisski_core\Entity\WisskiEntity;
 
 use Drupal\wisski_core\WisskiCacheHelper;
 
+
+define('WISSKI_DEVEL', FALSE);
+
 function wisski_core_cache_flush() {
 
   WisskiCacheHelper::flushAllEntityTitles();
@@ -74,9 +77,9 @@ function wisski_tick($name='') {
     $diff = ceil($now-$wisski_timestamp);
     if (!empty($name)) {
       dpm($diff.' ms',$name);
-      \Drupal::logger('wisski tick')->debug($name);
+      if (WISSKI_DEVEL) \Drupal::logger('wisski tick')->debug($name);
     } else {
-      \Drupal::logger('wisski tick')->debug("reset");
+      if (WISSKI_DEVEL) \Drupal::logger('wisski tick')->debug("reset");
     }
     $wisski_timestamp = $now;
     return $diff;

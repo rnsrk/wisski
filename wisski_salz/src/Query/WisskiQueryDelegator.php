@@ -33,7 +33,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   
   public function execute() {
   
-    if (!isset($empties)) {
+    if (!isset($this->empties)) {
       $bundle_id = NULL;
       foreach($this->condition->conditions() as $cond) {
         if ($cond['field'] === 'bundle') {
