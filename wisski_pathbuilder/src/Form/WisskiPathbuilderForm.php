@@ -503,6 +503,13 @@ class WisskiPathbuilderForm extends EntityForm {
 #        'field' => Pathbuilder::GENERATE_NEW_FIELD,
       );
       
+      // in D8 we do no longer allow a path/group without a name.
+      // we have to set it to a dummy value.
+      if ($pathdata['name'] == '') {
+        $pathdata['name'] = "_empty_";
+        drupal_set_message(t('Path with id @id (@uuid) has no name. Name has been set to "_empty_".', array('@id' => $pathdata['id'], '@uuid' => $uuid)), 'warning');
+      }
+      
       $path_in_wisski = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::create($pathdata);
       
       $path_in_wisski->save();
