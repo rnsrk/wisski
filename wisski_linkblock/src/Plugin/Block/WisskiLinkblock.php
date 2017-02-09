@@ -174,16 +174,18 @@ class WisskiLinkblock extends BlockBase {
             '#title' => $data['target_id'],
             '#url' => Url::fromUri('internal:/' . $url),
           );
+          $out[] = [ '#markup' => '</br>' ];
         } else {
           $out[] = array(
             '#type' => 'item',
             '#markup' =>  $data['target_id'],
           );
+          $out[] = [ '#markup' => '</br>' ];
         }
         
       }  
     }
-#    drupal_set_message($out); 
+
     return $out;
   }
 

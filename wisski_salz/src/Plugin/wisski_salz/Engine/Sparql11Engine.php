@@ -454,6 +454,12 @@ abstract class Sparql11Engine extends EngineBase {
     $uris[AdapterHelper::getDrupalAdapterNameAlias()] = AdapterHelper::generateWisskiUriFromId($entity_id);
     //we use the originates property as name fot the graph for sameAs info
     $orig_prop = $this->getOriginatesProperty();
+    
+    if(empty($orig_prop)) {
+    	drupal_set_message("No Default Graph Uri was set in the store configuration. Please fix it!", "error");
+    	return FALSE;
+    }
+    
     $origin = "<$orig_prop> a owl:AnnotationProperty. ";
     $same = '';
     foreach ($uris as $adapter_id => $first) {
@@ -468,6 +474,7 @@ abstract class Sparql11Engine extends EngineBase {
     }
     if (!empty($same)) {  
       try {
+#        drupal_set_message(htmlentities("INSERT DATA { GRAPH <$orig_prop> { $origin $same }}"), "yay!");
         $this->directUpdate("INSERT DATA { GRAPH <$orig_prop> { $origin $same }}");
         return TRUE;
       } catch (\Exception $e) {
