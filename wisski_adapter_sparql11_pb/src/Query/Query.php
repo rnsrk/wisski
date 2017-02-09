@@ -33,7 +33,7 @@ class Query extends WisskiQueryBase {
     // NOTE: this is not thread-safe... shouldn't bother!
     $this->varCounter = 0;
 
-dpm($this->condition,__METHOD__);
+#dpm($this->condition,__METHOD__);
     // compile the condition clauses into
     // sparql graph patterns and
     // a list of entity ids that the pattern should be restricted to
