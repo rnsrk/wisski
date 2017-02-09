@@ -194,8 +194,12 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
         $topids = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
         
         foreach($ids as $id) {
-          if(in_array($id, $topids))
+          if(in_array($id, $topids)) {
+            // this is dangerous!
+            $this->setBundleIdForEntityId($eid, $id);
+
             return $id;
+          }
         }
       }
 

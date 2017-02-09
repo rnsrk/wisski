@@ -19,6 +19,7 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
 
 //  ddebug_backtrace();
   $create_form_title = FALSE;
+
   if ($wisski_individual instanceof WisskiEntityInterface) {
     if ($wisski_individual->isNew()) $create_form_title = TRUE;
     $entity_id = $wisski_individual->id();
@@ -30,9 +31,29 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
   if ($override_bundle_id !== NULL) {
     $bundle_id = $override_bundle_id;
   }
+
+  if(empty($bundle_id)) {
+    // this is very complicated... do it anyway...
+    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+
+#    drupal_set_message(serialize($pbs));
+
+    foreach($pbs as $pb) {
+      
+      $bundle_id = $pb->getBundleIdForEntityId($entity_id);
+
+#      drupal_set_message(serialize($bundle_id));
+
+      if(!empty($bundle_id))
+        break;
+    }
+
+  }
+
   $title = '';
   if (!empty($bundle_id)) {
     if ($bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)) {
+#      drupal_set_message(serialize($bundle->generateEntityTitle($entity_id,FALSE,$force_new)));
       if ($create_form_title) $title = html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
       else $title = $bundle->generateEntityTitle($entity_id,FALSE,$force_new);
     }

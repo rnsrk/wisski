@@ -234,7 +234,7 @@ class WisskiPathForm extends EntityForm {
         #dpm($element_options,'options');
         #dpm($future, "fm");
       }
-
+            
       // if the engine has no ontology, it currently returns false which is evil as options      
       if($element_options === FALSE) {
         drupal_set_message($this->t("No path options for this path could be evaluated. Probably the ontology is missing in your store!"), "error");

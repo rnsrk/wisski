@@ -80,6 +80,8 @@ class WisskiLinkblock extends BlockBase {
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
     
     $dataout = array();
+    
+#    drupal_set_message(serialize($pbs));
 #return $out;
     foreach($pbs as $datapb) {
     
@@ -91,9 +93,11 @@ class WisskiLinkblock extends BlockBase {
        # dpm($datapb);
       $groups = $datapb->getGroupsForBundle($bundleid);
     
+#      drupal_set_message(serialize($datapb));
+    
       foreach($groups as $group) {
         $linkgroup = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($group->id());
-
+#        drupal_set_message(serialize("yay!"));
         if(!empty($linkgroup)) {
 
           $allpbpaths = $pb->getPbPaths();
@@ -113,7 +117,7 @@ class WisskiLinkblock extends BlockBase {
               continue;
             
             $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($childid);
-            
+#drupal_set_message("child: " . serialize($childid));            
 #            $adapters = \Drupal\wisski_salz\Entity\WisskiSalzAdapter
             $adapters = entity_load_multiple('wisski_salz_adapter');            
             
@@ -121,6 +125,8 @@ class WisskiLinkblock extends BlockBase {
               $engine = $adapter->getEngine();
 
               $tmpdata = $engine->pathToReturnValue($path, $pb, $individualid, 0, 'target_id');
+#              drupal_set_message("path: " . serialize($path));
+#              drupal_set_message(serialize($tmpdata));
 
               if(!empty($tmpdata)) {
                 $dataout[$path->id()]['path'] = $path;
@@ -144,7 +150,7 @@ class WisskiLinkblock extends BlockBase {
     // this does not work
 #    $out['#cache']['disabled'] = TRUE;
 #    $out[] = [ '#markup' => 'Time : ' . date("H:i:s"),];
-
+#    drupal_set_message(serialize($dataout));
     foreach($dataout as $pathid => $dataarray) {
       $path = $dataarray['path'];
       
@@ -156,6 +162,7 @@ class WisskiLinkblock extends BlockBase {
       foreach($dataarray['data'] as $data) {
       
         $url = $data['wisskiDisamb'];
+
         if(!empty($url)) {
 
           $entity_id = AdapterHelper::getDrupalIdForUri($url);
@@ -176,7 +183,7 @@ class WisskiLinkblock extends BlockBase {
         
       }  
     }
-
+#    drupal_set_message($out); 
     return $out;
   }
 

@@ -12,6 +12,7 @@ class WisskiEntityListController extends EntityListController {
   public function listing($wisski_bundle=NULL,$wisski_individual=NULL) {
 #    dpm($this->getDestinationArray());
 #    dpm(func_get_args(), "yay");
+
     if (is_null($wisski_bundle)) {
       if(strpos($this->getDestinationArray()['destination'], 'create') !== FALSE)
         return $this->entityManager()->getListBuilder('wisski_bundle')->render(WisskiBundleListBuilder::CREATE);

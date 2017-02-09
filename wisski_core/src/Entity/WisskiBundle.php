@@ -144,10 +144,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    */
   private function applyTitlePattern($pattern,$entity_id) {
     
-    //dpm($pattern,__FUNCTION__);
+    #dpm($pattern,__FUNCTION__);
     
     unset($pattern['max_id']);
-    
+        
     // just in case...
     if (empty($pattern)) return $this->createFallbackTitle($entity_id);;
     
@@ -198,7 +198,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           default: {
             list($pb_id,$path_id) = explode('.',$attributes['name']);
             $values = $this->gatherTitleValues($entity_id,$path_id);
-            //dpm($values,'gathered values for '.$path_id);
+            #dpm($values,'gathered values for '.$path_id);
           }
         }
         if (empty($values)) {
@@ -214,9 +214,16 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         if ($cardinality < 0 || $cardinality > count($values)) $cardinality = count($values);
         $delimiter = $attributes['delimiter'];
         $i = 0;
+#        dpm($values, "values");
         foreach ($values as $value) {
+
+          // fix for empty values, we ignore these for now.
+          if(empty($value))
+            continue;
+#          dpm($i, "i");
+#          dpm($cardinality, "card");
           if ($i >= $cardinality) break;
-          #dpm($value, 'get');
+#          dpm($value, 'get');
           $part .= $value;
           if (++$i < $cardinality) $part .= $delimiter;
         } 
@@ -228,7 +235,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       
       $parts[$key] = $part;
     }
-    //dpm(array('parts'=>$parts),'after');
+    #dpm(array('parts'=>$parts),'after');
     
     //reorder the parts according original pattern
     $title = '';
@@ -238,7 +245,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     
     if (empty(trim($title))) return $this->createFallbackTitle($entity_id);
 
-    //dpm(func_get_args()+array('result'=>$title),__METHOD__);
+    #dpm(func_get_args()+array('result'=>$title),__METHOD__);
     return $title;
   }
   
