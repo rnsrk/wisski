@@ -72,7 +72,7 @@ class Query extends WisskiQueryBase {
       }
       $return = $this->count ? count($entity_ids) : array_keys($entity_ids);
     }
-dpm([$limit, $offset], 'pager');
+#dpm([$limit, $offset], 'pager');
 
     #\Drupal::logger('query adapter ' . $this->getEngine()->adapterId())->debug('query result is {result}', array('result' => serialize($return)));
     return $return;
