@@ -172,7 +172,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       return $data;
     }
     else {
-    
+
       $bundle_from_uri = \Drupal::request()->query->get('wisski_bundle');
 
       if(!empty($bundle_from_uri)) {
@@ -181,6 +181,22 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
         $this->setBundleIdForEntityId($eid, $bundle_from_uri);
         
         return $bundle_from_uri;
+      }
+
+      // still alive? make a best guess.
+      $adapterid = $this->getAdapterId();
+      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($adapterid);
+      
+      $ids = $adapter->getBundleIdsForEntityId($eid);
+
+      if(!empty($ids)) {
+        
+        $topids = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
+        
+        foreach($ids as $id) {
+          if(in_array($id, $topids))
+            return $id;
+        }
       }
 
       drupal_set_message("No Bundle found for $eid - error.", "error");    
