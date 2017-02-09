@@ -353,10 +353,10 @@ class Query extends WisskiQueryBase {
   protected function buildAndExecSparql($query_parts, $entity_ids, $count = FALSE, $limit = 0, $offset = 0) {
     
     if ($count) {
-      $select = 'SELECT (COUNT(?x0) as ?cnt) WHERE { ';
+      $select = 'SELECT (COUNT(?x0) as ?cnt) WHERE { GRAPH ?g {';
     }
     else {
-      $select = 'SELECT DISTINCT ?x0 WHERE { ';
+      $select = 'SELECT DISTINCT ?x0 WHERE { GRAPH ?g {';
     }
     
     // we restrict the result set to the entities in $entity_ids by adding a
@@ -367,7 +367,7 @@ class Query extends WisskiQueryBase {
       $select .= 'VALUES ?x0 { <' . join('> <', $entity_ids) . '> } ';
     }
 
-    $select .= $query_parts . ' }';
+    $select .= $query_parts . ' } }';
     
     if ($limit) {
       $select .= " LIMIT $limit OFFSET $offset";
@@ -375,6 +375,7 @@ class Query extends WisskiQueryBase {
     
     $result = $engine = $this->getEngine()->directQuery($select);
     $adapter_id = $this->getEngine()->adapterId();
+    #dpm(htmlentities($select), "query");
     if (WISSKI_DEVEL) \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded {result}', array('query' => $select, 'result' => $result));
     if ($result->numRows() == 0) {
       $return = $count ? 0 : array();
@@ -575,7 +576,9 @@ class Query extends WisskiQueryBase {
     // subqueries.
     // only the first var x0 get to be the same so that everything maps
     // to the same entity
-    $starting_position = $pb->getRelativeStartingPosition($path, FALSE);
+    $starting_position = $pb->getRelativeStartingPosition($path, TRUE);
+#    dpm($path, "path");
+#    dpm($starting_position, "start");
     $vars[$starting_position] = "x0";
     $i = $this->varCounter++;
     for ($j = count($path->getPathArray()); $j > $starting_position; $j--) {
