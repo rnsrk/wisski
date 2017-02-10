@@ -12,24 +12,25 @@ use Drupal\wisski_salz\Query\WisskiQueryBase;
 
 class Query extends WisskiQueryBase {
   
-  protected $pathbuilders = NULL;
-
+  /**
+   * Holds the pathbuilders that this query object is responsible for.
+   * This variable should not be accessed directly, use $this->getPbs() 
+   * instead.
+   */
+  private $pathbuilders = NULL;
+  
+  /**
+   * A counter used for naming variables in multi-path sparql queries
+   *
+   * @var integer
+   */
   protected $varCounter = 0;
-
-  #private $parent_engine;
-
-  #public function __construct(EntityTypeInterface $entity_type,$condition,array $namespaces,Sparql11EngineWithPB $parent_engine) {
-    #parent::__construct($entity_type,$condition,$namespaces);
-    #$this->parent_engine = $parent_engine;
-    #drupal_set_message("yeah!");
-  #}
 
   /**
    * {@inheritdoc}
    */
   public function execute() {
     
-    // delete the cache, start a new search
     // NOTE: this is not thread-safe... shouldn't bother!
     $this->varCounter = 0;
 
@@ -80,7 +81,7 @@ class Query extends WisskiQueryBase {
   }
 
   
-  protected function getPager() {
+  public function getPager() {
     $limit = $offset = NULL;
     if (!empty($this->pager) || !empty($this->range)) {
       $limit = $this->range['length'] ? : NULL;
@@ -90,7 +91,9 @@ class Query extends WisskiQueryBase {
   }
 
   
-  /** Gets all the pathbuilders that this query is responsible for
+  /** Gets all the pathbuilders that this query is responsible for.
+   *
+   * @return an array of pathbuilder objects keyed by their ID
    */
   protected function getPbs() {
     
@@ -122,20 +125,20 @@ class Query extends WisskiQueryBase {
    * If none is found, returns the $default.
    *
    * We need this function as the conditions' conjunction field may itself
-   * contain a condition
+   * contain a condition.
    */
   protected function getConjunction($condition, $default = 'AND') {
     $conj = $condition->getConjunction();
-    if (is_string($conj)) {
+    if (is_object($conj) && $conj instanceof ConditionInterface) {
+      return $this->getConjunction($conj, $default);
+    }
+    elseif (is_string($conj)) {
       $conj = strtoupper($conj);
       if ($conj == 'AND' || $conj == 'OR') {
         return $conj;
-      } else {
-        return $default;
       }
-    } else {
-      return $this->getConjunction($conj, $default);
     }
+    return $default;
   }
 
   
@@ -514,7 +517,7 @@ class Query extends WisskiQueryBase {
             // only the first var x0 get to be the same so that everything maps
             // to the same entity
             // NOTE: we set the first var to x0 although it's not x0
-            $starting_position = $pb->getRelativeStartingPosition($group, FALSE);
+            $starting_position = $pb->getRelativeStartingPosition($group, TRUE);
             $i = $this->varCounter++;
             $vars[$starting_position] = 'x0';
             for ($j = count($group->getPathArray()); $j > $starting_position; $j--) {

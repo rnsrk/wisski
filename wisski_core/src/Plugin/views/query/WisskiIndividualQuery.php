@@ -194,9 +194,7 @@ wisski_tick("begin exec views");
 
         //  Fetch number of pager items differently based on data locality.
         // Execute the local count query.
-wisski_tick("pre exec pager");
         $this->pager->total_items = $count_query->execute();
-wisski_tick("post exec pager");
 
         if (!empty($this->pager->options['offset'])) {
           $this->pager->total_items -= $this->pager->options['offset'];
@@ -237,11 +235,8 @@ wisski_tick("post exec pager");
     $view->result = array();
     try {
 
-
-wisski_tick("pre exec views");
       // Execute the local query.
       $entity_ids = $query->execute();
-wisski_tick("post exec views");
 
       // Load each entity, give it its ID, and then add to the result array.
       // This is later used for field rendering
@@ -279,7 +274,6 @@ wisski_tick("post exec views");
     }
 
     $view->execute_time = microtime(true) - $start;
-dpm([microtime(true) - $start, $view->result],'result '.__METHOD__);    
 wisski_tick("end exec views");
   }
 

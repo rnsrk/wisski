@@ -46,6 +46,13 @@ class WisskiEntityViewsData extends EntityViewsData {
     $data[$base_table]['table']['group'] = $this->entityType->getLabel();
     $data[$base_table]['table']['provider'] = $this->entityType->getProvider();
     
+    // this is needed by some views plugins. e.g. for the rest module 
+    $data[$base_table]['table']['entity type'] = $this->entityType->id();
+    // from Drupal\views\Plugin\views\query\QueryPluginBase->getEntityTableInfo():
+    // "A boolean that specifies whether the table is a base table or
+    // a revision table of the entity type."
+    $data[$base_table]['table']['entity revision'] = FALSE;
+    
     // the base table
     // this is a virtual table as we do not intend to materialize it
     // we rather need this entry for specifying the custom views query engine.
@@ -75,7 +82,7 @@ class WisskiEntityViewsData extends EntityViewsData {
       'id' => 'bundle',
       'title' => 'Bundle/Group',
       'field' => [
-        'id' => 'wisski_bundle'   // i think we need this extra handler
+        'id' => 'standard'   // i think we need this extra handler
       ],
       'filter' => [
         'id' => 'wisski_bundle'   // i think we need this extra handler

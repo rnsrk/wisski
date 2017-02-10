@@ -47,7 +47,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     }  
     
     if ($this->count) {
-  
       $result = 0;
       foreach ($this->dependent_queries as $adapter_id => $query) {
         $query = $query->count();
@@ -71,7 +70,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       }
       $result = array();
       
-      if ($pager) {
+      if ($pager || !empty($this->range)) {
         return $this->pagerQuery($this->range['length'],$this->range['start']);
       }
       foreach ($this->dependent_queries as $query) {
@@ -86,7 +85,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   }
   
   protected function pagerQuery($limit,$offset) {
-  
     //old versions below  
     $queries = $this->dependent_queries;
     $query = array_shift($queries);
