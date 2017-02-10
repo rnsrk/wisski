@@ -356,10 +356,10 @@ class Query extends WisskiQueryBase {
   protected function buildAndExecSparql($query_parts, $entity_ids, $count = FALSE, $limit = 0, $offset = 0) {
     
     if ($count) {
-      $select = 'SELECT (COUNT(?x0) as ?cnt) WHERE { GRAPH ?g {';
+      $select = 'SELECT (COUNT(?x0) as ?cnt) WHERE { ';
     }
     else {
-      $select = 'SELECT DISTINCT ?x0 WHERE { GRAPH ?g {';
+      $select = 'SELECT DISTINCT ?x0 WHERE { ';
     }
     
     // we restrict the result set to the entities in $entity_ids by adding a
@@ -370,7 +370,7 @@ class Query extends WisskiQueryBase {
       $select .= 'VALUES ?x0 { <' . join('> <', $entity_ids) . '> } ';
     }
 
-    $select .= $query_parts . ' } }';
+    $select .= $query_parts . ' }';
     
     if ($limit) {
       $select .= " LIMIT $limit OFFSET $offset";
