@@ -21,7 +21,7 @@ abstract class Sparql11Engine extends EngineBase {
   
   protected $graph_rewrite;
 
-  protected $defaultGraph;
+  protected $default_graph;
   
   /** Holds the EasyRDF sparql client instance that is used to
    * query the endpoint.
@@ -55,7 +55,7 @@ abstract class Sparql11Engine extends EngineBase {
     $this->read_url = $this->configuration['read_url'];
     $this->write_url = $this->configuration['write_url'];
     $this->graph_rewrite = $this->configuration['graph_rewrite'];
-    $this->defaultGraph = $this->configuration['default_graph'];
+    $this->default_graph = $this->configuration['default_graph'];
     $this->store = NULL;
   }
 
@@ -68,7 +68,7 @@ abstract class Sparql11Engine extends EngineBase {
       'read_url' => $this->read_url,
       'write_url' => $this->write_url,
       'graph_rewrite' => $this->graph_rewrite,
-      'default_graph' => $this->defaultGraph,
+      'default_graph' => $this->default_graph,
     ) + parent::getConfiguration();
   }
 
@@ -102,12 +102,11 @@ abstract class Sparql11Engine extends EngineBase {
     $form['default_graph'] = [
       '#type' => 'textfield',
       '#title' => 'Default Graph URI',
+      '#required' => TRUE,
       '#default_value' => $this->default_graph,
       '#description' => 'Graph URI that is used to store triples in by default. May also be used as a base for new entity URIs.',
     ];
 
-
-    
     
     $form['same_as_properties'] = array('#type'=>'container');
     $form['same_as_properties']['sameAsProperties'] = $form['sameAsProperties'];
@@ -147,7 +146,7 @@ abstract class Sparql11Engine extends EngineBase {
     $this->read_url = $form_state->getValue('read_url');
     $this->write_url = $form_state->getValue('write_url');
     $this->graph_rewrite = $form_state->getValue('graph_rewrite');
-    $this->defaultGraph = $form_state->getValue('default_graph');
+    $this->default_graph = $form_state->getValue('default_graph');
     
   }
   
@@ -509,7 +508,7 @@ abstract class Sparql11Engine extends EngineBase {
 
   public function getDefaultDataGraphUri() {
     // here we should return a default graph for this store.
-    return $this->defaultGraph;
+    return $this->default_graph;
     return "graf://dr.acula/";
   }
   
