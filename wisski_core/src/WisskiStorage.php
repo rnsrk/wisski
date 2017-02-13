@@ -97,6 +97,7 @@ $rand = rand();
           // if so - ask for the bundles for that id
           // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
           $bundle_ids = $adapter->getBundleIdsForEntityId($id);
+#          drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
           if (isset($cached_bundle)) {
             if (in_array($cached_bundle,$bundle_ids)) {
               $bundle_ids = array($cached_bundle);
@@ -107,6 +108,12 @@ $rand = rand();
           }
           $bundle_ids = array_slice($bundle_ids,0,1);
           foreach($bundle_ids as $bundleid) {
+            // be more robust.
+            if(empty($bundleid)) {
+              drupal_set_message("Beware, there is somewhere an empty bundle id specified in your pathbuilder!", "warning");
+              continue;
+            }
+              
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
 #            $view_ids = \Drupal::entityQuery('entity_view_display')
 #              ->condition('id', 'wisski_individual.' . $bundleid . '.', 'STARTS_WITH')

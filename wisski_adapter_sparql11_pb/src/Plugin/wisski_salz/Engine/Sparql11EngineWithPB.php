@@ -640,10 +640,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #              dpm("I resort...");
                 $tmpout = $out;
                 $out = array();
-                $out[$pbpaths[$group->id()]['bundle']] = $pbpaths[$group->id()]['bundle'];
+                
+                // only do that if there is something
+                if(!empty($pbpaths[$group->id()]['bundle'])) {
+                  $out[$pbpaths[$group->id()]['bundle']] = $pbpaths[$group->id()]['bundle'];
+                }
                 $out = array_merge($out, $tmpout);
               }
-              $out[$pbpaths[$group->id()]['bundle']] = $pbpaths[$group->id()]['bundle'];
+              if(!empty($pbpaths[$group->id()]['bundle']))
+                $out[$pbpaths[$group->id()]['bundle']] = $pbpaths[$group->id()]['bundle'];
             }
           }
         }
@@ -1212,7 +1217,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #      return $this->loadFieldValues($entity_ids,array($field_id),$language);
 #    }
 #    return array();
-
+#    drupal_set_message(serialize($entity_ids));
     if(!empty($field_id) && empty($bundleid_in)) {
       drupal_set_message("Dorian ist doof, weil $field_id angefragt wurde und bundle aber leer ist.", "error");
       return;
