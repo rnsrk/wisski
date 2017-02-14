@@ -7,6 +7,8 @@ use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\query\QueryPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\views\ViewExecutable;
+use Drupal\wisski_salz\AdapterHelper;
+use Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWithPB;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -143,8 +145,10 @@ class WisskiIndividualQuery extends QueryPluginBase {
    * This is used by the style row plugins for node view and comment view.
    */
   function addField($base_table, $base_field) {
-dpm(func_get_args(),__METHOD__);
     $this->fields[$base_field] = $base_field;
+    if (strpos($base_field, "wisski_path_") === 0) {
+      $this->fields['_entity'] = '_entity';
+    }
     return $base_field;
   }
 
@@ -238,21 +242,19 @@ wisski_tick("begin exec views");
       // Execute the local query.
       $entity_ids = $query->execute();
 
-      // Load each entity, give it its ID, and then add to the result array.
-      // This is later used for field rendering
-      $i = 0;
-      foreach (entity_load_multiple("wisski_individual", $entity_ids) as $entity_id => $entity) {
-        // TODO: we must not load the whole entity. this is way too costly!
-        #$entity->entity_id = $entity_id;
-        #$entity->entity_type = $entity_type;
-        $values = ['eid' => $entity_id];
-        if (isset($this->fields['title'])) {
-          $values['title'] = wisski_core_generate_title($entity);
+      if (empty($entity_ids)) {
+        $view->result = [];
+      }
+      else {
+        // Get the fields for each entity, give it its ID, and then add to the result array.
+        // This is later used for field rendering
+        $values_per_row = $this->fillResultValues($entity_ids);
+#dpm([$values_per_row, $entity_ids], __METHOD__);
+        foreach ($values_per_row as $rowid => $values) {
+          $row = new ResultRow($values);
+          $row->index = $rowid;
+          $view->result[] = $row;
         }
-        $row = new ResultRow($values);
-        $row->index = $i++;
-        $row->_entity = $entity;
-        $view->result[] = $row;
       }
       
       if ($this->pager) {
@@ -277,23 +279,99 @@ wisski_tick("begin exec views");
 wisski_tick("end exec views");
   }
 
-  function get_result_entities($results, $relationship = NULL) {
-    $entity = reset($results);
-    return array($entity->entity_type, $results);
-  }
-  function add_selector_orderby($selector, $order = 'ASC') {
-    $views_data = views_fetch_data($this->base_table);
-    $sort_data = $views_data[$selector]['sort'];
-    switch ($sort_data['handler']) {
-      case 'efq_views_handler_sort_entity':
-        $this->query->entityOrderBy($selector, $order);
-        break;
-      case 'efq_views_handler_sort_property':
-        $this->query->propertyOrderBy($selector, $order);
-        break;
-      case 'efq_views_handler_sort_field':
-        $this->query->fieldOrderBy($sort_data['field_name'], $sort_data['field'], $order);
-        break;
+  
+  protected function fillResultValues($entity_ids) {
+    // we must not load the whole entity unless explicitly wished. this is way too costly!
+    
+    $values_per_row = [];
+    // we always return the entity id
+    foreach ($entity_ids as $entity_id) {
+      $values_per_row[$entity_id] = ['eid' => $entity_id];
     }
+
+    $fields = $this->fields;
+
+    if (isset($fields['_entity'])) {
+      foreach ($values_per_row as &$row) {
+        $row['_entity'] = entity_load('wisski_individual', $row['eid']);
+      }
+    }
+    
+    unset($fields['eid']);
+    unset($fields['_entity']);
+
+    while (($field = array_shift($fields)) !== NULL) {
+      if ($field == 'title') {
+        foreach ($values_per_row as $eid => &$row) {
+          $row['title'] = wisski_core_generate_title($eid);
+        }
+      }
+      elseif ($field == 'bundle' || $field == 'bundle_label' || $field == 'bundles') {
+        foreach ($values_per_row as $eid => &$row) {
+          $bundle_ids = AdapterHelper::getBundleIdsForEntityId($row['eid'], TRUE);
+          $values['bundles'] = $bundle_ids;
+          $bid = reset($bundle_ids);  // TODO: make a more sophisticated choice rather than the first one
+          $values['bundle'] = $bid;
+          $bundle = entity_load('wisski_bundle', $bid);
+          $values['bundle_label'] = $bundle->label();
+        }
+      }
+      elseif (strpos($field, "wisski_path_") === 0 && strpos($field, "__") !== FALSE) {
+        // the if is rather a hack but currently I have no idea how to access
+        // the field information wisski_field from WisskiEntityViewsData.
+        
+        $pb_and_path = explode("__", substr($field, 12), 2);
+        if (count($pb_and_path) != 2) {
+          drupal_set_message("Bad field id for Wisski views: $field", 'error');
+        }
+        else {
+          $pb = entity_load('wisski_pathbuilder', $pb_and_path[0]);
+          $path = entity_load('wisski_path', $pb_and_path[1]);
+          if (!$pb) {
+            drupal_set_message("Bad pathbuilder id for Wisski views: $pb_and_path[0]", 'error');
+          }
+          elseif (!$path) {
+            drupal_set_message("Bad path id for Wisski views: $pb_and_path[1]", 'error');
+          }
+          else {
+            $adapter = entity_load('wisski_salz_adapter', $pb->getAdapterId());
+            if (!$adapter) {
+              drupal_set_message("Bad adapter id for pathbuilder $pb_and_path[0]: " . $pb->getAdapterId(), 'error');
+            }
+            else {
+              $engine = $adapter->getEngine();
+              if (!($engine instanceof Sparql11EngineWithPB)) {
+                drupal_set_message("Adapter cannot be queried by path in WissKI views for path " . $path->getName() . " in pathbuilder " . $pb->getName(), 'error');
+              }
+              else {
+                $select = "SELECT * WHERE { VALUES ?x0 { ";
+                $uris_to_eids = []; // keep for reverse mapping of results
+                foreach ($entity_ids as $eid) {
+                  $uri = $engine->getUriForDrupalId($eid);
+                  if ($uri) {
+                    $select .= "<$uri> ";
+                    $uris_to_eids[$uri] = $eid;
+                  }
+                }
+                $select .= "} ";
+                $select .= $engine->generateTriplesForPath($pb, $path);
+                $select .= "}";
+                $result = $engine->directQuery($select);
+                foreach ($result as $sparql_row) {
+                  if (isset($uris_to_eids[$sparql_row->x0->getUri()])) {
+                    $eid = $uris_to_eids[$sparql_row->x0->getUri()];
+                    $values_per_row[$eid][$field] = $sparql_row->out->getValue();
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+    }
+    
+    return array_values($values_per_row);
+
   }
 }

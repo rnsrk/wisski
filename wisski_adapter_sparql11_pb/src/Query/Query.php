@@ -254,12 +254,16 @@ class Query extends WisskiQueryBase {
       elseif (in_array($field, $skip_field_ids)) {
         // these fields are not supported on purpose
 
-        $this->missingImplMsg("Field $field intentionally not queryable in field query", array('condition' => $condition));
+        $this->missingImplMsg("Field $field intentionally not queryable in entity query", array('condition' => $condition));
       
       } 
       // for the rest of the fields we need to distinguish between field and path
-      // query mode
-      elseif ($this->isPathQuery()) {
+      // query mode 
+      //
+      // TODO: we should not need to distinguish between both modes as we can
+      // tell them apart by the dot. This would make query more flexible and
+      // allow for queries that contain both path and field conditions.
+      elseif ($this->isPathQuery() || strpos($field, '.') !== FALSE) {
         // the field is actually a path so we can query it directly
 
         // the search field id encodes the pathbuilder id and the path id:
@@ -268,6 +272,7 @@ class Query extends WisskiQueryBase {
         $pb_and_path = explode(".", $field);
         if (count($pb_and_path) != 2) {
           // bad encoding! can't handle
+          drupal_set_message($this->t('Bad pathbuilder and path id "%id" in entity query condition', ['%id' => $field]));
           continue; // with next condition
         }
         $pbid = $pb_and_path[0];
@@ -282,10 +287,10 @@ class Query extends WisskiQueryBase {
         $path_id = $pb_and_path[1];
         $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path_id);
         if(empty($path)) {
+          drupal_set_message($this->t('Bad path id "%id" in entity query', ['%id' => $path_id]));
           continue; // with next condition
         }
         $query_parts[] = $this->makePathCondition($pb, $path, $operator, $value);
-      
       } else {
         // the field must be mapped to noe or many paths which are then queried
 
@@ -375,10 +380,9 @@ class Query extends WisskiQueryBase {
     if ($limit) {
       $select .= " LIMIT $limit OFFSET $offset";
     }
-    
+
     $result = $engine = $this->getEngine()->directQuery($select);
     $adapter_id = $this->getEngine()->adapterId();
-    #dpm(htmlentities($select), "query");
     if (WISSKI_DEVEL) \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded {result}', array('query' => $select, 'result' => $result));
     if ($result->numRows() == 0) {
       $return = $count ? 0 : array();

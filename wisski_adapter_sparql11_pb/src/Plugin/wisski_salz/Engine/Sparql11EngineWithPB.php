@@ -600,7 +600,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $result = $this->directQuery($query);
     
 #    drupal_set_message("res: " . serialize($result));
-    
+
    $out = array();
     foreach($result as $thing) {
       foreach($pbs as $pb) {

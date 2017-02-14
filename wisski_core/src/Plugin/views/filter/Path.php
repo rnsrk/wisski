@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Contains \Drupal\wisski_core\Plugin\views\filter\StringFilter.
+ * Contains \Drupal\wisski_core\Plugin\views\filter\PathString.
  */
 
 namespace Drupal\wisski_core\Plugin\views\filter;
@@ -14,9 +14,9 @@ use Drupal\views\Plugin\views\filter\StringFilter as ViewsString;
  *
  * @ingroup views_filter_handlers
  *
- * @ViewsFilter("wisski_field_string")
+ * @ViewsFilter("wisski_path_string")
  */
-class FieldString extends ViewsString {
+class PathString extends ViewsString {
 
   function operators() {
     $operators = array(
@@ -53,10 +53,9 @@ class FieldString extends ViewsString {
    * {@inheritdoc}
    */
   function query() {
-    $field = isset($this->configuration['wisski_field']) ? $this->configuration['wisski_field'] : $this->realField;
     $info = $this->operators();
     if (!empty($info[$this->operator]['method'])) {
-      $this->{$info[$this->operator]['method']}($field);
+      $this->{$info[$this->operator]['method']}();
     }
   }
 
@@ -64,8 +63,8 @@ class FieldString extends ViewsString {
   /**
    * {@inheritdoc}
    */
-  function opSimple($field) {
-    $this->query->query->condition($field, $this->value, $this->operator);
+  function opSimple() {
+    $this->query->query->condition($this->realField, $this->value, $this->operator);
   }
 
 }

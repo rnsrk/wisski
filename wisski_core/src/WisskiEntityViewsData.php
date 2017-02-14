@@ -82,10 +82,26 @@ class WisskiEntityViewsData extends EntityViewsData {
       'id' => 'bundle',
       'title' => 'Bundle/Group',
       'field' => [
-        'id' => 'standard'   // i think we need this extra handler
+        'id' => 'standard'   // is standard the right thing here?
       ],
       'filter' => [
         'id' => 'wisski_bundle'   // i think we need this extra handler
+      ],
+      'entity type' => $this->entityType->id(),
+    ];
+    $data[$base_table]['bundle_label'] = [ 
+      'id' => 'bundle_label',
+      'title' => 'Bundle/Group Label',
+      'field' => [
+        'id' => 'standard'   // is standard the right thing here?
+      ],
+      'entity type' => $this->entityType->id(),
+    ];
+    $data[$base_table]['bundles'] = [ 
+      'id' => 'bundle_label',
+      'title' => 'Bundles/Groups',
+      'field' => [
+        'id' => 'standard'   // is standard the right thing here?
       ],
       'entity type' => $this->entityType->id(),
     ];
@@ -116,7 +132,49 @@ class WisskiEntityViewsData extends EntityViewsData {
     // and the fields from the bundles and add them here as views fields.
     // one could think about the pb module altering this data here and adding
     // the paths for itself rather than letting wisski_core handle pb stuff...
+    
+    $pbs = entity_load_multiple('wisski_pathbuilder');
+    foreach ($pbs as $pbid => $pb) {
+      $groups = $pb->getMainGroups();
+      foreach ($groups as $gid => $group) {
+        $paths = $pb->getAllPathsForGroupId($gid, TRUE);
+        foreach ($paths as $path) {
+          $pid = $path->id();
+          if (!$path->isGroup()) {
+            $data[$base_table]["wisski_path_${pbid}__$pid"] = [
+              // It would have been brilliant if we could combine both pb ID
+              // and path ID by a dot for forming the field's ID as wisski 
+              // entity query encodes paths like that. But Drupal views does 
+              // not allow dots... :(
+              'id' => "wisski_path_{$pbid}__$pid",  
+              'title' => $this->t("@group -> @path (@id) in @pb", [
+                  "@group" => $group->getName(),
+                  "@path" => $path->getName(),
+                  "@id" => $pid,
+                  "@pb" => $pb->getName(),
+              ]),
+              'field' => [
+                'id' => 'wisski_standard',
+                'wisski_field' => "$pbid.$pid",
+              ],
+              'filter' => [
+                'id' => 'wisski_field_string', // TODO: depending on the field type we should use other filter types like numeric etc.
+                'pb' => $pbid,
+                'path' => $pid,
+                'wisski_field' => "$pbid.$pid",
+              ],
+              'entity type' => $this->entityType->id(),
+            ];
+          }
+        }
+      }
+    }
 
+    $top_bundles = WisskiHelper::getTopBundleIds(TRUE);
+    foreach ($top_bundles as $bid => $bundle_info) {
+      // HERE we should add the fields per bundle
+
+    }
 
     return $data;
 

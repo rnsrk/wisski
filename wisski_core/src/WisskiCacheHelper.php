@@ -82,7 +82,14 @@ class WisskiCacheHelper {
     
     $empties = array('','NULL','FALSE');
     $query = db_select('wisski_title_n_grams','n')->fields('n',array('ent_num'))->condition('ngram',$empties,'IN');
-    if (!is_null($bundle_id)) $query->condition('bundle',$bundle_id);
+    if (!is_null($bundle_id)) {
+      if (is_array($bundle_id)) {
+        $query->condition('bundle',$bundle_id, 'IN');
+      }
+      else {
+        $query->condition('bundle',$bundle_id);
+      }
+    }
     return $query->execute()->fetchCol();
   }
   

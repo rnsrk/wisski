@@ -910,10 +910,10 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     $paths = array();
     
     foreach($allpaths as $path) {
-      if($path['parent'] === $groupid) 
+      if((string) $path['parent'] === (string) $groupid) 
         $paths[] = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
     }
-    
+
     return $paths;
     
   }

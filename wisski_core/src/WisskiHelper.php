@@ -95,12 +95,11 @@ class WisskiHelper {
       foreach($pathtree as $key => $value) {
         if(!empty($pbarr[$key]['bundle']) && $pbarr[$key]['bundle'] != Pathbuilder::CONNECT_NO_FIELD && $pbarr[$key]['bundle'] != Pathbuilder::GENERATE_NEW_FIELD) {
           $bundle_id = $pbarr[$key]['bundle'];
-          if ($get_full_info) {
-            
-            // skip if empty bundle id
-            if(empty($bundle_id))
-              continue;
+          // skip if empty bundle id
+          if(empty($bundle_id))
+            continue;
               
+          if ($get_full_info) {
             $bundle_ob = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id);
             
             // skip if empty object
@@ -108,9 +107,10 @@ class WisskiHelper {
               continue;
 
             $parents[$bundle_id] = array(
-              'label' => \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)->label(),
+              'label' => $bundle_ob->label(),
               'pathbuilder' => $pb_id,
               'path_id' => $key,
+              'bundle' => $bundle_ob,
             );
           } else {
             $parents[$bundle_id] = $bundle_id;

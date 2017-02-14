@@ -8,6 +8,7 @@
 namespace Drupal\wisski_salz;
 
 use \Drupal\Component\Utility\UrlHelper;
+use \Drupal\wisski_core\WisskiHelper;
 use \Drupal\wisski_salz\Entity\Adapter;
 
 class AdapterHelper {
@@ -456,4 +457,24 @@ class AdapterHelper {
   
     return array(NULL, NULL, NULL);
   }
+
+
+  public static function getBundleIdsForEntityId($entity_id, $only_top_bundles) {
+    $adapters = entity_load_multiple('wisski_salz_adapter');
+    $bundle_ids = array();
+    // ask all adapters
+    foreach($adapters as $adapter) {
+      // if they know that id
+      if ($adapter->hasEntity($entity_id)) {
+        // if so - ask for the bundles for that id
+        // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
+        $bundle_ids = array_merge($bundle_ids, $adapter->getBundleIdsForEntityId($entity_id));
+      }
+    }
+    if ($only_top_bundles) {
+      $bundle_ids = array_intersect($bundle_ids, WisskiHelper::getTopBundleIds()); 
+    }
+    return $bundle_ids;
+  }
+  
 }
