@@ -360,7 +360,7 @@ wisski_tick("end exec views");
                 foreach ($result as $sparql_row) {
                   if (isset($uris_to_eids[$sparql_row->x0->getUri()])) {
                     $eid = $uris_to_eids[$sparql_row->x0->getUri()];
-                    $values_per_row[$eid][$field] = $sparql_row->out->getValue();
+                    $values_per_row[$eid][$field][] = $sparql_row->out->getValue();
                   }
                 }
               }
