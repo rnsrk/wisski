@@ -138,6 +138,11 @@ class WisskiCacheHelper {
   
   static function putPreviewImageUri($entity_id,$preview_image_uri) {
 
+    if(empty($entity_id) || empty($preview_image_uri)) {
+      drupal_set_message("Could not cache image " . $preview_image_uri . " of entity id " . $entity_id, "warning");
+      return;
+    }
+
     //dpm($preview_image_uri,__FUNCTION__.' '.$entity_id);
     self::flushPreviewImageUri($entity_id);
     db_insert('wisski_preview_images')->fields(array('eid'=>$entity_id,'image_uri'=>$preview_image_uri))->execute();
