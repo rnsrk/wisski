@@ -37,7 +37,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * having to load all the entities
    */
   public function render($bundle = '',$entity=NULL) {
-    
+#    dpm("1: " . microtime());
     //if (!isset($this->limit))
     $this->limit = \Drupal::config('wisski_core.settings')->get('wisski_max_entities_per_page');
     $this->bundle = \Drupal::entityManager()->getStorage('wisski_bundle')->load($bundle);
@@ -55,11 +55,13 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     //gather the page attributes from the request, this resembles a REST query
     $request_query = \Drupal::request()->query;
     //dpm($request_query,'HTTP GET');
+    
+    $columns = \Drupal::config('wisski_core.settings')->get('wisski_default_columns_per_page');
     $grid_type = $request_query->get('type') ? : 'grid';
-    $grid_width = $request_query->get('width') ? : 3;
+    $grid_width = $request_query->get('width') ? : !empty($columns) ? $columns : 3;
     $this->page = $request_query->get('page') ? : 0;
     //dpm($grid_type.' '.$grid_width);
-    
+#    dpm("2: " . microtime());
     //if we have a real table, we need a header
     if ($grid_type === 'table') {
       $header = array('preview_image'=>$this->t('Entity'),'title'=>'','operations'=>$this->t('Operations'));
@@ -90,7 +92,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     //...let the CacheHelper prepare for the preview image request
     //this speeds up things a little
     WisskiCacheHelper::preparePreviewImages($entities);
-    
+#    dpm("3: " . microtime());
     if ($grid_type === 'table') {
       //now, if we have a table
       foreach ($entities as $entity_id) {
@@ -123,6 +125,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
         }
       }
     }
+#    dpm("4: " . microtime());
     if ($grid_type === 'grid') {
       //in case we have the grid view, we need some additional computation
       //so we keep the row number and the number of the cel in the row
@@ -169,7 +172,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       //add the last row that might not have been filled to the full extent
       if ($cell_num > 0) $build['table']['#rows']['row'.$row_num] = $row;
     }
-    
+#    dpm("5: " . microtime());
     /*
     $build['custom_pager']['#type'] = 'container';
     $build['custom_pager']['#attributes']['class'] = 'text-align-center';
@@ -345,10 +348,10 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     //    echo "Hello ".$id;
     //dpm($entity);
     //dpm($entity->get('preview_image'));
-
+#    dpm("4.1: " . microtime());
     //let the bundle generate the entity title (normally from the title pattern)
     $entity_label = $this->bundle->generateEntityTitle($entity_id);
-
+#    dpm("4.2: " . microtime());
     //create a link to the entity's "canonical" route, link templates
     //do not work here, again
     $entity_url = Url::fromRoute('entity.wisski_individual.canonical',array('wisski_bundle'=>$this->bundle->id(),'wisski_individual'=>$entity_id));
@@ -357,10 +360,10 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       'label' => $entity_label,
       'url' => $entity_url,
     );
-    
+#    dpm("4.-: " . microtime());    
     //get the preview image URI and...
     $prev_uri = $this->getPreviewImageUri($entity_id,$this->bundle->id());
-
+#    dpm("4.3: " . microtime());
     if ($prev_uri) {
       //...render the image
       $array = array(
@@ -373,7 +376,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       \Drupal::service('renderer')->renderPlain($array);
       $row['preview_image'] = $array['#markup'];
     }
-    
+#    dpm("4.4: " . microtime());
     //add the OP-links to the element
     $row['operations'] = $this->getOperationLinks($entity_id);
 
@@ -385,9 +388,11 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * preview image
    */
   public function getPreviewImageUri($entity_id,$bundle_id) {
+#    dpm("4.2.1: " . microtime());
     
     //first try the cache
     $preview = WisskiCacheHelper::getPreviewImageUri($entity_id);
+#    dpm("4.2.2: " . microtime());
     //dpm($preview,__FUNCTION__.' '.$entity_id);
     if ($preview) {
       //do not log anything here, it is a performance sink
@@ -395,7 +400,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       if ($preview === 'none') return NULL;
       return $preview;
     }
-
+#    dpm("4.2.3: " . microtime());
     //if the cache had nothing try the adapters
     //for this purpose we need the entity URIs, which are stored in the local
     //store, so if there is none, stop here
@@ -409,6 +414,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
 
     //ask the local adapter for any image for this entity
     $images = $this->adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
+#    dpm("4.2.4: " . microtime());
     if (empty($images)) {
       if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug('No preview images available from adapter '.$this->adapter->id());
       WisskiCacheHelper::putPreviewImageUri($entity_id,'none');
@@ -419,7 +425,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     //if there is at least one, take the first of them
     //@TODO, possibly we can try something mor sophisticated to find THE preview image
     $input_uri = current($images);
-    
+#    dpm("4.2.4.1: " . microtime());
     //now we have to ensure there is the correct image file on our server
     //and we get a derivate in preview size and we have this derivates URI
     //as the desired output
@@ -427,10 +433,10 @@ class WisskiEntityListBuilder extends EntityListBuilder {
     
     //get a correct image uri in $output_uri, by saving a file there
     $this->storage->getFileId($input_uri,$output_uri);
-    
+#    dpm("4.2.4.2: " . microtime());
     //try to get the WissKI preview image style
     $image_style = $this->getPreviewStyle();
-    
+#    dpm("4.2.5: " . microtime());    
     //process the image with the style
     $preview_uri = $image_style->buildUri($output_uri);
     //dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));

@@ -77,10 +77,19 @@ class WisskiConfigForm extends FormBase {
       '#type' => 'number',
       '#default_value' => $settings->get('wisski_max_entities_per_page'),
       '#min' => 1,
-      '#max' => 100,
+      '#max' => 1000,
       '#step' => 1,
       '#title' => $this->t('Maximum number of entities displayed per list page'),
     );
+    $subform['pager_columns'] = array(
+      '#type' => 'number',
+      '#default_value' => $settings->get('wisski_default_columns_per_page'),
+      '#min' => 1,
+      '#max' => 20,
+      '#step' => 1,
+      '#title' => $this->t('Maximum number of columns in navigate view'),
+    );
+    
     $subform['preview_image'] = array('#tree'=>TRUE);
     $subform['preview_image']['max_width'] = array(
       '#type' => 'number',
@@ -110,6 +119,7 @@ class WisskiConfigForm extends FormBase {
     $settings = $form['#wisski_settings'];
     $new_vals = $form_state->getValues();
     $settings->set('wisski_max_entities_per_page',$new_vals['pager_max']);
+    $settings->set('wisski_default_columns_per_page',$new_vals['pager_columns']);
     $settings->set('wisski_preview_image_max_width_pixel',$new_vals['preview_image']['max_width']);
     $settings->set('wisski_preview_image_max_height_pixel',$new_vals['preview_image']['max_height']);
     $settings->save();
