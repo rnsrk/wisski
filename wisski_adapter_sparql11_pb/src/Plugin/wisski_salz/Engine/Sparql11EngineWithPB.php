@@ -1992,6 +1992,8 @@ $oldtmp = $tmp;
         
         // we have to escape it otherwise the sparql query may break
         $primitiveValue = $this->escapeSparqlLiteral($primitiveValue);
+        // and we have to encode it, otherwise the sparql query may break.
+        $primitiveValue = utf8_decode($primitiveValue);
 
         if ($write) {
           $query .= "\"$primitiveValue\"";
@@ -2059,9 +2061,9 @@ $oldtmp = $tmp;
       // starting position one before disamb because disamb counts the number of concepts, startin position however starts from zero
       $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE);
       $sparql .= " } }";
-            
+      drupal_set_message("spq: " . ($sparql));
       $disambresult = $this->directQuery($sparql);
-  
+      dpm($disambresult, "result");
       if(!empty($disambresult))
         $disambresult = current($disambresult);      
     }
