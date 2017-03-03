@@ -48,6 +48,7 @@
         if(empty($path))
           return NULL;
         
+        
         // Graph G?
         if($path->getDisamb()) {
           $sparql = "SELECT * WHERE { ";
@@ -55,7 +56,7 @@
           $sparql .= $engine->generateTriplesForPath($pb, $path, NULL, NULL, NULL, NULL, $path->getDisamb() -1, FALSE);
           //$sparql .= " FILTER regex( STR(?out), '$string') . } ";        
           // martin said contains is faster ;D
-          $sparql .= " FILTER CONTAINS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
+          $sparql .= " FILTER CONTAINS(STR(?out), '" . $engine->escapeSparqlLiteral(utf8_decode($string)) . "') . } ";
 #          $sparql .= " FILTER STRSTARTS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
 #          $sparql .= " FILTER CONTAINS(?out, '" . $engine->escapeSparqlLiteral($string) . "') . } ";
         } else {
@@ -82,6 +83,7 @@
       $i=0;
       foreach($result as $key => $thing) {
         $matches[] = array('value' => $thing->out->getValue(), 'label' => $thing->out->getValue());
+#        $matches[] = array('value' => $key, 'label' => $thing->out->getValue());
         $i++;
         
         if($i > 9) {
@@ -90,7 +92,7 @@
         }
       }
 
-#      dpm($matches, "out");
+#      dpm(serialize(new JsonResponse($matches)), "out");
             
       return new JsonResponse($matches);
     }
