@@ -71,17 +71,23 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 		} elseif ($type == 'query') {
 				// Use GET if the query is less than 2kB
 				// 2046 = 2kB minus 1 for '?' and 1 for NULL-terminated string on server
-				$encodedQuery = 'query='.urlencode($prefixes . $query);
-				if (strlen($encodedQuery) + strlen($this->getQueryUri()) <= 2046) {
+				$encodedQuery = 'query='.rawurlencode($prefixes . $query);
+        
+        /*  we do not use GET as it leads to corrupted non-ASCII chars the way
+            it is programmed atm.
+            we just always use POST as an interim patch until we know the exact
+            problem.
+        */
+        /*if (strlen($encodedQuery) + strlen($this->getQueryUri()) <= 2046) {
 						$client->setMethod('GET');
 						$client->setUri($this->getQueryUri().'?'.$encodedQuery);
-				} else {
+				} else {*/
 						// Fall back to POST instead (which is un-cacheable)
 						$client->setMethod('POST');
 						$client->setUri($this->getQueryUri());
 						$client->setRawData($encodedQuery);
 						$client->setHeaders('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8');
-				}
+        /*}*/
 		}
 		$response = $client->request();
 		//if ($type === 'update') dpm($response,$encodedQuery);

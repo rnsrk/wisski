@@ -1993,7 +1993,7 @@ $oldtmp = $tmp;
         // we have to escape it otherwise the sparql query may break
         $primitiveValue = $this->escapeSparqlLiteral($primitiveValue);
         // and we have to encode it, otherwise the sparql query may break.
-        $primitiveValue = utf8_decode($primitiveValue);
+//        $primitiveValue = utf8_decode($primitiveValue);
 
         if ($write) {
           $query .= "\"$primitiveValue\"";

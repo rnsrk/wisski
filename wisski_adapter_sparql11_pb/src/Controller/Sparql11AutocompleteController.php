@@ -56,7 +56,7 @@
           $sparql .= $engine->generateTriplesForPath($pb, $path, NULL, NULL, NULL, NULL, $path->getDisamb() -1, FALSE);
           //$sparql .= " FILTER regex( STR(?out), '$string') . } ";        
           // martin said contains is faster ;D
-          $sparql .= " FILTER CONTAINS(STR(?out), '" . $engine->escapeSparqlLiteral(utf8_decode($string)) . "') . } ";
+          $sparql .= " FILTER CONTAINS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
 #          $sparql .= " FILTER STRSTARTS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
 #          $sparql .= " FILTER CONTAINS(?out, '" . $engine->escapeSparqlLiteral($string) . "') . } ";
         } else {
