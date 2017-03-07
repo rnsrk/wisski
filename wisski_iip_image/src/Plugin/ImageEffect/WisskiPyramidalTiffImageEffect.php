@@ -90,6 +90,6 @@ class WisskiPyramidalTiffImageEffect extends ConfigurableImageEffectBase impleme
     
 #    $result = shell_exec("convert " . $source . " -define tiff:tile-geometry=256x256 -compress jpeg 'ptif:" . escapeshellarg($destination) . "'";);
     
-    return $result;
+    return TRUE;
   }
 }

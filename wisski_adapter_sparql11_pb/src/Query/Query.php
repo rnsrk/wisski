@@ -361,7 +361,7 @@ class Query extends WisskiQueryBase {
   protected function buildAndExecSparql($query_parts, $entity_ids, $count = FALSE, $limit = 0, $offset = 0) {
     
     if ($count) {
-      $select = 'SELECT (COUNT(?x0) as ?cnt) WHERE { ';
+      $select = 'SELECT (COUNT(DISTINCT ?x0) as ?cnt) WHERE { ';
     }
     else {
       $select = 'SELECT DISTINCT ?x0 WHERE { ';
@@ -384,6 +384,7 @@ class Query extends WisskiQueryBase {
 #    dpm($select, "select");
 
     $result = $engine = $this->getEngine()->directQuery($select);
+#    drupal_set_message(serialize($select));
     $adapter_id = $this->getEngine()->adapterId();
     if (WISSKI_DEVEL) \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded {result}', array('query' => $select, 'result' => $result));
     if ($result->numRows() == 0) {
@@ -407,7 +408,7 @@ class Query extends WisskiQueryBase {
         }
       }
     }
-
+#    drupal_set_message(serialize($return));
     return $return;
 
   }
