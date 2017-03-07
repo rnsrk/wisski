@@ -380,6 +380,8 @@ class Query extends WisskiQueryBase {
     if ($limit) {
       $select .= " LIMIT $limit OFFSET $offset";
     }
+    
+#    dpm($select, "select");
 
     $result = $engine = $this->getEngine()->directQuery($select);
     $adapter_id = $this->getEngine()->adapterId();
@@ -521,7 +523,9 @@ class Query extends WisskiQueryBase {
             // only the first var x0 get to be the same so that everything maps
             // to the same entity
             // NOTE: we set the first var to x0 although it's not x0
-            $starting_position = $pb->getRelativeStartingPosition($group, TRUE);
+            $starting_position = $pb->getRelativeStartingPosition($group, FALSE);
+#            drupal_set_message(serialize($group));
+#            drupal_set_message(serialize($starting_position));
             $i = $this->varCounter++;
             $vars[$starting_position] = 'x0';
             for ($j = count($group->getPathArray()); $j > $starting_position; $j--) {
