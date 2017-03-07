@@ -201,6 +201,16 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
             return $id;
           }
         }
+        
+        // if there is only one, return that.
+        if(count($ids) == 1) {
+          $id = current($ids);
+          
+          $this->setBundleIdForEntityId($eid, $id);
+
+          return $id;
+        }
+        
       }
 
       drupal_set_message("No Bundle found for $eid - error.", "error");    
