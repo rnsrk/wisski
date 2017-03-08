@@ -91,7 +91,15 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   protected $path_options = array();
   
   public function getTitlePattern() {
+    if(empty($this->title_pattern)) {
+      $state = \Drupal::state()->get('wisski_core_title_patterns') ?: serialize(array());
+      $state = unserialize($state);
     
+      $title = $state[$this->id];
+      if(!empty($title));
+        return $title;
+    }
+  
     return unserialize($this->title_pattern);
   }
   
@@ -387,6 +395,14 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       $this->title_pattern = $input;
       $this->flushTitleCache(); 
     }
+    
+#    $config = \Drupal::configFactory()->getEditable('wisski_core.wisski_bundle_title');
+#    $config->set($this->id, $title_pattern)->save();
+    $state = \Drupal::state()->get('wisski_core_title_patterns') ?: serialize(array());
+    $state = unserialize($state);
+    $state[$this->id] = $title_pattern;
+    $state = serialize($state);
+    \Drupal::state()->set('wisski_core_title_patterns', $state);
   }
 
   public function onEmpty() {
