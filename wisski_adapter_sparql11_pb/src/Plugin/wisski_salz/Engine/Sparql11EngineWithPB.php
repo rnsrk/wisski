@@ -169,7 +169,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // this might need to be adjusted for other standards than rdf/owl
     $query = 
       "SELECT DISTINCT ?property "
-      ."WHERE { "
+      ."WHERE { GRAPH ?g {"
         ."?property a owl:DatatypeProperty. "
 #        ."?property rdfs:domain ?d_superclass. "
 #        ."<$step> rdfs:subClassOf* ?d_superclass. }"
@@ -209,7 +209,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
               ."}"
             ."}"
           ."}"
-        ."}}";
+        ."}}}";
 
     $result = $this->directQuery($query);
 #    dpm($result, 'res');
@@ -229,13 +229,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
     $info = [];
 
-    $query = "SELECT DISTINCT ?label WHERE { <$step> <http://www.w3.org/2000/01/rdf-schema#label> ?label . } LIMIT 1";
+    $query = "SELECT DISTINCT ?label WHERE { GRAPH ?g { <$step> <http://www.w3.org/2000/01/rdf-schema#label> ?label . } } LIMIT 1";
     $result = $this->directQuery($query);
     if (count($result) > 0) {
       $info['label'] = $result[0]->label->getValue();
     }
 
-    $query = "SELECT DISTINCT ?comment WHERE { <$step> <http://www.w3.org/2000/01/rdf-schema#comment> ?comment . } LIMIT 1";
+    $query = "SELECT DISTINCT ?comment WHERE { GRAPH ?g { <$step> <http://www.w3.org/2000/01/rdf-schema#comment> ?comment . } } LIMIT 1";
     $result = $this->directQuery($query);
     if (count($result) > 0) {
       $info['comment'] = $result[0]->comment->getValue();
@@ -249,7 +249,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
   public function isaProperty($p) {
     
-    return $this->directQuery("ASK { <$p> a owl:ObjectProperty . }")->isTrue();
+    return $this->directQuery("ASK { GRAPH ?g { <$p> a owl:ObjectProperty . } }")->isTrue();
 
   }
 
@@ -258,7 +258,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
     $out = $this->retrieve('classes','class');
     if (!empty($out)) return $out;
-    $query = "SELECT DISTINCT ?class WHERE {"
+    $query = "SELECT DISTINCT ?class WHERE { GRAPH ?g {"
       ."{"
         ."{?class a owl:Class} "
         ."UNION "
@@ -267,7 +267,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         ."{?ind a ?class. ?class a ?type} "
       ."}"
       ."FILTER(!isBlank(?class))"
-    ."}";  
+    ."} }";  
     $result = $this->directQuery($query);
     
     if (count($result) > 0) {
@@ -286,14 +286,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
     $out = $this->retrieve('properties','property');
     if (!empty($out)) return $out;
-    $query = "SELECT DISTINCT ?property WHERE { "
+    $query = "SELECT DISTINCT ?property WHERE { GRAPH ?g {"
       ."{"
         ."{?property a owl:ObjectProperty .} "
         ."UNION "
         ."{?property a rdf:Property .} "
       ."} "
       ."FILTER(!isBlank(?property))"
-    ."}";  
+    ."} }";  
     $result = $this->directQuery($query);
     
     if (count($result) > 0) {
@@ -353,7 +353,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
   public function getPropertiesFromStore($class=NULL,$class_after = NULL,$fast_mode=FALSE) {
 
-    $query = "SELECT DISTINCT ?property WHERE {"
+    $query = "SELECT DISTINCT ?property WHERE { GRAPH ?g {"
 //      ."?property a owl:ObjectProperty. "
         ;
     if ($fast_mode) {  
@@ -391,7 +391,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
                 ."}"
               ."}"
             ."}"
-          ."}";
+          ."} ";
       }
       if (isset($class_after)) {
         $query .= "{"
@@ -427,7 +427,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           ."} ";
       }  
     }
-    $query .= "}";
+    $query .= "} }";
     $result = $this->directQuery($query);
     $output = array();
     foreach ($result as $obj) {
@@ -477,7 +477,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
   public function getClassesFromStore($property=NULL,$property_after = NULL,$fast_mode=FALSE) {
   
-    $query = "SELECT DISTINCT ?class WHERE {"
+    $query = "SELECT DISTINCT ?class WHERE { GRAPH ?g {"
       //."?class a owl:Class. "
       ;
     if ($fast_mode) {  
@@ -505,7 +505,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           ."?class rdfs:subClassOf* ?d_super_class. ";
       }  
     }
-    $query .= "}";
+    $query .= "} }";
     $result = $this->directQuery($query);
     
     if (count($result) == 0) return array();
@@ -589,12 +589,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $url = parse_url($uri);
 
     if(!empty($url["scheme"]))
-      $query = "SELECT ?class WHERE { <" . $uri . "> a ?class }";
+      $query = "SELECT ?class WHERE { GRAPH ?g { <" . $uri . "> a ?class } }";
     else {
       //it is possible, that we got an entity URI instead of an entity ID here, so try that one first
       $url = parse_url($entityid);
       if (!empty($url['scheme'])) $entityid = '<'.$entityid.'>';
-      $query = "SELECT ?class WHERE { " . $entityid . " a ?class }";
+      $query = "SELECT ?class WHERE { GRAPH ?g { " . $entityid . " a ?class } }";
     }
     
     $result = $this->directQuery($query);
@@ -935,9 +935,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    drupal_set_message("b2: " . microtime());
 
     if(!empty($url["scheme"]))
-      $query = "SELECT * WHERE { { <$uri> ?p ?o } UNION { ?s ?p <$uri> } } LIMIT 1"; 
+      $query = "SELECT * WHERE { GRAPH ?g { { <$uri> ?p ?o } UNION { ?s ?p <$uri> } } } LIMIT 1"; 
     else
-      $query = 'SELECT * WHERE { ?s ?p "' . $id . '" } LIMIT 1';  
+      $query = 'SELECT * WHERE { GRAPH ?g { ?s ?p "' . $id . '" } } LIMIT 1';  
 #    drupal_set_message("b3: " . microtime());    
     $result = $this->directQuery($query);
 #    drupal_set_message("b4: " . microtime());
@@ -960,7 +960,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    $this->entity_info = Yaml::parse($this->entity_string);
 #    dpm($this->entity_info,__METHOD__);
 #    if (is_null($ids)) return $this->entity_info;
-    $query = "SELECT ?s WHERE { ?s a/a owl:Class}";
+    $query = "SELECT ?s WHERE { GRAPH ?g { ?s a/a owl:Class} }";
     
     $result = $this->directQuery($query);
     
@@ -1872,7 +1872,7 @@ $oldtmp = $tmp;
         if($key == ($startingposition*2) && !empty($subject_in)) {
           $olduri = $subject_in;
           
-          $query .= "<$olduri> a <$value> . ";
+          $query .= "GRAPH ?g$key { <$olduri> a <$value> } . ";
 
           continue;
         }
@@ -1890,7 +1890,7 @@ $oldtmp = $tmp;
             $query .= "<$uri> a <$value> . ";
           }
           else
-            $query .= "$localvar a <$value> . ";
+            $query .= "GRAPH ?g$key { $localvar a <$value> } . ";
         }
         
         // magic function
@@ -1900,7 +1900,8 @@ $oldtmp = $tmp;
               
             $query .= "<$olduri> <$prop> <$uri> . ";
           } else {
-                      
+            
+            $query .= "GRAPH ?g$key { ";
             $inverse = $this->getInverseProperty($prop);
             // if there is not an inverse, don't do any unions
             if(empty($inverse)) {
@@ -1948,6 +1949,7 @@ $oldtmp = $tmp;
                             
               $query .= " } } . "; 
             }
+            $query .= " } . ";
           }
         }
          
@@ -1973,6 +1975,7 @@ $oldtmp = $tmp;
     }
     
     if(!empty($primitive) && !($primitive == "empty") && empty($object_in) && !$path->isGroup()) {
+      $query .= "GRAPH ?gprim { ";
       if(!empty($olduri)) {
         $query .= "<$olduri> ";
       } else {
@@ -2038,6 +2041,7 @@ $oldtmp = $tmp;
       } else {
         $query .= " $outvar . ";
       }
+      $query .= " } . ";
     }
 #    \Drupal::logger('WissKIsaveProcess')->debug('erg generate: ' . htmlentities($query));
     return $query;
@@ -2399,7 +2403,7 @@ $oldtmp = $tmp;
  #   dpm($iri, "1");
     if (empty($iri)) {
       //load all ontologies
-      $query = "SELECT ?ont WHERE {?ont a owl:Ontology}";
+      $query = "SELECT ?ont WHERE { GRAPH ?g { ?ont a owl:Ontology} }";
       $result = $this->directQuery($query);
      # if ($ok) {
         foreach ($result as $obj) {
@@ -2415,7 +2419,7 @@ $oldtmp = $tmp;
     }
 
     // check if the Ontology is already there
-    $result = $this->directQuery("ASK {<$iri> a owl:Ontology}");
+    $result = $this->directQuery("ASK { GRAPH ?g { <$iri> a owl:Ontology } }");
 #    dpm($result, "res");
    /* if (!$ok) { // we've got something weired.
       drupal_set_message("Store is not requestable.", 'error');
@@ -2754,7 +2758,7 @@ $oldtmp = $tmp;
     if ($this->prepareTables() === FALSE) return;
     
     //find properties
-    $result = $this->directQuery("SELECT ?property WHERE {{?property a owl:ObjectProperty.} UNION {?property a rdf:Property}}");
+    $result = $this->directQuery("SELECT ?property WHERE { GRAPH ?g {{?property a owl:ObjectProperty.} UNION {?property a rdf:Property}} }");
     $insert = $this->prepareInsert('properties');
     foreach ($result as $row) {
       $prop = $row->property->getUri();
@@ -2768,11 +2772,11 @@ $oldtmp = $tmp;
     //find one step property hierarchy, i.e. properties that are direct children or direct parents to each other
     // no sub-generations are gathered
     $result = $this->directQuery(
-      "SELECT ?property ?super WHERE {"
+      "SELECT ?property ?super WHERE { GRAPH ?g {"
         ."{{?property a owl:ObjectProperty.} UNION {?property a rdf:Property}} "
         ."?property rdfs:subPropertyOf ?super. "
         ."FILTER NOT EXISTS {?mid_property rdfs:subPropertyOf+ ?super. ?property rdfs:subPropertyOf ?mid_property.}"
-      ."}");
+      ."} }");
     foreach ($result as $row) {
       $prop = $row->property->getUri();
       $super = $row->super->getUri();
@@ -2789,7 +2793,7 @@ $oldtmp = $tmp;
     //now lets find inverses
     $insert = $this->prepareInsert('inverses');
     $inverses = array();
-    $results = $this->directQuery("SELECT ?prop ?inverse WHERE {{?prop owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf ?prop.}}");
+    $results = $this->directQuery("SELECT ?prop ?inverse WHERE { GRAPH ?g {{?prop owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf ?prop.}} }");
     foreach ($results as $row) {
       $prop = $row->prop->getUri();
       $inv = $row->inverse->getUri();
@@ -2804,7 +2808,7 @@ $oldtmp = $tmp;
     //find all classes
     $insert = $this->prepareInsert('classes');
     $classes = array();
-    $results = $this->directQuery("SELECT ?class WHERE {{?class a owl:Class.} UNION {?class a rdfs:Class}}");
+    $results = $this->directQuery("SELECT ?class WHERE { GRAPH ?g {{?class a owl:Class.} UNION {?class a rdfs:Class}} }");
     foreach ($results as $row) {
       $class = $row->class->getUri();
       $classes[$class] = $class;
@@ -2817,12 +2821,12 @@ $oldtmp = $tmp;
     //find full class hierarchy
     $super_classes = array();
     $sub_classes = array();
-    $results = $this->directQuery("SELECT ?class ?super WHERE {"
+    $results = $this->directQuery("SELECT ?class ?super WHERE { GRAPH ?g {"
       ."?class rdfs:subClassOf+ ?super. "
       ."FILTER (!isBlank(?class)) "
       ."FILTER (!isBlank(?super)) "
       ."{{?super a owl:Class.} UNION {?super a rdfs:Class.}} "
-    ."}");
+    ."} }");
     foreach ($results as $row) {
       $sub = $row->class->getUri();
       $super = $row->super->getUri();
@@ -2837,11 +2841,11 @@ $oldtmp = $tmp;
     $domains = array();
     
     $results = $this->directQuery(
-      "SELECT ?property ?domain WHERE {"
+      "SELECT ?property ?domain WHERE { GRAPH ?g {"
         ." ?property rdfs:domain ?domain."
         // we only need top level domains, so no proper subClass of the domain shall be taken into account
         ." FILTER NOT EXISTS { ?domain rdfs:subClassOf+ ?super_domain. ?property rdfs:domain ?super_domain.}"
-      ." }");
+      ." } }");
     foreach ($results as $row) {
       $domains[$row->property->getUri()][$row->domain->getUri()] = $row->domain->getUri();
     }
@@ -2853,11 +2857,11 @@ $oldtmp = $tmp;
     $ranges = array();
     
     $results = $this->directQuery(
-      "SELECT ?property ?range WHERE {"
+      "SELECT ?property ?range WHERE { GRAPH ?g {"
         ." ?property rdfs:range ?range."
         // we only need top level ranges, so no proper subClass of the range shall be taken into account
         ." FILTER NOT EXISTS { ?range rdfs:subClassOf+ ?super_range. ?property rdfs:range ?super_range.}"
-      ." }");
+      ." } }");
     foreach ($results as $row) {
       $ranges[$row->property->getUri()][$row->range->getUri()] = $row->range->getUri();
     }
@@ -3014,7 +3018,7 @@ $oldtmp = $tmp;
     //DB version
     $inverse = $this->retrieve('inverses','inverse','property',$property_uri);
     if (!empty($inverse)) return current($inverse);
-    $results = $this->directQuery("SELECT ?inverse WHERE {{<$property_uri> owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf <$property_uri>.}}");
+    $results = $this->directQuery("SELECT ?inverse WHERE { GRAPH ?g {{<$property_uri> owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf <$property_uri>.}} }");
     $inverse = '';
     foreach ($results as $row) {
       $inverse = $row->inverse->getUri();
