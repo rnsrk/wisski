@@ -95,7 +95,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       $state = \Drupal::state()->get('wisski_core_title_patterns') ?: serialize(array());
       $state = unserialize($state);
     
-      $title = isset($state[$this->id]) ? $state[$this->id] : '';
+      $title = isset($state[$this->id]) ?: '';
       if(!empty($title));
         return $title;
     }
@@ -153,8 +153,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   private function applyTitlePattern($pattern,$entity_id) {
     
     #dpm($pattern,__FUNCTION__);
-    
-    unset($pattern['max_id']);
+    if(isset($pattern['max_id']))
+      unset($pattern['max_id']);
         
     // just in case...
     if (empty($pattern)) return $this->createFallbackTitle($entity_id);;
