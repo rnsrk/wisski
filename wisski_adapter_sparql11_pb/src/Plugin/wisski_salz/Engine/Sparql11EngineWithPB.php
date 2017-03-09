@@ -169,7 +169,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // this might need to be adjusted for other standards than rdf/owl
     $query = 
       "SELECT DISTINCT ?property "
-      ."WHERE { GRAPH ?g {"
+      ."WHERE {  {"
         ."?property a owl:DatatypeProperty. "
 #        ."?property rdfs:domain ?d_superclass. "
 #        ."<$step> rdfs:subClassOf* ?d_superclass. }"
@@ -258,14 +258,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
     $out = $this->retrieve('classes','class');
     if (!empty($out)) return $out;
-    $query = "SELECT DISTINCT ?class WHERE { GRAPH ?g {"
+    $query = "SELECT DISTINCT ?class WHERE {  {"
       ."{"
         ."{?class a owl:Class} "
         ."UNION "
         ."{?class a rdfs:Class} "
         ."UNION "
         ."{?ind a ?class. ?class a ?type} "
-      ."}"
+      ."} . "
       ."FILTER(!isBlank(?class))"
     ."} }";  
     $result = $this->directQuery($query);
@@ -286,12 +286,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
     $out = $this->retrieve('properties','property');
     if (!empty($out)) return $out;
-    $query = "SELECT DISTINCT ?property WHERE { GRAPH ?g {"
+    $query = "SELECT DISTINCT ?property WHERE {  {"
       ."{"
         ."{?property a owl:ObjectProperty .} "
         ."UNION "
         ."{?property a rdf:Property .} "
-      ."} "
+      ."} . "
       ."FILTER(!isBlank(?property))"
     ."} }";  
     $result = $this->directQuery($query);
