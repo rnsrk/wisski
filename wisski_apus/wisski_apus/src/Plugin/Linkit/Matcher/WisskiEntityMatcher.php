@@ -82,9 +82,8 @@ class WisskiEntityMatcher extends EntityMatcher {
       }
       
       foreach ($entities as $entity_id => $bundled_title) {
-        $uri = AdapterHelper::getUrisForDrupalId($entity_id);
+        $uri = AdapterHelper::generateWisskiUriFromId($entity_id);
         if (empty($uri)) continue;
-        $uri = $uri[0];
 
         $default_title = "";
         if (isset($bundled_title['default'])) {

@@ -27,7 +27,7 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
   * @ignore
   */
   protected function request($type, $query) {
-    
+
     // Check for undefined prefixes
     $prefixes = '';
     // @TODO: Check - this should not happen every time I query something, this is very 

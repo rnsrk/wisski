@@ -527,6 +527,7 @@ class Query extends WisskiQueryBase {
             $starting_position = $pb->getRelativeStartingPosition($group, FALSE);
 #            drupal_set_message(serialize($group));
 #            drupal_set_message(serialize($starting_position));
+            
             $i = $this->varCounter++;
             $vars[$starting_position] = 'x0';
             for ($j = count($group->getPathArray()); $j > $starting_position; $j--) {
@@ -535,7 +536,6 @@ class Query extends WisskiQueryBase {
             $vars['out'] = "c${i}_out";
 
             $query_parts[] = $engine->generateTriplesForPath($pb, $group, '', NULL, NULL, 0, $starting_position, FALSE, '=', 'field', TRUE, $vars);
-           
           }
         }
       }
