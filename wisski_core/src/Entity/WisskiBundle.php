@@ -91,11 +91,13 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   protected $path_options = array();
   
   public function getTitlePattern() {
+
     if(empty($this->title_pattern)) {
+
       $state = \Drupal::state()->get('wisski_core_title_patterns') ?: serialize(array());
       $state = unserialize($state);
-    
-      $title = isset($state[$this->id]) ?: '';
+
+      $title = isset($state[$this->id]) ? $state[$this->id] : '';
       if(!empty($title));
         return $title;
     }
