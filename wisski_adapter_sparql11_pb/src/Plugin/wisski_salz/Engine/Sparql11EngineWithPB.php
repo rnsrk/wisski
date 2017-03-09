@@ -1872,7 +1872,10 @@ $oldtmp = $tmp;
         if($key == ($startingposition*2) && !empty($subject_in)) {
           $olduri = $subject_in;
           
-          $query .= "GRAPH ?g$key { <$olduri> a <$value> } . ";
+          if(!$write)
+            $query .= "GRAPH ?g$key { <$olduri> a <$value> } . ";
+          else
+            $query .= " <$olduri> a <$value> . ";
 
           continue;
         }
@@ -1946,9 +1949,11 @@ $oldtmp = $tmp;
                 $query .= "<$olduri> . ";
               else
                 $query .= "$oldvar . ";
-                            
+              
+ 
               $query .= " } } . "; 
             }
+            
             $query .= " } . ";
           }
         }
@@ -1975,7 +1980,11 @@ $oldtmp = $tmp;
     }
     
     if(!empty($primitive) && !($primitive == "empty") && empty($object_in) && !$path->isGroup()) {
-      $query .= "GRAPH ?gprim { ";
+      if(!$write)
+        $query .= "GRAPH ?gprim { ";
+      else
+        $query .= "";
+        
       if(!empty($olduri)) {
         $query .= "<$olduri> ";
       } else {
@@ -2041,7 +2050,8 @@ $oldtmp = $tmp;
       } else {
         $query .= " $outvar . ";
       }
-      $query .= " } . ";
+      if(!$write)
+        $query .= " } . ";
     }
 #    \Drupal::logger('WissKIsaveProcess')->debug('erg generate: ' . htmlentities($query));
     return $query;
