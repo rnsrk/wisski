@@ -335,6 +335,25 @@ class AdapterHelper {
     }
   }
 
+  
+  /** Convenience method that iterates all adapters and checks whether the
+   * given URI exists in at leat one of them.
+   *
+   * @param uri the URI
+   *
+   * @return TRUE if at least one adapter knows the URI, otherwise FALSE
+   */
+  public static function checkUriExists($uri) {
+    $adapters = entity_load_multiple('wisski_salz_adapter');
+    foreach($adapters as $adapter) {
+      if ($adapter->checkUriExists($uri)) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+
   public static function getFreshDrupalId() {
     
     $res = db_select('wisski_salz_id2uri','u')
