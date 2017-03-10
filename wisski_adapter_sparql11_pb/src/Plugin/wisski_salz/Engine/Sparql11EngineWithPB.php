@@ -1904,7 +1904,7 @@ $oldtmp = $tmp;
             $query .= "<$olduri> <$prop> <$uri> . ";
           } else {
             
-            $query .= "GRAPH ?g$key { ";
+            $query .= "GRAPH ?g" . $key . "_1 { ";
             $inverse = $this->getInverseProperty($prop);
             // if there is not an inverse, don't do any unions
             if(empty($inverse)) {
