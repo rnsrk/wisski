@@ -51,7 +51,7 @@
         
         // Graph G?
         if($path->getDisamb()) {
-          $sparql = "SELECT * WHERE { ";
+          $sparql = "SELECT ?out WHERE { ";
           // in case of disamb go for -1
           $sparql .= $engine->generateTriplesForPath($pb, $path, NULL, NULL, NULL, NULL, $path->getDisamb() -1, FALSE);
           //$sparql .= " FILTER regex( STR(?out), '$string') . } ";        
@@ -61,7 +61,7 @@
 #          $sparql .= " FILTER CONTAINS(?out, '" . $engine->escapeSparqlLiteral($string) . "') . } ";
         } else {
           $starting_position = (count($path->getPathArray()) - count($pb->getRelativePath($path)))/2;
-          $sparql = "SELECT * WHERE { ";
+          $sparql = "SELECT ?out WHERE { ";
           $sparql .= $engine->generateTriplesForPath($pb, $path, NULL, NULL, NULL, NULL, $starting_position, FALSE);
 #          $sparql .= " FILTER regex( STR(?out), '$string') . } ";
           $sparql .= " FILTER CONTAINS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";

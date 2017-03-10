@@ -935,9 +935,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    drupal_set_message("b2: " . microtime());
 
     if(!empty($url["scheme"]))
-      $query = "SELECT * WHERE { GRAPH ?g { { <$uri> ?p ?o } UNION { ?s ?p <$uri> } } } LIMIT 1"; 
+      $query = "SELECT ?s ?p ?o WHERE { GRAPH ?g { { <$uri> ?p ?o } UNION { ?s ?p <$uri> } } } LIMIT 1"; 
     else
-      $query = 'SELECT * WHERE { GRAPH ?g { ?s ?p "' . $id . '" } } LIMIT 1';  
+      $query = 'SELECT ?s ?p WHERE { GRAPH ?g { ?s ?p "' . $id . '" } } LIMIT 1';  
 #    drupal_set_message("b3: " . microtime());    
     $result = $this->directQuery($query);
 #    drupal_set_message("b4: " . microtime());
@@ -1019,7 +1019,18 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     else
       $disamb = NULL;
 
-    $sparql = "SELECT DISTINCT * WHERE { ";
+    $sparql = "SELECT DISTINCT ";
+    
+    $starting_position = count($path->getPathArray()) - count($pb->getRelativePath($path));
+    
+    for($i = $starting_position; $i <= count($path->getPathArray()); $i+=2) {
+      $sparql .= "?x" . $i . " ";
+    }
+
+    if(!empty($primitive) && $primitive != "empty")
+      $sparql .= "?out ";
+          
+    $sparql .= "WHERE { ";
 
     if(!empty($eid)) {
       // rename to uri
@@ -1540,7 +1551,16 @@ $oldtmp = $tmp;
       $clearPathArray = $pb->getRelativePath($path, TRUE);
           
       // delete normal field value
-      $sparql = "SELECT DISTINCT * WHERE { ";
+      $sparql = "SELECT DISTINCT ";
+      
+      for($i=$starting_position; $i <= count($path->getPathArray()); $i+=2) {
+        $sparql .= "?x" . $i . " ";
+      }
+      
+      // I am unsure about this.
+      $sparql .= "?out ";
+            
+      $sparql .= "WHERE { ";
 
       // I am unsure if this is correct
       // probably it needs to be relative - but I am unsure
@@ -2070,7 +2090,7 @@ $oldtmp = $tmp;
       return;
       
     if($path->getDisamb()) {
-      $sparql = "SELECT * WHERE { GRAPH ?g { ";
+      $sparql = "SELECT ?x" . (($path->getDisamb()-1)*2) . " WHERE { GRAPH ?g { ";
 
       // starting position one before disamb because disamb counts the number of concepts, startin position however starts from zero
       $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE);
@@ -2160,17 +2180,43 @@ $oldtmp = $tmp;
     }
 
     //drupal_set_message("the old values were: " . serialize($old_values));
-#    dpm($old_values,'old values');
-#    dpm($field_values,'new values');
+    #dpm($old_values,'old values');
+    #dpm($field_values,'new values');
 
-    
+
+    // if there are fields in the old_values that were deleted in the current
+    // version we have to get rid of these.
+    // also if you delete some string completely it might be
+    // that the key is not set in the new values anymore.
+
+    // check if we have to delete some values
+    // we go thru the old values and search for an equal value in the new 
+    // values array
+    // as we do this we also keep track of values that haven't changed so that we
+    // do not have to write them again.
+    foreach($old_values as $old_key => $old_value) {
+      if(!isset($field_values[$old_key])) {
+        $mainprop = $old_value['main_property'];
+        foreach($old_value as $key => $val) {
+        
+          // main prop?
+          if(!is_array($val))
+            continue;
+          
+          // if not its a value...
+          drupal_set_message("I delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
+          $this->deleteOldFieldValue($entity_id, $old_key, $val[$mainprop], $pathbuilder, $key);
+        }
+      }
+    }
+
+
+    // combined go through the new fields    
     foreach($field_values as $field_id => $field_items) {
-      #drupal_set_message("key: " . serialize($field_id) . " fieldvalue is: " . serialize($field_items)); 
       $path = $pathbuilder->getPbEntriesForFid($field_id);
       
       $old_value = isset($old_values[$field_id]) ? $old_values[$field_id] : array();
-      #dpm($old_value, "old value");
-      
+
       if(empty($path)) {
         //drupal_set_message("I leave here: $field_id");
         continue;
@@ -2182,12 +2228,6 @@ $oldtmp = $tmp;
       
       unset($field_items['main_property']);
       
-      // check if we have to delete some values
-      // we go thru the old values and search for an equal value in the new 
-      // values array
-      // as we do this we also keep track of values that haven't changed so that we
-      // do not have to write them again.
-
       $write_values = $field_items;
       
       // TODO $val is not set: iterate over fieldvalue!
@@ -2196,16 +2236,18 @@ $oldtmp = $tmp;
         // we might want to delete some
         $delete_values = $old_value;
         
+#        drupal_set_message("del: " . serialize($delete_values));
+        
         // if it is not an array there are no values, so we can savely stop
         if (!is_array($old_value)) {
           $delete_values = array($mainprop => $old_value);
-          
           // $old_value contains the value directly
           foreach ($field_items as $key => $new_item) {
             if (empty($new_item)) { // empty field item due to cardinality, see else branch
               unset($write_values[$key]);
               continue;
             }
+#            drupal_set_message("old value is: " . serialize($old_value) . " new is: " . $new_item[$mainprop]);
             // if the old value is somwhere in the new item
             if ($old_value == $new_item[$mainprop]) {
               // we unset the write value at this key because this doesn't have to be written
@@ -2219,6 +2261,7 @@ $oldtmp = $tmp;
           // containing field property => value pairs
           
           foreach ($old_value as $old_key => $old_item) {
+            
             if (!is_array($old_item) || empty($old_item)) {
               // this may be the case if 
               // - it contains key "main_property"... (not an array)
@@ -2231,6 +2274,7 @@ $oldtmp = $tmp;
             $maincont = FALSE;
             
             foreach ($write_values as $key => $new_item) {
+            
               if (empty($new_item)) {
                 unset($write_values[$key]);
                 continue; // empty field item due to cardinality
@@ -2255,7 +2299,7 @@ $oldtmp = $tmp;
         #dpm($delete_values, "we have to delete");
         if (!empty($delete_values)) {
           foreach ($delete_values as $key => $val) {
-            #dpm($val, "delete");
+            #drupal_set_message("I1 delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
             $this->deleteOldFieldValue($entity_id, $field_id, $val[$mainprop], $pathbuilder, $key);
           }
         }
