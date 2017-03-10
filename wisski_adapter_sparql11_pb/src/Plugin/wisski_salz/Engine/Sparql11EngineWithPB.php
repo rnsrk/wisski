@@ -2203,7 +2203,7 @@ $oldtmp = $tmp;
             continue;
           
           // if not its a value...
-          drupal_set_message("I delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
+#          drupal_set_message("I delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
           $this->deleteOldFieldValue($entity_id, $old_key, $val[$mainprop], $pathbuilder, $key);
         }
       }
