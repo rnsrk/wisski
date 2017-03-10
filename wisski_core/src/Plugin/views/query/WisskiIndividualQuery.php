@@ -354,7 +354,9 @@ wisski_tick("end exec views");
                   }
                 }
                 $select .= "} ";
-                $select .= $engine->generateTriplesForPath($pb, $path);
+                // NOTE: we need to set the $relative param to FALSE. All other
+                // optional params should be default values
+                $select .= $engine->generateTriplesForPath($pb, $path, "", NULL, NULL, 0, 0, FALSE, '=', 'field', FALSE);
                 $select .= "}";
                 $result = $engine->directQuery($select);
                 foreach ($result as $sparql_row) {

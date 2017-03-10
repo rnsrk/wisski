@@ -1852,7 +1852,7 @@ $oldtmp = $tmp;
 
       if($first) {
         if($key > ($startingposition *2) || ($startingposition *2) > ($key+count($clearPathArray))) {
-          drupal_set_message("Starting Position is set to a wrong value: '$starting_position'. See reports for details", "error");
+          drupal_set_message("Starting Position is set to a wrong value: '$startingposition'. See reports for details", "error");
           if (WISSKI_DEVEL) \Drupal::logger('WissKIsaveProcess')->debug('ERROR: ' . serialize($clearPathArray) . ' generate ' . serialize(func_get_args()));
           if (WISSKI_DEVEL) \Drupal::logger('WissKIsaveProcess')->debug('ERROR: ' . serialize(debug_backtrace()[1]['function']) . ' and ' . serialize(debug_backtrace()[2]['function']));
         }

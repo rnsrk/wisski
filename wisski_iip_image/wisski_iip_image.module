@@ -28,7 +28,7 @@ function wisski_iip_image_preprocess_colorbox_formatter(&$variables) {
 
   if(strpos($nuri, "public://") !== FALSE)
     $nuri = str_replace("public://", \Drupal::service('file_system')->realpath("public://"). '/', $nuri);
-  
+
   $variables['attributes']['iip'] = $nuri;
   
 }
