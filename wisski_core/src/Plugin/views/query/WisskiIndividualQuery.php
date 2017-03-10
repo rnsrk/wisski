@@ -344,7 +344,7 @@ wisski_tick("end exec views");
                 drupal_set_message("Adapter cannot be queried by path in WissKI views for path " . $path->getName() . " in pathbuilder " . $pb->getName(), 'error');
               }
               else {
-                $select = "SELECT * WHERE { VALUES ?x0 { ";
+                $select = "SELECT ?x0 ?out WHERE { VALUES ?x0 { ";
                 $uris_to_eids = []; // keep for reverse mapping of results
                 foreach ($entity_ids as $eid) {
                   $uri = $engine->getUriForDrupalId($eid);

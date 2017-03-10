@@ -1108,7 +1108,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }
     }
     
-#dpm($out, __METHOD__);
     return $out;
     
   }

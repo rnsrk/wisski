@@ -264,7 +264,9 @@ abstract class Sparql11Engine extends EngineBase {
 	private function doQuery($query) {
 	  if (WISSKI_DEVEL) \Drupal::logger('QUERY '.$this->adapterId())->debug('{q}',array('q'=>$query));
 	  try {
-  		return $this->getEndpoint()->query($query);
+  		$result = $this->getEndpoint()->query($query);
+	    if (WISSKI_DEVEL) \Drupal::logger('QUERY '.$this->adapterId())->debug('result {r}',array('r'=>serialize($result)));
+      return $result;
     } catch (\Exception $e) {
       drupal_set_message('Something went wrong in \''.__FUNCTION__.'\' for adapter "'.$this->adapterId().'"','error');
     }
