@@ -353,7 +353,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
   public function getPropertiesFromStore($class=NULL,$class_after = NULL,$fast_mode=FALSE) {
 
-    $query = "SELECT DISTINCT ?property WHERE { GRAPH ?g {"
+    $query = "SELECT DISTINCT ?property WHERE { {"
 //      ."?property a owl:ObjectProperty. "
         ;
     if ($fast_mode) {  
@@ -477,7 +477,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
   public function getClassesFromStore($property=NULL,$property_after = NULL,$fast_mode=FALSE) {
   
-    $query = "SELECT DISTINCT ?class WHERE { GRAPH ?g {"
+    $query = "SELECT DISTINCT ?class WHERE {  {"
       //."?class a owl:Class. "
       ;
     if ($fast_mode) {  
