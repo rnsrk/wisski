@@ -245,15 +245,23 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return $info;
   }
 
-  
-  
   public function isaProperty($p) {
-    
-    return $this->directQuery("ASK { GRAPH ?g { <$p> a owl:ObjectProperty . } }")->isTrue();
 
-  }
+    //you cannot use GRAPH in an ASK query
+    //return $this->directQuery("ASK { GRAPH ?g { <$p> a owl:ObjectProperty . } }")->isTrue(); 
 
-
+    //we obviously have to solve it via SELECT
+    $result = $this->directQuery(
+      "SELECT * WHERE {"
+        ."VALUES ?x {<$p>} "
+        ."GRAPH ?g { "
+          ."{ ?x a owl:ObjectProperty . } UNION { ?x a rdf:Property.}"
+        ."}"
+      ."}"   
+    );   
+    return $result->numRows() > 0;
+  } 
+  
   public function getClasses() {
   
     $out = $this->retrieve('classes','class');
@@ -354,7 +362,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getPropertiesFromStore($class=NULL,$class_after = NULL,$fast_mode=FALSE) {
 
     $query = "SELECT DISTINCT ?property WHERE { {"
-//      ."?property a owl:ObjectProperty. "
+      ."{?property a owl:ObjectProperty.} UNION {?property a rdf:Property}"
         ;
     if ($fast_mode) {  
       if (isset($class)) $query .= "?property rdfs:domain <$class>. ";
@@ -478,7 +486,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getClassesFromStore($property=NULL,$property_after = NULL,$fast_mode=FALSE) {
   
     $query = "SELECT DISTINCT ?class WHERE {  {"
-      //."?class a owl:Class. "
+      ."{?class a owl:Class. UNION ?class a rdfs:Class.}"
       ;
     if ($fast_mode) {  
       if (isset($property)) $query .= "<$property> rdfs:range ?class. ";
