@@ -486,7 +486,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getClassesFromStore($property=NULL,$property_after = NULL,$fast_mode=FALSE) {
   
     $query = "SELECT DISTINCT ?class WHERE {  {"
-      ."{?class a owl:Class. UNION ?class a rdfs:Class.}"
+      ."{ {?class a owl:Class. } UNION { ?class a rdfs:Class.} }"
       ;
     if ($fast_mode) {  
       if (isset($property)) $query .= "<$property> rdfs:range ?class. ";
