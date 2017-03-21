@@ -2834,10 +2834,10 @@ $oldtmp = $tmp;
     // no sub-generations are gathered
     $result = $this->directQuery(
       "SELECT ?property ?super WHERE { GRAPH ?g {"
-        ."{{?property a owl:ObjectProperty.} UNION {?property a rdf:Property}} "
-        ."?property rdfs:subPropertyOf ?super. "
+        ."{{?property a owl:ObjectProperty.} UNION {?property a rdf:Property}}} . GRAPH ?g1 { "
+        ."?property rdfs:subPropertyOf ?super.  "
         ."FILTER NOT EXISTS {?mid_property rdfs:subPropertyOf+ ?super. ?property rdfs:subPropertyOf ?mid_property.}"
-      ."} }");
+      ."} } ");
     foreach ($result as $row) {
       $prop = $row->property->getUri();
       $super = $row->super->getUri();
@@ -2885,7 +2885,7 @@ $oldtmp = $tmp;
     $results = $this->directQuery("SELECT ?class ?super WHERE { GRAPH ?g {"
       ."?class rdfs:subClassOf+ ?super. "
       ."FILTER (!isBlank(?class)) "
-      ."FILTER (!isBlank(?super)) "
+      ."FILTER (!isBlank(?super)) } . GRAPH ?g1 {"
       ."{{?super a owl:Class.} UNION {?super a rdfs:Class.}} "
     ."} }");
     foreach ($results as $row) {
@@ -3064,7 +3064,7 @@ $oldtmp = $tmp;
 //    $cid = 'wisski_reasoner_reverse_ranges';
 //    \Drupal::cache()->set($cid,$reverse_ranges);
   }
-  
+
   public function getInverseProperty($property_uri) {
 
   /* cache version
