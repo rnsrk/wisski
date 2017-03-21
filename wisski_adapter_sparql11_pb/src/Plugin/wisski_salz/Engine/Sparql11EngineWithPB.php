@@ -624,7 +624,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         #$path_array = $group->getPathArray();
                 
 #        $path_array = $this->getClearPathArray($group, $pb);
-          $path_array = $this->getClearGroupArray($group, $pb);
+#          $path_array = $this->getClearGroupArray($group, $pb);
+          $path_array = $pb->getRelativePath($group, FALSE);
           $i++;
  
 #        drupal_set_message("p_a " . $i . " " . $group->getName() . " " . serialize($path_array));
@@ -635,7 +636,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // this checks if the last element is the same
         // however this is evil whenever there are several elements in the path array
         // typically subgroups ask for the first element part.        
-          if($path_array[ count($path_array)-1] == $thing->class->dumpValue("text") || $path_array[0] == $thing->class->dumpValue("text")) {
+#          if($path_array[ count($path_array)-1] == $thing->class->dumpValue("text") || $path_array[0] == $thing->class->dumpValue("text")) {
+          if($path_array[ count($group->getPathArray())-1] == $thing->class->getUri() || current($path_array) == $thing->class->getUri()) {
             $pbpaths = $pb->getPbPaths();
           
 #          drupal_set_message(serialize($pbpaths[$group->id()]));
