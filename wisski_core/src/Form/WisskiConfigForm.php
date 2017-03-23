@@ -75,7 +75,7 @@ class WisskiConfigForm extends FormBase {
     );
     $subform['use_only_main_bundles'] = array(
       '#type' => 'checkbox',
-      '#default_value' => $settings->get('wisski_use_only_main_bundles') !== FALSE ? TRUE : FALSE,
+      '#default_value' => $settings->get('wisski_use_only_main_bundles'),
       '#title' => $this->t('Do you want to use only main bundles for display?'),
     );
     $subform['pager_max'] = array(
