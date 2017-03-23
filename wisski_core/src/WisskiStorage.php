@@ -77,6 +77,14 @@ $rand = rand();
       // if there remain entities that were not in cache, $ids now only 
       // contains their ids and we load these in the remaining procedure.
     }
+    
+    // prepare config variables if we only want to use main bundles.    
+    $topBundles = array();
+    $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
+    $only_use_topbundles = $set->get('wisski_use_only_main_bundles');
+
+    if($only_use_topbundles) 
+      $topBundles = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
 
     $adapters = entity_load_multiple('wisski_salz_adapter');
     $info = array();
@@ -88,12 +96,21 @@ $rand = rand();
       
       //see if we got bundle information cached. Useful for entity reference and more      
       $cached_bundle = WisskiCacheHelper::getCallingBundle($id);
-      if ($cached_bundle) $info[$id]['bundle'] = $cached_bundle;
       
+      // only use that if it is a top bundle when the checkbox was set. Always use it otherwise.
+      if ($cached_bundle) {
+        if(!in_array($cached_bundle, $topBundles))
+          $cached_bundle = NULL;
+        else
+          $info[$id]['bundle'] = $cached_bundle;
+      }
+            
       // ask all adapters
       foreach($adapters as $aid => $adapter) {
         // if they know that id
+#        drupal_set_message(serialize($adapter->hasEntity($id)) . " said adapter " . serialize($adapter));
         if($adapter->hasEntity($id)) {
+#          drupal_set_message(serialize("argh"));
           // if so - ask for the bundles for that id
           // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
           $bundle_ids = $adapter->getBundleIdsForEntityId($id);
@@ -106,6 +123,7 @@ $rand = rand();
               continue;
             }
           }
+
           $bundle_ids = array_slice($bundle_ids,0,1);
           foreach($bundle_ids as $bundleid) {
             // be more robust.
@@ -115,6 +133,7 @@ $rand = rand();
             }
               
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
+
 #            $view_ids = \Drupal::entityQuery('entity_view_display')
 #              ->condition('id', 'wisski_individual.' . $bundleid . '.', 'STARTS_WITH')
 #              ->execute();
@@ -157,7 +176,7 @@ $rand = rand();
                 }
                 //here we have a "normal field" so we can assume an array of field values is OK
                 $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
-                
+
                 if (empty($new_field_values)) continue;
                 $info[$id]['bundle'] = $bundleid;
                 if ($field_def->getType() === 'entity_reference') {

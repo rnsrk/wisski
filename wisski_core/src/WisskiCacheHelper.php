@@ -109,20 +109,21 @@ class WisskiCacheHelper {
   }
   
   static function getCallingBundle($entity_id) {
-    $settings = \Drupal::configFactory()->getEditable('wisski_core.settings');
+#    $settings = \Drupal::configFactory()->getEditable('wisski_core.settings');
     
     if ($record = \Drupal::service('database')->select('wisski_calling_bundles','c')->fields('c')->condition('eid',$entity_id)->execute()->fetch()) {
       $bid = $record->bid;
-      
-      // only return something here if it is either a top bundle or the setting allows non top bundles
-      if($settings->get('wisski_use_only_main_bundles') == TRUE) {
-        $topIds = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
-
-        if(in_array($bid, $topIds))
-          return $bid;
-        else
-          return NULL;        
-      } else      
+#
+#      This was moved to storage.      
+#      // only return something here if it is either a top bundle or the setting allows non top bundles
+#      if($settings->get('wisski_use_only_main_bundles') == TRUE) {
+#        $topIds = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
+#
+#        if(in_array($bid, $topIds))
+#          return $bid;
+#        else
+#       return NULL;        
+#      } else      
         return $bid;
     } else return NULL;
   }
