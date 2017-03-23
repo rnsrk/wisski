@@ -1017,6 +1017,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    */
   public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL, $relative = TRUE) {
 
+    if(empty($path)) {
+      drupal_set_message("No path supplied to ptr. This is evil.", "error");
+      return array();
+    }
+
     if(!$path->isGroup())
       $primitive = $path->getDatatypeProperty();
     else
@@ -2099,7 +2104,9 @@ $oldtmp = $tmp;
     $datagraphuri = $this->getDefaultDataGraphUri();
 
     $pbarray = $pb->getPbEntriesForFid($fieldid);
-    
+
+#    drupal_set_message("I fetched path: " . serialize($pbarray));    
+
     $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['id']);
 
     if(empty($path))
@@ -2142,6 +2149,7 @@ $oldtmp = $tmp;
     }
     $sparql .= " } } ";
 #     \Drupal::logger('WissKIsaveProcess')->debug('sparql writing in add: ' . htmlentities($sparql));
+#    dpm($sparql, "write:");
        
     $result = $this->directUpdate($sparql);
     
@@ -2230,12 +2238,14 @@ $oldtmp = $tmp;
 
     // combined go through the new fields    
     foreach($field_values as $field_id => $field_items) {
+#      drupal_set_message("I try to add data to field $field_id with items: " . serialize($field_items));
       $path = $pathbuilder->getPbEntriesForFid($field_id);
+#      drupal_set_message("found path: " . serialize($path). " " . microtime());
       
       $old_value = isset($old_values[$field_id]) ? $old_values[$field_id] : array();
 
       if(empty($path)) {
-        //drupal_set_message("I leave here: $field_id");
+#        drupal_set_message("I leave here: $field_id " . microtime());
         continue;
       }
         
@@ -2246,6 +2256,8 @@ $oldtmp = $tmp;
       unset($field_items['main_property']);
       
       $write_values = $field_items;
+      
+#      drupal_set_message("write values still is: " . serialize($write_values));
       
       // TODO $val is not set: iterate over fieldvalue!
       // if there are old values

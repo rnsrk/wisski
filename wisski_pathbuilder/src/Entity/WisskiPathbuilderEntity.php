@@ -998,8 +998,10 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
 #        $treepart = $this->getPathTree();
     $pbpaths = $this->getPbPaths();
     
-    if(empty($pbpaths))
+    if(empty($pbpaths)) {
+#      drupal_set_message("this pb has no paths!");
       return array();
+    }
           
     foreach($pbpaths as $potpath) {
       
