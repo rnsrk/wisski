@@ -358,8 +358,9 @@ class WisskiPathForm extends EntityForm {
 
 #    dpm($path_array);
     $entity->setPathArray($path_array);
-    //the $values do not accept the datatype_property value being named correctly, thus select is our desired goal
-    $entity->setDatatypeProperty($values['datatype_property']);
+    //some adapters do not support datatype_properties, so sometimes we have none set
+    if (isset($values['datatype_property']))
+      $entity->setDatatypeProperty($values['datatype_property']);
     $entity->setID($values['id']);
     $entity->setName($values['name']);
     $entity->setType($values['type']);
