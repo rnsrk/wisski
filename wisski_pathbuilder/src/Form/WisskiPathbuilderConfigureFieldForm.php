@@ -51,7 +51,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
   
     //dpm($this->pathbuilder,'before edit');  
     $form = parent::form($form, $form_state);
-
+    
     $form['pathbuilder'] = array(
       '#type' => 'textfield',
       '#maxlength' => 255,
@@ -84,6 +84,20 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 #    return $form;
     if($path->getType() != "Path") {
       $bundle_options = array();
+      
+      // typically for wisski bundle and fieldid have to be the same. Everything else is strange!
+      // we warn the user then.
+      if($pbpath['bundle'] !== Pathbuilder::CONNECT_NO_FIELD && $pbpath['bundle'] !== Pathbuilder::GENERATE_NEW_FIELD && !empty($pbpath['bundle']) && $pbpath['bundle'] != $pbpath['field']) {
+        drupal_set_message('For path ' . $pbpath['id'] . " bundle is '" . $pbpath['bundle'] . "' but field is '" . $pbpath['field'] . "' and it typically should be the same. We change that for you.", "warning");
+        
+#        $pbpath['field'] = $pbpath['bundle'];
+        
+        $pbpaths_for_write = $this->pathbuilder->getPbPaths();
+        $pbpaths_for_write[$this->path]['field'] = $pbpath['bundle'];
+        $this->pathbuilder->setPbPaths($pbpaths_for_write);
+        $this->pathbuilder->save();
+        
+      }
 
       // this was a buggy approach
 #      foreach (WisskiHelper::getAllBundleIds(TRUE) as $bundle_id => $bundle_info) {
