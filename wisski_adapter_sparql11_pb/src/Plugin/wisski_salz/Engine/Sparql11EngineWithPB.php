@@ -870,8 +870,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // get the group 
       // this does not work for subgroups! do it otherwise!
       #$grouppath = $group->getPathArray();    
-      $grouppath = $this->getClearPathArray($group, $pathbuilder);
-                   
+#      $grouppath = $this->getClearPathArray($group, $pathbuilder);
+      $grouppath = $pathbuilder->getRelativePath($group, FALSE);
+                         
       foreach($grouppath as $key => $pathpart) {
         if($key % 2 == 0)
           $query .= " ?x" . $key . " a <". $pathpart . "> . ";
@@ -1294,11 +1295,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           continue;
         }
         
-        if($field_id == "name") {
-          // tempo hack
-          $out[$eid][$field_id] = array($eid);
-          continue;
-        }
+#        if($field_id == "name") {
+#          // tempo hack
+#          $out[$eid][$field_id] = array($eid);
+#          continue;
+#        }
         
         // Bundle is a special case.
         // If we are asked for a bundle, we first look in the pb cache for the bundle
@@ -1354,9 +1355,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // if there is no path we can skip that
         if(empty($path))
           continue;
-
-        $clearPathArray = $this->getClearPathArray($path, $pb);
- 
+        
+        #$clearPathArray = $this->getClearPathArray($path, $pb);
+        $clearPathArray = $pb->getRelativePath($path, FALSE);
+        
  #         drupal_set_message("I have: " . serialize($pbarray), "error");
         if(!empty($path)) {
           // if this is question for a subgroup - handle it otherwise
@@ -1447,6 +1449,11 @@ $oldtmp = $tmp;
     // get the pb-entry for the field
     // this is a hack and will break if there are several for one field
     $pbarray = $pb->getPbEntriesForFid($fieldid);
+
+    if(!isset($pbarray['id'])) {
+      drupal_set_message("Danger zone: field $fieldid was queried in deleteOldFieldValue, but it has no id.", "warning.");
+      return;
+    }
     
     // get path/field-related config
     // and do some checks to ensure that we are acting on a
@@ -2204,6 +2211,7 @@ $oldtmp = $tmp;
     // as we do this we also keep track of values that haven't changed so that we
     // do not have to write them again.
     foreach($old_values as $old_key => $old_value) {
+#      drupal_set_message("deleting key $old_key with value " . serialize($old_value) . " from values " . serialize($field_values));
       if(!isset($field_values[$old_key])) {
         $mainprop = $old_value['main_property'];
         foreach($old_value as $key => $val) {

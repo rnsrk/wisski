@@ -162,7 +162,7 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
   }
 
   public function tellMe() {
-  
+
     $keys = func_get_args();
     $return = array();
     foreach ($keys as $key) {
@@ -260,7 +260,8 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
             ->execute();
         }
       }
-      if (!isset($out[$field_name][0]) || empty($out[$field_name][0])) unset($out[$field_name]);
+      if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) || empty($out[$field_name][0][$main_property])) unset($out[$field_name]);
+#      if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) ) unset($out[$field_name]);
     }
 #    dpm($out,__METHOD__);
     return $out;
