@@ -69,6 +69,14 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   protected function getEntityInfo(array $ids,$cached = FALSE) {
 $rand = rand();
+#    drupal_set_message(serialize($this));
+
+    // get the main entity id
+    // if this is NULL then we have a main-form
+    // if it is not NULL we have a sub-form    
+    $mainentityid = key($this->entities);
+    
+#    drupal_set_message("key is: " . serialize($mainentityid));
 
     $entity_info = &$this->entity_info;
     if ($cached) {
@@ -99,7 +107,7 @@ $rand = rand();
       
       // only use that if it is a top bundle when the checkbox was set. Always use it otherwise.
       if ($cached_bundle) {
-        if($only_use_topbundles && !in_array($cached_bundle, $topBundles))
+        if($only_use_topbundles && empty($mainentityid) && !in_array($cached_bundle, $topBundles))
           $cached_bundle = NULL;
         else
           $info[$id]['bundle'] = $cached_bundle;
