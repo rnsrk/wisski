@@ -99,7 +99,7 @@ $rand = rand();
       
       // only use that if it is a top bundle when the checkbox was set. Always use it otherwise.
       if ($cached_bundle) {
-        if(!in_array($cached_bundle, $topBundles))
+        if($only_use_topbundles && !in_array($cached_bundle, $topBundles))
           $cached_bundle = NULL;
         else
           $info[$id]['bundle'] = $cached_bundle;
