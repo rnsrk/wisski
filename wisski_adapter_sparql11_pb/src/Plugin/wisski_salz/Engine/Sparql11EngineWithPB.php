@@ -1638,7 +1638,7 @@ $oldtmp = $tmp;
       }
       
       // for fuseki we need graph
-      $delete  = "DELETE DATA {\n";
+      $delete  = "DELETE DATA { GRAPH <".$this->getDefaultDataGraphUri()."> {";
 
       // the datatype-property is not directly connected to the group-part
       if(count($clearPathArray) >= 3) {
@@ -1677,7 +1677,7 @@ $oldtmp = $tmp;
         }
       }
       
-      $delete .= ' }';
+      $delete .= ' }}';
       
       $result = $this->directUpdate($delete);
 
