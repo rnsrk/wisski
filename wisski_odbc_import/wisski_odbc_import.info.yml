@@ -1,5 +1,5 @@
-name: WissKI SQL Import
-description: The WissKI SQL Import module
+name: WissKI ODBC Import
+description: The WissKI ODBC Import module
 core: 8.x
 package: WissKI
 version: 0.1-dev
