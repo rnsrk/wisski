@@ -347,7 +347,7 @@ class WisskiTitlePatternForm extends EntityForm {
     $rendered['remove_op'] = array(
       '#type' => 'button',
       '#name' => 'remove:'.$key,
-      '#value' => 'remove',
+      '#value' => $this->t('remove'),
       '#ajax' => array(
         'callback' => 'Drupal\wisski_core\Form\WisskiTitlePatternForm::ajaxResponse',
         'wrapper' => 'wisski-title-table'

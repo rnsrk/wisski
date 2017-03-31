@@ -266,16 +266,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
     $out = $this->retrieve('classes','class');
     if (!empty($out)) return $out;
-    $query = "SELECT DISTINCT ?class WHERE {  {"
-      ."{"
-        ."{?class a owl:Class} "
+    $query = "SELECT DISTINCT ?class WHERE { "
+        ."{ GRAPH ?g1 {?class a owl:Class} }"
         ."UNION "
-        ."{?class a rdfs:Class} "
+        ."{ GRAPH ?g2 {?class a rdfs:Class} }"
         ."UNION "
-        ."{?ind a ?class. ?class a ?type} "
-      ."} . "
-      ."FILTER(!isBlank(?class))"
-    ."} }";  
+        ."{ GRAPH ?g3 {?ind a ?class. ?class a ?type} }"
+        ." . FILTER(!isBlank(?class))"
+        ."} ";  
     $result = $this->directQuery($query);
     
     if (count($result) > 0) {
@@ -294,14 +292,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   
     $out = $this->retrieve('properties','property');
     if (!empty($out)) return $out;
-    $query = "SELECT DISTINCT ?property WHERE {  {"
-      ."{"
-        ."{?property a owl:ObjectProperty .} "
+    $query = "SELECT DISTINCT ?property WHERE { "
+        ."{ GRAPH ?g1 {?property a owl:ObjectProperty .} } "
         ."UNION "
-        ."{?property a rdf:Property .} "
-      ."} . "
+        ."{ GRAPH ?g2 {?property a rdf:Property .} } "
+      ." . "
       ."FILTER(!isBlank(?property))"
-    ."} }";  
+    ."} ";  
     $result = $this->directQuery($query);
     
     if (count($result) > 0) {
@@ -787,7 +784,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // if there is nothing, do nothing!
       // I am unsure if that ever could occur
       if(empty($parentpath))
-        continue;
+        return;
       
       
       // we have to handle groups other than paths
@@ -1654,7 +1651,7 @@ $oldtmp = $tmp;
       }
       
       // for fuseki we need graph
-      $delete  = "DELETE DATA {\n";
+      $delete  = "DELETE DATA { GRAPH <".$this->getDefaultDataGraphUri()."> {";
 
       // the datatype-property is not directly connected to the group-part
       if(count($clearPathArray) >= 3) {
@@ -1693,7 +1690,7 @@ $oldtmp = $tmp;
         }
       }
       
-      $delete .= ' }';
+      $delete .= ' }}';
       
       $result = $this->directUpdate($delete);
 
@@ -2642,7 +2639,7 @@ $oldtmp = $tmp;
     if(!empty($graph)) {
       $query = "SELECT DISTINCT ?ont ?iri ?ver FROM $graph WHERE { ?ont a owl:Ontology . OPTIONAL { ?ont owl:ontologyIRI ?iri. ?ont owl:versionIRI ?ver . } }";
     } else
-      $query = "SELECT DISTINCT ?ont (COALESCE(?niri, 'none') as ?iri) (COALESCE(?nver, 'none') as ?ver) (COALESCE(?ngraph, 'default') as ?graph) WHERE { ?ont a owl:Ontology . OPTIONAL { GRAPH ?ngraph { ?ont a owl:Ontology } } . OPTIONAL { ?ont owl:ontologyIRI ?niri. ?ont owl:versionIRI ?nver . } }";
+      $query = "SELECT DISTINCT ?ont (COALESCE(?niri, 'none') as ?iri) (COALESCE(?nver, 'none') as ?ver) (COALESCE(?ngraph, 'default') as ?graph) WHERE { GRAPH ?g { ?ont a owl:Ontology } . OPTIONAL { GRAPH ?ngraph { ?ont a owl:Ontology } } . OPTIONAL { ?ont owl:ontologyIRI ?niri. ?ont owl:versionIRI ?nver . } }";
      
     $results = $this->directQuery($query); 
   /*
