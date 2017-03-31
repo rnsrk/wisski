@@ -3114,7 +3114,16 @@ $oldtmp = $tmp;
     //DB version
     $inverse = $this->retrieve('inverses','inverse','property',$property_uri);
     if (!empty($inverse)) return current($inverse);
-    $results = $this->directQuery("SELECT ?inverse WHERE { GRAPH ?g {{<$property_uri> owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf <$property_uri>.}} }");
+    $results = $this->directQuery(
+      "SELECT ?inverse WHERE {"
+        ."{"
+          ."{GRAPH ?g1 {?sub_inverse owl:inverseOf ?inverse.}}"
+          ." UNION "
+          ."{GRAPH ?g2 {?inverse owl:inverseOf ?sub_inverse.}}"
+        ."}"
+        ."{GRAPH ?g3 {<$property_uri> rdfs:subPropertyOf* ?sub_inverse}}"
+      ."}"
+    );
     $inverse = '';
     foreach ($results as $row) {
       $inverse = $row->inverse->getUri();
