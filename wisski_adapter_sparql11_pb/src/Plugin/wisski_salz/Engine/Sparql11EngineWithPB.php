@@ -362,39 +362,39 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getPropertiesFromStore($class=NULL,$class_after = NULL,$fast_mode=FALSE) {
 
     $query = "SELECT DISTINCT ?property WHERE { {"
-      ."{?property a owl:ObjectProperty.} UNION {?property a rdf:Property}"
+      ."{ GRAPH ?g1 { ?property a owl:ObjectProperty. } } UNION { GRAPH ?g2 { ?property a rdf:Property. } }"
         ;
     if ($fast_mode) {  
-      if (isset($class)) $query .= "?property rdfs:domain <$class>. ";
-      if (isset($class_after)) $query .= "?property rdfs:range <$class_after>.";
+      if (isset($class)) $query .= "GRAPH ?g3 { ?property rdfs:domain <$class>. }";
+      if (isset($class_after)) $query .= "GRAPH ?g4 { ?property rdfs:range <$class_after>. }";
     } else {
       if (isset($class)) {
         $query .= 
           "{"
-            ."{?d_def_prop rdfs:domain ?d_def_class.}"
+            ."{ GRAPH ?g5 { ?d_def_prop rdfs:domain ?d_def_class.}} "
             ." UNION "
             ."{"
-              ."?d_def_prop owl:inverseOf ?inv. "
-              ."?inv rdfs:range ?d_def_class. "
+              ." GRAPH ?g6 { ?d_def_prop owl:inverseOf ?inv. } "
+              ." GRAPH ?g7 { ?inv rdfs:range ?d_def_class. } "
             ."}"
           ."} "
-          ."<$class> rdfs:subClassOf* ?d_def_class. "
+          ." GRAPH ?g8 { <$class> rdfs:subClassOf* ?d_def_class. } "
           ."{"
-            ."{?d_def_prop rdfs:subPropertyOf* ?property.}"
+            ."{ GRAPH ?g9 { ?d_def_prop rdfs:subPropertyOf* ?property.}} "
             ." UNION "
             ."{ "
-              ."?property rdfs:subPropertyOf+ ?d_def_prop. "
+              ." GRAPH ?g10 { ?property rdfs:subPropertyOf+ ?d_def_prop. } "
               ." FILTER NOT EXISTS {"
                 ."{ "
-                  ."?mid_prop rdfs:subPropertyOf+ ?d_def_prop. "
-                  ."?property rdfs:subPropertyOf* ?mid_prop. "
+                  ." GRAPH ?g11 { ?mid_prop rdfs:subPropertyOf+ ?d_def_prop. } "
+                  ." GRAPH ?g12 { ?property rdfs:subPropertyOf* ?mid_prop. } "
                 ."}"
                 ."{"
-                  ."{?mid_prop rdfs:domain ?any_domain.}"
+                  ."{ GRAPH ?g13 { ?mid_prop rdfs:domain ?any_domain.}} "
                   ." UNION "
                   ."{ "
-                    ."?mid_prop owl:inverseOf ?mid_inv. "
-                    ."?mid_inv rdfs:range ?any_range. "
+                    ." GRAPH ?g14 { ?mid_prop owl:inverseOf ?mid_inv. } "
+                    ." GRAPH ?g15 { ?mid_inv rdfs:range ?any_range. } "
                   ."}"
                 ."}"
               ."}"
@@ -404,30 +404,30 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if (isset($class_after)) {
         $query .= "{"
             ."{ "
-                ."{?r_def_prop rdfs:range ?r_def_class.} "
+                ."{ GRAPH ?g16 { ?r_def_prop rdfs:range ?r_def_class.} } "
                 ."UNION "
                 ."{ "
-                  ."?r_def_prop owl:inverseOf ?inv. "
-                  ."?inv rdfs:domain ?inv. "
+                  ." GRAPH ?g17 { ?r_def_prop owl:inverseOf ?inv. } "
+                  ." GRAPH ?g18 { ?inv rdfs:domain ?inv. } "
                 ."} "
               ."} "
-            ."<$class_after> rdfs:subClassOf* ?r_def_class. "
+            ." GRAPH ?g19 { <$class_after> rdfs:subClassOf* ?r_def_class.}  "
           ."}"
           ."{"
-            ."{?r_def_prop rdfs:subPropertyOf* ?property.} "
+            ."{ GRAPH ?g20 { ?r_def_prop rdfs:subPropertyOf* ?property.} } "
           ."UNION "
             ."{ "
-              ."?property rdfs:subPropertyOf+ ?r_def_prop. "
+              ." GRAPH ?g21 { ?property rdfs:subPropertyOf+ ?r_def_prop. } "
               ."FILTER NOT EXISTS { "
                 ."{ "
-                  ."?mid_prop rdfs:subPropertyOf+ ?r_def_prop. "
-                  ."?property rdfs:subPropertyOf* ?mid_prop. "
+                  ." GRAPH ?g22 { ?mid_prop rdfs:subPropertyOf+ ?r_def_prop. } "
+                  ." GRAPH ?g23 { ?property rdfs:subPropertyOf* ?mid_prop. } "
                 ."} "
-                ."{?mid_prop rdfs:range ?any_range.}"
+                ."{ GRAPH ?g24 { ?mid_prop rdfs:range ?any_range. } }"
                   ." UNION "
                   ."{ "
-                    ."?mid_prop owl:inverseOf ?mid_inv. "
-                    ."?mid_inv rdfs:domain ?any_domain. "
+                    ." GRAPH ?g25 { ?mid_prop owl:inverseOf ?mid_inv. } "
+                    ." GRAPH ?g26 { ?mid_inv rdfs:domain ?any_domain. } "
                   ."}"
                 ."}"
               ."} "
@@ -592,7 +592,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
     #$uri = str_replace('\\', '/', $entityid);
 
-#    drupal_set_message("parse url: " . serialize(parse_url($uri)));
+    drupal_set_message("parse url $uri: " . serialize(parse_url($uri)));
 
     $url = parse_url($uri);
 
@@ -607,7 +607,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
     $result = $this->directQuery($query);
     
-#    drupal_set_message("res: " . serialize($result));
+    drupal_set_message("$query res: " . serialize($result));
 
    $out = array();
     foreach($result as $thing) {
@@ -628,7 +628,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           $path_array = $pb->getRelativePath($group, FALSE);
           $i++;
  
-#        drupal_set_message("p_a " . $i . " " . $group->getName() . " " . serialize($path_array));
+#          drupal_set_message("p_a " . $i . " " . $group->getName() . " " . serialize($path_array));
         
           if(empty($group) || empty($path_array))
             continue;
@@ -636,29 +636,44 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // this checks if the last element is the same
         // however this is evil whenever there are several elements in the path array
         // typically subgroups ask for the first element part.        
-#          if($path_array[ count($path_array)-1] == $thing->class->dumpValue("text") || $path_array[0] == $thing->class->dumpValue("text")) {
           if($path_array[ count($group->getPathArray())-1] == $thing->class->getUri() || current($path_array) == $thing->class->getUri()) {
             $pbpaths = $pb->getPbPaths();
           
-#          drupal_set_message(serialize($pbpaths[$group->id()]));
+#            drupal_set_message("p_a " . $i . " " . $group->getName() . "added something!:".serialize($pbpaths[$group->id()]));
           
             if(!empty($pbpaths[$group->id()])) {
+              // TODO: is it possible that this test fails??? this would mean
+              // that there is a group entity associated with the pb without 
+              // a group array in the pb...
               $elem = $pbpaths[$group->id()];
-            // priorize top groups to the front if the array
-#            dpm($elem);
-              if(empty($elem['parent'])) {
-#              dpm("I resort...");
-                $tmpout = $out;
-                $out = array();
-                
-                // only do that if there is something
-                if(!empty($pbpaths[$group->id()]['bundle'])) {
-                  $out[$pbpaths[$group->id()]['bundle']] = $pbpaths[$group->id()]['bundle'];
+#              dpm($elem);
+              // we only add the bundle of that path if
+              // a) there is a bundle associated with that path
+              // b) we haven't already added it
+              // c) the bundle entity exists. This may not be the case if 
+              //    bundles and fields have not yet been created for the pb
+              //    but the group was already assigned a bundle id.
+              // We output an array where top groups are in the front and
+              // nested ones are in the back.
+              if(!empty($elem['bundle'])) {
+                $bundle_id = $elem['bundle'];
+                $already_there = isset($out[$bundle_id]);
+                if ($already_there || entity_load('wisski_bundle', $bundle_id)) {
+                  // now we know that there is a bundle 
+                  if(empty($elem['parent'])) {
+                    // always add a top group so that we are sure it is in the
+                    // front, even if it was already added in the back
+#                dpm("I resort...");
+                    $front = array($bundle_id => $bundle_id);
+                    $out = array_merge($front, $out);
+                  }
+                  elseif (!$already_there) {
+                    // we only add it if it's not there
+                    // otherwise we may rearrange a top group to go to the back
+                    $out[$bundle_id] = $bundle_id;
+                  }
                 }
-                $out = array_merge($out, $tmpout);
               }
-              if(!empty($pbpaths[$group->id()]['bundle']))
-                $out[$pbpaths[$group->id()]['bundle']] = $pbpaths[$group->id()]['bundle'];
             }
           }
         }
@@ -1007,7 +1022,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $ent = $this->loadEntity($entity_id);
 
 #    dpm(!empty($ent), "ent");
-
+    
     return !empty($ent);
   }
   
@@ -1021,6 +1036,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       drupal_set_message("No path supplied to ptr. This is evil.", "error");
       return array();
     }
+
 
     if(!$path->isGroup())
       $primitive = $path->getDatatypeProperty();
@@ -1134,7 +1150,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
       }
     }
-    
+
     return $out;
     
   }
@@ -1245,7 +1261,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    return array();
 #    drupal_set_message(serialize($entity_ids));
     if(!empty($field_id) && empty($bundleid_in)) {
-      drupal_set_message("Dorian ist doof, weil $field_id angefragt wurde und bundle aber leer ist.", "error");
+      drupal_set_message("$field_id angefragt und bundle aber leer.", "error");
       return;
     }
     
