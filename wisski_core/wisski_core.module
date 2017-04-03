@@ -18,13 +18,14 @@ function wisski_core_cache_flush() {
 
 function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $override_bundle_id = NULL) {
 
-//  ddebug_backtrace();
+#  drupal_set_message(serialize(debug_backtrace()));
   $create_form_title = FALSE;
 
   if ($wisski_individual instanceof WisskiEntityInterface) {
     if ($wisski_individual->isNew()) $create_form_title = TRUE;
     $entity_id = $wisski_individual->id();
     $bundle_id = $wisski_individual->bundle();
+    WisskiCacheHelper::putCallingBundle($entity_id, $bundle_id);
   } else {
     $entity_id = $wisski_individual;
     $bundle_id = WisskiCacheHelper::getCallingBundle($wisski_individual);
