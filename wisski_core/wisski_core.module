@@ -25,7 +25,8 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
     if ($wisski_individual->isNew()) $create_form_title = TRUE;
     $entity_id = $wisski_individual->id();
     $bundle_id = $wisski_individual->bundle();
-    WisskiCacheHelper::putCallingBundle($entity_id, $bundle_id);
+    if(!empty($entity_id))
+      WisskiCacheHelper::putCallingBundle($entity_id, $bundle_id);
   } else {
     $entity_id = $wisski_individual;
     $bundle_id = WisskiCacheHelper::getCallingBundle($wisski_individual);
