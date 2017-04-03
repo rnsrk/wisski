@@ -589,7 +589,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
     #$uri = str_replace('\\', '/', $entityid);
 
-    drupal_set_message("parse url $uri: " . serialize(parse_url($uri)));
+#    drupal_set_message("parse url $uri: " . serialize(parse_url($uri)));
 
     $url = parse_url($uri);
 
@@ -604,7 +604,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
     $result = $this->directQuery($query);
     
-    drupal_set_message("$query res: " . serialize($result));
+ #   drupal_set_message("$query res: " . serialize($result));
 
    $out = array();
     foreach($result as $thing) {
