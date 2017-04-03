@@ -1083,6 +1083,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       drupal_set_message("No EID for data. Error. ", 'error');
     }
 
+    // if disamb should be in the query we can bind it.
+    if($starting_position === $disamb) {
+      $sparql .= " BIND( <" . $eid . "> AS ?x" . $disamb . ") . ";
+    }
+
     $sparql .= " } ";
 
     $result = $this->directQuery($sparql);
