@@ -121,11 +121,13 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   protected $cached_titles;
   
   public function generateEntityTitle($entity_id,$include_bundle=FALSE,$force_new=FALSE) {
-
+    $pattern = $this->getTitlePattern();
+#    drupal_set_message(serialize($pattern));
+#    drupal_set_message("generated: " . $this->applyTitlePattern($pattern,$entity_id));
     if (!$force_new) {
       $title = $this->getCachedTitle($entity_id);
       if (isset($title)) {
-        //drupal_set_message('Title from cache');
+        #drupal_set_message('Title from cache');
         if ($include_bundle) {
           drupal_set_message('Enhance Title '.$title);
           $title = $this->label().': '.$title;
@@ -289,6 +291,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           //dpm('can\'t load adapter '.$pb->getAdapterId(),$pb_id);
           continue;
         }
+
         if (\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($eid,$adapter->id())) {
           //finally, having a valid path and adapter, we can ask the adapter for the path's value
           $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, FALSE);
