@@ -1028,7 +1028,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * fetches the data for display purpose
    */
   public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL, $relative = TRUE) {
-
+#    drupal_set_message("I got: $eid");
     if(empty($path)) {
       drupal_set_message("No path supplied to ptr. This is evil.", "error");
       return array();
@@ -1050,8 +1050,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     $sparql = "SELECT DISTINCT ";
     
-    $starting_position = count($path->getPathArray()) - count($pb->getRelativePath($path));
-    
+    if($relative) {
+      $starting_position = count($path->getPathArray()) - count($pb->getRelativePath($path));
+    } else {
+      $starting_position = $position;
+    }
+      
     for($i = $starting_position; $i <= count($path->getPathArray()); $i+=2) {
       $sparql .= "?x" . $i . " ";
     }
@@ -1068,7 +1072,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #      $eid = str_replace("\\", "/", $eid);
 #      $url = parse_url($eid);
       
-      $starting_position = count($path->getPathArray()) - count($pb->getRelativePath($path));
+      if($relative) {
+        $starting_position = count($path->getPathArray()) - count($pb->getRelativePath($path));
+      } else {
+        $starting_position = $position;
+      }
+      
+      #drupal_set_message("start: " . serialize($starting_position));
       
       // if the path is a group it has to be a subgroup and thus entity reference.
       if($path->isGroup()) {
@@ -1089,6 +1099,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
 
     $sparql .= " } ";
+    
+    #drupal_set_message(serialize($sparql));
 
     $result = $this->directQuery($sparql);
 
