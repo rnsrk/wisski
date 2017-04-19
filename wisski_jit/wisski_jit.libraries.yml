@@ -1,0 +1,12 @@
+Jit:
+  js:
+    /libraries/Jit/jit.js: {}
+    /libraries/Jit/Extras/excanvas.js: {}
+    js/wisski_jit.js: {}
+  css:
+    theme:
+      css/wisski_jit.css: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupalSettings
