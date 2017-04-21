@@ -83,14 +83,14 @@ function init($, Drupal, drupalSettings, nodeid){
         },
 
         onBeforeCompute: function(node){
-            Log.write("centering " + node.name + "...");
+//            Log.write("centering " + node.name + "...");
 
 //    $jit.id('wki-infolist').innerHTML = node.data.relation;
             
         },
         
         onAfterCompute: function(){
-            Log.write("done");
+//            Log.write("done");
         },
         //Add the name of the node in the correponding label
         //and a click handler to move the graph.
@@ -113,15 +113,16 @@ function init($, Drupal, drupalSettings, nodeid){
 					//var url = "http://wisski.gnm.de/dev/jit/json/" + elem[elem.length -1];
 					var state = $("#wki-infoswitch option:selected").val();
 					//var url = Drupal.settings.basePath + "jit/json/" + state + "/" + encodeURIComponent(elem[elem.length -1]);
-					var url = Drupal.settings.basePath + "jit/json/" + state + "/" + encodeURIComponent(uri).replace(/%2F/g, "/");					
-
+					var url = drupalSettings.path.baseUrl + "jit/json/" + state + "/" + encodeURIComponent(nodeid) + "?target_uri=" + encodeURIComponent(node.id);					
+					Log.write(url);
 //					alert(url);
 					//alert(JSON.stringify(node));
 					var my_JSON_object = {};
 				  $.getJSON(url, function(jsonstring) {
 //						alert("alert");
-//						alert(jsonstring);
-				    json = JSON.parse(jsonstring);
+//                                                Log.write(url);
+//						Log.write(jsonstring);
+				    json = jsonstring;
 
 						//load JSON data
 //    				rgraph.loadJSON(json);

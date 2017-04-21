@@ -27,12 +27,18 @@ class Sparql11GraphTabController extends ControllerBase {
   
     $storage = \Drupal::entityManager()->getStorage('wisski_individual');
   
-    $entity = $storage->load($wisski_individual);
+    // repair given uris
+    $wisski_individual = urldecode($wisski_individual);
 
-    // if it is empty, the entity is the starting point
+    $target_uri = $request->query->get('target_uri');
+
+    // if it is an int, we can load the entity
     if(empty($target_uri)) {
+      $entity = $storage->load($wisski_individual);
       $target_uri = AdapterHelper::getUrisForDrupalId($entity->id());
       $target_uri = current($target_uri);
+    } else {
+      // else it is an uri
     }
 
     // go through all adapters    
@@ -43,32 +49,67 @@ class Sparql11GraphTabController extends ControllerBase {
       $e = $a->getEngine();
       if ($e instanceof Sparql11Engine) {
         $values = 'VALUES ?x { <' . $target_uri . '> } ';
-        $q = "SELECT ?g ?s ?sp ?po ?o WHERE { $values { { GRAPH ?g { ?s ?sp ?x } } UNION { GRAPH ?g { ?x ?po ?o } } } }";
+        
+        if($mode == 2) {
+          $q = "SELECT ?g ?s ?sp ?po ?o WHERE { $values { { GRAPH ?g { ?s ?sp ?x } } UNION { GRAPH ?g { ?x ?po ?o } } } }";
 #        dpm($q);
-        $results = $e->directQuery($q);
+          $results = $e->directQuery($q);
 
-        $base = array("id" => $target_uri, "name" => '<span class="wki-groupname">' . $target_uri . '</span>', "children" => array(), "data" => array("relation" => "<h2>Connections (" . $target_uri . ")</h2><ul></ul>"));            
+          $base = array("id" => $target_uri, "name" => '<span class="wki-groupname">' . $target_uri . '</span>', "children" => array(), "data" => array("relation" => "<h2>Connections (" . $target_uri . ")</h2><ul></ul>"));            
 
-        foreach ($results as $result) {
-#var_dump($result);
-          if (isset($result->sp)) {          
-            $base['data']['relation'] = substr($base['data']['relation'], 0, -5);  
+          foreach ($results as $result) {
 
-            $base['data']['relation'] = $base['data']['relation'] . (
-               "<li>" . $result->sp->getUri() . " &raquo; " . 
-               $result->s->getUri() . "</li></ul>");
+            // if it is forward
+            if (isset($result->sp)) {          
+              $base['data']['relation'] = substr($base['data']['relation'], 0, -5);  
 
-              $base['children'][] = array("id" => $result->s->getUri(), "name" => $result->s->getUri());
-              $curr = &$base['children'][count($base['children'])-1];
+              $base['data']['relation'] = $base['data']['relation'] . (
+                 "<li>" . $result->s->getUri() . " &raquo; " .
+                 $result->sp->getUri() . "</li></ul>");
+/*
+              if(is_a($result->sp, "EasyRdf_Literal"))
+                $base['data']['relation'] .= $result->sp->getValue() . "</li></ul>";
+              else
+                 $base['data']['relation'] .= $result->sp->getUri() . "</li></ul>";
+*/
+                $base['children'][] = array("id" => $result->s->getUri(), "name" => $result->s->localName());
+                $curr = &$base['children'][count($base['children'])-1];
       
-              if(empty($curr['data']['relation']))
-                $curr['data']['relation'] = ("<h2>Connections (" . $result->s->getUri() .")</h2><ul></ul>");
+                if(empty($curr['data']['relation']))
+                  $curr['data']['relation'] = ("<h2>Connections (" . $result->s->localName() .")</h2><ul></ul>");
           
-              $curr['data']['relation'] = substr($curr['data']['relation'], 0, -5);  
+//                $curr['data']['relation'] = substr($curr['data']['relation'], 0, -5);  
 
-              $curr['data']['relation'] = $curr['data']['relation'] . (
-                "<li>" . $result->s->getUri() . " &raquo; " . 
-                $result->sp->getUri() . "</li></ul>");
+//                $curr['data']['relation'] = $curr['data']['relation'] . (
+//                  "<li>" . $result->sp->getUri() . " &raquo; " . 
+//                  $result->s->getUri() . "</li></ul>");
+            } else {
+              // it is backward
+
+              $base['data']['relation'] = substr($base['data']['relation'], 0, -5);  
+
+              if(is_a($result->o, "EasyRdf_Literal"))
+                $object = $result->o->getValue();
+              else
+                $object = $result->o->getUri();
+
+              $base['data']['relation'] = $base['data']['relation'] . (
+                 "<li>" . $result->po->getUri() . " &raquo; " .
+                 $object . "</li></ul>");
+
+                $base['children'][] = array("id" => $object, "name" => $object);
+                $curr = &$base['children'][count($base['children'])-1];
+      
+                if(empty($curr['data']['relation']))
+                  $curr['data']['relation'] = ("<h2>Connections (" . $object .")</h2><ul></ul>");
+          
+#                $curr['data']['relation'] = substr($curr['data']['relation'], 0, -5);  
+
+#                $curr['data']['relation'] = $curr['data']['relation'] . (
+#                  "<li>" . $result->s->getUri() . " &raquo; " . 
+#                  $result->sp->getUri() . "</li></ul>");
+
+            }
           }
         }
       }
