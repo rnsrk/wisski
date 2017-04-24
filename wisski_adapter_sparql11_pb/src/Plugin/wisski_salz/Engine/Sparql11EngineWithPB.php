@@ -1100,9 +1100,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     $sparql .= " } ";
     
-    #drupal_set_message(serialize($sparql));
+#    drupal_set_message(serialize($sparql));
 
     $result = $this->directQuery($sparql);
+
+#    drupal_set_message(serialize($result));
 
     $out = array();
     foreach($result as $thing) {
@@ -3131,8 +3133,12 @@ $oldtmp = $tmp;
     //DB version
     $inverse = $this->retrieve('inverses','inverse','property',$property_uri);
     if (!empty($inverse)) return current($inverse);
+
+    // up to now this was the current code. However this is evil in case there are several answers.
+    // it will then return the upper one which is bad.
+    // so in case there is an easy answer, give the easy answer.
     $results = $this->directQuery(
-      "SELECT ?inverse WHERE {"
+      "SELECT ?sub_inverse ?inverse WHERE {"
         ."{"
           ."{GRAPH ?g1 {?sub_inverse owl:inverseOf ?inverse.}}"
           ." UNION "
@@ -3141,9 +3147,14 @@ $oldtmp = $tmp;
         ."{GRAPH ?g3 {<$property_uri> rdfs:subPropertyOf* ?sub_inverse}}"
       ."}"
     );
+
     $inverse = '';
     foreach ($results as $row) {
       $inverse = $row->inverse->getUri();
+      // if we had the requested property, we do not need to search for a sub...
+      if($row->sub_inverse->getUri() == $property_uri) {
+        break;
+      }
     }
     $inverses[$property_uri] = $inverse;
 //    \Drupal::cache()->set($cid,$inverses);
