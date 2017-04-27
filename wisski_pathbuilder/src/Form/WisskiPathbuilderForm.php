@@ -461,7 +461,7 @@ class WisskiPathbuilderForm extends EntityForm {
     $pb = $this->entity;
     
     foreach($xmldoc->path as $path) {
-      $parentid = html_entity_decode((int)$path->group_id);
+      $parentid = html_entity_decode((string)$path->group_id);
       
 #      if($parentid != 0)
 #        $parentid = wisski_pathbuilder_check_parent($parentid, $xmldoc);
@@ -471,13 +471,13 @@ class WisskiPathbuilderForm extends EntityForm {
       #if(empty($uuid))
       
       // check if path already exists
-      $path_in_wisski = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load((int)$path->id);
+      $path_in_wisski = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load((string)$path->id);
       
       // it exists, skip this...
       if(!empty($path_in_wisski)) {
         drupal_set_message("Path with id " . $uuid . " was already existing - skipping.");
         
-        $pb->addPathToPathTree($path_in_wisski->id(), (int)$path->group_id, $path_in_wisski->isGroup());
+        $pb->addPathToPathTree($path_in_wisski->id(), $parentid, $path_in_wisski->isGroup());
 
         continue;
       }
@@ -514,7 +514,7 @@ class WisskiPathbuilderForm extends EntityForm {
       
       $path_in_wisski->save();
       
-      $pb->addPathToPathTree($path_in_wisski->id(), (int)$path->group_id, $path_in_wisski->isGroup());
+      $pb->addPathToPathTree($path_in_wisski->id(), $parentid, $path_in_wisski->isGroup());
       
       // check enabled or disabled
       $pbpaths = $pb->getPbPaths();
