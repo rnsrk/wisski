@@ -211,76 +211,330 @@ class WisskiODBCImportForm extends FormBase {
  
    return $form;
   */ 
-  }
-  
-  
-  public function ajaxStores(array $form, FormStateInterface $form_state) {
- #   dpm("yay!");
-    return $form['stores'];
-  }
-   
+  }   
 
   public function validateForm(array &$form, FormStateInterface $form_state) {
     #drupal_set_message('hello');
   }
    
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    // if there is a selected store - check if there is an ontology in the store
-    $selected_id = $form_state->getValue('select_store');
-    $selected_name= $adapterlist[$selected_id];
-    // load the store adapter entity object by means of the id of the selected store
-    $selected_adapter = \Drupal\wisski_salz\Entity\Adapter::load($selected_id);
-    // load the engine of the adapter
-    $engine = $selected_adapter->getEngine();
-    #drupal_set_message('hello submit engine ' . $engine->getPluginId());
-                                                                                              
-    // if the engine is of type sparql11_with_pb we can load the existing ontologies
-    if($engine->getPluginId() === 'sparql11_with_pb' ) {  
-      $infos = $engine->getOntologies();
-      #drupal_set_message('infos in submit' . serialize($infos));                                                                                                    
-      // redirect to the wisski config ontology page
-#      $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
-      // rebuild the form to display the information regarding the selected store
-      $form_state->setRebuild();
-      #$form_state->setUserInput($form_state->getValue('select_store'));
-      $engine->addOntologies($form_state->getValue('load_onto'));
-    }                        
-   return;
 
+    $url = $form_state->getValues('url');
+    $file = (isset($_FILES['files']['tmp_name']['upload'])) ? $_FILES['files']['tmp_name']['upload'] : NULL;
+    if ($file == NULL) $file = $url;
+
+    $arr = $this->xml2array($file);
+
+    $dbserver = $arr['server'][0]['url'];
+    $dbuser = $arr['server'][0]['user'];
+    $dbpass = $arr['server'][0]['password'];
+    $dbport = isset($arr['server'][0]['port']) ? $arr['server'][0]['port'] : '3306';
+
+    $alreadySeen = array();
+
+    $db = $arr['server'][0]['database'];
+
+    $i =0;
+    while(isset($arr['server'][0]['table'][$i])) {
+
+      $connection = mysql_connect($dbserver . ':' . $dbport, $dbuser, $dbpass);
+  
+      if(!$connection) {
+        drupal_set_message("Connection could not be established!",'error');
+        return;
+      } else {
+        drupal_set_message("Connection established!");
+      }
+  
+      if(!mysql_select_db($db, $connection)) {
+        drupal_set_message("Database '$db' could not be found!", 'error');
+        return;
+      } else {
+        drupal_set_message("DB '$db' selected!");
+      }
+  
+    // delete all attachments
+    unset($_FILES);  
+
+    $this->wisski_odbc_storeTable($arr['server'][0]['table'][$i], $alreadySeen);
+    $i++;
+    mysql_close();
+  }
+  drupal_set_message("done.");
+
+#  $form_state['redirect'] = "admin/config/wisski/odbc_import";
+  return;
+}
+
+function wisski_odbc_storeTable($table, &$alreadySeen) {
+
+  $rowiter = 0;
+  $tablename = $table['name'];
+  $delimiter = $table['delimiter'];
+  $trim = $table['trim'];  
+  //drupal_set_message("delim is: " );
+  //drupal_set_message($delimiter);
+  //return;
+  
+//  $maptoconcept = $table['concept'];
+  $id = $table['id'];
+  $append = $table['append'];
+  $select = $table['select'];
+  if(empty($append))
+      $append = "";
+      
+  $sql = "SELECT $select FROM `$tablename` $append";
+//    drupal_set_message(htmlentities($sql));  
+  $qry = mysql_query($sql);
+  
+  if(!$qry) {
+    drupal_set_message("Anfrage '$sql' gescheitert!",'error');
+    return;
   }
   
-  public function deleteOntology(array &$form, FormStateInterface $form_state) {
-    $selected_id = $form_state->getValue('select_store');
-    $selected_name= $adapterlist[$selected_id];
-    // load the store adapter entity object by means of the id of the selected store
-    $selected_adapter = \Drupal\wisski_salz\Entity\Adapter::load($selected_id);
-    // load the engine of the adapter
-    $engine = $selected_adapter->getEngine();
-    #drupal_set_message('hello engine ' . $engine->getPluginId());
-                                                      
-    // if the engine is of type sparql11_with_pb we can load the existing ontologies
-    if($engine->getPluginId() === 'sparql11_with_pb' ) {                              
-      $infos = $engine->getOntologies();
-      
-      // there already is an ontology and we want to delete it
-       if(!empty($infos)) {
-         foreach($infos as $ont) {
-           if(strval($ont->graph) != "default"){
-             $engine->deleteOntology(strval($ont->graph));
-             drupal_set_message('Successfully deleted ontology ' . $ont->graph);
-           } else {
-             $engine->deleteOntology(strval($ont->ont), 'no-graph');
-             drupal_set_message('Successfully deleted ontology ' . $ont->ont);
-           }
-           // redirect to the wisski config ontology page
-#           $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
-           // rebuild the form to display the information regarding the selected store
-           $form_state->setRebuild();                              
-         }
-       }
-                                                               
-                                                    
-    }  
+  $numrows = mysql_num_rows($qry);
+  
+  $rows = array();
+  
+  drupal_set_message("table: " . serialize($table));
+  
+  while($row = mysql_fetch_array($qry)) {
+    foreach($table['row'] as $XMLrow) {
+
+      $this->wisski_odbc_storeRow($row, $XMLrow, $alreadySeen, $delimiter, $trim);
+
+    }
+//    break;
+    $rowiter++;
+#    variable_set("wisski_sql_import_progress", ($rowiter/$numrows) * 100);
   }
+}
+
+function wisski_odbc_storeRow($row, $XMLrows, $alreadySeen, $delimiter, $trim) {
+  $i = 0;
+  $tree = array();
+  
+  drupal_set_message("rows: " . serialize($XMLrows));
+
+  foreach($XMLrows as $key => $value) { 
+    $i = 0;
+    drupal_set_message("my key: " . serialize($key));
+    if($key == "bundle") {
+      while(isset($value[$i])) {
+        $bundleid = $value[$i . '_attr']['id'];
+        $this->wisski_odbc_storeBundle($row, $value[$i], $bundleid, $delimiter, $trim);
+        
+        $i++;
+      }
+    }
+
+//      $triples = array_merge($triples, $tmptrip);
+//    return $triples;
+//    $i++;
+  }
+  return;
+}
+
+function wisski_odbc_storeBundle($row, $XMLrows, $bundleid, $delimiter, $trim) {
+
+  $entity_fields = array();
+  
+  $entity_fields["bundle"] = $bundleid;
+  
+  drupal_set_message("bundle: " . serialize($XMLrows));
+  
+  foreach($XMLrows as $key => $value) {
+    $i = 0;
+    
+    drupal_set_message($key . " " . serialize($value));
+        
+    if($key == "bundle") {
+//        dpm($row);
+//        dpm($XMLrow);
+      while(isset($value[$i])) {
+        $bundleid = $value[$i . '_attr']['id'];
+        $ref_entity_id = $this->wisski_odbc_storeBundle($row, $value[$i], $bundleid, $delimiter, $trim);
+        $entity_fields[$bundleid][] = $ref_entity_id;
+        $i++;
+      }
+      $i = 0;
+    }
+    
+    if($key == "field") {
+      while(isset($value[$i])) {
+        $fieldid = $value[$i . '_attr']['id'];
+        $field_row_id = $value[$i]["fieldname"];
+        $entity_fields[$fieldid][] = $row[$field_row_id];
+        $i++;
+      }
+      $i = 0;
+    }  
+    
+  }
+  
+  drupal_set_message("gathered values: " . serialize($entity_fields));
+  
+  // generate entity
+  
+  // return the id
+  return -1;
+
+}
+
+function xml2array($url, $get_attributes = 1, $priority = 'tag')
+{
+    $contents = "";
+    if (!function_exists('xml_parser_create'))
+    {
+        return array ();
+    }
+    $parser = xml_parser_create('');
+    if (!($fp = @ fopen($url, 'rb')))
+    {
+        return array ();
+    }
+    while (!feof($fp))
+    {
+        $contents .= fread($fp, 8192);
+    }
+    fclose($fp);
+    xml_parser_set_option($parser, XML_OPTION_TARGET_ENCODING, "UTF-8");
+    xml_parser_set_option($parser, XML_OPTION_CASE_FOLDING, 0);
+    xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE, 1);
+    xml_parse_into_struct($parser, trim($contents), $xml_values);
+    xml_parser_free($parser);
+    if (!$xml_values)
+        return; //Hmm...
+    $xml_array = array ();
+    $parents = array ();
+    $opened_tags = array ();
+    $arr = array ();
+    $current = & $xml_array;
+    $repeated_tag_index = array ();
+    //drupal_set_message(serialize($xml_values));
+    foreach ($xml_values as $data)
+    {
+        unset ($attributes, $value);
+        extract($data);
+        $result = array ();
+        $attributes_data = array ();
+        if (isset ($value))
+        {
+            if ($priority == 'tag')
+                $result = $value;
+            else
+                $result['value'] = $value;
+        }
+        if (isset ($attributes) and $get_attributes)
+        {
+            foreach ($attributes as $attr => $val)
+            {
+                if ($priority == 'tag')
+                    $attributes_data[$attr] = $val;
+                else
+                    $result['attr'][$attr] = $val; //Set all the attributes in a array called 'attr'
+            }
+        }
+        if ($type == "open")
+        {
+            $parent[$level -1] = & $current;
+            
+            if (!is_array($current) or (!in_array($tag, array_keys($current))))
+            {
+/*
+                $current[$tag] = $result;
+                if ($attributes_data)
+                    $current[$tag . '_attr'] = $attributes_data;
+                $repeated_tag_index[$tag . '_' . $level] = 1;
+                $current = & $current[$tag];
+*/
+//              drupal_set_message(serialize($current));
+//              drupal_set_message(serialize($tag));
+              
+              $current[$tag][0] = $result;
+              $repeated_tag_index[$tag . '_' . $level] = 1;
+              if ($attributes_data)
+                $current[$tag]['0_attr'] = $attributes_data;
+              $last_item_index = $repeated_tag_index[$tag . '_' . $level] - 1;
+              $current = & $current[$tag][$last_item_index];
+                                              
+            }
+            else
+            {
+                if (isset ($current[$tag][0]))
+                {
+                    $current[$tag][$repeated_tag_index[$tag . '_' . $level]] = $result;
+                    $current[$tag][$repeated_tag_index[$tag . '_' . $level] . '_attr'] = $attributes_data;
+                    $repeated_tag_index[$tag . '_' . $level]++;
+                }
+                else
+                {
+                    $current[$tag] = array (
+                        $current[$tag],
+                        $result
+                    );
+                    $repeated_tag_index[$tag . '_' . $level] = 2;
+                    if (isset ($current[$tag . '_attr']))
+                    {
+                        $current[$tag]['0_attr'] = $current[$tag . '_attr'];
+                        unset ($current[$tag . '_attr']);
+                    }
+                }
+                $last_item_index = $repeated_tag_index[$tag . '_' . $level] - 1;
+                $current = & $current[$tag][$last_item_index];
+            }
+        }
+        elseif ($type == "complete")
+        {
+            if (!isset ($current[$tag]))
+            {
+                $current[$tag] = $result;
+                $repeated_tag_index[$tag . '_' . $level] = 1;
+                if ($priority == 'tag' and $attributes_data)
+                    $current[$tag . '_attr'] = $attributes_data;
+            }
+            else
+            {
+                if (isset ($current[$tag][0]) and is_array($current[$tag]))
+                {
+                    $current[$tag][$repeated_tag_index[$tag . '_' . $level]] = $result;
+                    if ($priority == 'tag' and $get_attributes and $attributes_data)
+                    {
+                        $current[$tag][$repeated_tag_index[$tag . '_' . $level] . '_attr'] = $attributes_data;
+                    }
+                    $repeated_tag_index[$tag . '_' . $level]++;
+                }
+                else
+                {
+                    $current[$tag] = array (
+                        $current[$tag],
+                        $result
+                    );
+                    $repeated_tag_index[$tag . '_' . $level] = 1;
+                    if ($priority == 'tag' and $get_attributes)
+                    {
+                        if (isset ($current[$tag . '_attr']))
+                        {
+//                            drupal_set_message(serialize($current));
+//                            drupal_set_message(serialize($tag));
+                            $current[$tag]['0_attr'] = $current[$tag . '_attr'];
+                            unset ($current[$tag . '_attr']);
+                        }
+                        if ($attributes_data)
+                        {
+                            $current[$tag][$repeated_tag_index[$tag . '_' . $level] . '_attr'] = $attributes_data;
+                        }
+                    }
+                    $repeated_tag_index[$tag . '_' . $level]++; //0 and 1 index is already taken
+                }
+            }
+        }
+        elseif ($type == 'close')
+        {
+            $current = & $parent[$level -1];
+        }
+    }
+    return ($xml_array);
+}
              
 }                                                                                                                                                                                                                                                                          
