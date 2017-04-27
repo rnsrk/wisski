@@ -364,7 +364,7 @@ function wisski_odbc_storeBundle($row, $XMLrows, $bundleid, $delimiter, $trim) {
       while(isset($value[$i])) {
         $fieldid = $value[$i . '_attr']['id'];
         $field_row_id = $value[$i]["fieldname"];
-        $entity_fields[$fieldid][] = $row[$field_row_id];
+        $entity_fields[$fieldid][] = utf8_encode($row[$field_row_id]);
         $i++;
       }
       $i = 0;
@@ -375,9 +375,11 @@ function wisski_odbc_storeBundle($row, $XMLrows, $bundleid, $delimiter, $trim) {
   drupal_set_message("gathered values: " . serialize($entity_fields));
   
   // generate entity
+  $entity = entity_create('wisski_individual', $entity_fields);
   
   // return the id
-  return -1;
+  $entity->save();
+  return $entity->id();
 
 }
 
