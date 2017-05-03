@@ -218,19 +218,32 @@ class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
   
   public function printPath($namespaces){
     $out = "";
-      
-    foreach($this->getPathArray() as $step) {
     
+    $i = 0;
+     
+    foreach($this->getPathArray() as $step) {
+      $style = array();      
       $nsout = NULL;
       foreach($namespaces as $short => $long) {
         if(strpos($step, $long) !== FALSE)
           $nsout = str_replace($long, $short . ':', $step);
       }
-    
+
+      // if this has a disamb, do some styling
+      if(!empty($this->getDisamb()) && $i == ($this->getDisamb()-1)*2) {
+        $style = array('class' => 'wki-disamb-red'); 
+      }
+      
+      // do it through rendering, this should be more convenient.
+      $render_array = array('#type' => 'html_tag', '#tag' => 'span', '#attributes' => $style, '#value' => $step);
+
+      $step = \Drupal::service('renderer')->render($render_array);
+
       if(empty($nsout))
         $out .= empty($out) ? $step : ' -> ' . $step;
       else
         $out .= empty($out) ? $nsout : ' -> ' . $nsout;
+      $i++;
     }
         
     return $out;

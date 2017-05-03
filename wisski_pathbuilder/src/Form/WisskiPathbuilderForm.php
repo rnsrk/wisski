@@ -365,6 +365,12 @@ class WisskiPathbuilderForm extends EntityForm {
 #      '#default_value' => $pathbuilder->getCreateMode(),
 #      '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
     );
+
+    $form['#attached'] = array(
+      'library' => array(
+        'wisski_pathbuilder/wisski_pathbuilder',
+      ),
+    );
     
 #    dpm($form);
     return $form;
@@ -642,10 +648,17 @@ class WisskiPathbuilderForm extends EntityForm {
       $pathform['title']['#suffix'] = ' (' . $this->t('disabled') . ')';
     }
     
+    /*
     $pathform['path'] = array(
       '#type' => 'item',
       '#markup' => $path->printPath($namespaces),
      );
+     */
+     
+     $pathform['path'] = array(
+       '#markup' => $path->printPath($namespaces),
+       '#allowed_tags' => array('span'),
+      );
      
      // if it is a group, mark it as such.
      if($path->isGroup()) {
