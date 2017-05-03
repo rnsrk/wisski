@@ -573,10 +573,32 @@ class WisskiPathbuilderForm extends EntityForm {
     $children = $grouparray['children'];
     
     array_multisort($weights, $children);
+
+    $mypath = $pathform[$grouparray['id']]['#item']->getPathArray();
     
     foreach($children as $childpath) {
       $subform = $this->recursive_render_tree($childpath, $grouparray['id'], $delta, $depth +1, $namespaces);
 
+      // check if the group is correct
+      foreach($subform as $sub) {
+        if(empty($sub['#item']))
+          continue;
+        $subpath = $sub['#item']->getPathArray();
+        
+        // calculate the diff between the subpath and the group
+        $diff = array_diff($subpath, $mypath);
+        
+        // and do it the primitive way.
+        $difflength = count($subpath) - count($mypath);
+        
+        // if these differ there is something fishy!
+        if(count($diff) > $difflength) {
+          drupal_set_message("Path " . $sub['#item']->getName() . " conflicts with definition of group " . $pathform[$grouparray['id']]['#item']->getName() . ". Please check.", "error");
+          $pathform[$grouparray['id']]['#attributes'] = array('style' => array('background-color: red'));
+        }
+        
+        
+      }
       $pathform = array_merge($pathform, $subform);
     }
         
