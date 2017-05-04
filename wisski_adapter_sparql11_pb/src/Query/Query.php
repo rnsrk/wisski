@@ -34,7 +34,8 @@ class Query extends WisskiQueryBase {
     // NOTE: this is not thread-safe... shouldn't bother!
     $this->varCounter = 0;
 
-#dpm($this->condition,__METHOD__);
+wpm($this->condition,$this->getEngine()->adapterId().': '.__METHOD__);
+wisski_tick();
     // compile the condition clauses into
     // sparql graph patterns and
     // a list of entity ids that the pattern should be restricted to
@@ -76,6 +77,7 @@ class Query extends WisskiQueryBase {
 #dpm([$limit, $offset], 'pager');
 
     #\Drupal::logger('query adapter ' . $this->getEngine()->adapterId())->debug('query result is {result}', array('result' => serialize($return)));
+wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($return)));
     return $return;
 
   }
@@ -201,6 +203,7 @@ class Query extends WisskiQueryBase {
       $field = $cond['field'];
       $value = $cond['value'];
       $operator = $cond['operator'];
+wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition" : "now for '$value' in field '$field'");
 #\Drupal::logger('query path cond')->debug("$ij::$field::$value::$operator::$conjunction");     
 
       // we dispatch over the field
@@ -380,14 +383,18 @@ class Query extends WisskiQueryBase {
     if ($limit) {
       $select .= " LIMIT $limit OFFSET $offset";
     }
-    
-#    dpm($select, "select");
 
+$timethis[] = microtime(TRUE);
     $result = $engine = $this->getEngine()->directQuery($select);
+$timethis[] = microtime(TRUE);
+
 #    drupal_set_message(serialize($select));
     $adapter_id = $this->getEngine()->adapterId();
-    if (WISSKI_DEVEL) \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded {result}', array('query' => $select, 'result' => $result));
-    if ($result->numRows() == 0) {
+    if (WISSKI_DEVEL) \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded result count {cnt}: {result}', array('query' => $select, 'result' => $result, 'cnt' => $result->count()));
+    if ($result === NULL) {
+      throw new \Exception("query failed (null): $select");
+    }
+    elseif ($result->numRows() == 0) {
       $return = $count ? 0 : array();
     }
     elseif ($count) {
@@ -400,7 +407,9 @@ class Query extends WisskiQueryBase {
         if (!empty($row) && !empty($row->x0)) {
           $uri = $row->x0->getUri();
           if (!empty($uri)) {
+$timethat = microtime(TRUE);
             $entity_id = AdapterHelper::getDrupalIdForUri($uri, TRUE, $adapter_id);
+$timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - microtime(TRUE));
             if (!empty($entity_id)) {
               $return[$entity_id] = $uri;
             }
@@ -408,6 +417,7 @@ class Query extends WisskiQueryBase {
         }
       }
     }
+wpm(array($select, $result->count(), $timethis, microtime()), $this->getEngine()->adapterId() . ": select");
 #    drupal_set_message(serialize($return));
     return $return;
 

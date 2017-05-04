@@ -34,6 +34,8 @@ class AdapterHelper {
    */
   public static function setSameUris($uris,$entity_id=NULL) {
 
+\Drupal::logger("AH:ssu")->debug("$entity_id and {uris}: {bt}", ["uris" => join(" ",$uris),"bt"=>join('//', array_map(function ($a) { return $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5)))]);
+
     if (empty($uris)) return TRUE;
     //dpm($uris,__FUNCTION__.' '.$entity_id);
     $drupal_aid = self::getDrupalAdapterNameAlias();
@@ -188,7 +190,6 @@ class AdapterHelper {
     //if we have exactly one result for the eid return it
     if (count($ids) === 1) {
       //dpm(key($ids),'from DB');
-      //drupal_set_message(key($ids));
       return key($ids);
     }
     
@@ -196,7 +197,11 @@ class AdapterHelper {
     //@TODO try something more sophisticated
     if (count($ids) > 1) {
       //dpm($ids,'from DB, multiple');
-      drupal_set_message('there are multiple eids for this uri','error');
+      drupal_set_message("There are multiple entity IDs for a URI. See log reports for details.");
+      \Drupal::logger('WissKI Salz')->warning(
+        'There are multiple entity IDs for URI {uri}: {ids}. Please resolve. The first one is taken.',
+        ['uri' => $uri, 'ids' => join(', ', $ids)]
+      );
       return key($ids);
     }
     
@@ -241,6 +246,7 @@ class AdapterHelper {
       ->fields(array('eid'=>$id))
       ->condition('rid',$id)
       ->execute();
+\Drupal::logger("AH:difu")->debug("$id and $uri and $input_adapter_id: {bt}", ["bt"=>join('//', array_map(function ($a) { return $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 8)))]);
     
     //don't forget to inform the services about the new id
     if (self::setSameUris(array($input_adapter_id=>$uri),$id)) {
@@ -259,6 +265,10 @@ class AdapterHelper {
       //we probably got a URI as input, check that and return the input if it's valid
       //otherwise we cant do anything
       //use this block in other functions, too, if there is the probability of getting wrong inputs
+      if (WISSKI_DEVEL) {
+        drupal_set_message(__METHOD__ . ": Expected entity id, got URI: $eid", 'warning');
+        \Drupal::logger('wisski salz')->warning(__METHOD__ . ": Expected entity id, got URI: $eid: {bt}", ["bt"=>join('//', array_map(function ($a) { return (isset($a['class']) ? $a['class'] . '::' : '') . $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 8)))]);
+      }
       if (isset($adapter_id)) {
         $adapter = Adapter::load($adapter_id);      
         if ($adapter && $adapter->getEngine()->isValidUri($eid)) return $eid;
@@ -291,10 +301,16 @@ class AdapterHelper {
     //if we get an answer from DB return it
     if (isset($adapter_id)) {
       //with adapter given, we only want the URI field returned
-      $return = $out->fetchField(1);
+      # $return = $out->fetchField(1);
       //var_dump($return);
       //dpm($return ? $return : 'FALSE','Single adapter');
-      if ($return !== FALSE) return $return;
+      # if ($return !== FALSE) return $return;
+      $return = $out->fetchCol(1);
+      if (count($return) > 1) {
+        drupal_set_message("There seems to be associated with one entity id with multiple instances. See logs", 'warning');
+        \Drupal::logger('wisski salz')->warning("There seems to be associated entity id {id} with multiple instances: {uris}", array('id' => $eid, 'uris' => $return));
+      }
+      if (!empty($return)) return $return[0];
     } else {
       //with unspecified adapter, we want an associative array keyed by adapter with URIs as values
       $return = $out->fetchAllKeyed();
@@ -353,7 +369,10 @@ class AdapterHelper {
     return FALSE;
   }
 
-
+  
+  /** @depricated
+   * This function is not functional. Do not use!
+   */
   public static function getFreshDrupalId() {
     
     $res = db_select('wisski_salz_id2uri','u')

@@ -54,7 +54,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         //dpm($adapter_id.' counted '.$sub_result);
         if (is_numeric($sub_result))
           $result += $sub_result;
-        else dpm($sub_result,'Wrong result type from '.$adapter_id);
+        else drupal_set_message("Wrong result type from adapter $adapter_id: numeric expected, given " . gettype($subresult), 'error');
       }
       //dpm('we counted '.$result);
       if (!empty(self::$empties)) $result -= count(self::$empties);

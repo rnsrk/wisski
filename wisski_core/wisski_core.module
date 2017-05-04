@@ -82,6 +82,7 @@ function wisski_core_flush_title_caches($bundle_ids=NULL,$entity_ids=NULL) {
 }
 
 function wisski_trace($dpm=TRUE) {
+  if (!WISSKI_DEVEL) return;
 
   $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS,3);
   if ($dpm && function_exists('dpm')) {
@@ -92,6 +93,7 @@ function wisski_trace($dpm=TRUE) {
 }
 
 function wisski_tick($name='') {
+  if (!WISSKI_DEVEL) return;
   
   static $wisski_timestamp;
   $now = microtime(TRUE)*1000;
@@ -107,6 +109,32 @@ function wisski_tick($name='') {
     }
     $wisski_timestamp = $now;
     return $diff;
+  }
+}
+
+
+function wpm() {
+  if (WISSKI_DEVEL && function_exists('dpm')) {
+    call_user_func_array('dpm', func_get_args());
+  }
+}
+
+
+function wsmlog($msg, $name = NULL, $status = 'status') {
+  if (WISSKI_DEVEL) {
+    dpm($msg, $name, $status);
+    if ($status == 'error') {
+      $level = \Psr\Log\LogLevel::ERROR;
+    } elseif ($status == 'warning') {
+      $level = \Psr\Log\LogLevel::WARNING;
+    } else {
+      $level = \Psr\Log\LogLevel::DEBUG;
+    }
+    
+    if ($name == NULL) {
+      $name = 'WissKI Debug Log';
+    }
+    \Drupal::logger($name)->log($level, $msg, array());
   }
 }
 

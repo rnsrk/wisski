@@ -575,32 +575,69 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
   
   /**
-   *
+   * @see getBundleIdsForUri()
    *
    *
    */
   public function getBundleIdsForEntityId($entityid) {
+    
+    if (is_numeric($entityid)) {
+      $uri = $this->getUriForDrupalId($entityid);    
+    } else {
+      $uri = $entityid;
+    }
+    $url = parse_url($uri);
+
+    if(!empty($url["scheme"]))
+      return $this->getBundleIdsForUri($uri);
+    else {
+      //it is possible, that we got an entity URI instead of an entity ID here, so try that one first
+      $url = parse_url($entityid);
+      if (!empty($url['scheme'])) {
+        $uri = $entityid;
+        return $this->getBundleIdsForUri($uri);
+      }
+    }
+    
+    wsmlog(__METHOD__ . ": could not find URI for entityid '$entityid'", 'warning');
+    return array();
+
+  }
+        
+  /** Get the IDs of all bundles that can be used for the given instance.
+   *
+   * It returns only bundles defined via pathbuilders that are associated with
+   * this engine/adapter.
+   * The URI must be without prefix but with namespace. Prefixed or abbreviated
+   * URIs will not be handled correctly! If you have an entity id or a
+   * non-standardized URI you may want to use getBundleIdsForEntityId().
+   *
+   * @param uri a URI of the instance
+   * @return an array of bundle ids
+   *
+   */
+  public function getBundleIdsForUri($uri) {
         
     $pbs = $this->getPbsForThis();
 #    dpm($pb,$this->adapterId().' Pathbuilder');
 #    dpm($entityid, "eid");
-
-    $uri = $this->getUriForDrupalId($entityid);    
     
     #$uri = str_replace('\\', '/', $entityid);
 
 #    drupal_set_message("parse url $uri: " . serialize(parse_url($uri)));
+    
+    $query = "SELECT ?class WHERE { GRAPH ?g { <" . $uri . "> a ?class } }";
 
-    $url = parse_url($uri);
-
-    if(!empty($url["scheme"]))
-      $query = "SELECT ?class WHERE { GRAPH ?g { <" . $uri . "> a ?class } }";
-    else {
-      //it is possible, that we got an entity URI instead of an entity ID here, so try that one first
-      $url = parse_url($entityid);
-      if (!empty($url['scheme'])) $entityid = '<'.$entityid.'>';
-      $query = "SELECT ?class WHERE { GRAPH ?g { " . $entityid . " a ?class } }";
-    }
+//    $url = parse_url($uri);
+//
+//    if(!empty($url["scheme"]))
+//      $query = "SELECT ?class WHERE { GRAPH ?g { <" . $uri . "> a ?class } }";
+//    else {
+//      //it is possible, that we got an entity URI instead of an entity ID here, so try that one first
+//      $url = parse_url($entityid);
+//      if (!empty($url['scheme'])) $entityid = '<'.$entityid.'>';
+//      $query = "SELECT ?class WHERE { GRAPH ?g { " . $entityid . " a ?class } }";
+//    }
     
     $result = $this->directQuery($query);
     

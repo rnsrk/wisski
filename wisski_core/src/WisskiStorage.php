@@ -68,14 +68,13 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * @return array keyed by entity id containing entity field info
    */
   protected function getEntityInfo(array $ids,$cached = FALSE) {
-$rand = rand();
 #    drupal_set_message(serialize($this));
 
     // get the main entity id
     // if this is NULL then we have a main-form
     // if it is not NULL we have a sub-form    
     $mainentityid = key($this->entities);
-    
+
 #    drupal_set_message("key is: " . serialize($mainentityid));
 
     $entity_info = &$this->entity_info;
@@ -122,7 +121,7 @@ $rand = rand();
           // if so - ask for the bundles for that id
           // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
           $bundle_ids = $adapter->getBundleIdsForEntityId($id);
-#          drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
+          drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
           if (isset($cached_bundle)) {
             if (in_array($cached_bundle,$bundle_ids)) {
               $bundle_ids = array($cached_bundle);
@@ -133,6 +132,7 @@ $rand = rand();
           }
 
           $bundle_ids = array_slice($bundle_ids,0,1);
+          drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
           foreach($bundle_ids as $bundleid) {
             // be more robust.
             if(empty($bundleid)) {
@@ -142,6 +142,7 @@ $rand = rand();
               
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
 
+wpm($field_definitions, 'gei-fd');
 #            $view_ids = \Drupal::entityQuery('entity_view_display')
 #              ->condition('id', 'wisski_individual.' . $bundleid . '.', 'STARTS_WITH')
 #              ->execute();
@@ -159,7 +160,7 @@ $rand = rand();
                   //this is a base field and cannot have multiple values
                   //@TODO make sure, we load the RIGHT value
                   $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
-
+wpm($new_field_values, "gei-nfv");
                   if (empty($new_field_values)) continue;
                 
                   $new_field_values = $new_field_values[$id][$field_name];
@@ -398,6 +399,8 @@ $rand = rand();
     }*/
     $entity_info = WisskiHelper::array_merge_nonempty($entity_info,$info);
 #    dpm(func_get_args()+array('info'=>$info,'result'=>$entity_info),__METHOD__);
+
+wpm($entity_info, 'gei');
     return $entity_info;
   }
 

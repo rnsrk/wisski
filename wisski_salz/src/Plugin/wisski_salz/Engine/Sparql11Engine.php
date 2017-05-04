@@ -269,6 +269,7 @@ abstract class Sparql11Engine extends EngineBase {
       return $result;
     } catch (\Exception $e) {
       drupal_set_message('Something went wrong in \''.__FUNCTION__.'\' for adapter "'.$this->adapterId().'"','error');
+      \Drupal::logger('QUERY '.$this->adapterId())->error('query "{query}" caused error: {exception}',array('query' => $query, 'exception'=>$exception));
     }
 	}
 	

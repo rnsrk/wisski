@@ -356,7 +356,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       if (preg_match('/^.*[\#\/](.+)$/',$uri,$matches)) {
         return $matches[1];
       } else {
-        dpm($uri,'no match');
+        drupal_set_message("no match for URI $uri", 'error');
       }
     }
     return '';

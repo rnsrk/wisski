@@ -18,5 +18,7 @@ jQuery(document).bind('cbox_complete', function() {
     winResize: true,
     protocol: 'iip',
   });
+
+  jQuery.colorbox.resize({width: 1000, height: 600});
   
 });

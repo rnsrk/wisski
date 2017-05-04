@@ -95,7 +95,19 @@ class WisskiConfigForm extends FormBase {
       '#title' => $this->t('Maximum number of columns in navigate view'),
     );
     
-    $subform['preview_image'] = array('#tree'=>TRUE);
+    $subform['preview_image'] = array(
+      '#type' => 'fieldset',
+      '#title' => $this->t('Preview Image'),
+      '#tree'=>TRUE,
+    );
+    $subform['preview_image']['adapters'] = array(
+      '#type' => 'select',
+      '#title' => $this->t('Adapters'),
+      '#options' => array_map(function($a) { return $a->label(); }, entity_load_multiple('wisski_salz_adapter')),
+      '#default_value' => $settings->get('preview_image_adapters'),
+      '#multiple' => TRUE,
+      '#description' => $this->t('The adapters that a preview image is search in.'), 
+    );
     $subform['preview_image']['max_width'] = array(
       '#type' => 'number',
       '#default_value' => $settings->get('wisski_preview_image_max_width_pixel'),
@@ -128,6 +140,7 @@ class WisskiConfigForm extends FormBase {
     $settings->set('wisski_default_columns_per_page',$new_vals['pager_columns']);
     $settings->set('wisski_preview_image_max_width_pixel',$new_vals['preview_image']['max_width']);
     $settings->set('wisski_preview_image_max_height_pixel',$new_vals['preview_image']['max_height']);
+    $settings->set('preview_image_adapters',$new_vals['preview_image']['adapters']);
     $settings->save();
     drupal_set_message($this->t('Changed global WissKI display settings'));
     $form_state->setRedirect('system.admin_config');

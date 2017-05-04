@@ -68,7 +68,7 @@ class Sparql11TriplesTabController extends ControllerBase {
 #var_dump($result);
           if (isset($result->sp)) {
             
-            $existing_bundles = $e->getBundleIdsForEntityId($result->s->getUri());
+            $existing_bundles = $e->getBundleIdsForUri($result->s->getUri());
 
             if(empty($existing_bundles))
               $subjecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->s->getUri() ) );
@@ -99,7 +99,7 @@ class Sparql11TriplesTabController extends ControllerBase {
             if($result->o instanceof \EasyRdf_Resource) {
               try {
               
-                $existing_bundles = $e->getBundleIdsForEntityId($result->o->getUri());
+                $existing_bundles = $e->getBundleIdsForUri($result->o->getUri());
                 
                 if(empty($existing_bundles))
                   $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->o->getUri() ) );

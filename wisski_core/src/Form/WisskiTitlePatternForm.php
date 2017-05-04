@@ -397,10 +397,11 @@ class WisskiTitlePatternForm extends EntityForm {
     $max_id = 0;
 
     $errors = array();
-    if (isset($title_pattern['max_id'])) unset($title_pattern['max_id']);
+    if (isset($pattern['max_id'])) unset($pattern['max_id']);
 
     $children = array();
     
+wpm($pattern, "patt");    
     foreach ($pattern as $row_id => &$attributes) {
       if (!isset($attributes['type'])) 
         $errors[] = array($row_id,'not set','type');
