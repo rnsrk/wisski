@@ -296,7 +296,7 @@ function wisski_odbc_storeTable($table, &$alreadySeen) {
   
   $rows = array();
   
-  drupal_set_message("table: " . serialize($table));
+#  drupal_set_message("table: " . serialize($table));
   
   while($row = mysql_fetch_array($qry)) {
     foreach($table['row'] as $XMLrow) {
@@ -314,11 +314,11 @@ function wisski_odbc_storeRow($row, $XMLrows, $alreadySeen, $delimiter, $trim) {
   $i = 0;
   $tree = array();
   
-  drupal_set_message("rows: " . serialize($XMLrows));
+#  drupal_set_message("rows: " . serialize($XMLrows));
 
   foreach($XMLrows as $key => $value) { 
     $i = 0;
-    drupal_set_message("my key: " . serialize($key));
+#    drupal_set_message("my key: " . serialize($key));
     if($key == "bundle") {
       while(isset($value[$i])) {
         $bundleid = $value[$i . '_attr']['id'];
@@ -341,12 +341,12 @@ function wisski_odbc_storeBundle($row, $XMLrows, $bundleid, $delimiter, $trim) {
   
   $entity_fields["bundle"] = $bundleid;
   
-  drupal_set_message("bundle: " . serialize($XMLrows));
+#  drupal_set_message("bundle: " . serialize($XMLrows));
   
   foreach($XMLrows as $key => $value) {
     $i = 0;
     
-    drupal_set_message($key . " " . serialize($value));
+#    drupal_set_message($key . " " . serialize($value));
         
     if($key == "bundle") {
 //        dpm($row);
@@ -364,7 +364,7 @@ function wisski_odbc_storeBundle($row, $XMLrows, $bundleid, $delimiter, $trim) {
       while(isset($value[$i])) {
         $fieldid = $value[$i . '_attr']['id'];
         $field_row_id = $value[$i]["fieldname"];
-        $entity_fields[$fieldid][] = utf8_encode($row[$field_row_id]);
+        $entity_fields[$fieldid][] = ($row[$field_row_id]);
         $i++;
       }
       $i = 0;
@@ -372,7 +372,7 @@ function wisski_odbc_storeBundle($row, $XMLrows, $bundleid, $delimiter, $trim) {
     
   }
   
-  drupal_set_message("gathered values: " . serialize($entity_fields));
+#  drupal_set_message("gathered values: " . serialize($entity_fields));
   
   // generate entity
   $entity = entity_create('wisski_individual', $entity_fields);
