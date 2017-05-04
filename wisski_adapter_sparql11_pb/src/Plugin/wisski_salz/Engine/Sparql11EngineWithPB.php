@@ -511,6 +511,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }  
     }
     $query .= "} }";
+
+#    drupal_set_message(serialize($query));
     $result = $this->directQuery($query);
     
     if (count($result) == 0) return array();
