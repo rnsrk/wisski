@@ -237,7 +237,7 @@ class WisskiODBCImportForm extends FormBase {
     $i =0;
     while(isset($arr['server'][0]['table'][$i])) {
 
-      $connection = mysql_connect($dbserver . ':' . $dbport, $dbuser, $dbpass);
+      $connection = mysqli_connect($dbserver . ':' . $dbport, $dbuser, $dbpass);
   
       if(!$connection) {
         drupal_set_message("Connection could not be established!",'error');
@@ -246,19 +246,21 @@ class WisskiODBCImportForm extends FormBase {
         drupal_set_message("Connection established!");
       }
   
-      if(!mysql_select_db($db, $connection)) {
+      if(!mysqli_select_db($connection, $db)) {
         drupal_set_message("Database '$db' could not be found!", 'error');
         return;
       } else {
         drupal_set_message("DB '$db' selected!");
       }
   
+    mysqli_set_charset($connection,"utf8");
+     
     // delete all attachments
     unset($_FILES);  
 
-    $this->wisski_odbc_storeTable($arr['server'][0]['table'][$i], $alreadySeen);
+    $this->wisski_odbc_storeTable($arr['server'][0]['table'][$i], $alreadySeen, $connection);
     $i++;
-    mysql_close();
+    mysqli_close($connection);
   }
   drupal_set_message("done.");
 
@@ -266,7 +268,7 @@ class WisskiODBCImportForm extends FormBase {
   return;
 }
 
-function wisski_odbc_storeTable($table, &$alreadySeen) {
+function wisski_odbc_storeTable($table, &$alreadySeen, &$connection) {
 
   $rowiter = 0;
   $tablename = $table['name'];
@@ -284,21 +286,28 @@ function wisski_odbc_storeTable($table, &$alreadySeen) {
       $append = "";
       
   $sql = "SELECT $select FROM `$tablename` $append";
-//    drupal_set_message(htmlentities($sql));  
-  $qry = mysql_query($sql);
+#  drupal_set_message(serialize(mysqli_query($connection,"SELECT * FROM `fuehrerbau1` WHERE 1")));
+#    drupal_set_message(htmlentities($sql));  
+  $qry = mysqli_query($connection, $sql);
   
+#  $qry = mysqli_query($connection,"SELECT * FROM `fuehrerbau1` WHERE 1");
+  
+#  drupal_set_message(serialize($qry));
+
   if(!$qry) {
     drupal_set_message("Anfrage '$sql' gescheitert!",'error');
+#    drupal_set_message($mysqli->character_set_name(), 'error');
+    drupal_set_message(mysqli_error($connection), 'error');
     return;
   }
   
-  $numrows = mysql_num_rows($qry);
+  $numrows = mysqli_num_rows($qry);
   
   $rows = array();
   
 #  drupal_set_message("table: " . serialize($table));
   
-  while($row = mysql_fetch_array($qry)) {
+  while($row = mysqli_fetch_array($qry)) {
     foreach($table['row'] as $XMLrow) {
 
       $this->wisski_odbc_storeRow($row, $XMLrow, $alreadySeen, $delimiter, $trim);
@@ -314,7 +323,7 @@ function wisski_odbc_storeRow($row, $XMLrows, $alreadySeen, $delimiter, $trim) {
   $i = 0;
   $tree = array();
   
-#  drupal_set_message("rows: " . serialize($XMLrows));
+  drupal_set_message("rows: " . serialize($XMLrows));
 
   foreach($XMLrows as $key => $value) { 
     $i = 0;
