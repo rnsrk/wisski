@@ -152,6 +152,16 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         '#prefix' => '<div id="wisski-bundle-field">',
         '#suffix' => '</div>',
       );
+      
+      $unlimited = FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+      //dpm($pbpath);  
+      $form['cardinality'] = array(
+        '#type' => 'select',
+        '#title' => $this->t('Cardinality'),
+        '#default_value' => (empty($pbpath['cardinality']) ? $unlimited : $pbpath['cardinality']),
+        '#options' => self::cardinalityOptions(),
+      );
+#      if (isset($selected_field_values['cardinality'])) $display['cardinality']['#value'] = $selected_field_values['cardinality'];
     }
     
     if($path->getType() == "Path") {
