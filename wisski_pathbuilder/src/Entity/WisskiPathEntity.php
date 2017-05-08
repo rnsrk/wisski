@@ -231,18 +231,22 @@ class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
 
       // if this has a disamb, do some styling
       if(!empty($this->getDisamb()) && $i == ($this->getDisamb()-1)*2) {
+#        drupal_set_message("I do something!" . serialize($this));
         $style = array('class' => 'wki-disamb-red'); 
       }
       
-      // do it through rendering, this should be more convenient.
-      $render_array = array('#type' => 'html_tag', '#tag' => 'span', '#attributes' => $style, '#value' => $step);
-
-      $step = \Drupal::service('renderer')->render($render_array);
-
-      if(empty($nsout))
+      // if we have no namespaces
+      if(empty($nsout)) {
+        // do it through rendering, this should be more convenient.
+        $render_array = array('#type' => 'html_tag', '#tag' => 'span', '#attributes' => $style, '#value' => $step);
+        $step = \Drupal::service('renderer')->render($render_array);
         $out .= empty($out) ? $step : ' -> ' . $step;
-      else
+      } else {
+        $render_array = array('#type' => 'html_tag', '#tag' => 'span', '#attributes' => $style, '#value' => $nsout);
+        $nsout = \Drupal::service('renderer')->render($render_array);
         $out .= empty($out) ? $nsout : ' -> ' . $nsout;
+      }
+      
       $i++;
     }
         
