@@ -319,6 +319,8 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     //$fieldid = $this->generateIdForField($pathid);
     
     $type = $this->getCreateMode(); //'field_collection'
+ 
+    $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : \Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
     
     // this was called field?
     $field_storage_values = [
@@ -326,6 +328,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       'entity_type' =>  'wisski_individual',
       'type' => ($type == 'wisski_bundle') ? 'entity_reference' : 'field_collection',//has to fit the field component type, see below
       'translatable' => TRUE,
+      'cardinality' => $card,
     ];
     
     if($type == 'wisski_bundle')
@@ -752,17 +755,20 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
   public function addPathToPathTree($pathid, $parentid = 0, $is_group = FALSE) {
     $pathtree = $this->getPathTree();
     $pbpaths = $this->getPbPaths();
-    
+#    drupal_set_message("yay!" . $pathid . " and " . $parentid);   
     #$pathtree[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'children' => array(), 'bundle' => 0, 'field' => 0);
     #$pathtree[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'children' => array(), 'bundle' => 'e21_person', 'field' => $pathid);
 
     if(empty($parentid))      
       $pathtree[$pathid] = array('id' => $pathid, 'children' => array());   
     else {
+#      Drupal::logger("I add $pathid to $parentid.");
+#      drupal_set_message("I add $pathid to $parentid.");
       // find the location in the pathtree
       // and add it there
       $pathtree = $this->addDataToParentInTree($parentid, array('id' => $pathid, 'children' => array()), $pathtree);
-    
+#      drupal_set_message(serialize($pathtree));
+#      Drupal::logger(serialize($pathtree));
     }
     
     // if it is a group - we usually want to do entity reference if we are in wisski_bundle-mode
