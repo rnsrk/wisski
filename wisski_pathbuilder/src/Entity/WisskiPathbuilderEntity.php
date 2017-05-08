@@ -319,9 +319,10 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     //$fieldid = $this->generateIdForField($pathid);
     
     $type = $this->getCreateMode(); //'field_collection'
- 
+
+    $pbpaths = $this->getPbPaths(); 
     $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : \Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
-    
+
     // this was called field?
     $field_storage_values = [
       'field_name' => $fieldid,#$values['field_name'],
