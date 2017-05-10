@@ -185,8 +185,11 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
   protected $original_values;
   
   public function saveOriginalValues($storage) {
-  
-    $this->original_values = $this->extractFieldData($storage);
+#    drupal_set_message("save ori" . microtime());
+#    drupal_set_message("ori was: " . serialize($this->original_values));
+    // if there were already original values - do nothing.
+    if(empty($this->original_values))
+      $this->original_values = $this->extractFieldData($storage);
   }
 
   public function getOriginalValues() {
@@ -195,13 +198,13 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
   }
   
   public function getValues($storage,$save_field_properties=FALSE) {
-    
+#    drupal_set_message("get values");
     return array($this->extractFieldData($storage,$save_field_properties),$this->original_values);
   }
   
   protected function extractFieldData($storage,$save_field_properties=FALSE) {
 #    dpm("calling extractfieldData with sfp: " . serialize($save_field_properties));
-#    dpm(func_get_args(), "extractFieldData");
+#    dpm(func_get_args(), "extractFieldData in the beginning");
 #    dpm($this, "this");
 #    return array();
     $out = array();
@@ -240,6 +243,8 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
         //gathers the ARRAY of field properties for each field list item
         //e.g. $out[$field_name][] = array(value => 'Hans Wurst', 'format' => 'basic_html');
         $out[$field_name][$weight] = $field_values;
+#        drupal_set_message("saved: " . serialize($field_values));
+
         if ($save_field_properties && !empty($this->id())) {
 
           $fields_to_save = array(
@@ -263,7 +268,7 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
       if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) || empty($out[$field_name][0][$main_property])) unset($out[$field_name]);
 #      if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) ) unset($out[$field_name]);
     }
-#    dpm($out,__METHOD__);
+#    dpm($out,__METHOD__ . ' at the end ');
     return $out;
   }
 
