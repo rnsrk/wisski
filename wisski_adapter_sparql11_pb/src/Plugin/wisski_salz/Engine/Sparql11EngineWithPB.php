@@ -1531,6 +1531,11 @@ $oldtmp = $tmp;
       return;
     }
     
+    // so what? delete nothing?!
+    if(empty($value)) {
+      return;
+    }
+    
     // get path/field-related config
     // and do some checks to ensure that we are acting on a
     // well configured field
@@ -1693,7 +1698,7 @@ $oldtmp = $tmp;
             break;
         }
       }
-      
+            
       if(is_null($position)) {
         drupal_set_message($this->t(
             "For path %name (%id): Could not find old value '@v' and thus could not delete it.", 
@@ -2297,6 +2302,10 @@ $oldtmp = $tmp;
         
           // main prop?
           if(!is_array($val))
+            continue;
+          
+          // empty value?
+          if(empty($val[$mainprop]))
             continue;
           
           // if not its a value...
