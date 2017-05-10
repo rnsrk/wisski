@@ -1650,7 +1650,7 @@ $oldtmp = $tmp;
       // delete normal field value
       $sparql = "SELECT DISTINCT ";
       
-      for($i=$starting_position; $i <= count($path->getPathArray()); $i+=2) {
+      for($i=($starting_position*2); $i <= count($path->getPathArray()); $i+=2) {
         $sparql .= "?x" . $i . " ";
       }
       
@@ -1669,6 +1669,7 @@ $oldtmp = $tmp;
       $sparql .= $triples;
       
       $sparql .= " }";
+#      dpm(htmlentities($sparql), "sparql");
       
       $result = $this->directQuery($sparql);
 
@@ -1716,12 +1717,15 @@ $oldtmp = $tmp;
       // for fuseki we need graph
       $delete  = "DELETE DATA { GRAPH <".$this->getDefaultDataGraphUri()."> {";
 
+#      drupal_set_message("cpa: " . serialize($clearPathArray));
+
       // the datatype-property is not directly connected to the group-part
       if(count($clearPathArray) >= 3) {
         $prop = array_values($clearPathArray)[1];
         $inverse = $this->getInverseProperty($prop);
 
         $name = "x" . ($starting_position * 2 +2);
+
         $object_uri = $the_thing->{$name}->getUri();
 
         $delete .= "  <$subject_uri> <$prop> <$object_uri> .\n";
