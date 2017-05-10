@@ -294,7 +294,20 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
         if (\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($eid,$adapter->id())) {
           //finally, having a valid path and adapter, we can ask the adapter for the path's value
-          $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, TRUE);
+#          drupal_set_message("bundle: " . serialize($this));
+#          drupal_set_message('path: ' . serialize($path));
+#          drupal_set_message('pbpaths: ' . serialize($pb->getPbPath($path_id)));
+          $pbpath = $pb->getPbPath($path_id);
+          $bundle_of_path = $pbpath['bundle'];
+
+#          drupal_set_message("id: " . serialize($this->id()));
+          // if the bundle and this object are not the same, the eid is the one of the
+          // main bundle and the paths have to be absolute. In this case
+          // we have to call it with false. 
+          if($bundle_of_path != $this->id())
+            $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, FALSE); 
+          else // if not they are relative.
+            $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, TRUE);
           if (WISSKI_DEVEL) \Drupal::logger($pb_id.' '.$path_id.' '.__FUNCTION__)->debug('Entity '.$eid."{out}",array('out'=>serialize($new_values)));
         }  
         if (empty($new_values)) {
