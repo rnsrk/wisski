@@ -1168,6 +1168,11 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       return $path_array;
     
     $parentpath = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["parent"]);
+
+    // this path has no parent path?
+    if(empty($parentpath)) {
+      return NULL;
+    }
     
     $parent_path_array = $parentpath->getPathArray();
     
