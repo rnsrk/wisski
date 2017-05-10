@@ -441,24 +441,6 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       $mode = 'wisski_individual';
     }
     
-    // if the field is already there...
-    if(empty($field_name)) { # || I Just don't get why dorian does this here... field_name is nothing that we can find in there... 
-       #!empty(\Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $field_name)))) {
-      drupal_set_message(t('Field %bundle with id %id was already there.',array('%bundle'=>$field_name, '%id' => $field_name)));
-#      $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->id()));
-
-      // get the pbpaths
-      $pbpaths = $this->getPbPaths();
-      // set the path and the bundle - beware: one is empty!
-      $pbpaths[$pathid]['field'] = $field_name;
-      $pbpaths[$pathid]['bundle'] = $bundle;
-      // save it
-      $this->setPbPaths($pbpaths);
-      // do this accumulated in one session.      
-      # $this->save();
-      return;
-    }      
-    
     // get the pbpaths
     $pbpaths = $this->getPbPaths();
 
