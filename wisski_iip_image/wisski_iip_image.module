@@ -32,3 +32,15 @@ function wisski_iip_image_preprocess_colorbox_formatter(&$variables) {
   $variables['attributes']['iip'] = $nuri;
   
 }
+
+function wisski_iip_image_field_widget_form_alter(&$element, \Drupal\Core\Form\FormStateInterface $form_state, $context) {
+
+  if(isset($element['#value_callback']) && in_array('Drupal\image\Plugin\Field\FieldWidget\ImageWidget', $element['#value_callback'])) {
+
+    $image_factory = \Drupal::service('image.factory');
+    $supported_extensions = $image_factory->getSupportedExtensions();
+
+    $element['#upload_validators']['file_validate_extensions'][0] = implode(' ', $supported_extensions);    
+  }
+
+}
