@@ -8,7 +8,7 @@
   // Override the "select" option of the jQueryUI autocomplete
   // to make sure we do not use quotes for inputs with comma.
   Drupal.autocomplete.options.select = function (event, ui) {
-    alert("hsdsadas");
+
     var terms = Drupal.autocomplete.splitValues(event.target.value);
     // Remove the current input.
     terms.pop();
