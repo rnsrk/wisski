@@ -18,23 +18,27 @@ function wisski_core_cache_flush() {
 
 function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $override_bundle_id = NULL) {
 
+#  drupal_set_message(" ind: " . serialize($wisski_individual)); 
+
 #  drupal_set_message(serialize(debug_backtrace()));
   $create_form_title = FALSE;
 
   if ($wisski_individual instanceof WisskiEntityInterface) {
+#    drupal_set_message("1");
     if ($wisski_individual->isNew()) $create_form_title = TRUE;
     $entity_id = $wisski_individual->id();
     $bundle_id = $wisski_individual->bundle();
     if(!empty($entity_id))
       WisskiCacheHelper::putCallingBundle($entity_id, $bundle_id);
   } else {
+#		drupal_set_message("2");
     $entity_id = $wisski_individual;
     $bundle_id = WisskiCacheHelper::getCallingBundle($wisski_individual);
   }
   if ($override_bundle_id !== NULL) {
     $bundle_id = $override_bundle_id;
   }
-
+#  drupal_set_message("3 " . $bundle_id);
   if(empty($bundle_id)) {
     // this is very complicated... do it anyway...
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
@@ -56,6 +60,7 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
   $title = '';
   if (!empty($bundle_id)) {
     if ($bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)) {
+#      drupal_set_message(serialize($entity_id));
 #      drupal_set_message(serialize($bundle->generateEntityTitle($entity_id,FALSE,$force_new)));
       if ($create_form_title) $title = html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
       else $title = $bundle->generateEntityTitle($entity_id,FALSE,$force_new);
@@ -168,4 +173,18 @@ function wisski_local_store_query($query,$select=NULL) {
     }
   }
   return $out;
+}
+
+/**
+ * Hook in to alter the behaviour of autocomplete.
+ * Because it currently breaks the WissKI functionality.
+ */
+function wisski_core_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+
+  // only act on wisski individuals
+  if(strpos($form_id, "wisski_individual") !== FALSE) {
+
+    $form['#attached']['library'][] = 'wisski_core/wisski_autocomplete';
+  }
+
 }
