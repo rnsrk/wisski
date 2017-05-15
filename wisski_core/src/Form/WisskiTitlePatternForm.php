@@ -456,7 +456,9 @@ wpm($pattern, "patt");
     } else {
       foreach ($errors as $error_array) {
         //dpm($error_array,'Errors');
-        list($element,$error_type,$category) = $error_array;
+        $element = $error_array[0];
+        $error_type = isset($error_array[1]) ? $error_array[1] : '';
+        $category = isset($error_array[2]) ? $error_array[2] : '';
         $t_error_type = $this->tError($error_type);
         $form_state->setErrorByName('pattern]['.$element,$t_error_type.' '.$category);
       }
@@ -470,7 +472,7 @@ wpm($pattern, "patt");
       case 'not set': return $this->t('Not Set');
       case 'empty': return $this->t('Empty');
       case 'cyclic': return $this->t('Cyclic Dependency');
-      default: return $this->t('Wrong');
+      default: return $this->t('Wrong input');
     }
   }
 

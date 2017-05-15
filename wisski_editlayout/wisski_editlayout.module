@@ -1,0 +1,7 @@
+<?php
+
+function wisski_editlayout_form_wisski_individual_form_alter (&$form) {
+  
+  $form['#attached']['library'][] = 'wisski_editlayout/std';
+
+}

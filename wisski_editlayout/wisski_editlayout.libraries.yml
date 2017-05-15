@@ -1,0 +1,4 @@
+std:
+  css:
+    theme:
+      css/std/edit-form.css: {}

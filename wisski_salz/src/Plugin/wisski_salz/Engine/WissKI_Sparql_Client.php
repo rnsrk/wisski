@@ -77,6 +77,8 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
             it is programmed atm.
             we just always use POST as an interim patch until we know the exact
             problem.
+            Obsolete: we found a the trick by applying json encoding first, 
+            see below
         */
         if (strlen($encodedQuery) + strlen($this->getQueryUri()) <= 2046) {
 						$client->setMethod('GET');
@@ -84,9 +86,14 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 
 						// json_encode should help in case of get!
 						$query = substr(json_encode($query, JSON_UNESCAPED_SLASHES), 1, -1);
-
-						// however it messes up the ""
-						$query = str_replace('\"', '"', $query);
+						// however it messes up some chars (this list may not be complete!)
+            $messed_up_chars = array(
+              '\t' => "\t",
+              '\n' => "\n",
+              '\r' => "\r",
+              '\"' => '"',
+            );
+						$query = strtr($query, $messed_up_chars);
 
 						// now we have to encode it to url
 						$encodedQuery = 'query='.rawurlencode($prefixes . $query);

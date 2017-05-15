@@ -22,6 +22,8 @@ abstract class Sparql11Engine extends EngineBase {
   protected $graph_rewrite;
 
   protected $default_graph;
+
+  protected $ontology_graphs;
   
   /** Holds the EasyRDF sparql client instance that is used to
    * query the endpoint.
@@ -41,6 +43,7 @@ abstract class Sparql11Engine extends EngineBase {
       'write_url' => '',
       'graph_rewrite' => FALSE,
       'default_graph' => 'graf://dr.acula/',
+      'ontology_graphs' => array(),
     ];
   }
 
@@ -56,6 +59,7 @@ abstract class Sparql11Engine extends EngineBase {
     $this->write_url = $this->configuration['write_url'];
     $this->graph_rewrite = $this->configuration['graph_rewrite'];
     $this->default_graph = $this->configuration['default_graph'];
+    $this->ontology_graphs = $this->configuration['ontology_graphs'];
     $this->store = NULL;
   }
 
@@ -69,6 +73,7 @@ abstract class Sparql11Engine extends EngineBase {
       'write_url' => $this->write_url,
       'graph_rewrite' => $this->graph_rewrite,
       'default_graph' => $this->default_graph,
+      'ontology_graphs' => $this->ontology_graphs,
     ) + parent::getConfiguration();
   }
 
@@ -105,6 +110,12 @@ abstract class Sparql11Engine extends EngineBase {
       '#required' => TRUE,
       '#default_value' => $this->default_graph,
       '#description' => 'Graph URI that is used to store triples in by default. May also be used as a base for new entity URIs.',
+    ];
+    $form['ontology_graphs'] = [
+      '#type' => 'textarea',
+      '#title' => 'Ontology graphs',
+      '#default_value' => join("\n", $this->ontology_graphs),
+      '#description' => t('Graphs that are considered to be containing ontology information. These are used to compute class and property information like hierarchies, domain/range, etc. Leave empty let system automatically detect the graphs.'),
     ];
 
     
@@ -147,7 +158,7 @@ abstract class Sparql11Engine extends EngineBase {
     $this->write_url = $form_state->getValue('write_url');
     $this->graph_rewrite = $form_state->getValue('graph_rewrite');
     $this->default_graph = $form_state->getValue('default_graph');
-    
+    $this->ontology_graphs = preg_split('/[\s\n\r]+/u', $form_state->getValue('ontology_graphs'), PREG_SPLIT_NO_EMPTY); 
   }
   
   /**
@@ -269,7 +280,7 @@ abstract class Sparql11Engine extends EngineBase {
       return $result;
     } catch (\Exception $e) {
       drupal_set_message('Something went wrong in \''.__FUNCTION__.'\' for adapter "'.$this->adapterId().'"','error');
-      \Drupal::logger('QUERY '.$this->adapterId())->error('query "{query}" caused error: {exception}',array('query' => $query, 'exception'=>$exception));
+      \Drupal::logger('QUERY '.$this->adapterId())->error('query "{query}" caused error: {exception}',array('query' => $query, 'exception'=> (string) $e));
     }
 	}
 	
