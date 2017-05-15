@@ -72,7 +72,6 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 				// Use GET if the query is less than 2kB
 				// 2046 = 2kB minus 1 for '?' and 1 for NULL-terminated string on server
 				$encodedQuery = 'query='.rawurlencode($prefixes . $query);
-dpm([$query, $encodedQuery],'qeq');
 #				drupal_set_message(json_encode($query, JSON_UNESCAPED_SLASHES));        
         /*  we do not use GET as it leads to corrupted non-ASCII chars the way
             it is programmed atm.
