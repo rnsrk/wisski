@@ -72,6 +72,7 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 				// Use GET if the query is less than 2kB
 				// 2046 = 2kB minus 1 for '?' and 1 for NULL-terminated string on server
 				$encodedQuery = 'query='.rawurlencode($prefixes . $query);
+dpm([$query, $encodedQuery],'qeq');
 #				drupal_set_message(json_encode($query, JSON_UNESCAPED_SLASHES));        
         /*  we do not use GET as it leads to corrupted non-ASCII chars the way
             it is programmed atm.
@@ -79,13 +80,15 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
             problem.
             Obsolete: we found a the trick by applying json encoding first, 
             see below
+            Obsolete: we encode non-ASCII chars in the escapeSparqlLiteral()
+            function now. Such chars should only occur in the literals...
         */
         if (strlen($encodedQuery) + strlen($this->getQueryUri()) <= 2046) {
 						$client->setMethod('GET');
 #						drupal_set_message("war: " . $query);
 
 						// json_encode should help in case of get!
-						$query = substr(json_encode($query, JSON_UNESCAPED_SLASHES), 1, -1);
+/*						$query = substr(json_encode($query, JSON_UNESCAPED_SLASHES), 1, -1);
 						// however it messes up some chars (this list may not be complete!)
             $messed_up_chars = array(
               '\t' => "\t",
@@ -97,7 +100,7 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 
 						// now we have to encode it to url
 						$encodedQuery = 'query='.rawurlencode($prefixes . $query);
-
+*/
 						$client->setUri($this->getQueryUri().'?'. $encodedQuery);
 
 				} else {

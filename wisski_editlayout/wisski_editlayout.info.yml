@@ -1,4 +1,4 @@
-name: Layout for Editing WissKI Entities 
+name: WissKI Layout 
 description: Overrides the standard edit form layout with a more space efficient one
 core: 8.x
 package: WissKI

@@ -236,166 +236,166 @@ abstract class Sparql11Engine extends EngineBase {
   //*** SPARQL 11 specific members and methods ***//
 
 
- 	/** Return the API to connect to the sparql endpoint
-	* 
-	* This method should be called if you need an endpoint. It lazy loads the Easyrdf instance
+   /** Return the API to connect to the sparql endpoint
+  * 
+  * This method should be called if you need an endpoint. It lazy loads the Easyrdf instance
   * which may save time.
   * 
   * @return Returns a EasyRdf_Sparql_Client instance (or a subclass) that is inited to
   * connect to the givensparql 1.1 endpoint.
-	*/
-	protected function getEndpoint() {
-		
-		if ($this->endpoint === NULL) {
+  */
+  protected function getEndpoint() {
+    
+    if ($this->endpoint === NULL) {
       include_once(__DIR__ . '/WissKI_Sparql_Client.php');
-			$this->endpoint = new WissKI_Sparql_Client($this->read_url, $this->write_url);
-		}
-		return $this->endpoint;
+      $this->endpoint = new WissKI_Sparql_Client($this->read_url, $this->write_url);
+    }
+    return $this->endpoint;
 
-	}	
-	
+  }  
+  
 
   // *** PUBLIC MEMBER FUNCTIONS *** //
 
-	// 
-  // Functions for direct access, firstly designed for test purposes	
-	// 
-		
-	/** Can be used to directly access the easyrdf sparql interface
-	*
-	* If not necessary, don't use this interface. 
-	* 
-	* @return @see EasyRdf_Sparql_Client->query
-	*/
-	public function directQuery($query) {
-	  if ($this->graph_rewrite) $query = $this->graphInsertionRewrite($query);
-	  return $this->doQuery($query);
-	}
-	
-	private function doQuery($query) {
-	  if (WISSKI_DEVEL) \Drupal::logger('QUERY '.$this->adapterId())->debug('{q}',array('q'=>$query));
-	  try {
-  		$result = $this->getEndpoint()->query($query);
-	    if (WISSKI_DEVEL) \Drupal::logger('QUERY '.$this->adapterId())->debug('result {r}',array('r'=>serialize($result)));
+  // 
+  // Functions for direct access, firstly designed for test purposes  
+  // 
+    
+  /** Can be used to directly access the easyrdf sparql interface
+  *
+  * If not necessary, don't use this interface. 
+  * 
+  * @return @see EasyRdf_Sparql_Client->query
+  */
+  public function directQuery($query) {
+    if ($this->graph_rewrite) $query = $this->graphInsertionRewrite($query);
+    return $this->doQuery($query);
+  }
+  
+  private function doQuery($query) {
+    if (WISSKI_DEVEL) \Drupal::logger('QUERY '.$this->adapterId())->debug('{q}',array('q'=>$query));
+    try {
+      $result = $this->getEndpoint()->query($query);
+      if (WISSKI_DEVEL) \Drupal::logger('QUERY '.$this->adapterId())->debug('result {r}',array('r'=>serialize($result)));
       return $result;
     } catch (\Exception $e) {
       drupal_set_message('Something went wrong in \''.__FUNCTION__.'\' for adapter "'.$this->adapterId().'"','error');
       \Drupal::logger('QUERY '.$this->adapterId())->error('query "{query}" caused error: {exception}',array('query' => $query, 'exception'=> (string) $e));
     }
-	}
-	
+  }
+  
   public function graphInsertionRewrite($query) {
-	  
-	  //dpm($query,'input');
-	  //first gather all variable names
-	  $vars = array();
-	  $variable_regex = '\?\w+';
-	  preg_match_all("/$variable_regex/",$query,$vars);
-	  $this->vars = array_unique($vars[0]);
-	  //dpm($this->vars,'Variables');
-	  //since we introduce new variables for the graphs we must ensure they do not reappear
-	  $count = 0;
-	  $new_query = preg_replace('/(SELECT\s+(?:DISTINCT\s+)?)\*/i','$1'.implode(' ',$this->vars),$query,1,$count);
-	  //if ($count) dpm($new_query,'variable (*) replacement');
-	  
-	  $uri_regex = '(?:\<[^\s\<\>\?]+\>|\w+\:[^\:\s\<\>\?\{\}]+|a)';	
-		$placeholder_regex = "(?:$uri_regex|$variable_regex)";
-		$triple_regex = "$placeholder_regex\s+$placeholder_regex\s+$placeholder_regex\s*(?:\.|(?=\}))";
-		
-		//if there already is a graph in the query, we must not rewrite that part
-	  $graph_detection_regex = "(GRAPH\s+\?\w+\s+((?:[^{}]+|\{(?2)\})*))";
-	  //preg_split with PREG_SPLIT_DELIM_CAPTURE flag gives us a list of query parts where the GRAPH... parts are 
-	  //divided from the rest, pitily it is not possible to keep preg_split from including the recursive subpatter (?2)
-	  //in the result array
-		$split = preg_split("/$graph_detection_regex/",$new_query,-1,PREG_SPLIT_DELIM_CAPTURE);
-		$new_query = '';
-		$part = current($split);
-		while ($part !== FALSE) {
-		  if (strpos($part,'GRAPH') === 0) {
-		    //GRAPH parts must not be rewritten
-		    $new_query .= $part;
-		    //move pointer one step forward since the recursive subpattern has been captured twice
-		    next($split);
-		  } else {
-		    //outside GRAPH-subpatterns we have to rewrite triples
-		    $new_query .= preg_replace_callback("/$triple_regex/",array($this,'graphReplacement'),$part);
+    
+    //dpm($query,'input');
+    //first gather all variable names
+    $vars = array();
+    $variable_regex = '\?\w+';
+    preg_match_all("/$variable_regex/",$query,$vars);
+    $this->vars = array_unique($vars[0]);
+    //dpm($this->vars,'Variables');
+    //since we introduce new variables for the graphs we must ensure they do not reappear
+    $count = 0;
+    $new_query = preg_replace('/(SELECT\s+(?:DISTINCT\s+)?)\*/i','$1'.implode(' ',$this->vars),$query,1,$count);
+    //if ($count) dpm($new_query,'variable (*) replacement');
+    
+    $uri_regex = '(?:\<[^\s\<\>\?]+\>|\w+\:[^\:\s\<\>\?\{\}]+|a)';  
+    $placeholder_regex = "(?:$uri_regex|$variable_regex)";
+    $triple_regex = "$placeholder_regex\s+$placeholder_regex\s+$placeholder_regex\s*(?:\.|(?=\}))";
+    
+    //if there already is a graph in the query, we must not rewrite that part
+    $graph_detection_regex = "(GRAPH\s+\?\w+\s+((?:[^{}]+|\{(?2)\})*))";
+    //preg_split with PREG_SPLIT_DELIM_CAPTURE flag gives us a list of query parts where the GRAPH... parts are 
+    //divided from the rest, pitily it is not possible to keep preg_split from including the recursive subpatter (?2)
+    //in the result array
+    $split = preg_split("/$graph_detection_regex/",$new_query,-1,PREG_SPLIT_DELIM_CAPTURE);
+    $new_query = '';
+    $part = current($split);
+    while ($part !== FALSE) {
+      if (strpos($part,'GRAPH') === 0) {
+        //GRAPH parts must not be rewritten
+        $new_query .= $part;
+        //move pointer one step forward since the recursive subpattern has been captured twice
+        next($split);
+      } else {
+        //outside GRAPH-subpatterns we have to rewrite triples
+        $new_query .= preg_replace_callback("/$triple_regex/",array($this,'graphReplacement'),$part);
       }
       $part = next($split);
     }
-		//dpm($new_query,'graph rewrite');
-		return $new_query;
-	}
-	
-	public function graphReplacement($matches) {
-	  //dpm($matches);
-	  $triple = $matches[0];
-	  static $num = 0;
-	  $graph_name = '?g'.$num;
-	  if (isset($this->vars)) {
-	    while (in_array($graph_name,$this->vars)) {
-	      $graph_name = '?g'.$num++;
+    //dpm($new_query,'graph rewrite');
+    return $new_query;
+  }
+  
+  public function graphReplacement($matches) {
+    //dpm($matches);
+    $triple = $matches[0];
+    static $num = 0;
+    $graph_name = '?g'.$num;
+    if (isset($this->vars)) {
+      while (in_array($graph_name,$this->vars)) {
+        $graph_name = '?g'.$num++;
       }
     }
     $num++;
-	  return "{{ $triple } UNION {GRAPH $graph_name { $triple }}}";
-	}
+    return "{{ $triple } UNION {GRAPH $graph_name { $triple }}}";
+  }
 
-	
-	/**
-	 * returns TRUE if this engine provides a kind of datatype that shall be used for the end of pathbuilder paths
-	 * @TODO add this to the interface
-	 */
-	public function providesDatatypeProperty() {
-	
-	  return TRUE;
-	}
+  
+  /**
+   * returns TRUE if this engine provides a kind of datatype that shall be used for the end of pathbuilder paths
+   * @TODO add this to the interface
+   */
+  public function providesDatatypeProperty() {
+  
+    return TRUE;
+  }
 
-	/** Can be used to directly access the easyrdf sparql interface
-	*
-	* If not necessary, don't use this interface
-	* 
-	* @return @see EasyRdf_Sparql_Client->update
-	*/
-	public function directUpdate($query) {
+  /** Can be used to directly access the easyrdf sparql interface
+  *
+  * If not necessary, don't use this interface
+  * 
+  * @return @see EasyRdf_Sparql_Client->update
+  */
+  public function directUpdate($query) {
     if (WISSKI_DEVEL) \Drupal::logger('UPDATE '.$this->adapterId())->debug('{u}',array('u'=>$query));
     try {
-  		return $this->getEndpoint()->update($query);
+      return $this->getEndpoint()->update($query);
     }
     catch (\Exception $e) {
       \Drupal::logger('UPDATE '.$this->adapterId())->error('{exception}', array('exception' => (string) $e));
       return NULL;
     }
-	}
+  }
 
-	public function checkUriExists($uri) {
-	  
-	  //dpm($this,__FUNCTION__);
-	  if ($this->isValidUri("<$uri>")) {
-  	  $query = "ASK {{<$uri> ?p ?o.} UNION {?s ?p <$uri>.}}";
-  	  $result = $this->directQuery($query);
-  	  return $result->isTrue();
-	  }
-	  return FALSE;
-	}
+  public function checkUriExists($uri) {
+    
+    //dpm($this,__FUNCTION__);
+    if ($this->isValidUri("<$uri>")) {
+      $query = "ASK {{<$uri> ?p ?o.} UNION {?s ?p <$uri>.}}";
+      $result = $this->directQuery($query);
+      return $result->isTrue();
+    }
+    return FALSE;
+  }
 
-	/**
-	 * this is not a true alias for {@see self::getDrupalIdForUri}
-	 * since it is the internal function that needs EXTERNAL information, i.e. from the AdapterHelper
-	 * while getDrupalIdForUri works fully internally but is only working correctly for the preferred Local Store
-	 * Additionally, this function here does a format check, too, finding out whether we already have an EID
-	 * in this case it just returns the input
-	 */
-	public function getDrupalId($uri) {
-	  
-	  if (empty($uri)) return FALSE;
-	  if (is_numeric($uri)) {
-	    //danger zone, we assume a numeric $uri to be an entity ID itself
-	    return $uri;
-	  }
-	  $id = AdapterHelper::getDrupalIdForUri($uri,TRUE,$this->adapterId());
-	  if (empty($id)) throw new \Exception('This URI '.$uri.' has no associated ID in '.$this->adapterId());
-	  return $id;
-	}
+  /**
+   * this is not a true alias for {@see self::getDrupalIdForUri}
+   * since it is the internal function that needs EXTERNAL information, i.e. from the AdapterHelper
+   * while getDrupalIdForUri works fully internally but is only working correctly for the preferred Local Store
+   * Additionally, this function here does a format check, too, finding out whether we already have an EID
+   * in this case it just returns the input
+   */
+  public function getDrupalId($uri) {
+    
+    if (empty($uri)) return FALSE;
+    if (is_numeric($uri)) {
+      //danger zone, we assume a numeric $uri to be an entity ID itself
+      return $uri;
+    }
+    $id = AdapterHelper::getDrupalIdForUri($uri,TRUE,$this->adapterId());
+    if (empty($id)) throw new \Exception('This URI '.$uri.' has no associated ID in '.$this->adapterId());
+    return $id;
+  }
 
   public function getDrupalIdForUri($uri,$adapter_id=NULL) {
     
@@ -469,8 +469,8 @@ abstract class Sparql11Engine extends EngineBase {
     $orig_prop = $this->getOriginatesProperty();
     
     if(empty($orig_prop)) {
-    	drupal_set_message("No Default Graph Uri was set in the store configuration. Please fix it!", "error");
-    	return FALSE;
+      drupal_set_message("No Default Graph Uri was set in the store configuration. Please fix it!", "error");
+      return FALSE;
     }
     
     $origin = "<$orig_prop> a owl:AnnotationProperty. ";
@@ -526,60 +526,60 @@ abstract class Sparql11Engine extends EngineBase {
     return "graf://dr.acula/";
   }
   
-	public function getPathArray($path) {		
-		
-	}
-	
+  public function getPathArray($path) {    
+    
+  }
+  
   /** Builds a sparql query from a given path and execute it.
-	*
+  *
   * !This is thought to be a convenience function!
   *
-	* For a documentation of the parameters see buildQuerySinglePath()
+  * For a documentation of the parameters see buildQuerySinglePath()
   *
   * @return Returns an EasyRDF result class depending on the query (should be
   *  EasyRdfSparqlResult though as the query verb is always SELECT)
   */
-	public function execQuerySinglePath(array $path, array $options = array()) {
-		
-		if (empty($path)) {
-			throw new InvalidArgumentException("Empty path given");
-		}
-		
-		if (is_numeric($path)) {
-			$path = $this->getPathArray($path);
-		}
+  public function execQuerySinglePath(array $path, array $options = array()) {
+    
+    if (empty($path)) {
+      throw new InvalidArgumentException("Empty path given");
+    }
+    
+    if (is_numeric($path)) {
+      $path = $this->getPathArray($path);
+    }
 
-		if (!is_array($path) || empty($path)) {
-			throw new InvalidArgumentException("Bad path given: " . serialize($path));
-		}
-		
-		// prepare query
-		$options['fields'] = FALSE;
-		
-		// build it
-		$sparql = $this->buildQuerySinglePath($path, $options);
-		
-		// exec
-		$result = $this->directQuery($sparql);
-		
-		// postprocess result?
-		
-		
-		return $result;
-			
-	}
-	
+    if (!is_array($path) || empty($path)) {
+      throw new InvalidArgumentException("Bad path given: " . serialize($path));
+    }
+    
+    // prepare query
+    $options['fields'] = FALSE;
+    
+    // build it
+    $sparql = $this->buildQuerySinglePath($path, $options);
+    
+    // exec
+    $result = $this->directQuery($sparql);
+    
+    // postprocess result?
+    
+    
+    return $result;
+      
+  }
+  
 
-	
-	/** This function returns a SPARQL 1.1 query for a given path.
+  
+  /** This function returns a SPARQL 1.1 query for a given path.
   *
   * !This is thought to be a convenience function!
    *
    * @param path is an associative array that may contain
    * the following entries:
-   * $key		| $value
+   * $key    | $value
    * ------------------------------------------------------------
-   * 'path_array' 	| array of strings representing owl:ObjectProperties 
+   * 'path_array'   | array of strings representing owl:ObjectProperties 
    *                    | and owl:Classes in alternating order
    * 'datatype_property'| string representing an owl:DatatypeProperty
    *
@@ -588,240 +588,240 @@ abstract class Sparql11Engine extends EngineBase {
    *
    * @param options is an associative array that may contain the following 
    * entries:
-   * $key 		| $value
+   * $key     | $value
    * ------------------------------------------------------------
-   * 'limit'		| int setting the SPARQL query LIMIT
-   * 'offset'		| int setting the SPARQL query OFFSET
-	 * 'vars' 		| array with the variables that should be returned.
+   * 'limit'    | int setting the SPARQL query LIMIT
+   * 'offset'    | int setting the SPARQL query OFFSET
+   * 'vars'     | array with the variables that should be returned.
    *            | the variable name must be preceeded with an '?'.
    *            | Defaults to all variables.
-   * 'var_inst_prefix'		| SPARQL variable name prefix for the datatype value
+   * 'var_inst_prefix'    | SPARQL variable name prefix for the datatype value
    *                      | the prefix must be without leading '?' or '$'
    *                      | Defaults to 'x'.
-   * 'var_offset'	| int offset for SPARQL variable names.
+   * 'var_offset'  | int offset for SPARQL variable names.
    *              | Variables will be constructed using the var_inst_prefix and
    *              | a number. Specify the offset here. Default is 0.
-   * 'var_dt'		| SPARQL variable name for the datatype value. Default: 'out'
-   * 'order'		| string containing 'ASC' or 'DESC' (or 'RAND')
-   * 'qualifier'	| SPARQL data qualifier e.g. 'STR'
-   * 'search_dt'		| a search struct. See _buildSearchFilter()
-   * 'uris'		| array of strings representing owl:Individuals on which the
-   *			| query is triggered OR
-   *			| an assoc array of such arrays where the keys are the variable name
-	 *			| that the uris shall be bound to
+   * 'var_dt'    | SPARQL variable name for the datatype value. Default: 'out'
+   * 'order'    | string containing 'ASC' or 'DESC' (or 'RAND')
+   * 'qualifier'  | SPARQL data qualifier e.g. 'STR'
+   * 'search_dt'    | a search struct. See _buildSearchFilter()
+   * 'uris'    | array of strings representing owl:Individuals on which the
+   *      | query is triggered OR
+   *      | an assoc array of such arrays where the keys are the variable name
+   *      | that the uris shall be bound to
    * 'fields' | if set to TRUE, return the query parts as array
    *
    * @return the sparql query as a string or the query parts if option fields
    *          is TRUE
    */
-	public function buildQuerySinglePath(array $path, array $options = []) {
-		
-		// variable naming
-		$varInstPrefix = isset($options['var_inst_prefix']) ? $options['var_inst_prefix'] : 'x';
-		$varOffset = isset($options['var_offset']) ? $options['var_offset'] : 0;
-		$varDt = '?' . (isset($options['var_dt']) ? $options['var_dt'] : 'out');
-				
-		// vars for the query parts
+  public function buildQuerySinglePath(array $path, array $options = []) {
+    
+    // variable naming
+    $varInstPrefix = isset($options['var_inst_prefix']) ? $options['var_inst_prefix'] : 'x';
+    $varOffset = isset($options['var_offset']) ? $options['var_offset'] : 0;
+    $varDt = '?' . (isset($options['var_dt']) ? $options['var_dt'] : 'out');
+        
+    // vars for the query parts
     $head = "SELECT DISTINCT ";
     $vars = [];
-   	$triples = '';
-		$constraints = '';
-		$order = '';
-		$limit = '';
-		
-		$pathArray = $path['path_array'];
-		if (empty($pathArray)) {
-			throw new InvalidArgumentException('Path of length zero given.');
-		}
+     $triples = '';
+    $constraints = '';
+    $order = '';
+    $limit = '';
+    
+    $pathArray = $path['path_array'];
+    if (empty($pathArray)) {
+      throw new InvalidArgumentException('Path of length zero given.');
+    }
 
-		$uris = isset($options['uris']) ? $options['uris'] : [];
+    $uris = isset($options['uris']) ? $options['uris'] : [];
 
-		$var = '';
-		
-		while (!empty($pathArray)) {
-			
-			// an individual
-		  //
-			// currently supported values:
-			// - a string containing a single uri which is the name of the
-			//  	this individual belongs to
-			// - an array with the following supported keys:
-			//   - constraints: an assoc array where the keys are properties
-			//			and the value is an array of URIs for classes or indivs
-			//      the constraints are or'ed
+    $var = '';
+    
+    while (!empty($pathArray)) {
+      
+      // an individual
+      //
+      // currently supported values:
+      // - a string containing a single uri which is the name of the
+      //    this individual belongs to
+      // - an array with the following supported keys:
+      //   - constraints: an assoc array where the keys are properties
+      //      and the value is an array of URIs for classes or indivs
+      //      the constraints are or'ed
 
-			$indiv = array_shift($pathArray);
-			$var = "?$varInstPrefix$varOffset";
-			$vars[$var] = $var;
+      $indiv = array_shift($pathArray);
+      $var = "?$varInstPrefix$varOffset";
+      $vars[$var] = $var;
 
-			if (!is_array($indiv)) {
-				$indiv = [
-					'constraints' => [
-						'a' => [$indiv],
-					],
-				];
-			}
-			
-			// constrain possible uris
-			if (isset($uris[$var])) {
-				$constraints .= "VALUES $var {<" . implode('> <', $uris[$var]) . ">} .\n";
-			}
-			
-			// further triplewise constraints
-			foreach ($indiv['constraints'] as $prop => $vals) {
-				foreach ($vals as $val) {
-					$triples .= $var . ($prop == 'a' ? ' a ' : " <$prop> ") . "<$val> .\n";
-				}
-			}
+      if (!is_array($indiv)) {
+        $indiv = [
+          'constraints' => [
+            'a' => [$indiv],
+          ],
+        ];
+      }
+      
+      // constrain possible uris
+      if (isset($uris[$var])) {
+        $constraints .= "VALUES $var {<" . implode('> <', $uris[$var]) . ">} .\n";
+      }
+      
+      // further triplewise constraints
+      foreach ($indiv['constraints'] as $prop => $vals) {
+        foreach ($vals as $val) {
+          $triples .= $var . ($prop == 'a' ? ' a ' : " <$prop> ") . "<$val> .\n";
+        }
+      }
 
-			if (!empty($pathArray)) {
-				// a property
-				//
-				// currently supported values:
-				// - a string containing the uri of the property
-				// - an array with the following supported keys:
-				//   - uris: an assoc array where the keys are uris
-				// 			and the value is either:
-				//			1: normal direction
-				//			2: inverse direction
-				//			3: both directions (symmetric property)
-				//   - expand inverses: if TRUE, expand the given uris to all inverses, too
+      if (!empty($pathArray)) {
+        // a property
+        //
+        // currently supported values:
+        // - a string containing the uri of the property
+        // - an array with the following supported keys:
+        //   - uris: an assoc array where the keys are uris
+        //       and the value is either:
+        //      1: normal direction
+        //      2: inverse direction
+        //      3: both directions (symmetric property)
+        //   - expand inverses: if TRUE, expand the given uris to all inverses, too
 
-				$prop = array_shift($pathArray);
-				
-				if (!is_array($elem)) {
-					$prop = [
-						'uris' => [$prop => 1],	// normal direction
+        $prop = array_shift($pathArray);
+        
+        if (!is_array($elem)) {
+          $prop = [
+            'uris' => [$prop => 1],  // normal direction
             'expand inverses' => TRUE,
-					];
-				}
-				
-				if (empty($prop['uris'])) {
-					throw new InvalidArgumentException('No URIs given for property.');
-				} 
+          ];
+        }
+        
+        if (empty($prop['uris'])) {
+          throw new InvalidArgumentException('No URIs given for property.');
+        } 
 
-				// compute the inverse(s) if not given
-				// TODO: magic numbers to constants
-				if (!empty($prop['expand inverses'])) {
-					foreach ($prop['uris'] as $uri => $direction) {
-						if ($direction == 3) continue; // its own inverse => do nothing
-						$inv = $this->getInverse($uri);
-						if (!empty($inv)) {
-							if (!isset($prop['uris'][$inv])) {
-								// if prop does not exist, we add it with the opposite direction
-								$prop['uris'][$this->getInverse($uri)] = $direction == 2 ? 1 : 2;
-							} else {
-								// if prop does exist, we or existing and new direction
-								// making it possibly symmetric
-								$prop['uris'][$this->getInverse($uri)] |= $direction;
-							}
-						}
-					}
-				}
-				
-				// variable for next indiv				
-				$varPlus = "?$varInstPrefix" . ($varOffset + 1);
-				$vars[$varPlus] = $varPlus;
-	
-				
-				// generate triples for inverse and normal
-				$tr = [];
-				foreach ($prop['uris'] as $uri => $direction) {
-					if ($direction & 1) {
-						$tr[] = "$var <$uri> $varPlus . ";
-					}
-					if ($direction & 2) {
-						$tr[] = "$varPlus <$uri> $var . ";
-					}
-				}
-				if (count($tr) == 1) {
-					$triples .= $tr[0];
-				} else {
-					$triples .= '{ { ' . join(' } UNION { ', $tr) . ' } }';
-				}
-				$triples .= "\n";
-				
-				// we update the last var here
-				$var = $varPlus;
+        // compute the inverse(s) if not given
+        // TODO: magic numbers to constants
+        if (!empty($prop['expand inverses'])) {
+          foreach ($prop['uris'] as $uri => $direction) {
+            if ($direction == 3) continue; // its own inverse => do nothing
+            $inv = $this->getInverse($uri);
+            if (!empty($inv)) {
+              if (!isset($prop['uris'][$inv])) {
+                // if prop does not exist, we add it with the opposite direction
+                $prop['uris'][$this->getInverse($uri)] = $direction == 2 ? 1 : 2;
+              } else {
+                // if prop does exist, we or existing and new direction
+                // making it possibly symmetric
+                $prop['uris'][$this->getInverse($uri)] |= $direction;
+              }
+            }
+          }
+        }
+        
+        // variable for next indiv        
+        $varPlus = "?$varInstPrefix" . ($varOffset + 1);
+        $vars[$varPlus] = $varPlus;
+  
+        
+        // generate triples for inverse and normal
+        $tr = [];
+        foreach ($prop['uris'] as $uri => $direction) {
+          if ($direction & 1) {
+            $tr[] = "$var <$uri> $varPlus . ";
+          }
+          if ($direction & 2) {
+            $tr[] = "$varPlus <$uri> $var . ";
+          }
+        }
+        if (count($tr) == 1) {
+          $triples .= $tr[0];
+        } else {
+          $triples .= '{ { ' . join(' } UNION { ', $tr) . ' } }';
+        }
+        $triples .= "\n";
+        
+        // we update the last var here
+        $var = $varPlus;
 
-			}
-			
-			// we always increment the counter, even if a step defines its own name
-			// this helps for more opacity
-			$varOffset++;	
+      }
+      
+      // we always increment the counter, even if a step defines its own name
+      // this helps for more opacity
+      $varOffset++;  
 
-		} // end path while loop
-		
-		// add datatype property/ies if there
-		if (isset($path['datatype_property'])) {
-			
-			$vars[$varDt] = $varDt;
-			$props = $path['datatype_property'];
-			
-			if (!is_array($props)) {
-				$props = [
-					'uris' => [$props],
-			 	];
-			}
+    } // end path while loop
+    
+    // add datatype property/ies if there
+    if (isset($path['datatype_property'])) {
+      
+      $vars[$varDt] = $varDt;
+      $props = $path['datatype_property'];
+      
+      if (!is_array($props)) {
+        $props = [
+          'uris' => [$props],
+         ];
+      }
 
-			// add the triple(s)
-			$tr = [];
-			foreach ($props['uris'] as $prop) {
-				$tr[] = "$var <$prop> $varDt .";
-			}
-			if (count($tr) == 1) {
-				$triples .= $tr[0];
-			} else {
-				$triples .= '{ { ' . join(' } UNION { ', $tr) . ' } }';
-			}
-			$triples .= "\n";
+      // add the triple(s)
+      $tr = [];
+      foreach ($props['uris'] as $prop) {
+        $tr[] = "$var <$prop> $varDt .";
+      }
+      if (count($tr) == 1) {
+        $triples .= $tr[0];
+      } else {
+        $triples .= '{ { ' . join(' } UNION { ', $tr) . ' } }';
+      }
+      $triples .= "\n";
 
-			if (isset($options['search_dt'])) {
-				$constraints .= $this->_buildSearchFilter($options['search_dt'], $varDt) . "\n";
-			}
+      if (isset($options['search_dt'])) {
+        $constraints .= $this->_buildSearchFilter($options['search_dt'], $varDt) . "\n";
+      }
 
-		} // end datatype prop
-	
-		// set order: we either order by 
-		// - the variable set in order_var (and it exists)
-		// - or the datatype variable (if it exists)
-		// otherwise we ignore order option
-		if (isset($options['order']) && $options['order'] != 'RAND' &&
-				((isset($options['order_var']) && isset($vars[$options['order_var']])) || isset($path['datatype_property']))
-				) {
-			$orderVar = (isset($options['order_var']) && isset($vars[$options['order_var']])) ? $options['order_var'] : $varDt;
-			$order .= "ORDER BY";
-			$order .= $options['order'] . '(';
-			if (isset($options['qualifier'])) {
-				$order .= $options['qualifier'] . "($orderVar)";
-			} else {
-				$order .= $orderVar;
-			}
-			$order .= ')';
-		}
-		
-		// set limit and offset
-		if (!empty($options['limit'])) $limit .= 'LIMIT ' . $options['limit'];
-		if (!empty($options['offset'])) $limit .= 'OFFSET ' . $options['offset'];
+    } // end datatype prop
+  
+    // set order: we either order by 
+    // - the variable set in order_var (and it exists)
+    // - or the datatype variable (if it exists)
+    // otherwise we ignore order option
+    if (isset($options['order']) && $options['order'] != 'RAND' &&
+        ((isset($options['order_var']) && isset($vars[$options['order_var']])) || isset($path['datatype_property']))
+        ) {
+      $orderVar = (isset($options['order_var']) && isset($vars[$options['order_var']])) ? $options['order_var'] : $varDt;
+      $order .= "ORDER BY";
+      $order .= $options['order'] . '(';
+      if (isset($options['qualifier'])) {
+        $order .= $options['qualifier'] . "($orderVar)";
+      } else {
+        $order .= $orderVar;
+      }
+      $order .= ')';
+    }
+    
+    // set limit and offset
+    if (!empty($options['limit'])) $limit .= 'LIMIT ' . $options['limit'];
+    if (!empty($options['offset'])) $limit .= 'OFFSET ' . $options['offset'];
 
-		// filter out vars that we don't want to have
-		if (isset($options['vars'])) {
-			$vars = array_intersect($vars, $options['vars']);
-		}
-		
+    // filter out vars that we don't want to have
+    if (isset($options['vars'])) {
+      $vars = array_intersect($vars, $options['vars']);
+    }
+    
     // return either a complete query as string or its parts as an array
-		return empty($options['fields']) ? 
-			$head . join(' ', $vars) . ' WHERE { ' . $triples . $constraints . '} ' . $order . $limit
-			: [
-				'head' => $head,
-				'vars' => $vars,
-				'triples' => $triples,
-				'constraints' => $constraints,
-				'order' => $order,
-				'limit' => $limit,
-			];
+    return empty($options['fields']) ? 
+      $head . join(' ', $vars) . ' WHERE { ' . $triples . $constraints . '} ' . $order . $limit
+      : [
+        'head' => $head,
+        'vars' => $vars,
+        'triples' => $triples,
+        'constraints' => $constraints,
+        'order' => $order,
+        'limit' => $limit,
+      ];
 
-	}
+  }
 
   
   /** Helper function that parses a search struct and builds a sparql filter
@@ -851,122 +851,123 @@ abstract class Sparql11Engine extends EngineBase {
   *
   * @return a sparql statement, usually a FILTER statement
   */
-	public function _buildSearchFilter(array $search, $dtVar, $depth = 0) {
-		
-		if (empty($search)) {
+  public function _buildSearchFilter(array $search, $dtVar, $depth = 0) {
+    
+    if (empty($search)) {
 
-			return '';
+      return '';
 
-		} elseif ($depth == 0 && isset($search['mode'])) {
-			
-			return "FILTER " . $this->_buildSearchFilter($search, $dtVar, 1);
-				
-		} elseif ($depth == 0 && !empty($search)) {
+    } elseif ($depth == 0 && isset($search['mode'])) {
+      
+      return "FILTER " . $this->_buildSearchFilter($search, $dtVar, 1);
+        
+    } elseif ($depth == 0 && !empty($search)) {
 
-			// an easy case: we just search for a list of literals
-			// we use the values construct as it may be faster and more readable
-			$res = "VALUES $dtVar { ";
-			foreach ($search as $t) {
-				$res .= "'" . $this->_escapeSparqlLiteral($t) . "' ";
-			}
-			$res .= "}";
-			return $res;
+      // an easy case: we just search for a list of literals
+      // we use the values construct as it may be faster and more readable
+      $res = "VALUES $dtVar { ";
+      foreach ($search as $t) {
+        $res .= "'" . $this->_escapeSparqlLiteral($t) . "' ";
+      }
+      $res .= "}";
+      return $res;
 
-		} elseif (isset($search['mode'])) {
-			
-			$mode = strtoupper($search['mode']);
-			switch ($mode) {
-				case 'AND':
-				case 'OR':
-					$res = [];
-					$terms = $search['terms'];
-					foreach ($terms as $term) {
-						$res[] = $this->_buildSearchFilter($term, $dtVar, $depth + 1);
-					}
-					return '(' . join(" $mode ", $res) . ')';
+    } elseif (isset($search['mode'])) {
+      
+      $mode = strtoupper($search['mode']);
+      switch ($mode) {
+        case 'AND':
+        case 'OR':
+          $res = [];
+          $terms = $search['terms'];
+          foreach ($terms as $term) {
+            $res[] = $this->_buildSearchFilter($term, $dtVar, $depth + 1);
+          }
+          return '(' . join(" $mode ", $res) . ')';
 
-				case 'NOT':
-					$res = $this->_buildSearchFilter($search['term'], $dtVar, $depth + 1);
-					return "( NOT $res )";
-				
-				// comparison of strings and numbers
-				case '=':
-				case '!=':
-				case '<':
-				case '>':
-					$term = $search['term'];
-					if (is_numeric($term)) {
-						// TODO: how to cast to a number type in sparql?
-						return "($dtVar $mode '" . $this->escapeSparqlLiteral($term) . "')";
-					} else {
-						return "(STR($dtVar) $mode " . $this->escapeSparqlLiteral($term) . ')';
-					}
-				case 'CONTAINS':
-					// contains behaves like regex but we also have to escape the special
-					// regex chars
-					$term = $search['term'];
-					return "(REGEX(STR($dtVar), '" . $this->escapeSparqlRegex($term, TRUE) . "'))";
-				case 'REGEX':
-					$term = $search['term'];
-					return "(REGEX(STR($dtVar), '" . $this->escapeSparqlLiteral($term) . "'))";
+        case 'NOT':
+          $res = $this->_buildSearchFilter($search['term'], $dtVar, $depth + 1);
+          return "( NOT $res )";
+        
+        // comparison of strings and numbers
+        case '=':
+        case '!=':
+        case '<':
+        case '>':
+          $term = $search['term'];
+          if (is_numeric($term)) {
+            // TODO: how to cast to a number type in sparql?
+            return "($dtVar $mode '" . $this->escapeSparqlLiteral($term) . "')";
+          } else {
+            return "(STR($dtVar) $mode " . $this->escapeSparqlLiteral($term) . ')';
+          }
+        case 'CONTAINS':
+          // contains behaves like regex but we also have to escape the special
+          // regex chars
+          $term = $search['term'];
+          return "(REGEX(STR($dtVar), '" . $this->escapeSparqlRegex($term, TRUE) . "'))";
+        case 'REGEX':
+          $term = $search['term'];
+          return "(REGEX(STR($dtVar), '" . $this->escapeSparqlLiteral($term) . "'))";
 
-				default:	
-					throw new InvalidArgumentException("Unknown search operator: $mode");
-			}
+        default:  
+          throw new InvalidArgumentException("Unknown search operator: $mode");
+      }
 
-		}
+    }
 
-		return '';
+    return '';
 
-	}
-	
-	
-	/** Computes the inverse of a property
-	*	@param prop the property
-	* @return the inverse or NULL if there is none. 
-	*   In case of a symmetric property the property itself is returned
-	* @author Martin Scholz
-	*/
-	public function getInverse($prop) {
+  }
+  
+  
+  /** Computes the inverse of a property
+  *  @param prop the property
+  * @return the inverse or NULL if there is none. 
+  *   In case of a symmetric property the property itself is returned
+  * @author Martin Scholz
+  */
+  public function getInverse($prop) {
     // TODO
-		return NULL;
-	}
+    return NULL;
+  }
 
 
-	/** Escapes a string according to http://www.w3.org/TR/rdf-sparql-query/#rSTRING_LITERAL.
-	* @param literal the literal as a string
-	* @param escape_backslash if FALSE, the pattern will not escape backslashes.
-	*		This may be used to prevent double escapes
-	* @return the escaped string
-	* @author Martin Scholz
-	*/
-	public function escapeSparqlLiteral($literal, $escape_backslash = TRUE) {
-	  $sic  = array("\\",   '"',   "'",   "\b",  "\f",  "\n",  "\r",  "\t");
-	  $corr = array($escape_backslash ? "\\\\" : "\\", '\\"', "\\'", "\\b", "\\f", "\\n", "\\r", "\\t");
-  	$literal = str_replace($sic, $corr, $literal);
-  	return $literal;
-	}
+  /** Escapes a string according to http://www.w3.org/TR/rdf-sparql-query/#rSTRING_LITERAL.
+  * @param literal the literal as a string
+  * @param escape_backslash if FALSE, the pattern will not escape backslashes.
+  *    This may be used to prevent double escapes
+  * @return the escaped string
+  * @author Martin Scholz
+  */
+  public function escapeSparqlLiteral($literal, $escape_backslash = TRUE) {
+    // this is the minimal escaping strategy which does not include non-ASCII
+    // chars.
+    // We don't use it as it is safer to also escape non-ASCII chars
+    // $sic  = array("\\",   '"',   "'",   "\b",  "\f",  "\n",  "\r",  "\t");
+    // $corr = array($escape_backslash ? "\\\\" : "\\", '\\"', "\\'", "\\b", "\\f", "\\n", "\\r", "\\t");
+    // $literal = str_replace($sic, $corr, $literal);
+
+    // we use the json encoding function as json has the same escaping strategy
+    // It also escapes all non-ASCII chars.
+    // It adds '"' at front and end; we have to trim them.
+    $literal = substr(json_encode($literal, JSON_UNESCAPED_SLASHES), 1, -1); 
+    return $literal;
+  }
 
 
-	/** Escapes the special characters for a sparql regex.
-	* @param regex the pattern as a string
-	* @param also_literal if TRUE, the pattern will also go through @see escapeSparqlLiteral
-	* @return the escaped string
-	* @author Martin Scholz
-	*/
-	public function escapeSparqlRegex($regex, $also_literal = FALSE) {
-		//  $chars = "\\.*+?^$()[]{}|";
-	  $sic = array('\\', '.', '*', '+', '?', '^', '$', '(', ')', '[', ']', '{', '}', '|');
-  	$corr = array('\\\\', '\.', '\*', '\+', '\?', '\^', '\$', '\(', '\)', '\[', '\]', '\{', '\}', '\|');
-  	$regex = str_replace($sic, $corr, $regex);
-		return $also_literal ? $this->escapeSparqlLiteral($regex) : $regex;
-	}
-		
-  
-
-
-
-
-  
+  /** Escapes the special characters for a sparql regex.
+  * @param regex the pattern as a string
+  * @param also_literal if TRUE, the pattern will also go through @see escapeSparqlLiteral
+  * @return the escaped string
+  * @author Martin Scholz
+  */
+  public function escapeSparqlRegex($regex, $also_literal = FALSE) {
+    //  $chars = "\\.*+?^$()[]{}|";
+    $sic = array('\\', '.', '*', '+', '?', '^', '$', '(', ')', '[', ']', '{', '}', '|');
+    $corr = array('\\\\', '\.', '\*', '\+', '\?', '\^', '\$', '\(', '\)', '\[', '\]', '\{', '\}', '\|');
+    $regex = str_replace($sic, $corr, $regex);
+    return $also_literal ? $this->escapeSparqlLiteral($regex) : $regex;
+  }
 
 }

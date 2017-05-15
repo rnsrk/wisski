@@ -203,7 +203,7 @@ wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($ret
       $field = $cond['field'];
       $value = $cond['value'];
       $operator = $cond['operator'];
-wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition" : "now for '$value' in field '$field'");
+wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition" : "now for '".join(";",(array)$value)."' in field '$field'");
 #\Drupal::logger('query path cond')->debug("$ij::$field::$value::$operator::$conjunction");     
 
       // we dispatch over the field
