@@ -24,7 +24,8 @@ use Drupal\wisski_pathbuilder\WisskiPathInterface;
   *     "form" = {
   *       "add" = "Drupal\wisski_pathbuilder\Form\WisskiPathForm",
   *       "edit" = "Drupal\wisski_pathbuilder\Form\WisskiPathForm",
-  *       "delete" = "Drupal\wisski_pathbuilder\Form\WisskiPathDeleteForm"
+  *       "delete" = "Drupal\wisski_pathbuilder\Form\WisskiPathDeleteForm",
+  *       "delete_local" = "Drupal\wisski_pathbuilder\Form\WisskiPathDeleteFormLocal"
   *     }             
   *    },
   *   config_prefix = "wisski_path",
