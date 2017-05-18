@@ -18,7 +18,7 @@ class WisskiFieldDeleteForm extends EntityConfirmFormBase {
   
   private $pb_id;
   private $field_id;
-                                
+  private $field_type;                      
   /**
    * {@inheritdoc}
    */
@@ -26,6 +26,8 @@ class WisskiFieldDeleteForm extends EntityConfirmFormBase {
     
     $this->pb_id = \Drupal::routeMatch()->getParameter('wisski_pathbuilder');
     $this->field_id = \Drupal::routeMatch()->getParameter('wisski_field_id');
+    $this->field_type = \Drupal::routeMatch()->getParameter('wisski_field_type');
+
     return $this->t('Do you want to delete the field @id associated with this path?',array('@id' => $this->field_id));
   }
   
@@ -57,17 +59,32 @@ class WisskiFieldDeleteForm extends EntityConfirmFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
-    $field_storages = \Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(
-      array(
-        'field_name' => $this->field_id,
-        //'entity_type' => $mode,
-      )
-    );
+    if($this->field_type == "field" || $this->field_type == "both") {
+
+      $field_storages = \Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(
+        array(
+          'field_name' => $this->field_id,
+          //'entity_type' => $mode,
+        )
+      );
         
-    if (!empty($field_storages)) {
-      foreach($field_storages as $field_storage) {
-        $field_storage->delete();
+      if (!empty($field_storages)) {
+        foreach($field_storages as $field_storage) {
+          $field_storage->delete();
+        }
       }
+    }
+    
+    if($this->field_type == "bundle" || $this->field_type == "both") {
+      // bundle mode.
+      $bundle_storages = \Drupal::entityManager()->getStorage('wisski_bundle')->loadByProperties(array('id' => $this->field_id));
+      
+      if (!empty($bundle_storages)) {
+        foreach($bundle_storages as $bundle_storage) {
+          $bundle_storage->delete();
+        }
+      }
+      
     }    
     
     drupal_set_message($this->t('The field with id @id has been deleted.',array('@id' => $this->field_id)));

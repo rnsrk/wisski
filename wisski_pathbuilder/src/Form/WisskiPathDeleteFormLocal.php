@@ -69,7 +69,15 @@ class WisskiPathDeleteFormLocal extends EntityConfirmFormBase {
       }
     }
     drupal_set_message($this->t('The path @id has been deleted.',array('@id' => $path_id)));
-    $form_state->setRedirectUrl($this->getCancelUrl());
+#    $form_state->setRedirectUrl($this->getCancelUrl());
+
+    if(!empty($pbpath['bundle']) && !empty($pbpath['field']))
+      $form_state->setRedirect('entity.wisski_path.delete_core',array('wisski_pathbuilder'=>$this->pb_id, 'wisski_field_id' => $pbpath['bundle'], 'wisski_field_type' => 'both'));
+    if(empty($pbpath['bundle']) && !empty($pbpath['field']))
+      $form_state->setRedirect('entity.wisski_path.delete_core',array('wisski_pathbuilder'=>$this->pb_id, 'wisski_field_id' => $pbpath['field'], 'wisski_field_type' => 'field'));
+    if(!empty($pbpath['bundle']) && empty($pbpath['field']))
+      $form_state->setRedirect('entity.wisski_path.delete_core',array('wisski_pathbuilder'=>$this->pb_id, 'wisski_field_id' => $pbpath['bundle'], 'wisski_field_type' => 'bundle'));
+
   }
 
 }

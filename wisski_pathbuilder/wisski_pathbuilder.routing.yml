@@ -90,4 +90,22 @@ entity.wisski_path.delete_local_form:
     _title: 'Delete Path'
   requirements:
     _permission: 'administer site configuration'
+    
+entity.wisski_path.delete_core:
+  path: '/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/{wisski_field_id}/{wisski_field_type}/deletecore'
+#  path: '/admin/config/wisski/path/{wisski_path}/delete'
+  defaults:
+    _entity_form: 'wisski_path.delete_fieldtype'
+    _title: 'Delete Fieldtype'
+  requirements:
+    _permission: 'administer site configuration'
+    
+#entity.wisski_path.delete_group:
+#  path: '/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/{wisski_field_id}/deletegroup'
+##  path: '/admin/config/wisski/path/{wisski_path}/delete'
+#  defaults:
+#    _entity_form: 'wisski_path.delete_group'
+#    _title: 'Delete Group'
+#  requirements:
+#    _permission: 'administer site configuration'
 
