@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Contains \Drupal\wisski_pathbuilder\Form\WisskiPathDeleteForm.
+ * Contains \Drupal\wisski_pathbuilder\Form\WisskiFieldDeleteForm.
  */
  
 namespace Drupal\wisski_pathbuilder\Form;
@@ -14,18 +14,19 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Form that handles the removal of Wisski Path entities
  */
-class WisskiPathDeleteForm extends EntityConfirmFormBase {
+class WisskiFieldDeleteForm extends EntityConfirmFormBase {
   
   private $pb_id;
+  private $field_id;
                                 
   /**
    * {@inheritdoc}
    */
   public function getQuestion() {
     
-    $path = $this->entity;
     $this->pb_id = \Drupal::routeMatch()->getParameter('wisski_pathbuilder');
-    return $this->t('Are you sure you want to delete this path: @id?',array('@id' => $path->getID()));
+    $this->field_id = \Drupal::routeMatch()->getParameter('wisski_field_id');
+    return $this->t('Do you want to delete the field @id associated with this path?',array('@id' => $this->field_id));
   }
   
   /**
@@ -55,18 +56,21 @@ class WisskiPathDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    
-    $path = $this->entity;
-    $path_id = $path->getID();
-    // Delete and set message
-    $path->delete();
-    if (isset($this->pb_id) && $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($this->pb_id)) {
-      if ($pb->hasPbPath($path_id)) {
-        $pb->removePath($path_id);
-        $pb->save();
+
+    $field_storages = \Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(
+      array(
+        'field_name' => $this->field_id,
+        //'entity_type' => $mode,
+      )
+    );
+        
+    if (!empty($field_storages)) {
+      foreach($field_storages as $field_storage) {
+        $field_storage->delete();
       }
-    }
-    drupal_set_message($this->t('The path @id has been deleted.',array('@id' => $path_id)));
+    }    
+    
+    drupal_set_message($this->t('The field with id @id has been deleted.',array('@id' => $this->field_id)));
     $form_state->setRedirectUrl($this->getCancelUrl());
   }
 

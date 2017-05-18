@@ -29,7 +29,7 @@ entity.wisski_pathbuilder.delete_form:
     _title: 'Delete Pathbuilder'
   requirements:
     _permission: 'administer site configuration'
-
+    
 entity.wisski_pathbuilder.overview:
   path: '/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/view'
   defaults:
@@ -81,3 +81,13 @@ entity.wisski_path.delete_form:
     _title: 'Delete Path'
   requirements:
     _permission: 'administer site configuration'
+
+entity.wisski_path.delete_local_form:
+  path: '/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/{wisski_path}/delete'
+#  path: '/admin/config/wisski/path/{wisski_path}/delete'
+  defaults:
+    _entity_form: 'wisski_path.delete_local'
+    _title: 'Delete Path'
+  requirements:
+    _permission: 'administer site configuration'
+

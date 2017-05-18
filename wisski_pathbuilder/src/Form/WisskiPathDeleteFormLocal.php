@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Contains \Drupal\wisski_pathbuilder\Form\WisskiPathDeleteForm.
+ * Contains \Drupal\wisski_pathbuilder\Form\WisskiPathDeleteFormLocal.
  */
  
 namespace Drupal\wisski_pathbuilder\Form;
@@ -14,18 +14,19 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Form that handles the removal of Wisski Path entities
  */
-class WisskiPathDeleteForm extends EntityConfirmFormBase {
+class WisskiPathDeleteFormLocal extends EntityConfirmFormBase {
   
   private $pb_id;
                                 
   /**
    * {@inheritdoc}
    */
-  public function getQuestion() {
+  public function getQuestion($wisski_pathbuilder = null, $wisski_path = null) {
     
     $path = $this->entity;
     $this->pb_id = \Drupal::routeMatch()->getParameter('wisski_pathbuilder');
-    return $this->t('Are you sure you want to delete this path: @id?',array('@id' => $path->getID()));
+
+    return $this->t('Are you sure you want to delete path "@id" from pathbuilder @pb?',array('@id' => $path->getID(), '@pb' => $this->pb_id));
   }
   
   /**
@@ -59,7 +60,8 @@ class WisskiPathDeleteForm extends EntityConfirmFormBase {
     $path = $this->entity;
     $path_id = $path->getID();
     // Delete and set message
-    $path->delete();
+#    drupal_set_message(serialize($this->pb_id));
+#    $path->delete();
     if (isset($this->pb_id) && $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($this->pb_id)) {
       if ($pb->hasPbPath($path_id)) {
         $pb->removePath($path_id);

@@ -215,12 +215,18 @@ class WisskiPathbuilderForm extends EntityForm {
                      ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
           );
         }
+        
+        $links['delete_local'] = array(
+          'title' => $this->t('Delete path only from this pathbuilder'),
+          'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.delete_local_form')
+                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
+        );
 
         $links['delete'] = array(
-          'title' => $this->t('Delete'),
+          'title' => $this->t('Delete path completely'),
           'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.delete_form')
                    ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
-        );  
+        );
                                                              
         // Operations (dropbutton) column.
       #  $operations = parent::getDefaultOperations($pathbuilder);
