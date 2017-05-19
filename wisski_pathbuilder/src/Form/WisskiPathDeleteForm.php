@@ -65,22 +65,30 @@ class WisskiPathDeleteForm extends EntityConfirmFormBase {
     if (isset($this->pb_id) && $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($this->pb_id)) {
       if ($pb->hasPbPath($path_id)) {
         $pbpath = $pb->getPbPath($path_id);
-        drupal_set_message(serialize($pbpath));
+
         $pb->removePath($path_id);
         $pb->save();
       }
     }
 
-    $path->delete();
     drupal_set_message($this->t('The path @id has been deleted.',array('@id' => $path_id)));
 #    $form_state->setRedirectUrl($this->getCancelUrl());
 
-    if(!empty($pbpath['bundle']) && !empty($pbpath['field']))
-      $form_state->setRedirect('entity.wisski_path.delete_core',array('wisski_pathbuilder'=>$this->pb_id, 'wisski_field_id' => $pbpath['bundle'], 'wisski_field_type' => 'both'));
-    if(empty($pbpath['bundle']) && !empty($pbpath['field']))
-      $form_state->setRedirect('entity.wisski_path.delete_core',array('wisski_pathbuilder'=>$this->pb_id, 'wisski_field_id' => $pbpath['field'], 'wisski_field_type' => 'field'));
-    if(!empty($pbpath['bundle']) && empty($pbpath['field']))
-      $form_state->setRedirect('entity.wisski_path.delete_core',array('wisski_pathbuilder'=>$this->pb_id, 'wisski_field_id' => $pbpath['bundle'], 'wisski_field_type' => 'bundle'));
+#    drupal_set_message("pb: " . serialize($pbpath));
+
+    if(!empty($pbpath)) {
+      if(!$path->isGroup())
+        $form_state->setRedirect('entity.wisski_path.delete_core',array('wisski_pathbuilder'=>$this->pb_id, 'wisski_field_id' => $pbpath['field'], 'wisski_field_type' => 'field'));
+      else { // it is some kind of group
+        if(!empty($pbpath['parent'])) // it is a subgroup via entity-reference
+          $form_state->setRedirect('entity.wisski_path.delete_core',array('wisski_pathbuilder'=>$this->pb_id, 'wisski_field_id' => $pbpath['bundle'], 'wisski_field_type' => 'both'));
+        else
+          $form_state->setRedirect('entity.wisski_path.delete_core',array('wisski_pathbuilder'=>$this->pb_id, 'wisski_field_id' => $pbpath['bundle'], 'wisski_field_type' => 'bundle'));
+      }
+    } else {
+      $form_state->setRedirectUrl($this->getCancelUrl());
+    }
+    $path->delete();
   }
 
 }
