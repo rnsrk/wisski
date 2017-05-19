@@ -238,7 +238,15 @@ class WisskiPathbuilderForm extends EntityForm {
         $form['pathbuilder_table'][$path->id()]['operations'] = $operations;
 
         $form['pathbuilder_table'][$path->id()]['id'] = $pathform['id'];
-        $form['pathbuilder_table'][$path->id()]['parent'] = $pathform['parent'];
+
+        // check if there is a parent and the parent is in this pb
+        if(!empty($pathform['parent']) && !empty($form['pathbuilder_table'][$pathform['parent']]))
+          $form['pathbuilder_table'][$path->id()]['parent'] = $pathform['parent'];
+        // if not, leave it empty. Hopefully it will be parent-less now ;-)
+        else {
+          $form['pathbuilder_table'][$path->id()]['parent'] = 0;
+        }
+                  
         if(!empty($pathform['bundle']))
           $form['pathbuilder_table'][$path->id()]['bundle'] = $pathform['bundle'];
         if(!empty($pathform['field']))
