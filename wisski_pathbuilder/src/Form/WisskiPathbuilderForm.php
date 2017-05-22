@@ -777,12 +777,39 @@ class WisskiPathbuilderForm extends EntityForm {
     if (!empty($paths)) {
       foreach($paths as $key => $path) {
         
-        if($path['enabled'] == 0) 
+        if($path['enabled'] == 0) {
+          
+          $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
+
+          $pbpath = $pathbuilder->getPbPath($pathob->id());
+
+          $field = NULL;
+
+          if($pathob->isGroup()) {
+            $field = $pbpath['bundle'];
+          } else {
+            $field = $pbpath['field'];
+          }
+                    
+          // delete old fields
+          $field_storages = \Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $field));
+          if(!empty($field_storages))
+            foreach($field_storages as $field_storage)
+              $field_storage->delete();
+          
+          $field_objects = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(array('field_name'=> $field));
+          if(!empty($field_objects)) 
+            foreach($field_objects as $field_object)
+              $field_object->delete();
+         
           continue;
+          
+        }
         
         if(!empty($path['parent']) && $paths[$path['parent']]['enabled'] == 0) {
           // take it with us if the parent is disabled down the tree
           $paths[$key]['enabled'] = 0;
+
           continue;
         }
         
