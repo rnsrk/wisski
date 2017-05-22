@@ -274,68 +274,117 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
   public function generateIdForField($path_id) {
     return 'f' . substr(md5($this->id() . '_' . $path_id . '_' . $this->getCreateMode() ), 0, -1);
   }
-  
+    
   /**
    * Generates the field in the bundle to link to a field collection as a
    * sub group if it was not already there. 
    *
    */
   public function generateFieldForSubGroup($pathid, $field_name, $orig_bundle) {
-    #drupal_set_message("I am generating Fields for path " . $pathid . " and got " . $field_name . ". ");
+#    drupal_set_message("I am generating Fields for path " . $pathid . " and got " . $field_name . ". ");
 
     // get the bundle for this pathid
     $bundle = $this->getBundle($pathid); #$form_state->getValue('bundle');
 
+    // if there is no bundle we can savely stop - where should we add the path anyway?
     if(empty($bundle)) {
       return FALSE;
     }
     
-    // if the field is already there...
-    if(empty($field_name) || 
-       !empty(\Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $field_name)))) {
-      drupal_set_message(t('Field %bundle with id %id was already there.',array('%bundle'=>$field_name, '%id' => $field_name)));
-#      $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->id()));
-      // get the pbpaths
-#        $pbpaths = $this->getPbPaths();
-      // set the path and the bundle - beware: one is empty!
-#        $pbpaths[$pathid]['field'] = $field_name;
-#        $pbpaths[$pathid]['bundle'] = $bundle;
-#        // save it
-#        $this->setPbPaths($pbpaths);
-#      
-#        $this->save();
+    // same holds if there is no field-name. Nameless fields are not allowed in drupal.
+    if(empty($field_name)) {
+      drupal_set_message(t('No field name was provided for the field associated with path id %id. This is evil, please change.',array('%id' => $pathid)), "error");
       return;
     }
-                
+    
+    // should we create a fs?
+    $no_fs = FALSE;
+        
     //don't go on if the user whishes not to
     if ($orig_bundle === self::CONNECT_NO_FIELD) return;
     
     //create a new field if the user whishes to
     if ($orig_bundle === self::GENERATE_NEW_FIELD || empty($bundle) || empty($orig_bundle)) $fieldid = $this->generateIdForField($pathid);
-    else $fieldid = $orig_bundle;
+    // there already is a bundle
+    else {
+    
+      $fieldid = $orig_bundle;
+    
+#      drupal_set_message("generating else ... " . $fieldid);
+    
+      // if the field is already there...
+      if($field_storages = \Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $fieldid))) {
+#        drupal_set_message(serialize($field_storages));
+        drupal_set_message(t('Field %bundle with id %id was already there.',array('%bundle'=>$field_name, '%id' => $fieldid)));
 
+        // here we have to check for sanity!
 
-    // this is old
-    //$fieldid = $this->generateIdForField($pathid);
+        // first we have to adjust the cardinality in case it was changed.
+        $pbpaths = $this->getPbPaths();
+        $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : \Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+                
+        foreach($field_storages as $field_storage) {
+          $field_storage->setCardinality($card);
+          $field_storage->save();
+        }
+        
+        // we found a fs, so we don't create a new one.
+        $no_fs = TRUE;
+        
+        // second we have to see if the parent is still the same.
+        $field_values = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(array('field_name'=>$fieldid,'entity_type' => 'wisski_individual', ));
+        
+        
+        $return = FALSE;
+                
+        foreach($field_values as $field_value) {
+          if($field_value->getTargetBundle() == $bundle) {
+#            drupal_set_message("no danger... everything the same");
+
+            // if there is any functional one, we don't create new ones...
+            $return = TRUE;    
+          } else {
+#            drupal_set_message(serialize($field_value)); 
+#            drupal_set_message(serialize($bundle));
+#            drupal_set_message("danger zone, not the same!");
+            // we may not reset it, so we have to delete it and make a new one...
+            $field_value->delete();
+            $no_fs = FALSE;
+          }
+        }
+
+        // only return if everything is okay.
+        if($return)        
+          return;
+      } else {
+        // we didn't find a field storage... so create one.
+      }
+    }
+                
+    // from here on everything is only called if this is a new bundle.
     
     $type = $this->getCreateMode(); //'field_collection'
 
     $pbpaths = $this->getPbPaths(); 
     $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : \Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
 
-    // this was called field?
-    $field_storage_values = [
-      'field_name' => $fieldid,#$values['field_name'],
-      'entity_type' =>  'wisski_individual',
-      'type' => ($type == 'wisski_bundle') ? 'entity_reference' : 'field_collection',//has to fit the field component type, see below
-      'translatable' => TRUE,
-      'cardinality' => $card,
-    ];
+    if(!$no_fs) {
+      
+      $field_storage_values = [
+        'field_name' => $fieldid,#$values['field_name'],
+        'entity_type' =>  'wisski_individual',
+        'type' => ($type == 'wisski_bundle') ? 'entity_reference' : 'field_collection',//has to fit the field component type, see below
+        'translatable' => TRUE,
+        'cardinality' => $card,
+      ];
     
-    if($type == 'wisski_bundle')
-      $field_storage_values['settings']['target_type'] = 'wisski_individual';
-  
-    // this was called instance?
+      if($type == 'wisski_bundle')
+        $field_storage_values['settings']['target_type'] = 'wisski_individual';
+
+      \Drupal::entityManager()->getStorage('field_storage_config')->create($field_storage_values)->enable()->save();
+      
+    }
+        
     $field_values = [
       'field_name' => $fieldid,
       'entity_type' => 'wisski_individual',
@@ -352,27 +401,15 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       $field_values['field_type'] = "entity_reference";
     }
 
+    \Drupal::entityManager()->getStorage('field_config')->create($field_values)->save();
+
     // get the pbpaths
     $pbpaths = $this->getPbPaths();
-    // set the path and the bundle - beware: one is empty!
+
     $pbpaths[$pathid]['field'] = $fieldid;
-    #$pbpaths[$pathid]['bundle'] = $bundle;
+
     // save it
     $this->setPbPaths($pbpaths);
-    
-    $this->save();
-  
-    // if the field is already there...
-    if(empty($field_name) || 
-       !empty(\Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $fieldid)))) {
-      drupal_set_message(t('Field %bundle with id %id was already there.',array('%bundle'=>$field_name, '%id' => $fieldid)));
-#      $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->id()));
-      return;
-    }
-
-    \Drupal::entityManager()->getStorage('field_storage_config')->create($field_storage_values)->enable()->save();
-
-    \Drupal::entityManager()->getStorage('field_config')->create($field_values)->save();
 
     $view_options = array(
       'type' => 'inline_entity_form_complex', #'entity_reference_autocomplete_tags',
@@ -638,10 +675,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     
     //don't go on if the user whishes not to
     if ($my_group['bundle'] === self::CONNECT_NO_FIELD) return;
-    
-#      //create a new field if the user whishes to
-#      if ($my_group['bundle'] === self::GENERATE_NEW_FIELD || empty($bundle)) $fieldid = $this->generateIdForField($pathid);
-    
+        
     // if there is a bundle it still might be not there due to table clashes etc.
     if (!empty($my_group['bundle']) && $my_group['bundle'] !== self::GENERATE_NEW_FIELD) {
 
