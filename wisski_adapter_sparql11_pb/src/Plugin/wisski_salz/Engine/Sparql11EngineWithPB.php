@@ -2924,6 +2924,13 @@ $oldtmp = $tmp;
     $button_label = $this->t('Start Reasoning');
     $emphasized = $this->t('This will take several minutes.');
 
+    $always_reason = \Drupal::state()->get('wisski_always_reason');
+
+    if(isset($always_reason[$this->adapterId()]))
+      $always_reason = $always_reason[$this->adapterId()];
+    else
+      $always_reason = TRUE;
+    
     $form['reasoner'] = array(
       '#type' => 'details',
       '#title' => $this->t('Compute Type and Property Hierarchy and Domains and Ranges'),
@@ -2958,6 +2965,11 @@ $oldtmp = $tmp;
         ),
         '#prefix' => '<div id="wisski-reasoner-start-button">',
         '#suffix' => '</div>',
+      ),
+      'always_reason_this_store' => array(
+        '#type' => 'checkbox',
+        '#title' => $this->t('Always do reasoning on this adapter.'),
+        '#default_value' => $always_reason,
       ),
     );
     if ($in_cache) {
@@ -2998,6 +3010,22 @@ $oldtmp = $tmp;
     }
     return $form;
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
+    parent::submitConfigurationForm($form, $form_state);
+    
+    $val = $form_state->getValue('always_reason_this_store');
+        
+    $always_reason = \Drupal::state()->get('wisski_always_reason');
+    $always_reason[$this->adapterId()] = $val;
+    
+    \Drupal::state()->set('wisski_always_reason', $always_reason);
+  
+  }  
+  
 
   public function checkboxAjax(array $form, FormStateInterface $form_state) {
     return $form['reasoner']['start_button'];
