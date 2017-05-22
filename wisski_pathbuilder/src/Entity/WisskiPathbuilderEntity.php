@@ -322,7 +322,9 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
         // first we have to adjust the cardinality in case it was changed.
         $pbpaths = $this->getPbPaths();
         $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : \Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
-                
+
+ #       drupal_set_message("subgroup1: " . $pathid . " has weight " . serialize($pbpaths[$pathid]['weight']));                
+
         foreach($field_storages as $field_storage) {
           $field_storage->setCardinality($card);
           $field_storage->save();
@@ -342,7 +344,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
 #            drupal_set_message("no danger... everything the same");
 
             // if there is any functional one, we don't create new ones...
-            $return = TRUE;    
+#            $return = TRUE;    
           } else {
 #            drupal_set_message(serialize($field_value)); 
 #            drupal_set_message(serialize($bundle));
@@ -354,8 +356,8 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
         }
 
         // only return if everything is okay.
-        if($return)        
-          return;
+#        if($return)        
+#          return;
       } else {
         // we didn't find a field storage... so create one.
       }
@@ -384,29 +386,35 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       \Drupal::entityManager()->getStorage('field_storage_config')->create($field_storage_values)->enable()->save();
       
     }
-        
-    $field_values = [
-      'field_name' => $fieldid,
-      'entity_type' => 'wisski_individual',
-      'bundle' => $bundle,
-      'label' => $field_name,
-      // Field translatability should be explicitly enabled by the users.
-      'translatable' => FALSE,
-      'disabled' => FALSE,
-    ];
     
-    if($type == 'wisski_bundle') {
-      $field_values['settings']['handler'] = "default:wisski_individual";
-      $field_values['settings']['handler_settings']['target_bundles'][$this->generateIdForBundle($pathid)] = $this->generateIdForBundle($pathid);
-      $field_values['field_type'] = "entity_reference";
+    $field_values = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(array('field_name'=>$fieldid,'entity_type' => 'wisski_individual', ));
+    if(empty($field_values)) {
+        
+      $field_values = [
+        'field_name' => $fieldid,
+        'entity_type' => 'wisski_individual',
+        'bundle' => $bundle,
+        'label' => $field_name,
+        // Field translatability should be explicitly enabled by the users.
+        'translatable' => FALSE,
+        'disabled' => FALSE,
+      ];
+    
+      if($type == 'wisski_bundle') {
+        $field_values['settings']['handler'] = "default:wisski_individual";
+        $field_values['settings']['handler_settings']['target_bundles'][$this->generateIdForBundle($pathid)] = $this->generateIdForBundle($pathid);
+        $field_values['field_type'] = "entity_reference";
+      }
+
+      \Drupal::entityManager()->getStorage('field_config')->create($field_values)->save();
     }
-
-    \Drupal::entityManager()->getStorage('field_config')->create($field_values)->save();
-
+    
     // get the pbpaths
     $pbpaths = $this->getPbPaths();
 
     $pbpaths[$pathid]['field'] = $fieldid;
+
+#    drupal_set_message("subgroup " . $pathid . " has weight " . serialize($pbpaths[$pathid]['weight']));
 
     // save it
     $this->setPbPaths($pbpaths);
@@ -594,7 +602,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     //@TODO make it possible to set the $required value
     //$field_object->setRequired($required);
     $field_object->save();
-
+#    drupal_set_message("path " . $pathid . " has weight " . serialize($pbpaths[$pathid]['weight']));
     $view_options = array(
       // this might also be formatterwidget - I am unsure here. @TODO
       'type' => $pbpaths[$pathid]['displaywidget'], #'text_summary_or_trimmed',//has to fit the field type, see above
