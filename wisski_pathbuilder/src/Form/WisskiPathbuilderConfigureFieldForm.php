@@ -34,7 +34,6 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
    * @{inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_pathbuilder = NULL, $wisski_path = NULL) { 
-
     // the form() function will not accept additional args,
     // but this function does
     // so we have to override this one to get hold of the pb id
@@ -412,6 +411,8 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
    */
   public function save(array $form, FormStateInterface $form_state) {
 
+#    drupal_set_message("save: " . serialize($form_state->getValues()));
+
     // get the input of the field
 #    $field_name = $form_state->getValue('field');
     // get the input for the path
@@ -428,7 +429,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     $pbpaths[$pathid]['fieldtype'] = $form_state->getValue('fieldtype');
     $pbpaths[$pathid]['displaywidget'] = $form_state->getValue('displaywidget');
     $pbpaths[$pathid]['formatterwidget'] = $form_state->getValue('formatterwidget');
-    $pbpaths[$pathid]['field'] = $form_state->getValue('field');
+    $pbpaths[$pathid]['field'] = $form_state->getValue('select_field');
     $pbpaths[$pathid]['bundle'] = $form_state->getValue('bundle');
     $pbpaths[$pathid]['cardinality'] = $form_state->getValue('cardinality');
 
