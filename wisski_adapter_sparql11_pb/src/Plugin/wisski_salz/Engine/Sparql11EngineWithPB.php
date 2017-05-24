@@ -1643,6 +1643,7 @@ $oldtmp = $tmp;
   }
   
   public function deleteOldFieldValue($entity_id, $fieldid, $value, $pb, $count = 0) {
+ #   drupal_set_message("entity_id: " . $entity_id . " field id: " . $fieldid . " value " . serialize($value));
     // get the pb-entry for the field
     // this is a hack and will break if there are several for one field
     $pbarray = $pb->getPbEntriesForFid($fieldid);
@@ -2398,15 +2399,16 @@ $oldtmp = $tmp;
       // it would be better to gather this information from the form and not from the ts
       // there might have been somebody saving in between...
       // @TODO !!!
-      $old_values = $this->loadFieldValues(array($entity_id), array_keys($field_values), $bundle_id);
+      $ofv = \Drupal::entityManager()->getFieldDefinitions('wisski_individual', $bundle_id);
+      $old_values = $this->loadFieldValues(array($entity_id), array_keys($ofv), $bundle_id);
       
       if(!empty($old_values))
         $old_values = $old_values[$entity_id];
     }
 
     //drupal_set_message("the old values were: " . serialize($old_values));
-    #dpm($old_values,'old values');
-    #dpm($field_values,'new values');
+#    dpm($old_values,'old values');
+#    dpm($field_values,'new values');
 
 
     // if there are fields in the old_values that were deleted in the current
@@ -2422,7 +2424,13 @@ $oldtmp = $tmp;
     foreach($old_values as $old_key => $old_value) {
 #      drupal_set_message("deleting key $old_key with value " . serialize($old_value) . " from values " . serialize($field_values));
       if(!isset($field_values[$old_key])) {
-        $mainprop = $old_value['main_property'];
+        
+        // in case there is no main prop it is typically value
+        if(isset($old_value['main_property']))
+          $mainprop = $old_value['main_property'];
+        else
+          $mainprop = "value";        
+
         foreach($old_value as $key => $val) {
         
           // main prop?
