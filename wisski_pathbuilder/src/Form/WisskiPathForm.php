@@ -392,7 +392,7 @@ class WisskiPathForm extends EntityForm {
     } else {
       drupal_set_message($this->t('The path @id could not be saved.', array(
         '@id' => $path->getID(),
-      )));
+      )), 'error');
     }
         
     if(empty($this->pb))

@@ -1223,5 +1223,7 @@ if (!$path) \Drupal::logger('bad wisski')->error(array_reduce(debug_backtrace(DE
     $starting_position = ($path_length - $relative_path_length) / 2;
     return $starting_position;
   }
+
+
 } 
             

@@ -906,7 +906,7 @@ class WisskiPathbuilderForm extends EntityForm {
     } else {
       drupal_set_message($this->t('The Pathbuilder @id could not be saved.', array(
         '@id' => $pathbuilder->id(),
-      )));
+      )), 'error');
     }
     
     $form_state->setRedirect('entity.wisski_pathbuilder.collection');

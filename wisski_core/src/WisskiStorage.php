@@ -2,33 +2,29 @@
 
 namespace Drupal\wisski_core;
 
+use Drupal\Component\Utility\NestedArray;
+use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Entity\ContentEntityStorageBase;
 use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityFieldManager;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageException;
-
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Field\FieldDefinitionInterface;
 
-use Drupal\file\FileStorage;
 use Drupal\file\Entity\File;
+use Drupal\file\FileStorage;
+use Drupal\image\Entity\ImageStyle;
 
 use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\wisski_core\Query\WisskiQueryInterface;
-//use Drupal\wisski_core\WisskiInvalidArgumentException;
 use Drupal\wisski_core\WisskiCacheHelper;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use Drupal\wisski_salz\Entity\Adapter;
 
-use Drupal\Core\Field\BaseFieldDefinition;
 
-use Drupal\Core\Entity\EntityTypeInterface;
- 
-use Drupal\Core\Entity\EntityManagerInterface;
- 
-use Drupal\Core\Cache\CacheBackendInterface;
-
-use Drupal\Component\Utility\NestedArray;
-
-use Drupal\image\Entity\ImageStyle;
 
 /**
  * Test Storage that returns a Singleton Entity, so we can see what the FieldItemInterface does
@@ -659,102 +655,75 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()));
 #    dpm(func_get_args(),__METHOD__);
 #    return;
-    #dpm($entity->id(), "entitydata1");
-    //gather values with property caching
+    // gather values with property caching
     // set second param of getValues to FALSE: we must not write
     // field values to cache now as there may be no eid yet (on create)
+$ts1 = microtime(true);
+
     list($values,$original_values) = $entity->getValues($this,FALSE);
     $bundle_id = $values['bundle'][0]['target_id'];
     if (empty($bundle_id)) $bundle_id = $entity->bundle();
-    #dpm($entity->id(), "entitydata2");
-//    dpm(func_get_args()+array('values'=>$values,'bundle'=>$bundle_id),__METHOD__);
-    //echo implode(', ',array_keys((array) $entity));
-    $local_adapters = array();
-    $writeable_adapters = array();
+    // TODO: What shall we do if bundle_id is still empty. Can this happen?
 
-    $adapters = entity_load_multiple('wisski_salz_adapter');
-#    dpm(serialize($adapters));
-#    drupal_set_message("hallo welt");
-
-    // ask all adapters and find the writable ones
-    foreach($adapters as $aid => $adapter) {
-      // we locate all writeable stores
-      // then we locate all local stores in these writeable stores
-
-      if($adapter->getEngine()->isWritable())
-        $writeable_adapters[$aid] = $adapter;
-             
-      if($adapter->getEngine()->isPreferredLocalStore())
-        $local_adapters[$aid] = $adapter;
-      
+    // we only load the pathbuilders and adapters that can handle the bundle.
+    // Loading all of them would take too long and most of them don't handle
+    // the bundle, assumingly.
+    // We have this information cached.
+    // Then we filter the writable ones
+    $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($bundle_id);
+$tsa = array('pbs' => array_keys($pbs_info));
+    $adapters_ids = array();
+    $pb_ids = array();
+    foreach($pbs_info as $pbid => $info) {
+      if ($info['writable']) {
+        $aid = $info['adapter_id'];
+        $pb_ids[$pbid] = $pbid;
+        $adapter_ids[$aid] = $aid;
+      }
+      elseif ($info['preferred_local']) {
+        // we warn here as the peferred local store should be writable if an 
+        // entity is to be saved. Eg. the sameAs mechanism relies on that.
+        drupal_set_message(t('The preferred local store %a is not writable.', array('%a' => $adapter->label())),'warning');
+      } 
     }
-
     // if there are no adapters by now we die...
-    if(empty($writeable_adapters)) {
+    if(empty($adapter_ids)) {
       drupal_set_message("There is no writable storage backend defined.", "error");
       return;
     }
     
-    if($diff = array_diff_key($local_adapters,$writeable_adapters)) {
-      if (count($diff) === 1)
-        drupal_set_message('The preferred local store '.key($diff).' is not writeable','warning');
-      else drupal_set_message('The preferred local stores '.implode(', ',array_keys($diff)).' are not writeable','warning');
-    }
+    $pathbuilders = WisskiPathbuilderEntity::loadMultiple($pb_ids);
+    $adapters = Adapter::loadMultiple($adapter_ids);
+
     
-    //we load all pathbuilders, check if they know the fields and have writeable adapters
-    $pathbuilders = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
-    #dpm($entity->id(), "entitydata");
     $entity_id = $entity->id();
-    // we track if this is a newly created entity, if yes, we want to write it to ALL writeable adapters
+
+    // we track if this is a newly created entity, if yes, we want to write it to ALL writable adapters
     $create_new = $entity->isNew() && empty($entity_id);
     
+$ts = microtime(true);
     
+    // if there is no entity id yet, we register the new entity
+    // at the adapters
     if (empty($entity_id)) {    
-      //dpm(array($writeable_adapters,$pathbuilders),'Empty ID');
-      foreach($pathbuilders as $pb_id => $pb) {
-      
-        //get the adapter
-        $aid = $pb->getAdapterId();
-
-        //check, if it's writeable, if not we can stop here
-        if (isset($writeable_adapters[$aid])) $adapter = $writeable_adapters[$aid];
-        else continue;
-
+      foreach($adapters as $aid => $adapter) {
         $entity_id = $adapter->createEntity($entity);
-
-        $create_new = false;      
+        $create_new = FALSE;
       }
-      //dpm($entity_id,$aid);
     }
-  
     if (empty($entity_id)) {
       drupal_set_message('No local adapter could create the entity','error');
       return;
     }
     
+$tsa['create'] = microtime(true) - $ts;
+$ts = microtime(true);
     
-    #dpm($original_values,'old values');
-    #dpm($values,'new values');
-    /*
-    $real_new_values = array_diff_key($values,$original_values);
-    //dpm($real_new_values,'Really new values');
-    
-    if (!$create_new) $create_new = !empty($real_new_values);
-    unset($real_new_values);
-    */
-#    drupal_set_message("lwa: " . serialize($local_writeable_adapters));
-#    drupal_set_message("wa: " . serialize($writeable_adapters));
-    //dpm($create_new ? 'Gotta create' : 'don\'t create');
-//    dpm(count($local_adapters),'how many');
     foreach($pathbuilders as $pb_id => $pb) {
       
       //get the adapter
       $aid = $pb->getAdapterId();
-
-      //dpm($writeable_adapters,'Check '.$aid.' from '.$pb_id);
-      //check, if it's writeable, if not we can stop here
-      if (isset($writeable_adapters[$aid])) $adapter = $writeable_adapters[$aid];
-      else continue;
+      $adapter = $adapters[$aid];
 
       $success = FALSE;
 #      drupal_set_message("I ask adapter " . serialize($adapter) . " for id " . serialize($entity->id()) . " and get: " . serialize($adapter->hasEntity($id)));
@@ -764,8 +733,6 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         // perhaps we have to check for the field definitions - we ignore this for now.
         //   $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundle_idid);
         try {
-          //dpm('Try writing to '.$aid);
-          //drupal_set_message(" I ask adapter: " . serialize($adapter));
           //we force the writable adapter to write values for newly created entities even if unknown to the adapter by now
           //@TODO return correct success code
           $adapter_info = $adapter->writeFieldValues($entity_id, $values, $pb, $bundle_id, $original_values,$create_new);
@@ -775,7 +742,6 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           // e.g. which uris were used for reference (disamb) etc.
           // as long as it is like now you can't promote uris back to the storage.
 
-#          dpm('Success',$aid);
           $success = TRUE;
         } catch (\Exception $e) {
           drupal_set_message('Could not write entity into adapter '.$adapter->id() . ' because ' . serialize($e->getMessage()));
@@ -786,6 +752,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
       
       if ($success) {
+        
+        // TODO: why are the next two necessary? what do they do?
         $entity->set('eid',$entity_id);
         $entity->enforceIsNew(FALSE);
         //we have successfully written to this adapter
@@ -795,14 +763,20 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         // as we are not interested in the values we discard them
         $entity->getValues($this, TRUE);
         // TODO: eventually there should be a seperate function for the field caching
-
-
         
-        $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id);
-        //dpm($bundle,'Wrote '.$entity_id.' to '.$bundle_id);
-        if ($bundle) $bundle->flushTitleCache($entity_id);
       }
+$tsa["pb $pb_id and adapter $aid"] = microtime(true) - $ts;
+$ts = microtime(true);
     }
+
+$tsa['all'] = microtime(true) - $ts1;
+$tsa['eid'] = $entity_id;
+#ddl($tsa, "time for saving");
+#dpm($tsa, "time for saving");
+
+    $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id);
+    if ($bundle) $bundle->flushTitleCache($entity_id);
+
   }
 
   /**
@@ -812,16 +786,16 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   protected function doDeleteFieldItems($entities) {
 
     $local_adapters = array();
-    $writeable_adapters = array();
+    $writable_adapters = array();
 
     $adapters = entity_load_multiple('wisski_salz_adapter');
 
     foreach($adapters as $aid => $adapter) {
-      // we locate all writeable stores
-      // then we locate all local stores in these writeable stores
+      // we locate all writable stores
+      // then we locate all local stores in these writable stores
 
       if($adapter->getEngine()->isWritable())
-        $writeable_adapters[$aid] = $adapter;
+        $writable_adapters[$aid] = $adapter;
              
       if($adapter->getEngine()->isPreferredLocalStore())
         $local_adapters[$aid] = $adapter;
@@ -829,27 +803,27 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     }
 
     // if there are no adapters by now we die...
-    if(empty($writeable_adapters)) {
+    if(empty($writable_adapters)) {
       drupal_set_message("There is no writable storage backend defined.", "error");
       return;
     }
     
-    if($diff = array_diff_key($local_adapters,$writeable_adapters)) {
+    if($diff = array_diff_key($local_adapters,$writable_adapters)) {
       if (count($diff) === 1)
-        drupal_set_message('The preferred local store '.key($diff).' is not writeable','warning');
-      else drupal_set_message('The preferred local stores '.implode(', ',array_keys($diff)).' are not writeable','warning');
+        drupal_set_message('The preferred local store '.key($diff).' is not writable','warning');
+      else drupal_set_message('The preferred local stores '.implode(', ',array_keys($diff)).' are not writable','warning');
     }
     
-    //we load all pathbuilders, check if they know the fields and have writeable adapters
-    $pathbuilders = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    //we load all pathbuilders, check if they know the fields and have writable adapters
+    $pathbuilders = WisskiPathbuilderEntity::loadMultiple();
 
     foreach($pathbuilders as $pb_id => $pb) {
     
       //get the adapter
       $aid = $pb->getAdapterId();
 
-      //check, if it's writeable, if not we can stop here
-      if (isset($writeable_adapters[$aid])) $adapter = $writeable_adapters[$aid];
+      //check, if it's writable, if not we can stop here
+      if (isset($writable_adapters[$aid])) $adapter = $writable_adapters[$aid];
       else continue;
 
       foreach($entities as $entity)

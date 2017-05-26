@@ -78,6 +78,7 @@ wisski_tick();
 
     #\Drupal::logger('query adapter ' . $this->getEngine()->adapterId())->debug('query result is {result}', array('result' => serialize($return)));
 wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($return)));
+    
     return $return;
 
   }
@@ -193,10 +194,11 @@ wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($ret
     // We walk the tree and build up sparql conditions / a where clause in
     // $query_parts.
     //
-    // We must handle the special case of an entity id condition, which is not
-    // executed against the triple store but the RDB. We keep track of these
-    // entities in $entity_ids and perform sparql subqueries in case the ids and
-    // the clauses have to be mixed (holds for ANDs).
+    // We must handle the special case of an entity id and title/label
+    // condition, which is not executed against the triple store but the RDB.
+    // We keep track of these entities in $entity_ids and perform sparql
+    // subqueries in case the ids and the clauses have to be mixed
+    // (holds for ANDs).
 
     foreach ($condition->conditions() as $ij => $cond) {
       
@@ -239,10 +241,11 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
         // the bundle is being mapped to pb groups
 
         $query_parts[] = $this->makeBundleCondition($operator, $value);
-
+      
       }
-      elseif ($field == "title") {
-        // directly ask Drupal's entity id.
+      elseif ($field == "title" || $field == 'label') {
+        // we treat label and title the same (there really should be no difference)
+        // directly ask the title.
 
         $eids = $this->executeEntityTitleCondition($operator, $value);
         $entity_ids = $this->join($conjunction, $entity_ids, $eids);
@@ -301,13 +304,28 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
       }
     }
     
+    // if we have a query part that is NULL, this means that the field is not
+    // supported by this adapter. If we are in AND mode, this means that the
+    // whole condition is not satisfiable and we return the empty set.
+    // In OR mode we can omit the query part.
+    foreach ($query_parts as $i => $part) {
+      if ($part === NULL) {
+        if ($conjunction == 'AND') {
+          return array('', array());
+        }
+        else {  // OR
+          unset($query_parts[$i]);
+        }
+      }
+    }
+
     // flatten query parts array
     if (empty($query_parts)) {
       $query_parts = '';
-    } 
+    }
     elseif (count($query_parts) == 1) {
       $query_parts = $query_parts[0];
-    } 
+    }
     elseif ($conjunction == 'AND') {
       $query_parts = join(' ', $query_parts);
     }
@@ -417,7 +435,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         }
       }
     }
-wpm(array($select, $result->count(), $timethis, microtime()), $this->getEngine()->adapterId() . ": select");
+
 #    drupal_set_message(serialize($return));
     return $return;
 
@@ -555,7 +573,9 @@ wpm(array($select, $result->count(), $timethis, microtime()), $this->getEngine()
     }
 
     if (empty($query_parts)) {
-      return '';
+      // the bundle is not handled by this adapter
+      // we signal that this query should be skipped
+      return NULL;
     } 
     else {
       $query_parts = '{{ ' . join('} UNION {', $query_parts) . '}} ';  
@@ -579,7 +599,7 @@ wpm(array($select, $result->count(), $timethis, microtime()), $this->getEngine()
     }
 
     if ($count == 0) {
-      return '';
+      return NULL;
     }
     elseif ($count == 1) {
       return $query_parts[0];

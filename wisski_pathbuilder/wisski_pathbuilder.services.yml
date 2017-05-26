@@ -5,3 +5,6 @@ services:
       - { name: cache.bin }
     factory: cache_factory:get
     arguments: [wisski_pathbuilder_eid_to_bundle]
+  wisski_pathbuilder.manager:
+    class: Drupal\wisski_pathbuilder\PathbuilderManager
+

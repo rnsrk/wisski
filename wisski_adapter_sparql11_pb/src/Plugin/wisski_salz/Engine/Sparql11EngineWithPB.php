@@ -1194,7 +1194,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       return array();
     }
 
-
     if(!$path->isGroup())
       $primitive = $path->getDatatypeProperty();
     else
@@ -1270,8 +1269,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     foreach($result as $thing) {
       
       // if $thing is just a true or not true statement
+      // TODO: by Martin: is this really working and if so in which case?
+      // Also, what does true/false statement mean? we know that it's not an ASK query
       if($thing == new \StdClass()) {
-        // we continue
         continue;
       }
       
@@ -1428,8 +1428,17 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #   
 #    drupal_set_message("muha: " . serialize($field_id));
     $field_storage_config = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);#->getItemDefinition()->mainPropertyName();
+    // What does it mean if the field storage config is empty?
+    //=>  it means it is a basic field
+    if (empty($field_storage_config)) {
+      // this is the case for base fields (fields that are defined directly in
+      // the entity class)
+#      drupal_set_message("No field storage config for field '$field_id'", 'warning');
+    }
+
     if(!empty($field_storage_config))
       $main_property = $field_storage_config->getMainPropertyName();
+#if ($field_id == 'fa1d538502c184d2d5e26cd0706c5c56') dpm($field_storage_config);
 #     drupal_set_message("mp: " . serialize($main_property) . "for field " . serialize($field_id));
 #    if (in_array($main_property,$property_ids)) {
 #      return $this->loadFieldValues($entity_ids,array($field_id),$language);
@@ -1437,7 +1446,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    return array();
 #    drupal_set_message(serialize($entity_ids));
     if(!empty($field_id) && empty($bundleid_in)) {
-      drupal_set_message("$field_id angefragt und bundle aber leer.", "error");
+      drupal_set_message("$field_id was queried but no bundle given.", "error");
       return;
     }
     
@@ -1719,15 +1728,18 @@ $oldtmp = $tmp;
         else {
           // we cannot use clearPathArray() here as path is a group and 
           // the function would chop off too much
+          // TODO: check if we can use the new *relative* methods
           $parent_path_array = $parent->getPathArray();
           $pathcnt = count($parent_path_array) - 1;
         }
 
         // we have to set disamb manually to the last instance
         // otherwise generateTriplesForPath() won't produce right triples
-        $disamb = (count($path_array) - 1) / 2;
-        // the var that interests us is the one before disamb
-        $subject_var = "x" . ($disamb - 1);
+        $disamb = (count($path_array) + 1) / 2;
+        // the var that interests us is the one before disamb.
+        // substract 2 as the disamb count starts from 1 whereas vars start from 0!
+        // in W8, the x increases by 2!
+        $subject_var = "x" . (($disamb - 2) * 2);
 
         // build up a select query that get us 
         $select  = "SELECT DISTINCT ?$subject_var WHERE {";
@@ -1740,7 +1752,8 @@ $oldtmp = $tmp;
           // there is no relation any more. has been deleted before!?
           return;
         }
-        
+#ddl(array($disamb, $subject_var, $select,$result, $result->numRows()), 'delete disamb select');
+
         // reset subjects
         $subject_uris = array();
         foreach ($result as $row) {
@@ -1758,7 +1771,6 @@ $oldtmp = $tmp;
         $delete .= "  <$object_uri> <$inverse> <$subject_uri> .\n";
       }
       $delete .= ' }';
-#dpm(array($subject_uris, $delete), 'del');
 
       $result = $this->directUpdate($delete);    
 
@@ -2217,12 +2229,15 @@ $oldtmp = $tmp;
 #\Drupal::logger('testung')->debug($path->getID() . ":".htmlentities($query));
     // get the primitive for this path if any    
     $primitive = $path->getDatatypeProperty();
+    
+    $pb_path_info = $pb->getPbPath($path->id());
+    $has_primitive = !empty($primitive) && $primitive != "empty";
+    $should_have_primitive = !$path->isGroup() && $pb_path_info['fieldtype'] != 'entity_reference';
 
-    if( (empty($primitive) || $primitive == "empty") && !$path->isGroup()) {
+    if(!$has_primitive && $should_have_primitive) {
       drupal_set_message("There is no primitive Datatype for Path " . $path->id(), "error");
     }
-    
-    if(!empty($primitive) && !($primitive == "empty") && empty($object_in) && !$path->isGroup()) {
+    elseif ($has_primitive) {
       if(!$write)
         $query .= "GRAPH ?gprim { ";
       else
@@ -2329,6 +2344,7 @@ $oldtmp = $tmp;
     
     // rename to uri
     $subject_uri = $this->getUriForDrupalId($entity_id);
+    
 
     $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
 
@@ -2336,13 +2352,18 @@ $oldtmp = $tmp;
     // 1 - 2 is 4 / 2 is 2 - which already is the starting point.
     $start = ((count($path->getPathArray()) - (count($pb->getRelativePath($path))))/2);
 
-    if($path->isGroup()) {
+    // we distinguish two modes of how to interpret the value: 
+    // entity ref: the value is an entity id that shall be linked to 
+    // normal: the value is a literal and may be disambiguated
+    $is_entity_ref = $path->isGroup() || $pb->getPbEntriesForFid($fieldid)['fieldtype'] == 'entity_reference';
+    
+    if($is_entity_ref) {
       $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value), (count($path->getPathArray())+1)/2, $start, TRUE, '', 'entity_reference');
     } else {
       if(empty($path->getDisamb()))
         $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE);
       else {
- #       drupal_set_message("disamb: " . serialize($disambresult) . " miau " . $path->getDisamb());
+#        drupal_set_message("disamb: " . serialize($disambresult) . " miau " . $path->getDisamb());
         if(empty($disambresult) || empty($disambresult->{"x" . ($path->getDisamb()-1)*2}) )
           $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE);
         else
@@ -2351,7 +2372,6 @@ $oldtmp = $tmp;
     }
     $sparql .= " } } ";
 #     \Drupal::logger('WissKIsaveProcess')->debug('sparql writing in add: ' . htmlentities($sparql));
-#    dpm($sparql, "write:");
        
     $result = $this->directUpdate($sparql);
     

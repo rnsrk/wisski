@@ -34,7 +34,9 @@ class AdapterHelper {
    */
   public static function setSameUris($uris,$entity_id=NULL) {
 
-\Drupal::logger("AH:ssu")->debug("$entity_id and {uris}: {bt}", ["uris" => join(" ",$uris),"bt"=>join('//', array_map(function ($a) { return $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5)))]);
+    if (WISSKI_DEVEL) {
+      \Drupal::logger("AH:ssu")->debug("$entity_id and {uris}: {bt}", ["uris" => join(" ",$uris),"bt"=>join('//', array_map(function ($a) { return $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5)))]);
+    }
 
     if (empty($uris)) return TRUE;
     //dpm($uris,__FUNCTION__.' '.$entity_id);
@@ -246,8 +248,9 @@ class AdapterHelper {
       ->fields(array('eid'=>$id))
       ->condition('rid',$id)
       ->execute();
-\Drupal::logger("AH:difu")->debug("$id and $uri and $input_adapter_id: {bt}", ["bt"=>join('//', array_map(function ($a) { return $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 8)))]);
-    
+    if (WISSKI_DEVEL) {
+      \Drupal::logger("AH:difu")->debug("$id and $uri and $input_adapter_id: {bt}", ["bt"=>join('//', array_map(function ($a) { return $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 8)))]);
+    } 
     //don't forget to inform the services about the new id
     if (self::setSameUris(array($input_adapter_id=>$uri),$id)) {
       //dpm($id,'set anew');
