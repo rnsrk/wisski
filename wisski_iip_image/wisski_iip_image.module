@@ -34,13 +34,30 @@ function wisski_iip_image_preprocess_colorbox_formatter(&$variables) {
 }
 
 function wisski_iip_image_field_widget_form_alter(&$element, \Drupal\Core\Form\FormStateInterface $form_state, $context) {
-
+  
   if(isset($element['#value_callback']) && in_array('Drupal\image\Plugin\Field\FieldWidget\ImageWidget', $element['#value_callback'])) {
+
+    $entity_type = 'wisski_individual';
+    // this seems evil... 
+    $bundle = $form_state->getBuildInfo()['callback_object']->getEntity()->bundle();
+
+    $field_name = $element['#field_name'];
+
+    $bundle_fields = \Drupal::getContainer()->get('entity_field.manager')->getFieldDefinitions($entity_type, $bundle);
+    $field_definition = $bundle_fields[$field_name];
 
     $image_factory = \Drupal::service('image.factory');
     $supported_extensions = $image_factory->getSupportedExtensions();
-
+    
     $element['#upload_validators']['file_validate_extensions'][0] = implode(' ', $supported_extensions);    
+
+    // set the field settings accordingly for validation!
+    $field_definition->setSetting("file_extensions", implode(' ', $supported_extensions));
+    $field_definition->save();
   }
 
 }
+
+#function wisski_iip_image_file_validate(Drupal\file\FileInterface $file) {
+#  drupal_set_message("Hallo Welt!");
+#}
