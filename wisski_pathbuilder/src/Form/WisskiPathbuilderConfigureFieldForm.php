@@ -165,9 +165,12 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     
     if($path->getType() == "Path") {
       $bundle_id = $pbpath['bundle'];
+
+      // if there is no bundle, search for one
       if (empty($bundle_id)) {
         $current = $pbpath;
-        while (empty($bundle_id) && $current['id'] !== $current['parent']) {
+        
+        while (empty($bundle_id) && !empty($current['parent']) && $current['id'] !== $current['parent']) {
           $current = $this->pathbuilder->getPbPath($current['parent']);
           $bundle_id = $current['bundle'];
         }
