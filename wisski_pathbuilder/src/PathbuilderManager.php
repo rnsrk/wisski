@@ -29,7 +29,7 @@ class PathbuilderManager {
    *          pathbuilders. If adapter_id is given returns an array of 
    *          corresponding pathbuilders.
    */
-  public function getPbsForAdapters($adapter_id = NULL) {
+  public function getPbsForAdapter($adapter_id = NULL) {
     if (self::$pbsForAdapter === NULL) {  // not yet fetched from cache?
       if ($cache = \Drupal::cache()->get('wisski_pathbuilder_manager_pbs_for_adapter')) {
         self::$pbsForAdapter = $cache->data;
