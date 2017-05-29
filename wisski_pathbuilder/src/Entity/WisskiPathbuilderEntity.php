@@ -132,7 +132,12 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
   }
   
   public function getPbPath($pathid){
-    return $this->pbpaths[$pathid] ?: NULL;
+
+    if(isset($this->pbpaths[$pathid]))
+      return $this->pbpaths[$pathid];
+    else 
+      return NULL;
+
   }
   
   public function setPbPaths($paths){
