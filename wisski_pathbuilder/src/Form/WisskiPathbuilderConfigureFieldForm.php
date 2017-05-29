@@ -207,9 +207,11 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         '#type' => 'fieldset',
         '#title' => $this->t('Choose field'),
       );
+      
+      
       $form['field_form']['choose_field']['select_field'] = array(
         '#type' => 'select',
-        '#description' => $this->t('Select an existing field from bundle %bundle_label',array('%bundle_label' => $bundle_label.' ('.$bundle_id.')')),
+        '#description' => (!empty($bundle_id) ? $this->t('Select an existing field from bundle %bundle_label',array('%bundle_label' => $bundle_label.' ('.$bundle_id.')')) : $this->t('Should a field be created?') ),
         '#options' => $field_options,
         '#default_value' => $default_value,
         '#empty_option' => ' - '.$this->t('select').' - ',
@@ -219,6 +221,8 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
           'callback' => array($this,'fieldCallback'),
         ),
       );
+      
+      
       $selected_field_name = $default_value;
       $trigger = $form_state->getTriggeringElement();
       //dpm($trigger,'Trigger');
