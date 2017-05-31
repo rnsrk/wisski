@@ -362,7 +362,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    */
   public function getOntologyGraphs() {
     $graph_uris = $this->ontology_graphs;
-    if (empty($graph_uris)) {
+    if (empty($graph_uris) || ( isset($graph_uris[0]) && empty($graph_uris[0])) ) {
       $graph_uris = $this->queryOntologyGraphsFromStore();
     }
     return $graph_uris;
