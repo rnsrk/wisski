@@ -463,7 +463,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       $parent_id = $pb->getParentBundleId($this->id());
       if ($parent_id) {
         if ($get_labels) {
-          $parents[$parent_id] = self::load($parent_id)->label();
+          $parent = self::load($parent_id);
+          if (!empty($parent)) {
+            $parents[$parent_id] = $parent->label();
+          }
         } else $parents[$parent_id] = $parent_id;
       }
     }

@@ -515,6 +515,9 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       'type' => $pbpaths[$pathid]['fieldtype'], #'type' => 'text',//has to fit the field component type, see below
       'translatable' => TRUE,
     ];
+      
+    if ($pbpaths[$pathid]['fieldtype'] == 'entity_reference')
+      $field_storage_values['settings']['target_type'] = 'wisski_individual';
   
     // this was called instance?
     $field_values = [
@@ -526,6 +529,44 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       'translatable' => FALSE,
       'disabled' => FALSE,
     ];
+
+    // in case of entity reference set referenced bundles appropriately
+    if($pbpaths[$pathid]['fieldtype'] == 'entity_reference') {
+      $path = entity_load('wisski_path', $pathid);
+      $path_array = $path->getPathArray();
+      $main_concept = end($path_array);
+      $bundle_infos = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle();
+      $target_bundles = array();
+      $best_rank = 0;
+      foreach ($bundle_infos as $target_bundle_id => $bundle_info) {
+        foreach ($bundle_info as $pbid => $info) {
+          if (isset($info['main_concept'][$main_concept])) {
+            // having the same concept is mandatory.
+            // to cut down multiples we rank the possible bundles further:
+            // 1. are top bundles and are in the same pb
+            // 2. are top bundles
+            // 3. are in the same pb
+            // 4. rest
+            $rank = 0;
+            if (isset($info['is_top_concept'][$main_concept])) $rank += 2;
+            if ($this->id() == $pbid) $rank +=1;
+            if ($rank > $best_rank) {
+              $target_bundles = array($target_bundle_id => $target_bundle_id);
+              $best_rank = $rank;
+            }
+            elseif ($rank == $best_rank) {
+              $target_bundles[$target_bundle_id] = $target_bundle_id;
+            }
+          }
+        }
+      }
+    
+#dpm(array($main_concept, $target_bundles, $best_rank));
+#ddl(array($main_concept, $target_bundles, $bundle_infos),'target');
+      $field_values['settings']['handler'] = "default:wisski_individual";
+      $field_values['settings']['handler_settings']['target_bundles'] = $target_bundles;
+      $field_values['field_type'] = "entity_reference";
+    }
     
 #      dpm($field_storage_values, 'fsv');
 #      dpm($field_values, 'fv');
@@ -1222,7 +1263,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
    * Gets the starting position for the relative path part
    */
   public function getRelativeStartingPosition($path, $with_start_connection = TRUE) {
-if (!$path) \Drupal::logger('bad wisski')->error(array_reduce(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 7), function($a, $b) {return "$a<br/>".$b['function'];}, ""));
+#if (!$path) \Drupal::logger('bad wisski')->error(array_reduce(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 7), function($a, $b) {return "$a<br/>".$b['function'];}, ""));
     $path_length = count($path->getPathArray());
     $relative_path_length = count($this->getRelativePath($path, $with_start_connection));
     $starting_position = ($path_length - $relative_path_length) / 2;

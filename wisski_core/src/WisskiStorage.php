@@ -48,6 +48,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     foreach ($ids as $id) {
       //@TODO combine this with getEntityInfo
       if (!empty($values[$id])) {
+#ddl($values, 'values');
+#if (!isset($values[$id]['bundle'])) ddl($values[$id], "adbadbad$id bad");
         $entity = $this->create($values[$id]);
         $entity->enforceIsNew(FALSE);
         $entities[$id] = $entity;
@@ -98,6 +100,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       $info[$id]['eid'] = $id;
       
       //see if we got bundle information cached. Useful for entity reference and more      
+      $overall_bundle_ids = array();
       $cached_bundle = WisskiCacheHelper::getCallingBundle($id);
       
       // only use that if it is a top bundle when the checkbox was set. Always use it otherwise.
@@ -117,6 +120,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           // if so - ask for the bundles for that id
           // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
           $bundle_ids = $adapter->getBundleIdsForEntityId($id);
+          $overall_bundle_ids = array_merge($overall_bundle_ids, $bundle_ids);
 #          drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
           if (isset($cached_bundle)) {
             if (in_array($cached_bundle,$bundle_ids)) {
@@ -186,11 +190,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 $info[$id]['bundle'] = $bundleid;
                 if ($field_def->getType() === 'entity_reference') {
                   $field_settings = $field_def->getSettings();
+#if (!isset($field_settings['handler_settings']['target_bundles'])) dpm($field_def);
                   $target_bundles = $field_settings['handler_settings']['target_bundles'];
                   if (count($target_bundles) === 1) {
                     $target_bundle_id = current($target_bundles);
                   } else {
-                    drupal_set_message($this->t('Multiple target bundles for field %field'),array('%field' => $field_name));
+                    drupal_set_message($this->t('Multiple target bundles for field %field',array('%field' => $field_name)));
                     //@TODO create a MASTER BUNDLE and choose that one here
                     $target_bundle_id = current($target_bundles);
                   }
@@ -315,86 +320,28 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         } else {
 #          drupal_set_message("No, I don't know " . $id . " and I am " . $aid . ".");
         }
-      }
-    }
-/*
-
-    foreach ($bundles as $bundle_name => $bundle_label) {
-      $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundle_name);
-      dpm($field_definitions,$bundle_name);
-      foreach ($adapters as $aid => $adapter) {
-  //      if ($adapter->getEngineId() === 'sparql11_with_pb') continue;
-        try {
-          $adapter_info = $adapter->loadFieldValues($ids,array_keys($field_definitions));
-          dpm($adapter_info,"info from $aid");#return array();
-          foreach($adapter_info as $entity_id => $entity_values) {
-            //if we don't know about that entity yet, this adapter's info can be used without a change
-            if (!isset($info[$entity_id])) $info[$entity_id] = $entity_values;
-            else {
-              //integrate additional values on existing entities
-              foreach($entity_values as $field_name => $value) {
-                if (empty($value)) continue;
-                $actual_field_info = $info[$entity_id][$field_name];
-                
-                // if there is no field definition throw an error.
-                if(empty($field_definitions[$field_name])) {
-                  drupal_set_message("Asked for field definition of field " . $field_name . " on WissKI Individual but there was nothing.", 'error');
-                  continue;
-                }
-                
-                if ($field_definitions[$field_name] instanceof BaseFieldDefinition) {
-                  //this is a base field and cannot have multiple values
-                  //@TODO make sure, we load the RIGHT value
-                  if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
-                    $this->t('1Multiple values for %field_name in entity %id: %val1, %val2',array(
-                      '%field_name'=>$field_name,
-                      '%id'=>$entity_id,
-                      '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
-                      '%val2'=>$value,
-                    )),'error');
-                  else $info[$entity_id][$field_name] = $value;
-                  continue;
-                }
-                
-                drupal_set_message("what do we have here: " . serialize($field_definitions[$field_name]));
-                
-                //rest is a field
-                $cardinality = $field_definitions[$field_name]->getCardinality();
-                
-                if ($cardinality === 1) {
-                  //this field cannot have multiple values
-                  //@TODO make sure, we load the RIGHT value
-                  if (!empty($actual_field_info) && $actual_field_info != $value) drupal_set_message(
-                    $this->t('Multiple values for field %field_name in entity %id: %val1, %val2',array(
-                      '%field_name'=>$field_name,
-                      '%id'=>$entity_id,
-                      '%val1'=>is_array($actual_field_info)?implode($actual_field_info,', '):$actual_field_info,
-                      '%val2'=>$value,
-                    )),'error');
-                  else $info[$entity_id][$field_name] = $value;
-                  continue;
-                }
-                if (!is_array($actual_field_info)) $actual_field_info = array($actual_field_info);
-                if ($cardinality > 0 && count($actual_field_info) >= $cardinality) {
-                  drupal_set_message(
-                    $this->t('Too many values for field %field_name in entity %id. %card allowed. Tried to add %val2',array(
-                      '%field_name'=>$field_name,
-                      '%id'=>$entity_id,
-                      '%card'=>$cardinality,
-                      '%val1'=>$value, )),'error');
-                } else $actual_field_info[] = $value;
-                $info[$entity_id][$field_name] = $actual_field_info;
-              }
-            }
+          
+      } // end foreach adapter
+      
+      if (!isset($info[$id]['bundle'])) {
+        // we got no bundle information
+        // this may especially be the case if we have an instance with no fields filled out.
+        // if some adapters found some bundle info, we make a best guess
+        if (!empty($overall_bundle_ids)) {
+          $top_bundle_ids = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
+          $best_guess = array_intersect($overall_bundle_ids, $top_bundle_ids);
+          if (empty($best_guess)) {
+            $best_guess = $overall_bundle_ids;
           }
-          //dpm(array('adapter_info'=>$adapter_info,'entity_info_after'=>$info),$aid);
-        } catch (\Exception $e) {
-          drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . serialize($e));
+          // if there are multiples, tkae the first one
+          // TODO: rank remaining bundles
+          $info[$id]['bundle'] = current($best_guess);
         }
       }
-    }*/
+      
+    }
+
     $entity_info = WisskiHelper::array_merge_nonempty($entity_info,$info);
-#    dpm(func_get_args()+array('info'=>$info,'result'=>$entity_info),__METHOD__);
 
     wpm($entity_info, 'gei');
     return $entity_info;
