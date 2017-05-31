@@ -109,3 +109,12 @@ entity.wisski_path.delete_core:
 #  requirements:
 #    _permission: 'administer site configuration'
 
+entity.wisski_path.usage:
+  path: '/admin/config/wisski/path/usage'
+  defaults:
+    _form: '\Drupal\wisski_pathbuilder\Form\PathUsageForm'
+    _title: 'Usage of Paths'
+  requirements:
+    _permission: 'administer site configuration'
+
+

@@ -60,7 +60,7 @@ class PathbuilderManager {
   }
 
   
-  public function getPbsUsingBundle($bundle_id) {
+  public function getPbsUsingBundle($bundle_id = NULL) {
     if (self::$pbsUsingBundle === NULL) {  // not yet fetched from cache?
       if ($cache = \Drupal::cache()->get('wisski_pathbuilder_manager_pbs_using_bundle')) {
         self::$pbsUsingBundle = $cache->data;
@@ -71,22 +71,36 @@ class PathbuilderManager {
       $pbs = entity_load_multiple('wisski_pathbuilder');
       foreach ($pbs as $pbid => $pb) {
         foreach ($pb->getAllGroups() as $group) {
-          $bid = $pb->getPbPath($group->getID())['bundle'];
+          $pbpath = $pb->getPbPath($group->getID());
+          $bid = $pbpath['bundle'];
           if (!empty($bid)) {
             if (!isset(self::$pbsUsingBundle[$bid])) {
               self::$pbsUsingBundle[$bid] = array();
             }
             $adapter = entity_load('wisski_salz_adapter', $pb->getAdapterId());
             if ($adapter) {
-              $engine = $adapter->getEngine();
-              $info = array(
-                'pb_id' => $pbid,
-                'adapter_id' => $adapter->id(),
-                'writable' => $engine->isWritable(),
-                'preferred_local' => $engine->isPreferredLocalStore(),
-                'engine_plugin_id' => $engine->getPluginId(),
-              );
-              self::$pbsUsingBundle[$bid][$pbid] = $info;
+              if (!isset(self::$pbsUsingBundle[$bid][$pbid])) {
+                $engine = $adapter->getEngine();
+                $info = array(
+                  'pb_id' => $pbid,
+                  'adapter_id' => $adapter->id(),
+                  'writable' => $engine->isWritable(),
+                  'preferred_local' => $engine->isPreferredLocalStore(),
+                  'engine_plugin_id' => $engine->getPluginId(),
+                  'main_concept' => array(), // filled below
+                  'is_top_concept' => array(), // filled below
+                  'groups' => array(), // filled below
+                );
+                self::$pbsUsingBundle[$bid][$pbid] = $info;
+              }
+              $path_array = $group->getPathArray();
+              $main_concept = end($path_array); // the last concept is the main concept  
+              self::$pbsUsingBundle[$bid][$pbid]['main_concept'][$main_concept] = $main_concept;
+              if (empty($pbpath['parent'])) {
+                self::$pbsUsingBundle[$bid][$pbid]['is_top_concept'][$main_concept] = $main_concept;
+              }
+              self::$pbsUsingBundle[$bid][$pbid]['groups'][$group->getID()] = $main_concept;
+
             }
             else {
               drupal_set_message(t('Pathbuilder %pb refers to non-existing adapter with ID %aid.', array(
@@ -99,9 +113,64 @@ class PathbuilderManager {
       }
       \Drupal::cache()->set('wisski_pathbuilder_manager_pbs_using_bundle', self::$pbsUsingBundle);
     }
-    return isset(self::$pbsUsingBundle[$bundle_id]) ? self::$pbsUsingBundle[$bundle_id] : array();
+    return empty($bundle_id) 
+           ? self::$pbsUsingBundle // if no bundle given, return all
+           : (isset(self::$pbsUsingBundle[$bundle_id]) 
+             ? self::$pbsUsingBundle[$bundle_id] // if bundle given and we know it, return only for this
+             : array());  // if bundle is unknown, return empty array
   }
 
   
+  public function getOrphanedPaths() {
+
+    $pba = entity_load_multiple('wisski_pathbuilder');
+    $pa = entity_load_multiple('wisski_path');
+    $tree_path_ids = array(); // filled in big loop
+    
+    $home = array(); // here go regular paths, ie. that are in a pb's path tree
+    $semiorphaned = array(); // here go paths that are listed in a pb but not in its path tree (are "hidden")
+    $orphaned = array(); // here go paths that aren't mentioned in any pb
+    
+    foreach ($pa as $pid => $p) {
+      $is_orphaned = TRUE;
+      foreach ($pba as $pbid => $pb) {
+        if (!isset($tree_path_ids[$pbid])) {
+          $tree_path_ids[$pbid] = $this->getPathIdsInPathTree($pb);
+        }
+        $pbpath = $pb->getPbPath($pid);
+        if (isset($tree_path_ids[$pbid][$pid])) {
+          $home[$pid][$pbid] = $pbid;
+          $is_orphaned = FALSE;
+        }
+        elseif (!empty($pbpath)) {
+          $semiorphaned[$pid][$pbid] = $pbid;
+          $is_orphaned = FALSE;
+        }
+      }
+      if ($is_orphaned) {
+        $orphaned[$pid] = $pid;
+      }
+    }
+    return array(
+      'home' => $home,
+      'semiorphaned' => $semiorphaned,
+      'orphaned' => $orphaned,
+    );
+
+  } 
+
+
+  public function getPathIdsInPathTree($pb) {
+    $ids = array();
+    $agenda = $pb->getPathTree();
+    while ($node = array_shift($agenda)) {
+      $ids[$node['id']] = $node['id'];
+      $agenda = array_merge($agenda, $node['children']);
+    }
+    return $ids;
+  }
+
+
+
 
 }

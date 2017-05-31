@@ -4,6 +4,12 @@ entity.wisski_pathbuilder.add:
   appears_on:
     - entity.wisski_pathbuilder.collection
 
+entity.wisski_path.usage:
+  route_name: 'entity.wisski_path.usage'
+  title: 'Path usage'
+  appears_on:
+    - entity.wisski_pathbuilder.collection
+
 entity.wisski_path.add:
   route_name: 'entity.wisski_path.add_form'
   title: 'Add Path'

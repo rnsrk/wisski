@@ -65,7 +65,7 @@ class AdapterHelper {
         return FALSE;
       }
     } elseif (!empty($set_ids) && !in_array($entity_id,$set_ids)) {
-      drupal_set_message('There are already entities connected with those uris','error');
+      drupal_set_message('There are already entities connected with these uris. Entity id: ' . $entity_id . ', URIS: ' . join('; ', $uris),'error');
       //dpm($set_ids+array('new'=>$entity_id),'IDs');
       return FALSE;
     }
