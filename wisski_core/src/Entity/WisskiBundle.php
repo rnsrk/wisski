@@ -312,7 +312,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           // main bundle and the paths have to be absolute. In this case
           // we have to call it with false. 
           if($bundle_of_path != $this->id())
-            $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, count($pb->getRelativePath($path)), NULL, FALSE); 
+            $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, count($pb->getRelativePath($path)) -1, NULL, FALSE); 
           else // if not they are relative.
             $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, TRUE);
           if (WISSKI_DEVEL) \Drupal::logger($pb_id.' '.$path_id.' '.__FUNCTION__)->debug('Entity '.$eid."{out}",array('out'=>serialize($new_values)));
