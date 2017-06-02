@@ -71,7 +71,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getPathAlternatives($history = [], $future = [],$fast_mode=FALSE,$empty_uri='empty') {
 
 #    \Drupal::logger('WissKI path alternatives: '.($fast_mode ? 'fast mode' : "normal mode"))->debug('History: '.serialize($history)."\n".'Future: '.serialize($future));
-    
     $search_properties = NULL;
     
     $last = NULL;
@@ -109,7 +108,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
       }
     }
-    
+#  dpm(serialize($search_properties), "sp");    
 #    \Drupal::logger('WissKI next '.($search_properties ? 'properties' : 'classes'))->debug('Last: '.$last.', Next: '.$next);
     //$search_properties is TRUE if and only if last and next are valid URIs and no owl:Class-es
     if ($search_properties) {
@@ -117,7 +116,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     } else {
       $return = $this->nextClasses($last,$next,$fast_mode);
     }
-//    dpm(func_get_args()+array('result'=>$return),__FUNCTION__);
+#    dpm(func_get_args()+array('result'=>$return),__FUNCTION__);
     return $return;
   }
   
@@ -343,7 +342,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     } else return $dom_properties;
     return array_intersect_key($dom_properties,$rng_properties);
     */
-    
+
     //DB version
     $dom_properties = $this->retrieve('domains','property','class',$class);
     if (isset($class_after)) $rng_properties = $this->retrieve('ranges','property','class',$class_after);
@@ -568,6 +567,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if (!isset($property) && !isset($property_after)) return $this->getClasses();
 #    \Drupal::logger(__METHOD__)->debug('property: '.$property.', property_after: '.$property_after);
     $output = $this->getClassesFromCache($property,$property_after);
+#    dpm($output, "output");
     if ($output === FALSE) {
       //drupal_set_message('none in cache');
       $output = $this->getClassesFromStore($property,$property_after,$fast_mode);
@@ -593,9 +593,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     } else return $rng_classes;
     return array_intersect_key($rng_classes,$dom_classes);
     */
-    
+#    dpm(func_get_args()+array('result'=>$return),__FUNCTION__);    
     //DB version
     $rng_classes = $this->retrieve('ranges','class','property',$property);
+#    dpm($rng_classes, "ranges");
     if (isset($property_after)) $dom_classes = $this->retrieve('domains','class','property',$property_after);
     else return $rng_classes;
     return array_intersect_key($rng_classes,$dom_classes);
@@ -3216,12 +3217,13 @@ $oldtmp = $tmp;
     //take all properties with no super property
     $top_properties = array_diff_key($properties,$super_properties);
 
-    $valid_definitions = TRUE;
+    $invalid_definitions = array();
     //check if they all have domains and ranges set
     $dom_check = array_diff_key($top_properties,$domains);
     if (!empty($dom_check)) {
       drupal_set_message('No domains for top-level properties: '.implode(', ',$dom_check),'error');;
-      $valid_definitions = FALSE;
+      $invalid_definitions = array_merge($invalid_definitions, $dom_check);
+    #  $valid_definitions = FALSE;
       //foreach($dom_check as $dom) {
       //  $domains[$dom] = ['TOPCLASS'=>'TOPCLASS'];
       //}
@@ -3229,7 +3231,8 @@ $oldtmp = $tmp;
     $rng_check = array_diff_key($top_properties,$ranges);
     if (!empty($rng_check)) {
       drupal_set_message('No ranges for top-level properties: '.implode(', ',$rng_check),'error');
-      $valid_definitions = FALSE;
+      $invalid_definitions = array_merge($invalid_definitions, $rng_check);
+    #  $valid_definitions = FALSE;
       //foreach ($rng_check as $rng) {
       //  $ranges[$rng] = ['TOPCLASS'=>'TOPCLASS'];
       //}
@@ -3237,19 +3240,33 @@ $oldtmp = $tmp;
     
     //set of properties where the domains and ranges are not fully set
     $not_set = array_diff_key($properties,$top_properties);
+    $not_set = array_diff_key($not_set, $invalid_definitions);
+#    dpm($invalid_definitions, "invalid!");
+#   dpm($not_set, "not set");
     
     //while there are unchecked properties cycle throgh them, gather domain/range defs from all super properties and inverses
     //and include them into own definition
     $runs = 0;
-    while ($valid_definitions && !empty($not_set)) {
+    while (!empty($not_set)) {
       
       $runs++;
       //take one of the properties
       $prop = array_shift($not_set);
+ #     dpm($prop, "was not set");
       //check if all super_properties have their domains/ranges set
       $supers = $super_properties[$prop];
-      $invalid_supers = array_intersect($supers,$not_set);
+      $invalid_supers = array_intersect($supers,$invalid_definitions);
+#      $invalid_supers = $invalid_definitions;
+#      dpm($supers, "for prop $prop, still to check: " . serialize($not_set));
+
       if (empty($invalid_supers)) {
+      
+        $to_check = array_intersect($supers, $not_set);
+        if(!empty($to_check)) {
+          array_push($not_set,$prop);
+          continue;
+        }
+      
         //take all the definitions of super properties and add them here
         $new_domains = isset($domains[$prop]) ? $domains[$prop] : array();
         $new_ranges = isset($ranges[$prop]) ? $ranges[$prop] : array();
@@ -3290,7 +3307,9 @@ $oldtmp = $tmp;
         
       } else {
         //append this property to the end of the list to be checked again later-on
-        array_push($not_set,$prop);
+#        array_push($not_set,$prop);
+        drupal_set_message("I could not check $prop, because it has the invalid superproperties: " . implode(', ',$invalid_supers), "error");
+        continue;
       }
     }
     drupal_set_message('Definition checkup runs: '.$runs);
