@@ -5,10 +5,3 @@ wisski_apus.config.overview:
   route_name: wisski_apus.config.overview
   weight: 100
 
-wisski_apus.config.dummy:
-  title: 'WissKI APUS Dummy'
-  description: "Dumm dumm dummy"
-  parent: wisski_apus.config.overview
-  route_name: wisski_apus.config.dummy
-  weight: 0
-

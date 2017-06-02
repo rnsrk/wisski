@@ -79,7 +79,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         $sub_result = $query->execute();
         $result = array_unique(array_merge($result,$sub_result));
       }
-      if (!empty(self::$empties)) $result = array_diff($result,$empties);
+      if (!empty(self::$empties)) $result = array_diff($result,self::$empties);
       return $result;
     }
   }

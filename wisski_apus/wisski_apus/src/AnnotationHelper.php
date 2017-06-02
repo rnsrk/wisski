@@ -11,7 +11,10 @@ use Drupal\wisski_salz\AdapterHelper;
 
 class AnnotationHelper {
   
-  
+  public static function generateAnnotationId($params = array()) {
+    $id = 'wta' . \Drupal::service('uuid')->generate();
+    return $id;
+  }
 
   
   /** Tries its best to find a Wisski entity to the given URL.
@@ -168,15 +171,24 @@ class AnnotationHelper {
       }
       // we target an instance
       // search potential ref attributes, order resembles priority 
-      $targets = NULL;
-      if ($element->hasAttribute('data-wisski-target-ref')) $targets = $element->getAttribute('data-wisski-target-ref');
-      if ($element->hasAttribute('data-wisski-target')) $targets = $element->getAttribute('data-wisski-target');
-      if ($element->hasAttribute('about')) $targets = $element->getAttribute('about');
-      if ($element->hasAttribute('href')) $targets = $element->getAttribute('href');
+      $targets = '';
+      if ($element->hasAttribute('data-wisski-target-ref')) {
+        $targets = $element->getAttribute('data-wisski-target-ref');
+      }
+      elseif ($element->hasAttribute('data-wisski-target')) {
+        $targets = $element->getAttribute('data-wisski-target');
+      }
+      elseif ($element->hasAttribute('about')) {
+        $targets = $element->getAttribute('about');
+      }
+      elseif ($element->hasAttribute('href')) {
+        $targets = $element->getAttribute('href');
+      }
+      // targets are potentially a ws-separated list 
+      $targets = preg_replace('/\s+/u', ' ', $targets);
+      $targets = explode(' ', trim($targets));
       // cleanse the list of targets
-      if ($targets) {
-        $targets = preg_replace('/\s+/u', ' ', $targets);
-        $targets = explode(' ', trim($targets));
+      if (!empty($targets)) {
         // for every target we check if it points to some wisski individual
         $entity_infos = array();
         foreach ($targets as $key => $target) {
@@ -194,23 +206,25 @@ class AnnotationHelper {
         }
       }
 
-      // we also send the type / category info as thhasAttribute may help the
+      // we also send the type / category info as hasAttribute may help the
       // server to respond faster->
       // the other possibility hasAttribute that the instance is not specified,
       // and there hasAttribute just a type or category annotation->
-      if ($element->hasAttribute('typeof')) {
-        $anno->target->type = $element->getAttribute('typeof');
-      } 
       if ($element->hasAttribute('data-wisski-target-type')) {
         $anno->target->type = $element->getAttribute('data-wisski-target-type');
       }
+      elseif ($element->hasAttribute('typeof')) {
+        $anno->target->type = $element->getAttribute('typeof');
+      }
+      
+      // there may be information about the annotator's certainty
       if ($element->hasAttribute('data-wisski-certainty')) {
         $anno->certainty = $element->getAttribute('data-wisski-certainty');
       }
 
-
     }
-
+    
+    // if this annotation does not refer to a target it's not a real annotation
     if (empty($anno->target->ref) && empty($anno->target->type)) {
       return NULL;
     }

@@ -77,10 +77,33 @@ class PipeManager {
    * @param ids
    *  The IDs of the pipe or NULL
    *
-   * @return Pipe
+   * @return array of Pipes keyed by their IDs
    */
   public function loadMultiple(array $ids = NULL) {
     return $this->getEntityManager()->getStorage('wisski_pipe')->loadMultiple($ids);
+  }
+  
+
+  /**
+   * Loads all pipes that match all of the given flags.
+   *
+   * @param tags an array of tags or a string with a single tag
+   *
+   * @return array of Pipes keyed by their IDs
+   */
+  public function loadByTags($tags = array()) {
+    $tags = (array) $tags;  // make string an array
+    $pipes = $this->getEntityManager()->getStorage('wisski_pipe')->loadMultiple();
+    $cnt = count($tags);
+    if ($cnt) {
+      foreach ($pipes as $pid => $pipe) {
+        $sect = array_intersect($tags, $pipe->getTags());
+        if (count($sect) != $cnt) {
+          unset($pipes[$pid]);
+        }
+      }
+    }
+    return $pipes;
   }
 
 

@@ -310,5 +310,9 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
   public function checkUriExists($uri) {
     return $this->getEngine()->checkUriExists($uri);
   }
+
+  public function isWritable() {
+    return $this->getEngine()->isWritable();
+  }
   
 }
