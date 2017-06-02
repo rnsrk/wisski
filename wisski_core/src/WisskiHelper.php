@@ -163,10 +163,14 @@ class WisskiHelper {
         }
         
         // if it is entity_reference - recurse if user wants to         
-        if($recursive && $field_definition->getType() == "entity_reference")
-          $subbundles[] = $key;
+        if($recursive && $field_definition->getType() == "entity_reference") {
+          
+#          drupal_set_message("er: " . serialize($field_definition->getSettings()['handler_settings']['target_bundles']));
+          $subbundles = array_merge($subbundles, $field_definition->getSettings()['handler_settings']['target_bundles']);
+        }
       }
     }
+    
     
     // recurse
     if($recursive) {
