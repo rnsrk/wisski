@@ -134,22 +134,47 @@ class WisskiHelper {
    * @param $fieldtype	The type of the field or null for any field
    * @param $field_format	The format of the field or null for any
    */ 
-  public static function getFieldsForBundleId($bundleid, $fieldtype = NULL, $field_format = NULL) {
+  public static function getFieldsForBundleId($bundleid, $fieldtype = NULL, $field_format = NULL, $recursive = TRUE) {
     $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual',$bundleid);
-
-    // if fieldtype is empty we ignore the field format
-    if(empty($fieldtype))
-      return $field_definitions;
     
     $out = array();
+    $subbundles = array();
     
     foreach($field_definitions as $key => $field_definition) {
       if(!($field_definition instanceof BaseFieldDefinition)) {
-        if($fieldtype == $field_definition->getType())
+        
+        if(empty($fieldtype))
           $out[$key] = $key;
- #       drupal_set_message(serialize($key) . " is " . serialize($field_definition));
+        else if($fieldtype == $field_definition->getType()) {
+          if(empty($field_format))
+            $out[$key] = $key;
+
+          
+// @TODO This might be useful later - up to now $field format is ignored 
+#          $def = \Drupal::service('plugin.manager.field.field_type')->getDefinitions();
+          
+#          drupal_set_message("def is: " . serialize($def[$field_definition->getType()]));
+#          $ding = $def[$field_definition->getType()];
+#          $blubb = $ding['class'];
+          
+#          drupal_set_message("miazt: " . serialize($blubb::propertyDefinitions($field_definition->getFieldStorageDefinition())));
+          #else if(Drupal::service('plugin.manager.' . $key . '.' .$field_definition->getType())->getDefinitions())
+#            $out[$key] = $key;
+        }
+        
+        // if it is entity_reference - recurse if user wants to         
+        if($recursive && $field_definition->getType() == "entity_reference")
+          $subbundles[] = $key;
       }
     }
+    
+    // recurse
+    if($recursive) {
+      foreach($subbundles as $subbundle) {
+        $out = array_merge($out, \Drupal\wisski_core\WisskiHelper::getFieldsForBundleId($subbundle, $fieldtype, $field_format, $recursive));
+      }
+    }
+    
     return $out;
   }
   
