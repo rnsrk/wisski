@@ -2,6 +2,7 @@
 
 namespace Drupal\wisski_core;
 
+use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity as Pathbuilder;
 
 /**
@@ -126,6 +127,31 @@ class WisskiHelper {
     }
     return $parents;
   }  
+
+  /**
+   * Gets all fields from a bundle id of a given type and format
+   * @param $bundleid	The id of the bundle
+   * @param $fieldtype	The type of the field or null for any field
+   * @param $field_format	The format of the field or null for any
+   */ 
+  public static function getFieldsForBundleId($bundleid, $fieldtype = NULL, $field_format = NULL) {
+    $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual',$bundleid);
+
+    // if fieldtype is empty we ignore the field format
+    if(empty($fieldtype))
+      return $field_definitions;
+    
+    $out = array();
+    
+    foreach($field_definitions as $key => $field_definition) {
+      if(!($field_definition instanceof BaseFieldDefinition)) {
+        if($fieldtype == $field_definition->getType())
+          $out[$key] = $key;
+ #       drupal_set_message(serialize($key) . " is " . serialize($field_definition));
+      }
+    }
+    return $out;
+  }
   
 }
 
