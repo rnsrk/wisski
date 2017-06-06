@@ -46,14 +46,17 @@ function wisski_iip_image_field_widget_form_alter(&$element, \Drupal\Core\Form\F
     $bundle_fields = \Drupal::getContainer()->get('entity_field.manager')->getFieldDefinitions($entity_type, $bundle);
     $field_definition = $bundle_fields[$field_name];
 
-    $image_factory = \Drupal::service('image.factory');
-    $supported_extensions = $image_factory->getSupportedExtensions();
-    
-    $element['#upload_validators']['file_validate_extensions'][0] = implode(' ', $supported_extensions);    
+    if(!empty($field_definition)) {
 
-    // set the field settings accordingly for validation!
-    $field_definition->setSetting("file_extensions", implode(' ', $supported_extensions));
-    $field_definition->save();
+      $image_factory = \Drupal::service('image.factory');
+      $supported_extensions = $image_factory->getSupportedExtensions();
+    
+      $element['#upload_validators']['file_validate_extensions'][0] = implode(' ', $supported_extensions);    
+
+      // set the field settings accordingly for validation!
+      $field_definition->setSetting("file_extensions", implode(' ', $supported_extensions));
+      $field_definition->save();
+    }
   }
 
 }
