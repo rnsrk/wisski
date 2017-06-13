@@ -284,36 +284,40 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           //dpm('can\'t load path '.$path_id,$pb_id);
           continue;
         }
-        //dpm($path,$path_id);
+        #dpm($path,$path_id);
         // then we try to load the path's adapter
         $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
         if (empty($adapter)) {
-          //dpm('can\'t load adapter '.$pb->getAdapterId(),$pb_id);
+          #dpm('can\'t load adapter '.$pb->getAdapterId(),$pb_id);
           continue;
         }
 
         if (\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($eid,$adapter->id())) {
           //finally, having a valid path and adapter, we can ask the adapter for the path's value
-#          drupal_set_message("bundle: " . serialize($this));
-#          drupal_set_message('path: ' . serialize($path));
-#          drupal_set_message('pbpaths: ' . serialize($pb->getPbPath($path_id)));
           $pbpath = $pb->getPbPath($path_id);
+                              
           $bundle_of_path = $pbpath['bundle'];
  
           // if this is empty, then we get the parent and take this.
-          if(empty($bundle_of_path)) {
-            $group = $pb->getPbPath($pbpath['parent']);
+          if(empty($bundle_of_path) || $path->getType() == "Path") {
             $bundle_of_path = $group['bundle'];
           }
+
+          // get the group-object for the current bundle we're on
+          $groups = $pb->getGroupsForBundle($this->id());
+                    
+          // if there are several groups, for now take only the first one
+          $group = current($groups);
           
-#          drupal_set_message("id: " . serialize($this->id()));
-#          drupal_set_message("bundleid: " . serialize($bundle_of_path));
           // if the bundle and this object are not the same, the eid is the one of the
           // main bundle and the paths have to be absolute. In this case
           // we have to call it with false. 
-          if($bundle_of_path != $this->id())
-            $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, count($pb->getRelativePath($path)) -1, NULL, FALSE); 
-          else // if not they are relative.
+          if($bundle_of_path != $this->id()) {
+            // if this bundle is not the bundle where the path is in, we go to
+            // absolute mode and give the length of the group because we find 
+            // $eid there.
+            $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, count($group->getPathArray())-1, NULL, FALSE); 
+          } else // if not they are relative.
             $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, TRUE);
           if (WISSKI_DEVEL) \Drupal::logger($pb_id.' '.$path_id.' '.__FUNCTION__)->debug('Entity '.$eid."{out}",array('out'=>serialize($new_values)));
         }  
