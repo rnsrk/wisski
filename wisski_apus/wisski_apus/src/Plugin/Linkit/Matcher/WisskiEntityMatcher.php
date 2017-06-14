@@ -95,11 +95,17 @@ class WisskiEntityMatcher extends EntityMatcher {
         foreach ($bundled_title as $bundle_id => $title) {
 
           if (stripos($title,$string) !== FALSE) {
+          
+            $entity = entity_load('wisski_bundle', $bundle_id);
+            
+            if(empty($entity))
+              continue;
+          
             $matches[] = [
               'title' => $title,
               'description' => '',
               'path' => $uri,
-              'group' => entity_load('wisski_bundle', $bundle_id)->label(),
+              'group' => $entity->label(),
             ];
             $entity_matched = TRUE;
             if (count($matches) >= $this->limit) break 2;
