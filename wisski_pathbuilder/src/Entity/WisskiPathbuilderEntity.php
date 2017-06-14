@@ -9,6 +9,7 @@ namespace Drupal\wisski_pathbuilder\Entity;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
+use Drupal\wisski_core\WisskiCacheHelper;
 
 /**
  * Defines a Pathbuilder configuration entity class
@@ -166,16 +167,22 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
    * For now we return NULL in this case.
    */    
   public function getBundleIdForEntityId($eid) {
-  
-    $cid = $this->generateCid($eid);
+
+    $bundle = WisskiCacheHelper::getCallingBundle($eid);
+      
+    #$cid = $this->generateCid($eid);
     
-    $data = NULL;
+    #$data = NULL;
         
 #    drupal_set_message(serialize(\Drupal::cache()->get($cid)));
-    if ($cache = \Drupal::cache()->get($cid)) {
-      $data = $cache->data;
-      return $data;
-    }
+    #if ($cache = \Drupal::cache()->get($cid)) {
+    #  $data = $cache->data;
+    #  return $data;
+    #}
+
+    if(!empty($bundle))
+      return $bundle;
+
     else {
 
       $bundle_from_uri = \Drupal::request()->query->get('wisski_bundle');
