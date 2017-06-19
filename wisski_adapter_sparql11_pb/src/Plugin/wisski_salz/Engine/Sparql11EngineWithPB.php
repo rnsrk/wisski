@@ -839,7 +839,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
 
 #    drupal_set_message("serializing out: " . serialize($out));
-
+#dpm($out);
     return $out;    
     
   }
@@ -1135,7 +1135,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
 #    drupal_set_message("b5: " . microtime());
 #    drupal_set_message("load single");
-    
+#    dpm($out);    
     return $out;
   }
   
@@ -2238,6 +2238,10 @@ $oldtmp = $tmp;
     if(!$has_primitive && $should_have_primitive) {
       drupal_set_message("There is no primitive Datatype for Path " . $path->id(), "error");
     }
+    // if write context and there is an object, we don't attach the primitive
+    elseif ($write && !empty($object_in) && !empty($disambposition)) {
+      // do nothing!
+    }
     elseif ($has_primitive) {
       if(!$write)
         $query .= "GRAPH ?gprim { ";
@@ -2368,12 +2372,13 @@ $oldtmp = $tmp;
         if(empty($disambresult) || empty($disambresult->{"x" . ($path->getDisamb()-1)*2}) )
           $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE);
         else
+          // we may not set a value here - because we have a disamb result!
           $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . ($path->getDisamb()-1)*2}->dumpValue("text"), $path->getDisamb(), $start, TRUE);
       }
     }
     $sparql .= " } } ";
 #     \Drupal::logger('WissKIsaveProcess')->debug('sparql writing in add: ' . htmlentities($sparql));
-       
+#    dpm($sparql);
     $result = $this->directUpdate($sparql);
     
     
@@ -2568,7 +2573,7 @@ $oldtmp = $tmp;
         }
       }
       
-      #dpm($write_values, "we have to write");
+#      dpm($write_values, "we have to write");
       // now we write all the new values
       foreach ($write_values as $new_item) {
         $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder); 
