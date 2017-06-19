@@ -35,7 +35,9 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     },
  *     "access" = "Drupal\wisski_core\Controller\WisskiEntityAccessHandler",
  *   },
- *   render_cache = TRUE,
+ *   render_cache = FALSE,
+ *   field_cache = FALSE,
+ *   persistent_cache = FALSE,
  *   entity_keys = {
  *     "id" = "eid",
  *     "revision" = "vid",
