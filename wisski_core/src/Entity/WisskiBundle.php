@@ -300,6 +300,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
  
           // if this is empty, then we get the parent and take this.
           if(empty($bundle_of_path) || $path->getType() == "Path") {
+            $group = $pb->getPbPath($pbpath['parent']);
             $bundle_of_path = $group['bundle'];
           }
 
