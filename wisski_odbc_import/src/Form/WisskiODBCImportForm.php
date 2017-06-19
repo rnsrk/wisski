@@ -237,7 +237,7 @@ class WisskiODBCImportForm extends FormBase {
     $i =0;
     while(isset($arr['server'][0]['table'][$i])) {
 
-      $connection = mysqli_connect($dbserver . ':' . $dbport, $dbuser, $dbpass);
+      $connection = mysqli_connect($dbserver, $dbuser, $dbpass, $db, $port);
   
       if(!$connection) {
         drupal_set_message("Connection could not be established!",'error');
@@ -246,12 +246,12 @@ class WisskiODBCImportForm extends FormBase {
         drupal_set_message("Connection established!");
       }
   
-      if(!mysqli_select_db($connection, $db)) {
-        drupal_set_message("Database '$db' could not be found!", 'error');
-        return;
-      } else {
-        drupal_set_message("DB '$db' selected!");
-      }
+#      if(!mysqli_select_db($connection, $db)) {
+#        drupal_set_message("Database '$db' could not be found!", 'error');
+#        return;
+#      } else {
+#        drupal_set_message("DB '$db' selected!");
+#      }
   
     mysqli_set_charset($connection,"utf8");
      
