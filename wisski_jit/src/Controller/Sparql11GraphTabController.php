@@ -50,9 +50,9 @@ class Sparql11GraphTabController extends ControllerBase {
       if ($e instanceof Sparql11Engine) {
         $values = 'VALUES ?x { <' . $target_uri . '> } ';
         
-        if($mode == 2) {
+        if($mode == 3) {
           $q = "SELECT ?g ?s ?sp ?po ?o WHERE { $values { { GRAPH ?g { ?s ?sp ?x } } UNION { GRAPH ?g { ?x ?po ?o } } } }";
-#        dpm($q);
+#        dpm(htmlentities($q));
           $results = $e->directQuery($q);
 
           $base = array("id" => $target_uri, "name" => '<span class="wki-groupname">' . $target_uri . '</span>', "children" => array(), "data" => array("relation" => "<h2>Connections (" . $target_uri . ")</h2><ul></ul>"));            
