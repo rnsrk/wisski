@@ -49,7 +49,8 @@ class Sparql11GraphTabController extends ControllerBase {
       $e = $a->getEngine();
       if ($e instanceof Sparql11Engine) {
         $values = 'VALUES ?x { <' . $target_uri . '> } ';
-        
+
+        // full view mode        
         if($mode == 3) {
           $q = "SELECT ?g ?s ?sp ?po ?o WHERE { $values { { GRAPH ?g { ?s ?sp ?x } } UNION { GRAPH ?g { ?x ?po ?o } } } }";
 #        dpm(htmlentities($q));
