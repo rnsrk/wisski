@@ -6,6 +6,7 @@ use Drupal\image\Entity\ImageStyle;
 
 
 function wisski_iip_image_preprocess_colorbox_formatter(&$variables) {
+#  dpm($variables);
   $iu = $variables['image']['#uri'];
 
   $prerendered_paths = \Drupal::config('wisski_iip_image.settings')->get('wisski_iip_image_prerendered_path');
@@ -24,6 +25,12 @@ function wisski_iip_image_preprocess_colorbox_formatter(&$variables) {
   if(empty($nuri)) {
     $style = ImageStyle::load('wisski_pyramid');
     $nuri = $style->buildUri($iu);
+  }
+#  dpm($variables);
+  if($variables['settings']['wisski_inline'] === "1") {
+    $variables['attributes']['wisski-inline-iip'] = "1";
+    $variables['attributes']['class'] = ['wisski-inline-iip'];
+    $variables['url'] = '#/';
   }
 
   if(strpos($nuri, "public://") !== FALSE)
@@ -64,3 +71,10 @@ function wisski_iip_image_field_widget_form_alter(&$element, \Drupal\Core\Form\F
 #function wisski_iip_image_file_validate(Drupal\file\FileInterface $file) {
 #  drupal_set_message("Hallo Welt!");
 #}
+
+function wisski_iip_image_theme_registry_alter(&$theme_registry) {
+#  dpm($theme_registry);
+#  $theme_registry['colorbox_formatter']['template'] = 'wisskiiip-colorbox-formatter';
+  $theme_registry['colorbox_formatter']['path'] = drupal_get_path('module', 'wisski_iip_image') . '/templates';
+}
+

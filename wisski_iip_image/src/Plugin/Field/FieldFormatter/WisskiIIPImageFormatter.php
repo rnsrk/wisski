@@ -121,6 +121,36 @@
       return $elements;
 
     }
-    
 
+    /**
+     * {@inheritdoc}
+     */
+    public static function defaultSettings() {
+      return [
+        'wisski_inline' => 'FALSE',
+      ] + parent::defaultSettings();
+    }
+    
+    /**
+     * {@inheritdoc}
+     */
+    public function settingsForm(array $form, FormStateInterface $form_state) {
+
+      $element['wisski_inline'] = [
+        '#type' => 'checkbox',
+        '#title' => $this->t('Inline mode for IIP'),
+        '#default_value' => $this->getSetting('wisski_inline'),
+      ];
+      
+      $element = $element + parent::settingsForm($form, $form_state);
+
+      return $element;
+    }
+    
+    /**
+     * {@inheritdoc}
+     */
+    public function settingsSummary() {
+      return parent::settingsSummary();
+    }
   }
