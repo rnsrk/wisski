@@ -457,11 +457,21 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     );
 
     $display = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual' . '.'.$bundle.'.default');
-    if (is_null($display)) $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
+    if (is_null($display)) { 
+      $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
+    } else { // there already is one.    
+      $display_options = array_merge($display->getComponent($fieldid), $display_options); 
+    }
     $display->setComponent($fieldid,$display_options)->save();
 
     $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual' . '.'.$bundle.'.default');
-    if (is_null($form_display)) $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
+    if (is_null($form_display)) {
+      $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
+    } else {
+      // there already is one.
+      $view_options = array_merge($form_display->getComponent($fieldid), $view_options);  
+    }
+    
     $form_display->setComponent($fieldid, $view_options)->save();
 
     drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
