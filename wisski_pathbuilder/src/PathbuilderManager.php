@@ -10,6 +10,8 @@ class PathbuilderManager {
   
   private static $pbsUsingBundle = NULL;
 
+  private static $bundlesWithStartingConcept = NULL;
+
   
   /** Reset the cached mappings.
    */
@@ -38,7 +40,7 @@ class PathbuilderManager {
     if (self::$pbsForAdapter === NULL) {  // was reset
       self::$pbsForAdapter = array();
       $pbs = entity_load_multiple('wisski_pathbuilder');
-      foreach ($pbs as $pb) {
+      foreach ($pbs as $pbid => $pb) {
         $aid = $pb->getAdapterId();
         $adapter = entity_load('wisski_salz_adapter', $aid);
         if ($adapter) {
@@ -56,7 +58,11 @@ class PathbuilderManager {
       }
       \Drupal::cache()->set('wisski_pathbuilder_manager_pbs_for_adapter', self::$pbsForAdapter);
     }
-    return empty($adapter_id) ? self::$pbsForAdapter : self::$pbsForAdapter[$adapter_id];
+    return empty($adapter_id)
+           ? self::$pbsForAdapter
+           : (isset(self::$pbsForAdapter[$adapter_id])  // if there is no pb for this adapter there is no array key
+             ? self::$pbsForAdapter[$adapter_id] 
+             : array());                                // ... thus we return an empty array
   }
 
   
@@ -67,57 +73,102 @@ class PathbuilderManager {
       }
     }
     if (self::$pbsUsingBundle === NULL) {  // was reset, recalculate
-      self::$pbsUsingBundle = array();
-      $pbs = entity_load_multiple('wisski_pathbuilder');
-      foreach ($pbs as $pbid => $pb) {
-        foreach ($pb->getAllGroups() as $group) {
-          $pbpath = $pb->getPbPath($group->getID());
-          $bid = $pbpath['bundle'];
-          if (!empty($bid)) {
-            if (!isset(self::$pbsUsingBundle[$bid])) {
-              self::$pbsUsingBundle[$bid] = array();
-            }
-            $adapter = entity_load('wisski_salz_adapter', $pb->getAdapterId());
-            if ($adapter) {
-              if (!isset(self::$pbsUsingBundle[$bid][$pbid])) {
-                $engine = $adapter->getEngine();
-                $info = array(
-                  'pb_id' => $pbid,
-                  'adapter_id' => $adapter->id(),
-                  'writable' => $engine->isWritable(),
-                  'preferred_local' => $engine->isPreferredLocalStore(),
-                  'engine_plugin_id' => $engine->getPluginId(),
-                  'main_concept' => array(), // filled below
-                  'is_top_concept' => array(), // filled below
-                  'groups' => array(), // filled below
-                );
-                self::$pbsUsingBundle[$bid][$pbid] = $info;
-              }
-              $path_array = $group->getPathArray();
-              $main_concept = end($path_array); // the last concept is the main concept  
-              self::$pbsUsingBundle[$bid][$pbid]['main_concept'][$main_concept] = $main_concept;
-              if (empty($pbpath['parent'])) {
-                self::$pbsUsingBundle[$bid][$pbid]['is_top_concept'][$main_concept] = $main_concept;
-              }
-              self::$pbsUsingBundle[$bid][$pbid]['groups'][$group->getID()] = $main_concept;
-
-            }
-            else {
-              drupal_set_message(t('Pathbuilder %pb refers to non-existing adapter with ID %aid.', array(
-                '%pb' => $pb->getName(),
-                '%aid' => $pb->getAdapterId(),
-              )), 'error');
-            }
-          }
-        }
-      }
-      \Drupal::cache()->set('wisski_pathbuilder_manager_pbs_using_bundle', self::$pbsUsingBundle);
+      $this->calculateBundlesAndStartingConcepts();
     }
     return empty($bundle_id) 
            ? self::$pbsUsingBundle // if no bundle given, return all
            : (isset(self::$pbsUsingBundle[$bundle_id]) 
              ? self::$pbsUsingBundle[$bundle_id] // if bundle given and we know it, return only for this
              : array());  // if bundle is unknown, return empty array
+
+  }
+
+
+  public function getBundlesWithStartingConcept($concept_uri = NULL) {
+    if (self::$bundlesWithStartingConcept === NULL) {  // not yet fetched from cache?
+      if ($cache = \Drupal::cache()->get('wisski_pathbuilder_manager_bundles_with_starting_concept')) {
+        self::$bundlesWithStartingConcept = $cache->data;
+      }
+    }
+    if (self::$bundlesWithStartingConcept === NULL) {  // was reset, recalculate
+      $this->calculateBundlesAndStartingConcepts();
+    }
+    return empty($concept_uri) 
+           ? self::$bundlesWithStartingConcept // if no concept given, return all
+           : (isset(self::$bundlesWithStartingConcept[$concept_uri]) 
+             ? self::$bundlesWithStartingConcept[$concept_uri] // if concept given and we know it, return only for this
+             : array());  // if concept is unknown, return empty array
+
+  }
+
+
+  private function calculateBundlesAndStartingConcepts() {
+    self::$pbsUsingBundle = array();
+    self::$bundlesWithStartingConcept = array();
+    $pbs = entity_load_multiple('wisski_pathbuilder');
+    foreach ($pbs as $pbid => $pb) {
+      foreach ($pb->getAllGroups() as $group) {
+        $pbpath = $pb->getPbPath($group->getID());
+        $bid = $pbpath['bundle'];
+        if (!empty($bid)) {
+          if (!isset(self::$pbsUsingBundle[$bid])) {
+            self::$pbsUsingBundle[$bid] = array();
+          }
+          $adapter = entity_load('wisski_salz_adapter', $pb->getAdapterId());
+          if ($adapter) {
+            // struct for pbsUsingBundle
+            if (!isset(self::$pbsUsingBundle[$bid][$pbid])) {
+              $engine = $adapter->getEngine();
+              $info = array(
+                'pb_id' => $pbid,
+                'adapter_id' => $adapter->id(),
+                'writable' => $engine->isWritable(),
+                'preferred_local' => $engine->isPreferredLocalStore(),
+                'engine_plugin_id' => $engine->getPluginId(),
+                'main_concept' => array(), // filled below
+                'is_top_concept' => array(), // filled below
+                'groups' => array(), // filled below
+              );
+              self::$pbsUsingBundle[$bid][$pbid] = $info;
+            }
+            $path_array = $group->getPathArray();
+            $main_concept = end($path_array); // the last concept is the main concept  
+            self::$pbsUsingBundle[$bid][$pbid]['main_concept'][$main_concept] = $main_concept;
+            if (empty($pbpath['parent'])) {
+              self::$pbsUsingBundle[$bid][$pbid]['is_top_concept'][$main_concept] = $main_concept;
+            }
+            self::$pbsUsingBundle[$bid][$pbid]['groups'][$group->getID()] = $main_concept;
+            
+            // struct for bundlesWithStartingConcept
+            if (!isset(self::$bundlesWithStartingConcept[$main_concept])) {
+              self::$bundlesWithStartingConcept[$main_concept] = array();
+            }
+            if (!isset(self::$bundlesWithStartingConcept[$main_concept][$bid])) {
+              self::$bundlesWithStartingConcept[$main_concept][$bid] = array(
+                'bundle_id' => $bid,
+                'is_top_bundle' => FALSE,
+                'pb_ids' => array(),
+                'adapter_ids' => array(),
+              );
+            }
+            self::$bundlesWithStartingConcept[$main_concept][$bid]['pb_ids'][$pbid] = $pbid;
+            self::$bundlesWithStartingConcept[$main_concept][$bid]['adapter_ids'][$adapter->id()] = $adapter->id();
+            if (empty($pbpath['parent'])) {
+              self::$bundlesWithStartingConcept[$main_concept][$bid]['is_top_bundle'] = TRUE;
+            }
+
+          }
+          else {
+            drupal_set_message(t('Pathbuilder %pb refers to non-existing adapter with ID %aid.', array(
+              '%pb' => $pb->getName(),
+              '%aid' => $pb->getAdapterId(),
+            )), 'error');
+          }
+        }
+      }
+    }
+    \Drupal::cache()->set('wisski_pathbuilder_manager_pbs_using_bundle', self::$pbsUsingBundle);
+    \Drupal::cache()->set('wisski_pathbuilder_manager_bundles_with_starting_concept', self::$bundlesWithStartingConcept);
   }
 
   

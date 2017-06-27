@@ -273,7 +273,7 @@ class AdapterHelper {
         \Drupal::logger('wisski salz')->warning(__METHOD__ . ": Expected entity id, got URI: $eid: {bt}", ["bt"=>join('//', array_map(function ($a) { return (isset($a['class']) ? $a['class'] . '::' : '') . $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 8)))]);
       }
       if (isset($adapter_id)) {
-        $adapter = Adapter::load($adapter_id);      
+        $adapter = is_object($adapter_id) ? $adapter_id : Adapter::load($adapter_id);      
         if ($adapter && $adapter->getEngine()->isValidUri($eid)) return $eid;
       }
       return FALSE;
@@ -292,6 +292,9 @@ class AdapterHelper {
    * @return an assocative array keyed by adapter ID with the associated URIs as values or | the URI associated with the input adapter
    */
   public static function doGetUrisForDrupalId($eid,$adapter_id=NULL) {
+    
+    $adapter = is_object($adapter_id) ? $adapter_id : NULL;
+    $adapter_id = is_object($adapter_id) && !is_null($adapter_id) ? $adapter_id->id() : $adapter_id;
 
     //dpm($eid,__FUNCTION__.' '.$adapter_id);
     //first try the DB
@@ -333,13 +336,13 @@ class AdapterHelper {
       if (empty($same_uri)) {
         //if there was none, we try to find out whether the adapter knows any of the other URIs assocaited with
         //the EID
-        $adapter = Adapter::load($adapter_id);
+        $adapter = !is_null($adapter) ? $adapter : Adapter::load($adapter_id);
         foreach ($old_uris as $old_uri) {
           if ($adapter->checkUriExists($old_uri)) $same_uri = $old_uri;
         }
         if (empty($same_uri)) {
           //create on fail
-          $same_uri = Adapter::load($adapter_id)->getEngine()->generateFreshIndividualUri();
+          $same_uri = $adapter->getEngine()->generateFreshIndividualUri();
         }
       }
       if (!empty($same_uri)) {

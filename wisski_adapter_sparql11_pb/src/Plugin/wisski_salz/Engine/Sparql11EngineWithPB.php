@@ -2303,7 +2303,9 @@ $oldtmp = $tmp;
           
         
           if($regex || $op == 'BETWEEN' || $op == 'IN' || $op == 'NOT IN') {
-            $query .= " $outvar . FILTER ( regex ( $outvar, \"" . $primitiveValue . '", "i" ) ) . ';
+            // we have to use STR() otherwise we may get into trouble with
+            // datatype and lang comparisons
+            $query .= " $outvar . FILTER ( regex ( STR($outvar), \"" . $primitiveValue . '", "i" ) ) . ';
           } else {
             // we have to use STR() otherwise we may get into trouble with
             // datatype and lang comparisons
