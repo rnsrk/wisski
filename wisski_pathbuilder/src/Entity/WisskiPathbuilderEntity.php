@@ -460,7 +460,10 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     if (is_null($display)) { 
       $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
     } else { // there already is one.    
-      $display_options = array_merge($display->getComponent($fieldid), $display_options); 
+      $comp = $display->getComponent($fieldid);
+
+      if(!empty($comp))
+        $display_options = array_merge($comp, $display_options); 
     }
     $display->setComponent($fieldid,$display_options)->save();
 
@@ -469,7 +472,10 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
     } else {
       // there already is one.
-      $view_options = array_merge($form_display->getComponent($fieldid), $view_options);  
+      $comp = $form_display->getComponent($fieldid);
+
+      if(!empty($comp))
+        $view_options = array_merge($comp, $view_options);  
     }
     
     $form_display->setComponent($fieldid, $view_options)->save();
@@ -716,11 +722,16 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     if (is_null($display)) {
       $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
     } else { // there already is one.    
-      $display_options = array_merge($display->getComponent($fieldid), $display_options); 
+
+      $comp = $display->getComponent($fieldid);
+  
+      if(!empty($comp))
+        $display_options = array_merge($display->getComponent($fieldid), $display_options); 
+
     }
     
     // setComponent enables them
-    $display->setComponent($fieldid,$display_options)->save();
+    $display->setComponent($fieldid, $display_options)->save();
 
     // find the current form display elements
     $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual' . '.'.$bundle.'.default');
@@ -728,7 +739,10 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
     } else {
       // there already is one.
-      $view_options = array_merge($form_display->getComponent($fieldid), $view_options);  
+      $comp = $form_display->getComponent($fieldid);
+      
+      if(!empty($comp))
+        $view_options = array_merge($comp, $view_options);  
     }
     
     // setComponent enables them
