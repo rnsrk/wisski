@@ -43,20 +43,21 @@ class Sparql11GraphTabController extends ControllerBase {
 
     // go through all adapters    
     $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
+          
+    $base = array("id" => $target_uri, "name" => '<span class="wki-groupname">' . $target_uri . '</span>', "children" => array(), "data" => array("relation" => "<h2>Connections (" . $target_uri . ")</h2><ul></ul>"));            
 
-    foreach ($adapters as $a) {
+
+    foreach ($adapters as $aid => $a) {
       $label = $a->label();
       $e = $a->getEngine();
       if ($e instanceof Sparql11Engine) {
-        $values = 'VALUES ?x { <' . $target_uri . '> } ';
-
         // full view mode        
         if($mode == 3) {
+          $values = 'VALUES ?x { <' . $target_uri . '> } ';
+
           $q = "SELECT ?g ?s ?sp ?po ?o WHERE { $values { { GRAPH ?g { ?s ?sp ?x } } UNION { GRAPH ?g { ?x ?po ?o } } } }";
 #        dpm(htmlentities($q));
           $results = $e->directQuery($q);
-
-          $base = array("id" => $target_uri, "name" => '<span class="wki-groupname">' . $target_uri . '</span>', "children" => array(), "data" => array("relation" => "<h2>Connections (" . $target_uri . ")</h2><ul></ul>"));            
 
           foreach ($results as $result) {
 
@@ -113,297 +114,61 @@ class Sparql11GraphTabController extends ControllerBase {
             }
           }
         }
-      }
-    }
-            
-#            $existing_bundles = $e->getBundleIdsForEntityId($result->s->getUri());
+        elseif ($mode == 2) {
+          // standard mode
 
-#            if(empty($existing_bundles))
-#              $subjecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->s->getUri() ) );
-#            else {
-#              $remote_entity_id = $e->getDrupalId($result->s->getUri());
-#              $subjecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $remote_entity_id, 'target_uri' => $result->s->getUri() ) );
-#            }
-
-#            $predicateuri = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->sp->getUri() ) );
-
-#            $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $target_uri ) );
-
-#            dpm(\Drupal::l($this->t('sub'), $subjecturi));
-#            $form['in_triples'][] = array(
-#              "<" . $result->s->getUri() . ">",
-#              Link::fromTextAndUrl($this->t($result->s->getUri()), $subjecturi)->toRenderable(),
-#              Link::fromTextAndUrl($this->t($result->sp->getUri()), $predicateuri)->toRenderable(),
-#              Link::fromTextAndUrl($this->t($target_uri), $objecturi)->toRenderable(),
-#              array('#type' => 'item', '#title' => $result->g->getUri()),
-#              array('#type' => 'item', '#title' => $label),
-#            );
-#          } else {
-#            
-#            $subjecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $target_uri ) );
-
-#            $predicateuri = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->po->getUri() ) );
-#            
-#            if($result->o instanceof \EasyRdf_Resource) {
-#              try {
-#              
-#                $existing_bundles = $e->getBundleIdsForEntityId($result->o->getUri());
-#                
-#                if(empty($existing_bundles))
-#                  $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->o->getUri() ) );
-#                else {
-#                  $remote_entity_id = $e->getDrupalId($result->o->getUri());              
-#                  $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $remote_entity_id, 'target_uri' => $result->o->getUri() ) );
-#                }
-#                $got_target_url = TRUE;
-#              } catch (\Symfony\Component\Routing\Exception\InvalidParameterException $ex) {
-#                $got_target_url = FALSE;
-#              }
-#              $object_text = $result->o->getUri();
-#            } else {
-#              $got_target_url = FALSE;
-#              $object_text = $result->o->getValue();
-#            }
-#            $graph_uri = isset($result->g) ? $result->g->getUri() : 'DEFAULT';
-#            $form['out_triples'][] = array(
-#              Link::fromTextAndUrl($target_uri, $subjecturi)->toRenderable(),
-#              Link::fromTextAndUrl($result->po->getUri(), $predicateuri)->toRenderable(),
-#              $got_target_url ? Link::fromTextAndUrl($object_text, $objecturi)->toRenderable() : array('#type' => 'item', '#title' => $object_text),
-#              array('#type' => 'item', '#title' => $graph_uri),
-#              array('#type' => 'item', '#title' => $label),
-#            );
-#          }
-#        }
-#      }
-#    }
-#    
-#
-#    $form['#title'] = $this->t('View Triples for ') . $target_uri;
-#
-#    return $form;
-  
-/*    
-  $item = wisski_store_getObj()->wisski_ARCAdapter_addNamespace(urldecode($item));
-
-  $olditem = wisski_store_getObj()->wisski_ARCAdapter_delNamespace($item);
-
-  if($type == '3') {
-    $query = "SELECT * WHERE { <" . wisski_store_getObj()->wisski_ARCAdapter_delNamespace($item). "> ?p ?o }";
-     
-    $rows = wisski_store_getObj()->wisski_ARCAdapter_getStore()->query($query, 'rows');
-    
-    $base = array("id" => wisski_store_getObj()->wisski_ARCAdapter_delNamespace($item), "name" => '<span class="wki-groupname">' . $item . '</span>', "children" => array(), "data" => array("relation" => "<h2>Connections (" . $item . ")</h2><ul></ul>"));    
-    if(count($rows) > 0) { 	   
-      foreach($rows as $row) {
+          if ($e->checkUriExists($target_uri) && $e instanceof \Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWithPB) {
           
-        $base['data']['relation'] = substr($base['data']['relation'], 0, -5);  
+            $target_eid = AdapterHelper::getDrupalIdForUri($target_uri);
 
-        $base['data']['relation'] = $base['data']['relation'] . (
-           "<li>" . wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['p']) . " &raquo; " . 
-           wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['o']) . "</li></ul>");
+            $bundles = $e->getBundleIdsForUri($target_uri);
+            $bundles_to_pbs = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle();
 
-        $base['children'][] = array("id" => $row['o'], "name" => wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['o']));
-        $curr = &$base['children'][count($base['children'])-1];
-      
-        if(empty($curr['data']['relation']))
-          $curr['data']['relation'] = ("<h2>Connections (" . wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['o']) .")</h2><ul></ul>");
-          
-        $curr['data']['relation'] = substr($curr['data']['relation'], 0, -5);  
+            foreach ($bundles as $bid) {
+              foreach ($bundles_to_pbs[$bid] as $pbid => $pb_info) {
+                $pb = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->load($pbid);
+                foreach ($pb->getAllPathsAndGroupsForBundleId($bid) as $path) {
+                  if (!$pb->getPbPath($path->id())['enabled']) {
+                    continue;
+                  }
+                  $q = $e->generateTriplesForPath($pb, $path, "", $target_uri);
+                  $result = $e->directQuery("SELECT * { $q }");
+                  foreach ($result as $row) {
+                    $curr = &$base;
+                    for ($x = 2; ; $x+=2) {
+                      $xp = "x$x";
+                      if (!isset($row->$xp)) break;
+                      $uri = $row->$xp->getUri();
+                      $eid = AdapterHelper::getDrupalIdForUri($uri);
+                      $drupal_url = AdapterHelper::generateWisskiUriFromId($eid);
+                      $already_there = FALSE;
+                      // we reuse $index below!
+                      foreach ($curr['children'] as $index => $child) {
+                        if ($child['id'] == $uri) {
+                          $already_there = TRUE;
+                          break;
+                        }
+                      }
+                      if (!$already_there) {
+                        $index = count($curr['children']);
+                        $curr['children'][$index] = array(
+                          'id' => $uri,
+                          'name' => '<span class="wki-groupname" data-wisski-url="' . $drupal_url . '">' . $row->$xp->localName() . '</span>',
+                          'children' => array(),
+                        );
+                      }
+                      $curr = &$curr['children'][$index];
+                    }
+                  }
+                }
+              }
 
-        $curr['data']['relation'] = $curr['data']['relation'] . (
-           "<li>" . wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['s']) . " &raquo; " . 
-           wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['p']) . "</li></ul>");
-      }
-    
-      $query = "SELECT * WHERE { ?s ?p <" . wisski_store_getObj()->wisski_ARCAdapter_delNamespace($item). "> }";
-    
-      $rows = wisski_store_getObj()->wisski_ARCAdapter_getStore()->query($query, 'rows');
-    
-      foreach($rows as $row) {
-          
-        $base['data']['relation'] = substr($base['data']['relation'], 0, -5);  
-
-        $base['data']['relation'] = $base['data']['relation'] . (
-           "<li>" . wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['s']) . " &raquo; " . 
-           wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['p']) . "</li></ul>");
-
-        $base['children'][] = array("id" => $row['s'], "name" => wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['s']));
-        $curr = &$base['children'][count($base['children'])-1];
-      
-        if(empty($curr['data']['relation']))
-          $curr['data']['relation'] = ("<h2>Connections (" . wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['s']) .")</h2><ul></ul>");
-          
-        $curr['data']['relation'] = substr($curr['data']['relation'], 0, -5);  
-
-        $curr['data']['relation'] = $curr['data']['relation'] . (
-           "<li>" . wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['p']) . " &raquo; " . 
-           wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['o']) . "</li></ul>");
-      }
-    } else {
-      $query = 'SELECT * WHERE { ?s ?p "' . $item . '" }';
-     
-      $rows = wisski_store_getObj()->wisski_ARCAdapter_getStore()->query($query, 'rows');
-    
-      $base = array("id" => $item, "name" => '<span class="wki-groupname">' . $item . '</span>', "children" => array(), "data" => array("relation" => "<h2>Connections (" . $item . ")</h2><ul></ul>"));      
-
-      if(count($rows) > 0) { 	   
-        foreach($rows as $row) {
-          
-          $base['data']['relation'] = substr($base['data']['relation'], 0, -5);  
-
-          $base['data']['relation'] = $base['data']['relation'] . (
-           "<li>" . wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['s']) . " &raquo; " . 
-           wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['p']) . "</li></ul>");
-
-          $base['children'][] = array("id" => $row['s'], "name" => wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['s']));
-        }
-                
-      } else {
-        $base = array();
-                        
-      }
-
-    }
-    
-    $json = json_encode($base);
-      
-    drupal_json($json);
-    return;
-  } else { // case simple or standard
-  
-    include_once('sites/all/modules/wisski_pathbuilder/wisski_pathbuilder.inc');
-    $groupid = wisski_pathbuilder_getGroupIDForIndividual(wisski_store_getObj()->wisski_ARCAdapter_delNamespace($item));
-
-    if(empty($groupid) || $groupid == -1) 
-      return json_encode("\{\}");
-
-    $samepart = _wisski_pathbuilder_calculate_group_samepart($groupid);
-    $sparqlcondition = (" FILTER ( ?x" . (floor(count($samepart)/2)) . " = <" . wisski_store_getObj()->wisski_ARCAdapter_delNamespace($item). "> ) ");
-	
-  	$basename = wisski_pathbuilder_generateGroupName($item, $groupid);
-	
-  	$base = array("id" => (wisski_store_getObj()->wisski_ARCAdapter_delNamespace($item)), "name" => '<span class="wki-groupname">' . $basename . '</span>', "children" => array(), "data" => array("relation" => "<h2>Connections (" . $basename . ")</h2><ul></ul>")); 
-
-    $base = wisski_jit_generateJsonArray($groupid, $base, $sparqlcondition, $type);
-
-    $json = json_encode($base);
-
-    drupal_json($json);  
-    return;
-  }
-}
-
-function wisski_jit_generateJsonArray($groupid, $base = array(), $sparqlcondition, $type = '2') {
-  include_once('sites/all/modules/wisski_pathbuilder/wisski_pathbuilder.inc');
-  $pathIds = wisski_pathbuilder_getMembers($groupid, TRUE);
-
-  $samepart = _wisski_pathbuilder_calculate_group_samepart($groupid);
-
-  foreach($pathIds as $pathid) {
-    $sparql = wisski_pathbuilder_get_sparql($pathid, $sparqlcondition);
-    
-    $pathdata = wisski_pathbuilder_getPathData($pathid);   
-
-    $patharray = unserialize($pathdata['path_array']);
-    
-    $rows = wisski_store_getObj()->wisski_ARCAdapter_getStore()->query($sparql, 'rows');
-
-    if(empty($rows))
-      continue;
-
-    if($pathdata['is_group'])
-      $patharray = _wisski_pathbuilder_calculate_group_samepart($pathid);
-            
-
-    foreach($rows as $row) {
-      $curr = &$base;
-
-      $max = floor(count($patharray)/2);
-      $min = floor(count($samepart)/2) + 1;
-
-      for($i=$min; $i<=$max; $i++) {     
-        $subgroupid = wisski_pathbuilder_getGroupIDForIndividual($row['x' . $i]);
-          
-        $subgroupname = "";
-        if($subgroupid != -1) {
-          if(wisski_pathbuilder_getParentGroup($subgroupid) == 0) {
-            $subgroupname = wisski_pathbuilder_generateGroupName(wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['x' . $i]), $subgroupid);
-            $subgroupname = '<span class="wki-groupname">' . $subgroupname . '</span>';
-          } else {
-            if($type == '1')
-              continue;
-            $subgroupname = wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['x' . $i]);
+            }
           }
-        } else {
-          if($type == '1')
-            continue;
-          $subgroupname = wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['x' . $i]);
-        }
-          $curr['children'][] = array("id" => ($row['x' . $i]), "name" => $subgroupname);
-          if(empty($curr['data']['relation']))
-            $curr['data']['relation'] = ("<h2>Connections (" . wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['x' . ($i-1)]) .")</h2><ul></ul>");
-          
-          $curr['data']['relation'] = substr($curr['data']['relation'], 0, -5);  
-
-          $curr['data']['relation'] = $curr['data']['relation'] . (
-            "<li>" . wisski_store_getObj()->wisski_ARCAdapter_addNamespace($patharray["y" . ($i-1)]) . " &raquo; " . 
-            wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['x' . $i]) . "</li></ul>");
-
-          $curr = &$curr['children'][count($curr['children'])-1];
-          
-          if(empty($curr['data']['relation']))
-            $curr['data']['relation'] = ("<h2>Connections (" . wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['x' . $i]) .")</h2><ul></ul>");
-          
-          $curr['data']['relation'] = substr($curr['data']['relation'], 0, -5);
-          
-          $curr['data']['relation'] = $curr['data']['relation'] . (
-            "<li>" . wisski_store_getObj()->wisski_ARCAdapter_addNamespace($patharray["y" . ($i-1)]) . " &raquo; " .
-            wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['x' . ($i-1)]) . "</li></ul>");
-          if($type == '1') 
-            break;
-      }
-
-      if($subgroupname != "" && $type == '1')
-        continue;
-        
-      if(!$pathdata['is_group']) {
-  
-        $str = mb_substr($row['out'], 0, 15);
-        if(strlen($row['out']) > 15)
-          $str .= '...';
-
-        $curr['children'][] = array("id" => $row['out'],
-          "name" => '<span class="wki-primitive">' . $str . '</span>');
-          
-        if(empty($curr['data']['relation']))
-          $curr['data']['relation'] = ("<h2>Connections (" . wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['x' . ($i-1)]) .")</h2><ul></ul>");
-          
-        $curr['data']['relation'] = substr($curr['data']['relation'], 0, -5);  
-
-        $curr['data']['relation'] = $curr['data']['relation'] . (
-          "<li>" . wisski_store_getObj()->wisski_ARCAdapter_addNamespace($pathdata["datatype_property"]) .  " &raquo; " .
-          $row['out'] . "</li></ul>");
-
-        $curr = &$curr['children'][count($curr['children'])-1];
-          
-        if(empty($curr['data']['relation']))
-          $curr['data']['relation'] = ("<h2>Connections (" . $row['out'] .")</h2><ul></ul>");
-          
-        $curr['data']['relation'] = substr($curr['data']['relation'], 0, -5);
-          
-        $curr['data']['relation'] = $curr['data']['relation'] . (
-          "<li>" . wisski_store_getObj()->wisski_ARCAdapter_addNamespace($pathdata["datatype_property"]) .  " &raquo; " .
-          wisski_store_getObj()->wisski_ARCAdapter_addNamespace($row['x' . ($i-1)]) . "</li></ul>");
-      } else {
-
-        $curr = wisski_jit_generateJsonArray($pathid, $curr, $sparqlcondition
-              . ". FILTER ( ?x" . $max . " = <" . $row['x' . $max] . "> ) ", $type);
+        } // end mode 2
       }
     }
-  }
-  
-  */
-  
+ 
     return new JsonResponse( $base );
         
   }

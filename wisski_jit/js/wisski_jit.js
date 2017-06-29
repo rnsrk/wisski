@@ -4,13 +4,16 @@ var labelType, useGradients, nativeTextSupport, animate;
 
   'use strict';
 
-  Drupal.behaviors.mybehavior = {
-    attach: function (context, settings) {
-      
-      //console.log(drupalSettings.wisski_jit);
-      init($, Drupal, drupalSettings, drupalSettings.wisski_jit);
-    }
-  };
+// don't use behaviour for now as it runs init several times leading to a massive triple store calls
+//  Drupal.behaviors.mybehavior = {
+//    attach: function (context, settings) {
+//      
+//console.log(drupalSettings.wisski_jit, context, settings);
+//    }
+//  };
+  
+  init($, Drupal, drupalSettings, drupalSettings.wisski_jit);
+
 
 })(jQuery, Drupal, drupalSettings);
 
@@ -46,6 +49,7 @@ function init($, Drupal, drupalSettings, nodeid){
   var state = $("#wki-infoswitch option:selected").val();
 //	alert(state);
 	var url = drupalSettings.path.baseUrl + "jit/json/" + state + "/" + encodeURIComponent(nodeid).replace(/%2F/g, "/"); //"http://wisski.gnm.de/dev/jit/json/" + nodeid;
+//console.log('init', url);
   $.getJSON(url, function(json) {
 		//json = JSON.parse(json);
 
@@ -118,6 +122,7 @@ function init($, Drupal, drupalSettings, nodeid){
 //					alert(url);
 					//alert(JSON.stringify(node));
 					var my_JSON_object = {};
+//console.log("json 124", url);          
 				  $.getJSON(url, function(jsonstring) {
 //						alert("alert");
 //                                                Log.write(url);
@@ -204,37 +209,39 @@ function init($, Drupal, drupalSettings, nodeid){
 //    var elem = uri.split("/");
 
 		var state = $("#wki-infoswitch option:selected").val();
-		var url = Drupal.settings.basePath + "jit/json/" + state + "/" + encodeURIComponent(uri).replace(/%2F/g, "/");
+		var url = drupalSettings.path.baseUrl + "jit/json/" + state + "/" + nodeid; // encodeURIComponent(uri).replace(/%2F/g, "/");
 					
-					//alert(url);
-					//alert(JSON.stringify(node));
-					var my_JSON_object = {};
-				  $.getJSON(url, function(jsonstring) {
+    //alert(url);
+    //alert(JSON.stringify(node));
+    var my_JSON_object = {};
+//console.log("json 214", url);          
+    $.getJSON(url, function(jsonstring) {
 //						alert("alert");
 //						alert(jsonstring);
-				    json = JSON.parse(jsonstring);
+//      json = JSON.parse(jsonstring);
+      json = jsonstring;
 
-						//load JSON data
-    				rgraph.loadJSON(json);
+      //load JSON data
+      rgraph.loadJSON(json);
 
-				    //trigger small animation
-    rgraph.graph.eachNode(function(n) {
-      var pos = n.getPos();
-      //pos.setc(-200, -200);
-      pos.setc(0,0);
+      //trigger small animation
+      rgraph.graph.eachNode(function(n) {
+        var pos = n.getPos();
+        //pos.setc(-200, -200);
+        pos.setc(0,0);
+      });
+      rgraph.compute('end');
+      rgraph.fx.animate({
+        modes:['polar'],
+        duration: 1600
+      });
+      //end
+      //append information about the root relations in the right column
+      rgraph.graph.getNode(rgraph.root).data.relation = json.data.relation;
+      $jit.id('wki-infolist').innerHTML = rgraph.graph.getNode(rgraph.root).data.relation;
+  //		$jit.id('wki-infolist').innerHTML = json.data.relation;		
     });
-    rgraph.compute('end');
-    rgraph.fx.animate({
-      modes:['polar'],
-      duration: 1600
-    });
-    //end
-    //append information about the root relations in the right column
-		rgraph.graph.getNode(rgraph.root).data.relation = json.data.relation;
-    $jit.id('wki-infolist').innerHTML = rgraph.graph.getNode(rgraph.root).data.relation;
-//		$jit.id('wki-infolist').innerHTML = json.data.relation;		
-});
-	});
+  });
 
     //load JSON data
     rgraph.loadJSON(json);

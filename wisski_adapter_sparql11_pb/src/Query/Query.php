@@ -102,22 +102,9 @@ wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($ret
     
     // As the pbs won't change during query execution, we cache them
     if ($this->pathbuilders === NULL) {
-      // get the engine
-      $engine = $this->getEngine();
-      if (empty($engine))
-        return array();
-      // get the adapter id
-      $adapterid = $engine->adapterId();
-      if (empty($adapterid))
-        return array();
-      // get all pbs
-      $this->pathbuilders = array();
-      // collect all pbs that this engine is responsible for
-      foreach (WisskiPathbuilderEntity::loadMultiple() as $pb) {
-        if (!empty($pb->getAdapterId()) && $pb->getAdapterId() == $adapterid) {
-          $this->pathbuilders[$pb->id()] = $pb;
-        }
-      }
+      $aid = $this->getEngine()->adapterId();
+      $pbids = \Drupal::service('wisski_pathbuilder.manager')->getPbsForAdapter($aid);
+      $this->pathbuilders = entity_load_multiple('wisski_pathbuilder', $pbids);
     }
     return $this->pathbuilders;
 
@@ -245,7 +232,10 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
       }
       elseif ($field == "title" || $field == 'label') {
         // we treat label and title the same (there really should be no difference)
-        // directly ask the title.
+        // directly ask the title
+        // TODO: we could handle the special case of title+bundle query as this
+        // can be packed into one db query and not unintentionally explode the
+        // intermediate result set
 
         $eids = $this->executeEntityTitleCondition($operator, $value);
         $entity_ids = $this->join($conjunction, $entity_ids, $eids);
@@ -296,11 +286,42 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
           drupal_set_message($this->t('Bad path id "%id" in entity query', ['%id' => $path_id]));
           continue; // with next condition
         }
-        $query_parts[] = $this->makePathCondition($pb, $path, $operator, $value);
-      } else {
-        // the field must be mapped to noe or many paths which are then queried
 
-        $query_parts[] = $this->makeFieldCondition($field, $operator, $value);
+        $new_query_part = $this->makePathCondition($pb, $path, $operator, $value);
+        
+        if (is_null($new_query_part)) {
+          if ($conjunction == 'AND') {
+            // the condition would definitely evaluate to an empty set of 
+            // entities and we have to AND; so the result set will be empty.
+            // The rest of the conditions can be skipped 
+            return array('', array());
+          }
+          // else: we are in OR mode so we can just skip the condition that 
+          // would evaluate to an empty set
+        }
+        else {
+          $query_parts[] = $new_query_part;
+        }
+
+      } 
+      else {
+        // the field must be mapped to one or many paths which are then queried
+
+        $new_query_part = $this->makeFieldCondition($field, $operator, $value);
+        if (is_null($new_query_part)) {
+          if ($conjunction == 'AND') {
+            // the condition would definitely evaluate to an empty set of 
+            // entities and we have to AND; so the result set will be empty.
+            // The rest of the conditions can be skipped 
+            return array('', array());
+          }
+          // else: we are in OR mode so we can just skip the condition that 
+          // would evaluate to an empty set
+        }
+        else {
+          $query_parts[] = $new_query_part;
+        }
+
       }
     }
     
@@ -590,15 +611,26 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     $query_parts = array();
     
     $count = 0;
+    $path_available = FALSE;
     foreach ($this->getPbs() as $pb) {
       $path = $pb->getPathForFid($field);
       if (!empty($path)) {
-        $query_parts[] = $this->makePathCondition($pb, $path, $operator, $value);
-        $count++;
+        $path_available = TRUE;
+        $new_query_part = $this->makePathCondition($pb, $path, $operator, $value);
+        if ($new_query_part !== NULL) {
+          $query_parts[] = $new_query_part;
+          $count++;
+        }
       }
     }
 
-    if ($count == 0) {
+    if (!$path_available) {
+      // the adapter is not responsible for this field.
+      // we just skip this condition
+      // TODO: should we rather declare the condition as failed? (return NULL) 
+      return '';
+    }
+    elseif ($count == 0) {
       return NULL;
     }
     elseif ($count == 1) {
@@ -619,23 +651,95 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     // only the first var x0 get to be the same so that everything maps
     // to the same entity
     $starting_position = $pb->getRelativeStartingPosition($path, TRUE);
-#    dpm($path, "path");
-#    dpm($starting_position, "start");
+    #\Drupal::logger('query path cond')->debug("start path cond:".$this->varCounter.";$operator:$value;".($path->getDatatypeProperty()?:"no dt"));
+    
+    $dt_prop = $path->getDatatypeProperty();
+    $obj_uris = array();
+    if ((empty($dt_prop) || $dt_prop == 'empty') && !$path->isGroup()) {
+      // we have a regular path without datatype property
+      // TODO: the value can't be the primitive, so we have to interpret it 
+      // differently. E.g. the value could be the title search string of the
+      // referred entities
+      if (!is_array($value)) {
+        // if value is a scalar we treat it as title pattern and do a search
+        // for these entities first.
+
+
+        // determine at which position the referred/object uris are in the path
+        $obj_pos = $path->getDisamb() ? $path->getDisamb() * 2 - 2 : (count($path->getPathArray()) - 1);
+        $referred_concept = $path->getPathArray()[$obj_pos];
+
+        // we have to find out the bundle(s)
+        $bundles = \Drupal::service('wisski_pathbuilder.manager')->getBundlesWithStartingConcept($referred_concept);
+        // top bundles are preferred
+        $preferred_bundles = NULL;
+        foreach ($bundles as $bid => $info) {
+          if ($info['is_top_bundle']) {
+            $preferred_bundles[$bid] = $bid;
+            unset($bundles[$bid]);
+          }
+        }
+
+        $entity_ids = array();
+        
+        if (!empty($preferred_bundles)) {
+          $entity_ids = $this->queryReferencedEntities($preferred_bundles, $value, $operator);
+        }
+        // if there are no preferred bundles or querying them yielded no result
+        // we search in all the other bundles
+        if (empty($entity_ids)) {
+          // we have to take the keys as the values are the info structs
+          $entity_ids = $this->queryReferencedEntities(array_keys($bundles), $value, $operator);
+        }
+
+        if (empty($entity_ids)) {
+          // there are no entities that match the title, therefore the whole
+          // condition cannot be satisfied and we have to abort
+          return NULL;
+          #$obj_uris = 'UNDEF'; // this leads to an unbound sparql var
+        }
+
+        // get the uris for the entity ids
+        $adapter = entity_load('wisski_salz_adapter', $this->getEngine()->adapterId());
+        foreach ($entity_ids as $eid) {
+          // NOTE: getUrisForDrupalId returns one uri as string as we have 
+          // given the adapter
+          $obj_uris[] = '<' . AdapterHelper::getUrisForDrupalId($eid, $adapter) .'>';
+        }
+        
+      }
+    }
+
     $vars[$starting_position] = "x0";
     $i = $this->varCounter++;
     for ($j = count($path->getPathArray()); $j > $starting_position; $j--) {
       $vars[$j] = "c${i}_x$j";
     }
     $vars['out'] = "c${i}_out";
-    
+
+
     // arg 11 ($relative) must be FALSE, otherwise fields of subgroups yield
     // the entities of the subgroup
     $query_part = $this->getEngine()->generateTriplesForPath($pb, $path, $value, NULL, NULL, 0, $starting_position, FALSE, $operator, 'field', FALSE, $vars);
+    
+    if (!empty($obj_uris)) {
+      $query_part .= ' VALUES ?' . $vars[$obj_pos] . ' { ' . join(' ', $obj_uris) . ' }';
+    }
 
-#\Drupal::logger('query path cond')->debug("path ".$path->id() ." {v} qc {d} qp $query_part", array("d"=>join(";", $path->getPathArray()), "v"=>join("/", $vars)));
     return $query_part;
     
   }
+
+  
+  protected function queryReferencedEntities($bundle_ids, $title_search_string, $operator) {
+    // we start a new query
+    $result = \Drupal::entityQuery('wisski_individual')
+      ->condition('title', $title_search_string, $operator)
+      ->condition('bundle', $bundle_ids, 'IN')
+      ->execute();
+    return $result;
+  }
+
 
 
   /**
