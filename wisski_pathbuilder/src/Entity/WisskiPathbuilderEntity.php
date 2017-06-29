@@ -978,6 +978,18 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     return $paths;
   }
 
+  public function getAllPathsAndGroupsForBundleId($bundleid) {
+    $groups = $this->getGroupsForBundle($bundleid);
+    
+    $paths = array();
+    
+    foreach($groups as $group) {
+      $paths = array_merge($paths, $this->getPathsAndGroupsForGroupId($group->id()));
+    }
+    
+    return $paths;
+  }
+
   public function getAllPathsForGroupId($groupid, $recursive) {
     $paths = array();
           
@@ -1004,8 +1016,12 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     $paths = array();
     
     foreach($allpaths as $path) {
-      if((string) $path['parent'] === (string) $groupid) 
-        $paths[] = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
+      if((string) $path['parent'] === (string) $groupid) { 
+        $path_obj = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
+        if ($path_obj !== NULL) {
+          $paths[] = $path_obj;
+        }
+      }
     }
 
     return $paths;
