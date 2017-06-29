@@ -3440,7 +3440,7 @@ $oldtmp = $tmp;
       foreach (self::getReasonerTableSchema() as $type => $table_schema) {
         $table_name = $adapter_id.'_'.$type;
         if ($schema->tableExists($table_name)) {
-          $database->truncate($table_name);
+          $database->truncate($table_name)->execute();
         } else {
           $schema->createTable($table_name,$table_schema);
         }
