@@ -2242,7 +2242,7 @@ $oldtmp = $tmp;
     }
     // if write context and there is an object, we don't attach the primitive
     // also if we create a group
-    elseif ( ($write && !empty($object_in) && !empty($disambposition) ) || $mode == 'group_creation' ) {
+    elseif ( ($write && !empty($object_in) && !empty($disambposition) ) || $mode == 'group_creation' || $mode == 'entity_reference') {
       // do nothing!
     }
     elseif ($has_primitive) {
