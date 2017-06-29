@@ -457,11 +457,27 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     );
 
     $display = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual' . '.'.$bundle.'.default');
-    if (is_null($display)) $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
+    if (is_null($display)) { 
+      $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
+    } else { // there already is one.    
+      $comp = $display->getComponent($fieldid);
+
+      if(!empty($comp))
+        $display_options = array_merge($comp, $display_options); 
+    }
     $display->setComponent($fieldid,$display_options)->save();
 
     $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual' . '.'.$bundle.'.default');
-    if (is_null($form_display)) $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
+    if (is_null($form_display)) {
+      $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
+    } else {
+      // there already is one.
+      $comp = $form_display->getComponent($fieldid);
+
+      if(!empty($comp))
+        $view_options = array_merge($comp, $view_options);  
+    }
+    
     $form_display->setComponent($fieldid, $view_options)->save();
 
     drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
@@ -502,7 +518,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     $pbpaths = $this->getPbPaths();
 
     $fieldid = $pbpaths[$pathid]['field'];
-    
+        
     //don't go on if the user whishes not to
     if ($fieldid === self::CONNECT_NO_FIELD) return;
     
@@ -625,8 +641,10 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : \Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
     //dpm($field_storage->id(),'ID before');
     $field_storage->setCardinality($card);
+    
     $field_storage->save();
     //dpm($field_storage->id(), 'ID after');
+    
     
     $create_fo = FALSE;
     $field_objects = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(
@@ -655,11 +673,12 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     //@TODO make it possible to set the $required value
     //$field_object->setRequired($required);
     $field_object->save();
+
 #    drupal_set_message("path " . $pathid . " has weight " . serialize($pbpaths[$pathid]['weight']));
     $view_options = array(
       // this might also be formatterwidget - I am unsure here. @TODO
       'type' => $pbpaths[$pathid]['displaywidget'], #'text_summary_or_trimmed',//has to fit the field type, see above
-      'settings' => array(), #array('trim_length' => '200'),
+      //'settings' => array(), #array('trim_length' => '200'),
       'weight' => $pbpaths[$pathid]['weight'],#'weight' => 1,//@TODO specify a "real" weight
     );
   
@@ -698,13 +717,34 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
 
     // find the current display elements
     $display = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual' . '.'.$bundle.'.default');
-    if (is_null($display)) $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
+
+    // no display?
+    if (is_null($display)) {
+      $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
+    } else { // there already is one.    
+
+      $comp = $display->getComponent($fieldid);
+  
+      if(!empty($comp))
+        $display_options = array_merge($display->getComponent($fieldid), $display_options); 
+
+    }
+    
     // setComponent enables them
-    $display->setComponent($fieldid,$display_options)->save();
+    $display->setComponent($fieldid, $display_options)->save();
 
     // find the current form display elements
     $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual' . '.'.$bundle.'.default');
-    if (is_null($form_display)) $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
+    if (is_null($form_display)) { // no form display?
+      $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
+    } else {
+      // there already is one.
+      $comp = $form_display->getComponent($fieldid);
+      
+      if(!empty($comp))
+        $view_options = array_merge($comp, $view_options);  
+    }
+    
     // setComponent enables them
     $form_display->setComponent($fieldid, $view_options)->save();      
 
