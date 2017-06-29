@@ -1988,7 +1988,7 @@ $oldtmp = $tmp;
         
         $sparql = "INSERT DATA { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " . $triples . " } } ";
 #        \Drupal::logger('WissKIsaveProcess')->debug('sparql writing in create: ' . htmlentities($sparql));
-        
+#        dpm($sparql, "group creation");  
         $result = $this->directUpdate($sparql);
     
         if (empty($uri)) {
@@ -2047,6 +2047,8 @@ $oldtmp = $tmp;
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array()) {
 #     \Drupal::logger('WissKIsaveProcess')->debug('generate: ' . serialize(func_get_args()));
+#    if($mode == 'entity_reference')
+#      dpm(func_get_args(), "fun");
     // the query construction parameter
     $query = "";
     // if we disamb on ourself, return.
@@ -2239,7 +2241,8 @@ $oldtmp = $tmp;
       drupal_set_message("There is no primitive Datatype for Path " . $path->id(), "error");
     }
     // if write context and there is an object, we don't attach the primitive
-    elseif ($write && !empty($object_in) && !empty($disambposition)) {
+    // also if we create a group
+    elseif ( ($write && !empty($object_in) && !empty($disambposition) ) || $mode == 'group_creation' ) {
       // do nothing!
     }
     elseif ($has_primitive) {
@@ -2317,6 +2320,10 @@ $oldtmp = $tmp;
         $query .= " } . ";
     }
 #    \Drupal::logger('WissKIsaveProcess')->debug('erg generate: ' . htmlentities($query));
+#    if($mode == 'entity_reference')
+#      \Drupal::logger('WissKIsaveProcess')->debug('erg generate: ' . htmlentities($query));
+
+#      dpm($query, "query"); 
     return $query;
   }
   
