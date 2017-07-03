@@ -27,7 +27,7 @@ function wisski_iip_image_preprocess_colorbox_formatter(&$variables) {
     $nuri = $style->buildUri($iu);
   }
 #  dpm($variables);
-  if($variables['settings']['wisski_inline'] === "1") {
+  if(isset($variables['settings']['wisski_inline']) && $variables['settings']['wisski_inline'] === "1") {
     $variables['attributes']['wisski-inline-iip'] = "1";
     $variables['attributes']['class'] = ['wisski-inline-iip'];
     $variables['url'] = '#/';
@@ -51,7 +51,7 @@ function wisski_iip_image_field_widget_form_alter(&$element, \Drupal\Core\Form\F
     $field_name = $element['#field_name'];
 
     $bundle_fields = \Drupal::getContainer()->get('entity_field.manager')->getFieldDefinitions($entity_type, $bundle);
-    $field_definition = $bundle_fields[$field_name];
+    $field_definition = isset($bundle_fields[$field_name]) ? $bundle_fields[$field_name] : NULL;
 
     if(!empty($field_definition)) {
 
@@ -75,6 +75,6 @@ function wisski_iip_image_field_widget_form_alter(&$element, \Drupal\Core\Form\F
 function wisski_iip_image_theme_registry_alter(&$theme_registry) {
 #  dpm($theme_registry);
 #  $theme_registry['colorbox_formatter']['template'] = 'wisskiiip-colorbox-formatter';
-  $theme_registry['colorbox_formatter']['path'] = drupal_get_path('module', 'wisski_iip_image') . '/templates';
+  #$theme_registry['colorbox_formatter']['path'] = drupal_get_path('module', 'wisski_iip_image') . '/templates';
 }
 

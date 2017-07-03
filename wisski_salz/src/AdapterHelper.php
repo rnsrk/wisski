@@ -8,6 +8,7 @@
 namespace Drupal\wisski_salz;
 
 use \Drupal\Component\Utility\UrlHelper;
+use \Drupal\wisski_core\WisskiCacheHelper;
 use \Drupal\wisski_core\WisskiHelper;
 use \Drupal\wisski_salz\Entity\Adapter;
 
@@ -355,6 +356,32 @@ class AdapterHelper {
       self::setSameUris($same_uris,$eid);
       return $same_uris;
     }
+  }
+  
+
+  /** Deletes the mapping between the given entity ID and its associated URIs.
+   * It does NOT delete other data associated with the ID or the URIs!
+   */
+  public static function deleteUrisForDrupalId($entity_id) {
+
+    $same_uris = self::doGetUrisForDrupalId($entity_id);
+    // delete from local store
+    // with TRUE it returns the engine instead of adapter
+    $local_engine = self::getPreferredLocalStore(TRUE);
+    $local_engine->deleteSameUris($same_uris);
+
+    // delete from table
+    $query = db_delete('wisski_salz_id2uri')
+      ->condition('eid',$entity_id)
+      ->execute();
+    $query = db_delete('wisski_title_n_grams')
+      ->condition('ent_num',$entity_id)
+      ->execute();
+    
+    // erase caches
+    WisskiCacheHelper::flushCallingBundle($entity_id);
+    WisskiCacheHelper::flushEntityTitle($entity_id);
+
   }
 
   

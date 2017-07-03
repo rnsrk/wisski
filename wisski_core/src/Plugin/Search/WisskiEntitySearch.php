@@ -270,7 +270,7 @@ class WisskiEntitySearch extends SearchPluginBase {
         for ($i = 0; $i < $this->path_limit && $i < count($bundle_path_options); $i++) {
           $list = each($bundle_path_defaults);
           $def_input = '';
-          $def_operator = '=';
+          $def_operator = $this->getDefaultOperator();
           if ($list) {
             list( , list($path_id, $def_input, $def_operator)) = $list;
           } else {
@@ -324,22 +324,27 @@ class WisskiEntitySearch extends SearchPluginBase {
     //dpm($form);
   }
 
+  protected function getDefaultOperator() {
+    return 'CONTAINS';
+  }
+
+
   protected function getSearchOperators() {
   
     return array(
-      '=' => $this->t('exactly'),
-      '<>' => $this->t('not equal'),
-      '>' => '>',
-      '>=' => '>=',
-      '<' => '<',
-      '<=' => '<=',
-      'STARTS_WITH' => $this->t('Starts with'),
       'CONTAINS' => $this->t('Contains'),
-      'ENDS_WITH' => $this->t('Ends with'),
-      'ALL' => $this->t('all of'),
-      'IN' => $this->t('one of'),
-      'NOT_IN' => $this->t('none of'),
-      'BETWEEN' => $this->t('between'),
+      '=' => $this->t('exactly'),
+#      '<>' => $this->t('not equal'),
+      '>' => '>',
+#      '>=' => '>=',
+      '<' => '<',
+#      '<=' => '<=',
+      'STARTS_WITH' => $this->t('Starts with'),
+#      'ENDS_WITH' => $this->t('Ends with'),
+#      'ALL' => $this->t('all of'),
+#      'IN' => $this->t('one of'),
+#      'NOT_IN' => $this->t('none of'),
+#      'BETWEEN' => $this->t('between'),
     );
     
   }

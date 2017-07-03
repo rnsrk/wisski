@@ -130,8 +130,12 @@ class WisskiCacheHelper {
   
   static function flushCallingBundle($entity_id) {
     
+    // TODO: cache is no longer used!?
     $cid = 'wisski_individual.'.$entity_id.'.bundle';
     self::flushCacheData($cid);
+    
+    db_delete('wisski_calling_bundles')->condition('eid', $entity_id)->execute();
+
   }
   
   static $gathered_preview_images;

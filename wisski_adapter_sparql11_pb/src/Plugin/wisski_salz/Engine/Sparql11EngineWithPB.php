@@ -1919,9 +1919,13 @@ $oldtmp = $tmp;
     //if there is none $uri will be FALSE
     $uri = $this->getUriForDrupalId($eid);
     
-    $sparql = "DELETE { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o } } " . 
-              "WHERE { { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o . FILTER ( <$uri> = ?s ) } } " .
-              "UNION { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o . FILTER ( <$uri> = ?o ) } } }";
+#    $sparql = "DELETE { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o } } " . 
+#              "WHERE { { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o . FILTER ( <$uri> = ?s ) } } " .
+#              "UNION { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o . FILTER ( <$uri> = ?o ) } } }";
+    // we can't use the default graph here as the uri may also occur in other graphs
+    $sparql = "DELETE { GRAPH ?g { ?s ?p ?o } } " . 
+              "WHERE { { GRAPH ?g { ?s ?p ?o . FILTER ( <$uri> = ?s ) } } " .
+              "UNION { GRAPH ?g { ?s ?p ?o . FILTER ( <$uri> = ?o ) } } }";
     #\Drupal::logger('WissKIsaveProcess')->debug('sparql deleting: ' . htmlentities($sparql));
     
     $result = $this->directUpdate($sparql);

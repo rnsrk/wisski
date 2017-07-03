@@ -459,6 +459,7 @@ abstract class Sparql11Engine extends EngineBase {
     return NULL;
   }
 
+  
   /**
    * {@inheritdoc}
    */
@@ -495,6 +496,33 @@ abstract class Sparql11Engine extends EngineBase {
       }
     }
     return FALSE;
+  }
+
+
+  public function deleteSameUris($uris) {
+    if (empty($uris)) return;
+    if (!is_array($uris)) $uris = array($uris);
+    
+    $orig_prop = $this->getOriginatesProperty();
+    
+    $values = 'VALUES ?uri { <' . join('> <', $uris) . '> }';
+    
+    $qa = array();
+    $qa[] = "DELETE { GRAPH <$orig_prop> { ?uri <$orig_prop> ?aid } } WHERE { $values GRAPH <$orig_prop> { ?uri <$orig_prop> ?aid } }";
+    foreach ($this->getSameAsProperties() as $prop) {
+      $qa[] = "DELETE { GRAPH <$orig_prop> { ?uri <$prop> ?other } } WHERE { $values GRAPH <$orig_prop> { ?uri <$prop> ?other } }";
+      $qa[] = "DELETE { GRAPH <$orig_prop> { ?other <$prop> ?uri } } WHERE { $values GRAPH <$orig_prop> { ?other <$prop> ?uri } }";
+    }
+    $q = join('; ', $qa);
+
+    try {
+      $this->directUpdate($q);
+      return TRUE;
+    } catch (\Exception $e) {
+      \Drupal::logger(__METHOD__)->error($e->getMessage());
+      drupal_set_message('Database error occurred. See logs.');
+    }
+
   }
   
   public function generateFreshIndividualUri() {

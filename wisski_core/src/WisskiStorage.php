@@ -22,6 +22,7 @@ use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\wisski_core\Query\WisskiQueryInterface;
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use Drupal\wisski_salz\AdapterHelper;
 use Drupal\wisski_salz\Entity\Adapter;
 
 
@@ -748,7 +749,6 @@ $tsa['eid'] = $entity_id;
         $local_adapters[$aid] = $adapter;
       
     }
-
     // if there are no adapters by now we die...
     if(empty($writable_adapters)) {
       drupal_set_message("There is no writable storage backend defined.", "error");
@@ -776,7 +776,11 @@ $tsa['eid'] = $entity_id;
       foreach($entities as $entity)
         $return = $adapter->deleteEntity($entity);
     }
-  
+    
+    foreach($entities as $entity) {
+      AdapterHelper::deleteUrisForDrupalId($entity->id());
+    }
+
     if (empty($return)) {
       drupal_set_message('No local adapter could delete the entity','error');
       return;
