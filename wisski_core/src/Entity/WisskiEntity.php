@@ -65,6 +65,11 @@ use Drupal\wisski_core\WisskiEntityInterface;
  */
 class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
 
+#  public static function create(array $values = array()) {
+#    dpm("hallo welt!");
+#    return parent::create($values);
+#  }
+
   //@TODO we have a 'name' entity key and don't know what to do with it. SPARQL adapter uses a 'Tempo Hack'
   //making it the same as 'eid'
   /**
@@ -209,7 +214,11 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
 #    dpm(func_get_args(), "extractFieldData in the beginning");
 #    dpm($this, "this");
 #    return array();
+    dpm(microtime(), "1");
     $out = array();
+
+    $fields_to_save = array();
+    $fields_to_delete = array();
 
     //$this is iterable itself, iterates over field list
     foreach ($this as $field_name => $field_item_list) {
@@ -271,6 +280,7 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
 #      if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) ) unset($out[$field_name]);
     }
 #    dpm($out,__METHOD__ . ' at the end ');
+    dpm(microtime(), "2");
     return $out;
   }
 
