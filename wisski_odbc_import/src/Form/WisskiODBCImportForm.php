@@ -351,6 +351,8 @@ function wisski_odbc_storeBundle($row, $XMLrows, $bundleid, $delimiter, $trim) {
   $entity_fields["bundle"] = $bundleid;
   
 #  drupal_set_message("bundle: " . serialize($XMLrows));
+
+  $found_something = false;
   
   foreach($XMLrows as $key => $value) {
     $i = 0;
@@ -364,6 +366,10 @@ function wisski_odbc_storeBundle($row, $XMLrows, $bundleid, $delimiter, $trim) {
         $bundleid = $value[$i . '_attr']['id'];
         $ref_entity_id = $this->wisski_odbc_storeBundle($row, $value[$i], $bundleid, $delimiter, $trim);
         $entity_fields[$bundleid][] = $ref_entity_id;
+        
+        if($ref_entity_id)
+          $found_something = true;
+        
         $i++;
       }
       $i = 0;
@@ -374,13 +380,22 @@ function wisski_odbc_storeBundle($row, $XMLrows, $bundleid, $delimiter, $trim) {
         $fieldid = $value[$i . '_attr']['id'];
         $field_row_id = $value[$i]["fieldname"];
         $entity_fields[$fieldid][] = ($row[$field_row_id]);
+
+        if(!empty($row[$field_row_id]))
+          $found_something = true;
+
         $i++;
       }
       $i = 0;
     }  
     
   }
-  
+
+  // if absolutely nothing was stored - don't create an entity, as it will only
+  // take time and produce nothing
+  if(!$found_something)
+    return;
+
 #  drupal_set_message("gathered values: " . serialize($entity_fields));
   
   // generate entity
