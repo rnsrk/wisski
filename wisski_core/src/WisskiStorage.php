@@ -31,6 +31,21 @@ use Drupal\wisski_salz\Entity\Adapter;
  */
 class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInterface {
 
+  /*
+  public function create(array $values = array()) {
+    $user = \Drupal::currentUser();
+    
+    
+    dpm($values, "before");
+    if(!isset($values['uid']))
+      $values['uid'] = $user->id();
+      
+    dpm($values, "values");
+    return parent::create($values);
+  }
+  */
+  
+
   /**
    * stores mappings from entity IDs to arrays of storages, that handle the id
    * and arrays of bundles the entity is in
@@ -43,13 +58,48 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   protected function doLoadMultiple(array $ids = NULL) {
   //dpm($ids,__METHOD__);
     $entities = array();
+
+    // this loads everything from the triplestore
     $values = $this->getEntityInfo($ids);
-  //dpm($values,'values');    
+
+#  dpm($values,'values');    
+
+    // add the values from the cache
     foreach ($ids as $id) {
       //@TODO combine this with getEntityInfo
       if (!empty($values[$id])) {
 #ddl($values, 'values');
 #if (!isset($values[$id]['bundle'])) ddl($values[$id], "adbadbad$id bad");
+
+        // load the cache
+        $cached_field_values = db_select('wisski_entity_field_properties','f')
+          ->fields('f',array('fid', 'ident','delta','properties'))
+          ->condition('eid',$id)
+          ->condition('bid',$values[$id]['bundle'])
+#          ->condition('fid',$field_name)
+          ->execute()
+          ->fetchAllAssoc('fid');
+          
+#        dpm($cached_field_values, "argh");
+
+        foreach($cached_field_values as $field_id => $cached_field_value) {
+#          dpm($cached_field_value, "sdasdf");
+
+          // empty here might make problems
+          if( isset($values[$id][$field_id]) )
+            continue;
+
+          $cached_value = unserialize($cached_field_value->properties);
+          
+          if(empty($cached_value))
+            continue;
+
+          // now it should be save to set this value
+          $values[$id][$field_id] = $cached_value;
+        }
+        
+#        dpm($values, "values after");
+        
         $entity = $this->create($values[$id]);
         $entity->enforceIsNew(FALSE);
         $entities[$id] = $entity;
@@ -141,7 +191,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             }
               
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
-
+            
             wpm($field_definitions, 'gei-fd');
 #            $view_ids = \Drupal::entityQuery('entity_view_display')
 #              ->condition('id', 'wisski_individual.' . $bundleid . '.', 'STARTS_WITH')
@@ -160,7 +210,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   //this is a base field and cannot have multiple values
                   //@TODO make sure, we load the RIGHT value
                   $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
-                  wpm($new_field_values, "gei-nfv");
+
                   if (empty($new_field_values)) continue;
                 
                   $new_field_values = $new_field_values[$id][$field_name];
@@ -600,12 +650,27 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   protected function doSaveFieldItems(ContentEntityInterface $entity, array $names = []) {
 #    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()));
+#    \Drupal::logger('WissKIsaveProcess')->debug(serialize($entity->uid->getValue())); 
 #    dpm(func_get_args(),__METHOD__);
 #    return;
+
+#    dpm($entity->uid->getValue(), 'uid');
+
+    $uid = $entity->uid;
+    // override the user setting
+    if(isset($uid) && empty($uid->getValue()['target_id']) ) {
+      $user = \Drupal::currentUser();
+#    dpm($values, "before");
+      $uid->setValue(array('target_id' => (int)$user->id()));
+    }
+    
+#    dpm($entity->uid->getValue(), 'uid');
+
+
     // gather values with property caching
     // set second param of getValues to FALSE: we must not write
     // field values to cache now as there may be no eid yet (on create)
-$ts1 = microtime(true);
+$ts1 = microtime(true);    
 
     list($values,$original_values) = $entity->getValues($this,FALSE);
     $bundle_id = $values['bundle'][0]['target_id'];

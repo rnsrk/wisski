@@ -212,28 +212,28 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
   protected function extractFieldData($storage,$save_field_properties=FALSE) {
 #    dpm("calling extractfieldData with sfp: " . serialize($save_field_properties));
 #    dpm(func_get_args(), "extractFieldData in the beginning");
-#    dpm($this, "this");
-#    return array();
-    dpm(microtime(), "1");
     $out = array();
 
     $fields_to_save = array();
-    $fields_to_delete = array();
+
+    if ($save_field_properties) {
+      //clear the field values for this field in entity in bundle
+      db_delete('wisski_entity_field_properties')
+        ->condition('eid',$this->id())
+        ->condition('bid',$this->bundle())
+    #    ->condition('fid',$field_name)
+        ->execute();
+      
+      // prepare the insert query.
+      $query = db_insert('wisski_entity_field_properties')
+        ->fields(array('eid', 'bid', 'fid', 'delta', 'ident', 'properties'));
+        
+      }
 
     //$this is iterable itself, iterates over field list
     foreach ($this as $field_name => $field_item_list) {
-#      dpm($field_name, "fieldname");
-#      dpm($field_item_list, "fielditem");
 
       $out[$field_name] = array();
-      if ($save_field_properties) {
-        //clear the field values for this field in entity in bundle
-        db_delete('wisski_entity_field_properties')
-          ->condition('eid',$this->id())
-          ->condition('bid',$this->bundle())
-          ->condition('fid',$field_name)
-          ->execute();
-      }
       
       foreach($field_item_list as $weight => $field_item) {
         
@@ -269,18 +269,21 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
             #isset($field_values['wisskiDisamb']) ? $field_values['wisskiDisamb'] : $field_values[$main_property],
             'properties' => serialize($field_values),
           );
-
-#          dpm($fields_to_save, "fields to save");
-          db_insert('wisski_entity_field_properties')
-            ->fields($fields_to_save)
-            ->execute();
+          
+          // add the values to the insert query
+          $query->values($fields_to_save);
         }
       }
+
+      // execute the insert query
+      if ($save_field_properties && !empty($this->id())) {     
+        $query->execute();
+      }
+        
       if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) || empty($out[$field_name][0][$main_property])) unset($out[$field_name]);
 #      if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) ) unset($out[$field_name]);
     }
-#    dpm($out,__METHOD__ . ' at the end ');
-    dpm(microtime(), "2");
+
     return $out;
   }
 
