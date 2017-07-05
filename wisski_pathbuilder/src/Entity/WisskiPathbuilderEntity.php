@@ -479,9 +479,10 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     }
     
     $form_display->setComponent($fieldid, $view_options)->save();
-
-    drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
-  
+    if(!$no_fs) {
+      drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
+    } else {
+    }
   }
 
   
