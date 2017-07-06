@@ -1,6 +1,19 @@
 
 /* simple singel value input */
 
+/* do some overwriting because drupal is stupid. */
+body {
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif !important;
+}
+
+table {
+  font-family: inherit !important;
+  
+  font-size: 0.929em !important;
+  position: relative;
+  display: table-cell;
+}
+
 form .form-item label::after {
   content: ":";
 }
@@ -29,11 +42,14 @@ table.field-multiple-table > div {
 
 form .form-item table thead tr {
   border: 0;
+  background: none;
 }
 
 form .form-item table thead tr th {
   border: 0;
-  background: white;
+  background: none;
+  color: inherit;
+//  background: white;
   padding-top: 2px;
   padding-bottom: 2px;
   padding-left: 0;
@@ -62,16 +78,53 @@ form .form-item table tbody td input {
 form .form-item .field-add-more-submit.button,
 form .form-item .field-add-more-submit.button:hover,
 form .form-item .field-add-more-submit.button:focus {
-  background-image: url('../../images/icons/add.png');
+
+  background-image: url('../../images/icons/plus.png');
   background-repeat: no-repeat;
   background-position: center center;
+  background-size: 60%;
+
   text-indent: 100px;
+  font-size: 0 !important;
+/*
   white-space: nowrap;
   width: 36px;
-  margin: 0 0 0 36px;
+*/
+  margin: 0 0 0 15px;
+
+  
+  width:25px;
+  height:25px;
+  line-height:25px;
+/*  border: 2px solid #f5f5f5; */
+  border-radius: 50%;
+  color:#f5f5f5;
+  text-align:center;
+  text-decoration:none;
+/*  background: #464646; */
+  box-shadow: 0 0 3px gray;
+  font-size:20px;
+  font-weight:bold;
+/*  margin: 0;*/
 }
 
 form .form-item .clearfix {
+    position: relative;
+    top: 23px;
+    /* right: 10px; */
+    /* float: right; */
+    display: table-cell;
  /* padding-left: 10px;*/
 }
 
+.form-item, .form-actions {
+/*    margin-top: 1em; */
+    position: relative;
+/*    margin-bottom: 1em;*/
+    width: auto;
+    display: table-row-group;
+}
+
+.form-composite > legend, .label {
+  font-weight: initial;
+}
