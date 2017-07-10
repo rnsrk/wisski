@@ -90,12 +90,21 @@ class WisskiHelper {
     $parents = array();
     foreach ($pbs as $pb_id => $pb) {
       $pathtree = $pb->getPathTree();
+#      dpm($pathtree);
       if (empty($pathtree)) continue;
       $pbarr = $pb->getPbPaths();
       
       foreach($pathtree as $key => $value) {
+#        dpm($pbarr[$key], "pbarr");
+        
+        // in this case it is a field on top level - this should not occur, but we ignore it here!
+        if(!empty($pbarr[$key]['field']) && $pbarr[$key]['field'] != $pbarr[$key]['bundle'])
+          continue; 
+        
         if(!empty($pbarr[$key]['bundle']) && $pbarr[$key]['bundle'] != Pathbuilder::CONNECT_NO_FIELD && $pbarr[$key]['bundle'] != Pathbuilder::GENERATE_NEW_FIELD) {
           $bundle_id = $pbarr[$key]['bundle'];
+#          dpm($bundle_id, $pb->id() . ' and key ' . $key);
+          
           // skip if empty bundle id
           if(empty($bundle_id))
             continue;
