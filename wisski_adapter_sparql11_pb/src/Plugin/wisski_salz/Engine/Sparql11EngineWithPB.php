@@ -2341,14 +2341,14 @@ $oldtmp = $tmp;
       return;
       
     if($path->getDisamb()) {
-      $sparql = "SELECT ?x" . (($path->getDisamb()-1)*2) . " WHERE { GRAPH ?g { ";
+      $sparql = "SELECT ?x" . (($path->getDisamb()-1)*2) . " WHERE { ";
 
       // starting position one before disamb because disamb counts the number of concepts, startin position however starts from zero
       $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE);
-      $sparql .= " } }";
+      $sparql .= " }";
 #      drupal_set_message("spq: " . ($sparql));
       $disambresult = $this->directQuery($sparql);
-#      dpm($disambresult, "result");
+#dpm(array($sparql, $disambresult), __METHOD__ . " disamb query");
       if(!empty($disambresult))
         $disambresult = current($disambresult);      
     }
@@ -2384,7 +2384,7 @@ $oldtmp = $tmp;
     }
     $sparql .= " } } ";
 #     \Drupal::logger('WissKIsaveProcess')->debug('sparql writing in add: ' . htmlentities($sparql));
-#    dpm($sparql);
+#dpm($sparql, __METHOD__ . " sparql");
     $result = $this->directUpdate($sparql);
     
     
