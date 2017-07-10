@@ -102,7 +102,7 @@ class WisskiEntitySearch extends SearchPluginBase {
             array('wisski_individual' => $entity_id),
             array('query' => array('wisski_bundle' => $bundle_id))
           )->toString(),
-          'type' => $bundle->label(),
+          'type' => is_null($bundle) ? '' : $bundle->label(),
           'title' => $title,
         );
       }
