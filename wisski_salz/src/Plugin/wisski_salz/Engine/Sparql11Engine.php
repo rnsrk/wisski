@@ -362,7 +362,8 @@ abstract class Sparql11Engine extends EngineBase {
       return $this->getEndpoint()->update($query);
     }
     catch (\Exception $e) {
-      \Drupal::logger('UPDATE '.$this->adapterId())->error('{exception}', array('exception' => (string) $e));
+      drupal_set_message('Something went wrong in \''.__FUNCTION__.'\' for adapter "'.$this->adapterId().'"','error');
+      \Drupal::logger('UPDATE '.$this->adapterId())->error('query "{query}" caused error: {exception}',array('query' => $query, 'exception'=> (string) $e));
       return NULL;
     }
   }
@@ -980,9 +981,9 @@ abstract class Sparql11Engine extends EngineBase {
     // It also escapes all non-ASCII chars.
     // It adds '"' at front and end; we have to trim them.
     $literal = substr(json_encode($literal, JSON_UNESCAPED_SLASHES), 1, -1); 
-    $sic = array('"', "'");
-    $corr = array('\"', "\'");
-    $literal = str_replace($sic, $corr, $literal);
+#    $sic = array('"', "'");
+#    $corr = array('\"', "\'");
+#    $literal = str_replace($sic, $corr, $literal);
     return $literal;
   }
 
