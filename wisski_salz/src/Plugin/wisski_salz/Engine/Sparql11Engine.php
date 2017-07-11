@@ -980,6 +980,9 @@ abstract class Sparql11Engine extends EngineBase {
     // It also escapes all non-ASCII chars.
     // It adds '"' at front and end; we have to trim them.
     $literal = substr(json_encode($literal, JSON_UNESCAPED_SLASHES), 1, -1); 
+    $sic = array('"', "'");
+    $corr = array('\"', "\'");
+    $literal = str_replace($sic, $corr, $literal);
     return $literal;
   }
 
