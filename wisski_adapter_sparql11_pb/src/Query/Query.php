@@ -426,7 +426,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
 $timethis[] = microtime(TRUE);
     $result = $engine = $this->getEngine()->directQuery($select);
 $timethis[] = microtime(TRUE);
-
+dpm($select, 'sparql');
 #    drupal_set_message(serialize($select));
     $adapter_id = $this->getEngine()->adapterId();
     if (WISSKI_DEVEL) \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded result count {cnt}: {result}', array('query' => $select, 'result' => $result, 'cnt' => $result->count()));
@@ -644,13 +644,18 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
   }
 
 
-  protected function makePathCondition($pb, $path, $operator, $value) {
+  protected function makePathCondition($pb, $path, $operator, $value, $starting_group = NULL) {
     
     // build up an array for separating the variables of the sparql 
     // subqueries.
     // only the first var x0 get to be the same so that everything maps
     // to the same entity
-    $starting_position = $pb->getRelativeStartingPosition($path, TRUE);
+    if ($starting_group === NULL) {
+      $starting_position = 0;
+    }
+    else {
+      $starting_position = $pb->getRelativeStartingPosition($path, FALSE);
+    }
     #\Drupal::logger('query path cond')->debug("start path cond:".$this->varCounter.";$operator:$value;".($path->getDatatypeProperty()?:"no dt"));
     
     $dt_prop = $path->getDatatypeProperty();
@@ -726,6 +731,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       $query_part .= ' VALUES ?' . $vars[$obj_pos] . ' { ' . join(' ', $obj_uris) . ' }';
     }
 
+dpm($query_part, 'pq');
     return $query_part;
     
   }
