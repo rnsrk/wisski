@@ -70,7 +70,7 @@ class WisskiEntityMatcher extends EntityMatcher {
    */
   public function getMatches($string) {
 
-    \Drupal::logger()->info("query: $string");
+    \Drupal::logger("WissKI APUS")->debug("query: $string");
     
     $matches = array();
     if ($string) {

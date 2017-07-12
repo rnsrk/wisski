@@ -109,7 +109,7 @@ class WisskiODBCImportForm extends FormBase {
     $i =0;
     while(isset($arr['server'][0]['table'][$i])) {
 
-      $connection = mysqli_connect($dbserver, $dbuser, $dbpass, $db, $port);
+      $connection = mysqli_connect($dbserver, $dbuser, $dbpass, $db, $dbport);
   
       if(!$connection) {
         drupal_set_message("Connection could not be established!",'error');
@@ -136,19 +136,19 @@ class WisskiODBCImportForm extends FormBase {
   function wisski_odbc_storeTable($table, &$alreadySeen, &$connection) {
 
     $rowiter = 0;
-    $tablename = $table['name'];
-    $delimiter = $table['delimiter'];
-    $trim = $table['trim'];  
+    $delimiter = isset($table['delimiter']) ? $table['delimiter'] : '';
+    $trim = isset($table['trim']) ? $table['trim'] : FALSE;  
   
-    $id = $table['id'];
-    $append = $table['append'];
-    $select = $table['select'];
-    $sql = trim($table['sql']);
-    if(empty($append))
-      $append = "";
-    
-    // we introduce the special <sql> tag
-    if (!empty($sql) && strtoupper(substr($sql, 0, 6)) == 'SELECT') {
+    //$id = isset($table['id']) ? $table['id'] : '';
+    $sql = isset($table['sql']) ? trim($table['sql']) : '';
+    // we introduce the special <sql> tag if you want to define a whole sql 
+    // select query. This is more readable for more complex cases.
+    if (empty($sql)) {
+      $tablename = $table['name'];
+      $append = $table['append'];
+      $select = $table['select'];
+      if(empty($append))
+        $append = "";
       $sql = "SELECT $select FROM `$tablename` $append";
     }
 #  drupal_set_message(serialize(mysqli_query($connection,"SELECT * FROM `fuehrerbau1` WHERE 1")));
