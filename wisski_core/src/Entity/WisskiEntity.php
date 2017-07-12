@@ -69,7 +69,7 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
 #    dpm("hallo welt!");
 #    return parent::create($values);
 #  }
-
+  
   //@TODO we have a 'name' entity key and don't know what to do with it. SPARQL adapter uses a 'Tempo Hack'
   //making it the same as 'eid'
   /**
@@ -167,6 +167,22 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
     
     return $fields;
   }
+  
+
+  protected $label = NULL;
+  
+
+  /**
+   * {@inheritdoc}
+   */
+  public function label() {
+    // we cache the label to prevent that it is fetched from db all the time
+    if ($this->label === NULL) {
+      $this->label = parent::label();
+    }
+    return $this->label;
+  }
+
 
   public function tellMe() {
 

@@ -184,7 +184,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     $info = array();
     // for every id
     foreach($ids as $id) {
-    
+
       //make sure the entity knows its ID at least
       $info[$id]['eid'] = $id;
       
@@ -851,10 +851,10 @@ $tsa['eid'] = $entity_id;
 
     $local_adapters = array();
     $writable_adapters = array();
+    $delete_adapters = array(); // adapters that we use for deleting the entities
+    $all_adapters = entity_load_multiple('wisski_salz_adapter');
 
-    $adapters = entity_load_multiple('wisski_salz_adapter');
-
-    foreach($adapters as $aid => $adapter) {
+    foreach($all_adapters as $aid => $adapter) {
       // we locate all writable stores
       // then we locate all local stores in these writable stores
 
@@ -881,20 +881,19 @@ $tsa['eid'] = $entity_id;
     $pathbuilders = WisskiPathbuilderEntity::loadMultiple();
 
     foreach($pathbuilders as $pb_id => $pb) {
-    
-      //get the adapter
       $aid = $pb->getAdapterId();
-
       //check, if it's writable, if not we can stop here
-      if (isset($writable_adapters[$aid])) $adapter = $writable_adapters[$aid];
-      else continue;
-
-      foreach($entities as $entity)
-        $return = $adapter->deleteEntity($entity);
+      if (isset($writable_adapters[$aid])) {
+        $delete_adapters[$aid] = $writable_adapters[$aid];
+      }
     }
     
     foreach($entities as $entity) {
+      foreach ($delete_adapters as $adapter) {
+        $return = $adapter->deleteEntity($entity);
+      }
       AdapterHelper::deleteUrisForDrupalId($entity->id());
+      WisskiCacheHelper::flushCallingBundle($entity->id());
     }
 
     if (empty($return)) {

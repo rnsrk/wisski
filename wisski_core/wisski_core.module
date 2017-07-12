@@ -28,8 +28,11 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
     if ($wisski_individual->isNew()) $create_form_title = TRUE;
     $entity_id = $wisski_individual->id();
     $bundle_id = $wisski_individual->bundle();
-    if(!empty($entity_id))
+#dpm(array($entity_id, get_class_methods($wisski_individual), $bundle_id), "generate title");
+    if(!empty($entity_id)) {
+      // TODO: Why do we need to cache the bundle here?
       WisskiCacheHelper::putCallingBundle($entity_id, $bundle_id);
+    }
   } else {
 #		drupal_set_message("2");
     $entity_id = $wisski_individual;

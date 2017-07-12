@@ -315,7 +315,7 @@ class AdapterHelper {
       $return = $out->fetchCol(1);
       if (count($return) > 1) {
         drupal_set_message("There seems to be associated with one entity id with multiple instances. See logs", 'warning');
-        \Drupal::logger('wisski salz')->warning("There seems to be associated entity id {id} with multiple instances: {uris}", array('id' => $eid, 'uris' => $return));
+        \Drupal::logger('wisski salz')->warning("There seems to be associated entity id {id} with multiple instances: {uris}", array('id' => $eid, 'uris' => join(', ', $return)));
       }
       if (!empty($return)) return $return[0];
     } else {
@@ -365,6 +365,8 @@ class AdapterHelper {
   public static function deleteUrisForDrupalId($entity_id) {
 
     $same_uris = self::doGetUrisForDrupalId($entity_id);
+    $same_uris[] = self::generateWisskiUriFromId($entity_id);
+
     // delete from local store
     // with TRUE it returns the engine instead of adapter
     $local_engine = self::getPreferredLocalStore(TRUE);

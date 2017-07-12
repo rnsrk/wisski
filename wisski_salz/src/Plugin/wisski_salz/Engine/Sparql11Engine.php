@@ -515,7 +515,6 @@ abstract class Sparql11Engine extends EngineBase {
       $qa[] = "DELETE { GRAPH <$orig_prop> { ?other <$prop> ?uri } } WHERE { $values GRAPH <$orig_prop> { ?other <$prop> ?uri } }";
     }
     $q = join('; ', $qa);
-
     try {
       $this->directUpdate($q);
       return TRUE;

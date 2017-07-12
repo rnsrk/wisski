@@ -3429,7 +3429,8 @@ $oldtmp = $tmp;
   
   protected function isPrepared() {
     try {
-      return !empty(\Drupal::service('database')->select($this->adapterId().'_classes','c')->fields('c')->range(0,1)->execute());
+      $result = !empty(\Drupal::service('database')->select($this->adapterId().'_classes','c')->fields('c')->range(0,1)->execute());
+      return $result;
     } catch (\Exception $e) {
       return FALSE;
     }
