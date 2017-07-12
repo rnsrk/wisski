@@ -143,10 +143,14 @@ class WisskiODBCImportForm extends FormBase {
     $id = $table['id'];
     $append = $table['append'];
     $select = $table['select'];
+    $sql = trim($table['sql']);
     if(empty($append))
       $append = "";
-      
-    $sql = "SELECT $select FROM `$tablename` $append";
+    
+    // we introduce the special <sql> tag
+    if (!empty($sql) && strtoupper(substr($sql, 0, 6)) == 'SELECT') {
+      $sql = "SELECT $select FROM `$tablename` $append";
+    }
 #  drupal_set_message(serialize(mysqli_query($connection,"SELECT * FROM `fuehrerbau1` WHERE 1")));
 #    drupal_set_message(htmlentities($sql));  
     $qry = mysqli_query($connection, $sql);
@@ -257,7 +261,7 @@ class WisskiODBCImportForm extends FormBase {
           
             // go through it, trim and add it.
             foreach($field_row_array as $one_part) {
-              $entity_fields[$fieldid][] ($trim) ? trim($one_part) : $one_part;
+              $entity_fields[$fieldid][] = ($trim) ? trim($one_part) : $one_part;
             }
         
           // else - do the normal way, just trim and add.
