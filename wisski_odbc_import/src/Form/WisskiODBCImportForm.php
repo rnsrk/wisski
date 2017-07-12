@@ -379,8 +379,23 @@ function wisski_odbc_storeBundle($row, $XMLrows, $bundleid, $delimiter, $trim) {
       while(isset($value[$i])) {
         $fieldid = $value[$i . '_attr']['id'];
         $field_row_id = $value[$i]["fieldname"];
-        $entity_fields[$fieldid][] = ($row[$field_row_id]);
-
+        
+        // if there is a delimiter set and we find it
+        if($delimiter && strpos($row[$field_row_id], $delimiter)) {
+          // separate the parts
+          $field_row_array = explode($delimiter, $row[$field_row_id]);
+          
+          // go through it, trim and add it.
+          foreach($field_row_array as $one_part) {
+            $entity_fields[$fieldid][] ($trim) ? trim($one_part) : $one_part;
+          }
+        
+        // else - do the normal way, just trim and add.
+        } else {
+          $entity_fields[$fieldid][] = ($trim) ? trim($row[$field_row_id]) : $row[$field_row_id];
+        }
+        
+        // if we found something, we have to go on, otherwise we can skip later.
         if(!empty($row[$field_row_id]))
           $found_something = true;
 
