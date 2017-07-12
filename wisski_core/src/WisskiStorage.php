@@ -67,6 +67,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
     // add the values from the cache
     foreach ($ids as $id) {
+      
       //@TODO combine this with getEntityInfo
       if (!empty($values[$id])) {
 #ddl($values, 'values');
@@ -84,11 +85,42 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #        dpm($cached_field_values, "argh");
 
         foreach($cached_field_values as $field_id => $cached_field_value) {
-#          dpm($cached_field_value, "sdasdf");
-
+#          dpm($cached_field_value->properties, "sdasdf");
+#          dpm($values[$id][$field_id], "is set to");
+#          dpm(serialize(isset($values[$id][$field_id])), "magic");
+          
           // empty here might make problems
+          // if we loaded something from TS we can skip the cache.
           if( isset($values[$id][$field_id]) )
             continue;
+            
+          // if we didn't load something, we might need the cache.
+          // however not if the TS is the normative thing and has no data for this.
+          $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($values[$id]['bundle']);
+#          dpm($pbs_info);
+          
+          $continue = FALSE;
+          // iterate through all infos
+          foreach($pbs_info as $pb_info) {
+            
+            // load the pb
+            $pb = WisskiPathbuilderEntity::load($pb_info['pb_id']);
+                        
+            if(!empty($pb->getPbEntriesForFid($field_id))) {
+#              drupal_set_message("I found something for $field_id");
+              // if we have a field in any pathbuilder matching this
+              // we continue.
+              $continue = TRUE;
+              break;
+            }
+          }
+          
+          // do it
+          if($continue)
+            continue;
+          
+                  
+#          dpm($cached_field_value->properties, "I am alive!");
 
           $cached_value = unserialize($cached_field_value->properties);
           
@@ -125,6 +157,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     $mainentityid = key($this->entities);
 
 #    drupal_set_message("key is: " . serialize($mainentityid));
+
+    // this is an array of the known entities.
+    // whenever some adapter knows any of the entities that
+    // are queried here, it sets the corresponding id
+    // with $id => TRUE
+    $known_entity_ids = array();
 
     $entity_info = &$this->entity_info;
     if ($cached) {
@@ -167,6 +205,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         // if they know that id
 #        drupal_set_message(serialize($adapter->hasEntity($id)) . " said adapter " . serialize($adapter));
         if($adapter->hasEntity($id)) {
+          $known_entity_ids[$id] = TRUE;
 #          drupal_set_message(serialize("argh"));
           // if so - ask for the bundles for that id
           // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
@@ -207,30 +246,37 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 if ($field_def instanceof BaseFieldDefinition) {
                   //the bundle key will be set via the loop variable $bundleid
                   if ($field_name === 'bundle') continue;
-                  //drupal_set_message("Hello i am a base field ".$field_name);
+#                  drupal_set_message("Hello i am a base field ".$field_name);
                   //this is a base field and cannot have multiple values
                   //@TODO make sure, we load the RIGHT value
                   $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
 
                   if (empty($new_field_values)) continue;
-                
+#                  drupal_set_message("Hello i am still alive ". serialize($new_field_values));
                   $new_field_values = $new_field_values[$id][$field_name];
-        
+#                  drupal_set_message(serialize($info[$id][$field_name]) . " " . $field_name);
                   if (isset($info[$id][$field_name])) {
                     $old_field_value = $info[$id][$field_name];
                     if (in_array($old_field_value,$new_field_values) && count($new_field_values) > 1) {
+#                      drupal_set_message("muahah!2" . $field_name);
                       //@TODO drupal_set_message('Multiple values for base field '.$field_name,'error');
                       //FALLLBACK: do nothing, old field value stays the same
                       //WATCH OUT: if you change this remember to handle preview_image case correctly
                     } elseif (count($new_field_values) === 1) {
+#                       drupal_set_message("muahah!1" . $field_name);
                       $info[$id][$field_name] = $new_field_values[0];
                     } else {
+#                      drupal_set_message("muahah!" . $field_name);
                       //@TODO drupal_set_message('Multiple values for base field '.$field_name,'error');
                       //WATCH OUT: if you change this remember to handle preview_image case correctly
                     }
                   } elseif (!empty($new_field_values)) {
+#                    dpm($new_field_values, "argh: ");
                     $info[$id][$field_name] = current($new_field_values);
+#                    $info[$id][$field_name] = $new_field_values;
                   }
+                  
+#                  dpm($info[$id][$field_name], $field_name);
                   if (!isset($info[$id]['bundle'])) $info[$id]['bundle'] = $bundleid;
                   continue;                 
                 }
@@ -373,6 +419,11 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         }
           
       } // end foreach adapter
+      
+      if(empty($known_entity_ids[$id])) {
+        unset($info[$id]);
+        continue;
+      }
       
       if (!isset($info[$id]['bundle'])) {
         // we got no bundle information
