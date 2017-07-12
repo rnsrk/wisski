@@ -426,7 +426,6 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
 $timethis[] = microtime(TRUE);
     $result = $engine = $this->getEngine()->directQuery($select);
 $timethis[] = microtime(TRUE);
-dpm($select, 'sparql');
 #    drupal_set_message(serialize($select));
     $adapter_id = $this->getEngine()->adapterId();
     if (WISSKI_DEVEL) \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded result count {cnt}: {result}', array('query' => $select, 'result' => $result, 'cnt' => $result->count()));
@@ -731,7 +730,6 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       $query_part .= ' VALUES ?' . $vars[$obj_pos] . ' { ' . join(' ', $obj_uris) . ' }';
     }
 
-dpm($query_part, 'pq');
     return $query_part;
     
   }
