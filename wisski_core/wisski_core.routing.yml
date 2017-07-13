@@ -17,7 +17,7 @@ entity.wisski_individual.list:
   path: '/wisski/navigate'
   defaults:
     _controller: '\Drupal\wisski_core\Controller\WisskiEntityListController::listing'
-    _title: 'Browse WissKI Entities'
+    _title: 'Navigate'
   requirements:
     _permission: 'view wisski content'
 
