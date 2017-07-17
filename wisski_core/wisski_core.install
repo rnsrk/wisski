@@ -73,7 +73,7 @@ function wisski_core_schema() {
       'bundle' => array(
         'description' => 'Bundle Name',
         'type' => 'varchar',
-        'length' => 255,
+        'length' => 64,
         'not null' => TRUE,
         'default' => 'default',
       ),
@@ -110,13 +110,13 @@ function wisski_core_schema() {
       'bid' => array(
         'description' => 'bundle name / ID',
         'type' => 'varchar',
-        'length' => 255,
+        'length' => 64,
         'not null' => TRUE,
       ),
     ),
     'indexes' => array(
       'eid' => array('eid'),
-      'bid' => array(array('bid',128)),
+      'bid' => array(array('bid',64)),
     ),
   );
   
@@ -156,13 +156,13 @@ function wisski_core_schema() {
       'bid' => array(
         'description' => 'bundle name / ID',
         'type' => 'varchar',
-        'length' => 255,
+        'length' => 64,
         'not null' => TRUE,
       ),
       'fid' => array(
         'description' => 'field name / ID',
         'type' => 'varchar',
-        'length' => 255,
+        'length' => 64,
         'not null' => TRUE,
       ),
       'delta' => array(
@@ -183,8 +183,8 @@ function wisski_core_schema() {
     ),
     'indexes' => array(
       'eid' => array('eid'),
-      'bid' => array(array('bid',128)),
-      'fid' => array(array('fid',128)),
+      'bid' => array(array('bid',64)),
+      'fid' => array(array('fid',64)),
     ),
   );
 
