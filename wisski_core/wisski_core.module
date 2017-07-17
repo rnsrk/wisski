@@ -203,10 +203,13 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
 
     $bundleid = WisskiCacheHelper::getCallingBundle($eid);
 
-    $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundleid);
-
-    $link = \Drupal\Core\Link::createFromRoute($bundle->label(), "entity.wisski_bundle.entity_list", array("wisski_bundle" => $bundleid));
-    $breadcrumb->addLink($link);
+    if(!empty($bundleid)) {
+      $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundleid);
+      if(!empty($bundle) && !empty($bundle->label())) {
+        $link = \Drupal\Core\Link::createFromRoute($bundle->label(), "entity.wisski_bundle.entity_list", array("wisski_bundle" => $bundleid));
+        $breadcrumb->addLink($link);
+      }
+    }
   }
 
 }
