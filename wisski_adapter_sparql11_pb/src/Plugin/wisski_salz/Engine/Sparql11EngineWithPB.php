@@ -1658,8 +1658,13 @@ $oldtmp = $tmp;
     // this is a hack and will break if there are several for one field
     $pbarray = $pb->getPbEntriesForFid($fieldid);
 
+    // if there is absolutely nothing, we don't delete something.
+    if(empty($pbarray)) {
+      return;
+    }
+
     if(!isset($pbarray['id'])) {
-      drupal_set_message("Danger zone: field $fieldid was queried in deleteOldFieldValue, but it has no id.", "warning.");
+      drupal_set_message("Danger zone: in PB " . $pb->getName() . " field $fieldid was queried with value $value in deleteOldFieldValue, but the path with array " . serialize($pbarray) . " has no id.", "warning.");
       return;
     }
     
