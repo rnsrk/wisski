@@ -310,6 +310,11 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           // if there are several groups, for now take only the first one
           $group = current($groups);
           
+          if(empty($group)) {
+            drupal_set_message("There is an empty group in your system: " . serialize($groups));
+            continue;
+          }
+          
           // if the bundle and this object are not the same, the eid is the one of the
           // main bundle and the paths have to be absolute. In this case
           // we have to call it with false. 
