@@ -242,9 +242,10 @@ class WisskiODBCImportForm extends FormBase {
     
       if($key == "field") {
         while(isset($value[$i])) {
-          $fieldid = $value[$i . '_attr']['id'];
-          $local_delimiter = $value[$i . '_attr']['delimiter'];
-          $local_trim = $value[$i . '_attr']['trim'];
+          $attrs = isset($value[$i . '_attr']) ? $value[$i . '_attr'] : array();
+          $fieldid = $attrs['id'];
+          $local_delimiter = isset($attrs['delimiter']) ? $attrs['delimiter'] : NULL;
+          $local_trim = isset($attrs['trim']) ? $attrs['trim'] : NULL;
         
           $field_row_id = $value[$i]["fieldname"];
         

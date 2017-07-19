@@ -599,7 +599,7 @@ class WisskiPathbuilderForm extends EntityForm {
     array_multisort($weights, $children);
     
     if(empty($pathform[$grouparray['id']]['#item']))
-      continue;
+      return array();
 
     $mypath = $pathform[$grouparray['id']]['#item']->getPathArray();
     
