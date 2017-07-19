@@ -138,6 +138,11 @@ class WisskiPathbuilderForm extends EntityForm {
     
         $path = $pathform['#item'];
         
+        if(empty($path)) {
+          drupal_set_message("There is an empty Path in " . serialize($pathform), "error");
+          continue;
+        }
+        
         $form['pathbuilder_table'][$path->id()]['#item'] = $pathform['#item'];
       
         // TableDrag: Mark the table row as draggable.
@@ -592,8 +597,13 @@ class WisskiPathbuilderForm extends EntityForm {
     $children = $grouparray['children'];
     
     array_multisort($weights, $children);
+    
+    if(empty($pathform[$grouparray['id']]['#item']))
+      continue;
 
     $mypath = $pathform[$grouparray['id']]['#item']->getPathArray();
+    
+    $origpf = $pathform;
     
     foreach($children as $childpath) {
       $subform = $this->recursive_render_tree($childpath, $grouparray['id'], $delta, $depth +1, $namespaces);
@@ -612,13 +622,22 @@ class WisskiPathbuilderForm extends EntityForm {
         
         // if these differ there is something fishy!
         if(count($diff) > $difflength) {
-          drupal_set_message("Path " . $sub['#item']->getName() . " conflicts with definition of group " . $pathform[$grouparray['id']]['#item']->getName() . ". Please check.", "error");
+          $subname = $sub['#item']->getName();
+          $pathname = $pathform[$grouparray['id']]['#item']->getName();
+
+          drupal_set_message("Path " . $subname . " conflicts with definition of group " . $pathname . ". Please check.", "error");
           $pathform[$grouparray['id']]['#attributes'] = array('style' => array('background-color: red'));
         }
         
         
       }
-      $pathform = array_merge($pathform, $subform);
+#      dpm($pathform, "before");
+#      dpm($subform, "before2");
+      if(!empty($subform))
+        $pathform = $pathform + $subform;
+
+#      dpm($pathform, "after");
+#      return;
     }
         
     return $pathform;    
