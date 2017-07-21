@@ -92,14 +92,26 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    */
   protected $path_options = array();
   
+  /**
+   * Where should this be listed?
+   * @return array with key = menu name
+   *         and value route parameters
+   */
+  public static function getWissKIMenus() {
+    return array('navigate' => 'entity.wisski_bundle.entity_list',
+                 'create' => 'entity.wisski_individual.add');
+  }
+  
   public static function postDelete(EntityStorageInterface $storage, array $entities) {
     parent::postDelete($storage, $entities);
 
-    $menus = array("navigate" => 'entity.wisski_individual.list', "create" => 'entity.wisski_individual_create.list');
+#    $menus = array("navigate" => 'entity.wisski_bundle.entity_list', "create" => 'entity.wisski_individual_create.list');
     
-    foreach($menus as $menu_name => $route) {
-      foreach($entities as $entity) 
+    foreach($entities as $entity) {
+      $menus = $entity->getWissKIMenus();
+      foreach($menus as $menu_name => $route) {
         $entity->deleteBundleFromMenu($menu_name,  $route);
+      }
     }
   }
   

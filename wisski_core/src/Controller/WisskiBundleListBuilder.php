@@ -31,9 +31,55 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
   /**
    * {@inheritdoc}
    */
+   
+  public function load() {
+  
+    if($this->type == self::NAVIGATE || $this->type == self::CREATE) {
+      $entities = parent::load();
+
+      $outentities = array();
+            
+#      dpm($entities, "load");
+      $sortlist = array();
+      foreach($entities as $key => $entity) {
+        $menus = $entity->getWissKIMenus();
+        
+        if($this->type == self::NAVIGATE)
+          $menu_items = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => 'navigate', 'title' => $entity->label(), 'link__uri' => 'route:' . $menus['navigate'] . ';' . 'wisski_bundle=' . $entity->id(), "enabled" => 1 ]);
+        else
+          $menu_items = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => 'create', 'title' => $entity->label(), 'link__uri' => 'route:' . $menus['create'] . ';' . 'wisski_bundle=' . $entity->id(), "enabled" => 1 ]);
+
+        // there should not be more than one.
+        $menu_items = current($menu_items);
+        
+        if(!empty($menu_items))
+          $sortlist[$key] = $menu_items->getWeight();
+      }
+      
+      asort($sortlist);
+      
+      foreach($sortlist as $key => $value) {
+        $outentities[$key] = $entities[$key];
+      }
+      
+      return $outentities;
+      
+    } else {
+      $entities = parent::load();
+    }
+    
+    return $entities;
+  
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  
   public function getEntityIds() {
 
     // only get topids
+    
     $topIds = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
     
     $query = $this->getStorage()->getQuery()->sort($this->entityType->getKey('id'));
@@ -47,9 +93,13 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     if ($this->limit) {
       $query->pager($this->limit);
     }
-
+    
+    #dpm($query->execute());
+    
     return $query->execute();
+    
   }
+  
 
   /**
    * {@inheritdoc}
@@ -72,23 +122,42 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
       }
     }
     */
+    
+ #   dpm($entity);
+    
+    $menus = $entity->getWissKIMenus();
+    
     switch ($this->type) {
-      case self::NAVIGATE: return $this->buildNavigateRow($entity);
-      case self::CREATE: return $this->buildCreateRow($entity);
+      case self::NAVIGATE: return $this->buildNavigateRow($entity, $menus['navigate']);
+      case self::CREATE: return $this->buildCreateRow($entity, $menus['create']);
       case self::CONFIG: return $this->buildConfigRow($entity);
     }
     drupal_set_message($this->t('Invalid list type'),'error');
     return array();
   }
   
-  private function buildNavigateRow($entity) {
+  private function buildNavigateRow($entity, $menu_param = "entity.wisski_bundle.entity_list") {
+
+    // see if there is a row in the navigation menu.
+    $entities = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => 'navigate', 'title' => $entity->label(), 'link__uri' => 'route:' . $menu_param . ';' . 'wisski_bundle=' . $entity->id() ]);
+
+    // there should not be more than one.
+    $entities = current($entities);
+
+    if(empty($entities) || !$entities->isEnabled())
+      return array();
+    
+#    dpm($entities);
+
 #    dpm($entity);    
     $row['label'] = array(
       'data' => array(
         '#type' => 'link',
-        '#url' => Url::fromRoute('entity.wisski_bundle.entity_list')
-          ->setRouteParameters(array('wisski_bundle' => $entity->id())),
-        '#title' => $entity->label(),
+        '#url' => $entities->getUrlObject(),
+        '#title' => $entities->getTitle(),
+#        '#url' => Url::fromRoute('entity.wisski_bundle.entity_list')
+#          ->setRouteParameters(array('wisski_bundle' => $entity->id())),
+#        '#title' => $entity->label(),
       ),
     );
     return $row;
@@ -129,17 +198,31 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     return $row;
   }
 
-  private function buildCreateRow($entity) {
-#    dpm($entity);    
+  private function buildCreateRow($entity, $menu_param = 'entity.wisski_individual_create.list') {
+
+    // see if there is a row in the navigation menu.
+    $entities = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => 'create', 'title' => $entity->label(), 'link__uri' => 'route:' . $menu_param .  ';' . 'wisski_bundle=' . $entity->id() ]);
+
+    // there should not be more than one.
+    $entities = current($entities);
+
+    if(empty($entities) || !$entities->isEnabled())
+      return array();
+
+ #   dpm($entities);    
     $row['label'] = array(
       'data' => array(
         '#type' => 'link',
-        '#url' => Url::fromRoute('entity.wisski_individual.add')
+        '#url' => $entities->getUrlObject(),
+        '#title' => $entities->getTitle(),
+
+#        '#url' => Url::fromRoute('entity.wisski_individual.add')
 #        '#url' => Url::fromRoute('entity.wisski_bundle.entity_list')
-          ->setRouteParameters(array('wisski_bundle' => $entity->id())),
-        '#title' => $entity->label(),
+#          ->setRouteParameters(array('wisski_bundle' => $entity->id())),
+#        '#title' => $entity->label(),
       ),
     );
+    
     return $row;
   }
   
@@ -154,6 +237,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     $build['#empty'] = t('No WissKI bundle available. <a href="@link">Add media bundle</a>.', array(
       '@link' => Url::fromRoute('entity.wisski_bundle.add')->toString(),
     ));
+        
     return $build;
   }
 

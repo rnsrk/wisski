@@ -847,8 +847,8 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       drupal_set_message(t('Created new bundle %bundle for group with id %groupid.',array('%bundle'=>$bundle_name, '%groupid'=>$groupid)));
     }
     
-    $menus = array("navigate" => 'entity.wisski_individual.list', "create" => 'entity.wisski_individual_create.list');
-    
+//    $menus = array("navigate" => 'entity.wisski_bundle.entity_list', "create" => 'entity.wisski_individual_create.list');
+    $menus = $bundle->getWissKIMenus();    
     foreach($menus as $menu_name => $route) {
       $bundle->addBundleToMenu($menu_name, $route);
     }
