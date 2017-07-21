@@ -1,0 +1,9 @@
+id: find
+label: 'Find'
+description: 'Links related to the WissKI Find module.'
+langcode: en
+locked: true
+dependencies:
+  enforced:
+    module:
+      - wisski_core
