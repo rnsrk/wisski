@@ -7,7 +7,9 @@ use Drupal\wisski_core\WisskiBundleInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 use Drupal\wisski_core\WisskiCacheHelper;
+use Drupal\menu_link_content\Entity\MenuLinkContent;
 
+use Drupal\Core\Entity\EntityStorageInterface;
 /**
  * Defines the bundle configuration entity.
  *
@@ -89,6 +91,17 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    * The options array for this bundle's title pattern
    */
   protected $path_options = array();
+  
+  public static function postDelete(EntityStorageInterface $storage, array $entities) {
+    parent::postDelete($storage, $entities);
+
+    $menus = array("navigate" => 'entity.wisski_individual.list', "create" => 'entity.wisski_individual_create.list');
+    
+    foreach($menus as $menu_name => $route) {
+      foreach($entities as $entity) 
+        $entity->deleteBundleFromMenu($menu_name,  $route);
+    }
+  }
   
   public function getTitlePattern() {
 
@@ -489,4 +502,119 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     }
     return $parents;
   }
+
+  public function deleteBundleFromMenu($menu_name,  $destination_route = "entity.wisski_bundle.entity_list", $parameters = array() ) {
+
+    if(empty($parameters))
+      $parameters = array("wisski_bundle" => $this->id());
+  
+    $link = \Drupal\Core\Link::createFromRoute($this->label(), $destination_route, $parameters);
+    
+    // generate the parameter-string for the menu_link_content table
+    $params = "";
+    foreach($parameters as $key => $parameter) {
+      $params .= $key . '=' . $parameter. ';';
+    }
+
+    // kill the last ; in the end
+    $params = substr($params, 0, -1);
+
+#    dpm('route:' . $destination_route . ';' . $params);
+
+    // get the matching entities     
+    $entities = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => $menu_name, 'title' => $this->label(), 'link__uri' => 'route:' . $destination_route . ';' . $params ]);
+
+    // typically there should be only one.
+    $entity = current($entities);
+    
+    if(!empty($entity))
+      $entity->delete();  
+  
+  }
+
+
+  /**
+   * Adds a menu entry for a bundle
+   * e.g. to navigate, find or create
+   */
+  public function addBundleToMenu($menu_name, $destination_route = "entity.wisski_bundle.entity_list", $parameters = array() ) {
+
+    if(empty($parameters))
+      $parameters = array("wisski_bundle" => $this->id());
+//    $name = 'wisski_menu_' . $this->id();
+    /** @var \Drupal\menu_link_content\MenuLinkContentInterface $entity */
+
+ //   $entity = MenuLinkContent::load($name);
+ 
+    $link = \Drupal\Core\Link::createFromRoute($this->label(), $destination_route, $parameters);
+    
+    // generate the parameter-string for the menu_link_content table
+    $params = "";
+    foreach($parameters as $key => $parameter) {
+      $params .= $key . '=' . $parameter. ';';
+    }
+
+    // kill the last ; in the end
+    $params = substr($params, 0, -1);
+
+#    dpm('route:' . $destination_route . ';' . $params);
+
+    // get the matching entities     
+    $entities = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => $menu_name, 'title' => $this->label(), 'link__uri' => 'route:' . $destination_route . ';' . $params ]);
+
+    // typically there should be only one.
+    $entity = current($entities);
+    
+    $weight = 0;
+    
+    // only act if there is no entity. Otherwise we can just check if everything is ok.
+
+    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    
+    $groups = array();
+    //we ask all pathbuilders if they know the bundle
+    foreach ($pbs as $pb_id => $pb) {
+      $groups = array_merge($groups, $pb->getGroupsForBundle($this->id()));
+    
+      if(!empty($groups)) // we take the first one for now
+        $group = current($groups);
+        
+      if(!empty($group)) {
+        $pbp = $pb->getPbPath($group->id());
+        $weight = $pbp['weight'];
+        break;
+      }    
+    }  
+  
+      // for further usage: language coding... currently no support at this point
+/*
+    if ($entity->isTranslatable()) {
+      if (!$entity->hasTranslation($node->language()->getId())) {
+        $entity = $entity->addTranslation($node->language()->getId(), $entity->toArray());
+      }
+      else {
+        $entity = $entity->getTranslation($node->language()->getId());
+      }
+    }
+    */
+    if(empty($entity)) {
+#      $link = \Drupal\Core\Link::createFromRoute($this->label(), "entity.wisski_bundle.entity_list", array("wisski_bundle" => $this->id()));
+      // Create a new menu_link_content entity.
+      $entity = MenuLinkContent::create(array(
+        'link' => ['uri' => $link->getUrl()->toUriString()],
+#        'langcode' => $node->language()->getId(),
+      ));
+      $entity->enabled->value = 1;
+    }
+
+#    dpm($entity, "bundle");
+#    $entity->id = $name;
+    $entity->title->value = trim($this->label());
+#    $entity->description->value = trim($group->getDe);
+    $entity->menu_name->value = $menu_name;
+#    $entity->parent->value = $values['parent'];
+    $entity->weight->value = isset($entity->weight->value) ? $entity->weight->value : $weight;
+    $entity->save();
+  }
+
 }

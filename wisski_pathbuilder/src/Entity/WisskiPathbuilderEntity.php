@@ -786,8 +786,8 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       $bundles = \Drupal::entityManager()->getStorage($mode)->loadByProperties(array('id' => $bundleid));
 
       if (!empty($bundles)) {
-        $bundle_object = current($bundles);
-        $bundle_name = $bundle_object->label();
+        $bundle = current($bundles);
+        $bundle_name = $bundle->label();
         drupal_set_message(t('Connected bundle %bundlelabel (%bundleid) with group %groupid.',array('%bundlelabel'=>$bundle_name, '%bundleid'=>$bundleid, '%groupid'=>$groupid)));
       } else {
         drupal_set_message(t('Could not connect bundle with id %bundleid with group %groupid. Generating new one.',array('%bundleid'=>$bundleid, '%groupid'=>$groupid)));
@@ -847,6 +847,11 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       drupal_set_message(t('Created new bundle %bundle for group with id %groupid.',array('%bundle'=>$bundle_name, '%groupid'=>$groupid)));
     }
     
+    $menus = array("navigate" => 'entity.wisski_individual.list', "create" => 'entity.wisski_individual_create.list');
+    
+    foreach($menus as $menu_name => $route) {
+      $bundle->addBundleToMenu($menu_name, $route);
+    }
   }
   
   private function addDataToParentInTree($parentid, $data, $tree) {
