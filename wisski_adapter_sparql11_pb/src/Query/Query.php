@@ -523,14 +523,14 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       $select = \Drupal::service('database')
           ->select('wisski_title_n_grams','w')
           ->fields('w', array('ent_num'));
-      if ($operator == '=' || $operator == "!=") {
+      if ($operator == '=' || $operator == "!=" || $operator == "LIKE") {
         $select->condition('ngram', $value, $operator);
       }
       elseif ($operator == 'CONTAINS' || $operator == "STARTS_WITH") {
         $select->condition('ngram', ($operator == 'CONTAINS' ? "%" : "") . $select->escapeLike($value) . "%", 'LIKE');
-      }
+      } 
       else {
-        $this->missingImplMsg("Operator $operator in title field query", array('condition' => $condition));
+        $this->missingImplMsg("Operator $operator in title field query", array('condition' => $value));
         return $entity_ids; // NULL
       }
 
