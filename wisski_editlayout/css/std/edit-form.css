@@ -1,3 +1,14 @@
+/* tweaks for the link dialog/linkit widget for non-Seven themes */
+div.editor-link-dialog.ui-dialog--narrow {
+  /* make dialog as wide as it needs */
+  max-width: 95%;
+}
+div.editor-link-dialog.ui-dialog--narrow #drupal-modal.ui-dialog-content {
+  /* this allows the linkit dropdown to flow out of the bounding dialog content */
+  position: static;
+}
+
+
 
 /* simple singel value input */
 
