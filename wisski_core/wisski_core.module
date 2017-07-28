@@ -110,10 +110,10 @@ function wisski_tick($name='') {
   } else {
     $diff = ceil($now-$wisski_timestamp);
     if (!empty($name)) {
-      if (WISSKI_DEVEL) dpm($diff.' ms',$name);
-      if (WISSKI_DEVEL) \Drupal::logger('wisski tick')->debug($name);
+      dpm($diff.' ms',$name);
+      \Drupal::logger('wisski tick')->debug("$diff ms: $name");
     } else {
-      if (WISSKI_DEVEL) \Drupal::logger('wisski tick')->debug("reset");
+      \Drupal::logger('wisski tick')->debug("reset");
     }
     $wisski_timestamp = $now;
     return $diff;

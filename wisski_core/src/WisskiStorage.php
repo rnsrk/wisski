@@ -63,8 +63,6 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     // this loads everything from the triplestore
     $values = $this->getEntityInfo($ids);
 
-#  dpm($values,'values');    
-
     // add the values from the cache
     foreach ($ids as $id) {
       
@@ -805,6 +803,9 @@ $ts = microtime(true);
           // object because it could make changes to it
           // e.g. which uris were used for reference (disamb) etc.
           // as long as it is like now you can't promote uris back to the storage.
+          // By Martin: this is an important point. Also the adapters should propagate
+          // disamb/all ?xX uris also when loading as there is no way to trace the value
+          // otherwise.
 
           $success = TRUE;
         } catch (\Exception $e) {

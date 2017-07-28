@@ -25,16 +25,15 @@ function wisski_core_update_8001(&$sandbox) {
 #	dpm($line);
       }
     } else {
-      dpm("Could not open file " . $table);
+      drupal_set_message("Could not open file " . $table, 'error');
     } 
     fclose($file);
   }
   
-
-
- 
-  
 }
+
+
+
 
 /**
  * implements hook_schema()

@@ -30,8 +30,8 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     "form" = {
  *       "default" = "Drupal\wisski_core\Form\WisskiEntityForm",
  *       "edit" = "Drupal\wisski_core\Form\WisskiEntityForm",
- *	 "add" = "Drupal\wisski_core\Form\WisskiEntityForm",
- *	 "delete" = "Drupal\wisski_core\Form\WisskiEntityDeleteForm",
+ *       "add" = "Drupal\wisski_core\Form\WisskiEntityForm",
+ *       "delete" = "Drupal\wisski_core\Form\WisskiEntityDeleteForm",
  *     },
  *     "access" = "Drupal\wisski_core\Controller\WisskiEntityAccessHandler",
  *   },
