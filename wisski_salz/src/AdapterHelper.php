@@ -198,6 +198,8 @@ class AdapterHelper {
     
     //if we have multiple results, we don't know exactly what to do, for now we return the first
     //@TODO try something more sophisticated
+    // there may be duplicate entries...
+    $ids = array_unique($ids);
     if (count($ids) > 1) {
       //dpm($ids,'from DB, multiple');
       drupal_set_message("There are multiple entity IDs for a URI. See log reports for details.");
@@ -295,7 +297,7 @@ class AdapterHelper {
   public static function doGetUrisForDrupalId($eid,$adapter_id=NULL) {
     
     $adapter = is_object($adapter_id) ? $adapter_id : NULL;
-    $adapter_id = is_object($adapter_id) && !is_null($adapter_id) ? $adapter_id->id() : $adapter_id;
+    $adapter_id = is_null($adapter) ? $adapter_id : $adapter->id();
 
     //dpm($eid,__FUNCTION__.' '.$adapter_id);
     //first try the DB
@@ -313,8 +315,9 @@ class AdapterHelper {
       //dpm($return ? $return : 'FALSE','Single adapter');
       # if ($return !== FALSE) return $return;
       $return = $out->fetchCol(1);
+      $return = array_unique($return); 
       if (count($return) > 1) {
-        drupal_set_message("There seems to be associated with one entity id with multiple instances. See logs", 'warning');
+        drupal_set_message("There seems to be associated multiple instances with one entity id. See logs.", 'warning');
         \Drupal::logger('wisski salz')->warning("There seems to be associated entity id {id} with multiple instances: {uris}", array('id' => $eid, 'uris' => join(', ', $return)));
       }
       if (!empty($return)) return $return[0];
@@ -509,7 +512,6 @@ class AdapterHelper {
     
     // check if it has the site's prefix and remove it
     if (UrlHelper::isValid($url, FALSE)) {
-    #} elseif (UrlHelper::isValid($url, FALSE)) {
     
       if (substr($url, 0, $bp_len) == $base_path) {
         // strip base_path

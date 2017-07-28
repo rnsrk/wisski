@@ -10,8 +10,9 @@ namespace Drupal\wisski_salz\Plugin\wisski_salz\Engine;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 
-use Drupal\wisski_salz\EngineBase;
 use Drupal\wisski_salz\AdapterHelper;
+use Drupal\wisski_salz\EngineBase;
+use Drupal\wisski_salz\RdfSparqlUtil;
 
 
 abstract class Sparql11Engine extends EngineBase {
@@ -24,6 +25,8 @@ abstract class Sparql11Engine extends EngineBase {
   protected $default_graph;
 
   protected $ontology_graphs;
+
+  protected $rdf_sparql_util = NULL;
   
   /** Holds the EasyRDF sparql client instance that is used to
    * query the endpoint.
@@ -895,7 +898,7 @@ abstract class Sparql11Engine extends EngineBase {
       // we use the values construct as it may be faster and more readable
       $res = "VALUES $dtVar { ";
       foreach ($search as $t) {
-        $res .= "'" . $this->_escapeSparqlLiteral($t) . "' ";
+        $res .= "'" . $this->escapeSparqlLiteral($t) . "' ";
       }
       $res .= "}";
       return $res;
@@ -959,46 +962,159 @@ abstract class Sparql11Engine extends EngineBase {
     // TODO
     return NULL;
   }
+    
 
-
-  /** Escapes a string according to http://www.w3.org/TR/rdf-sparql-query/#rSTRING_LITERAL.
-  * @param literal the literal as a string
-  * @param escape_backslash if FALSE, the pattern will not escape backslashes.
-  *    This may be used to prevent double escapes
-  * @return the escaped string
-  * @author Martin Scholz
-  */
-  public function escapeSparqlLiteral($literal, $escape_backslash = TRUE) {
-    // this is the minimal escaping strategy which does not include non-ASCII
-    // chars.
-    // We don't use it as it is safer to also escape non-ASCII chars
-    // $sic  = array("\\",   '"',   "'",   "\b",  "\f",  "\n",  "\r",  "\t");
-    // $corr = array($escape_backslash ? "\\\\" : "\\", '\\"', "\\'", "\\b", "\\f", "\\n", "\\r", "\\t");
-    // $literal = str_replace($sic, $corr, $literal);
-
-    // we use the json encoding function as json has the same escaping strategy
-    // It also escapes all non-ASCII chars.
-    // It adds '"' at front and end; we have to trim them.
-    $literal = substr(json_encode($literal, JSON_UNESCAPED_SLASHES), 1, -1); 
-    $sic = array("'");
-    $corr = array("\'");
-    $literal = str_replace($sic, $corr, $literal);
-    return $literal;
+  /**
+   * Lazy-instantiates a util rdf+sparql utility object
+   */
+  protected function rdfSparqlUtil() {
+    if ($this->rdf_sparql_util === NULL) {
+      $this->rdf_sparql_util = new RdfSparqlUtil();
+    }
+    return $this->rdf_sparql_util;
   }
 
 
-  /** Escapes the special characters for a sparql regex.
-  * @param regex the pattern as a string
-  * @param also_literal if TRUE, the pattern will also go through @see escapeSparqlLiteral
-  * @return the escaped string
-  * @author Martin Scholz
-  */
+  /**
+   * @see \Drupal\wisski_salz\RdfSparqlUtil
+   */
+  public function escapeSparqlLiteral($literal, $escape_backslash = TRUE) {
+    return $this->rdfSparqlUtil()->escapeSparqlLiteral($literal, $escape_backslash);
+  }
+
+
+  /**
+   * @see \Drupal\wisski_salz\RdfSparqlUtil
+   */
   public function escapeSparqlRegex($regex, $also_literal = FALSE) {
-    //  $chars = "\\.*+?^$()[]{}|";
-    $sic = array('\\', '.', '*', '+', '?', '^', '$', '(', ')', '[', ']', '{', '}', '|');
-    $corr = array('\\\\', '\.', '\*', '\+', '\?', '\^', '\$', '\(', '\)', '\[', '\]', '\{', '\}', '\|');
-    $regex = str_replace($sic, $corr, $regex);
-    return $also_literal ? $this->escapeSparqlLiteral($regex) : $regex;
+    return $this->rdfSparqlUtil()->escapeSparqlRegex($regex, $also_literal);
+  }
+  
+  
+
+  /** Gathers the quads that contain the given URIs in the given positions.
+   *
+   * @param uris an array containing the URIs. The value may also be a string
+   *             containing a single URI. 
+   * @param variables a string containing the triple/quad positions that shall
+   *                  be considered for replacement. Possible values are a
+   *                  concatenation of these four: g s p o.
+   *                  NULL is the default and behaves like 'so'.
+   * @param format a string specifying the return value.
+   *               Possible values are:
+   *               'count': Only the number of quads is returned.
+   *               'quads':  an array of quads is returned where each quad is 
+   *                         encoded as specified in the nquads format but 
+   *                         without the trailing dot.
+   *               'triples': an array of arrays is returned where the inner 
+   *                          arrays contain triples encoded as in the ntriples
+   *                          format but without a dot and the triples are
+   *                          grouped by their graphs.
+   *
+   * @return array|int according to format parameter
+   */
+  public function getQuadsContainingUris($uris, $variables = NULL, $format = 'quads') {
+    
+    // make from_uris unique and delete to_uri from it
+    $uris = (array) $uris; // make it an array 
+    $uris = array_unique($uris);
+
+    $variables = array_unique(str_split($variables));
+    
+    if (empty($uris) || empty($variables)) {
+      return $format == 'count' ? 0 : array();
+    }
+    $uri_values = '<' . join('> <', $uris) . '>';
+
+    // the sparql header differs for count from quads/triples
+    // the where clause is the same
+    $where_clauses = array();
+    foreach ($variables as $v) {
+      $where_clauses[$v] = 
+        "  {\n" .
+        "    VALUES ?$v { $uri_values }\n" .
+        "    GRAPH ?g { ?s ?p ?o }\n" .
+        "  }\n";
+    }
+    $where_clause = "WHERE {\n" . join("  UNION\n", $where_clauses) . '}';
+    if ($format == 'count') {
+      $query = "SELECT (count(*) as ?c) $where_clause";
+    } 
+    else {
+      $query = "SELECT ?g ?s ?p ?o $where_clause";
+    }
+
+    $result = $this->directQuery($query);
+    
+    // return value depends on $format
+    if ($format == 'count') {
+      return $result->current()->c->getValue();
+    }
+    elseif ($format == 'triples') {
+      return $this->rdfSparqlUtil()->sparqlResultToNTriplesByGraph($result);
+    } 
+    else {
+      return $this->rdfSparqlUtil()->sparqlResultToNQuads($result);
+    } 
+
+  }
+
+  
+  
+  /** Updates URIs in all quads.
+   *
+   * @param from_uris an array of the original URIs. The value may also be a
+   *                  string containing a single URI. 
+   * @param to_uri a string containing the new URI
+   * @param variables a string containing the triple/quad positions that shall
+   *                  be considered for replacement. Possible values are a
+   *                  concatenation of these four: g s p o.
+   *                  NULL is the default and behaves like 'so'.
+   * @param copy a boolean whether to copy or move the original quads, ie. 
+   *             whether to perform a DELETE on the original quads
+   *                  
+   * @return TRUE on success, otherwise FALSE.
+   */
+  public function replaceUris(array $from_uris, $to_uri, $variables = NULL, $copy = FALSE) {
+     
+    // make from_uris unique and delete to_uri from it
+    $from_uris = (array) $from_uris; // make it an array 
+    $from_uris = array_flip($from_uris);
+    if (isset($from_uris[$to_uri])) {
+      unset($from_uris[$to_uri]);
+    }
+    $from_uris = array_flip($from_uris);
+
+    $variables = array_unique(str_split($variables));
+    
+    if (empty($from_uris) || empty($variables)) {
+      return TRUE;
+    }
+    if (empty($to_uri)) {
+      return FALSE;
+    }
+    $from_uri_values = '<' . join('> <', $from_uris) . '>';
+    
+    // for each URI position we do a separate SPARQL update
+    // TODO: make a separate update for g using ADD(+DROP)
+    $updates = array();
+    foreach ($variables as $v) {
+      $delete = "GRAPH ?g { ?s ?p ?o }";
+      $insert = str_replace("?$v", "<$to_uri>", "GRAPH ?g { ?s ?p ?o }");
+      $where = "VALUES ?$v { $from_uri_values }\n  $delete";
+      if ($copy) {
+        $updates[] = "INSERT {  $insert\n}\nWHERE {\n  $where\n}";
+      }
+      else {
+        $updates[] = "DELETE {\n  $delete\n}\nINSERT {  $insert\n}\nWHERE {\n  $where\n}";
+      }
+    }
+    $update = join(";\n", $updates);
+
+    $this->directUpdate($update);
+
+    return TRUE;
+
   }
 
 }
