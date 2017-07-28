@@ -357,6 +357,8 @@ class WisskiPathbuilderForm extends EntityForm {
     file_prepare_directory($export_path, FILE_CREATE_DIRECTORY);
     
     $files = file_scan_directory($export_path, '/.*/');
+    
+    ksort($files);
 
     $items = array();
         
@@ -466,7 +468,7 @@ class WisskiPathbuilderForm extends EntityForm {
     $dom = dom_import_simplexml($xmldoc)->ownerDocument;
     $dom->formatOutput = true;
     
-    $export_path = 'public://wisski_pathbuilder/export/';
+    $export_path = 'public://wisski_pathbuilder/export/' . $pathbuilder->id() . date('_Ymd\THis');
             
     $file = file_save_data($dom->saveXML(), $export_path, FILE_EXISTS_RENAME);
   }
