@@ -316,7 +316,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     if ($orig_bundle === self::CONNECT_NO_FIELD) return;
     
     //create a new field if the user whishes to
-    if ($orig_bundle === self::GENERATE_NEW_FIELD || empty($bundle) || empty($orig_bundle)) $fieldid = $this->generateIdForField($pathid);
+    if ($orig_bundle === self::GENERATE_NEW_FIELD || empty($bundle) || empty($orig_bundle)) $fieldid = $this->generateIdForBundle($pathid);
     // there already is a bundle
     else {
     
