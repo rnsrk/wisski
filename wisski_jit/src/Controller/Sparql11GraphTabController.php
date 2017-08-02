@@ -11,6 +11,8 @@ use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11Engine;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
+use Drupal\wisski_core\WisskiCacheHelper;
+
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -31,6 +33,7 @@ class Sparql11GraphTabController extends ControllerBase {
     $wisski_individual = urldecode($wisski_individual);
 
     $target_uri = $request->query->get('target_uri');
+  
 
     // if it is an int, we can load the entity
     if(empty($target_uri)) {
@@ -40,11 +43,20 @@ class Sparql11GraphTabController extends ControllerBase {
     } else {
       // else it is an uri
     }
-
+    
+    //get Drupal EID
+    $drupal_eid = AdapterHelper::getDrupalIdForUri($target_uri);
+  
     // go through all adapters    
     $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
-          
-    $base = array("id" => $target_uri, "name" => '<span class="wki-groupname">' . $target_uri . '</span>', "children" => array(), "data" => array("relation" => "<h2>Connections (" . $target_uri . ")</h2><ul></ul>"));            
+    
+    // get title
+    $title = NULL;
+    if(!empty(WisskiCacheHelper::getCallingBundle($drupal_eid)))
+      $title = wisski_core_generate_title($drupal_eid);
+    
+      
+    $base = array("id" => $target_uri, "name" => '<span class="wki-groupname">' . $title . '</span>', "children" => array(), "data" => array("relation" => "<h2>Connections (" . $target_uri . ")</h2><ul></ul>"));            
 
 
     foreach ($adapters as $aid => $a) {
@@ -88,7 +100,7 @@ class Sparql11GraphTabController extends ControllerBase {
             } else {
               // it is backward
 
-              $base['data']['relation'] = substr($base['data']['relation'], 0, -5);  
+           $base['data']['relation'] = substr($base['data']['relation'], 0, -5);  
 
               if(is_a($result->o, "EasyRdf_Literal"))
                 $object = $result->o->getValue();
@@ -133,6 +145,7 @@ class Sparql11GraphTabController extends ControllerBase {
                   }
                   $q = $e->generateTriplesForPath($pb, $path, "", $target_uri);
                   $result = $e->directQuery("SELECT * { $q }");
+                  dpm($q);
                   foreach ($result as $row) {
                     $curr = &$base;
                     for ($x = 2; ; $x+=2) {
@@ -140,6 +153,12 @@ class Sparql11GraphTabController extends ControllerBase {
                       if (!isset($row->$xp)) break;
                       $uri = $row->$xp->getUri();
                       $eid = AdapterHelper::getDrupalIdForUri($uri);
+  
+                      $title = NULL;
+                      if(!empty(WisskiCacheHelper::getCallingBundle($eid)))
+                        $title = wisski_core_generate_title($eid);
+                      
+#                     drupal_set_message($xp . ' is ' . $title);
                       $drupal_url = AdapterHelper::generateWisskiUriFromId($eid);
                       $already_there = FALSE;
                       // we reuse $index below!
@@ -151,9 +170,13 @@ class Sparql11GraphTabController extends ControllerBase {
                       }
                       if (!$already_there) {
                         $index = count($curr['children']);
+//                        drupal_set_message($xp . ' 1is ' . $title);
+                        $nodetitle = $row->$xp->localName();
+                        if(!empty($title))
+                          $nodetitle = $title;
                         $curr['children'][$index] = array(
                           'id' => $uri,
-                          'name' => '<span class="wki-groupname" data-wisski-url="' . $drupal_url . '">' . $row->$xp->localName() . '</span>',
+                          'name' => '<span class="wki-groupname" data-wisski-url="' . $drupal_url . '">' . $nodetitle . '</span>',
                           'children' => array(),
                         );
                       }
@@ -162,14 +185,61 @@ class Sparql11GraphTabController extends ControllerBase {
                   }
                 }
               }
-
             }
           }
-        } // end mode 2
-      }
-    }
+        } else if ($mode == 1) {
+            if ($e->checkUriExists($target_uri) && $e instanceof \Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWithPB) {
+              $target_eid = AdapterHelper::getDrupalIdForUri($target_uri);
+              $bundles = $e->getBundleIdsForUri($target_uri);
+              $bundles_to_pbs = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle();
+              
+              foreach ($bundles as $bid) {
+                foreach ($bundles_to_pbs[$bid] as $pbid => $pb_info) { 
+                  $pb = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->load($pbid);
+                  dpm($pb->getAllPathsAndGroupsForBundleId($bid));
+                  $paths = $pb->getAllPathsAndGroupsForBundleId($bid);
+		  $path = $paths[1];  
+                  //dpm($path);
+                  $eid = $target_eid;
+                  $pathValue = $e->pathToReturnValue($path,$pb,$eid, 0, "value");
+                  //dpm($pathValue[0]['value']);
+                  //$round = 1; 
+                  dpm($pathValue);
+                  $index = 0 ;
+                  foreach($pathValue as $value){
+                    $curr = &$base;
+                    dpm($index);
+                    dpm($value);
+                    //dpm($value['wisskiDisamb']);
+                    //$q = "SELECT ?g ?s ?sp ?po ?o WHERE { VALUES ?x { $value }  { { GRAPH ?g { ?s ?sp ?x } } UNION { GRAPH ?g { ?x ?po ?o } } } }"
+                    //$result = $e->directQuery($q);
+                    // dpm($results);
+                    //@TODO: get $uri
+                    // $uri=  AdapterHelper::getUrisForDrupalId($eid);
+                    //dpm($pathValue[0]['wisskiDisamb']);                                    
+                    //dpm($eid);
+                    //$drupal_url = AdapterHelper::generateWisskiUriFromId($eid);
+                    if(isset($value['value'])){
+                      $curr['children'][$index] = array(
+                        'id' =>  $value['wisskiDisamb'] ,
+                        'name' => '<span class="wki-groupname" data-wisski-url="' . $value['wisskiDisamb'] . '">' . $value['value'] . '</span>',
+                        'data' => array( 
+                          'labeltext' => 'labeletext'. $index,
+                          'labelid' => $value['wisskiDisamb'],
+                        ),
+                        'children' => array(),
+                        );
+                      }
+                    $index++;   
+                    }
+                  } 
+                }
+              }
+            } 
+          }
+        } 
  
-    return new JsonResponse( $base );
+        return new JsonResponse( $base );
         
   }
 
