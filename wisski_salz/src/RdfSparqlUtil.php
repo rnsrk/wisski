@@ -134,7 +134,7 @@ class RdfSparqlUtil {
   public function escapeSparqlRegex($regex, $also_literal = FALSE) {
     //  $chars = "\\.*+?^$()[]{}|";
     $sic = array('\\', '.', '*', '+', '?', '^', '$', '(', ')', '[', ']', '{', '}', '|');
-    $corr = array('\\\\', '\.', '\*', '\+', '\?', '\^', '\$', '\(', '\)', '\[', '\]', '\{', '\}', '\|');
+    $corr = array('\\\\', '\\\\.', '\\\\*', '\\\\+', '\\\\?', '\\\\^', '\\\\$', '\\\\(', '\\\\)', '\\\\[', '\\\\]', '\\\\{', '\\\\}', '\\\\|');
     $regex = str_replace($sic, $corr, $regex);
     return $also_literal ? $this->escapeSparqlLiteral($regex) : $regex;
   }
