@@ -127,6 +127,17 @@ class WisskiEntityViewsData extends EntityViewsData {
       ],
       'entity type' => $this->entityType->id(),
     ];
+    $data[$base_table]['preview_image'] = [
+      'id' => 'preview_image',
+      'title' => 'Preview Image',
+      'field' => [
+        'id' => 'standard'  // is standard the right thing here?
+      ],
+      'filter' => [
+        'id' => 'wisski_field_string'
+      ],
+      'entity type' => $this->entityType->id(),
+    ];
 
     // TODO: here should come a section where we read the paths from the pbs
     // and the fields from the bundles and add them here as views fields.

@@ -23,3 +23,7 @@ wisski_core.wisski_bundle.*:
     fallback_title:
       type: string
       label: 'Entity Fallback Title'
+      
+views.filter.wisski_bundle:
+  type: views.filter.bundle
+  label: 'WBundle'

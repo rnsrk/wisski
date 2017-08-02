@@ -28,7 +28,6 @@ class WisskiPathbuilderForm extends EntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-  
     $form = parent::form($form, $form_state);
     
     // what entity do we work on?
@@ -132,11 +131,16 @@ class WisskiPathbuilderForm extends EntityForm {
       }
     
       $pbpaths = $pathbuilder->getPbPaths();
-    
+
       // iterate through all the pathforms and bring the forms in a tree together
       foreach($pathforms as $pathform) {    
     
         $path = $pathform['#item'];
+        
+        if(empty($path)) {
+          drupal_set_message("There is an empty Path in " . serialize($pathform), "error");
+          continue;
+        }
         
         $form['pathbuilder_table'][$path->id()]['#item'] = $pathform['#item'];
       
@@ -260,7 +264,7 @@ class WisskiPathbuilderForm extends EntityForm {
         #dpm($form['pathbuilder_table'][$path->id()],'Path '.$path->id());
       }
     }
-    
+
     // additional information stored in a field set below       
     $form['additional'] = array(
       '#type' => 'fieldset',
@@ -353,6 +357,8 @@ class WisskiPathbuilderForm extends EntityForm {
     file_prepare_directory($export_path, FILE_CREATE_DIRECTORY);
     
     $files = file_scan_directory($export_path, '/.*/');
+    
+    ksort($files);
 
     $items = array();
         
@@ -384,7 +390,7 @@ class WisskiPathbuilderForm extends EntityForm {
         'wisski_pathbuilder/wisski_pathbuilder',
       ),
     );
-    
+
 #    dpm($form);
     return $form;
   }
@@ -462,7 +468,7 @@ class WisskiPathbuilderForm extends EntityForm {
     $dom = dom_import_simplexml($xmldoc)->ownerDocument;
     $dom->formatOutput = true;
     
-    $export_path = 'public://wisski_pathbuilder/export/';
+    $export_path = 'public://wisski_pathbuilder/export/' . $pathbuilder->id() . date('_Ymd\THis');
             
     $file = file_save_data($dom->saveXML(), $export_path, FILE_EXISTS_RENAME);
   }
@@ -556,6 +562,7 @@ class WisskiPathbuilderForm extends EntityForm {
   }
   
   private function recursive_render_tree($grouparray, $parent = 0, $delta = 0, $depth = 0, $namespaces = NULL) {
+#    dpm(microtime(), "1");
     // first we have to get any additional fields because we just got the tree-part
     // and not the real data-fields
     $pbpath = $this->entity->getPbPath($grouparray['id']);
@@ -592,16 +599,23 @@ class WisskiPathbuilderForm extends EntityForm {
     $children = $grouparray['children'];
     
     array_multisort($weights, $children);
+    
+    if(empty($pathform[$grouparray['id']]['#item']))
+      return array();
 
     $mypath = $pathform[$grouparray['id']]['#item']->getPathArray();
+    
+#    $origpf = $pathform;
     
     foreach($children as $childpath) {
       $subform = $this->recursive_render_tree($childpath, $grouparray['id'], $delta, $depth +1, $namespaces);
 
       // check if the group is correct
       foreach($subform as $sub) {
+
         if(empty($sub['#item']))
           continue;
+
         $subpath = $sub['#item']->getPathArray();
         
         // calculate the diff between the subpath and the group
@@ -612,15 +626,24 @@ class WisskiPathbuilderForm extends EntityForm {
         
         // if these differ there is something fishy!
         if(count($diff) > $difflength) {
-          drupal_set_message("Path " . $sub['#item']->getName() . " conflicts with definition of group " . $pathform[$grouparray['id']]['#item']->getName() . ". Please check.", "error");
+          $subname = $sub['#item']->getName();
+          $pathname = $pathform[$grouparray['id']]['#item']->getName();
+
+          drupal_set_message("Path " . $subname . " conflicts with definition of group " . $pathname . ". Please check.", "error");
           $pathform[$grouparray['id']]['#attributes'] = array('style' => array('background-color: red'));
         }
         
         
       }
-      $pathform = array_merge($pathform, $subform);
+#      dpm($pathform, "before");
+#      dpm($subform, "before2");
+      if(!empty($subform))
+        $pathform = $pathform + $subform;
+
+#      dpm($pathform, "after");
+#      return;
     }
-        
+#        dpm(microtime(), "2");
     return $pathform;    
     
   }

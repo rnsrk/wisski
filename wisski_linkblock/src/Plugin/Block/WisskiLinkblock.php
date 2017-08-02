@@ -124,7 +124,7 @@ class WisskiLinkblock extends BlockBase {
             foreach($adapters as $adapter) {
               $engine = $adapter->getEngine();
 
-              $tmpdata = $engine->pathToReturnValue($path, $pb, $individualid, 0, 'target_id');
+              $tmpdata = $engine->pathToReturnValue($path, $pb, $individualid, 0, 'target_id', FALSE);
 #              drupal_set_message("path: " . serialize($path));
 #              drupal_set_message(serialize($tmpdata));
 
@@ -160,8 +160,9 @@ class WisskiLinkblock extends BlockBase {
       $out[] = [ '#markup' => '<h3>' . $path->getName() . '</h3>'];
       
       foreach($dataarray['data'] as $data) {
-      
-        $url = $data['wisskiDisamb'];
+
+        if(isset($data['wisskiDisamb']))  	    
+          $url = $data['wisskiDisamb'];
 
         if(!empty($url)) {
 

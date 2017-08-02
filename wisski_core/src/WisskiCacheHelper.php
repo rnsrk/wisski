@@ -94,7 +94,7 @@ class WisskiCacheHelper {
   }
   
   static function putCallingBundle($entity_id,$bundle_id) {
-  
+#dpm($bundle_id, "put $entity_id");  
     // DEBUG, change $entity_id and open up in case you get 'Could not load entities in adapter sparql_1_1_with_pathbuilder because ...'-error
     // if ($entity_id === 'Leo') ddebug_backtrace();
     $db = \Drupal::service('database');
@@ -124,14 +124,20 @@ class WisskiCacheHelper {
 #        else
 #       return NULL;        
 #      } else      
+#dpm($bid, "get $entity_id");
         return $bid;
     } else return NULL;
   }
   
   static function flushCallingBundle($entity_id) {
-    
+
+    // TODO: cache is no longer used!?
     $cid = 'wisski_individual.'.$entity_id.'.bundle';
     self::flushCacheData($cid);
+    
+    $return = db_delete('wisski_calling_bundles')->condition('eid', $entity_id)->execute();
+#dpm($return, "flush $entity_id");
+
   }
   
   static $gathered_preview_images;

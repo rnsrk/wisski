@@ -22,7 +22,7 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *   label = @Translation("Wisski Entity"),
  *   bundle_label = @Translation("Wisski Bundle"),
  *   handlers = {
- *		 "storage" = "Drupal\wisski_core\WisskiStorage",
+ *     "storage" = "Drupal\wisski_core\WisskiStorage",
  *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
  *     "views_data" = "Drupal\wisski_core\WisskiEntityViewsData",
  *     "list_builder" = "Drupal\wisski_core\Controller\WisskiEntityListBuilder",
@@ -30,8 +30,8 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     "form" = {
  *       "default" = "Drupal\wisski_core\Form\WisskiEntityForm",
  *       "edit" = "Drupal\wisski_core\Form\WisskiEntityForm",
- *	 		 "add" = "Drupal\wisski_core\Form\WisskiEntityForm",
- *	 		 "delete" = "Drupal\wisski_core\Form\WisskiEntityDeleteForm",
+ *       "add" = "Drupal\wisski_core\Form\WisskiEntityForm",
+ *       "delete" = "Drupal\wisski_core\Form\WisskiEntityDeleteForm",
  *     },
  *     "access" = "Drupal\wisski_core\Controller\WisskiEntityAccessHandler",
  *   },
@@ -43,28 +43,33 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     "revision" = "vid",
  *     "bundle" = "bundle",
  *     "label" = "label",
- *		 "preview_image" = "preview_image",
+ *     "preview_image" = "preview_image",
  *     "langcode" = "langcode",
  *     "uuid" = "uuid"
  *   },
  *   bundle_entity_type = "wisski_bundle",
- *	 label_callback = "wisski_core_generate_title",
+ *   label_callback = "wisski_core_generate_title",
  *   permission_granularity = "entity_type",
  *   admin_permission = "administer wisski",
- *	 fieldable = TRUE,
- *   field_ui_base_route = "entity.wisski_individual.add",
+ *   fieldable = TRUE,
+ *   field_ui_base_route = "entity.wisski_bundle.edit_form",
  *   links = {
  *     "canonical" = "/wisski/navigate/{wisski_individual}",
  *     "delete-form" = "/wisski/navigate/{wisski_individual}/delete",
  *     "add-form" = "/wisski/create/{wisski_bundle}",
  *     "edit-form" = "/wisski/navigate/{wisski_individual}/edit",
- *     "admin-form" = "/admin/structure/wisski_core/manage/{wisski_bundle}",
+ *     "admin-form" = "/admin/structure/wisski_core/{wisski_bundle}/edit",
  *   },
  *   translatable = FALSE,
  * )
  */
 class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
 
+#  public static function create(array $values = array()) {
+#    dpm("hallo welt!");
+#    return parent::create($values);
+#  }
+  
   //@TODO we have a 'name' entity key and don't know what to do with it. SPARQL adapter uses a 'Tempo Hack'
   //making it the same as 'eid'
   /**
@@ -162,6 +167,22 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
     
     return $fields;
   }
+  
+
+  protected $label = NULL;
+  
+
+  /**
+   * {@inheritdoc}
+   */
+  public function label() {
+    // we cache the label to prevent that it is fetched from db all the time
+    if ($this->label === NULL) {
+      $this->label = parent::label();
+    }
+    return $this->label;
+  }
+
 
   public function tellMe() {
 
@@ -207,24 +228,28 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
   protected function extractFieldData($storage,$save_field_properties=FALSE) {
 #    dpm("calling extractfieldData with sfp: " . serialize($save_field_properties));
 #    dpm(func_get_args(), "extractFieldData in the beginning");
-#    dpm($this, "this");
-#    return array();
     $out = array();
+
+    $fields_to_save = array();
+
+    if ($save_field_properties) {
+      //clear the field values for this field in entity in bundle
+      db_delete('wisski_entity_field_properties')
+        ->condition('eid',$this->id())
+        ->condition('bid',$this->bundle())
+    #    ->condition('fid',$field_name)
+        ->execute();
+      
+      // prepare the insert query.
+      $query = db_insert('wisski_entity_field_properties')
+        ->fields(array('eid', 'bid', 'fid', 'delta', 'ident', 'properties'));
+        
+      }
 
     //$this is iterable itself, iterates over field list
     foreach ($this as $field_name => $field_item_list) {
-#      dpm($field_name, "fieldname");
-#      dpm($field_item_list, "fielditem");
 
       $out[$field_name] = array();
-      if ($save_field_properties) {
-        //clear the field values for this field in entity in bundle
-        db_delete('wisski_entity_field_properties')
-          ->condition('eid',$this->id())
-          ->condition('bid',$this->bundle())
-          ->condition('fid',$field_name)
-          ->execute();
-      }
       
       foreach($field_item_list as $weight => $field_item) {
         
@@ -260,17 +285,21 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
             #isset($field_values['wisskiDisamb']) ? $field_values['wisskiDisamb'] : $field_values[$main_property],
             'properties' => serialize($field_values),
           );
-
-#          dpm($fields_to_save, "fields to save");
-          db_insert('wisski_entity_field_properties')
-            ->fields($fields_to_save)
-            ->execute();
+          
+          // add the values to the insert query
+          $query->values($fields_to_save);
         }
       }
+
+      // execute the insert query
+      if ($save_field_properties && !empty($this->id())) {     
+        $query->execute();
+      }
+        
       if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) || empty($out[$field_name][0][$main_property])) unset($out[$field_name]);
 #      if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) ) unset($out[$field_name]);
     }
-#    dpm($out,__METHOD__ . ' at the end ');
+
     return $out;
   }
 

@@ -1658,8 +1658,13 @@ $oldtmp = $tmp;
     // this is a hack and will break if there are several for one field
     $pbarray = $pb->getPbEntriesForFid($fieldid);
 
+    // if there is absolutely nothing, we don't delete something.
+    if(empty($pbarray)) {
+      return;
+    }
+
     if(!isset($pbarray['id'])) {
-      drupal_set_message("Danger zone: field $fieldid was queried in deleteOldFieldValue, but it has no id.", "warning.");
+      drupal_set_message("Danger zone: in PB " . $pb->getName() . " field $fieldid was queried with value $value in deleteOldFieldValue, but the path with array " . serialize($pbarray) . " has no id.", "warning.");
       return;
     }
     
@@ -1919,9 +1924,13 @@ $oldtmp = $tmp;
     //if there is none $uri will be FALSE
     $uri = $this->getUriForDrupalId($eid);
     
-    $sparql = "DELETE { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o } } " . 
-              "WHERE { { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o . FILTER ( <$uri> = ?s ) } } " .
-              "UNION { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o . FILTER ( <$uri> = ?o ) } } }";
+#    $sparql = "DELETE { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o } } " . 
+#              "WHERE { { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o . FILTER ( <$uri> = ?s ) } } " .
+#              "UNION { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o . FILTER ( <$uri> = ?o ) } } }";
+    // we can't use the default graph here as the uri may also occur in other graphs
+    $sparql = "DELETE { GRAPH ?g { ?s ?p ?o } } " . 
+              "WHERE { { GRAPH ?g { ?s ?p ?o . FILTER ( <$uri> = ?s ) } } " .
+              "UNION { GRAPH ?g { ?s ?p ?o . FILTER ( <$uri> = ?o ) } } }";
     #\Drupal::logger('WissKIsaveProcess')->debug('sparql deleting: ' . htmlentities($sparql));
     
     $result = $this->directUpdate($sparql);
@@ -2242,7 +2251,7 @@ $oldtmp = $tmp;
     }
     // if write context and there is an object, we don't attach the primitive
     // also if we create a group
-    elseif ( ($write && !empty($object_in) && !empty($disambposition) ) || $mode == 'group_creation' ) {
+    elseif ( ($write && !empty($object_in) && !empty($disambposition) ) || $mode == 'group_creation' || $mode == 'entity_reference') {
       // do nothing!
     }
     elseif ($has_primitive) {
@@ -2344,14 +2353,14 @@ $oldtmp = $tmp;
       return;
       
     if($path->getDisamb()) {
-      $sparql = "SELECT ?x" . (($path->getDisamb()-1)*2) . " WHERE { GRAPH ?g { ";
+      $sparql = "SELECT ?x" . (($path->getDisamb()-1)*2) . " WHERE { ";
 
       // starting position one before disamb because disamb counts the number of concepts, startin position however starts from zero
       $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE);
-      $sparql .= " } }";
+      $sparql .= " }";
 #      drupal_set_message("spq: " . ($sparql));
       $disambresult = $this->directQuery($sparql);
-#      dpm($disambresult, "result");
+#dpm(array($sparql, $disambresult), __METHOD__ . " disamb query");
       if(!empty($disambresult))
         $disambresult = current($disambresult);      
     }
@@ -2387,7 +2396,7 @@ $oldtmp = $tmp;
     }
     $sparql .= " } } ";
 #     \Drupal::logger('WissKIsaveProcess')->debug('sparql writing in add: ' . htmlentities($sparql));
-#    dpm($sparql);
+#dpm($sparql, __METHOD__ . " sparql");
     $result = $this->directUpdate($sparql);
     
     
@@ -3425,7 +3434,8 @@ $oldtmp = $tmp;
   
   protected function isPrepared() {
     try {
-      return !empty(\Drupal::service('database')->select($this->adapterId().'_classes','c')->fields('c')->range(0,1)->execute());
+      $result = !empty(\Drupal::service('database')->select($this->adapterId().'_classes','c')->fields('c')->range(0,1)->execute());
+      return $result;
     } catch (\Exception $e) {
       return FALSE;
     }
@@ -3440,7 +3450,7 @@ $oldtmp = $tmp;
       foreach (self::getReasonerTableSchema() as $type => $table_schema) {
         $table_name = $adapter_id.'_'.$type;
         if ($schema->tableExists($table_name)) {
-          $database->truncate($table_name);
+          $database->truncate($table_name)->execute();
         } else {
           $schema->createTable($table_name,$table_schema);
         }

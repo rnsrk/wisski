@@ -28,8 +28,11 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
     if ($wisski_individual->isNew()) $create_form_title = TRUE;
     $entity_id = $wisski_individual->id();
     $bundle_id = $wisski_individual->bundle();
-    if(!empty($entity_id))
+#dpm(array($entity_id, get_class_methods($wisski_individual), $bundle_id), "generate title");
+    if(!empty($entity_id)) {
+      // TODO: Why do we need to cache the bundle here?
       WisskiCacheHelper::putCallingBundle($entity_id, $bundle_id);
+    }
   } else {
 #		drupal_set_message("2");
     $entity_id = $wisski_individual;
@@ -107,10 +110,10 @@ function wisski_tick($name='') {
   } else {
     $diff = ceil($now-$wisski_timestamp);
     if (!empty($name)) {
-      if (WISSKI_DEVEL) dpm($diff.' ms',$name);
-      if (WISSKI_DEVEL) \Drupal::logger('wisski tick')->debug($name);
+      dpm($diff.' ms',$name);
+      \Drupal::logger('wisski tick')->debug("$diff ms: $name");
     } else {
-      if (WISSKI_DEVEL) \Drupal::logger('wisski tick')->debug("reset");
+      \Drupal::logger('wisski tick')->debug("reset");
     }
     $wisski_timestamp = $now;
     return $diff;
@@ -185,6 +188,28 @@ function wisski_core_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $fo
   if(strpos($form_id, "wisski_individual") !== FALSE) {
 
     $form['#attached']['library'][] = 'wisski_core/wisski_autocomplete';
+  }
+
+}
+
+/**
+ * Add the place where the entity is found in navigate
+ */
+function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb &$breadcrumb, \Drupal\Core\Routing\RouteMatchInterface $route_match, array $context) {
+  $routename =  $route_match->getRouteName();
+
+  if($routename == 'entity.wisski_individual.canonical') {
+    $eid = $route_match->getParameter('wisski_individual');
+
+    $bundleid = WisskiCacheHelper::getCallingBundle($eid);
+
+    if(!empty($bundleid)) {
+      $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundleid);
+      if(!empty($bundle) && !empty($bundle->label())) {
+        $link = \Drupal\Core\Link::createFromRoute($bundle->label(), "entity.wisski_bundle.entity_list", array("wisski_bundle" => $bundleid));
+        $breadcrumb->addLink($link);
+      }
+    }
   }
 
 }

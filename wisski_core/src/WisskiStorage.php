@@ -22,6 +22,7 @@ use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\wisski_core\Query\WisskiQueryInterface;
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use Drupal\wisski_salz\AdapterHelper;
 use Drupal\wisski_salz\Entity\Adapter;
 
 
@@ -30,6 +31,21 @@ use Drupal\wisski_salz\Entity\Adapter;
  * Test Storage that returns a Singleton Entity, so we can see what the FieldItemInterface does
  */
 class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInterface {
+
+  /*
+  public function create(array $values = array()) {
+    $user = \Drupal::currentUser();
+    
+    
+    dpm($values, "before");
+    if(!isset($values['uid']))
+      $values['uid'] = $user->id();
+      
+    dpm($values, "values");
+    return parent::create($values);
+  }
+  */
+  
 
   /**
    * stores mappings from entity IDs to arrays of storages, that handle the id
@@ -43,13 +59,78 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   protected function doLoadMultiple(array $ids = NULL) {
   //dpm($ids,__METHOD__);
     $entities = array();
+
+    // this loads everything from the triplestore
     $values = $this->getEntityInfo($ids);
-  //dpm($values,'values');    
+
+    // add the values from the cache
     foreach ($ids as $id) {
+      
       //@TODO combine this with getEntityInfo
       if (!empty($values[$id])) {
 #ddl($values, 'values');
 #if (!isset($values[$id]['bundle'])) ddl($values[$id], "adbadbad$id bad");
+
+        // load the cache
+        $cached_field_values = db_select('wisski_entity_field_properties','f')
+          ->fields('f',array('fid', 'ident','delta','properties'))
+          ->condition('eid',$id)
+          ->condition('bid',$values[$id]['bundle'])
+#          ->condition('fid',$field_name)
+          ->execute()
+          ->fetchAllAssoc('fid');
+          
+#        dpm($cached_field_values, "argh");
+
+        foreach($cached_field_values as $field_id => $cached_field_value) {
+#          dpm($cached_field_value->properties, "sdasdf");
+#          dpm($values[$id][$field_id], "is set to");
+#          dpm(serialize(isset($values[$id][$field_id])), "magic");
+          
+          // empty here might make problems
+          // if we loaded something from TS we can skip the cache.
+          if( isset($values[$id][$field_id]) )
+            continue;
+            
+          // if we didn't load something, we might need the cache.
+          // however not if the TS is the normative thing and has no data for this.
+          $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($values[$id]['bundle']);
+#          dpm($pbs_info);
+          
+          $continue = FALSE;
+          // iterate through all infos
+          foreach($pbs_info as $pb_info) {
+            
+            // load the pb
+            $pb = WisskiPathbuilderEntity::load($pb_info['pb_id']);
+                        
+            if(!empty($pb->getPbEntriesForFid($field_id))) {
+#              drupal_set_message("I found something for $field_id");
+              // if we have a field in any pathbuilder matching this
+              // we continue.
+              $continue = TRUE;
+              break;
+            }
+          }
+          
+          // do it
+          if($continue)
+            continue;
+          
+                  
+#          dpm($cached_field_value->properties, "I am alive!");
+
+          $cached_value = unserialize($cached_field_value->properties);
+          
+          if(empty($cached_value))
+            continue;
+
+          // now it should be save to set this value
+          $values[$id][$field_id] = $cached_value;
+        }
+        
+#        dpm($values, "values after");
+        
         $entity = $this->create($values[$id]);
         $entity->enforceIsNew(FALSE);
         $entities[$id] = $entity;
@@ -75,6 +156,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
 #    drupal_set_message("key is: " . serialize($mainentityid));
 
+    // this is an array of the known entities.
+    // whenever some adapter knows any of the entities that
+    // are queried here, it sets the corresponding id
+    // with $id => TRUE
+    $known_entity_ids = array();
+
     $entity_info = &$this->entity_info;
     if ($cached) {
       $ids = array_diff_key($ids,$entity_info);
@@ -95,7 +182,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     $info = array();
     // for every id
     foreach($ids as $id) {
-    
+
       //make sure the entity knows its ID at least
       $info[$id]['eid'] = $id;
       
@@ -116,6 +203,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         // if they know that id
 #        drupal_set_message(serialize($adapter->hasEntity($id)) . " said adapter " . serialize($adapter));
         if($adapter->hasEntity($id)) {
+          $known_entity_ids[$id] = TRUE;
 #          drupal_set_message(serialize("argh"));
           // if so - ask for the bundles for that id
           // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
@@ -141,7 +229,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             }
               
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
-
+            
             wpm($field_definitions, 'gei-fd');
 #            $view_ids = \Drupal::entityQuery('entity_view_display')
 #              ->condition('id', 'wisski_individual.' . $bundleid . '.', 'STARTS_WITH')
@@ -156,30 +244,37 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 if ($field_def instanceof BaseFieldDefinition) {
                   //the bundle key will be set via the loop variable $bundleid
                   if ($field_name === 'bundle') continue;
-                  //drupal_set_message("Hello i am a base field ".$field_name);
+#                  drupal_set_message("Hello i am a base field ".$field_name);
                   //this is a base field and cannot have multiple values
                   //@TODO make sure, we load the RIGHT value
                   $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
-                  wpm($new_field_values, "gei-nfv");
+
                   if (empty($new_field_values)) continue;
-                
+#                  drupal_set_message("Hello i am still alive ". serialize($new_field_values));
                   $new_field_values = $new_field_values[$id][$field_name];
-        
+#                  drupal_set_message(serialize($info[$id][$field_name]) . " " . $field_name);
                   if (isset($info[$id][$field_name])) {
                     $old_field_value = $info[$id][$field_name];
                     if (in_array($old_field_value,$new_field_values) && count($new_field_values) > 1) {
+#                      drupal_set_message("muahah!2" . $field_name);
                       //@TODO drupal_set_message('Multiple values for base field '.$field_name,'error');
                       //FALLLBACK: do nothing, old field value stays the same
                       //WATCH OUT: if you change this remember to handle preview_image case correctly
                     } elseif (count($new_field_values) === 1) {
+#                       drupal_set_message("muahah!1" . $field_name);
                       $info[$id][$field_name] = $new_field_values[0];
                     } else {
+#                      drupal_set_message("muahah!" . $field_name);
                       //@TODO drupal_set_message('Multiple values for base field '.$field_name,'error');
                       //WATCH OUT: if you change this remember to handle preview_image case correctly
                     }
                   } elseif (!empty($new_field_values)) {
+#                    dpm($new_field_values, "argh: ");
                     $info[$id][$field_name] = current($new_field_values);
+#                    $info[$id][$field_name] = $new_field_values;
                   }
+                  
+#                  dpm($info[$id][$field_name], $field_name);
                   if (!isset($info[$id]['bundle'])) $info[$id]['bundle'] = $bundleid;
                   continue;                 
                 }
@@ -322,6 +417,11 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         }
           
       } // end foreach adapter
+      
+      if(empty($known_entity_ids[$id])) {
+        unset($info[$id]);
+        continue;
+      }
       
       if (!isset($info[$id]['bundle'])) {
         // we got no bundle information
@@ -600,12 +700,27 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   protected function doSaveFieldItems(ContentEntityInterface $entity, array $names = []) {
 #    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()));
+#    \Drupal::logger('WissKIsaveProcess')->debug(serialize($entity->uid->getValue())); 
 #    dpm(func_get_args(),__METHOD__);
 #    return;
+
+#    dpm($entity->uid->getValue(), 'uid');
+
+    $uid = $entity->uid;
+    // override the user setting
+    if(isset($uid) && empty($uid->getValue()['target_id']) ) {
+      $user = \Drupal::currentUser();
+#    dpm($values, "before");
+      $uid->setValue(array('target_id' => (int)$user->id()));
+    }
+    
+#    dpm($entity->uid->getValue(), 'uid');
+
+
     // gather values with property caching
     // set second param of getValues to FALSE: we must not write
     // field values to cache now as there may be no eid yet (on create)
-$ts1 = microtime(true);
+$ts1 = microtime(true);    
 
     list($values,$original_values) = $entity->getValues($this,FALSE);
     $bundle_id = $values['bundle'][0]['target_id'];
@@ -688,6 +803,9 @@ $ts = microtime(true);
           // object because it could make changes to it
           // e.g. which uris were used for reference (disamb) etc.
           // as long as it is like now you can't promote uris back to the storage.
+          // By Martin: this is an important point. Also the adapters should propagate
+          // disamb/all ?xX uris also when loading as there is no way to trace the value
+          // otherwise.
 
           $success = TRUE;
         } catch (\Exception $e) {
@@ -734,10 +852,10 @@ $tsa['eid'] = $entity_id;
 
     $local_adapters = array();
     $writable_adapters = array();
+    $delete_adapters = array(); // adapters that we use for deleting the entities
+    $all_adapters = entity_load_multiple('wisski_salz_adapter');
 
-    $adapters = entity_load_multiple('wisski_salz_adapter');
-
-    foreach($adapters as $aid => $adapter) {
+    foreach($all_adapters as $aid => $adapter) {
       // we locate all writable stores
       // then we locate all local stores in these writable stores
 
@@ -748,7 +866,6 @@ $tsa['eid'] = $entity_id;
         $local_adapters[$aid] = $adapter;
       
     }
-
     // if there are no adapters by now we die...
     if(empty($writable_adapters)) {
       drupal_set_message("There is no writable storage backend defined.", "error");
@@ -765,18 +882,21 @@ $tsa['eid'] = $entity_id;
     $pathbuilders = WisskiPathbuilderEntity::loadMultiple();
 
     foreach($pathbuilders as $pb_id => $pb) {
-    
-      //get the adapter
       $aid = $pb->getAdapterId();
-
       //check, if it's writable, if not we can stop here
-      if (isset($writable_adapters[$aid])) $adapter = $writable_adapters[$aid];
-      else continue;
-
-      foreach($entities as $entity)
-        $return = $adapter->deleteEntity($entity);
+      if (isset($writable_adapters[$aid])) {
+        $delete_adapters[$aid] = $writable_adapters[$aid];
+      }
     }
-  
+    
+    foreach($entities as $entity) {
+      foreach ($delete_adapters as $adapter) {
+        $return = $adapter->deleteEntity($entity);
+      }
+      AdapterHelper::deleteUrisForDrupalId($entity->id());
+      WisskiCacheHelper::flushCallingBundle($entity->id());
+    }
+
     if (empty($return)) {
       drupal_set_message('No local adapter could delete the entity','error');
       return;

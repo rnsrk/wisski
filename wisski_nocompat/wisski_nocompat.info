@@ -1,6 +1,0 @@
-; $Id$
-name = WissKI Compatibility Tests
-description = Tests for some known compatibility issues
-core = 7.x
-package = "WissKI"
-//dependencies[] = wisski_salz
