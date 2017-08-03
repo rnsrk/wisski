@@ -69,7 +69,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       //@TODO combine this with getEntityInfo
       if (!empty($values[$id])) {
 #ddl($values, 'values');
-#if (!isset($values[$id]['bundle'])) ddl($values[$id], "adbadbad$id bad");
+        if (!isset($values[$id]['bundle'])) continue;
 
         // load the cache
         $cached_field_values = db_select('wisski_entity_field_properties','f')
@@ -131,12 +131,15 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         
 #        dpm($values, "values after");
         
-        $entity = $this->create($values[$id]);
-        $entity->enforceIsNew(FALSE);
-        $entities[$id] = $entity;
+        try {
+          $entity = $this->create($values[$id]);
+          $entity->enforceIsNew(FALSE);
+          $entities[$id] = $entity;
+        } catch (\Exception $e) {
+        }
       }
     }
-    //dpm(array('in'=>$ids,'out'=>$entities),__METHOD__);
+#    dpm(array('in'=>$ids,'out'=>$entities),__METHOD__);
     return $entities;
   }
 

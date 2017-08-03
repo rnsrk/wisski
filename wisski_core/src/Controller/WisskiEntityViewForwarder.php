@@ -4,6 +4,9 @@ namespace Drupal\wisski_core\Controller;
 
 use Drupal\Core\Entity\ContentEntityStorageInterface;
 
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+
 class WisskiEntityViewForwarder {
 
   public function forward($wisski_individual) {
@@ -16,7 +19,9 @@ class WisskiEntityViewForwarder {
     if ($bundle_id) $storage->writeToCache($wisski_individual,$bundle_id);
     $entity = $storage->load($wisski_individual);
     //dpm($entity,__FUNCTION__);
-    if (empty($entity)) return array();
+    if (empty($entity)) {
+      throw new NotFoundHttpException();
+    }
     $entity_type = $storage->getEntityType();
     $view_builder_class = $entity_type->getViewBuilderClass();
     $view_builder = $view_builder_class::createInstance(\Drupal::getContainer(),$entity_type);
