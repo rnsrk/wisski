@@ -10,6 +10,7 @@ use Drupal\Core\Url;
 use Drupal\image\Entity\ImageStyle;
 
 use Drupal\wisski_core\WisskiCacheHelper;
+use Drupal\wisski_core\WisskiStorage;
 
 /**
  * Provides a list controller for wisski_core entity.
@@ -102,6 +103,7 @@ wpm($this->preview_image_adapters, 'preview adapters');
     //...let the CacheHelper prepare for the preview image request
     //this speeds up things a little
     WisskiCacheHelper::preparePreviewImages($entities);
+    $this->storage->preparePreviewImages();
 #    dpm("3: " . microtime());
     if ($grid_type === 'table') {
       //now, if we have a table
@@ -289,7 +291,31 @@ wisski_tick('query');
     */
     return $return;
   }
-
+  
+  /**
+   * externally prepare the Listbuilder
+   * this is necessary e.g. for views
+   * @TODO: We just do this here because the list-builder
+   * handles image-shit he shouldn't handle. This should
+   * be improved.
+   * @return returns true on sucess, false else.
+   */
+/*
+  public function prepareWisskiEntityListBuilder() {
+    $pref_local = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore();
+    if (!$pref_local) {
+      return FALSE;
+    } else {
+      $this->adapter = $pref_local;
+    
+      $this->preview_image_adapters = \Drupal::config('wisski_core.settings')->get('preview_image_adapters');
+      if (empty($this->preview_image_adapters)) {
+        $this->preview_image_adapters = array($pref_local);
+      }
+    }
+    return TRUE;
+  }
+*/
   private function getOperationLinks($entity_id) {
   
     //we have these hard-coded since there seems to be no possibility to generate fully qualified Route-URLs from
@@ -377,7 +403,8 @@ $timethis = microtime(TRUE);
     );
 #    dpm("4.-: " . microtime());    
     //get the preview image URI and...
-    $prev_uri = $this->getPreviewImageUri($entity_id,$this->bundle->id());
+    $prev_uri = $this->storage->getPreviewImageUri($entity_id,$this->bundle->id());
+#    dpm($prev_uri);
 #    dpm("4.3: " . microtime());
     if ($prev_uri) {
       //...render the image
@@ -404,13 +431,14 @@ wpm($timethis, "$timeall all over");
    * this gathers the URI i.e. some public:// or remote path to this entity's
    * preview image
    */
-  public function getPreviewImageUri($entity_id,$bundle_id) {
+/*  public function getPreviewImageUri($entity_id,$bundle_id) {
 #    dpm("4.2.1: " . microtime());
     
     //first try the cache
     $preview = WisskiCacheHelper::getPreviewImageUri($entity_id);
 #    dpm("4.2.2: " . microtime());
-    //dpm($preview,__FUNCTION__.' '.$entity_id);
+#    dpm($preview,__FUNCTION__.' '.$entity_id);
+    
     if ($preview) {
       //do not log anything here, it is a performance sink
       //\Drupal::logger('wisski_preview_image')->debug('From Cache '.$preview);
@@ -422,7 +450,7 @@ wpm($timethis, "$timeall all over");
     //for this purpose we need the entity URIs, which are stored in the local
     //store, so if there is none, stop here
     if (empty($this->preview_image_adapters)) return NULL;
-    
+
     // we iterate through all the selected adapters but we stop at the first
     // image that was successfully converted to preview image style as we only
     // need one!
@@ -448,6 +476,7 @@ wpm($timethis, "$timeall all over");
       //ask the local adapter for any image for this entity
       $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
 #    dpm("4.2.4: " . microtime());
+
       if (empty($images)) {
         if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug('No preview images available from adapter '.$adapter->id());
         continue;
@@ -464,7 +493,9 @@ wpm($timethis, "$timeall all over");
       $output_uri = '';
       
       //get a correct image uri in $output_uri, by saving a file there
-      $this->storage->getFileId($input_uri,$output_uri);
+      #$this->storage->getFileId($input_uri,$output_uri);
+      // generalized this line for external use
+      \Drupal::entityTypeManager()->getStorage('wisski_individual')->getFileId($input_uri, $output_uri);
 #    dpm("4.2.4.2: " . microtime());
       //try to get the WissKI preview image style
       $image_style = $this->getPreviewStyle();
@@ -472,7 +503,7 @@ wpm($timethis, "$timeall all over");
       //process the image with the style
       $preview_uri = $image_style->buildUri($output_uri);
       //dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
-      if ($image_style->createDerivative($output_uri,$preview_uri)) {
+      if ($out = $image_style->createDerivative($output_uri,$preview_uri)) {
         //drupal_set_message('Style did it - uri is ' . $preview_uri);
         WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
         //we got the image resized and can output the derivates URI
@@ -486,16 +517,17 @@ wpm($timethis, "$timeall all over");
 
     return NULL;
 
-  }
+  }*/
   
   //cache the style in this object in case it will be used for multiple entites
-  private $image_style;
+  #private $image_style;
   
   /**
    * loads and - if necessary - in advance generates the 'wisski_preview' ImageStyle
    * object
    * the style resizes - mostly downsizes - the image and converts it to JPG
    */
+   /*
   private function getPreviewStyle() {
 
     //cached?    
@@ -546,5 +578,6 @@ wpm($config,'image style config');
     $this->image_style = $image_style;
     return $image_style;
   }
+  */
 
 }

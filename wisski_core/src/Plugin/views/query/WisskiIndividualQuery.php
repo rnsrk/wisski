@@ -156,6 +156,21 @@ class WisskiIndividualQuery extends QueryPluginBase {
     return $base_field;
   }
 
+  public function addOrderBy($table, $field = NULL, $order = 'ASC', $alias = '', $params = array()) {
+    if ($table && $table != 'rand') {
+    #  $this->ensureTable($table);
+    }
+    
+    if ($field) {
+      $as = $this->addField($table, $field, $as, $params);
+    }
+
+    $this->orderby[] = array(
+      'field' => $as, 
+      'direction' => strtoupper($order),
+    );
+    
+  }
 
   /** This function is called by Drupal\views\Plugin\views\HandlerBase
   * maybe we should eventually break up the inheritance from there/QueryPluginBase if possible.
@@ -173,6 +188,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
    * $view->pager['current_page'].
    */
   function execute(ViewExecutable $view) {
+#  dpm($this->orderby, "orderby!");
 #    dpm($view->field);
 wisski_tick();
 wisski_tick("begin exec views");
@@ -229,6 +245,10 @@ wisski_tick("begin exec views");
     // Let the pager set limit and offset.
     if ($this->pager) {
       $this->pager->preExecute($query);
+    }
+    
+    if($this->orderby) {
+#      $query->orderby
     }
 
     if (!empty($this->limit) || !empty($this->offset)) {
@@ -317,12 +337,19 @@ wisski_tick("end exec views");
       }
       elseif ($field == 'preview_image') {
 #        dpm("prew");
+        
+#        dpm(\Drupal::entityTypeManager()->getStorage('wisski_individual'));
+#        return;
+        // prepare the listbuilder for external access.
+        \Drupal::entityTypeManager()->getStorage('wisski_individual')->preparePreviewImages();
+        
         foreach($values_per_row as $eid => &$row) {
           #$preview_image = WisskiCacheHelper::getPreviewImageUri($eid);
           $bundle_ids = AdapterHelper::getBundleIdsForEntityId($row['eid'], TRUE);
           $bid = reset($bundle_ids);
           
-          $preview_image_uri = WisskiEntityListBuilder::getPreviewImageUri($eid,$bid);
+          $preview_image_uri = \Drupal::entityTypeManager()->getStorage('wisski_individual')->getPreviewImageUri($eid,$bid);
+          
 
           if(strpos($preview_image_uri, "public://") !== FALSE)
             $preview_image_uri = str_replace("public:/", \Drupal::service('stream_wrapper.public')->baseUrl(), $preview_image_uri);

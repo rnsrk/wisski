@@ -116,6 +116,9 @@ class WisskiEntityViewsData extends EntityViewsData {
       'filter' => [
         'id' => 'wisski_field_string'
       ],
+      'sort' => [
+        'id' => 'standard'
+      ],
       'entity type' => $this->entityType->id(),
     ];
     $data[$base_table]['preferred_uri'] = [
