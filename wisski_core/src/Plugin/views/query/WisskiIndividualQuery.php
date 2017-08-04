@@ -41,6 +41,12 @@ class WisskiIndividualQuery extends QueryPluginBase {
    */
   public $fields = [];
 
+  /**
+   * The order statements for the query
+   * 
+   * @var array
+   */
+  public $orderby;
   
   /**
    * {@inheritdoc}
@@ -162,13 +168,13 @@ class WisskiIndividualQuery extends QueryPluginBase {
     }
     
     if ($field) {
-      $as = $this->addField($table, $field, $as, $params);
-    }
+      $as = $this->addField($table, $field, $alias, $params);
 
-    $this->orderby[] = array(
-      'field' => $as, 
-      'direction' => strtoupper($order),
-    );
+      $this->orderby[] = array(
+        'field' => $as, 
+        'direction' => strtoupper($order),
+      );
+    }
     
   }
 
@@ -248,7 +254,9 @@ wisski_tick("begin exec views");
     }
     
     if($this->orderby) {
-#      $query->orderby
+      foreach($this->orderby as $elem) {
+        $query->sort($elem['field'], $elem['direction']);
+      }
     }
 
     if (!empty($this->limit) || !empty($this->offset)) {

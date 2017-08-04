@@ -30,7 +30,7 @@ class Query extends WisskiQueryBase {
    * {@inheritdoc}
    */
   public function execute() {
-    
+#    dpm($this);    
     // NOTE: this is not thread-safe... shouldn't bother!
     $this->varCounter = 0;
 
@@ -426,7 +426,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
 $timethis[] = microtime(TRUE);
     $result = $engine = $this->getEngine()->directQuery($select);
 $timethis[] = microtime(TRUE);
-#    drupal_set_message(serialize($select));
+    #drupal_set_message(serialize($select));
     $adapter_id = $this->getEngine()->adapterId();
     if (WISSKI_DEVEL) \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded result count {cnt}: {result}', array('query' => $select, 'result' => $result, 'cnt' => $result->count()));
     if ($result === NULL) {
@@ -534,6 +534,14 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         return $entity_ids; // NULL
       }
 
+      // handle sorting - currently only for title.
+      foreach($this->sort as $elem) {
+        if($elem['field'] == "title") {
+          $select->orderBy('ngram', $elem['direction']);
+        }
+      }
+#      dpm($select);
+
       $rows = $select
           ->execute()
           ->fetchAll();
@@ -549,6 +557,16 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         ->condition('adapter_id', $this->getEngine()->adapterId())
         ->condition('eid', $entity_ids, 'IN');
       $entity_ids = $query->execute()->fetchAllKeyed();
+    
+      $out_entities = array();
+      
+      // redo the sorting
+      foreach($rows as $row) {
+        $out_entities[$row->ent_num] = $entity_ids[$row->ent_num];
+      }
+      
+      $entity_ids = $out_entities;
+    
     }
     return $entity_ids;
   }
