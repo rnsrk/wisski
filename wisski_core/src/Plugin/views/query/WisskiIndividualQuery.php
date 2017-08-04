@@ -8,6 +8,8 @@ use Drupal\views\Plugin\views\query\QueryPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\views\ViewExecutable;
 use Drupal\wisski_salz\AdapterHelper;
+use Drupal\wisski_core\WisskiCacheHelper;
+use Drupal\wisski_core\Controller\WisskiEntityListBuilder;
 use Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWithPB;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -145,10 +147,12 @@ class WisskiIndividualQuery extends QueryPluginBase {
    * This is used by the style row plugins for node view and comment view.
    */
   function addField($base_table, $base_field) {
+#    dpm($this->fields, "fields in addfield");
     $this->fields[$base_field] = $base_field;
     if (strpos($base_field, "wisski_path_") === 0) {
       $this->fields['_entity'] = '_entity';
     }
+#    dpm($this->fields, "fields in addfield2");
     return $base_field;
   }
 
@@ -169,6 +173,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
    * $view->pager['current_page'].
    */
   function execute(ViewExecutable $view) {
+#    dpm($view->field);
 wisski_tick();
 wisski_tick("begin exec views");
     $query = $view->build_info['wisski_query'];
@@ -291,6 +296,9 @@ wisski_tick("end exec views");
 
     $fields = $this->fields;
 
+    
+#    dpm($this, "fields");
+
     if (isset($fields['_entity'])) {
       foreach ($values_per_row as &$row) {
         $row['_entity'] = entity_load('wisski_individual', $row['eid']);
@@ -301,20 +309,38 @@ wisski_tick("end exec views");
     unset($fields['_entity']);
 
     while (($field = array_shift($fields)) !== NULL) {
+
       if ($field == 'title') {
         foreach ($values_per_row as $eid => &$row) {
           $row['title'] = wisski_core_generate_title($eid);
         }
       }
+      elseif ($field == 'preview_image') {
+#        dpm("prew");
+        foreach($values_per_row as $eid => &$row) {
+          #$preview_image = WisskiCacheHelper::getPreviewImageUri($eid);
+          $bundle_ids = AdapterHelper::getBundleIdsForEntityId($row['eid'], TRUE);
+          $bid = reset($bundle_ids);
+          
+          $preview_image_uri = WisskiEntityListBuilder::getPreviewImageUri($eid,$bid);
+
+          if(strpos($preview_image_uri, "public://") !== FALSE)
+            $preview_image_uri = str_replace("public:/", \Drupal::service('stream_wrapper.public')->baseUrl(), $preview_image_uri);
+
+          $row['preview_image'] = '<a href="http://va.gnm.de/posse/wisski/navigate/'.$eid.'/view"><img src="'. $preview_image_uri .'" /></a>';
+        }
+      }
       elseif ($field == 'bundle' || $field == 'bundle_label' || $field == 'bundles') {
+#        dpm($values_per_row, "vpr");
         foreach ($values_per_row as $eid => &$row) {
           $bundle_ids = AdapterHelper::getBundleIdsForEntityId($row['eid'], TRUE);
-          $values['bundles'] = $bundle_ids;
+          $row['bundles'] = $bundle_ids;
           $bid = reset($bundle_ids);  // TODO: make a more sophisticated choice rather than the first one
-          $values['bundle'] = $bid;
+          $row['bundle'] = $bid;
           $bundle = entity_load('wisski_bundle', $bid);
-          $values['bundle_label'] = $bundle->label();
+          $row['bundle_label'] = $bundle->label();
         }
+
       }
       elseif (strpos($field, "wisski_path_") === 0 && strpos($field, "__") !== FALSE) {
         // the if is rather a hack but currently I have no idea how to access

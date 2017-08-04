@@ -38,6 +38,8 @@ class WisskiEntityViewsData extends EntityViewsData {
     $data = [];
     $base_table = 'wisski_individual';
     
+#    dpm($this->entityType->id(), "id!");
+    
     // The $data array is documented in 
     // https://api.drupal.org/api/drupal/core%21modules%21views%21views.api.php/function/hook_views_data/8.2.x
     // documentation is quite sparse however and doesn't seem to be complete
@@ -131,12 +133,16 @@ class WisskiEntityViewsData extends EntityViewsData {
       'id' => 'preview_image',
       'title' => 'Preview Image',
       'field' => [
-        'id' => 'standard'  // is standard the right thing here?
+#        'id' => 'wisski_field',  // is standard the right thing here?
+        'id' => 'wisski_preview_image',
+        'entity_type' => $this->entityType->id(),
+        'entity field' => 'preview_image'
       ],
       'filter' => [
         'id' => 'wisski_field_string'
       ],
       'entity type' => $this->entityType->id(),
+      'entity_type' => $this->entityType->id(),
     ];
 
     // TODO: here should come a section where we read the paths from the pbs
