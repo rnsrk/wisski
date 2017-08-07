@@ -548,7 +548,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
 
 $timethis[] = microtime(TRUE);
     $result = $engine = $this->getEngine()->directQuery($select);
-    dpm($select);
+    #dpm($select);
 $timethis[] = microtime(TRUE);
     #drupal_set_message(serialize($select));
     $adapter_id = $this->getEngine()->adapterId();
