@@ -206,7 +206,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         ."}}}";
 
     $result = $this->directQuery($query);
-#    dpm($result, 'res');
+#    dpm($query, 'res');
 
     if (count($result) == 0) return array();
     

@@ -419,6 +419,7 @@ wisski_tick("end exec views");
                 // optional params should be default values
                 $select .= $engine->generateTriplesForPath($pb, $path, "", NULL, NULL, 0, 0, FALSE, '=', 'field', FALSE);
                 $select .= "}";
+#                dpm($select, "select");
                 $result = $engine->directQuery($select);
                 foreach ($result as $sparql_row) {
                   if (isset($uris_to_eids[$sparql_row->x0->getUri()])) {

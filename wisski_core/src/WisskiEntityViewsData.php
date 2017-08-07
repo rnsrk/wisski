@@ -116,9 +116,9 @@ class WisskiEntityViewsData extends EntityViewsData {
       'filter' => [
         'id' => 'wisski_field_string'
       ],
-      'sort' => [
-        'id' => 'standard'
-      ],
+#      'sort' => [
+#        'id' => 'standard'
+#      ],
       'entity type' => $this->entityType->id(),
     ];
     $data[$base_table]['preferred_uri'] = [
@@ -182,6 +182,9 @@ class WisskiEntityViewsData extends EntityViewsData {
                 'pb' => $pbid,
                 'path' => $pid,
                 'wisski_field' => "$pbid.$pid",
+              ],
+              'sort' => [
+                'id' => 'standard',
               ],
               'entity type' => $this->entityType->id(),
             ];

@@ -40,7 +40,7 @@ wisski_tick();
     // sparql graph patterns and
     // a list of entity ids that the pattern should be restricted to
     list($where_clause, $entity_ids) = $this->makeQueryConditions($this->condition);
-    
+
     if (empty($where_clause) && empty($entity_ids)) {
       $return = $this->count ? 0 : array();
     }
@@ -53,7 +53,8 @@ wisski_tick();
     }
     elseif (empty($entity_ids)) {
       list($limit, $offset) = $this->getPager();
-      $return = $this->buildAndExecSparql($where_clause, NULL, $this->count, $limit, $offset);
+
+      $return = $this->buildAndExecSparql($where_clause, NULL, $this->count, $limit, $offset, $this->sort['sparqlsort']);
       if (!$this->count) {
         $return = array_keys($return);
       }
@@ -340,6 +341,62 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
       }
     }
 
+    $sort_params = "";
+    
+    // handle sorting
+    foreach($this->sort as $sortkey => $elem) {
+#      dpm($elem);
+#      if($elem['field'] == "title") {
+#        $select->orderBy('ngram', $elem['direction']);
+#      }
+
+      $field = $elem['field'];
+
+      if (strpos($field, "wisski_path_") === 0 && strpos($field, "__") !== FALSE) {
+        
+        $pb_and_path = explode("__", substr($field, 12), 2);
+        if (count($pb_and_path) != 2) {
+          drupal_set_message("Bad field id for Wisski views: $field", 'error');
+        }
+        else {
+          $pb = entity_load('wisski_pathbuilder', $pb_and_path[0]);
+          $path = entity_load('wisski_path', $pb_and_path[1]);
+          $engine = $this->getEngine();
+          if (!$pb) {
+            drupal_set_message("Bad pathbuilder id for Wisski views: $pb_and_path[0]", 'error');
+          }
+          elseif (!$path) {
+            drupal_set_message("Bad path id for Wisski views: $pb_and_path[1]", 'error');
+          }
+          else {
+            $starting_position = $pb->getRelativeStartingPosition($path, TRUE);
+
+            $vars[$starting_position] = "x0";
+            $i = $this->varCounter++;
+            for ($j = count($path->getPathArray()); $j > $starting_position; $j--) {
+              $vars[$j] = "c${i}_x$j";
+            }
+            $vars['out'] = "c${i}_out";
+
+            $sort_part = $this->getEngine()->generateTriplesForPath($pb, $path, "", NULL, NULL, 0, $starting_position, FALSE, '=', 'field', FALSE, $vars);            
+
+            $sort = " . OPTIONAL { " . $sort_part . " } ";
+
+            foreach($query_parts as $iter => $query_part) {
+              $query_parts[$iter] = $query_part . $sort;
+            }
+            
+            $sort_params .= $elem['direction'] . "(?c${i}_out) ";
+            
+            $this->sort['sparqlsort'] = $this->sort['sparqlsort'] . $sort_params;
+            
+#            dpm($query_parts);
+#            $query_parts 
+          }
+        }
+      }
+    }
+
     // flatten query parts array
     if (empty($query_parts)) {
       $query_parts = '';
@@ -354,7 +411,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
       // OR
       $query_parts = ' {{ ' . join(' } UNION { ', $query_parts) . ' }} ';
     }
-    
+#   dpm($query_parts);   
     // 
     if ($entity_ids === NULL) {
       return array($query_parts, $entity_ids);
@@ -400,7 +457,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
    * @return an assoc array of matched entities in the form of entity_id => uri
    *         or an integer $count is TRUE.
    */
-  protected function buildAndExecSparql($query_parts, $entity_ids, $count = FALSE, $limit = 0, $offset = 0) {
+  protected function buildAndExecSparql($query_parts, $entity_ids, $count = FALSE, $limit = 0, $offset = 0, $sort_params = "") {
     
     if ($count) {
       $select = 'SELECT (COUNT(DISTINCT ?x0) as ?cnt) WHERE { ';
@@ -419,12 +476,17 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
 
     $select .= $query_parts . ' }';
     
+    if($sort_params) {
+      $select .= " ORDER BY " . $sort_params;
+    }
+    
     if ($limit) {
       $select .= " LIMIT $limit OFFSET $offset";
     }
 
 $timethis[] = microtime(TRUE);
     $result = $engine = $this->getEngine()->directQuery($select);
+    #dpm($select);
 $timethis[] = microtime(TRUE);
     #drupal_set_message(serialize($select));
     $adapter_id = $this->getEngine()->adapterId();
