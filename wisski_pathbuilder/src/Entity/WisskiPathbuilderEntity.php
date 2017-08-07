@@ -974,16 +974,28 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     if(empty($this->getPbPaths()))
       return array();
     
+    /* not working currently... as a reminder for the future!
+    dpm(\Drupal::service('entity.query')
+      ->get('wisski_path')
+#      ->condition('type', 'group')
+      ->condition('path_array.%delta', 0, '=')->execute(), "query!");
+#      ->condition('path_array.%delta.value', 'http://va.gnm.de/posse/ontologie/Pos21a_person')->execute(), "query!");
+   */   
     // iterate through the paths array
     foreach($this->getPbPaths() as $potpath) {
-      $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potpath["id"]);
+      #dpm($potpath);
       
-      if(empty($path))
-        continue;
+      if(empty($potpath['field']) || $potpath['field'] == $potpath['bundle']) {
+              
+        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potpath["id"]);
       
-      // if it is a group - we want it
-      if($path->isGroup())
-        $groups[] = $path;
+        if(empty($path))
+          continue;
+      
+        // if it is a group - we want it
+        if($path->isGroup())
+          $groups[] = $path;
+      }
     }
     
     return $groups; 
