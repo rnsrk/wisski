@@ -1104,84 +1104,31 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return $outarr;
   }
 
-  public function loadEntity($id) {
-#    drupal_set_message("b1: $id " . microtime());
+  public function loadEntity($id) {    
+    // simply give back something without thinking about it.
+    $out['eid'] = $id;
         
-    $out = array();
-#    $uri = str_replace('\\', '/', $id);
-
-    $uri = $this->getUriForDrupalId($id);
-#    dpm(serialize($uri), 'uri!');
-
-#    drupal_set_message("parse url: " . serialize(parse_url($uri)));
-
-    $url = parse_url($uri);
-#    drupal_set_message("b2: " . microtime());
-
-    if(!empty($url["scheme"]))
-      $query = "SELECT ?s ?p ?o WHERE { GRAPH ?g { { <$uri> ?p ?o } UNION { ?s ?p <$uri> } } } LIMIT 1"; 
-    else
-      $query = 'SELECT ?s ?p WHERE { GRAPH ?g { ?s ?p "' . $id . '" } } LIMIT 1';  
-#    drupal_set_message("b3: " . microtime());    
-    $result = $this->directQuery($query);
-#    drupal_set_message("b4: " . microtime());
-    foreach($result as $thing) {
-#      $uri = $thing->s->dumpValue("text");
-#      $uri = str_replace('/','\\',$uri);
-      $out = array('eid' => $id, 'bundle' => 'e21_person', 'name' => 'frizt');
-
-#      $out[$uri] = array('eid' => $uri, 'bundle' => 'e21_person', 'name' => 'frizt');#$thing->s->dumpValue("text"), 'bundle' => 'e21_person', 'name' => 'frizt');
-#      $i++;
-    }
-#    drupal_set_message("b5: " . microtime());
-#    drupal_set_message("load single");
-#    dpm($out);    
     return $out;
   }
   
+  /**
+   * This is deprecated and unfunctional
+   */
   public function loadMultipleEntities($ids = NULL) {
-#    dpm($this->getConfiguration());
-#    $this->entity_info = Yaml::parse($this->entity_string);
-#    dpm($this->entity_info,__METHOD__);
-#    if (is_null($ids)) return $this->entity_info;
-    $query = "SELECT ?s WHERE { GRAPH ?g { ?s a/a owl:Class} }";
-    
-    $result = $this->directQuery($query);
-    
-#    drupal_set_message(serialize($result));
-    
-    $out = array();
-    foreach($result as $thing) {
-      
-      $uri = $thing->s->dumpValue("text");
-      #$uri = str_replace('/','\\',$uri);
-      
-      $uri = $this->getUriForDrupalId($uri);
-    
-#      drupal_set_message("my uri is: " . htmlentities($uri));
-      
-      $out[$uri] = array('eid' => $uri, 'bundle' => 'e21_person', 'name' => 'frizt');
-    }
-    
-#    drupal_set_message("load Mult...");
-    
-    return $out;
-    
-    return array_intersect_key($this->entity_info,array_flip($ids));
+    drupal_set_message("I may not be called: loadMultipleEntities. ", "error");
+    return;
   }
     
   /**
    * @inheritdoc
    */
   public function hasEntity($entity_id) {
- 
-#    dpm($entity_id, "eid");
-    
-    $ent = $this->loadEntity($entity_id);
+  
+    $uri = $this->getUriForDrupalId($entity_id);
 
-#    dpm(!empty($ent), "ent");
-    
-    return !empty($ent);
+    $out = $this->checkUriExists($uri);
+
+    return $out;
   }
   
   /**
@@ -1215,8 +1162,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     } else {
       $starting_position = $position;
     }
-      
-    for($i = $starting_position; $i <= count($path->getPathArray()); $i+=2) {
+    
+    // $starting_position+2 because we can omit x0 in this place - it will always be replaced
+    // by the eid of this thing here.
+    for($i = $starting_position+2; $i <= count($path->getPathArray()); $i+=2) {
       $sparql .= "?x" . $i . " ";
     }
 
@@ -1228,18 +1177,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if(!empty($eid)) {
       // rename to uri
       $eid = $this->getUriForDrupalId($eid);
-      
-#      $eid = str_replace("\\", "/", $eid);
-#      $url = parse_url($eid);
-      
-      if($relative) {
-        $starting_position = count($path->getPathArray()) - count($pb->getRelativePath($path));
-      } else {
-        $starting_position = $position;
-      }
-      
-      #drupal_set_message("start: " . serialize($starting_position));
-      
+
       // if the path is a group it has to be a subgroup and thus entity reference.
       if($path->isGroup()) {
         // it is the same as field - so entity_reference is basic shit here
@@ -1253,6 +1191,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       drupal_set_message("No EID for data. Error. ", 'error');
     }
 
+
     // if disamb should be in the query we can bind it.
     if($starting_position === $disamb) {
       $sparql .= " BIND( <" . $eid . "> AS ?x" . $disamb . ") . ";
@@ -1263,7 +1202,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    drupal_set_message(serialize($sparql));
 
     $result = $this->directQuery($sparql);
-
 #    drupal_set_message(serialize($result));
 
     $out = array();
@@ -1273,6 +1211,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // TODO: by Martin: is this really working and if so in which case?
       // Also, what does true/false statement mean? we know that it's not an ASK query
       if($thing == new \StdClass()) {
+        drupal_set_message("This is ultra-evil!", "error");
         continue;
       }
       
@@ -1492,9 +1431,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // if(empty($entity))
         //  continue;
 
-        if($field_id == "bundle" && !empty($bundleid_in))
+        if($field_id == "bundle" && !empty($bundleid_in)) {
           $out[$eid]["bundle"] = array($bundleid_in);
-
+          continue;
+        }
 #        drupal_set_message("I am asked for fids: " . serialize($field_ids));
   
         if($field_id == "eid") {
@@ -1607,9 +1547,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
               continue;
             }
 #              drupal_set_message("pa: " . serialize($path->getPathArray()) . " cpa: " . serialize($clearPathArray) . " cga: " . serialize($this->getClearGroupArray($par, $pb)));
-            
+#            dpm(microtime(), "ptr in");   
             $tmp = $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property);            
-            
+#            dpm(microtime(), "ptr out");
             if ($main_property == 'target_id') {
 $oldtmp = $tmp;
               foreach($tmp as $key => $item) {
