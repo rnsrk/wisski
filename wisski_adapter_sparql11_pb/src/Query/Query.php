@@ -25,6 +25,13 @@ class Query extends WisskiQueryBase {
    * @var integer
    */
   protected $varCounter = 0;
+  
+  /**
+   * A string of vars to order by in this query
+   * 
+   * @var array
+   */
+  protected $orderby = "";
 
   /**
    * {@inheritdoc}
@@ -54,7 +61,7 @@ wisski_tick();
     elseif (empty($entity_ids)) {
       list($limit, $offset) = $this->getPager();
 
-      $return = $this->buildAndExecSparql($where_clause, NULL, $this->count, $limit, $offset, $this->sort['sparqlsort']);
+      $return = $this->buildAndExecSparql($where_clause, NULL, $this->count, $limit, $offset, $this->orderby);
       if (!$this->count) {
         $return = array_keys($return);
       }
@@ -342,7 +349,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
     }
 
     $sort_params = "";
-    
+    /*
     // handle sorting
     foreach($this->sort as $sortkey => $elem) {
 #      dpm($elem);
@@ -388,7 +395,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
             
             $sort_params .= $elem['direction'] . "(?c${i}_out) ";
             
-            $this->sort['sparqlsort'] = $this->sort['sparqlsort'] . $sort_params;
+            $this->orderby = $this->orderby . $sort_params;
             
 #            dpm($query_parts);
 #            $query_parts 
@@ -396,7 +403,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
         }
       }
     }
-
+*/
     // flatten query parts array
     if (empty($query_parts)) {
       $query_parts = '';
@@ -410,7 +417,62 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
     else {
       // OR
       $query_parts = ' {{ ' . join(' } UNION { ', $query_parts) . ' }} ';
-    }
+    }  
+    
+    // handle sorting
+    foreach($this->sort as $sortkey => $elem) {
+#      dpm($elem);
+#      if($elem['field'] == "title") {
+#        $select->orderBy('ngram', $elem['direction']);
+#      }
+
+      $field = $elem['field'];
+
+      if (strpos($field, "wisski_path_") === 0 && strpos($field, "__") !== FALSE) {
+        
+        $pb_and_path = explode("__", substr($field, 12), 2);
+        if (count($pb_and_path) != 2) {
+          drupal_set_message("Bad field id for Wisski views: $field", 'error');
+        }
+        else {
+          $pb = entity_load('wisski_pathbuilder', $pb_and_path[0]);
+          $path = entity_load('wisski_path', $pb_and_path[1]);
+          $engine = $this->getEngine();
+          if (!$pb) {
+            drupal_set_message("Bad pathbuilder id for Wisski views: $pb_and_path[0]", 'error');
+          }
+          elseif (!$path) {
+            drupal_set_message("Bad path id for Wisski views: $pb_and_path[1]", 'error');
+          }
+          else {
+            $starting_position = $pb->getRelativeStartingPosition($path, TRUE);
+
+            $vars[$starting_position] = "x0";
+            $i = $this->varCounter++;
+            for ($j = count($path->getPathArray()); $j > $starting_position; $j--) {
+              $vars[$j] = "c${i}_x$j";
+            }
+            $vars['out'] = "c${i}_out";
+
+            $sort_part = $this->getEngine()->generateTriplesForPath($pb, $path, "", NULL, NULL, 0, $starting_position, FALSE, '=', 'field', FALSE, $vars);            
+
+            $sort = " . OPTIONAL { " . $sort_part . " } ";
+
+            #foreach($query_parts as $iter => $query_part) {
+            $query_parts = $query_parts . $sort;
+            #}
+            
+            $sort_params .= $elem['direction'] . "(?c${i}_out) ";
+            
+            $this->orderby = $this->orderby . $sort_params;
+            
+#            dpm($query_parts);
+#            $query_parts 
+          }
+        }
+      }
+    } 
+    
 #   dpm($query_parts);   
     // 
     if ($entity_ids === NULL) {
@@ -486,7 +548,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
 
 $timethis[] = microtime(TRUE);
     $result = $engine = $this->getEngine()->directQuery($select);
-    #dpm($select);
+    dpm($select);
 $timethis[] = microtime(TRUE);
     #drupal_set_message(serialize($select));
     $adapter_id = $this->getEngine()->adapterId();
@@ -641,6 +703,9 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     if (empty($operator) || $operator == 'IN' || $operator == '=') {
       $bundle_ids = (array) $value;
       $engine = $this->getEngine();
+
+      $i = $this->varCounter++;
+      
       // we have to igo thru all the groups that belong to this bundle
       foreach ($this->getPbs() as $pb) {
         foreach ($bundle_ids as $bid) {
@@ -656,14 +721,16 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
 #            drupal_set_message(serialize($group));
 #            drupal_set_message(serialize($starting_position));
             
-            $i = $this->varCounter++;
             $vars[$starting_position] = 'x0';
             for ($j = count($group->getPathArray()); $j > $starting_position; $j--) {
               $vars[$j] = "c${i}_x$j";
             }
             $vars['out'] = "c${i}_out";
 
-            $query_parts[] = $engine->generateTriplesForPath($pb, $group, '', NULL, NULL, 0, $starting_position, FALSE, '=', 'field', TRUE, $vars);
+            $sparql_part = $engine->generateTriplesForPath($pb, $group, '', NULL, NULL, 0, $starting_position, FALSE, '=', 'field', TRUE, $vars);
+
+            if(!in_array($sparql_part, $query_parts))
+              $query_parts[] = $sparql_part;
           }
         }
       }
@@ -679,6 +746,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     } 
     else {
       $query_parts = '{{ ' . join('} UNION {', $query_parts) . '}} ';  
+
       return $query_parts;
     }
   
