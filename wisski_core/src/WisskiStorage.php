@@ -63,11 +63,14 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * {@inheritdoc}
    */
   protected function doLoadMultiple(array $ids = NULL) {
+ #   dpm(microtime(), "first!");
   //dpm($ids,__METHOD__);
     $entities = array();
 
     // this loads everything from the triplestore
     $values = $this->getEntityInfo($ids);
+
+    $pb_cache = array();
 
     // add the values from the cache
     foreach ($ids as $id) {
@@ -85,10 +88,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #          ->condition('fid',$field_name)
           ->execute()
           ->fetchAllAssoc('fid');
-          
+
 #        dpm($cached_field_values, "argh");
 
-        foreach($cached_field_values as $field_id => $cached_field_value) {
+        $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($values[$id]['bundle']);
+
+        foreach($cached_field_values[$id] as $field_id => $cached_field_value) {
 #          dpm($cached_field_value->properties, "sdasdf");
 #          dpm($values[$id][$field_id], "is set to");
 #          dpm(serialize(isset($values[$id][$field_id])), "magic");
@@ -100,15 +105,17 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             
           // if we didn't load something, we might need the cache.
           // however not if the TS is the normative thing and has no data for this.
-          $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($values[$id]['bundle']);
+#          $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($values[$id]['bundle']);
 #          dpm($pbs_info);
           
           $continue = FALSE;
           // iterate through all infos
           foreach($pbs_info as $pb_info) {
             
-            // load the pb
-            $pb = WisskiPathbuilderEntity::load($pb_info['pb_id']);
+            // lazy-load the pb
+            if(empty($pb_cache[$pb_info['pb_id']]))
+              $pb_cache[$pb_info['pb_id']] = WisskiPathbuilderEntity::load($pb_info['pb_id']);
+            $pb = $pb_cache[$pb_info['pb_id']];
                         
             if(!empty($pb->getPbEntriesForFid($field_id))) {
 #              drupal_set_message("I found something for $field_id");
@@ -145,6 +152,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         }
       }
     }
+    
+#    dpm(microtime(), "last!");
 #    dpm(array('in'=>$ids,'out'=>$entities),__METHOD__);
     return $entities;
   }
@@ -216,7 +225,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #          drupal_set_message(serialize("argh"));
           // if so - ask for the bundles for that id
           // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
+
+#          dpm(microtime(), "begin111");
           $bundle_ids = $adapter->getBundleIdsForEntityId($id);
+#          dpm(microtime(), "beginafter");
           $overall_bundle_ids = array_merge($overall_bundle_ids, $bundle_ids);
 #          drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
           if (isset($cached_bundle)) {
@@ -245,6 +257,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #              ->execute();
 #            $entity_view_displays = \Drupal::entityManager()->getStorage('entity_view_display')->loadMultiple($view_ids);
             try {
+#              dpm(microtime(), "load field $field_name");
               foreach ($field_definitions as $field_name => $field_def) {
               
                 $main_property = $field_def->getFieldStorageDefinition()->getMainPropertyName();
@@ -287,9 +300,11 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   if (!isset($info[$id]['bundle'])) $info[$id]['bundle'] = $bundleid;
                   continue;                 
                 }
+#                dpm(microtime(), "actual load");
                 //here we have a "normal field" so we can assume an array of field values is OK
                 $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
 
+#                dpm(microtime(), "after load");
                 if (empty($new_field_values)) continue;
                 $info[$id]['bundle'] = $bundleid;
                 if ($field_def->getType() === 'entity_reference') {
