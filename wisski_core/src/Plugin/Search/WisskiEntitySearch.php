@@ -365,10 +365,10 @@ class WisskiEntitySearch extends SearchPluginBase {
       case 'STARTS_WITH':
       case 'CONTAINS':
       case 'ENDS_WITH': {    
-        if (!empty($input) && strlen($input) < 3) {
+        if (!empty($input) && strlen($input) < 1) {
           $form_state->setError(
             $element['input_field'],
-            $this->t('Search string must consists of at least three (3) characters')
+            $this->t('Search string must consist of at least one (1) characters')
           );
           //dpm($vals,__FUNCTION__.'::values');
         }
