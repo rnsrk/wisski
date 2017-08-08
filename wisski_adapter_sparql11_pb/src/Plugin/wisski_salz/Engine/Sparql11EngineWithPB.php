@@ -741,60 +741,49 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    */
   public function getBundleIdsForUri($uri) {
-        
     $pbs = $this->getPbsForThis();
-#    dpm($pb,$this->adapterId().' Pathbuilder');
-#    dpm($entityid, "eid");
-    
-    #$uri = str_replace('\\', '/', $entityid);
-
-#    drupal_set_message("parse url $uri: " . serialize(parse_url($uri)));
     
     $query = "SELECT ?class WHERE { GRAPH ?g { <" . $uri . "> a ?class } }";
-
-//    $url = parse_url($uri);
-//
-//    if(!empty($url["scheme"]))
-//      $query = "SELECT ?class WHERE { GRAPH ?g { <" . $uri . "> a ?class } }";
-//    else {
-//      //it is possible, that we got an entity URI instead of an entity ID here, so try that one first
-//      $url = parse_url($entityid);
-//      if (!empty($url['scheme'])) $entityid = '<'.$entityid.'>';
-//      $query = "SELECT ?class WHERE { GRAPH ?g { " . $entityid . " a ?class } }";
-//    }
     
     $result = $this->directQuery($query);
-    
  #   drupal_set_message("$query res: " . serialize($result));
 
-   $out = array();
+    $out = array();
     foreach($result as $thing) {
+    
+      $uri_to_find = $thing->class->getUri();
+    
       foreach($pbs as $pb) {
       // ask for a bundle from the pb that has this class thing in it	
         $groups = $pb->getAllGroups();
-      
+              
 #      drupal_set_message("groups: " . count($groups) . " " . serialize($groups));
 
         $i = 0;
-      
+
         foreach($groups as $group) {
-        // this does not work for subgroups
-        #$path_array = $group->getPathArray();
-                
-#        $path_array = $this->getClearPathArray($group, $pb);
-#          $path_array = $this->getClearGroupArray($group, $pb);
-          $path_array = $pb->getRelativePath($group, FALSE);
           $i++;
- 
-#          drupal_set_message("p_a " . $i . " " . $group->getName() . " " . serialize($path_array));
-        
-          if(empty($group) || empty($path_array))
+         
+          if(empty($group))
+            continue;
+            
+          // to speed everything up a little, check if it might be possible at all
+          // that this is a group for our concept
+          $path_array = $group->getPathArray();
+          
+          if(!in_array($uri_to_find, $path_array)) { 
+            continue;
+          }
+
+          $path_array = $pb->getRelativePath($group, FALSE);
+
+          if(empty($path_array))
             continue;
 
         // this checks if the last element is the same
         // however this is evil whenever there are several elements in the path array
         // typically subgroups ask for the first element part.        
-          if($path_array[ count($group->getPathArray())-1] == $thing->class->getUri() || current($path_array) == $thing->class->getUri()) {
+          if($path_array[ count($group->getPathArray())-1] == $uri_to_find || current($path_array) == $uri_to_find) {
             $pbpaths = $pb->getPbPaths();
           
 #            drupal_set_message("p_a " . $i . " " . $group->getName() . "added something!:".serialize($pbpaths[$group->id()]));
@@ -816,6 +805,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
               if(!empty($elem['bundle'])) {
                 $bundle_id = $elem['bundle'];
                 $already_there = isset($out[$bundle_id]);
+
                 if ($already_there || entity_load('wisski_bundle', $bundle_id)) {
                   // now we know that there is a bundle 
                   if(empty($elem['parent'])) {
@@ -1370,207 +1360,159 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $field_storage_config = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);#->getItemDefinition()->mainPropertyName();
     // What does it mean if the field storage config is empty?
     //=>  it means it is a basic field
+
+    $out = array();
+
     if (empty($field_storage_config)) {
       // this is the case for base fields (fields that are defined directly in
       // the entity class)
-#      drupal_set_message("No field storage config for field '$field_id'", 'warning');
+      
+      // we can handle base-fields in advance.
+      if($field_id == "bundle" || $field_id == "eid") {
+        foreach($entity_ids as $eid) {
+
+          if($field_id == "bundle" && !empty($bundleid_in)) {
+            $out[$eid]["bundle"] = array($bundleid_in);
+            continue;
+          }
+#        drupal_set_message("I am asked for fids: " . serialize($field_ids));
+  
+          if($field_id == "eid") {
+            $out[$eid][$field_id] = array($eid);
+            continue;
+          }
+      
+          // Bundle is a special case.
+          // If we are asked for a bundle, we first look in the pb cache for the bundle
+          // because it could have been set by 
+          // measures like navigate or something - so the entity is always displayed in 
+          // a correct manor.
+          // If this is not set we just select the first bundle that might be appropriate.
+          // We select this with the first field that is there. @TODO:
+          // There might be a better solution to this.
+          // e.g. knowing what bundle was used for this id etc...
+          // however this would need more tables with mappings that will be slow in case
+          // of a lot of data...
+          if($field_id == "bundle") {
+            
+            if(!empty($bundleid_in)) {
+              $out[$eid]['bundle'] = array($bundleid_in);
+              continue;
+            }
+
+            // get all the bundles for the eid from us
+            $bundles = $this->getBundleIdsForEntityId($eid);
+          
+            if(!empty($bundles)) {
+              // if there is only one, we take that one.
+              #foreach($bundles as $bundle) {
+              $out[$eid]['bundle'] = array_values($bundles);
+              #  break;
+              #}
+              continue;
+            } else {
+              // if there is none return NULL
+              $out[$eid]['bundle'] = NULL;              
+              continue;
+            }
+          }
+        }
+      }
+      return $out;
     }
+    
 
     if(!empty($field_storage_config))
       $main_property = $field_storage_config->getMainPropertyName();
-#if ($field_id == 'fa1d538502c184d2d5e26cd0706c5c56') dpm($field_storage_config);
-#     drupal_set_message("mp: " . serialize($main_property) . "for field " . serialize($field_id));
-#    if (in_array($main_property,$property_ids)) {
-#      return $this->loadFieldValues($entity_ids,array($field_id),$language);
-#    }
-#    return array();
-#    drupal_set_message(serialize($entity_ids));
+
     if(!empty($field_id) && empty($bundleid_in)) {
       drupal_set_message("$field_id was queried but no bundle given.", "error");
       return;
     }
     
+    // make an entity query for all relevant pbs with this adapter.
+    $relevant_pb_ids = \Drupal::service('entity.query')
+      ->get('wisski_pathbuilder')
+      ->condition('adapter', $this->adapterId())->execute();
+
+    
     // this approach will be not fast enough in the future...
     // the pbs have to have a better mapping of where and how to find fields
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple($relevant_pb_ids);
     
-    $out = array();
+    // what we loaded once we don't want to load twice.
+    $adapter_cache = array();
         
-    // get the adapterid that was loaded
-    // haha, this is the engine-id...
-    //$adapterid = $this->getConfiguration()['id'];
-        
+    // go through all relevant pbs        
     foreach($pbs as $pb) {
-#      drupal_set_message("a2: " . microtime());
-      // if we have no adapter for this pb it may go home.
-      if(empty($pb->getAdapterId()))
-        continue;
-        
-      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
 
-      // if we have not adapter, we may go home, too
-      if(empty($adapter))
+      dpm(microtime(), $field_id);
+
+      // get the pbarray for this field
+      $pbarray = $pb->getPbEntriesForFid($field_id);
+          
+      // if there is no data about this path - how did we get here in the first place?
+      // fields not in sync with pb?
+      if(empty($pbarray["id"]))
         continue;
-      
-      // if he didn't ask for us...    
-      if($this->adapterId() != $adapter->id())
+
+      $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["id"]);
+
+      // if there is no path we can skip that
+      if(empty($path))
         continue;
-      
+                          
       // if we find any data, we set this to true.
       $found_any_data = FALSE;
       
       foreach($entity_ids as $eid) {
-#        drupal_set_message("a3: " . microtime());
-        // here we should check if we really know the entity by asking the TS for it.
-        // this would speed everything up largely, I think.
-        // 
-        // for now we assume we know the entity.
-        // $entity = $this->loadEntity($eid);
-#        drupal_set_message("a4: " . microtime());
-        // if there is nothing, continue.
-        // if(empty($entity))
-        //  continue;
-
-        if($field_id == "bundle" && !empty($bundleid_in)) {
-          $out[$eid]["bundle"] = array($bundleid_in);
-          continue;
-        }
-#        drupal_set_message("I am asked for fids: " . serialize($field_ids));
-  
-        if($field_id == "eid") {
-          $out[$eid][$field_id] = array($eid);
-          continue;
-        }
-        
-#        if($field_id == "name") {
-#          // tempo hack
-#          $out[$eid][$field_id] = array($eid);
-#          continue;
-#        }
-        
-        // Bundle is a special case.
-        // If we are asked for a bundle, we first look in the pb cache for the bundle
-        // because it could have been set by 
-        // measures like navigate or something - so the entity is always displayed in 
-        // a correct manor.
-        // If this is not set we just select the first bundle that might be appropriate.
-        // We select this with the first field that is there. @TODO:
-        // There might be a better solution to this.
-        // e.g. knowing what bundle was used for this id etc...
-        // however this would need more tables with mappings that will be slow in case
-        // of a lot of data...
-        if($field_id == "bundle") {
-          
-          if(!empty($bundleid_in)) {
-            $out[$eid]['bundle'] = array($bundleid_in);
-            continue;
-          }
-          
-          // get all the bundles for the eid from us
-          $bundles = $this->getBundleIdsForEntityId($eid);
-          
-          if(!empty($bundles)) {
-            // if there is only one, we take that one.
-            #foreach($bundles as $bundle) {
-            $out[$eid]['bundle'] = array_values($bundles);
-            #  break;
-            #}
-            continue;
-          } else {
-            // if there is none return NULL
-            $out[$eid]['bundle'] = NULL;              
-            continue;
-          }
-        }
-
         // every other field is an array, we guess
         // this might be wrong... cardinality?          
         if(!isset($out[$eid][$field_id]))
           $out[$eid][$field_id] = array();
 
-        // set the bundle
-        // @TODO: This is a hack and might break for multi-federalistic stores
-        $pbarray = $pb->getPbEntriesForFid($field_id);
-          
-        // if there is no data about this path - how did we get here in the first place?
-        // fields not in sync with pb?
-        if(empty($pbarray["id"]))
-          continue;
+        // if this is question for a subgroup - handle it otherwise
+        if($pbarray['parent'] > 0 && $path->isGroup()) {
+          // @TODO: ueberarbeiten
+#          drupal_set_message("danger zone!");
+          $tmp = $this->pathToReturnValue($path, $pb, $eid, 0, $main_property);            
 
-        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["id"]);
-
-        // if there is no path we can skip that
-        if(empty($path))
-          continue;
-        
-        #$clearPathArray = $this->getClearPathArray($path, $pb);
-        $clearPathArray = $pb->getRelativePath($path, FALSE);
-        
- #         drupal_set_message("I have: " . serialize($pbarray), "error");
-        if(!empty($path)) {
-          // if this is question for a subgroup - handle it otherwise
-          if($pbarray['parent'] > 0 && $path->isGroup()) {
-#              drupal_set_message("I am asking for: " . serialize($this->getClearGroupArray($path, $pb)) . "with eid: " . serialize($eid));
-            // this was the old query without evil numeric ids.
-            // now we have to change all this.
-            #$out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid, 0, $main_property, $path->getDisamb()));
-            // nowadays we do it otherwise
-            
-            #$tmp = $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid, 0, $main_property, $path->getDisamb());
-            // @TODO: ueberarbeiten
-#            drupal_set_message("danger zone!");
-            $tmp = $this->pathToReturnValue($path, $pb, $eid, 0, $main_property);            
-
-            foreach($tmp as $key => $item) {
-              $tmp[$key]["target_id"] = $this->getDrupalId($item["target_id"]);
-            }
-            
-            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);
-            
-            
-#            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->getDrupalId($this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid, 0, $main_property, $path->getDisamb())));
-#              drupal_set_message("I've got: " . serialize($out[$eid][$field_id]));
-          } else {
-              // it is a field?
-#              $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($clearPathArray, $path->getDatatypeProperty(), $eid));
-#              drupal_set_message("pa: " . serialize($path->getPathArray()) . " cpa: " . serialize($clearPathArray));
-
-            // get the parentid
-            $parid = $pbarray["parent"];
-            
-            // get the parent (the group the path belongs to) to get the common group path
-            $par = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($parid);
-
-            // if there is no parent it is a ungrouped path... who asks for this?
-            if(empty($par)) {
-              drupal_set_message("Path " . $path->getName() . " with id " . $path->id() . " has no parent.", "error");
-              continue;
-            }
-#              drupal_set_message("pa: " . serialize($path->getPathArray()) . " cpa: " . serialize($clearPathArray) . " cga: " . serialize($this->getClearGroupArray($par, $pb)));
-#            dpm(microtime(), "ptr in");   
-            $tmp = $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property);            
-#            dpm(microtime(), "ptr out");
-            if ($main_property == 'target_id') {
-$oldtmp = $tmp;
-              foreach($tmp as $key => $item) {
-                $tmp[$key]["original_target_id"] = $item["target_id"];
-                $tmp[$key]["target_id"] = $this->getDrupalId(isset($item['wisskiDisamb']) ? $item["wisskiDisamb"] : $item["target_id"]);
-              }
-#dpm([$oldtmp,$tmp], 'target_id_rewrite');                
-            }
-          
-
-
-            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);        
-#            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $eid, count($path->getPathArray()) - count($clearPathArray), $main_property, $path->getDisamb()));#(count($this->getClearGroupArray($par, $pb))-1), $main_property, $path->getDisamb()));
-#            drupal_set_message("smthg: " . serialize($out[$eid][$field_id]));
-          
-            // 
+          foreach($tmp as $key => $item) {
+            $tmp[$key]["target_id"] = $this->getDrupalId($item["target_id"]);
           }
-#          drupal_set_message("bla: " . serialize($out[$eid][$field_id]));
-          
-#            drupal_set_message($path->getDisamb());
-#              drupal_set_message("I loaded: " . serialize($out));
+            
+          $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);
+        } else {
+          // it is a field?
+          // get the parentid
+          $parid = $pbarray["parent"];
+            
+          // get the parent (the group the path belongs to) to get the common group path
+          $par = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($parid);
+
+          // if there is no parent it is a ungrouped path... who asks for this?
+          if(empty($par)) {
+            drupal_set_message("Path " . $path->getName() . " with id " . $path->id() . " has no parent.", "error");
+            continue;
+          }
+
+          // get the clear path array            
+          $clearPathArray = $pb->getRelativePath($path, FALSE);
+            
+          $tmp = $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property);            
+
+          if ($main_property == 'target_id') {
+              
+            $oldtmp = $tmp;
+              
+            foreach($tmp as $key => $item) {
+              $tmp[$key]["original_target_id"] = $item["target_id"];
+              $tmp[$key]["target_id"] = $this->getDrupalId(isset($item['wisskiDisamb']) ? $item["wisskiDisamb"] : $item["target_id"]);
+            }
+
+          }
+
+          $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);        
         }
         
         if(empty($out[$eid][$field_id]))
@@ -1578,12 +1520,7 @@ $oldtmp = $tmp;
       }
     }
 
-#    drupal_set_message("out: for " . serialize(func_get_args()) . " is: " . serialize($out));
-
-#dpm($out);
     return $out;
-
-
   }
   
   
