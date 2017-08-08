@@ -315,7 +315,7 @@ wisski_tick("end exec views");
   
   protected function fillResultValues($entity_ids) {
     // we must not load the whole entity unless explicitly wished. this is way too costly!
-    
+#    dpm(microtime(), "beginning of fill result values");
     $values_per_row = [];
     // we always return the entity id
     foreach ($entity_ids as $entity_id) {
@@ -326,12 +326,24 @@ wisski_tick("end exec views");
 
     
 #    dpm($this, "fields");
-
+#    dpm(microtime(), "before load");
+    $ids_to_load = array();
     if (isset($fields['_entity'])) {
       foreach ($values_per_row as &$row) {
-        $row['_entity'] = entity_load('wisski_individual', $row['eid']);
+        $ids_to_load[] = $row['eid'];
+#        $row['_entity'] = entity_load('wisski_individual', $row['eid']);
       }
     }
+    
+    $loaded_ids = entity_load_multiple('wisski_individual', $ids_to_load);
+    
+    if (isset($fields['_entity'])) {
+      foreach ($values_per_row as &$row) {
+        $row['_entity'] = $loaded_ids[$row['eid']];
+      }
+    }
+    
+#    dpm(microtime(), "after load");
     
     unset($fields['eid']);
     unset($fields['_entity']);
@@ -339,9 +351,12 @@ wisski_tick("end exec views");
     while (($field = array_shift($fields)) !== NULL) {
 
       if ($field == 'title') {
+#        dpm(microtime(), "before generate");
         foreach ($values_per_row as $eid => &$row) {
           $row['title'] = wisski_core_generate_title($eid);
         }
+        
+#        dpm(microtime(), "after generate");
       }
       elseif ($field == 'preview_image') {
 #        dpm("prew");
@@ -420,7 +435,9 @@ wisski_tick("end exec views");
                 $select .= $engine->generateTriplesForPath($pb, $path, "", NULL, NULL, 0, 0, FALSE, '=', 'field', FALSE);
                 $select .= "}";
 #                dpm($select, "select");
+#                dpm(microtime(), "before");
                 $result = $engine->directQuery($select);
+#                dpm(microtime(), "after");
                 foreach ($result as $sparql_row) {
                   if (isset($uris_to_eids[$sparql_row->x0->getUri()])) {
                     $eid = $uris_to_eids[$sparql_row->x0->getUri()];
@@ -434,7 +451,7 @@ wisski_tick("end exec views");
       }
 
     }
-    
+#    dpm(microtime(), "end of ...");    
     return array_values($values_per_row);
 
   }
