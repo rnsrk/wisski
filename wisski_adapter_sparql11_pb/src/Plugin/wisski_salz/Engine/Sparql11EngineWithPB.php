@@ -1446,8 +1446,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // go through all relevant pbs        
     foreach($pbs as $pb) {
 
-      dpm(microtime(), $field_id);
-
       // get the pbarray for this field
       $pbarray = $pb->getPbEntriesForFid($field_id);
           
