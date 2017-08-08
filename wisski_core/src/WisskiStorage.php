@@ -93,7 +93,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
         $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($values[$id]['bundle']);
 
-        foreach($cached_field_values[$id] as $field_id => $cached_field_value) {
+        foreach($cached_field_values as $field_id => $cached_field_value) {
 #          dpm($cached_field_value->properties, "sdasdf");
 #          dpm($values[$id][$field_id], "is set to");
 #          dpm(serialize(isset($values[$id][$field_id])), "magic");
