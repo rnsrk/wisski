@@ -457,15 +457,27 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     );
 
     $display = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual' . '.'.$bundle.'.default');
+
+    $hidden = FALSE;
+
     if (is_null($display)) { 
       $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
     } else { // there already is one.    
-      $comp = $display->getComponent($fieldid);
+      
+      // if it was disabled by the user, we want to stay disabled!
+      if($display->toArray()['hidden'][$fieldid])
+        $hidden = TRUE;
+      else {
+        $comp = $display->getComponent($fieldid);
 
-      if(!empty($comp))
-        $display_options = array_merge($comp, $display_options); 
+        if(!empty($comp))
+          $display_options = array_merge($display_options, $comp); 
+      }
     }
-    $display->setComponent($fieldid,$display_options)->save();
+    
+    // setComponent enables them
+    if(!$hidden)
+      $display->setComponent($fieldid,$display_options)->save();
 
     $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual' . '.'.$bundle.'.default');
     if (is_null($form_display)) {
@@ -719,20 +731,27 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     // find the current display elements
     $display = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual' . '.'.$bundle.'.default');
 
+    $hidden = FALSE;
+    
     // no display?
     if (is_null($display)) {
       $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
     } else { // there already is one.    
 
-      $comp = $display->getComponent($fieldid);
-  
-      if(!empty($comp))
-        $display_options = array_merge($display->getComponent($fieldid), $display_options); 
-
+      // if it was disabled by the user, we want to stay disabled!
+      if($display->toArray()['hidden'][$fieldid])
+        $hidden = TRUE;  
+      else {
+        $comp = $display->getComponent($fieldid);
+            
+        if(!empty($comp))
+          $display_options = array_merge($display_options, $comp);
+      }
     }
-    
+      
     // setComponent enables them
-    $display->setComponent($fieldid, $display_options)->save();
+    if(!$hidden)
+      $display->setComponent($fieldid, $display_options)->save();
 
     // find the current form display elements
     $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual' . '.'.$bundle.'.default');
@@ -1129,6 +1148,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
    * @return a path object
    */
   public function getPathForFid($fieldid) {      
+    
     $pbpaths = $this->getPbPaths();
     
     foreach($pbpaths as $potpath) {
