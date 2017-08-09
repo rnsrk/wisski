@@ -51,11 +51,88 @@ function init($, Drupal, drupalSettings, nodeid){
   //alert(nodeid);
   var state = $("#wki-infoswitch option:selected").val();
   //alert(state);
-  var url = drupalSettings.path.baseUrl + "jit/json/" + state + "/" + encodeURIComponent(nodeid).replace(/%2F/g, "/"); //"http://wisski.gnm.de/dev/jit/json/" + nodeid;
+  var url = drupalSettings.path.baseUrl + "jit/json/" 
+                                        + state 
+                                        + "/" 
+                                        + encodeURIComponent(nodeid).replace(/%2F/g, "/"); //"http://wisski.gnm.de/dev/jit/json/" + nodeid;
+  
+  // Implementing a new EdgeType for edge label support 
+  $jit.RGraph.Plot.EdgeTypes.implement({
+    'labeled': {
+      'render': function(adj, canvas) {
+        this.edgeTypes.line.render.call(this, adj, canvas);
+        var data = adj.nodeTo.data['labeltext'];
+        if(adj.nodeTo.data['labeltext']) {
+          var ctx = canvas.getCtx();
+          var posFr = adj.nodeFrom.pos.getc(true);
+          var posTo = adj.nodeTo.pos.getc(true);
+          
+          /*
+            Calculate the angle of the edge according to angle =  Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI 
+            (as well as  x = rho * cos(theta) and y = rho * sin(theta) for polar coordinates)
+          */
+          
+          
+          // To recieve a angle using polar coordinates use this:
+          
+          /*
+           var thetaFr = adj.nodeFrom.pos.getp().theta;
+           var thetaTo = adj.nodeTo.pos.getp().theta;
+           var rhoFr = adj.nodeFrom.pos.getp().rho;
+           var rhoTo = adj.nodeTo.pos.getp().rho;
+           var angle = Math.atan2(rhoTo * Math.sin(thetaTo) - rhoFr * Math.sin(thetaFr) , 
+             rhoTo * Math.cos(thetaTo) - rhoFr * Math.cos(thetaFr)) * 180 / Math.PI;
+          */
+          
+          // here we use complex pos 
+          var angle =  Math.atan2(posFr.y - posTo.y, posTo.x - posFr.x) * 180 / Math.PI;
+          
+          // Angle ranges between PI and -PI thus we have to add 2 PI in case of -PI to receive
+          // a range between 0 and 2 PI
+          if (angle < 0)
+            angle = angle + 360;
+          //alert(angle + " " + data );
+          
+          //Now we have to rotate the canvas
+          //Always save the initial canvas context in advance of the next rotation
+          ctx.save();
+          //translate fixed point of the rotation to the middle of the corresponding edge
+          ctx.translate((posFr.x + posTo.x) / 2, (posFr.y + posTo.y) / 2);
+
+         
+        ///* 
+          //Rotation depends on the particular quadrant
+          if ( angle > 0 && angle <= 90 ) {
+            ctx.rotate( -angle * Math.PI / 180);
+                 
+          } if ( angle > 90 && angle <= 180 ) {
+            ctx.rotate( -( angle - 180 ) * Math.PI / 180 );
+                      
+          } if ( angle > 180 && angle <= 270 ) {
+            ctx.rotate( -( angle - 180 ) * Math.PI / 180 );
+                        
+          } if ( angle > 270 && angle < 360 ) {
+            ctx.rotate( -( angle - 360 ) * Math.PI / 180 );
+                    
+          }
+        //*/
+        
+         ctx.textAlign = "center";
+         ctx.fillText(data, 0, 0 );
+         //Always restore the initial canvas context we saved 
+         //at the beginning for the next rotation
+         ctx.restore();
+            
+        }// if data
+      }
+    }
+  });
+
+
   //console.log('init', url);
   $.getJSON(url, function(json) {
     //json = JSON.parse(json);
-
+    //alert(JSON.stringify(json));  
     //init RGraph
     var rgraph = new $jit.RGraph({
       //Where to append the visualization
@@ -85,8 +162,10 @@ function init($, Drupal, drupalSettings, nodeid){
       },
         
       Edge: {
+        overridable: true,
         color: 'rgb(195,79,9)',
-        lineWidth: 0.5
+        lineWidth: 0.5,
+        'type': 'labeled'
       },
 
       onBeforeCompute: function(node){
