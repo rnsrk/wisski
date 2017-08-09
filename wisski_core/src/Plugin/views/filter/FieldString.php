@@ -44,6 +44,12 @@ class FieldString extends ViewsString {
         'method' => 'opSimple',
         'values' => 1,
       ),
+      'IN' => array(
+        'title' => t('One of'),
+        'short' => t('in'),
+        'method' => 'opMulti',
+        'values' => 1,
+      ),
     );
 
     return $operators;
@@ -66,6 +72,12 @@ class FieldString extends ViewsString {
    */
   function opSimple($field) {
     $this->query->query->condition($field, $this->value, $this->operator);
+  }
+
+  function opMulti($field) {
+    $value = explode(',', $this->value);
+    $this->query->query->condition($field, $value, $this->operator);
+    
   }
 
 }

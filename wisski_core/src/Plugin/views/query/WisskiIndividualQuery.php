@@ -215,10 +215,6 @@ wisski_tick("begin exec views");
 
     $start = microtime(true);
 
-    // Determine if the query entity type is local or remote.
-    $remote = FALSE;
-    
-
     // if we are using the pager, calculate the total number of results
     if ($this->pager && $this->pager->usePager()) {
       try {
@@ -233,7 +229,7 @@ wisski_tick("begin exec views");
 
         $this->pager->updatePageInfo();
       }
-      catch (Exception $e) {
+      catch (\Exception $e) {
         if (!empty($view->simpletest)) {
           throw($e);
         }
@@ -297,14 +293,14 @@ wisski_tick("begin exec views");
         }
       }
     }
-    catch (Exception $e) {
+    catch (\Exception $e) {
       // Show the full exception message in Views admin.
-      if (!empty($view->preview)) {
+#      if (!empty($view->preview)) {
         drupal_set_message($e->getMessage(), 'error');
-      }
-      else {
-        vpr('Exception in @human_name[@view_name]: @message', array('@human_name' => $view->human_name, '@view_name' => $view->name, '@message' => $e->getMessage()));
-      }
+#      }
+#      else {
+#        vpr('Exception in @human_name[@view_name]: @message', array('@human_name' => $view->human_name, '@view_name' => $view->name, '@message' => $e->getMessage()));
+#      }
       return;
     }
 

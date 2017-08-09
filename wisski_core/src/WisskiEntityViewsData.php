@@ -73,10 +73,13 @@ class WisskiEntityViewsData extends EntityViewsData {
       'id' => 'eid',
       'title' => 'Entity Id',
       'field' => [          // the handler for views field (display!?) section, expected by WizardPluginBase
-        'id' => 'standard'  // is standard the right thing here?
+        'id' => 'standard', // is standard the right thing here?
       ],
       'filter' => [         // the handler for views filter section
-        'id' => 'wisski_field_numeric'
+        'id' => 'wisski_field_numeric',
+      ],
+      'argument' => [
+        'id' => 'wisski_entity_id',
       ],
       'entity type' => $this->entityType->id(), // this should always be wisski_individual, used by WizardPluginBase
     ];
@@ -84,10 +87,13 @@ class WisskiEntityViewsData extends EntityViewsData {
       'id' => 'bundle',
       'title' => 'Bundle/Group',
       'field' => [
-        'id' => 'standard'   // is standard the right thing here?
+        'id' => 'standard', // is standard the right thing here?
       ],
       'filter' => [
-        'id' => 'wisski_bundle'   // i think we need this extra handler
+        'id' => 'wisski_bundle',  // i think we need this extra handler
+      ],
+      'argument' => [
+        'id' => 'wisski_bundle',
       ],
       'entity type' => $this->entityType->id(),
     ];
@@ -95,15 +101,15 @@ class WisskiEntityViewsData extends EntityViewsData {
       'id' => 'bundle_label',
       'title' => 'Bundle/Group Label',
       'field' => [
-        'id' => 'standard'   // is standard the right thing here?
+        'id' => 'standard', // is standard the right thing here?
       ],
       'entity type' => $this->entityType->id(),
     ];
     $data[$base_table]['bundles'] = [ 
-      'id' => 'bundle_label',
+      'id' => 'bundles',
       'title' => 'Bundles/Groups',
       'field' => [
-        'id' => 'standard'   // is standard the right thing here?
+        'id' => 'standard', // is standard the right thing here?
       ],
       'entity type' => $this->entityType->id(),
     ];
@@ -111,10 +117,10 @@ class WisskiEntityViewsData extends EntityViewsData {
       'id' => 'title',
       'title' => 'Title',
       'field' => [
-        'id' => 'standard'  // is standard the right thing here?
+        'id' => 'standard', // is standard the right thing here?
       ],
       'filter' => [
-        'id' => 'wisski_field_string'
+        'id' => 'wisski_field_string',
       ],
 #      'sort' => [
 #        'id' => 'standard'
@@ -125,10 +131,10 @@ class WisskiEntityViewsData extends EntityViewsData {
       'id' => 'preferred_uri',
       'title' => 'Preferred URI',
       'field' => [
-        'id' => 'standard'  // TODO: whats the right handler?
+        'id' => 'standard', // TODO: whats the right handler?
       ],
       'filter' => [
-        'id' => 'wisski_field_numeric'  // TODO: whats the right handler?
+        'id' => 'wisski_field_string',  // TODO: whats the right handler?
       ],
       'entity type' => $this->entityType->id(),
     ];
@@ -139,10 +145,10 @@ class WisskiEntityViewsData extends EntityViewsData {
 #        'id' => 'wisski_field',  // is standard the right thing here?
         'id' => 'wisski_preview_image',
         'entity_type' => $this->entityType->id(),
-        'entity field' => 'preview_image'
+        'entity field' => 'preview_image',
       ],
       'filter' => [
-        'id' => 'wisski_field_string'
+        'id' => 'wisski_field_string',
       ],
       'entity type' => $this->entityType->id(),
       'entity_type' => $this->entityType->id(),
@@ -185,6 +191,12 @@ class WisskiEntityViewsData extends EntityViewsData {
               ],
               'sort' => [
                 'id' => 'standard',
+              ],
+              'argument' => [
+                'id' => 'wisski_string',
+                'pb' => $pbid,
+                'path' => $pid,
+                'wisski_field' => "$pbid.$pid",
               ],
               'entity type' => $this->entityType->id(),
             ];

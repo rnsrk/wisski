@@ -1938,7 +1938,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // if we disamb on ourself, return.
     if($disambposition == 0 && !empty($object_in)) return "";
 
-    
     // we get the sub-section for this path
     $clearPathArray = array();
     if($relative) {
@@ -2152,12 +2151,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
       if(!empty($primitiveValue)) {
         
-        // we have to escape it otherwise the sparql query may break
-        $primitiveValue = $this->escapeSparqlLiteral($primitiveValue);
-        // and we have to encode it, otherwise the sparql query may break.
-//        $primitiveValue = utf8_decode($primitiveValue);
-
         if ($write) {
+          // we have to escape it otherwise the sparql query may break
+          $primitiveValue = $this->escapeSparqlLiteral($primitiveValue);
           $query .= "\"$primitiveValue\"";
         } else {
 
@@ -2170,34 +2166,67 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
 */
 
-          $regex = null;
+          $regex = FALSE;
+          $negate = FALSE;
+          $safe = FALSE;
           if($op == '<>')
             $op = '!=';
+          
           if($op == 'STARTS_WITH') {
             $regex = true;
-            $primitiveValue = '^' . $this->escapeSparqlRegex($primitiveValue);
+            $safe = TRUE;
+            $primitiveValue = '^' . $this->escapeSparqlRegex($primitiveValue, TRUE);
           }
           
           if($op == 'ENDS_WITH') {
             $regex = true;
-            $primitiveValue = $this->escapeSparqlRegex($primitiveValue) . '$';
+            $safe = TRUE;
+            $primitiveValue = $this->escapeSparqlRegex($primitiveValue, TRUE) . '$';
           }
           
           if($op == 'CONTAINS') {
             $regex = true;
-            $primitiveValue = $this->escapeSparqlRegex($primitiveValue);
+            $safe = TRUE;
+            $primitiveValue = $this->escapeSparqlRegex($primitiveValue, TRUE);
+          }
+
+          if ($op == 'IN' || $op == 'NOT IN') {
+            $regex = TRUE;
+            $negate = $op == 'NOT IN';
+            $safe = TRUE;
+            $values = is_array($primitiveValue) ? $primitiveValue : explode(",", $primitiveValue);
+            foreach ($values as &$v) {
+              $v = $this->escapeSparqlRegex($v, TRUE);
+            }
+            $primitiveValue = join('|', $values);
           }
           
-        
-          if($regex || $op == 'BETWEEN' || $op == 'IN' || $op == 'NOT IN') {
+          if (!$safe) {
+            $primitiveValue = $this->escapeSparqlLiteral($primitiveValue);
+          }
+
+          if ($op == 'BETWEEN') {
+            list($val_min, $val_max) = is_array($primitiveValue) ? $primitiveValue : explode(",", $primitiveValue, 2);
+            $val_min = intval($val_min);
+            $val_max = intval($val_max);
+            $filter = "$outvar >= $val_min & $outvar <= $val_max";
+          }
+          elseif($regex) {
             // we have to use STR() otherwise we may get into trouble with
             // datatype and lang comparisons
-            $query .= " $outvar . FILTER ( regex ( STR($outvar), \"" . $primitiveValue . '", "i" ) ) . ';
+            $filter = "REGEX( STR($outvar), \"" . $primitiveValue . '", "i" )';
           } else {
             // we have to use STR() otherwise we may get into trouble with
             // datatype and lang comparisons
-            $query .= " $outvar . FILTER ( STR($outvar) " . $op . ' "' . $primitiveValue . '" ) . ';
+            $filter = "STR($outvar) " . $op . ' "' . $primitiveValue . '"';
           }
+
+          if ($negate) {
+            $filter = "NOT( $filter )";
+          }
+          
+          $query .= " $outvar . FILTER( $filter ) . ";
+
         }
       } else {
         $query .= " $outvar . ";

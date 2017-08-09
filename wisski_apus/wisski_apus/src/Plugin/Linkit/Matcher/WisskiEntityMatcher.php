@@ -75,7 +75,7 @@ class WisskiEntityMatcher extends EntityMatcher {
     $form = parent::buildConfigurationForm($form, $form_state);
     
     $form['limit'] = [
-      '#type' => 'range',
+      '#type' => 'number',
       '#title' => 'Limit results',
       '#description' => $this->t('Maximum number of results. 0 means no limit.'),
       '#min' => 0,
