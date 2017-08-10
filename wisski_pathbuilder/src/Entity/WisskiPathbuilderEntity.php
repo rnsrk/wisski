@@ -1083,7 +1083,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       
       // if it is a group - we want it
       if(!$path->isGroup())
-        $paths[] = $path;
+        $paths[$path->getID()] = $path;
     }
     
     return $paths; 

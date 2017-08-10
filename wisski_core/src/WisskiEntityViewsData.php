@@ -161,11 +161,16 @@ class WisskiEntityViewsData extends EntityViewsData {
     
     $pbs = entity_load_multiple('wisski_pathbuilder');
     foreach ($pbs as $pbid => $pb) {
+      // we load all paths. then we go though the top groups
+      // paths that haven't been handled in a group will be added below
+      $orphaned_paths = $pb->getAllPaths();
       $groups = $pb->getMainGroups();
       foreach ($groups as $gid => $group) {
         $paths = $pb->getAllPathsForGroupId($gid, TRUE);
         foreach ($paths as $path) {
           $pid = $path->id();
+          // we are gonna handle this path, so it's not orphaned
+          unset($orphaned_paths[$pid]);
           if (!$path->isGroup()) {
             $data[$base_table]["wisski_path_${pbid}__$pid"] = [
               // It would have been brilliant if we could combine both pb ID
@@ -203,6 +208,42 @@ class WisskiEntityViewsData extends EntityViewsData {
           }
         }
       }
+
+      // handle orphaned paths
+      foreach ($orphaned_paths as $path) {
+        $pid = $path->id();
+        if (!$path->isGroup()) {
+          $data[$base_table]["wisski_path_${pbid}__$pid"] = [
+            'id' => "wisski_path_{$pbid}__$pid",  
+            'title' => $this->t("@path (@id) in @pb (Standalone)", [
+                "@path" => $path->getName(),
+                "@id" => $pid,
+                "@pb" => $pb->getName(),
+            ]),
+            'field' => [
+              'id' => 'wisski_standard',
+              'wisski_field' => "$pbid.$pid",
+            ],
+            'filter' => [
+              'id' => 'wisski_field_string', // TODO: depending on the field type we should use other filter types like numeric etc.
+              'pb' => $pbid,
+              'path' => $pid,
+              'wisski_field' => "$pbid.$pid",
+            ],
+            'sort' => [
+              'id' => 'standard',
+            ],
+            'argument' => [
+              'id' => 'wisski_string',
+              'pb' => $pbid,
+              'path' => $pid,
+              'wisski_field' => "$pbid.$pid",
+            ],
+            'entity type' => $this->entityType->id(),
+          ];
+        }
+      }
+
     }
 
     $top_bundles = WisskiHelper::getTopBundleIds(TRUE);
