@@ -752,11 +752,40 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     foreach($result as $thing) {
     
       $uri_to_find = $thing->class->getUri();
-    
+  
+      $topbundles = array();
+      $nontopbundles = array();
+
       foreach($pbs as $pb) {
+        list($tmptopbundles, $tmpnontopbundles) = $pb->getAllBundleIdsAboutUri($uri_to_find);
+
+        $topbundles = array_merge($topbundles, $tmptopbundles);
+        $nontopbundles = array_merge($nontopbundles, $tmpnontopbundles);
+
+/*
+        // do the sorting        
+        foreach($groups as $groupid) { 	
+          $pbpaths = $pb->getPbPath($groupid);
+
+          if(!empty($pbpaths['parent']))
+            $nontopgroups = array_merge($nontopgroups, $pbpaths['bundle']);
+          else
+            $topgroups = array_merge($topgroups, $pbpaths['bundle']);
+        }*/
+      }
+      
+      $out = $nontopbundles;
+      
+      foreach($topbundles as $key => $value) {
+        $out = array_merge(array($key => $value), $out);
+      }
+      
+/*
+      foreach($pbs as $pb) {
+
       // ask for a bundle from the pb that has this class thing in it	
         $groups = $pb->getAllGroups();
-              
+
 #      drupal_set_message("groups: " . count($groups) . " " . serialize($groups));
 
         $i = 0;
@@ -826,10 +855,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           }
         }
       }
+      */
+#      dpm(microtime(), "timestop2 old");
     }
 
 #    drupal_set_message("serializing out: " . serialize($out));
-#dpm($out);
+#    dpm($out, "returned");
+#    dpm($my_out, "other");
     return $out;    
     
   }

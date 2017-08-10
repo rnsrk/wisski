@@ -987,6 +987,47 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
   }
   
   /**
+   * Rocket function to find all groups that are about
+   * a certain uri.
+   *
+   * @return returns an array of an array of topbundles and an array of nontopbundles
+   */
+  public function getAllBundleIdsAboutUri($uri) {
+    $topbundles = array();
+    
+    $nontopbundles = array();
+    
+    $pbpaths = $this->getPbPaths();
+    
+    if(empty($pbpaths))
+      return array();
+        
+    // iterate through all groups
+    foreach($pbpaths as $groupid => $group) {
+
+      // only if this holds it is a group.
+      if(empty($group['field']) || $group['field'] == $group['bundle']) {
+
+        $relativePath = $this->getRelativePath($groupid, FALSE);
+        if(!empty($relativePath)) {
+
+          $last = array_pop($relativePath);
+          $first = current($relativePath);
+          if($last == $uri || $first == $uri) {
+            if(!empty($group['parent']))
+              $nontopbundles = array_merge($nontopbundles, array($group['bundle'] => $group['bundle']));
+            else
+              $topbundles = array_merge($topbundles, array($group['bundle'] => $group['bundle']));
+          }
+        }
+      }
+    }
+    
+    return array($topbundles, $nontopbundles);
+    
+  }
+  
+  /**
    *
    * Returns all groups that are used in the pathbuilder
    * @return An array of path objects that are groups
@@ -1334,8 +1375,12 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     if(empty($path))
       return;
     
-    $pbarray = $this->getPbPath($path->id());
-
+    // if it is an object, it has an id function
+    if(is_object($path))
+      $pbarray = $this->getPbPath($path->id());
+    else // if not, we load it lateron, but first have a look in the cache
+      $pbarray = $this->getPbPath($path);
+      
     // if we have something in cache, return that.
     if(!empty($pbarray['relativepath'])) {
       if(!$with_start_connection) {
@@ -1352,6 +1397,14 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
         return $path_array;
       } else
         return $pbarray['relativepath'];
+    }
+
+    // lazy load the path now
+    if(!is_object($path)) {
+      $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path);
+      
+      if(empty($path))
+        return;
     }
     
     // if we have nothing in cache, we have to calc it.
