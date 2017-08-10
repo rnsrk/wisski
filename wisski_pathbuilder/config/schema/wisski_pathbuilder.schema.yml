@@ -30,7 +30,7 @@ wisski_pathbuilder.wisski_pathbuilder.*:
             label: the value
     pbpaths:
       type: sequence
-      'label': 'Store an array of paths as nine-tupel (ID, weight, enabled, parent, bundle, field, fieldtype, displaywidget, formatterwidget)'
+      'label': 'Store an array of paths as ten-tupel (ID, weight, enabled, parent, bundle, field, fieldtype, displaywidget, formatterwidget, relativepath)'
       sequence:
         type: mapping
         mapping:

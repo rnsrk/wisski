@@ -531,7 +531,11 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     $pbpaths = $this->getPbPaths();
 
     $fieldid = $pbpaths[$pathid]['field'];
-        
+    
+    unset($pbpaths[$pathid]['relativepath']);
+    $this->setPbPaths($pbpaths);
+    
+    
     //don't go on if the user whishes not to
     if ($fieldid === self::CONNECT_NO_FIELD) return;
     
@@ -785,6 +789,10 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     // get all the pbpaths
     $pbpaths = $this->getPbPaths();
     
+    unset($pbpaths[$groupid]['relativepath']);
+    $this->setPbPaths($pbpaths);
+
+    
     // which group should I handle?
     $my_group = $pbpaths[$groupid];
     
@@ -835,10 +843,6 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       // set the the bundle_name to the path
       $pbpaths[$groupid]['bundle'] = $bundleid;
 
-      // save it
-      $this->setPbPaths($pbpaths);
-      $this->save();
-
       $bundle = \Drupal::entityManager()->getStorage($mode)->create(array('id'=>$bundleid, 'label'=>$bundle_name));
       $bundle->save();
       
@@ -864,7 +868,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       $efd->save();
       
       drupal_set_message(t('Created new bundle %bundle for group with id %groupid.',array('%bundle'=>$bundle_name, '%groupid'=>$groupid)));
-    }
+    }    
     
 //    $menus = array("navigate" => 'entity.wisski_bundle.entity_list', "create" => 'entity.wisski_individual_create.list');
     $menus = $bundle->getWissKIMenus();    
@@ -1330,10 +1334,29 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     if(empty($path))
       return;
     
-    $path_array = $path->getPathArray();
-    
     $pbarray = $this->getPbPath($path->id());
+
+    // if we have something in cache, return that.
+    if(!empty($pbarray['relativepath'])) {
+      if(!$with_start_connection) {
+        $path_array = $pbarray['relativepath'];
+        $i = 0;
+        // kind of complicated way, however we can't do it otherwise
+        // because we need the association of the keys.
+        foreach($path_array as $key => $value) {
+          if($i == 2)
+            break;
+          unset($path_array[$key]);
+          $i++;
+        }
+        return $path_array;
+      } else
+        return $pbarray['relativepath'];
+    }
     
+    // if we have nothing in cache, we have to calc it.
+    $path_array = $path->getPathArray();
+        
     // main path - so return everything.
     if(empty($pbarray['parent']))
       return $path_array;
@@ -1348,16 +1371,48 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     $parent_path_array = $parentpath->getPathArray();
     
     $parent_count = count($parent_path_array);
-    
-    if(!$with_start_connection)
-      $parent_count += 2;
-    
+
+    // cut away what we don't need        
     for($i=0; $i < ($parent_count -1); $i++) {
       unset($path_array[$i]);
     }
     
+    // save the relative path.
+    $this->setRelativePath($path, $path_array);
+
+    // if we don't want the starting connection we pop the two in the beginning
+    if(!$with_start_connection) {
+      $i = 0;
+      // kind of complicated way, however we can't do it otherwise
+      // because we need the association of the keys.
+      foreach($path_array as $key => $value) {
+        if($i == 2)
+          break;
+        unset($path_array[$key]);
+        $i++;
+      }
+    }
+      
+ 
+#    if(!$with_start_connection)
+#      return array_slice($path_array, 2);
+    
     return $path_array;
     
+  }
+  
+  /**
+   * Sets the relative starting position in the cache array
+   */
+  public function setRelativePath($path, $path_array) {
+    $pbarray = $this->getPbPaths();
+    
+    $pbarray[$path->id()]['relativepath'] = $path_array;
+    
+    $this->setPbPaths($pbarray);
+
+    $this->save();
+    return TRUE;
   }
   
   /**
