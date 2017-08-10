@@ -1,0 +1,6 @@
+name: WissKI Merge 
+description: Merge multiple instances / records into one
+core: 8.x
+package: WissKI
+version: 0.1-dev
+type: module
