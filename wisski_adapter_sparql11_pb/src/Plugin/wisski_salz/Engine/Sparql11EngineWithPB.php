@@ -2720,13 +2720,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // the importing ontology's namespaces win over the ones in the imported 
     // ontologies
     list($default, $namespaces) = $this->getNamespacesFromDocument($iri);
-dpm(array($default,$namespaces), $iri);
     if (!empty($namespaces)) {
       foreach($namespaces as $key => $value) {
         $this->putNamespace($key, $value);
       }
       \Drupal::logger('WissKI Ontology')->info(
-        'Adapter {a}: registered the following namespaces and prefixes: {n} Base is {b}',
+        'Adapter {a}: registered the following namespaces and prefixes: {n} Default is {b}',
         array(
           'a' => $this->adapterId(),
           'n' => array_reduce(array_keys($namespaces), function($carry, $k) use ($namespaces) { return "$carry$k: <$namespaces[$k]>. "; }, ''),
@@ -2769,7 +2768,6 @@ dpm(array($default,$namespaces), $iri);
       // this is a quick and dirty parse of an rdfxml file.
       // search for xmlns:xyz pattern inside the rdf:RDF tag.
       if (preg_match('/<(?:\w+:)?RDF[^>]*>/i', $file, $rdf_tag)) {
-dpm($rdf_tag,$iri);
         preg_match_all('/xmlns[^=]*=(?:"[^"]*"|\'[^\']*\')/i', $rdf_tag[0], $nsarray);
         // go thru the matches and collect the default and prefix-namespace pairs
         $namespaces = array();
