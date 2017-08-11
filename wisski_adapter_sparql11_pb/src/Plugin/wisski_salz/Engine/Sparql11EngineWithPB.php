@@ -2676,161 +2676,147 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   // -------------------------------- Ontologie thingies ----------------------
 
   public function addOntologies($iri = NULL) { 
- #   dpm($iri, "1");
+    
     if (empty($iri)) {
       //load all ontologies
       $query = "SELECT ?ont WHERE { GRAPH ?g { ?ont a owl:Ontology} }";
       $result = $this->directQuery($query);
-     # if ($ok) {
-        foreach ($result as $obj) {
-          $this->addOntologies(strval($obj->ont));
-        }
-     /* } else {
-        foreach ($result as $err) {
-          drupal_set_message(t('Error getting imports of ontology %iri: @e', array('%ont' => $o, '@e' => $err)), 'error');
-        }
+      foreach ($result as $obj) {
+        $this->addOntologies(strval($obj->ont));
       }
-      */
       return;
     }
 
     // check if the Ontology is already there
     $result = $this->directQuery("ASK { GRAPH ?g { <$iri> a owl:Ontology } }");
-#    dpm($result, "res");
-   /* if (!$ok) { // we've got something weired.
-      drupal_set_message("Store is not requestable.", 'error');
-      return;
-   */
-    
-  /*
-     // this case will not work, result will never be empty because it always contains the 
-     if(!empty($result)){ // if it is not false it is already there   
-      drupal_set_message("$iri is already loaded.", 'error');
-      return;
-    }
-*/
 
     // if we get here we may load the ontology
     $query = "LOAD <$iri> INTO GRAPH <$iri>";
 #    dpm($query, "query");
     $result = $this->directUpdate($query);
 
-    // everything worked?  
-/*    if (!$ok) {
-      foreach ($result as $err) {
-        drupal_set_message(t('An error occured while loading the Ontology: ' . serialize($err)),'error');
-      }
-    } else { // or it worked
- */     
-      drupal_set_message("Successfully loaded $iri into the Triplestore.");
-   # }
+    drupal_set_message("Successfully loaded $iri into the Triplestore.");
+    \Drupal::logger('WissKI Ontology')->info(
+      'Adapter {a}: Successfully loaded ontology <{iri}>.',
+      array(
+        'a' => $this->adapterId(),
+        'iri' => $iri,
+      )
+    );
   
     // look for imported ontologies
     $query = "SELECT DISTINCT ?ont FROM <$iri> WHERE { ?s a owl:Ontology . ?s owl:imports ?ont . }";
-  #  list($ok, $results) = $this->directQuery($query);
     $results = $this->directQuery($query);
  
-    // if there was nothing something is weired again.
-  /*  if (!$ok) {
-      foreach ($results as $err) {
-        drupal_set_message(t('Error getting imports of ontology %iri: @e', array('%ont' => $o, '@e' => $err)), 'error');
-      }
-    } else { // if there are some we have to load them
-      foreach ($results as $to_load) {
-        $this->addOntologies(strval($to_load->ont));
-      }
-    }*/
     foreach ($results as $to_load) {
       $this->addOntologies(strval($to_load->ont));
     }
                 
-    // load the ontology info in internal parameters    
-    // $this->loadOntologyInfo();
-    
     // add namespaces to table
-  
-    $file = file_get_contents($iri);
-    $format = \EasyRdf_Format::guessFormat($file, $iri); 
-    if(empty($format)) {
-      drupal_set_message("Could not initialize namespaces.", 'error');
-    } else {
-      if(stripos($format->getName(), 'xml') !== FALSE) {
-        preg_match('/RDF[^>]*>/i', $file, $nse);
-        
-        preg_match_all('/xmlns:[^=]*="[^"]*"/i', $nse[0], $nsarray);
-        
-        $ns = array();
-        $toStore = array();
-        foreach($nsarray[0] as $newns) {
-          preg_match('/xmlns:[^=]*=/', $newns, $front);
-          $front = substr($front[0], 6, strlen($front[0])-7);
-          preg_match('/"[^"]*"/', $newns, $end);
-          $end = substr($end[0], 1, strlen($end[0])-2);
-          $ns[$front] = $end;
-        }
-                
-	preg_match_all('/xmlns="[^"]*"/i', $nse[0], $toStore);
-	
-	foreach($toStore[0] as $itemGot) {
-          $i=0;
-	  $key = 'base';
-	
-	  preg_match('/"[^"]*"/', $itemGot, $item);
-	  $item	= substr($item[0], 1, strlen($item[0])-2);
-	  
-	  if(!array_key_exists($key, $ns)) {
-	    if(substr($item, strlen($item)-1, 1) != '#')
-	      $ns[$key] = $item . '#';
-	    else
-	      $ns[$key] = $item;
-          } else {
-	      $newkey = $key . $i;
-	      while(array_key_exists($newkey, $ns)) {
-		$i++;
-		$newkey = $key . $i;
-	      }
-	      if(substr($item, strlen($item)-1, 1) != '#')
-	 	$ns[$newkey] = $item . '#';
-	      else
-		$ns[$newkey] = $item;
-          }
-	}
-	
-	foreach($ns as $key => $value) {
-  	  $this->putNamespace($key, $value);
-  	} 
-  	
-  	global $base_url;
-  	// @TODO: check if it is already in the ontology.
-  	$this->putNamespace("local", $base_url . '/');
-  	$this->putNamespace("data", $base_url . '/inst/');
+    // TODO: curently all namespaces from all adapters are stored in a single
+    // table and adapters may override existing ones from themselves or from
+    // other adapters!
+    // We add the namespaces AFTER we loaded the imported ontologies so that
+    // the importing ontology's namespaces win over the ones in the imported 
+    // ontologies
+    list($default, $namespaces) = $this->getNamespacesFromDocument($iri);
+dpm(array($default,$namespaces), $iri);
+    if (!empty($namespaces)) {
+      foreach($namespaces as $key => $value) {
+        $this->putNamespace($key, $value);
       }
-      
-      
-    }    
+      \Drupal::logger('WissKI Ontology')->info(
+        'Adapter {a}: registered the following namespaces and prefixes: {n} Base is {b}',
+        array(
+          'a' => $this->adapterId(),
+          'n' => array_reduce(array_keys($namespaces), function($carry, $k) use ($namespaces) { return "$carry$k: <$namespaces[$k]>. "; }, ''),
+          'b' => empty($base) ? 'not set' : "<$base>",
+        )
+      );
+      // TODO: default is currently not stored. Do we need to store it? 
+      // it is no proper namespace prefix. 
+      // @TODO: check if it is already in the ontology.
+      // TODO: why declare these here? we never use them!
+      #global $base_url;
+      #$this->putNamespace("local", $base_url . '/');
+      #$this->putNamespace("data", $base_url . '/inst/');
+    } else {
+      \Drupal::logger('WissKI Ontology')->info('Adapter {a}: no namespaces registered', array('a' => $this->adapterId()));
+    }
     
-    // return the result
+    // return the result of the loading of this ontology
     return $result;   
 
- }  
+  }
+
+  
+  /** Tries to parse RDF namespace declarations in a given document.
+   *
+   * @param iri the IRI of the document
+   *
+   * @return an array where the first element is the default prefix URI and the
+   *         second is an array of prefix-namespace pairs. If the document 
+   *         cannot be parsed, an array(FALSE, FALSE) is returned.
+   */
+  public function getNamespacesFromDocument($iri) {
+    $file = file_get_contents($iri);
+    $format = \EasyRdf_Format::guessFormat($file, $iri); 
+    // unfortunately EasyRdf does not provide any API to get the declared
+    // namespaces although in general its Parsers do handle them.
+    // Therefore we have to provide our own namespace parsers. 
+    // atm, we only supprt rdfxml
+    if(stripos($format->getName(), 'xml') !== FALSE) {
+      // this is a quick and dirty parse of an rdfxml file.
+      // search for xmlns:xyz pattern inside the rdf:RDF tag.
+      if (preg_match('/<(?:\w+:)?RDF[^>]*>/i', $file, $rdf_tag)) {
+dpm($rdf_tag,$iri);
+        preg_match_all('/xmlns[^=]*=(?:"[^"]*"|\'[^\']*\')/i', $rdf_tag[0], $nsarray);
+        // go thru the matches and collect the default and prefix-namespace pairs
+        $namespaces = array();
+        $default = NULL;
+        foreach($nsarray[0] as $ns_decl) {
+          list($front, $back) = explode("=", substr($ns_decl, 5));  // remove the leading xmlns
+          $front = trim($front);
+          $value = substr($back, 1, -1);  // chop the "/'
+          if (empty($front)) {
+            // if front is empty it is the default namespace
+            $default = $value;
+          }
+          elseif ($front[0] == ':') {
+            // a named prefix must start with a :
+            $prefix = substr($front, 1); // chop the leading :
+            $namespaces[$prefix] = $value;
+          } 
+          // else:
+          // it's not a namespace declaration but an attribute that starts 
+          // with xmlns. we must ignore it.
+        }
+        return array($default, $namespaces);
+      }
+      // else: if we cannot match an RDF tag it's no / an unknown RDF document
+    }
+    // no parser available for this file format
+    return array(FALSE, FALSE);
+  }
+
 
   public function getOntologies($graph = NULL) {
     // get ontology and version uri
     if(!empty($graph)) {
-      $query = "SELECT DISTINCT ?ont ?iri ?ver FROM $graph WHERE { ?ont a owl:Ontology . OPTIONAL { ?ont owl:ontologyIRI ?iri. ?ont owl:versionIRI ?ver . } }";
-    } else
-      $query = "SELECT DISTINCT ?ont (COALESCE(?niri, 'none') as ?iri) (COALESCE(?nver, 'none') as ?ver) (COALESCE(?ngraph, 'default') as ?graph) WHERE { GRAPH ?g { ?ont a owl:Ontology } . OPTIONAL { GRAPH ?ngraph { ?ont a owl:Ontology } } . OPTIONAL { ?ont owl:ontologyIRI ?niri. ?ont owl:versionIRI ?nver . } }";
-     
-    $results = $this->directQuery($query); 
-  /*
-  if (!$ok) {
-    foreach ($results as $err) {
-      drupal_set_message(t('Error getting imports of ontology %iri: @e', array('%ont' => $o, '@e' => $err)), 'error');
+      $query = "SELECT DISTINCT ?ont ?iri ?ver FROM $graph WHERE {\n"
+             . "  ?ont a owl:Ontology .\n"
+             . "  OPTIONAL { ?ont owl:ontologyIRI ?iri. ?ont owl:versionIRI ?ver . }\n"
+             . "}";
     }
-  }
- */                              
+    else {
+      $query = "SELECT DISTINCT ?ont (COALESCE(?niri, 'none') as ?iri) (COALESCE(?nver, 'none') as ?ver) ?graph WHERE {\n"
+             . "  GRAPH ?graph { ?ont a owl:Ontology } .\n"
+             . "  OPTIONAL { ?ont owl:ontologyIRI ?niri. ?ont owl:versionIRI ?nver . }\n"
+             . "}";
+    }
+    $results = $this->directQuery($query);                      
     return $results;
-}
+  }
      
   public function deleteOntology($graph, $type = "graph") {
  
