@@ -1000,7 +1000,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     $pbpaths = $this->getPbPaths();
     
     if(empty($pbpaths))
-      return array();
+      return array(array(), array());
         
     // iterate through all groups
     foreach($pbpaths as $groupid => $group) {
