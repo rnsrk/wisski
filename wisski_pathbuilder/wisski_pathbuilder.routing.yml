@@ -117,4 +117,22 @@ entity.wisski_path.usage:
   requirements:
     _permission: 'administer site configuration'
 
+wisski_pathbuilder.exporter:
+  path: '/admin/config/wisski/pathbuilder-export/{pbid}'
+  defaults:
+    _form: '\Drupal\wisski_pathbuilder\Form\ExporterForm'
+    _title: 'Export'
+    pbid: NULL
+  requirements:
+    _permission: 'administer site configuration'
+
+wisski_pathbuilder.importer:
+  path: '/admin/config/wisski/pathbuilder-import'
+  defaults:
+    _form: '\Drupal\wisski_pathbuilder\Form\ImporterForm'
+    _title: 'Import'
+  requirements:
+    _permission: 'administer site configuration'
+
+
 
