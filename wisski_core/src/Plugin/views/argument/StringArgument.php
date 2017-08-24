@@ -55,7 +55,7 @@ class StringArgument extends ViewsString {
     }
     else {
       foreach($this->value as $value) {
-        $this->query->query->condition($field, $this->value, '=');
+        $this->query->query->condition($field, $value, '=');
       }
     }
     

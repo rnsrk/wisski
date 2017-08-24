@@ -113,15 +113,23 @@ class RdfSparqlUtil {
     // $sic  = array("\\",   '"',   "'",   "\b",  "\f",  "\n",  "\r",  "\t");
     // $corr = array($escape_backslash ? "\\\\" : "\\", '\\"', "\\'", "\\b", "\\f", "\\n", "\\r", "\\t");
     // $literal = str_replace($sic, $corr, $literal);
-
+    
+    // we require literal to be a string. if it is another scalar we quitely 
+    // cast it, all other types must fail
+    if (!is_scalar($literal)) {
+      $error = 'First parameter expected to be string, got ' . gettype($literal);
+      throw new \IllegalArgumentException($error);
+    }
+    $literal = (string) $literal;
     // we use the json encoding function as json has the same escaping strategy
     // It also escapes all non-ASCII chars.
     // It adds '"' at front and end; we have to trim them.
-    $literal = substr(json_encode($literal, JSON_UNESCAPED_SLASHES), 1, -1); 
+    $escaped = json_encode($literal, JSON_UNESCAPED_SLASHES); 
+    $escaped = substr($escaped, 1, -1); 
     $sic = array("'");
     $corr = array("\'");
-    $literal = str_replace($sic, $corr, $literal);
-    return $literal;
+    $escaped = str_replace($sic, $corr, $escaped);
+    return $escaped;
   }
 
 
@@ -132,7 +140,14 @@ class RdfSparqlUtil {
   * @author Martin Scholz
   */
   public function escapeSparqlRegex($regex, $also_literal = FALSE) {
-    //  $chars = "\\.*+?^$()[]{}|";
+    // we require literal to be a string. if it is another scalar we quitely 
+    // cast it, all other types must fail
+    if (!is_scalar($regex)) {
+      $error = 'First parameter expected to be string, got ' . gettype($regex);
+      throw new \IllegalArgumentException($error);
+    }
+    $regex = (string) $regex;
+    // these are the special regex chars: \.*+?^$()[]{}|
     $sic = array('\\', '.', '*', '+', '?', '^', '$', '(', ')', '[', ']', '{', '}', '|');
     $corr = array('\\\\', '\\\\.', '\\\\*', '\\\\+', '\\\\?', '\\\\^', '\\\\$', '\\\\(', '\\\\)', '\\\\[', '\\\\]', '\\\\{', '\\\\}', '\\\\|');
     $regex = str_replace($sic, $corr, $regex);
