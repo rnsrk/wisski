@@ -47,7 +47,7 @@ class ExporterForm extends FormBase {
   
 
   protected function initPbs($id) {
-    $this->pbs = WisskiPathbuilderEntity::loadMultiple(empty($id) ? [] : [$id]);
+    $this->pbs = WisskiPathbuilderEntity::loadMultiple(empty($id) ? NULL : [$id]);
     foreach ($this->pbs as $pb) {
       $this->pbsCN[$pb->getConfigDependencyName()] = $pb;
     }
@@ -116,8 +116,6 @@ class ExporterForm extends FormBase {
 
   }
   
-
-
 
   protected function buildConfigList($form, $parents, $config_name) {
     // first we check if we care about this config entity type
