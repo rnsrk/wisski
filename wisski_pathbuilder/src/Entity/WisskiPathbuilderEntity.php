@@ -671,6 +671,10 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
         'entity_type' => $mode,
       )
     );
+    
+#    dpm($fieldid, "fid");
+#    dpm($bundle, "bundle");
+#    dpm($mode, "mode");
 
     if (!empty($field_objects)) {
       foreach ($field_objects as $field_object) {
@@ -689,6 +693,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     
     //@TODO make it possible to set the $required value
     //$field_object->setRequired($required);
+#    dpm($field_object);
     $field_object->save();
 
 #    drupal_set_message("path " . $pathid . " has weight " . serialize($pbpaths[$pathid]['weight']));
@@ -837,11 +842,19 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       // if the bundle is already there...
       if(empty($bundle_name) || !empty(\Drupal::entityManager()->getStorage($mode)->loadByProperties(array('id' => $bundleid)))) {
         drupal_set_message(t('Bundle %bundle with id %id was already there.',array('%bundle'=>$bundle_name, '%id' => $bundleid)));
+
+        // it might be that this was falsely unset.
+        // So we fix the correct bundleid here.        
+        $pbpaths[$groupid]['bundle'] = $bundleid;
+        $this->setPbPaths($pbpaths);
+        
         return;
       }
 
       // set the the bundle_name to the path
       $pbpaths[$groupid]['bundle'] = $bundleid;
+      // save this.
+      $this->setPbPaths($pbpaths);
 
       $bundle = \Drupal::entityManager()->getStorage($mode)->create(array('id'=>$bundleid, 'label'=>$bundle_name));
       $bundle->save();
