@@ -54,81 +54,9 @@ class WisskiIndividualQuery extends QueryPluginBase {
   public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
     parent::init($view, $display, $options);
     $this->query = \Drupal::entityTypeManager()->getStorage('wisski_individual')->getQuery();
-    $this->tables = array();
-    $this->pager = $view->pager;
+    $this->pager = $view->pager;  // TODO: do we need to set it here if pager is only inited in this->build()?
   }
 
-  function option_definition() {
-    $options = parent::option_definition();
-    $options['field_language'] = array(
-      'default' => '***CURRENT_LANGUAGE***',
-    );
-    $options['query_tags'] = array(
-      'default' => array(),
-    );
-    return $options;
-  }
-
-  /**
-   * Show field language settings if the entity type we are querying has
-   * field translation enabled.
-   * If we are querying multiple entity types, then the settings are shown
-   * if at least one entity type has field translation enabled.
-   */
-  function options_form(&$form, &$form_state) {
-    if (isset($this->entity_type)) {
-      $entities = array();
-      $entities[$this->entity_type] = entity_get_info($this->entity_type);
-    }
-    else {
-      $entities = entity_get_info();
-    }
-
-    $has_translation_handlers = FALSE;
-    foreach ($entities as $type => $entity_info) {
-      if (!empty($entity_info['translation'])) {
-        $has_translation_handlers = TRUE;
-      }
-    }
-
-    if ($has_translation_handlers) {
-      $languages = array(
-        '***CURRENT_LANGUAGE***' => t("Current user's language"),
-        '***DEFAULT_LANGUAGE***' => t("Default site language"),
-        LANGUAGE_NONE => t('No language')
-      );
-      $languages = array_merge($languages, locale_language_list());
-
-      $form['field_language'] = array(
-        '#type' => 'select',
-        '#title' => t('Field Language'),
-        '#description' => t('All fields which support translations will be displayed in the selected language.'),
-        '#options' => $languages,
-        '#default_value' => $this->options['field_language'],
-      );
-    }
-
-    $form['query_tags'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Query Tags'),
-      '#description' => t('If set, these tags will be appended to the query and can be used to identify the query in a module. This can be helpful for altering queries.'),
-      '#default_value' => implode(', ', $this->options['query_tags']),
-      '#element_validate' => array('views_element_validate_tags'),
-    );
-
-    // The function views_element_validate_tags() is defined here.
-    form_load_include($form_state, 'inc', 'views', 'plugins/views_plugin_query_default');
-  }
-
-  /**
-   * Special submit handling.
-   */
-  function options_submit(&$form, &$form_state) {
-    $element = array('#parents' => array('query', 'options', 'query_tags'));
-    $value = explode(',', drupal_array_get_nested_value($form_state['values'], $element['#parents']));
-    $value = array_filter(array_map('trim', $value));
-    form_set_value($element, $value, $form_state);
-  }
 
   /**
    * Builds the necessary info to execute the query.
@@ -150,23 +78,35 @@ class WisskiIndividualQuery extends QueryPluginBase {
 
 
   /**
-   * This is used by the style row plugins for node view and comment view.
+   * We override this function as the standard field plugins use it.
+   *
+   * @param base_table not used
+   * @param base_field the WisskiEntity entity query field
+   *
    */
   function addField($base_table, $base_field) {
-#    dpm($this->fields, "fields in addfield");
     $this->fields[$base_field] = $base_field;
     if (strpos($base_field, "wisski_path_") === 0) {
+      // we always load the whole entity if the field is a path.
+      // TODO: this is very slow when retrieving many entities; find a way to
+      // get the field values without loading the entity.
       $this->fields['_entity'] = '_entity';
     }
-#    dpm($this->fields, "fields in addfield2");
     return $base_field;
   }
-
+  
+  
+  /**
+   * We override this function as the standard sort plugins use it
+   *
+   * @param table not used
+   * @param field the WisskiEntity entity query field by which to sort
+   * @param order sort order
+   * @param alias not used
+   * @param params not used
+   */
   public function addOrderBy($table, $field = NULL, $order = 'ASC', $alias = '', $params = array()) {
-    if ($table && $table != 'rand') {
-    #  $this->ensureTable($table);
-    }
-    
+    // $table is useless here
     if ($field) {
       $as = $this->addField($table, $field, $alias, $params);
 
