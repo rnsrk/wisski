@@ -2803,13 +2803,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if(!empty($graph)) {
       $query = "SELECT DISTINCT ?ont ?iri ?ver FROM $graph WHERE {\n"
              . "  ?ont a owl:Ontology .\n"
-             . "  OPTIONAL { ?ont owl:ontologyIRI ?iri. ?ont owl:versionIRI ?ver . }\n"
+             . "  OPTIONAL { ?ont owl:ontologyIRI ?iri. } OPTIONAL { ?ont owl:versionIRI ?ver . }\n"
              . "}";
     }
     else {
       $query = "SELECT DISTINCT ?ont (COALESCE(?niri, 'none') as ?iri) (COALESCE(?nver, 'none') as ?ver) ?graph WHERE {\n"
              . "  GRAPH ?graph { ?ont a owl:Ontology } .\n"
-             . "  OPTIONAL { ?ont owl:ontologyIRI ?niri. ?ont owl:versionIRI ?nver . }\n"
+             . "  OPTIONAL { ?ont owl:ontologyIRI ?niri. } OPTIONAL { ?ont owl:versionIRI ?nver . }\n"
              . "}";
     }
     $results = $this->directQuery($query);                      
