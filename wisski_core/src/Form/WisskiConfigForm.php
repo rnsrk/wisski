@@ -73,11 +73,19 @@ class WisskiConfigForm extends FormBase {
       '#type' => 'fieldset',
       '#title' => $this->t('Miscellaneous Settings'),
     );
+    
     $subform['use_only_main_bundles'] = array(
       '#type' => 'checkbox',
       '#default_value' => $settings->get('wisski_use_only_main_bundles'),
       '#title' => $this->t('Do you want to use only main bundles for display?'),
     );
+    
+    $subform['use_views_for_navigate'] = array(
+      '#type' => 'checkbox',
+      '#default_value' => $settings->get('wisski_use_views_for_navigate'),
+      '#title' => $this->t('Do you want to use views for navigation?'),
+    );
+    
     $subform['pager_max'] = array(
       '#type' => 'number',
       '#default_value' => $settings->get('wisski_max_entities_per_page'),
@@ -136,6 +144,7 @@ class WisskiConfigForm extends FormBase {
     $settings = $form['#wisski_settings'];
     $new_vals = $form_state->getValues();
     $settings->set('wisski_use_only_main_bundles',$new_vals['use_only_main_bundles']);
+    $settings->set('wisski_use_views_for_navigate', $new_vals['use_views_for_navigate']);
     $settings->set('wisski_max_entities_per_page',$new_vals['pager_max']);
     $settings->set('wisski_default_columns_per_page',$new_vals['pager_columns']);
     $settings->set('wisski_preview_image_max_width_pixel',$new_vals['preview_image']['max_width']);
