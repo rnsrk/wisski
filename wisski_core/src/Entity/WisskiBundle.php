@@ -37,6 +37,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
  *     "on_empty",
  *     "fallback_title",
  *     "pager_limit",
+ *     "menu_items",
  *   },
  *
  *   bundle_of = "wisski_individual",
@@ -63,6 +64,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   const DONT_SHOW = 1;
   const FALLBACK_TITLE = 2;
   const DEFAULT_PATTERN = 3;
+
+  const MENU_CREATE = 1;
+  const MENU_ENABLE = 2;
   
   /**
    * The field based pattern for the entity title generation.
@@ -91,6 +95,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    * The options array for this bundle's title pattern
    */
   protected $path_options = array();
+
+
+  protected $menu_items = array();
   
   /**
    * Where should this be listed?
@@ -550,6 +557,12 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    * e.g. to navigate, find or create
    */
   public function addBundleToMenu($menu_name, $destination_route = "entity.wisski_bundle.entity_list", $parameters = array() ) {
+    
+    $menu_mode = $this->getCreateMenuItems($menu_name, self::MENU_CREATE);
+    if (!$menu_mode) {
+      // the setting says that we should not create a menu item
+      return;
+    }
 
     if(empty($parameters))
       $parameters = array("wisski_bundle" => $this->id());
@@ -616,7 +629,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         'link' => ['uri' => $link->getUrl()->toUriString()],
 #        'langcode' => $node->language()->getId(),
       ));
-      $entity->enabled->value = 1;
+      $entity->enabled->value = $menu_mode & self::MENU_ENABLE;
     }
 
 #    dpm($entity, "bundle");
@@ -628,5 +641,46 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $entity->weight->value = isset($entity->weight->value) ? $entity->weight->value : $weight;
     $entity->save();
   }
+
+  
+  /** For each of the menus associated with this bundle, returns information 
+   * whether to create a menu item for this bundle and whether it should be 
+   * enabled by default.
+   *
+   * @param menu_name restrict the return value to the info for this menu
+   * @param filter filter the menus' info. Can be MENU_CREATE, MENU_ENABLE or a
+            combination thereof
+   * @return an array where the keys are menu ids and the values are 
+   *         MENU_CREATE, MENU_ENABLE or a combination thereof. If menu_name is
+   *         given, only the menu's info is returned; if the menu does not 
+   *         exist or was filtered out, FALSE is returned.
+   */
+  public function getCreateMenuItems($menu_name = NULL, $filter = NULL) {
+    $menus = $this->menu_items + self::getCreateMenuItemDefaults();
+    if ($filter !== NULL) {
+      $menus = array_filter($menus, function($v) use ($filter) {
+        return $v & $filter;
+      });
+    }
+    if ($menu_name !== NULL) {
+      if (isset($menus[$menu_name])) {
+        return $menus[$menu_name];
+      }
+      // either the menu name does not exist or it was filtered out
+      return FALSE;
+    }
+    return $menus;
+  }
+
+
+  public function setCreateMenuItems($items) {
+    $this->menu_items = $items;
+  }
+
+  public static function getCreateMenuItemDefaults() {
+    // currently we always want to create items for every menu
+    return array_fill_keys(array_keys(self::getWissKIMenus()), self::MENU_CREATE | self::MENU_ENABLE);
+  }
+
 
 }

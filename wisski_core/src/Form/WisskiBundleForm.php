@@ -7,6 +7,8 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
 
+use Drupal\wisski_core\Entity\WisskiBundle;
+
 
 class WisskiBundleForm extends EntityForm {
   
@@ -16,7 +18,6 @@ class WisskiBundleForm extends EntityForm {
   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
 
-    /** @var \Drupal\media_entity\MediaBundleInterface $bundle */
     $form['#entity'] = $bundle = $this->entity;
 
     if ($this->operation == 'add') {
@@ -54,6 +55,29 @@ class WisskiBundleForm extends EntityForm {
       '#default_value' => $bundle->get('description'),
       '#description' => t('Describe this bundle. The text will be displayed on the <em>Add new WisskiEntity</em> page.'),
     );
+    
+    $menus = WisskiBundle::getWissKIMenus();
+    foreach ($menus as $mid => $foo) {
+      if ($menu = entity_load('menu', $mid)) {
+        $menus[$mid] = $menu->label();
+      } else {
+        unset($menus[$mid]);
+      }
+    }
+    $form['create_menu_items'] = array(
+      '#title' => t('Create menu items'),
+      '#type' => 'checkboxes',
+      '#options' => $menus,
+      '#default_value' => array_keys($bundle->getCreateMenuItems(NULL, WisskiBundle::MENU_CREATE)),
+    );
+
+    $form['enable_menu_items'] = array(
+      '#title' => t('Enable menu items'),
+      '#type' => 'checkboxes',
+      '#options' => $menus,
+      '#default_value' => array_keys($bundle->getCreateMenuItems(NULL, WisskiBundle::MENU_ENABLE)),
+    );
+    
     return $form;
   }
 
@@ -84,7 +108,17 @@ class WisskiBundleForm extends EntityForm {
   public function save(array $form, FormStateInterface $form_state) {
     /** @var  \Drupal\wisski_core\WisskiBundleInterface $bundle */
     $bundle = $this->entity;
-    
+
+    $menu_items = array();
+    foreach ($bundle->create_menu_items as $mid => $v) {
+      $menu_items[$mid] = $v ? WisskiBundle::MENU_CREATE : 0;
+    }
+    foreach ($bundle->enable_menu_items as $mid => $v) {
+      if ($v) $menu_items[$mid] |= WisskiBundle::MENU_ENABLE;
+    }
+    unset($bundle->create_menu_items);
+    unset($bundle->enable_menu_items);
+    $bundle->setCreateMenuItems($menu_items);
     $status = $bundle->save();
 
     $t_args = array('%name' => $bundle->label());

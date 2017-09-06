@@ -163,3 +163,12 @@ wisski.test_form:
     _form: '\Drupal\wisski_core\Form\WisskiTestForm'
   requirements:
     _access: 'TRUE'
+
+wisski.menus.recreate_items:
+  path: '/admin/config/wisski/menus/recreate/{menu_name}'
+  defaults:
+    _controller: '\Drupal\wisski_core\Controller\WisskiBundleMenuController::recreateMenuItems'
+    menu_name: NULL
+  requirements:
+    _permission: 'administer wisski'
+    
