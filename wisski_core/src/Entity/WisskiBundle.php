@@ -547,7 +547,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $entity = current($entities);
     
     if(!empty($entity))
-      $entity->delete();  
+      $entity->delete();
+    
+    return $entity;
   
   }
 

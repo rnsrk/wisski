@@ -1262,6 +1262,12 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       
       $view->save();
       
+      $menus = $bundle->getWissKIMenus();
+      
+      $ret = $bundle->deleteBundleFromMenu('navigate', $menus['navigate']);
+      
+#      dpm($ret, "yay");
+      
     } else {    
 //    $menus = array("navigate" => 'entity.wisski_bundle.entity_list', "create" => 'entity.wisski_individual_create.list');
       $menus = $bundle->getWissKIMenus();    

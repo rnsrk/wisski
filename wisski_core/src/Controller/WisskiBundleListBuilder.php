@@ -7,6 +7,7 @@ use Drupal\Core\Entity\EntityHandlerInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Url;
 use Drupal\wisski_core\Entity\WisskiEntity;
+use Drupal\wisski_core\Entity\WisskiBundle;
 
 class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityHandlerInterface {
 
@@ -40,16 +41,28 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
       $outentities = array();
             
       $sortlist = array();
+      
+      $menu_tree_data = array();
+      
       foreach($entities as $key => $entity) {
         $menus = $entity->getWissKIMenus();
         
-        if($this->type == self::NAVIGATE)
-          $menu_items = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => 'navigate', 'title' => $entity->label(), 'link__uri' => 'route:' . $menus['navigate'] . ';' . 'wisski_bundle=' . $entity->id() ]);
-        else
+        if($this->type == self::NAVIGATE) {
+          $p = new \Drupal\Core\Menu\MenuTreeParameters();
+          $p->addCondition('title', $entity->label(), '=');
+
+          $menu_tree_data = \Drupal::service('menu.link_tree')->load('navigate', $p);
+          $menu_items = array();
+          
+          foreach($menu_tree_data as $data) {
+            $menu_items[] = $data->link;
+          }
+#          $menu_items = \Drupal::entityTypeManager()->getStorage('menu_tree')->loadByProperties(['menu_name' => 'navigate', 'title' => $entity->label() ])
+        } else
           $menu_items = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => 'create', 'title' => $entity->label(), 'link__uri' => 'route:' . $menus['create'] . ';' . 'wisski_bundle=' . $entity->id() ]);
         
         $menu_items = array_filter($menu_items, function($m) { return $m->isEnabled(); });
-
+        #dpm($menu_items);
         // there should not be more than one.
         $menu_items = current($menu_items);
         
@@ -105,7 +118,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
   /**
    * {@inheritdoc}
    */
-  public function buildRow(EntityInterface $entity) {
+  public function buildRow($entity) {
     
     // old: in case of navigate and create - exclude all non-top-groups
     // we don't need to do this here anymore, because we do this in
@@ -124,10 +137,10 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     }
     */
     
-    $menus = $entity->getWissKIMenus();
+    $menus = WisskiBundle::getWissKIMenus();
     
     switch ($this->type) {
-      case self::NAVIGATE: return $this->buildNavigateRow($entity, $menus['navigate']);
+      case self::NAVIGATE: return $this->buildMenuNavigateRow($entity, $menus['navigate']); //$this->buildNavigateRow($entity, $menus['navigate']);
       case self::CREATE: return $this->buildCreateRow($entity, $menus['create']);
       case self::CONFIG: return $this->buildConfigRow($entity);
     }
@@ -135,11 +148,35 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     return array();
   }
   
+  private function buildMenuNavigateRow($entity, $menu_param = "entity.wisski_bundle.entity_list") {
+
+    $p = new \Drupal\Core\Menu\MenuTreeParameters();
+    $p->addCondition('title', $entity->label(), '=');
+
+    $menu_tree_data = \Drupal::service('menu.link_tree')->load('navigate', $p);
+        
+    $menu_tree_data = current($menu_tree_data);
+    $entities = $menu_tree_data->link;
+        
+    $row['label'] = array(
+      'data' => array(
+        '#type' => 'link',
+        '#url' => $entities->getUrlObject(),
+        '#title' => $entities->getTitle(),
+#        '#url' => Url::fromRoute('entity.wisski_bundle.entity_list')
+#          ->setRouteParameters(array('wisski_bundle' => $entity->id())),
+#        '#title' => $entity->label(),
+      ),
+    );
+  
+    return $row;
+  }
+  
   private function buildNavigateRow($entity, $menu_param = "entity.wisski_bundle.entity_list") {
 
     // see if there is a row in the navigation menu.
-    $entities = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => 'navigate', 'title' => $entity->label(), 'link__uri' => 'route:' . $menu_param . ';' . 'wisski_bundle=' . $entity->id() ]);
-
+    $entities = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => 'navigate', 'title' => $entity->label() ]);
+    
     // there should not be more than one.
     $entities = current($entities);
 
