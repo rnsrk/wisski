@@ -62,9 +62,3 @@ entity.wisski_individual.bundle_menu:
   description: 'Manage WissKI Entities'
   route_name: entity.wisski_bundle.list
 
-entity.wisski_bundle.edit_form:
-  parent: entity.wisski_individual.bundle_menu:
-  route_name: entity.wisski_individual.edit_form
-  title: Edit
-  weight: -100
-
