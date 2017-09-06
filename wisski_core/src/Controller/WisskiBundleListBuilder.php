@@ -39,15 +39,16 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
 
       $outentities = array();
             
-#      dpm($entities, "load");
       $sortlist = array();
       foreach($entities as $key => $entity) {
         $menus = $entity->getWissKIMenus();
         
         if($this->type == self::NAVIGATE)
-          $menu_items = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => 'navigate', 'title' => $entity->label(), 'link__uri' => 'route:' . $menus['navigate'] . ';' . 'wisski_bundle=' . $entity->id(), "enabled" => 1 ]);
+          $menu_items = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => 'navigate', 'title' => $entity->label(), 'link__uri' => 'route:' . $menus['navigate'] . ';' . 'wisski_bundle=' . $entity->id() ]);
         else
-          $menu_items = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => 'create', 'title' => $entity->label(), 'link__uri' => 'route:' . $menus['create'] . ';' . 'wisski_bundle=' . $entity->id(), "enabled" => 1 ]);
+          $menu_items = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => 'create', 'title' => $entity->label(), 'link__uri' => 'route:' . $menus['create'] . ';' . 'wisski_bundle=' . $entity->id() ]);
+        
+        $menu_items = array_filter($menu_items, function($m) { return $m->isEnabled(); });
 
         // there should not be more than one.
         $menu_items = current($menu_items);
@@ -122,8 +123,6 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
       }
     }
     */
-    
- #   dpm($entity);
     
     $menus = $entity->getWissKIMenus();
     
@@ -231,13 +230,11 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
    * {@inheritdoc}
    */
   public function render($type = self::CONFIG) {
-  
     $this->type = $type;
     $build = parent::render();
     $build['#empty'] = t('No WissKI bundle available. <a href="@link">Add media bundle</a>.', array(
       '@link' => Url::fromRoute('entity.wisski_bundle.add')->toString(),
     ));
-        
     return $build;
   }
 

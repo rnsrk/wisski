@@ -15,7 +15,6 @@ class WisskiBundleMenuController extends ControllerBase {
   public function recreateMenuItems ($menu_name = NULL) {
     $this->emptyMenus($menu_name);
     $this->updateMenus($menu_name);
-    
     drupal_set_message($this->t("The WissKI menus' items have been recreated"));
     return $this->redirect('<front>');
   }
@@ -41,15 +40,13 @@ class WisskiBundleMenuController extends ControllerBase {
 
 
   public function updateMenus ($menu_name) {
-    
     $bundles = WisskiBundle::loadMultiple();
     $menus = WisskiBundle::getWissKIMenus();
     foreach ($bundles as $bundle) {
-      foreach ($menus as $menu_name => $foo) {
-        $bundle->addBundleToMenu($menu_name);
+      foreach ($menus as $menu_name => $route_name) {
+        $bundle->addBundleToMenu($menu_name, $route_name);
       }
     }
-
   }
 
   
