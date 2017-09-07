@@ -749,7 +749,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     } else { // there already is one.    
 
       // if it was disabled by the user, we want to stay disabled!
-      if($display->toArray()['hidden'][$fieldid])
+      if(isset($display->toArray()['hidden']) && isset($display->toArray()['hidden'][$fieldid]))
         $hidden = TRUE;  
       else {
         $comp = $display->getComponent($fieldid);
