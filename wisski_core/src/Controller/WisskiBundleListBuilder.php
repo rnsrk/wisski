@@ -118,7 +118,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
   /**
    * {@inheritdoc}
    */
-  public function buildRow($entity) {
+  public function buildRow(\Drupal\Core\Entity\EntityInterface $entity) {
     
     // old: in case of navigate and create - exclude all non-top-groups
     // we don't need to do this here anymore, because we do this in
