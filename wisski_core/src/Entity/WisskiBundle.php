@@ -862,7 +862,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         ),
       ),
        'sorts' => array(),
-       'title' => 'test',
+       'title' => $bundle_name,
        'header' => array(
          'result' => array(
            'id' => 'result',
