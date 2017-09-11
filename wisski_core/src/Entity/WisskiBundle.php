@@ -8,6 +8,7 @@ use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
+use Drupal\views\Entity\View;
 
 use Drupal\Core\Entity\EntityStorageInterface;
 /**
@@ -553,27 +554,436 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   }
 
+  /**
+   * Creates a view for navigation
+   *
+   */   
+  public function addViewForBundle($menu_name, $weight, $enabled) {
+    $bundleid = $this->id();
+    $bundle_name = $this->label();
+    
+    $options = array();
+    $options['base_table'] = "wisski_individual";
+    $options['id'] = $bundleid;
+    $options['label'] = $bundle_name;
+    $options['module'] = "views";
+    $options['core'] = "8.x";
+    $options['base_field'] = "eid";
+    $options['originalId'] = $bundleid;
+
+    $options['display']['default'] = array(
+      'display_plugin' => 'default',
+      'id' => 'default',
+      'display_title' => 'Master',
+      'position' => 0,
+      'display_options' => array(
+        'access' => array('type' => 'perm', 'options' => array( 'perm' => 'view wisski content' ) ),
+        'cache' => array('type' => 'tag', 'options' => array() ),
+        'query' => array('type' => 'views_query', 'options' => array() ),
+        'exposed_form' => array('type' => 'basic', 'options' => array(
+          'submit_button' => 'Apply',
+          'reset_button' => false,
+          'reset_button_label' => 'Reset',
+          'exposed_sorts_label' => 'Sort by',
+          'expose_sort_order' => true,
+          'sort_asc_label' => 'Asc',
+          'sort_desc_label' => 'Desc',
+          ),
+        ),
+       'pager' => array('type' => 'full', 'options' => array(
+         'items_per_page' => 24,
+         'offset' => 0,
+         'id' => 0,
+         'total_pages' => NULL,
+         'tags' => array('previous' => '<<', 'next' => '>>', 'first' => '<< First', 'last' => 'Last >>'),
+         'expose' => array(
+           'items_per_page' => false,
+           'items_per_page_label' => 'Items per page',
+           'items_per_page_options' => '5, 10, 25, 50',
+           'items_per_page_options_all' => false,
+           'items_per_page_options_all_label' => '- All -',
+           'offset' => false,
+           'offset_label' => 'Offset',
+         ),
+         'quantity' => 9,
+         ),
+       ),
+       'style' => array(
+         'type' => 'grid',
+         'options' => array(
+           'grouping' => array(),
+           'columns' => 6,
+           'automatic_width' => true,
+           'alignment' => 'horizontal',
+           'col_class_default' => true,
+           'col_class_custom' => '',
+           'row_class_default' => true,
+           'row_class_custom' => '',
+         ),
+       ),
+       'row' => array(
+         'type' => 'fields',
+       ),
+       'fields' => array(
+         'eid' => array(
+           'id' => 'eid',
+           'table' => 'wisski_individual',
+           'field' => 'eid',
+           'relationship' => 'none',
+           'group_type' => 'group',
+           'admin_label' => '',
+           'label' => '',
+           'exclude' => true,
+           'alter' => 
+          array(
+             'alter_text' => false,
+             'text' => '',
+             'make_link' => false,
+             'path' => '',
+             'absolute' => false,
+             'external' => false,
+             'replace_spaces' => false,
+             'path_case' => 'none',
+             'trim_whitespace' => false,
+             'alt' => '',
+             'rel' => '',
+             'link_class' => '',
+             'prefix' => '',
+             'suffix' => '',
+             'target' => '',
+             'nl2br' => false,
+             'max_length' => 0,
+             'word_boundary' => true,
+             'ellipsis' => true,
+             'more_link' => false,
+             'more_link_text' => '',
+             'more_link_path' => '',
+             'strip_tags' => false,
+             'trim' => false,
+             'preserve_tags' => '',
+             'html' => false,
+          ),
+           'element_type' => '',
+           'element_class' => '',
+           'element_label_type' => '',
+           'element_label_class' => '',
+           'element_label_colon' => false,
+           'element_wrapper_type' => '',
+           'element_wrapper_class' => '',
+           'element_default_classes' => true,
+           'empty' => '',
+           'hide_empty' => false,
+           'empty_zero' => false,
+           'hide_alter_empty' => true,
+           'entity_type' => 'wisski_individual',
+           'plugin_id' => 'standard',
+        ),
+         'preview_image' => 
+        array(
+           'id' => 'preview_image',
+           'table' => 'wisski_individual',
+           'field' => 'preview_image',
+           'relationship' => 'none',
+           'group_type' => 'group',
+           'admin_label' => '',
+           'label' => '',
+           'exclude' => false,
+           'alter' => 
+          array(
+             'alter_text' => false,
+             'text' => '',
+             'make_link' => false,
+             'path' => '',
+             'absolute' => false,
+             'external' => false,
+             'replace_spaces' => false,
+             'path_case' => 'none',
+             'trim_whitespace' => false,
+             'alt' => '',
+             'rel' => '',
+             'link_class' => '',
+             'prefix' => '',
+             'suffix' => '',
+             'target' => '',
+             'nl2br' => false,
+             'max_length' => 0,
+             'word_boundary' => true,
+             'ellipsis' => true,
+             'more_link' => false,
+             'more_link_text' => '',
+             'more_link_path' => '',
+             'strip_tags' => false,
+             'trim' => false,
+             'preserve_tags' => '',
+             'html' => false,
+          ),
+           'element_type' => '',
+           'element_class' => '',
+           'element_label_type' => '',
+           'element_label_class' => '',
+           'element_label_colon' => false,
+           'element_wrapper_type' => '',
+           'element_wrapper_class' => '',
+           'element_default_classes' => true,
+           'empty' => '',
+           'hide_empty' => false,
+           'empty_zero' => false,
+           'hide_alter_empty' => true,
+           'click_sort_column' => 'target_id',
+           'type' => 'image_url',
+           'settings' => 
+          array(
+             'image_style' => 'medium',
+          ),
+           'group_column' => '',
+           'group_columns' => 
+          array(
+          ),
+           'group_rows' => true,
+           'delta_limit' => 0,
+           'delta_offset' => 0,
+           'delta_reversed' => false,
+           'delta_first_last' => false,
+           'multi_type' => 'separator',
+           'separator' => ', ',
+           'field_api_classes' => false,
+           'entity_type' => 'wisski_individual',
+           'plugin_id' => 'field',
+        ),
+         'title' => 
+        array(
+           'id' => 'title',
+           'table' => 'wisski_individual',
+           'field' => 'title',
+           'relationship' => 'none',
+           'group_type' => 'group',
+           'admin_label' => '',
+           'label' => '',
+           'exclude' => false,
+           'alter' => 
+          array(
+             'alter_text' => false,
+             'text' => '',
+             'make_link' => true,
+             'path' => '/wisski/navigate/{{eid}}/view?wisski_bundle=' . $bundleid,
+             'absolute' => false,
+             'external' => false,
+             'replace_spaces' => false,
+             'path_case' => 'none',
+             'trim_whitespace' => false,
+             'alt' => '',
+             'rel' => '',
+             'link_class' => '',
+             'prefix' => '',
+             'suffix' => '',
+             'target' => '',
+             'nl2br' => false,
+             'max_length' => 0,
+             'word_boundary' => true,
+             'ellipsis' => true,
+             'more_link' => false,
+             'more_link_text' => '',
+             'more_link_path' => '',
+             'strip_tags' => false,
+             'trim' => false,
+             'preserve_tags' => '',
+             'html' => false,
+          ),
+           'element_type' => '',
+           'element_class' => '',
+           'element_label_type' => '',
+           'element_label_class' => '',
+           'element_label_colon' => false,
+           'element_wrapper_type' => '',
+           'element_wrapper_class' => '',
+           'element_default_classes' => true,
+           'empty' => '',
+           'hide_empty' => false,
+           'empty_zero' => false,
+           'hide_alter_empty' => true,
+           'entity_type' => 'wisski_individual',
+           'plugin_id' => 'standard',
+        ),
+      ),
+       'filters' => 
+      array(
+         'bundle' => 
+        array(
+           'id' => 'bundle',
+           'table' => 'wisski_individual',
+           'field' => 'bundle',
+           'relationship' => 'none',
+           'group_type' => 'group',
+           'admin_label' => '',
+           'operator' => 'IN',
+           'value' => 
+          array(
+             $bundleid => $bundleid,
+          ),
+           'group' => 1,
+           'exposed' => false,
+           'expose' => 
+          array(
+             'operator_id' => '',
+             'label' => '',
+             'description' => '',
+             'use_operator' => false,
+             'operator' => '',
+             'identifier' => '',
+             'required' => false,
+             'remember' => false,
+             'multiple' => false,
+             'remember_roles' => 
+            array(
+               'authenticated' => 'authenticated',
+            ),
+             'reduce' => false,
+          ),
+           'is_grouped' => false,
+           'group_info' => 
+          array(
+             'label' => '',
+             'description' => '',
+             'identifier' => '',
+             'optional' => true,
+             'widget' => 'select',
+             'multiple' => false,
+             'remember' => false,
+             'default_group' => 'All',
+             'default_group_multiple' => 
+            array(
+            ),
+             'group_items' => 
+            array(
+            ),
+          ),
+           'entity_type' => 'wisski_individual',
+           'plugin_id' => 'wisski_bundle',
+        ),
+      ),
+       'sorts' => array(),
+       'title' => 'test',
+       'header' => array(
+         'result' => array(
+           'id' => 'result',
+           'table' => 'views',
+           'field' => 'result',
+           'relationship' => 'none',
+           'group_type' => 'group',
+           'admin_label' => '',
+           'empty' => false,
+           'content' => 'Displaying @start - @end of @total',
+           'plugin_id' => 'result',
+         ),
+       ),
+       'footer' => array(),
+       'empty' => array(),
+       'relationships' => array(),
+       'arguments' => array(),
+       'display_extenders' => array(),
+       'use_ajax' => true,
+    ),
+     'cache_metadata' => 
+    array(
+       'max-age' => -1,
+       'contexts' => 
+      array (
+        0 => 'languages:language_interface',
+        1 => 'url.query_args',
+      ),
+       'tags' => 
+      array(
+      ),
+    ),
+   );
+
+    $options['display'][$bundleid] = array(
+      'display_plugin' => 'page',
+      'id' => $bundleid,
+      'display_title' => $bundle_name,
+      'position' => 1,
+      'display_options' => array(
+        'display_extenders' => array(),
+        'path' => 'wisski_views/' . $bundleid,
+        'menu' => array(
+          'type' => 'normal',
+          'title' => $bundle_name,
+          'description' => '',
+          'expanded' => FALSE,
+          'parent' => '',
+          'weight' => $weight,
+          'context' => '0',
+          'menu_name' => $menu_name,
+        ),
+      ),
+      'cache_metadata' => array(
+        'max-age' => -1,
+        'contexts' => array (
+          0 => 'languages:language_interface',
+          1 => 'url.query_args',
+        ),
+        'tags' => array(),
+      ),
+    );
+   
+    $view = new View($options, 'view');
+    
+    $view->enable();
+      
+    $view->save();
+  }
+  
+  public function addMenuItem($menu_name, $weight, $enabled, $destination_route, $parameters) {
+    $link = \Drupal\Core\Link::createFromRoute($this->label(), $destination_route, $parameters);
+    
+    $entity = MenuLinkContent::create(array(
+      'link' => ['uri' => $link->getUrl()->toUriString()],
+       #        'langcode' => $node->language()->getId(),
+      ));
+
+    $entity->enabled->value = $enabled;
+
+
+#    dpm($entity, "bundle");
+#    $entity->id = $name;
+    $entity->title->value = trim($this->label());
+#    $entity->description->value = trim($group->getDe);
+    $entity->menu_name->value = $menu_name;
+#    $entity->parent->value = $values['parent'];
+    $entity->weight->value = isset($entity->weight->value) ? $entity->weight->value : $weight;
+    $entity->save();
+  }
 
   /**
    * Adds a menu entry for a bundle
    * e.g. to navigate, find or create
    */
   public function addBundleToMenu($menu_name, $destination_route = "entity.wisski_bundle.entity_list", $parameters = array() ) {
-    
+#    drupal_set_message("I should add " . $this->id() . " to $menu_name");    
     $menu_mode = $this->getCreateMenuItems($menu_name, self::MENU_CREATE);
+
+    $weight = 0;
+    $enabled = TRUE;
+    $found_menu_item = FALSE;
+    $found_view = FALSE;
+    
+    $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
+    $use_views = $set->get('wisski_use_views_for_navigate');
+    
+    // we can only use views for navigate
+    if($use_views && $menu_name != 'navigate') {
+      $use_views = FALSE;
+    }
+
     if (!$menu_mode) {
       // the setting says that we should not create a menu item
       return;
     }
 
+
+    // first: get the old weight
     if(empty($parameters))
       $parameters = array("wisski_bundle" => $this->id());
-//    $name = 'wisski_menu_' . $this->id();
-    /** @var \Drupal\menu_link_content\MenuLinkContentInterface $entity */
-
- //   $entity = MenuLinkContent::load($name);
- 
-    $link = \Drupal\Core\Link::createFromRoute($this->label(), $destination_route, $parameters);
     
     // generate the parameter-string for the menu_link_content table
     $params = "";
@@ -584,35 +994,88 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     // kill the last ; in the end
     $params = substr($params, 0, -1);
 
-#    dpm('route:' . $destination_route . ';' . $params);
-
     // get the matching entities     
     $entities = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => $menu_name, 'title' => $this->label(), 'link__uri' => 'route:' . $destination_route . ';' . $params ]);
+    
+    if(!empty($entities)) {
+      // typically there should be only one.
+      $entity = current($entities);
 
-    // typically there should be only one.
-    $entity = current($entities);
-    
-    $weight = 0;
-    
-    // only act if there is no entity. Otherwise we can just check if everything is ok.
+      $found_menu_item = TRUE;
 
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+      if(!empty($entity)) {
+        if(isset($entity->weight->value))
+          $weight = $entity->weight->value;
+        if(isset($entity->enabled->value))
+          $enabled = $entity->enabled->value;      
+      }
+    }
     
-    $groups = array();
-    //we ask all pathbuilders if they know the bundle
-    foreach ($pbs as $pb_id => $pb) {
-      $groups = array_merge($groups, $pb->getGroupsForBundle($this->id()));
+    $view = NULL;
     
-      if(!empty($groups)) // we take the first one for now
-        $group = current($groups);
+    // now we should have the values for the menu-part... lets see if there is a view?
+    // only do this for navigate
+    if($menu_name == "navigate") {
+      $view = \Drupal::service('entity.manager')->getStorage('view')->load($this->id());
+    
+      if(!empty($view)) {
+        $display = $view->getDisplay($this->id());
+        if(isset($display['display_options']['menu']['weight']))
+          $weight = $display['display_options']['menu']['weight'];
+        if(isset($display['display_options']['menu']['enabled']))
+          $enabled =  $display['display_options']['menu']['enabled'];
+        $found_view = TRUE;
+      }
+    }
+     
+    // if we didn't find a view or a menu we can assume pb-input as truth
+    if(!$found_view && !$found_menu_item) {
+   
+#      $weight = 0;
+    
+      // only act if there is no entity. Otherwise we can just check if everything is ok.
+      $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    
+      $groups = array();
+      //we ask all pathbuilders if they know the bundle
+      foreach ($pbs as $pb_id => $pb) {
+        $groups = array_merge($groups, $pb->getGroupsForBundle($this->id()));
+    
+        if(!empty($groups)) // we take the first one for now
+          $group = current($groups);
         
-      if(!empty($group)) {
-        $pbp = $pb->getPbPath($group->id());
-        $weight = $pbp['weight'];
-        break;
-      }    
-    }  
-  
+        if(!empty($group)) {
+          $pbp = $pb->getPbPath($group->id());
+          $weight = $pbp['weight'];
+          break;
+        }    
+      }
+    }
+ 
+    drupal_set_message("I should add " . $this->id() . " to $menu_name and v:$found_view and m:$found_menu_item and uv:$use_views with weight:$weight and enabled " . serialize($enabled));
+    
+    // if there is a view and we are in menu create mode, we delete the view and create the menu.
+    if($found_view && !$use_views && !empty($view)) {
+      $view->delete();
+      #$this->addViewForBundle($menu_name, $weight, $enabled);
+    }
+    
+    // if there is a menu but we want to use views
+    if($found_menu_item && $use_views) {
+      $this->deleteBundleFromMenu($menu_name,  $destination_route, $parameters);
+    }
+    
+    // if we want to use views and we didn't find any - create it
+    if(!$found_view && $use_views) {
+      $this->addViewForBundle($menu_name, $weight, $enabled);
+    }
+    
+    // we didn't find a menu item and we don't want to use views
+    if(!$found_menu_item && !$use_views) {
+      $this->addMenuItem($menu_name, $weight, $enabled, $destination_route, $parameters);
+    }
+    
+        
       // for further usage: language coding... currently no support at this point
 /*
     if ($entity->isTranslatable()) {
@@ -624,24 +1087,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       }
     }
     */
-    if(empty($entity)) {
-#      $link = \Drupal\Core\Link::createFromRoute($this->label(), "entity.wisski_bundle.entity_list", array("wisski_bundle" => $this->id()));
-      // Create a new menu_link_content entity.
-      $entity = MenuLinkContent::create(array(
-        'link' => ['uri' => $link->getUrl()->toUriString()],
-#        'langcode' => $node->language()->getId(),
-      ));
-      $entity->enabled->value = $menu_mode & self::MENU_ENABLE;
-    }
-
-#    dpm($entity, "bundle");
-#    $entity->id = $name;
-    $entity->title->value = trim($this->label());
-#    $entity->description->value = trim($group->getDe);
-    $entity->menu_name->value = $menu_name;
-#    $entity->parent->value = $values['parent'];
-    $entity->weight->value = isset($entity->weight->value) ? $entity->weight->value : $weight;
-    $entity->save();
+    
   }
 
   
