@@ -167,7 +167,7 @@ class WisskiOntologyForm extends FormBase {
   }
 
 
-  public function ajaxStores(array $form, FormStateInterface $form_state) {
+  public static function ajaxStores(array $form, FormStateInterface $form_state) {
  #   dpm("yay!");
     return $form['stores'];
   }
