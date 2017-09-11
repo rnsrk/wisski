@@ -1052,7 +1052,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       }
     }
  
-    drupal_set_message("I should add " . $this->id() . " to $menu_name and v:$found_view and m:$found_menu_item and uv:$use_views with weight:$weight and enabled " . serialize($enabled));
+#    drupal_set_message("I should add " . $this->id() . " to $menu_name and v:$found_view and m:$found_menu_item and uv:$use_views with weight:$weight and enabled " . serialize($enabled));
     
     // if there is a view and we are in menu create mode, we delete the view and create the menu.
     if($found_view && !$use_views && !empty($view)) {
