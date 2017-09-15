@@ -25,7 +25,7 @@ table {
   display: table-cell;
 }
 
-form .form-item label::after {
+form .form-item label:after {
   content: ":";
 }
 
@@ -67,7 +67,7 @@ form .form-item table thead tr th.field-label {
   text-transform: none;
 }
 
-form .form-item table thead tr th.field-label::after {
+form .form-item table thead tr th.field-label:after {
   content: ":";
 }
 
@@ -85,7 +85,7 @@ form .form-item table tbody td input {
 
 form .form-item .field-add-more-submit.button,
 form .form-item .field-add-more-submit.button:hover,
-form .form-item .field-add-more-submit.button:focus,
+form .form-item .field-add-more-submit.button:focus
 {
 
   background-image: url('../../images/icons/plus.png');
