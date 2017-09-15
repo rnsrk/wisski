@@ -313,7 +313,7 @@ wisski_tick("end exec views");
           if(strpos($preview_image_uri, "public://") !== FALSE)
             $preview_image_uri = str_replace("public:/", \Drupal::service('stream_wrapper.public')->baseUrl(), $preview_image_uri);
 
-          $row['preview_image'] = '<a href="http://va.gnm.de/posse/wisski/navigate/'.$eid.'/view"><img src="'. $preview_image_uri .'" /></a>';
+          $row['preview_image'] = '<a href="/wisski/navigate/'.$eid.'/view"><img src="'. $preview_image_uri .'" /></a>';
         }
       }
       elseif ($field == 'bundle' || $field == 'bundle_label' || $field == 'bundles') {
