@@ -3,6 +3,7 @@
 namespace Drupal\wisski_core\Plugin\views\query;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Url;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\query\QueryPluginBase;
 use Drupal\views\ResultRow;
@@ -313,7 +314,7 @@ wisski_tick("end exec views");
           if(strpos($preview_image_uri, "public://") !== FALSE)
             $preview_image_uri = str_replace("public:/", \Drupal::service('stream_wrapper.public')->baseUrl(), $preview_image_uri);
 
-          $row['preview_image'] = '<a href="/wisski/navigate/'.$eid.'/view"><img src="'. $preview_image_uri .'" /></a>';
+          $row['preview_image'] = '<a href="' . \Drupal::service('stream_wrapper.public')->baseUrl() . '/wisski/navigate/'.$eid.'/view"><img src="'. $preview_image_uri .'" /></a>';
         }
       }
       elseif ($field == 'bundle' || $field == 'bundle_label' || $field == 'bundles') {
