@@ -401,7 +401,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
   /**
    * {@inheritdoc}
    */
-  public function ajaxPathData(array $form, FormStateInterface $form_state) {
+  public static function ajaxPathData(array $form, FormStateInterface $form_state) {
     return $form['field_form']['display']['field_display'];
   }
   
