@@ -48,7 +48,5 @@ class WisskiBundleMenuController extends ControllerBase {
       }
     }
   }
-
-  
   
 }
