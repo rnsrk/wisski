@@ -8,11 +8,11 @@ use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\query\QueryPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\views\ViewExecutable;
+
 use Drupal\wisski_salz\AdapterHelper;
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\wisski_core\Controller\WisskiEntityListBuilder;
 use Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWithPB;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Views query plugin for an SQL query.
@@ -124,6 +124,33 @@ class WisskiIndividualQuery extends QueryPluginBase {
   */
   public function ensureTable($t, $r) {
     // do nothing
+  }
+  
+  public function query($get_count = FALSE) {
+    
+    $query = clone $this->query;
+
+    // Add the query tags.
+    if (!empty($this->options['query_tags'])) {
+      foreach ($this->options['query_tags'] as $tag) {
+        $query->addTag($tag);
+      }
+    }
+    
+    if ($get_count) {
+      $query->count(); 
+      return $query;
+    }
+
+    
+    if($this->orderby) {
+      foreach($this->orderby as $elem) {
+        $query->sort($elem['field'], $elem['direction']);
+      }
+    }
+
+    return $query;
+
   }
 
 
@@ -251,6 +278,9 @@ wisski_tick("end exec views");
 
   
   protected function fillResultValues($entity_ids) {
+
+    $uri_to_eids_per_aid = [];
+
     // we must not load the whole entity unless explicitly wished. this is way too costly!
 #    dpm(microtime(), "beginning of fill result values");
     $values_per_row = [];
@@ -311,11 +341,13 @@ wisski_tick("end exec views");
           $preview_image_uri = \Drupal::entityTypeManager()->getStorage('wisski_individual')->getPreviewImageUri($eid,$bid);
           
 
-          if(strpos($preview_image_uri, "public://") !== FALSE)
+          if(strpos($preview_image_uri, "public://") !== FALSE) {
             $preview_image_uri = str_replace("public:/", \Drupal::service('stream_wrapper.public')->baseUrl(), $preview_image_uri);
+          }
 
           global $base_path;
           $row['preview_image'] = '<a href="' . $base_path . 'wisski/navigate/'.$eid.'/view?wisski_bundle='.$bid.'"><img src="'. $preview_image_uri .'" /></a>';
+
         }
       }
       elseif ($field == 'bundle' || $field == 'bundle_label' || $field == 'bundles') {
@@ -358,7 +390,15 @@ wisski_tick("end exec views");
                 drupal_set_message("Adapter cannot be queried by path in WissKI views for path " . $path->getName() . " in pathbuilder " . $pb->getName(), 'error');
               }
               else {
-                $select = "SELECT ?x0 ?out WHERE { VALUES ?x0 { ";
+                // we need to distinguish references and data primitives
+                $is_reference = $path->getDatatypeProperty() == 'empty';
+                $out_prop = 'out';
+                if ($is_reference) {
+                  $disamb = $path->getDisamb();
+                  if ($disamb < 2) $disamb = count($path->getPathArray());
+                  $out_prop = 'x' . ($disamb - 1);
+                }
+                $select = "SELECT ?x0 ?$out_prop WHERE { VALUES ?x0 { ";
                 $uris_to_eids = []; // keep for reverse mapping of results
                 foreach ($entity_ids as $eid) {
                   $uri = $engine->getUriForDrupalId($eid);
@@ -372,14 +412,26 @@ wisski_tick("end exec views");
                 // optional params should be default values
                 $select .= $engine->generateTriplesForPath($pb, $path, "", NULL, NULL, 0, 0, FALSE, '=', 'field', FALSE);
                 $select .= "}";
-#                dpm($select, "select");
+#                dpm($select, "select " . $path->getID() .': '.$path->getDatatypeProperty() );
 #                dpm(microtime(), "before");
                 $result = $engine->directQuery($select);
+#                dpm([$select, $result], 'select' . $path->getID());
 #                dpm(microtime(), "after");
                 foreach ($result as $sparql_row) {
                   if (isset($uris_to_eids[$sparql_row->x0->getUri()])) {
                     $eid = $uris_to_eids[$sparql_row->x0->getUri()];
-                    $values_per_row[$eid][$field][] = $sparql_row->out->getValue();
+                    if (!isset($sparql_row->$out_prop) || $sparql_row->$out_prop === NULL) {
+                      \Drupal::logger('WissKI views')->warning("invalid reference slot {s} for path {pid}", ['s' => $out_prop, 'pid' => $path->getID()]);
+                    }
+                    elseif ($is_reference) {
+                      $referenced_uri = $sparql_row->$out_prop->getUri();
+                      $referenced_eid = AdapterHelper::getDrupalIdForUri($referenced_uri);
+                      $referenced_title = wisski_core_generate_title($referenced_eid);
+                      $values_per_row[$eid][$field][] = $referenced_title;
+                    }
+                    else {
+                      $values_per_row[$eid][$field][] = $sparql_row->$out_prop->getValue();
+                    }
                   }
                 }
               }
