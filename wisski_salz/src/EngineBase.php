@@ -264,8 +264,12 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   public function isValidUri($uri) {
 	  $short_uri = '[a-z]+\:[^\/]+';
 	  //see RFC3986, simplified
-	  $long_uri = '\<[a-z][a-z0-9\-\.\+]*\:(\/\/)?[^\/]+(\/[^\/]+)*(\/|#)[^\/]+\/?\>';
-	  return preg_match("/^($short_uri|$long_uri)$/",$uri);
+	  $urn_or_similar = '\<' . $short_uri . '\>';
+	  // this is too complicated because it does not accept something like
+	  // http://www.bla.de
+	  //$long_uri = '\<[a-z][a-z0-9\-\.\+]*\:(\/\/)?[^\/]+(\/[^\/]+)*(\/|#)[^\/]+\/?\>';
+	  $long_uri = '\<[a-z][a-z0-9\-\.\+]*\:\/\/[^\/]+(\/[^\/]*)*(\/|#)*[^\/]*\/?\>';
+	  return preg_match("/^($short_uri|$urn_or_similar|$long_uri)$/",$uri);
   }
 
   /**
