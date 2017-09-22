@@ -63,13 +63,13 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * {@inheritdoc}
    */
   protected function doLoadMultiple(array $ids = NULL) {
- #   dpm(microtime(), "first!");
+#   dpm(microtime(), "first!");
   //dpm($ids,__METHOD__);
     $entities = array();
 
     // this loads everything from the triplestore
     $values = $this->getEntityInfo($ids);
-
+#    dpm(microtime(), "after load");
     $pb_cache = array();
 
     // add the values from the cache
@@ -166,7 +166,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   protected function getEntityInfo(array $ids,$cached = FALSE) {
 #    drupal_set_message(serialize($this));
-
+#dpm(microtime(), "in1");
     // get the main entity id
     // if this is NULL then we have a main-form
     // if it is not NULL we have a sub-form    
@@ -192,15 +192,17 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     $topBundles = array();
     $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
     $only_use_topbundles = $set->get('wisski_use_only_main_bundles');
-
+#dpm(microtime(), "in2");
     if($only_use_topbundles) 
       $topBundles = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
+
+    $bundle_from_uri = \Drupal::request()->query->get('wisski_bundle');
 
     $adapters = entity_load_multiple('wisski_salz_adapter');
     $info = array();
     // for every id
     foreach($ids as $id) {
-
+#      dpm(microtime(), "in3");
       //make sure the entity knows its ID at least
       $info[$id]['eid'] = $id;
       
@@ -215,30 +217,38 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         else
           $info[$id]['bundle'] = $cached_bundle;
       }
-            
+#      dpm(microtime(), "in4");
       // ask all adapters
       foreach($adapters as $aid => $adapter) {
         // if they know that id
 #        drupal_set_message(serialize($adapter->hasEntity($id)) . " said adapter " . serialize($adapter));
         if($adapter->hasEntity($id)) {
           $known_entity_ids[$id] = TRUE;
+          
+          // if the bundle is given via the uri, we use that and only that
+          if(!empty($bundle_from_uri))
+            $bundle_ids = array($bundle_from_uri);
+          else {
 #          drupal_set_message(serialize("argh"));
           // if so - ask for the bundles for that id
           // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
 
-#          dpm(microtime(), "begin111");
-          $bundle_ids = $adapter->getBundleIdsForEntityId($id);
-#          dpm(microtime(), "beginafter");
-          $overall_bundle_ids = array_merge($overall_bundle_ids, $bundle_ids);
 #          drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
-          if (isset($cached_bundle)) {
-            if (in_array($cached_bundle,$bundle_ids)) {
+            if (isset($cached_bundle)) {
+              // always think that the cached bundle is correct 
+              // the sanity-check here reduces the overall performance
+              //if (in_array($cached_bundle,$bundle_ids)) {
               $bundle_ids = array($cached_bundle);
+              //} else {
+              //  //cached bundle is not handled by this adapter
+              //  continue;
+              //}
             } else {
-              //cached bundle is not handled by this adapter
-              continue;
+              $bundle_ids = $adapter->getBundleIdsForEntityId($id);
             }
           }
+
+          $overall_bundle_ids = array_merge($overall_bundle_ids, $bundle_ids);
 
           $bundle_ids = array_slice($bundle_ids,0,1);
 #          drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
@@ -259,6 +269,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             try {
 #              dpm(microtime(), "load field $field_name");
               foreach ($field_definitions as $field_name => $field_def) {
+#                dpm(microtime(), "loading $field_name");
               
                 $main_property = $field_def->getFieldStorageDefinition()->getMainPropertyName();
 #dpm(array($adapter->id(), $field_name,$id, $bundleid),'ge1','error');
