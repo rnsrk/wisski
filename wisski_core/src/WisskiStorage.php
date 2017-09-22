@@ -225,29 +225,20 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         if($adapter->hasEntity($id)) {
           $known_entity_ids[$id] = TRUE;
           
-          // if the bundle is given via the uri, we use that and only that
-          if(!empty($bundle_from_uri))
-            $bundle_ids = array($bundle_from_uri);
+          // if we have something in cache, take that first.
+          if (isset($cached_bundle)) {
+            $bundle_ids = array($cached_bundle);
           else {
-#          drupal_set_message(serialize("argh"));
-          // if so - ask for the bundles for that id
-          // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
-
-#          drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
-            if (isset($cached_bundle)) {
-              // always think that the cached bundle is correct 
-              // the sanity-check here reduces the overall performance
-              //if (in_array($cached_bundle,$bundle_ids)) {
-              $bundle_ids = array($cached_bundle);
-              //} else {
-              //  //cached bundle is not handled by this adapter
-              //  continue;
-              //}
-            } else {
+            // if the bundle is given via the uri, we use that and only that
+            if(!empty($bundle_from_uri))
+              $bundle_ids = array($bundle_from_uri);
+            else {
+              // if so - ask for the bundles for that id
+              // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
               $bundle_ids = $adapter->getBundleIdsForEntityId($id);
             }
           }
-
+          
           $overall_bundle_ids = array_merge($overall_bundle_ids, $bundle_ids);
 
           $bundle_ids = array_slice($bundle_ids,0,1);
