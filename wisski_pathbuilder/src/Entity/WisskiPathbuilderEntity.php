@@ -747,9 +747,11 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     if (is_null($display)) {
       $display = \Drupal::entityManager()->getStorage('entity_view_display')->create($view_entity_values);
     } else { // there already is one.    
+    
+ #     dpm($display->toArray(), "display for $fieldid");
 
       // if it was disabled by the user, we want to stay disabled!
-      if(isset($display->toArray()['hidden']) && isset($display->toArray()['hidden'][$fieldid]))
+      if(!$create_fo && isset($display->toArray()['hidden']) && isset($display->toArray()['hidden'][$fieldid]))
         $hidden = TRUE;  
       else {
         $comp = $display->getComponent($fieldid);
@@ -758,7 +760,9 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
           $display_options = array_merge($display_options, $comp);
       }
     }
-      
+    
+#    dpm(serialize($hidden) . " and " . serialize($display_options), "hidden for $fieldid");
+    
     // setComponent enables them
     if(!$hidden)
       $display->setComponent($fieldid, $display_options)->save();
