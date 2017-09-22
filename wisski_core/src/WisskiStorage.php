@@ -228,7 +228,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           // if we have something in cache, take that first.
           if (isset($cached_bundle)) {
             $bundle_ids = array($cached_bundle);
-          else {
+          } else {
             // if the bundle is given via the uri, we use that and only that
             if(!empty($bundle_from_uri))
               $bundle_ids = array($bundle_from_uri);
@@ -238,7 +238,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               $bundle_ids = $adapter->getBundleIdsForEntityId($id);
             }
           }
-          
+
           $overall_bundle_ids = array_merge($overall_bundle_ids, $bundle_ids);
 
           $bundle_ids = array_slice($bundle_ids,0,1);
