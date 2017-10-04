@@ -315,8 +315,11 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   $target_bundles = $field_settings['handler_settings']['target_bundles'];
                   if (count($target_bundles) === 1) {
                     $target_bundle_id = current($target_bundles);
+                  } else if( count($target_bundles) === 1) {
+                    drupal_set_message($this->t('There is no target bundle id for field %field - I could not continue.',array('%field' => $field_name)));
                   } else {
                     drupal_set_message($this->t('Multiple target bundles for field %field',array('%field' => $field_name)));
+#                    dpm($target_bundles);
                     //@TODO create a MASTER BUNDLE and choose that one here
                     $target_bundle_id = current($target_bundles);
                   }
