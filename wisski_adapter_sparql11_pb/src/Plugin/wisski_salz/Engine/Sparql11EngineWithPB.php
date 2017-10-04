@@ -762,106 +762,18 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $topbundles = array_merge($topbundles, $tmptopbundles);
         $nontopbundles = array_merge($nontopbundles, $tmpnontopbundles);
 
-/*
-        // do the sorting        
-        foreach($groups as $groupid) { 	
-          $pbpaths = $pb->getPbPath($groupid);
-
-          if(!empty($pbpaths['parent']))
-            $nontopgroups = array_merge($nontopgroups, $pbpaths['bundle']);
-          else
-            $topgroups = array_merge($topgroups, $pbpaths['bundle']);
-        }*/
       }
       
-      $out = $nontopbundles;
+      foreach($nontopbundles as $key => $value) {
+        $out = array_merge(array($key => $value), $out);
+      }
       
       foreach($topbundles as $key => $value) {
         $out = array_merge(array($key => $value), $out);
       }
       
-/*
-      foreach($pbs as $pb) {
-
-      // ask for a bundle from the pb that has this class thing in it	
-        $groups = $pb->getAllGroups();
-
-#      drupal_set_message("groups: " . count($groups) . " " . serialize($groups));
-
-        $i = 0;
-
-        foreach($groups as $group) {
-          $i++;
-         
-          if(empty($group))
-            continue;
-            
-          // to speed everything up a little, check if it might be possible at all
-          // that this is a group for our concept
-          $path_array = $group->getPathArray();
-          
-          if(!in_array($uri_to_find, $path_array)) { 
-            continue;
-          }
-
-          $path_array = $pb->getRelativePath($group, FALSE);
-
-          if(empty($path_array))
-            continue;
-
-        // this checks if the last element is the same
-        // however this is evil whenever there are several elements in the path array
-        // typically subgroups ask for the first element part.        
-          if($path_array[ count($group->getPathArray())-1] == $uri_to_find || current($path_array) == $uri_to_find) {
-            $pbpaths = $pb->getPbPaths();
-          
-#            drupal_set_message("p_a " . $i . " " . $group->getName() . "added something!:".serialize($pbpaths[$group->id()]));
-          
-            if(!empty($pbpaths[$group->id()])) {
-              // TODO: is it possible that this test fails??? this would mean
-              // that there is a group entity associated with the pb without 
-              // a group array in the pb...
-              $elem = $pbpaths[$group->id()];
-#              dpm($elem);
-              // we only add the bundle of that path if
-              // a) there is a bundle associated with that path
-              // b) we haven't already added it
-              // c) the bundle entity exists. This may not be the case if 
-              //    bundles and fields have not yet been created for the pb
-              //    but the group was already assigned a bundle id.
-              // We output an array where top groups are in the front and
-              // nested ones are in the back.
-              if(!empty($elem['bundle'])) {
-                $bundle_id = $elem['bundle'];
-                $already_there = isset($out[$bundle_id]);
-
-                if ($already_there || entity_load('wisski_bundle', $bundle_id)) {
-                  // now we know that there is a bundle 
-                  if(empty($elem['parent'])) {
-                    // always add a top group so that we are sure it is in the
-                    // front, even if it was already added in the back
-#                dpm("I resort...");
-                    $front = array($bundle_id => $bundle_id);
-                    $out = array_merge($front, $out);
-                  }
-                  elseif (!$already_there) {
-                    // we only add it if it's not there
-                    // otherwise we may rearrange a top group to go to the back
-                    $out[$bundle_id] = $bundle_id;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      */
-#      dpm(microtime(), "timestop2 old");
     }
 
-#    drupal_set_message("serializing out: " . serialize($out));
-#    dpm($out, "returned");
-#    dpm($my_out, "other");
     return $out;    
     
   }
