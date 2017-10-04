@@ -772,9 +772,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
     }
 
-#    drupal_set_message("serializing out: " . serialize($out));
-#    dpm($out, "returned");
-#    dpm($my_out, "other");
     return $out;    
     
   }
@@ -1924,6 +1921,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           if (WISSKI_DEVEL) \Drupal::logger('WissKIsaveProcess')->debug('ERROR: ' . serialize(debug_backtrace()[1]['function']) . ' and ' . serialize(debug_backtrace()[2]['function']));
         }
         
+
+
         if($disambposition > 0 && !empty($object_in)) {
           if($key > (($disambposition-1) *2) || (($disambposition-1) *2) > ($key+count($clearPathArray))) {
             drupal_set_message("Disambposition is set to a wrong value: '$disambposition'. See reports for details.", "error");

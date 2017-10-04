@@ -100,5 +100,68 @@ class Sparql11RdfEngineWithPB extends Sparql11EngineWithPB implements Pathbuilde
     uksort($output,'strnatcasecmp');
     return $output;
   } 
+
+  public function getInverseProperty($property_uri) {
+
+  /* cache version
+    $inverses = array();
+    $cid = 'wisski_reasoner_inverse_properties';
+    if ($cache = \Drupal::cache()->get($cid)) {
+      $inverses = $cache->data;
+      if (isset($properties[$property_uri])) return $inverses[$property_uri];
+    }
+    */
+    
+    //DB version
+    $inverse = $this->retrieve('inverses','inverse','property',$property_uri);
+    if (!empty($inverse)) return current($inverse);
+
+    $min = max(strrpos($property_uri, '/'), strrpos($property_uri, '#'));
+    
+    if(empty($min))
+      return NULL;
+
+    $min = $min +1;
+    
+    $front = substr($property_uri, 0, $min);
+    $end = substr($property_uri, $min);
+    
+    preg_match('/^([a-zA-Z0-9]*)([^a-zA-Z0-9])/', $end, $matches);
+    #dpm($property_uri, "searched");
+    #dpm(serialize($min), "min");
+    #dpm($matches, "found");
+    #dpm($front, "front");
+    #dpm($end, "end");        
+    if(empty($matches))
+      return NULL;
+      
+    $inversestart = $matches[1];
+        
+    if($inversestart[strlen($inversestart)-1] == "i")
+      $inversestart = substr($inversestart, 0, -1);
+    else
+      $inversestart = $inversestart . 'i';
+
+#      dpm($inversestart, "inv");
+
+    // up to now this was the current code. However this is evil in case there are several answers.
+    // it will then return the upper one which is bad.
+    // so in case there is an easy answer, give the easy answer.
+    $results = $this->directQuery(
+      "SELECT ?prop WHERE {"
+        ." GRAPH ?g1 {?prop a rdf:Property } . FILTER(contains(xsd:string(?prop), '" . $inversestart . $matches[2] . "')) . "
+      ."}"
+    );
+    
+    $inverse = '';
+    foreach ($results as $row) {
+      $inverse = $row->prop->getUri();
+    }
+    
+#    dpm($inverse, "inv");
+    $inverses[$property_uri] = $inverse;
+//    \Drupal::cache()->set($cid,$inverses);
+    return $inverse;
+  }
   
 }

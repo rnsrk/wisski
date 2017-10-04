@@ -41,7 +41,7 @@ class Query extends WisskiQueryBase {
     // NOTE: this is not thread-safe... shouldn't bother!
     $this->varCounter = 0;
 
-wpm($this->condition,$this->getEngine()->adapterId().': '.__METHOD__);
+wpm($this->condition->conditions(),$this->getEngine()->adapterId().': '.__METHOD__);
 wisski_tick();
     // compile the condition clauses into
     // sparql graph patterns and
@@ -738,6 +738,12 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
 
 
   protected function makePathCondition($pb, $path, $operator, $value, $starting_group = NULL) {
+    #$sort_order = NULL;
+    #if (!empty($this->sort)) {
+    #  foreach ($this->sort as $elem) {
+    #    if ($elem['field'] == 
+    #  }
+    #}
     // build up an array for separating the variables of the sparql 
     // subqueries.
     // only the first var x0 get to be the same so that everything maps
@@ -754,9 +760,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     $obj_uris = array();
     if ((empty($dt_prop) || $dt_prop == 'empty') && !$path->isGroup()) {
       // we have a regular path without datatype property
-      // TODO: the value can't be the primitive, so we have to interpret it 
-      // differently. E.g. the value could be the title search string of the
-      // referred entities
+      // TODO: if value is an array how do we want to treat it? 
       if (!is_array($value)) {
         // if value is a scalar we treat it as title pattern and do a search
         // for these entities first.
@@ -784,7 +788,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         }
         // if there are no preferred bundles or querying them yielded no result
         // we search in all the other bundles
-        if (empty($entity_ids)) {
+        if (empty($entity_ids) && !empty($bundles)) {
           // we have to take the keys as the values are the info structs
           $entity_ids = $this->queryReferencedEntities(array_keys($bundles), $value, $operator);
         }

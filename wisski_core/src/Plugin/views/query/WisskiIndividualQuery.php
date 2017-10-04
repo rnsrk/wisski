@@ -279,7 +279,11 @@ wisski_tick("end exec views");
   
   protected function fillResultValues($entity_ids) {
 
+<<<<<<< HEAD
     $uri_to_eids_per_aid = [];
+=======
+    $eid_to_uri_per_aid = [];
+>>>>>>> 00569e01fd89acac4e71a1ac68afc3f17dc77179
 
     // we must not load the whole entity unless explicitly wished. this is way too costly!
 #    dpm(microtime(), "beginning of fill result values");
@@ -381,6 +385,7 @@ wisski_tick("end exec views");
           }
           else {
             $adapter = entity_load('wisski_salz_adapter', $pb->getAdapterId());
+            $aid = $adapter->id();
             if (!$adapter) {
               drupal_set_message("Bad adapter id for pathbuilder $pb_and_path[0]: " . $pb->getAdapterId(), 'error');
             }
@@ -396,16 +401,35 @@ wisski_tick("end exec views");
                 if ($is_reference) {
                   $disamb = $path->getDisamb();
                   if ($disamb < 2) $disamb = count($path->getPathArray());
+<<<<<<< HEAD
                   $out_prop = 'x' . ($disamb - 1);
+=======
+                  // NOTE: $disamb is the concept position (starting with 1)
+                  // but generateTriplesForPath() names vars by concept 
+                  // position times 2, starting with 0!
+                  $out_prop = 'x' . (($disamb - 1) * 2);
+>>>>>>> 00569e01fd89acac4e71a1ac68afc3f17dc77179
                 }
                 $select = "SELECT ?x0 ?$out_prop WHERE { VALUES ?x0 { ";
                 $uris_to_eids = []; // keep for reverse mapping of results
                 foreach ($entity_ids as $eid) {
-                  $uri = $engine->getUriForDrupalId($eid);
-                  if ($uri) {
-                    $select .= "<$uri> ";
-                    $uris_to_eids[$uri] = $eid;
+                  if (isset($eid_to_uri_per_aid[$aid]) && isset($eid_to_uri_per_aid[$aid][$eid])) {
+                    $uri = $eid_to_uri_per_aid[$aid][$eid];
+                  } 
+                  else {
+                    $uri = $engine->getUriForDrupalId($eid);
+                    if ($uri) {
+                      if (!isset($eid_to_uri_per_aid[$aid])) {
+                        $eid_to_uri_per_aid[$aid] = [];
+                      }
+                      $eid_to_uri_per_aid[$aid][$eid] = $uri;
+                    }
+                    else {
+                      continue;
+                    }
                   }
+                  $select .= "<$uri> ";
+                  $uris_to_eids[$uri] = $eid;
                 }
                 $select .= "} ";
                 // NOTE: we need to set the $relative param to FALSE. All other
@@ -415,7 +439,11 @@ wisski_tick("end exec views");
 #                dpm($select, "select " . $path->getID() .': '.$path->getDatatypeProperty() );
 #                dpm(microtime(), "before");
                 $result = $engine->directQuery($select);
+<<<<<<< HEAD
 #                dpm([$select, $result], 'select' . $path->getID());
+=======
+#               dpm([$select, $result], 'select' . $path->getID());
+>>>>>>> 00569e01fd89acac4e71a1ac68afc3f17dc77179
 #                dpm(microtime(), "after");
                 foreach ($result as $sparql_row) {
                   if (isset($uris_to_eids[$sparql_row->x0->getUri()])) {

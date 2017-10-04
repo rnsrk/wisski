@@ -164,12 +164,27 @@ class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
   
   public function setShortName($short_name){
     $this->short_name = $short_name;
-         }
-                       
+  }
+  
+
+  /** Get the disambiguation point for this path.
+   *
+   * The positive number returned is interpreted as follows:
+   * 0: no disambiguation
+   * 1: first concept in path
+   * 2: second concept in path
+   * ... and so forth
+   *
+   * @return a positive integer value
+   */
   public function getDisamb(){
     return $this->disamb;
   }
   
+  /** Set the disambiguation.
+   * 
+   * @param disamb @see getDisamb() for how to encode the disambiguation point
+   */
   public function setDisamb($disamb){
     $this->disamb = $disamb;
   }
