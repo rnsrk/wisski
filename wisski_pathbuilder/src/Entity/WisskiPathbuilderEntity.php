@@ -466,9 +466,9 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     } else { // there already is one.    
       
       // if it was disabled by the user, we want to stay disabled!
-      if(isset($display->toArray()['hidden']) && isset($display->toArray()['hidden'][$fieldid]))
+      if($no_fs && isset($display->toArray()['hidden']) && isset($display->toArray()['hidden'][$fieldid])) {        
         $hidden = TRUE;
-      else {
+      } else {
         $comp = $display->getComponent($fieldid);
 
         if(!empty($comp))
@@ -508,8 +508,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     // get the bundle for this pathid
     $bundle = $this->getBundle($pathid); #$form_state->getValue('bundle');
 
-#      drupal_set_message("I am generating Fields for path " . $pathid . " and got " . $field_name . " bundle " . serialize($bundle) . ". ");
-
+    // if there is no bundle we can stop
     if(empty($bundle)) {
       return FALSE;
     }
