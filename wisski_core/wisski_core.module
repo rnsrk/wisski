@@ -206,7 +206,12 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
     if(!empty($bundleid)) {
       $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundleid);
       if(!empty($bundle) && !empty($bundle->label())) {
-        $link = \Drupal\Core\Link::createFromRoute($bundle->label(), "entity.wisski_bundle.entity_list", array("wisski_bundle" => $bundleid));
+        $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
+        $use_views = $set->get('wisski_use_views_for_navigate');
+        if(!$use_views)
+          $link = \Drupal\Core\Link::createFromRoute($bundle->label(), "entity.wisski_bundle.entity_list", array("wisski_bundle" => $bundleid));
+        else
+          $link = \Drupal\Core\Link::fromTextAndUrl($bundle->label(), \Drupal\Core\Url::fromUserInput('/wisski_views/' . $bundleid));
         $breadcrumb->addLink($link);
       }
     }
