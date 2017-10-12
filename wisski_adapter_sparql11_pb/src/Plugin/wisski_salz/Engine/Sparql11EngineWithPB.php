@@ -1096,6 +1096,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     } else {
       $starting_position = $position;
     }
+
+    // in case of disamb we contradict the theory below.
+    if(!is_null($disamb) && $disamb === $starting_position) {
+      $sparql .= "?x" . $disamb . " ";
+    }
     
     // $starting_position+2 because we can omit x0 in this place - it will always be replaced
     // by the eid of this thing here.
@@ -1165,7 +1170,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           
 #          if($path->isGroup() && $main_property == "target_id")
 #            $outvalue = $this->getDrupalId($outvalue);
-          
+#          dpm($outvalue . " and " . serialize($disamb));          
           if(is_null($disamb) == TRUE) {
             $out[] = array($main_property => $outvalue);
           }
