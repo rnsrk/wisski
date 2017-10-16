@@ -489,7 +489,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
     $local_file_uri = $this->ensureSchemedPublicFileUri($file_uri);
-    
+#    dpm($local_file_uri);
     // we now check for an existing 'file managed' with that uri
     $query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
     $file_ids = $query->execute();
@@ -611,11 +611,35 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
     file_prepare_directory($original_path, FILE_CREATE_DIRECTORY);
 
+    // do a htmlentities in case of any & or fragments...
+    $extension = htmlentities(substr($file_uri,strrpos($file_uri,'.')));
+    
+    // load the valid image extensions
+    $image_factory = \Drupal::service('image.factory'); 
+    $supported_extensions = $image_factory->getSupportedExtensions();
+
+    $extout = "";
+#    dpm($supported_extensions);
+    
+    // go through them and see if there is any in this extension
+    // fragment. If so - make it "clean" and get rid of any 
+    // appended fragment parts.
+    foreach($supported_extensions as $key => $ext) {
+      if(strpos($extension, $ext)) {
+        $extout = $ext;
+        break;
+      }
+    }
+    
+    // if not - we assume jpg.
+    if(empty($extout))
+      $extout = 'jpg';
+
     // this is evil in case it is not .tif or .jpeg but something with . in the name...
 #    return file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));    
     // this is also evil, because many modules can't handle public:// :/
     // to make it work we added a directory.
-    return file_default_scheme().'://wisski_original/'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));    
+    return file_default_scheme().'://wisski_original/'.md5($file_uri).$extout;
     // external uri doesn't work either
     // this is just a documentation of what I've tried...
 #    return \Drupal::service('stream_wrapper.public')->baseUrl() . '/' . md5($file_uri);
