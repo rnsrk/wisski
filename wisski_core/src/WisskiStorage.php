@@ -626,14 +626,14 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     // appended fragment parts.
     foreach($supported_extensions as $key => $ext) {
       if(strpos($extension, $ext)) {
-        $extout = $ext;
+        $extout = '.' . $ext;
         break;
       }
     }
     
     // if not - we assume jpg.
     if(empty($extout))
-      $extout = 'jpg';
+      $extout = '.jpg';
 
     // this is evil in case it is not .tif or .jpeg but something with . in the name...
 #    return file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));    
