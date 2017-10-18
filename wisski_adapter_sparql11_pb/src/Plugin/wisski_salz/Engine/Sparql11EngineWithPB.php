@@ -1509,6 +1509,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // TODO: maybe we can combine reference delete and value delete
     $is_reference = $path->isGroup() ? : ($pbarray['fieldtype'] == 'entity_reference');
 
+
     if ($is_reference) {
       // delete a reference
       // this differs from normal field values as there is no literal
@@ -1678,6 +1679,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         return;
       }
       
+      
+      /* We cannot use DELETE DATA as we do not know the graph(s) of the triple.
+      * The code below would only delete the triple if it is in the default
+      * graph. we cannot omit the graph as fuseki needs it.
+      * so we instead make a DELETE WHERE update and leave the graph unspecified.
       // for fuseki we need graph
       $delete  = "DELETE DATA { GRAPH <".$this->getDefaultDataGraphUri()."> {";
 
@@ -1722,6 +1728,54 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }
       
       $delete .= ' }}';
+      */
+
+      $delete_clause = "DELETE {\n  GRAPH ?g {\n";
+      $where_clause = "WHERE {\n  GRAPH ?g {\n";
+      
+      // we have to distinguish between whether to delete a datatype prop
+      // or an object prop.
+      // first object prop
+      if(count($clearPathArray) >= 3) {
+        // the datatype-property is not directly connected to the group-part
+        $prop = array_values($clearPathArray)[1];
+        $inverse = $this->getInverseProperty($prop);
+        $name = "x" . ($starting_position * 2 +2);
+        $object_uri = $the_thing->{$name}->getUri();
+        $delete_clause .= "    <$subject_uri> <$prop> <$object_uri> .\n";
+        $delete_clause .= "    <$object_uri> <$inverse> <$subject_uri> .\n";
+        $where_clause  .= "    {  <$subject_uri> <$prop> <$object_uri> . }\n";
+        $where_clause  .= "    UNION\n";
+        $where_clause  .= "    {  <$object_uri> <$inverse> <$subject_uri> . }\n";
+      }
+      // now datatype prop
+      else {
+        $primitive = $path->getDatatypeProperty();
+        
+        if(!empty($primitive)) {
+          if(!empty($value)) {
+            $escaped_value = $this->escapeSparqlLiteral($value);
+            // Evil: no datatype or lang check!
+            $delete_clause .= "    <$subject_uri> <$primitive> ?out .\n";
+            $where_clause  .= "    <$subject_uri> <$primitive> ?out .\n    FILTER (STR(?out) = '$escaped_value')\n";
+          }
+          else {
+            drupal_set_message($this->t(
+                "Path %name (%id) has primitive but no value given.",
+                array(
+                  '%name' => $path->getName(),
+                  '%id' => $path->id()
+                )
+              ),
+              "error"
+            );
+            return; 
+          }
+        }
+      }
+      
+      // assemble the clauses
+      $delete = "$delete_clause  }\n}\n$where_clause  }\n}";
       
       $result = $this->directUpdate($delete);
 
