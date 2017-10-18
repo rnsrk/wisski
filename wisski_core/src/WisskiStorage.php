@@ -1094,7 +1094,11 @@ $tsa['eid'] = $entity_id;
       }
 
       //ask the local adapter for any image for this entity
-      $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
+#      $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
+      $images = array();
+      $images = \Drupal::service('wisski_pathbuilder.manager')->getPreviewImage($entity_id, $bundle_id, $adapter);
+      
+#      dpm($images, "yay");
 #    dpm("4.2.4: " . microtime());
 
       if (empty($images)) {
