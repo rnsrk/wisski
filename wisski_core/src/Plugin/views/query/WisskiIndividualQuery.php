@@ -164,11 +164,22 @@ class WisskiIndividualQuery extends QueryPluginBase {
   function execute(ViewExecutable $view) {
 #  dpm($this->orderby, "orderby!");
 #    dpm($view->field);
+#dpm(microtime(), "first!");
 wisski_tick();
 wisski_tick("begin exec views");
     $query = $view->build_info['wisski_query'];
     $count_query = $view->build_info['wisski_count_query'];
     $args = $view->build_info['query_args'];
+
+    $bundle_ids = array();
+    
+    if(!empty($view->filter)) {
+      foreach($view->filter as $key => $one_filter) {
+        if($key == "bundle") {
+          $bundle_ids = array_merge($bundle_ids, $one_filter->value);
+        }
+      }
+    }    
 
     $query->addMetaData('view', $view);
     $count_query->addMetaData('view', $view);
@@ -180,17 +191,17 @@ wisski_tick("begin exec views");
         $count_query->addTag($tag);
       }
     }
-
+#    dpm($view, "view");
     $start = microtime(true);
 
     // if we are using the pager, calculate the total number of results
     if ($this->pager && $this->pager->usePager()) {
       try {
-
+#        dpm(microtime(), "before count");
         //  Fetch number of pager items differently based on data locality.
         // Execute the local count query.
         $this->pager->total_items = $count_query->execute();
-
+#        dpm(microtime(), "after count");
         if (!empty($this->pager->options['offset'])) {
           $this->pager->total_items -= $this->pager->options['offset'];
         }
@@ -222,7 +233,7 @@ wisski_tick("begin exec views");
         $query->sort($elem['field'], $elem['direction']);
       }
     }
-
+ #   dpm(microtime(), "sec!");
     if (!empty($this->limit) || !empty($this->offset)) {
       // We can't have an offset without a limit, so provide a very large limit instead.
       $limit  = intval(!empty($this->limit) ? $this->limit : 999999999);
@@ -235,17 +246,20 @@ wisski_tick("begin exec views");
 
     $view->result = array();
     try {
-
+#      dpm(microtime(), "before ex");
+ #     dpm($query, "query");
       // Execute the local query.
       $entity_ids = $query->execute();
-
+#      dpm(microtime(), "after ex");
       if (empty($entity_ids)) {
         $view->result = [];
       }
       else {
+#        dpm(microtime(), "before frv");
         // Get the fields for each entity, give it its ID, and then add to the result array.
         // This is later used for field rendering
-        $values_per_row = $this->fillResultValues($entity_ids);
+        $values_per_row = $this->fillResultValues($entity_ids, $bundle_ids);
+#        dpm(microtime(), "after frv");
 #dpm([$values_per_row, $entity_ids], __METHOD__);
         foreach ($values_per_row as $rowid => $values) {
           $row = new ResultRow($values);
@@ -271,14 +285,15 @@ wisski_tick("begin exec views");
 #      }
       return;
     }
+#    dpm(microtime(), "thrd!");
 
     $view->execute_time = microtime(true) - $start;
 wisski_tick("end exec views");
   }
 
   
-  protected function fillResultValues($entity_ids) {
-
+  protected function fillResultValues($entity_ids, $bundle_ids = array()) {
+ #   dpm($bundle_ids, "this");
     $eid_to_uri_per_aid = [];
 
     // we must not load the whole entity unless explicitly wished. this is way too costly!
@@ -292,7 +307,7 @@ wisski_tick("end exec views");
     $fields = $this->fields;
 
     
-#    dpm($this, "fields");
+    #dpm($this, "fields");
 #    dpm(microtime(), "before load");
     $ids_to_load = array();
     if (isset($fields['_entity'])) {
@@ -303,12 +318,14 @@ wisski_tick("end exec views");
     }
     
     $loaded_ids = entity_load_multiple('wisski_individual', $ids_to_load);
-    
+            
     if (isset($fields['_entity'])) {
       foreach ($values_per_row as &$row) {
         $row['_entity'] = $loaded_ids[$row['eid']];
       }
     }
+
+#    dpm($row, "row");
     
 #    dpm(microtime(), "after load");
     
@@ -316,28 +333,39 @@ wisski_tick("end exec views");
     unset($fields['_entity']);
 
     while (($field = array_shift($fields)) !== NULL) {
-
+#      dpm(microtime(), "beginning one thing");
       if ($field == 'title') {
 #        dpm(microtime(), "before generate");
+        if(!empty($bundle_ids))
+          $bid = reset($bundle_ids);
+        else
+          $bid = NULL;
+
         foreach ($values_per_row as $eid => &$row) {
-          $row['title'] = wisski_core_generate_title($eid);
+          $row['title'] = wisski_core_generate_title($eid, FALSE, $bid);
         }
         
-#        dpm(microtime(), "after generate");
+#        dpm(microtime(), "after generate title");
       }
       elseif ($field == 'preview_image') {
 #        dpm("prew");
-        
+#        dpm(microtime(), "beginning image prev");        
 #        dpm(\Drupal::entityTypeManager()->getStorage('wisski_individual'));
 #        return;
         // prepare the listbuilder for external access.
         \Drupal::entityTypeManager()->getStorage('wisski_individual')->preparePreviewImages();
         
         foreach($values_per_row as $eid => &$row) {
+#          dpm(microtime(), "ar " . serialize($bundle_ids));
           #$preview_image = WisskiCacheHelper::getPreviewImageUri($eid);
-          $bundle_ids = AdapterHelper::getBundleIdsForEntityId($row['eid'], TRUE);
-          $bid = reset($bundle_ids);
-          
+          if(empty($bundle_ids)) {
+#            dpm("i have no bundle!");
+            $bids = AdapterHelper::getBundleIdsForEntityId($row['eid'], TRUE);
+          } else { // take the ones we have before.
+            $bids = $bundle_ids;
+          }
+          $bid = reset($bids);
+#          dpm(microtime(), "br");          
           $preview_image_uri = \Drupal::entityTypeManager()->getStorage('wisski_individual')->getPreviewImageUri($eid,$bid);
           
 
@@ -347,18 +375,22 @@ wisski_tick("end exec views");
           global $base_path;
           $row['preview_image'] = '<a href="' . $base_path . 'wisski/navigate/'.$eid.'/view?wisski_bundle='.$bid.'"><img src="'. $preview_image_uri .'" /></a>';
         }
+#        dpm(microtime(), "after preview image");
       }
       elseif ($field == 'bundle' || $field == 'bundle_label' || $field == 'bundles') {
 #        dpm($values_per_row, "vpr");
         foreach ($values_per_row as $eid => &$row) {
-          $bundle_ids = AdapterHelper::getBundleIdsForEntityId($row['eid'], TRUE);
-          $row['bundles'] = $bundle_ids;
-          $bid = reset($bundle_ids);  // TODO: make a more sophisticated choice rather than the first one
+          if(empty($bundle_ids))
+            $bids = AdapterHelper::getBundleIdsForEntityId($row['eid'], TRUE);
+          else
+            $bids = $bundle_ids;
+          $row['bundles'] = $bids;
+          $bid = reset($bids);  // TODO: make a more sophisticated choice rather than the first one
           $row['bundle'] = $bid;
           $bundle = entity_load('wisski_bundle', $bid);
           $row['bundle_label'] = $bundle->label();
         }
-
+#        dpm(microtime(), "after bundles");
       }
       elseif (strpos($field, "wisski_path_") === 0 && strpos($field, "__") !== FALSE) {
         // the if is rather a hack but currently I have no idea how to access
@@ -452,6 +484,7 @@ wisski_tick("end exec views");
             }
           }
         }
+#        dpm(microtime(), "after field");
       }
 
     }

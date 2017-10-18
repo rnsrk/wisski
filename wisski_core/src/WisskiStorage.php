@@ -63,12 +63,14 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * {@inheritdoc}
    */
   protected function doLoadMultiple(array $ids = NULL) {
+#    dpm("yay, I do loadmultiple!");
 #   dpm(microtime(), "first!");
   //dpm($ids,__METHOD__);
     $entities = array();
 
     // this loads everything from the triplestore
     $values = $this->getEntityInfo($ids);
+#    dpm($values, "values");
 #    dpm(microtime(), "after load");
     $pb_cache = array();
 
@@ -166,7 +168,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   protected function getEntityInfo(array $ids,$cached = FALSE) {
 #    drupal_set_message(serialize($this));
-#dpm(microtime(), "in1");
+#    dpm(microtime(), "in1 asking for " . serialize($ids));
     // get the main entity id
     // if this is NULL then we have a main-form
     // if it is not NULL we have a sub-form    
@@ -302,11 +304,11 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   if (!isset($info[$id]['bundle'])) $info[$id]['bundle'] = $bundleid;
                   continue;                 
                 }
-#                dpm(microtime(), "actual load");
+#                dpm(microtime(), "actual load for field " . $field_name . " in bundle " . $bundleid . " for id " . $id);
                 //here we have a "normal field" so we can assume an array of field values is OK
                 $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
 
-#                dpm(microtime(), "after load");
+#                dpm(microtime(), "after load" . serialize($new_field_values));
                 if (empty($new_field_values)) continue;
                 $info[$id]['bundle'] = $bundleid;
                 if ($field_def->getType() === 'entity_reference') {
@@ -471,7 +473,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     }
 
     $entity_info = WisskiHelper::array_merge_nonempty($entity_info,$info);
-
+#    dpm(microtime(), "out5");
     wpm($entity_info, 'gei');
     return $entity_info;
   }
