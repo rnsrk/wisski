@@ -1119,8 +1119,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
       // if the path is a group it has to be a subgroup and thus entity reference.
       if($path->isGroup()) {
+      
         // it is the same as field - so entity_reference is basic shit here
-        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0,  ($starting_position/2), FALSE, NULL, 'entity_reference');
+        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0,  ($starting_position/2), FALSE, NULL, 'entity_reference', $relative);
       }
       else {
         $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, ($starting_position/2), FALSE, NULL, 'field', $relative);
@@ -1977,6 +1978,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
       if($first) {
         if($key > ($startingposition *2) || ($startingposition *2) > ($key+count($clearPathArray))) {
+          dpm($key, "key");
+          dpm($startingposition, "starting");
+          dpm($clearPathArray, "cpa");
           drupal_set_message("Starting Position is set to a wrong value: '$startingposition'. See reports for details", "error");
           if (WISSKI_DEVEL) \Drupal::logger('WissKIsaveProcess')->debug('ERROR: ' . serialize($clearPathArray) . ' generate ' . serialize(func_get_args()));
           if (WISSKI_DEVEL) \Drupal::logger('WissKIsaveProcess')->debug('ERROR: ' . serialize(debug_backtrace()[1]['function']) . ' and ' . serialize(debug_backtrace()[2]['function']));

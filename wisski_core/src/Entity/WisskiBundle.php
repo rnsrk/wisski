@@ -308,6 +308,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
     $values = array();
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    $adapters = \Drupal\wisski_salz\Entity\Adapter::loadMultiple();
     //we ask all pathbuilders if they know the path
     foreach ($pbs as $pb_id => $pb) {
       if ($pb->hasPbPath($path_id)) {
@@ -319,46 +320,83 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         }
         #dpm($path,$path_id);
         // then we try to load the path's adapter
-        $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
+        $adapter = $adapters[$pb->getAdapterId()];
         if (empty($adapter)) {
           #dpm('can\'t load adapter '.$pb->getAdapterId(),$pb_id);
           continue;
         }
-
+        
         if (\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($eid,$adapter->id())) {
           //finally, having a valid path and adapter, we can ask the adapter for the path's value
           $pbpath = $pb->getPbPath($path_id);
-                              
-          $bundle_of_path = $pbpath['bundle'];
- 
-          // if this is empty, then we get the parent and take this.
-          if(empty($bundle_of_path) || $path->getType() == "Path") {
-            $group = $pb->getPbPath($pbpath['parent']);
-            $bundle_of_path = $group['bundle'];
-          }
+          
+          // this is the case when the thing is a group
+          // in this case we want it to generate the title of the
+          // subentity and use that.
+          if($pbpath['bundle'] == $pbpath['field']) {
 
-          // get the group-object for the current bundle we're on
-          $groups = $pb->getGroupsForBundle($this->id());
+            // get the data from the pathbuilder
+            $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", FALSE);
+
+
+            $grptitles = array();
+
+            // iterate through the data we've got
+            foreach($tmp as $key => $item) {
+              
+              // construct the drupal id
+              $item_eid = $adapter->getEngine()->getDrupalId($item["target_id"]);
+              
+              // get the bundle of the data
+              $bundleid = $pb->getBundleIdForEntityId($item_eid);
+              if(empty($bundleid))
+                continue;
+              
+              $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundleid);
+              
+              if(empty($bundle))
+                continue;
+              
+              // generate the title of that
+              $grptitles[] = $bundle->generateEntityTitle($item_eid);
+              
+            }
+            
+            $new_values[] = implode(", ", $grptitles);
+
+          } else { // normal field handling
+                              
+            $bundle_of_path = $pbpath['bundle'];
+ 
+            // if this is empty, then we get the parent and take this.
+            if(empty($bundle_of_path) || $path->getType() == "Path") {
+              $group = $pb->getPbPath($pbpath['parent']);
+              $bundle_of_path = $group['bundle'];
+            }
+
+            // get the group-object for the current bundle we're on
+            $groups = $pb->getGroupsForBundle($this->id());
                     
-          // if there are several groups, for now take only the first one
-          $group = current($groups);
+            // if there are several groups, for now take only the first one
+            $group = current($groups);
           
-          if(empty($group)) {
-            drupal_set_message("There is an empty group in your system: " . serialize($groups));
-            continue;
+            if(empty($group)) {
+              drupal_set_message("There is an empty group in your system: " . serialize($groups));
+              continue;
+            }
+          
+            // if the bundle and this object are not the same, the eid is the one of the
+            // main bundle and the paths have to be absolute. In this case
+            // we have to call it with false. 
+            if($bundle_of_path != $this->id()) {
+              // if this bundle is not the bundle where the path is in, we go to
+              // absolute mode and give the length of the group because we find 
+              // $eid there.
+              $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, count($group->getPathArray())-1, NULL, FALSE); 
+            } else // if not they are relative.
+              $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, TRUE);
+            if (WISSKI_DEVEL) \Drupal::logger($pb_id.' '.$path_id.' '.__FUNCTION__)->debug('Entity '.$eid."{out}",array('out'=>serialize($new_values)));
           }
-          
-          // if the bundle and this object are not the same, the eid is the one of the
-          // main bundle and the paths have to be absolute. In this case
-          // we have to call it with false. 
-          if($bundle_of_path != $this->id()) {
-            // if this bundle is not the bundle where the path is in, we go to
-            // absolute mode and give the length of the group because we find 
-            // $eid there.
-            $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, count($group->getPathArray())-1, NULL, FALSE); 
-          } else // if not they are relative.
-            $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, TRUE);
-          if (WISSKI_DEVEL) \Drupal::logger($pb_id.' '.$path_id.' '.__FUNCTION__)->debug('Entity '.$eid."{out}",array('out'=>serialize($new_values)));
         }  
         if (empty($new_values)) {
           //dpm('don\'t have values for '.$path_id.' in '.$pb_id,$adapter->id());
@@ -389,10 +427,14 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
 #      $paths = array();
       foreach ($pbs as $pb_id => $pb) {
-        $paths = $pb->getAllPathsForBundleId($this->id(), TRUE);
+        #$paths = $pb->getAllPathsForBundleId($this->id(), TRUE);
+        $paths = $pb->getAllPathsAndGroupsForBundleId($this->id(), TRUE);
         
         foreach($paths as $path) {
-          $options[$pb_id][$pb_id.'.'.$path->id()] = $path->getName();
+          if($path->isGroup())
+            $options[$pb_id][$pb_id.'.'.$path->id()] = $path->getName() . ' (group label)';
+          else
+            $options[$pb_id][$pb_id.'.'.$path->id()] = $path->getName();
         }
 /*
         $pb_paths = $pb->getAllPaths();
