@@ -172,6 +172,15 @@ class WisskiEntityViewsData extends EntityViewsData {
           // we are gonna handle this path, so it's not orphaned
           unset($orphaned_paths[$pid]);
           if (!$path->isGroup()) {
+          
+            $fieldid = NULL;
+            $pbpath = $pb->getPbPath($path->id());
+            if(!empty($pbpath))
+              $fieldid = $pbpath['field'];
+
+            if(empty($fieldid))
+              drupal_set_message("Path " . $path->getName() . " has no field definition.", "warning");
+                      
             $data[$base_table]["wisski_path_${pbid}__$pid"] = [
               // It would have been brilliant if we could combine both pb ID
               // and path ID by a dot for forming the field's ID as wisski 
@@ -185,7 +194,9 @@ class WisskiEntityViewsData extends EntityViewsData {
                   "@pb" => $pb->getName(),
               ]),
               'field' => [
-                'id' => 'wisski_standard',
+                'id' => 'wisski_field', #'wisski_standard',
+                'field_name' => $fieldid,
+                'entity_type' => $this->entityType->id(),
                 'wisski_field' => "$pbid.$pid",
               ],
               'filter' => [
