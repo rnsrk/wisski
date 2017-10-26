@@ -257,7 +257,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
       }
       elseif (in_array($field, $skip_field_ids)) {
         // these fields are not supported on purpose
-        $this->missingImplMsg("Field '$field' intentionally not queryable in entity query", array('condition' => $condition));
+        //$this->missingImplMsg("Field '$field' intentionally not queryable in entity query", array('condition' => $condition));
       } 
       // for the rest of the fields we need to distinguish between field and path
       // query mode 
