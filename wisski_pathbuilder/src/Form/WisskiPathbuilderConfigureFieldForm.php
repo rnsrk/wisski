@@ -445,6 +445,8 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     $pbpaths[$pathid]['bundle'] = $form_state->getValue('bundle');
     $pbpaths[$pathid]['cardinality'] = $form_state->getValue('cardinality');
 
+    // reset that in case something has changed.
+    $pbpaths[$pathid]['relativepath'] = NULL;
     
     // save it
     $this->pathbuilder->setPbPaths($pbpaths);

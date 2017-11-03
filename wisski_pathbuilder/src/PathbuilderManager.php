@@ -12,14 +12,23 @@ class PathbuilderManager {
 
   private static $bundlesWithStartingConcept = NULL;
 
+  private static $imagePaths = NULL;
+ 
+  private static $pbs = NULL;
+  
+  private static $paths = NULL;
   
   /** Reset the cached mappings.
    */
   public function reset() {
     self::$pbsForAdapter = NULL;
     self::$pbsUsingBundle = NULL;
+    self::$imagePaths = NULL;
+    self::$pbs = NULL;
+    self::$paths = NULL;
     \Drupal::cache()->delete('wisski_pathbuilder_manager_pbs_for_adapter');
     \Drupal::cache()->delete('wisski_pathbuilder_manager_pbs_using_bundle');
+    \Drupal::cache()->delete('wisski_pathbuilder_manager_image_paths');
   }
   
   
@@ -83,6 +92,78 @@ class PathbuilderManager {
 
   }
 
+  public function getPreviewImage($entity_id, $bundle_id, $adapter) {
+    $pbs_and_paths = $this->getImagePathsAndPbsForBundle($bundle_id);
+    
+    foreach($pbs_and_paths as $pb_id => $paths) {
+      
+      if(empty(self::$pbs))
+        $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+      else
+        $pbs = self::$pbs;
+
+      $pb = $pbs[$pb_id];
+
+      foreach($paths as $pathid) {
+        #  dpm($pathid, "assa");
+        
+        if(empty(self::$paths))
+          $paths = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::loadMultiple();
+        else
+          $paths = self::$paths;
+        
+        $path = $paths[$pathid];
+        
+        $values = $adapter->getEngine()->pathToReturnValue($path, $pb, $entity_id, 0, NULL, FALSE);
+
+        if(!empty($values))
+          return $values;
+
+      }
+    }
+    return array();
+  }
+
+  public function getImagePathsAndPbsForBundle($bundle_id) {
+ 
+    if (self::$imagePaths === NULL) {  // not yet fetched from cache?
+      if ($cache = \Drupal::cache()->get('wisski_pathbuilder_manager_image_paths')) {
+        self::$imagePaths = $cache->data;
+      }
+    }
+    if (self::$imagePaths === NULL) {  // was reset, recalculate
+      $this->calculateImagePaths();
+    }
+     
+    if(isset(self::$imagePaths[$bundle_id]))
+      return self::$imagePaths[$bundle_id];
+    
+    return array();
+ 
+  }
+  
+  public function calculateImagePaths() {
+    $info = array();
+    $pbs = entity_load_multiple('wisski_pathbuilder');
+    foreach ($pbs as $pbid => $pb) {
+      $groups = $pb->getMainGroups();
+
+      foreach($groups as $group) {
+        $bundleid = $pb->getPbPath($group->id())['bundle'];
+        $paths = $pb->getImagePathIDsForGroup($group->id());
+
+        if(!empty($paths))
+          self::$imagePaths[$bundleid][$pbid] = $paths;
+
+#        foreach($paths as $pathid) {
+#          $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
+#          $info[$bundleid][$pbid][$pathid] = $pathid;
+#        }
+      }
+    }
+    
+    \Drupal::cache()->set('wisski_pathbuilder_manager_image_paths', self::$imagePaths);
+  }
 
   public function getBundlesWithStartingConcept($concept_uri = NULL) {
     if (self::$bundlesWithStartingConcept === NULL) {  // not yet fetched from cache?

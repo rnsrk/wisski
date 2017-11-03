@@ -257,7 +257,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
       }
       elseif (in_array($field, $skip_field_ids)) {
         // these fields are not supported on purpose
-        $this->missingImplMsg("Field $field intentionally not queryable in entity query", array('condition' => $condition));
+        //$this->missingImplMsg("Field '$field' intentionally not queryable in entity query", array('condition' => $condition));
       } 
       // for the rest of the fields we need to distinguish between field and path
       // query mode 
@@ -543,7 +543,10 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     else {
       // we directly access the entity table.
       // TODO: this is a hack but faster than talking with the AdapterHelper
-      if ($operator == 'IN' || $operator == "=") {
+      // NOTE: an empty operator value means IN as it is the default. This is
+      // necessary at least since Drupal 8.4, as the quickedit module makes
+      // such queries.
+      if ($operator == 'IN' || $operator == "=" || empty($operator)) {
         $values = (array) $value;
         $query = \Drupal::database()->select('wisski_salz_id2uri', 't')
           ->distinct()
@@ -562,7 +565,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         $entity_ids = $query->execute()->fetchAllKeyed();
       }
       else {
-        $this->missingImplMsg("Operator $operator in eid field query", array('condition' => $condition));
+        $this->missingImplMsg("Operator '$operator' in eid field query", array('condition' => $this->condition));
       }
     }
     return $entity_ids;
@@ -600,7 +603,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         $select->condition('ngram', ($operator == 'CONTAINS' ? "%" : "") . $select->escapeLike($value) . "%", 'LIKE');
       } 
       else {
-        $this->missingImplMsg("Operator $operator in title field query", array('condition' => $value));
+        $this->missingImplMsg("Operator '$operator' in title field query", array('condition' => $value));
         return $entity_ids; // NULL
       }
 
@@ -682,7 +685,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       }
     }
     else {
-      $this->missingImplMsg("Operator $operator in bundle fieldquery", array(func_get_args()));
+      $this->missingImplMsg("Operator '$operator' in bundle fieldquery", array(func_get_args()));
     }
 
     if (empty($query_parts)) {
