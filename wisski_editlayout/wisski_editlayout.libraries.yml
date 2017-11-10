@@ -2,3 +2,8 @@ std:
   css:
     theme:
       css/std/edit-form.css: {}
+  js:
+    js/edit-layout.js: {}
+  dependencies:
+    - core/drupal
+    - core/jquery
