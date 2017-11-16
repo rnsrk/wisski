@@ -292,18 +292,11 @@ wisski_tick("end exec views");
   }
 
   
-<<<<<<< HEAD
-  protected function fillResultValues($entity_ids) {
-
-<<<<<<< HEAD
-    $uri_to_eids_per_aid = [];
-=======
-=======
   protected function fillResultValues($entity_ids, $bundle_ids = array()) {
  #   dpm($bundle_ids, "this");
->>>>>>> d3d7cfe3c18961410747889424894feba651a842
+
     $eid_to_uri_per_aid = [];
->>>>>>> 00569e01fd89acac4e71a1ac68afc3f17dc77179
+
 
     // we must not load the whole entity unless explicitly wished. this is way too costly!
 #    dpm(microtime(), "beginning of fill result values");
@@ -472,11 +465,9 @@ wisski_tick("end exec views");
 #                dpm($select, "select " . $path->getID() .': '.$path->getDatatypeProperty() );
 #                dpm(microtime(), "before");
                 $result = $engine->directQuery($select);
-<<<<<<< HEAD
+
 #                dpm([$select, $result], 'select' . $path->getID());
-=======
-#               dpm([$select, $result], 'select' . $path->getID());
->>>>>>> 00569e01fd89acac4e71a1ac68afc3f17dc77179
+
 #                dpm(microtime(), "after");
                 foreach ($result as $sparql_row) {
                   if (isset($uris_to_eids[$sparql_row->x0->getUri()])) {
