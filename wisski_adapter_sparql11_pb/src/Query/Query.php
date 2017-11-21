@@ -525,7 +525,6 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         }
       }
     }
-
 #    drupal_set_message(serialize($return));
     return $return;
 

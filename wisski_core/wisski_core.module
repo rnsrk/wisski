@@ -40,13 +40,15 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
     $entity_id = $wisski_individual;
     $bundle_id = WisskiCacheHelper::getCallingBundle($wisski_individual);
   }
-  
+
 #  dpm(microtime(), "1");
   
   if ($override_bundle_id !== NULL) {
     $entity_id = $wisski_individual;
     $bundle_id = $override_bundle_id;
   }
+#drupal_set_message(" title for eid: $entity_id"); 
+  
 #  drupal_set_message("3 " . $bundle_id);
   if(empty($bundle_id)) {
     // this is very complicated... do it anyway...
@@ -135,6 +137,14 @@ function wpm() {
     call_user_func_array('dpm', func_get_args());
   }
 }
+
+
+function rpm() {
+  if (\Drupal::currentUser()->id() == 1 && function_exists('dpm')) {
+    call_user_func_array('dpm', func_get_args());
+  }
+}
+    
 
 
 function wsmlog($msg, $name = NULL, $status = 'status') {

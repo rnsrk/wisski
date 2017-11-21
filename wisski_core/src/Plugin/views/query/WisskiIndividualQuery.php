@@ -251,6 +251,7 @@ wisski_tick("begin exec views");
       // Execute the local query.
       $entity_ids = $query->execute();
 #      dpm(microtime(), "after ex");
+      
       if (empty($entity_ids)) {
         $view->result = [];
       }
@@ -320,12 +321,12 @@ wisski_tick("end exec views");
     }
     
     $loaded_ids = entity_load_multiple('wisski_individual', $ids_to_load);
-            
     if (isset($fields['_entity'])) {
       foreach ($values_per_row as &$row) {
         $row['_entity'] = $loaded_ids[$row['eid']];
       }
     }
+
 
 #    dpm($row, "row");
     
@@ -480,6 +481,7 @@ wisski_tick("end exec views");
                       $referenced_eid = AdapterHelper::getDrupalIdForUri($referenced_uri);
                       $referenced_title = wisski_core_generate_title($referenced_eid);
                       $values_per_row[$eid][$field][] = $referenced_title;
+                      #$values_per_row[$eid][$field][] = $referenced_eid;
                     }
                     else {
                       $values_per_row[$eid][$field][] = $sparql_row->$out_prop->getValue();
@@ -492,6 +494,7 @@ wisski_tick("end exec views");
         }
 #        dpm(microtime(), "after field");
       }
+    
 
     }
 #    dpm(microtime(), "end of ...");    

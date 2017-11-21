@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\wisski_salz\Plugin\wisski_salz\Engine\WisskiSparql11Plugin.
+ * Contains \Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11Engine.
  */
 
 namespace Drupal\wisski_salz\Plugin\wisski_salz\Engine;

@@ -171,4 +171,19 @@ wisski.menus.recreate_items:
     menu_name: NULL
   requirements:
     _permission: 'administer wisski'
-    
+
+wisski.titles.bulk_update:
+  path: '/admin/structure/wisski_core/{bundle}/regenerate_titles'
+  defaults:
+    _controller: '\Drupal\wisski_core\Controller\TitleGenerationController::generateByBundle'
+  requirements:
+    _permission: 'administer wisski'
+
+wisski.execute_action:
+  path: '/wisski/action/{action}/{objects}'
+  defaults:
+    _controller: '\Drupal\wisski_core\Controller\ActionController::execute'
+    objects: NULL
+  requirements:
+    _permission: 'administer wisski'
+

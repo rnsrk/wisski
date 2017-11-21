@@ -200,7 +200,6 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
   }
   
   private function buildConfigRow($entity) {
-    
     //    $row['id'] = 
     $id = $entity->get('id');
     //@TODO use EntityFieldQuery or whatsolike
@@ -230,6 +229,11 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
       'weight' => 10,
       'url' => $entity->urlInfo('entity-list'),
     );
+    $row['operations']['data']['#links']['regenerate_titles'] = array(
+      'title' => $this->t('Update Entity Titles'),
+      'weight' => 11,
+      'url' => Url::fromRoute('wisski.titles.bulk_update', array('bundle' => $id)),
+    );  
 //    dpm($row['operations']['data']['#links'],__METHOD__);
     return $row;
   }
