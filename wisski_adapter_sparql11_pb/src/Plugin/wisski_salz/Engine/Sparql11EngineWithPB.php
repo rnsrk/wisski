@@ -1976,9 +1976,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
       if($first) {
         if($key > ($startingposition *2) || ($startingposition *2) > ($key+count($clearPathArray))) {
-          dpm($key, "key");
-          dpm($startingposition, "starting");
-          dpm($clearPathArray, "cpa");
+#          dpm($key, "key");
+#          dpm($startingposition, "starting");
+#          dpm($clearPathArray, "cpa");
           drupal_set_message("Starting Position is set to a wrong value: '$startingposition'. See reports for details", "error");
           if (WISSKI_DEVEL) \Drupal::logger('WissKIsaveProcess')->debug('ERROR: ' . serialize($clearPathArray) . ' generate ' . serialize(func_get_args()));
           if (WISSKI_DEVEL) \Drupal::logger('WissKIsaveProcess')->debug('ERROR: ' . serialize(debug_backtrace()[1]['function']) . ' and ' . serialize(debug_backtrace()[2]['function']));
@@ -2012,6 +2012,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // TODO: fix this!
         $oldvar = "?" . (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "x" . $key);
       }
+      $graphvar = "?g_" . (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "x" . $key);
       
       if($key % 2 == 0) {
         // if it is the first element and we have a subject_in
@@ -2021,7 +2022,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           $olduri = $subject_in;
           
           if(!$write)
-            $query .= "GRAPH ?g$key { <$olduri> a <$value> } . ";
+            $query .= "GRAPH $graphvar { <$olduri> a <$value> } . ";
           else
             $query .= " <$olduri> a <$value> . ";
 
@@ -2041,7 +2042,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             $query .= "<$uri> a <$value> . ";
           }
           else
-            $query .= "GRAPH ?g$key { $localvar a <$value> } . ";
+            $query .= "GRAPH $graphvar { $localvar a <$value> } . ";
         }
         
         // magic function
@@ -2052,7 +2053,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             $query .= "<$olduri> <$prop> <$uri> . ";
           } else {
             
-            $query .= "GRAPH ?g" . $key . "_1 { ";
+            $query .= "GRAPH ${graphvar}_1 { ";
             $inverse = $this->getInverseProperty($prop);
             // if there is not an inverse, don't do any unions
             if(empty($inverse)) {
@@ -2136,8 +2137,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // do nothing!
     }
     elseif ($has_primitive) {
+      $outvar = "?" . (isset($variable_prefixes["out"]) ? $variable_prefixes["out"] : "out");
+      $outgraph = "?g_" . (isset($variable_prefixes["out"]) ? $variable_prefixes["out"] : "out");
+
       if(!$write)
-        $query .= "GRAPH ?gprim { ";
+        $query .= "GRAPH $outgraph { ";
       else
         $query .= "";
         
@@ -2154,7 +2158,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
       $query .= "<$primitive> ";
 
-      $outvar = "?" . (isset($variable_prefixes["out"]) ? $variable_prefixes["out"] : "out");
       
       if(!empty($primitiveValue)) {
         
