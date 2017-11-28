@@ -2827,6 +2827,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
   }
                                                                                                            
+  /*
+  * This should be made global as it actually stores the namespaces globally
+  */
   public function getNamespaces() {
     $ns = array();
     $db_spaces = db_select('wisski_core_ontology_namespaces','ns')

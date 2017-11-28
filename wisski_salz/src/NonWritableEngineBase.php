@@ -79,12 +79,24 @@ abstract class NonWritableEngineBase extends EngineBase {
 
     return $form;
   }
-
-
-  public function getQueryObject(EntityTypeInterface $entity_type,$condition, array $namespaces) {
-    return new Query\Query($entity_type,$condition,$namespaces);
-  }
   
+  /*
+  * This function is copied from the sparql_pb engine.
+  * This should be made global as it actually stores the namespaces globally
+  */
+  public function getNamespaces() {
+    $ns = array();
+    $db_spaces = db_select('wisski_core_ontology_namespaces','ns')
+                  ->fields('ns')
+                  ->execute()
+                  ->fetchAllAssoc('short_name');
+    foreach ($db_spaces as $space) {
+      $ns[$space->short_name] = $space->long_name;
+    }
+    return $ns;
+  }
+
+
   public function writeFieldValues($entity_id,array $field_values,$pathbuilder,$bundle = NULL,$original_values=array(),$force_creation=FALSE) {
     return EngineInterface::NULL_WRITE;
   }
@@ -101,6 +113,10 @@ abstract class NonWritableEngineBase extends EngineBase {
   }
   
   public function setWritable() {
+  }
+
+
+  public function deleteEntity($entity) {
   }
   
   

@@ -55,6 +55,8 @@ class AdapterHelper {
       ->fetchCol(2);
     //fetch the 'eid' column into $set_ids
     //dpm($set_ids,'set IDs');
+    $set_ids = array_unique($set_ids);
+dpm([$set_ids, $entity_id], 'ids eid');
     if (is_null($entity_id)) {  
       if (count($set_ids) === 1) {
         $entity_id = key($set_ids);

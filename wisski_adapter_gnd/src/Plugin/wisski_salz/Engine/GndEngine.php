@@ -273,7 +273,6 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     if(!empty($main_property)) {
       $main_property = $main_property->getMainPropertyName();
     }
-dpm($main_property, 'löä');    
     
 #     drupal_set_message("mp: " . serialize($main_property) . "for field " . serialize($field_id));
 #    if (in_array($main_property,$property_ids)) {
@@ -297,7 +296,6 @@ dpm($main_property, 'löä');
         $paths[] = WisskiPathEntity::load($field["id"]);
       }
     }
-//dpm($paths, 'paths');
       
     $out = array();
 
@@ -356,24 +354,24 @@ dpm($main_property, 'löä');
 
   public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL) {
     $field_id = $pb->getPbPath($path->getID())["field"];
-dpm($main_property, 'mp');
 
-    $uri = AdapterHelper::getUrisForDrupalId($eid)[0];
+    $uri = AdapterHelper::getUrisForDrupalId($eid, $this->adapterId());
     $data = $this->fetchData($uri);
-
-    $pa = $path->getPathArray();
-    $pa[] = $path->getDatatypeProperty();
+    if (!$data) {
+      return [];
+    }
+dpm($data);
+    $path_array = $path->getPathArray();
+    $path_array[] = $path->getDatatypeProperty();
     $data_walk = $data;
     do {
-#dpm($data_walk, 'walk');
-      $step = array_shift($pa);
+      $step = array_shift($path_array);
       if (isset($data_walk[$step])) {
         $data_walk = $data_walk[$step];
       } else {
-        continue 2; // go to the next path
+        continue; // go to the next path
       }
-    } while (!empty($pa));
-#dpm($data_walk, 'wale');
+    } while (!empty($path_array));
     // now data_walk contains only the values
     $out = array();
     foreach ($data_walk as $value) {
