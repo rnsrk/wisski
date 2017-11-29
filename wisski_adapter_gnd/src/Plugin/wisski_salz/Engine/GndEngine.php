@@ -326,13 +326,13 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
           continue;
         } else {
           // if there is none return NULL
-          $out[$eid]['bundle'] = NULL;              
+          $out[$eid]['bundle'] = NULL;
           continue;
         }
       } else {
         
         if (empty($paths)) {
-          $out[$eid][$field_id] = NULL;              
+#          $out[$eid][$field_id] = NULL;              
         } else {
           
           foreach ($paths as $key => $path) {
@@ -346,13 +346,15 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         }
       }
     }
-    
+   
+#dpm($out, 'lfp');   
     return $out;
 
   }
 
 
   public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL) {
+#dpm($path->getName(), 'spam');
     $field_id = $pb->getPbPath($path->getID())["field"];
 
     $uri = AdapterHelper::getUrisForDrupalId($eid, $this->adapterId());
@@ -360,7 +362,6 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     if (!$data) {
       return [];
     }
-dpm($data);
     $path_array = $path->getPathArray();
     $path_array[] = $path->getDatatypeProperty();
     $data_walk = $data;

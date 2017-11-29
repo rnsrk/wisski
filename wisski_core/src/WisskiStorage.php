@@ -328,6 +328,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   $target_ids = $new_field_values[$id][$field_name];
                   if (!is_array($target_ids)) $target_ids = array(array('target_id'=>$target_ids));
                   foreach ($target_ids as $target_id) {
+#dpm($target_id, "bwtb:$aid");                    
                     $target_id = $target_id['target_id'];
                     $this->writeToCache($target_id,$target_bundle_id);
                   }
@@ -1021,8 +1022,11 @@ $tsa['eid'] = $entity_id;
   }  
   
   public function writeToCache($entity_id,$bundle_id) {
-  
-    WisskiCacheHelper::putCallingBundle($entity_id,$bundle_id);
+    try {
+      WisskiCacheHelper::putCallingBundle($entity_id,$bundle_id);
+    } catch (\Exception $e) {
+#dpm(func_get_args(), 'writeToCache');
+    }
   }
   
   // WissKI image preview stuff.

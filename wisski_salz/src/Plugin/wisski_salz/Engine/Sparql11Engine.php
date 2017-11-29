@@ -503,16 +503,22 @@ abstract class Sparql11Engine extends EngineBase {
   }
 
 
-  public function deleteSameUris($uris) {
+  public function deleteSameUris($uris, $other_uris = [], $delete_adapter_ref = TRUE) {
     if (empty($uris)) return;
     if (!is_array($uris)) $uris = array($uris);
     
     $orig_prop = $this->getOriginatesProperty();
     
     $values = 'VALUES ?uri { <' . join('> <', $uris) . '> }';
+    if (!empty($other_uris)) {
+      if (!is_array($other_uris)) $other_uris = array($other_uris);
+      $values .= ' VALUES ?other { <' . join('> <', $uris) . '> }';
+    }
     
     $qa = array();
-    $qa[] = "DELETE { GRAPH <$orig_prop> { ?uri <$orig_prop> ?aid } } WHERE { $values GRAPH <$orig_prop> { ?uri <$orig_prop> ?aid } }";
+    if ($delete_adapter_ref) {
+      $qa[] = "DELETE { GRAPH <$orig_prop> { ?uri <$orig_prop> ?aid } } WHERE { $values GRAPH <$orig_prop> { ?uri <$orig_prop> ?aid } }";
+    }
     foreach ($this->getSameAsProperties() as $prop) {
       $qa[] = "DELETE { GRAPH <$orig_prop> { ?uri <$prop> ?other } } WHERE { $values GRAPH <$orig_prop> { ?uri <$prop> ?other } }";
       $qa[] = "DELETE { GRAPH <$orig_prop> { ?other <$prop> ?uri } } WHERE { $values GRAPH <$orig_prop> { ?other <$prop> ?uri } }";
@@ -528,6 +534,7 @@ abstract class Sparql11Engine extends EngineBase {
 
   }
   
+   
   public function generateFreshIndividualUri() {
     return uniqid($this->getDefaultDataGraphUri());
   }

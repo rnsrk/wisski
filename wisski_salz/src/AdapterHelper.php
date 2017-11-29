@@ -24,6 +24,26 @@ class AdapterHelper {
     return 'drupal_id';
   }
   
+
+  public static function removeSameUris($uris, $entity_id) {
+    if (empty($uris)) return;
+
+    // delete from local store
+    // with TRUE it returns the engine instead of adapter
+    $local_engine = self::getPreferredLocalStore(TRUE);
+    $local_engine->deleteSameUris($same_uris);
+    
+    // delete from database table
+    $query = db_delete('wisski_salz_id2uri')
+      ->condition('eid', $entity_id)
+      ->condition('uri', $uris)
+      ->execute();
+    
+    return $query;  // # deleted rows
+    
+  }
+
+  
   /**
    * saves a set of URI mappings with an optional drupal entity id. This method saves the info in the Drupal database and writes it through to the preferred local adapter
    * so that in case of a DB breakdown we can re-establish the data from the local store
@@ -391,7 +411,7 @@ dpm([$set_ids, $entity_id], 'ids eid');
 
   }
 
-  
+
   /** Convenience method that iterates all adapters and checks whether the
    * given URI exists in at leat one of them.
    *

@@ -1,0 +1,51 @@
+<?php
+
+/** Module wisski_authfile
+ *
+ * @author: Martin Scholz
+ */
+
+
+/**
+ * Implementation of hook_ENTITY_TYPE_presave
+ * for WissKI's entity type
+ */
+function wisski_authfile_wisski_individual_presave(Drupal\Core\Entity\EntityInterface $entity) {
+  wisski_authfile_complete_authority_entry($entity);
+}
+
+
+/**
+ * Implementation of hook_ENTITY_TYPE_insert
+ * for WissKI's entity type
+ */
+function wisski_authfile_wisski_individual_insert(Drupal\Core\Entity\EntityInterface $entity) {
+    wisski_authfile_update_authority_uri($entity);
+}
+
+
+/**
+ * Implementation of hook_ENTITY_TYPE_update
+ * for WissKI's entity type
+ */
+function wisski_authfile_wisski_individual_update(Drupal\Core\Entity\EntityInterface $entity) {
+    wisski_authfile_update_authority_uri($entity);
+}
+
+
+function wisski_authfile_complete_authority_entry($entity) {
+  $actions = entity_load_multiple_by_properties('action', array('plugin' => 'wisski_authfile_complete_info'));
+#dpm(count($actions), 'actions ci');  
+  foreach ($actions as $action) {
+    $action->execute([$entity]);
+  }
+}
+
+
+function wisski_authfile_update_authority_uri($entity) {
+  $actions = entity_load_multiple_by_properties('action', array('plugin' => 'wisski_authfile_update_uri'));
+#dpm(count($actions), 'actions ui');  
+  foreach ($actions as $action) {
+    $action->execute([$entity]);
+  }
+}

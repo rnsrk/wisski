@@ -381,7 +381,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             $group = current($groups);
           
             if(empty($group)) {
-              drupal_set_message("There is an empty group in your system: " . serialize($groups));
+              // There should not be any error message here, this is a normal case
+              //drupal_set_message(t("Bundle %b is associated with no groups", array('%b' => $this->id)));
               continue;
             }
           
