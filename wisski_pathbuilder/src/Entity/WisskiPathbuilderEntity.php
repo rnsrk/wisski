@@ -480,18 +480,27 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     if(!$hidden)
       $display->setComponent($fieldid,$display_options)->save();
 
+    $hidden = FALSE;
+
     $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual' . '.'.$bundle.'.default');
     if (is_null($form_display)) {
       $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
     } else {
-      // there already is one.
-      $comp = $form_display->getComponent($fieldid);
 
-      if(!empty($comp))
-        $view_options = array_merge($comp, $view_options);  
+      if($no_fs && isset($form_display->toArray()['hidden']) && isset($form_display->toArray()['hidden'][$fieldid])) {
+        $hidden = TRUE;
+      } else {
+        // there already is one.
+        $comp = $form_display->getComponent($fieldid);
+
+        if(!empty($comp))
+          $view_options = array_merge($comp, $view_options);  
+      }
     }
     
-    $form_display->setComponent($fieldid, $view_options)->save();
+    if(!$hidden)
+      $form_display->setComponent($fieldid, $view_options)->save();
+
     if(!$no_fs) {
       drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
     } else {
@@ -765,21 +774,31 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     // setComponent enables them
     if(!$hidden)
       $display->setComponent($fieldid, $display_options)->save();
+      
+      
+    $hidden = FALSE;
 
     // find the current form display elements
     $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->load('wisski_individual' . '.'.$bundle.'.default');
     if (is_null($form_display)) { // no form display?
       $form_display = \Drupal::entityManager()->getStorage('entity_form_display')->create($view_entity_values);
     } else {
-      // there already is one.
-      $comp = $form_display->getComponent($fieldid);
       
-      if(!empty($comp))
-        $view_options = array_merge($comp, $view_options);  
+      if(!$create_fo && isset($form_display->toArray()['hidden']) && isset($form_display->toArray()['hidden'][$fieldid]))
+        $hidden = TRUE;
+      else {
+
+        // there already is one.
+        $comp = $form_display->getComponent($fieldid);
+      
+        if(!empty($comp))
+          $view_options = array_merge($comp, $view_options);  
+      }
     }
     
     // setComponent enables them
-    $form_display->setComponent($fieldid, $view_options)->save();      
+    if(!$hidden)
+      $form_display->setComponent($fieldid, $view_options)->save();      
 
   }
   
