@@ -1131,7 +1131,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
 
     // if disamb should be in the query we can bind it.
-    if($starting_position === $disamb) {
+    if ($starting_position === $disamb) {
+      // TODO/WARNING by Martin: I think this does not work! It should be VALUES {} instead!
+      // afaik BIND only works for unbound variables.
+      // I do not fix it now as i don't get the idea behind why this is done
+      // here! When can starting and disamb position be the same and why and
+      // what is expected to happen?
       $sparql .= " BIND( <" . $eid . "> AS ?x" . $disamb . ") . ";
     }
 

@@ -37,8 +37,6 @@ use Drupal\wisski_pathbuilder\WisskiPathInterface;
   *     "weight" = "weight"
   *   },
   *   links = {
-  *     "edit-form" = "/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/{wisski_path}",
-  *     "entity-list" = "/admin/structure/wisski_core/{wisski_bundle}/list"
   *   }        
   *  )
   */

@@ -6,6 +6,8 @@
  
 namespace Drupal\wisski_pathbuilder\Form;
 
+use SimpleXMLElement;
+
 use Drupal\Core\Form\FormStateInterface; 
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityInterface;
@@ -414,7 +416,7 @@ class WisskiPathbuilderForm extends EntityForm {
   }
 
   public function export(array &$form, FormStateInterface $form_state) {
-    $xmldoc = new \Symfony\Component\DependencyInjection\SimpleXMLElement("<pathbuilderinterface></pathbuilderinterface>");
+    $xmldoc = new SimpleXMLElement("<pathbuilderinterface></pathbuilderinterface>");
     
     // get the pathbuilder    
     $pathbuilder = $this->entity;
@@ -481,7 +483,7 @@ class WisskiPathbuilderForm extends EntityForm {
 
     $importmode = $form_state->getValue('import_mode');
 
-    $xmldoc = new \Symfony\Component\DependencyInjection\SimpleXMLElement($importfile, 0, TRUE);
+    $xmldoc = new SimpleXMLElement($importfile, 0, TRUE);
     
     $pb = $this->entity;
     
