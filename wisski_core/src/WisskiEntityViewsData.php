@@ -178,9 +178,11 @@ class WisskiEntityViewsData extends EntityViewsData {
             if(!empty($pbpath))
               $fieldid = $pbpath['field'];
 
-            if(empty($fieldid))
+            if(empty($fieldid)) {
+              continue; // the warning is left here only for debug purpose.
               drupal_set_message("Path " . $path->getName() . " has no field definition.", "warning");
-                      
+            }
+            
             $data[$base_table]["wisski_path_${pbid}__$pid"] = [
               // It would have been brilliant if we could combine both pb ID
               // and path ID by a dot for forming the field's ID as wisski 
