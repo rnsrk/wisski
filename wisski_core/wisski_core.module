@@ -79,9 +79,13 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
       else $title = $bundle->generateEntityTitle($entity_id,FALSE,$force_new);
     }
   }
+
   if (empty($title)) {
     $title = \Drupal::service('entity_type.manager')->getDefinition('wisski_individual')->getLabel().' '.$entity_id;
-    drupal_set_message(t('No title could be generated for this entity'),'warning');
+    if(empty($bundle))
+      drupal_set_message(t('No title could be generated for entity ' . $entity_id . ' with bundle ' . $bundle_id),'warning');
+    else
+      drupal_set_message(t('No title could be generated for entity ' . $entity_id . ' with bundle ' . $bundle->label()),'warning');
   }
 #  dpm(microtime(), "last title gen");
   return $title;
