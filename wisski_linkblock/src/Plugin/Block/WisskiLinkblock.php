@@ -33,7 +33,7 @@ class WisskiLinkblock extends BlockBase {
     
     $linkblockpbid = "wisski_linkblock";
     
-    $form = parent::blockForm($form, $form_state);
+#    $form = parent::blockForm($form, $form_state);
     
     $config = $this->getConfiguration();
     
@@ -48,6 +48,8 @@ class WisskiLinkblock extends BlockBase {
 #    $form = \Drupal::formBuilder()->getForm('Drupal\wisski_pathbuilder\Form\WisskiPathbuilderForm');
     
 #    dpm($pb);
+
+    #dpm($form, "form!!");
     
     return $form;
   }
@@ -61,11 +63,11 @@ class WisskiLinkblock extends BlockBase {
 
     $individualid = \Drupal::routeMatch()->getParameter('wisski_individual');
     if ($individualid instanceof \Drupal\wisski_core\Entity\WisskiEntity) $individualid = $individualid->id();
-    
+
     if(empty($individualid)) {
       return $out;
     }
-    
+        
     $linkblockpbid = "wisski_linkblock";
     
     $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($linkblockpbid);
@@ -146,7 +148,8 @@ class WisskiLinkblock extends BlockBase {
     }
 
     // cache for 2 seconds so subsequent queries seem to be fast
-    $out[]['#cache']['max-age'] = 2;
+    if(!empty($dataout))  
+      $out[]['#cache']['max-age'] = 2;
     // this does not work
 #    $out['#cache']['disabled'] = TRUE;
 #    $out[] = [ '#markup' => 'Time : ' . date("H:i:s"),];
