@@ -1480,7 +1480,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return new Query($entity_type,$condition,$namespaces,$this);
   }
   
-  public function deleteOldFieldValue($entity_id, $fieldid, $value, $pb, $count = 0) {
+  public function deleteOldFieldValue($entity_id, $fieldid, $value, $pb, $count = 0, $value_is_entity_ref = FALSE) {
  #   drupal_set_message("entity_id: " . $entity_id . " field id: " . $fieldid . " value " . serialize($value));
     // get the pb-entry for the field
     // this is a hack and will break if there are several for one field
@@ -1511,8 +1511,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     // this is an important distinction till now!
     // TODO: maybe we can combine reference delete and value delete
-    $is_reference = $path->isGroup() ? : ($pbarray['fieldtype'] == 'entity_reference');
+    if($value_is_entity_reference) $is_reference = TRUE;
+    else
+      $is_reference = $path->isGroup() ? : ($pbarray['fieldtype'] == 'entity_reference');
 
+#    dpm($is_reference, "is ref");
 
     if ($is_reference) {
       // delete a reference
@@ -1520,6 +1523,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // and the entity has to be matched to the uri
       
       $subject_uri = $this->getUriForDrupalId($entity_id);
+#      dpm($subject_uri, "subj");
       if (empty($subject_uri)) {
         // the adapter doesn't know of this entity. some other adapter needs
         // to handle it and we can skip it.
@@ -1529,6 +1533,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
       // value is the Drupal id of the referenced entity
       $object_uri = $this->getUriForDrupalId($value);
+#      dpm($object_uri, "obj");
       if (empty($object_uri)) {
         // the adapter doesn't know of this entity. some other adapter needs
         // to handle it and we can skip it.
@@ -1570,34 +1575,43 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
         // we have to set disamb manually to the last instance
         // otherwise generateTriplesForPath() won't produce right triples
-        $disamb = (count($path_array) + 1) / 2;
-        // the var that interests us is the one before disamb.
-        // substract 2 as the disamb count starts from 1 whereas vars start from 0!
-        // in W8, the x increases by 2!
-        $subject_var = "x" . (($disamb - 2) * 2);
-
-        // build up a select query that get us 
-        $select  = "SELECT DISTINCT ?$subject_var WHERE {";
-        $select .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $object_uri, $disamb, $pathcnt, FALSE, NULL, 'entity_reference');
-        $select .= "}";
+        if($path->isGroup()) { // only do this for groups - for fields we have to handle this otherwise.
+          $disamb = (count($path_array) + 1) / 2;
         
-        $result = $this->directQuery($select);
+          // the var that interests us is the one before disamb.
+          // substract 2 as the disamb count starts from 1 whereas vars start from 0!
+          // in W8, the x increases by 2!
+          $subject_var = "x" . (($disamb - 2) * 2);
 
-        if ($result->numRows() == 0) {
-          // there is no relation any more. has been deleted before!?
-          return;
-        }
+          // build up a select query that get us 
+          $select  = "SELECT DISTINCT ?$subject_var WHERE {";
+          $select .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $object_uri, $disamb, $pathcnt, FALSE, NULL, 'entity_reference');
+          $select .= "}";
+          
+          $result = $this->directQuery($select);
+
+          if ($result->numRows() == 0) {
+            // there is no relation any more. has been deleted before!?
+            return;
+          }
 #ddl(array($disamb, $subject_var, $select,$result, $result->numRows()), 'delete disamb select');
 
-        // reset subjects
-        $subject_uris = array();
-        foreach ($result as $row) {
-          $subject_uris[] = $row->{$subject_var}->getUri();
+          // reset subjects
+          $subject_uris = array();
+          foreach ($result as $row) {
+            $subject_uris[] = $row->{$subject_var}->getUri();
+          }
+        } else { // this is the case for the entity-reference fields that are not made by wisski
+          $subject_uris = array($subject_uri);
         }
 
       }
       
-      $prop = $path_array[count($path_array) - 2];
+      // if it is a entity reference we take that before the disamb!
+      if(!$path->isGroup() && $is_reference)     
+        $prop = $path_array[(($path->getDisamb()-1) * 2) - 1];
+      else
+        $prop = $path_array[count($path_array) - 2];
       $inverse = $this->getInverseProperty($prop);
 
       $delete  = "DELETE DATA {\n";
@@ -1606,6 +1620,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $delete .= "  <$object_uri> <$inverse> <$subject_uri> .\n";
       }
       $delete .= ' }';
+
+#      dpm($delete, "sparql");
 
       $result = $this->directUpdate($delete);    
 
@@ -2257,8 +2273,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return $query;
   }
   
-  public function addNewFieldValue($entity_id, $fieldid, $value, $pb) {
-#    drupal_set_message("I get: " . $entity_id.  " with fid " . $fieldid . " and value " . $value . ' for pb ' . $pb->id());
+  public function addNewFieldValue($entity_id, $fieldid, $value, $pb, $value_is_entity_ref = FALSE) {
+#    drupal_set_message("I get: " . $entity_id.  " with fid " . $fieldid . " and value " . $value . ' for pb ' . $pb->id() . ' er ' . serialize($value_is_entity_ref));
 #    drupal_set_message(serialize($this->getUri("smthg")));
     $datagraphuri = $this->getDefaultDataGraphUri();
 
@@ -2270,19 +2286,31 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     if(empty($path))
       return;
-      
-    if($path->getDisamb()) {
+    
+    // we distinguish two modes of how to interpret the value: 
+    // entity ref: the value is an entity id that shall be linked to 
+    // normal: the value is a literal and may be disambiguated
+    if($value_is_entity_ref)
+      $is_entity_ref = TRUE;
+    else
+      $is_entity_ref = $path->isGroup() || $pb->getPbEntriesForFid($fieldid)['fieldtype'] == 'entity_reference';
+    
+    // in case of no entity-reference we do not search because we
+    // already get what we want!
+    if($path->getDisamb() && !$is_entity_ref) {
       $sparql = "SELECT ?x" . (($path->getDisamb()-1)*2) . " WHERE { ";
 
       // starting position one before disamb because disamb counts the number of concepts, startin position however starts from zero
       $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE);
+       
       $sparql .= " }";
 #      drupal_set_message("spq: " . ($sparql));
+#      dpm($path, "path");
       $disambresult = $this->directQuery($sparql);
 #dpm(array($sparql, $disambresult), __METHOD__ . " disamb query");
       if(!empty($disambresult))
         $disambresult = current($disambresult);      
-    }
+    } 
     
     // rename to uri
     $subject_uri = $this->getUriForDrupalId($entity_id);
@@ -2293,14 +2321,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // 1.) A -> B -> C -> D -> E (l: 9) and 2.) C -> D -> E (l: 5) is the relative, then
     // 1 - 2 is 4 / 2 is 2 - which already is the starting point.
     $start = ((count($path->getPathArray()) - (count($pb->getRelativePath($path))))/2);
-
-    // we distinguish two modes of how to interpret the value: 
-    // entity ref: the value is an entity id that shall be linked to 
-    // normal: the value is a literal and may be disambiguated
-    $is_entity_ref = $path->isGroup() || $pb->getPbEntriesForFid($fieldid)['fieldtype'] == 'entity_reference';
     
     if($is_entity_ref) {
-      $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value), (count($path->getPathArray())+1)/2, $start, TRUE, '', 'entity_reference');
+      // if it is a group - we take the whole group path as disamb pos
+      if($path->isGroup())
+        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value), (count($path->getPathArray())+1)/2, $start, TRUE, '', 'entity_reference');
+      else // if it is a field it has a disamb pos!
+        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value), $path->getDisamb(), $start, TRUE, '', 'entity_reference');        
     } else {
       if(empty($path->getDisamb()))
         $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE);
@@ -2504,8 +2531,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         #dpm($delete_values, "we have to delete");
         if (!empty($delete_values)) {
           foreach ($delete_values as $key => $val) {
+            $value_is_entity_ref = FALSE;
+           
+            // it might be an entity reference!
+            if($mainprop == "target_id") {
+              $value_is_entity_ref = TRUE;
+            }   
+            
             #drupal_set_message("I1 delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
-            $this->deleteOldFieldValue($entity_id, $field_id, $val[$mainprop], $pathbuilder, $key);
+            $this->deleteOldFieldValue($entity_id, $field_id, $val[$mainprop], $pathbuilder, $key, $value_is_entity_ref);
           }
         }
       }
@@ -2513,7 +2547,16 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #      dpm($write_values, "we have to write");
       // now we write all the new values
       foreach ($write_values as $new_item) {
-        $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder); 
+        $value_is_entity_ref = FALSE;
+        
+        // it might be an entity reference!
+        if($mainprop == "target_id") {
+          $value_is_entity_ref = TRUE;
+        }
+        
+ #       dpm($mainprop, "mainprop");
+        
+        $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder, $value_is_entity_ref); 
       }
 
       
