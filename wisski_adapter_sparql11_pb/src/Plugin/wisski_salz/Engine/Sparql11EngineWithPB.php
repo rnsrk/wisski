@@ -1068,7 +1068,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * fetches the data for display purpose
    */
   public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL, $relative = TRUE) {
-#    drupal_set_message("I got: $eid");
+#    drupal_set_message("I got: $eid " . serialize($path));
     if(empty($path)) {
       drupal_set_message("No path supplied to ptr. This is evil.", "error");
       return array();
@@ -1480,7 +1480,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return new Query($entity_type,$condition,$namespaces,$this);
   }
   
-  public function deleteOldFieldValue($entity_id, $fieldid, $value, $pb, $count = 0, $value_is_entity_ref = FALSE) {
+  public function deleteOldFieldValue($entity_id, $fieldid, $value, $pb, $count = 0, $mainprop = FALSE) {
  #   drupal_set_message("entity_id: " . $entity_id . " field id: " . $fieldid . " value " . serialize($value));
     // get the pb-entry for the field
     // this is a hack and will break if there are several for one field
@@ -1511,9 +1511,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     // this is an important distinction till now!
     // TODO: maybe we can combine reference delete and value delete
-    if($value_is_entity_reference) $is_reference = TRUE;
-    else
-      $is_reference = $path->isGroup() ? : ($pbarray['fieldtype'] == 'entity_reference');
+    $is_reference = ($mainprop == 'target_id' && ($path->isGroup() ? : ($pbarray['fieldtype'] == 'entity_reference')));
 
 #    dpm($is_reference, "is ref");
 
@@ -2273,7 +2271,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return $query;
   }
   
-  public function addNewFieldValue($entity_id, $fieldid, $value, $pb, $value_is_entity_ref = FALSE) {
+  public function addNewFieldValue($entity_id, $fieldid, $value, $pb, $mainprop = FALSE) {
 #    drupal_set_message("I get: " . $entity_id.  " with fid " . $fieldid . " and value " . $value . ' for pb ' . $pb->id() . ' er ' . serialize($value_is_entity_ref));
 #    drupal_set_message(serialize($this->getUri("smthg")));
     $datagraphuri = $this->getDefaultDataGraphUri();
@@ -2290,10 +2288,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // we distinguish two modes of how to interpret the value: 
     // entity ref: the value is an entity id that shall be linked to 
     // normal: the value is a literal and may be disambiguated
-    if($value_is_entity_ref)
-      $is_entity_ref = TRUE;
-    else
-      $is_entity_ref = $path->isGroup() || $pb->getPbEntriesForFid($fieldid)['fieldtype'] == 'entity_reference';
+    $is_entity_ref = ($mainprop == 'target_id' && ($path->isGroup() || $pb->getPbEntriesForFid($fieldid)['fieldtype'] == 'entity_reference'));
     
     // in case of no entity-reference we do not search because we
     // already get what we want!
@@ -2530,16 +2525,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
         #dpm($delete_values, "we have to delete");
         if (!empty($delete_values)) {
-          foreach ($delete_values as $key => $val) {
-            $value_is_entity_ref = FALSE;
-           
-            // it might be an entity reference!
-            if($mainprop == "target_id") {
-              $value_is_entity_ref = TRUE;
-            }   
-            
+          foreach ($delete_values as $key => $val) {            
             #drupal_set_message("I1 delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
-            $this->deleteOldFieldValue($entity_id, $field_id, $val[$mainprop], $pathbuilder, $key, $value_is_entity_ref);
+            $this->deleteOldFieldValue($entity_id, $field_id, $val[$mainprop], $pathbuilder, $key, $mainprop);
           }
         }
       }
@@ -2547,16 +2535,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #      dpm($write_values, "we have to write");
       // now we write all the new values
       foreach ($write_values as $new_item) {
-        $value_is_entity_ref = FALSE;
-        
-        // it might be an entity reference!
-        if($mainprop == "target_id") {
-          $value_is_entity_ref = TRUE;
-        }
-        
  #       dpm($mainprop, "mainprop");
         
-        $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder, $value_is_entity_ref); 
+        $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder, $mainprop); 
       }
 
       
