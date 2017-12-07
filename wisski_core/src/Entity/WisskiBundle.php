@@ -336,9 +336,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           if($pbpath['bundle'] == $pbpath['field']) {
 
             // get the data from the pathbuilder
-            $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", FALSE);
+            $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", TRUE);
 
-
+#            dpm($eid, "tmp");
             $grptitles = array();
 
             // iterate through the data we've got
