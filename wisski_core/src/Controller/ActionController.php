@@ -21,8 +21,12 @@ class ActionController extends ControllerBase {
     if (empty($action)) {
       throw new \InvalidArgumentException("You must specify a valid action");
     }
-    
-    $action->execute([]);
+    $entity_type = $action->getType();
+    $entity_ids = explode(',', $objects);
+    $entities = entity_load_multiple($entity_type, $entity_ids);
+#rpm([$action,$entity_ids,count($entities)],'davor');    
+    $action->execute($entities);
+#rpm('danach');    
 
     return $this->redirect('<front>');
 

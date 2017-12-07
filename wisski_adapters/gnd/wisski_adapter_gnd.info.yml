@@ -1,7 +1,7 @@
 name: WissKI DNB GND Adapter
 description: A WissKI adapter that directly queries the Gemeinsame Normdatei of the Deutsche Nationalbibliothek
 core: 8.x
-package: WissKI
+package: WissKI Adapters
 version: 0.1-dev
 type: module
 dependencies:

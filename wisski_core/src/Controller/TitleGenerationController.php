@@ -51,7 +51,7 @@ class TitleGenerationController extends ControllerBase {
    * @param mixed $context
    *   Batch context information.
    */
-  public function processBatch($bundle_id, &$context) {
+  public static function processBatch($bundle_id, &$context) {
     $amount = 1000; // 1000 should be sufficient
     $query = \Drupal::entityQuery('wisski_individual');
     $query->condition('bundle', $bundle_id);
@@ -66,7 +66,7 @@ class TitleGenerationController extends ControllerBase {
     }
     else {
       foreach ($eids as $eid) {
-        wisski_core_generate_title($eid, FALSE, $bundle_id);
+        wisski_core_generate_title($eid, TRUE, $bundle_id);
       }
       $context['sandbox']['progress'] = $offset + count($eids);
       // we do not know the total number of individuals so we just
@@ -89,7 +89,7 @@ class TitleGenerationController extends ControllerBase {
    * @return RedirectResponse
    *    Where to redirect when batching ended.
    */
-  public function finishBatch($success, $results, $operations) {
+  public static function finishBatch($success, $results, $operations) {
     if ($success) {
       drupal_set_message(t('Updated titles of @total entities', ['@total' => $results['total']]));
     }

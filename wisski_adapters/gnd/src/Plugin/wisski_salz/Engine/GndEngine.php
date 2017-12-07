@@ -290,6 +290,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     $pbs = array($this->getPbForThis());
     $paths = array();
     foreach($pbs as $key => $pb) {
+      if (!$pb) continue;
       $field = $pb->getPbEntriesForFid($field_id);
 #dpm(array($key,$field),'öäü');
       if (is_array($field) && !empty($field['id'])) {

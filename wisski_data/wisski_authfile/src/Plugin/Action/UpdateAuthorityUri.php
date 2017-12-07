@@ -36,7 +36,7 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
   /**
    * {@inheritdoc}
    */
-  protected function getDefaultConfiguration() {
+  public function defaultConfiguration() {
     return array(
       'auth_adapters' => '',
       'fields' => '',
@@ -127,7 +127,7 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
     $old_auth_uris = [];
     foreach ($uris_by_adapter as $aid => $uri) {
       $old_uris["$aid $uri"] = "$aid $uri";
-      if ($adapters[$aid]) {
+      if (isset($adapters[$aid])) {
         $old_auth_uris["$aid $uri"] = "$aid $uri";
       }
     }

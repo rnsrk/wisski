@@ -34,7 +34,7 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
   /**
    * {@inheritdoc}
    */
-  protected function getDefaultConfiguration() {
+  public function defaultConfiguration() {
     return array(
       'bundle' => '',
       'file_eid_field' => '',
@@ -50,31 +50,32 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+    $configuration = $this->getConfiguration();
     $form['bundle'] = array(
       '#type' => 'textfield',
       '#title' => t('Bundle ID'),
-      '#default_value' => $this->configuration['bundle'],
+      '#default_value' => $configuration['bundle'],
       '#required' => TRUE,
     );
     $form['entry_uri_field'] = array(
       '#type' => 'textfield',
       '#title' => t('Field ID for the URI of the entry'),
-      '#default_value' => $this->configuration['entry_uri_field'],
+      '#default_value' => $configuration['entry_uri_field'],
     );
     $form['file_eid_field'] = array(
       '#type' => 'textfield',
       '#title' => t('Field ID for Authority File ID'),
-      '#default_value' => $this->configuration['file_eid_field'],
+      '#default_value' => $configuration['file_eid_field'],
     );
     $form['entry_id_field'] = array(
       '#type' => 'textfield',
       '#title' => t('Field ID for the ID of the entry'),
-      '#default_value' => $this->configuration['entry_id_field'],
+      '#default_value' => $configuration['entry_id_field'],
     );
     $form['patterns'] = array(
       '#type' => 'textarea',
       '#title' => t('The completion patterns'),
-      '#default_value' => $this->configuration['patterns'],
+      '#default_value' => $configuration['patterns'],
       '#required' => TRUE,
     );
     return $form;

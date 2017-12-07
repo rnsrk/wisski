@@ -29,7 +29,7 @@ class SparqlQuery extends ConfigurableActionBase {
   /**
    * {@inheritdoc}
    */
-  protected function getDefaultConfiguration() {
+  public function defaultConfiguration() {
     return array(
       'adapter_id' => '',
       'sparql' => '',
@@ -106,6 +106,7 @@ class SparqlQuery extends ConfigurableActionBase {
       ]);
     }
     $queryMethod = 'direct' . $this->configuration['query_method'];
+#rpm([$queryMethod, $this->configuration], "action");    
     $result = $adapter->getEngine()->$queryMethod($this->configuration['sparql']);
     // what to do with the result?
   }

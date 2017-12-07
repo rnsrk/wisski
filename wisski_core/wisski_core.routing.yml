@@ -11,7 +11,7 @@ wisski.wisski_ontology:
     _form: '\Drupal\wisski_core\Form\WisskiOntologyForm'
     _title: 'Ontology'
   requirements:
-    _permission: 'access content'
+    _permission: 'administer wisski'
 
 entity.wisski_individual.list:
   path: '/wisski/navigate'
