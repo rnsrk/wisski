@@ -310,7 +310,7 @@ wisski_tick("end exec views");
     $fields = $this->fields;
 
     
-    #dpm($this, "fields");
+rpm($this->fields, "fields");
 #    dpm(microtime(), "before load");
     $ids_to_load = array();
     if (isset($fields['_entity'])) {
@@ -488,6 +488,7 @@ wisski_tick("end exec views");
                     }
                   }
                 }
+if ($field == 'wisski_path_sammlungsobjekt__91') rpm([$path, $result, $values_per_row], '91');
               }
             }
           }

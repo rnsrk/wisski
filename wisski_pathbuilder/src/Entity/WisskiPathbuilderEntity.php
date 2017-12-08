@@ -226,10 +226,17 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
         
       }
 
-      drupal_set_message("No Bundle found for $eid - error.", "error");    
+      // We must not trigger the error message below:
+      // In case of multiple adapters, the adapter for this pathbuilder may not
+      // know the entity and so doesn't find any bundle; however, other 
+      // adapters may well know the bundle.
+      // So it needn't be an error if we do not find a bundle here
+      // TODO: check if there should be an error message on a point further up
+      // the call hierarchy
+      // drupal_set_message("No Bundle found for $eid for adapter $adapterid - error.", "error");    
+      
       return NULL;
-#        $data = my_module_complicated_calculation();
-#        \Drupal::cache()->set($cid, $data);
+    
     }
   }
   

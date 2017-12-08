@@ -81,9 +81,8 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
    * {@inheritdoc} 
    */
   public function hasEntity($entity_id) {
-    
     $uris = AdapterHelper::getUrisForDrupalId($entity_id);
-
+    if (empty($uris)) return FALSE;
     foreach ($uris as $uri) {
       // fetchData also checks if the URI matches the GND URI pattern
       // and if so tries to get the data.
@@ -91,8 +90,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         return TRUE;
       }
     }
-
-    return TRUE;
+    return FALSE;
   }
 
 

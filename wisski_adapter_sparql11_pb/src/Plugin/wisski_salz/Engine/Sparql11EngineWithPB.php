@@ -2145,7 +2145,17 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
     $pb_path_info = $pb->getPbPath($path->id());
     $has_primitive = !empty($primitive) && $primitive != "empty";
-    $should_have_primitive = !$path->isGroup() && $pb_path_info['fieldtype'] != 'entity_reference';
+if ($path->id() == 'sammler_verweis_') rpm([$pb_path_info, $path->id()], 'ref');
+    // all paths should have a primitive. only this cases usually have no 
+    // primitive:
+    // - a group
+    // - a path belonging to an entity reference field
+    // - a path that has no corresp field (depending on use it may or may not 
+    //   have a primitive)
+    $should_have_primitive = 
+         !$path->isGroup() 
+      && $pb_path_info['fieldtype'] != 'entity_reference'
+      && $pb_path_info['field'] != $pb::CONNECT_NO_FIELD;
 
     if(!$has_primitive && $should_have_primitive) {
       drupal_set_message("There is no primitive Datatype for Path " . $path->getName(), "error");
