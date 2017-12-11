@@ -70,7 +70,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
     // this loads everything from the triplestore
     $values = $this->getEntityInfo($ids);
-#    dpm($values, "values");
+    dpm($values, "values");
 #    dpm(microtime(), "after load");
     $pb_cache = array();
 
@@ -145,12 +145,17 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         }
         
 #        dpm($values, "values after");
-        
+             
         try {
+#        dpm("yay!");
+#          dpm(serialize($values[$id]));
           $entity = $this->create($values[$id]);
+#          dpm(serialize($entity), "yay!");
           $entity->enforceIsNew(FALSE);
           $entities[$id] = $entity;
+#          dpm($entities);
         } catch (\Exception $e) {
+          drupal_set_message("An error occured: " . $e->getMessage(), "error");
         }
       }
     }
@@ -249,6 +254,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             // be more robust.
             if(empty($bundleid)) {
               drupal_set_message("Beware, there is somewhere an empty bundle id specified in your pathbuilder!", "warning");
+              drupal_set_message("I have been looking for a bundle for $id and I got from cache: " . serialize($cached_bundle));
               continue;
             }
               
