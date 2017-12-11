@@ -171,15 +171,24 @@ wisski_tick("begin exec views");
     $count_query = $view->build_info['wisski_count_query'];
     $args = $view->build_info['query_args'];
 
+    $filter_regex = array();
+
     $bundle_ids = array();
     
     if(!empty($view->filter)) {
       foreach($view->filter as $key => $one_filter) {
         if($key == "bundle") {
           $bundle_ids = array_merge($bundle_ids, $one_filter->value);
+        } else {
+#          dpm(serialize($one_filter));
+#          $filter_regex[$key][] = array('op' => $one_filter->operator, 'val' => $one_filter->value);
+#          dpm($key, "key");
+          $query->condition($key, $one_filter->value);
         }
       }
     }    
+
+#    dpm($filter_regex);
 
     $query->addMetaData('view', $view);
     $count_query->addMetaData('view', $view);
@@ -259,7 +268,7 @@ wisski_tick("begin exec views");
 #        dpm(microtime(), "before frv");
         // Get the fields for each entity, give it its ID, and then add to the result array.
         // This is later used for field rendering
-        $values_per_row = $this->fillResultValues($entity_ids, $bundle_ids);
+        $values_per_row = $this->fillResultValues($entity_ids, $bundle_ids, $filter_regex);
 #        dpm(microtime(), "after frv");
 #dpm([$values_per_row, $entity_ids], __METHOD__);
         foreach ($values_per_row as $rowid => $values) {
@@ -293,7 +302,7 @@ wisski_tick("end exec views");
   }
 
   
-  protected function fillResultValues($entity_ids, $bundle_ids = array()) {
+  protected function fillResultValues($entity_ids, $bundle_ids = array(), $filter_regex = array()) {
  #   dpm($bundle_ids, "this");
 
     $eid_to_uri_per_aid = [];
@@ -308,7 +317,8 @@ wisski_tick("end exec views");
     }
 
     $fields = $this->fields;
-
+    #dpm($fields);
+#    dpm(serialize($values_per_row));
     
 #rpm($this->fields, "fields");
 #    dpm(microtime(), "before load");
@@ -321,12 +331,15 @@ wisski_tick("end exec views");
     }
     
     $loaded_ids = entity_load_multiple('wisski_individual', $ids_to_load);
+#    dpm(serialize($ids_to_load));
+#    dpm(serialize(entity_load(437)));
+#    dpm(serialize($loaded_ids));
     if (isset($fields['_entity'])) {
       foreach ($values_per_row as &$row) {
         $row['_entity'] = $loaded_ids[$row['eid']];
       }
     }
-
+#    dpm(serialize($values_per_row));
 
 #    dpm($row, "row");
     
@@ -462,7 +475,18 @@ wisski_tick("end exec views");
                 // NOTE: we need to set the $relative param to FALSE. All other
                 // optional params should be default values
                 $select .= $engine->generateTriplesForPath($pb, $path, "", NULL, NULL, 0, 0, FALSE, '=', 'field', FALSE);
+                #$select .= "}";
+
+                // add filter criteria on this level
+                // because these paths must not align with entities.
+#                if(isset($filter_regex[$field])) {
+#                  foreach($filter_regex[$field] as $filter_val) {
+#                    $select .= "FILTER REGEX(?out, '" . $filter_val['val'] . "', 'i') . ";
+#                  }
+#                }
+
                 $select .= "}";
+
 #                dpm($select, "select " . $path->getID() .': '.$path->getDatatypeProperty() );
 #                dpm(microtime(), "before");
                 $result = $engine->directQuery($select);
@@ -472,6 +496,7 @@ wisski_tick("end exec views");
 #                dpm(microtime(), "after");
                 foreach ($result as $sparql_row) {
                   if (isset($uris_to_eids[$sparql_row->x0->getUri()])) {
+#                    dpm($uris_to_eids[$sparql_row->x0->getUri()], $sparql_row->x0->getUri());
                     $eid = $uris_to_eids[$sparql_row->x0->getUri()];
                     if (!isset($sparql_row->$out_prop) || $sparql_row->$out_prop === NULL) {
                       \Drupal::logger('WissKI views')->warning("invalid reference slot {s} for path {pid}", ['s' => $out_prop, 'pid' => $path->getID()]);
@@ -488,7 +513,7 @@ wisski_tick("end exec views");
                     }
                   }
                 }
-if ($field == 'wisski_path_sammlungsobjekt__91') rpm([$path, $result, $values_per_row], '91');
+#if ($field == 'wisski_path_sammlungsobjekt__91') rpm([$path, $result, $values_per_row], '91');
               }
             }
           }
@@ -498,6 +523,7 @@ if ($field == 'wisski_path_sammlungsobjekt__91') rpm([$path, $result, $values_pe
     
 
     }
+#    dpm(serialize($values_per_row[437]));
 #    dpm(microtime(), "end of ...");    
     return array_values($values_per_row);
 
