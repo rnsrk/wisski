@@ -310,7 +310,7 @@ wisski_tick("end exec views");
     $fields = $this->fields;
 
     
-rpm($this->fields, "fields");
+#rpm($this->fields, "fields");
 #    dpm(microtime(), "before load");
     $ids_to_load = array();
     if (isset($fields['_entity'])) {
