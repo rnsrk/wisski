@@ -131,11 +131,13 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       $state = unserialize($state);
 
       $title = isset($state[$this->id]) ? $state[$this->id] : '';
-      if(!empty($title));
+
+      if(!empty($title))
         return $title;
     }
-  
+
     return unserialize($this->title_pattern);
+
   }
   
   public function removeTitlePattern() {
@@ -189,7 +191,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    */
   private function applyTitlePattern($pattern,$entity_id) {
     
-    #dpm($pattern,__FUNCTION__);
+#    dpm($pattern,__FUNCTION__);
     if(isset($pattern['max_id']))
       unset($pattern['max_id']);
         
@@ -305,7 +307,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   }
   
   public function gatherTitleValues($eid,$path_id) {
-
+    #dpm("yay!");
     $values = array();
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
     $adapters = \Drupal\wisski_salz\Entity\Adapter::loadMultiple();
@@ -338,7 +340,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             // get the data from the pathbuilder
             $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", TRUE);
 
-#            dpm($eid, "tmp");
+     #       dpm($tmp, "tmp");
             $grptitles = array();
 
             // iterate through the data we've got
@@ -365,7 +367,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             $new_values[] = implode(", ", $grptitles);
 
           } else { // normal field handling
-                              
+      #      dpm("normal handling1");                  
             $bundle_of_path = $pbpath['bundle'];
  
             // if this is empty, then we get the parent and take this.
@@ -385,7 +387,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               //drupal_set_message(t("Bundle %b is associated with no groups", array('%b' => $this->id)));
               continue;
             }
-          
+       #     dpm("normal handling");          
             // if the bundle and this object are not the same, the eid is the one of the
             // main bundle and the paths have to be absolute. In this case
             // we have to call it with false. 
