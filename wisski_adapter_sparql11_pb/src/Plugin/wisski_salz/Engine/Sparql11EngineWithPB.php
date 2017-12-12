@@ -1511,7 +1511,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     // this is an important distinction till now!
     // TODO: maybe we can combine reference delete and value delete
-    $is_reference = ($mainprop == 'target_id' && ($path->isGroup() ? : ($pbarray['fieldtype'] == 'entity_reference')));
+    $is_reference = ($mainprop == 'target_id' || $path->isGroup() || ($pbarray['fieldtype'] == 'entity_reference'));
 
 #    dpm($is_reference, "is ref");
 
