@@ -24,6 +24,39 @@ function wisski_iip_image_preprocess_colorbox_formatter(&$variables) {
 
   if(empty($nuri)) {
     $style = ImageStyle::load('wisski_pyramid');
+    if(empty($style)) {
+      $service = \Drupal::service('image.toolkit.manager');
+      $toolkit = $service->getDefaultToolkit();
+#      dpm($toolkit);
+#      $config = $this->configFactory->getEditable('imagemagick.settings');
+      
+      if(empty($toolkit) || $toolkit->getPluginId() !== "imagemagick") {
+        drupal_set_message('Your default toolkit is not imagemagick. Please use imagemagick for this module.', "error");
+        return;
+      }
+      
+      $config = \Drupal::service('config.factory')->getEditable('imagemagick.settings');
+      
+      $formats = $config->get('image_formats');
+      
+      if(!isset($formats["PTIF"])) {
+        drupal_set_message("PTIF was not a valid image format. We enabled it for you. Make sure it is supported by your imagemagick configuration.");
+        $formats["PTIF"] = array('mime_type' => "image/tiff", "enabled" => TRUE);
+        $config->set('image_formats', $formats);
+        $config->save();
+      }
+      
+
+      $image_style_name = 'wisski_pyramid';
+
+      if(! $image_style = \Drupal\image\Entity\ImageStyle::load($image_style_name)) {
+        $values = array('name'=>$image_style_name,'label'=>'Wisski Pyramid Style');
+        $image_style = \Drupal\image\Entity\ImageStyle::create($values);
+        $image_style->addImageEffect(array('id' => 'WisskiPyramidalTiffImageEffect'));
+        $image_style->save();
+      }
+      $style = $image_style;
+    }
     $nuri = $style->buildUri($iu);
   }
 #  dpm($variables);
@@ -75,6 +108,6 @@ function wisski_iip_image_field_widget_form_alter(&$element, \Drupal\Core\Form\F
 function wisski_iip_image_theme_registry_alter(&$theme_registry) {
 #  dpm($theme_registry);
 #  $theme_registry['colorbox_formatter']['template'] = 'wisskiiip-colorbox-formatter';
-  #$theme_registry['colorbox_formatter']['path'] = drupal_get_path('module', 'wisski_iip_image') . '/templates';
+  $theme_registry['colorbox_formatter']['path'] = drupal_get_path('module', 'wisski_iip_image') . '/templates';
 }
 

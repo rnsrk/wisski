@@ -70,7 +70,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
     // this loads everything from the triplestore
     $values = $this->getEntityInfo($ids);
-    dpm($values, "values");
+#    dpm($values, "values");
 #    dpm(microtime(), "after load");
     $pb_cache = array();
 
