@@ -3,7 +3,7 @@
 namespace Drupal\wisski_jit\Controller;
 
 use Drupal\Core\Entity\ContentEntityStorageInterface;
-use \Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\wisski_core;
 use Drupal\wisski_salz\AdapterHelper;
@@ -12,17 +12,39 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
 use Drupal\wisski_core\WisskiCacheHelper;
-
+//optional
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\OpenDialogCommand;
+use Drupal\Core\Ajax\OpenModalDialogCommand;
+use Drupal\Core\Form\FormBuilder;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+//optional end
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 class Sparql11GraphTabController extends ControllerBase {
 
+  protected $formBuilder;
+ 
+  public function __construct(FormBuilder $formBuilder) {
+    $this->formBuilder = $formBuilder;
+  }
+  
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('form_builder')
+    );
+  }
+
+  public static function getRequest(Request $request){
+    return $request;  
+  }
+  
   public function getJson(Request $request) {
 #    drupal_set_message("got: " . serialize($request->get('wisski_individual')));
 #    return new JsonResponse(array());
-
+    //dpm("test getJson");
     $mode = $request->get('mode');
 
     $wisski_individual = $request->get('wisski_individual');
@@ -56,7 +78,14 @@ class Sparql11GraphTabController extends ControllerBase {
       $title = wisski_core_generate_title($drupal_eid);
     
       
-    $base = array("id" => $target_uri, "name" => '<span class="wki-groupname">' . $title . '</span>', "children" => array(), "data" => array("relation" => "<h2>Connections (" . $target_uri . ")</h2><ul></ul>"));            
+    $base = array("id" => $target_uri, 
+                  "name" => '<span class="wki-groupname">' . $title . '</span>', 
+                  "children" => array(), 
+                  "data" => array(
+                    "relation" => "<h2>Connections (" . $target_uri . ")</h2><ul></ul>",
+                    "nodetitle"=> $title,
+                  ),
+            );            
 
 
     foreach ($adapters as $aid => $a) {
@@ -145,7 +174,7 @@ class Sparql11GraphTabController extends ControllerBase {
                   }
                   $q = $e->generateTriplesForPath($pb, $path, "", $target_uri);
                   $result = $e->directQuery("SELECT * { $q }");
-                  dpm($q);
+                  //dpm($q);
                   foreach ($result as $row) {
                     $curr = &$base;
                     for ($x = 2; ; $x+=2) {
@@ -170,13 +199,19 @@ class Sparql11GraphTabController extends ControllerBase {
                       }
                       if (!$already_there) {
                         $index = count($curr['children']);
-//                        drupal_set_message($xp . ' 1is ' . $title);
+//                      drupal_set_message($xp . ' 1is ' . $title);
                         $nodetitle = $row->$xp->localName();
                         if(!empty($title))
-                          $nodetitle = $title;
+                        $nodetitle = $title;
                         $curr['children'][$index] = array(
                           'id' => $uri,
                           'name' => '<span class="wki-groupname" data-wisski-url="' . $drupal_url . '">' . $nodetitle . '</span>',
+                          'data' => array(
+                            'nodetitle' => $nodetitle,
+                            //@Todo: this is a default value. change to get the appropriate value
+                            'labeltext' => $nodetitle,
+                            'labelid' => 'labelid=' . $nodetitle,
+                          ),
                           'children' => array(),
                         );
                       }
@@ -196,36 +231,33 @@ class Sparql11GraphTabController extends ControllerBase {
               foreach ($bundles as $bid) {
                 foreach ($bundles_to_pbs[$bid] as $pbid => $pb_info) { 
                   $pb = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->load($pbid);
-                  dpm($pb->getAllPathsAndGroupsForBundleId($bid));
+                  //dpm($pb->getAllPathsAndGroupsForBundleId($bid));
                   $paths = $pb->getAllPathsAndGroupsForBundleId($bid);
+		  //we need the child path only
 		  $path = $paths[1];  
                   //dpm($path);
                   $eid = $target_eid;
-                  $pathValue = $e->pathToReturnValue($path,$pb,$eid, 0, "value");
+                  $pathValue = $e->pathToReturnValue($path,$pb,$eid, 0, "nodetitle");
                   //dpm($pathValue[0]['value']);
                   //$round = 1; 
-                  dpm($pathValue);
+                  //dpm($pathValue);
                   $index = 0 ;
                   foreach($pathValue as $value){
                     $curr = &$base;
-                    dpm($index);
-                    dpm($value);
+                    //dpm($index);
+                    //dpm($value);
                     //dpm($value['wisskiDisamb']);
-                    //$q = "SELECT ?g ?s ?sp ?po ?o WHERE { VALUES ?x { $value }  { { GRAPH ?g { ?s ?sp ?x } } UNION { GRAPH ?g { ?x ?po ?o } } } }"
-                    //$result = $e->directQuery($q);
-                    // dpm($results);
-                    //@TODO: get $uri
-                    // $uri=  AdapterHelper::getUrisForDrupalId($eid);
                     //dpm($pathValue[0]['wisskiDisamb']);                                    
                     //dpm($eid);
-                    //$drupal_url = AdapterHelper::generateWisskiUriFromId($eid);
-                    if(isset($value['value'])){
+                    if(isset($value['nodetitle'])){
                       $curr['children'][$index] = array(
                         'id' =>  $value['wisskiDisamb'] ,
-                        'name' => '<span class="wki-groupname" data-wisski-url="' . $value['wisskiDisamb'] . '">' . $value['value'] . '</span>',
-                        'data' => array( 
-                          'labeltext' => 'labeletext'. $index,
-                          'labelid' => $value['wisskiDisamb'],
+                        'name' => '<span class="wki-groupname" data-wisski-url=" '. $value['wisskiDisamb'] .' "> '. $value['nodetitle'] .' </span>',
+                        'data' => array(
+                          'nodetitle' => $value['nodetitle'],
+                          //@Todo: q.v mode=2
+                          'labeltext' => $value['nodetitle'],
+                          'labelid' => 'labelid=' . $value['nodetitle'],
                         ),
                         'children' => array(),
                         );
@@ -244,26 +276,59 @@ class Sparql11GraphTabController extends ControllerBase {
   }
 
   public function forward($wisski_individual) {
-   
+  //dpm($wisski_individual); 
+  //$url = \Drupal\Core\Url::fromRoute('<current>', [], ['absolute' => 'true'])->toString();
+  $url = base_path();
+  //dpm($url);
+  /*
+  <div id="wki-modallink">
+                  <a id="modallink" class="use-ajax" data-accepts="application/vnd.drupal-modal" href="'.$url.'wisski/navigate/
+                                  '.$wisski_individual.'/modal">
+                                  <span id="modallink-span>
+                                  Expand
+                                  </span></a>
+                                                </div>
+  */
+  
   $form['#markup'] = '<div id="wki-graph">
-            <div id="wki-infocontrol">
-              <select id="wki-infoswitch" size="1">
-                <option value="1">Simple View&nbsp;</option>
-                <option value="2" selected="selected">Standard View&nbsp;</option>
-                <option value="3">Full View&nbsp;</option>
-              </select>
-            </div>
-            <div id="wki-infovis"></div>    
+              <div id="wki-modallink">
+                <a id="modallink" class="use-ajax" data-accepts="application/vnd.drupal-modal" href="'.$url.'wisski/navigate/'.$wisski_individual.'/modal">
+                  <span id="modallink-span">Expand</span></a>
+              </div>
+              <div id="wki-infocontrol">
+                <select id="wki-infoswitch" size="1">
+                  <option value="1">Simple View&nbsp;</option>
+                  <option value="2" selected="selected">Standard View&nbsp;</option>
+                  <option value="3">Full View&nbsp;</option>
+                </select>
+                <!--optional-->
+              </div>
+            <div id="wki-infovis"></div>                   
             <div id="wki-infolist"></div>
             <div id="wki-infolog"></div>
           </div>';
           
-  $form['#allowed_tags'] = array('div', 'select', 'option');
+  $form['#allowed_tags'] = array('div', 'select', 'option','a');
   $form['#attached']['drupalSettings']['wisski_jit'] = $wisski_individual;
   $form['#attached']['library'][] = "wisski_jit/Jit";
 
           
   return $form;
+  }
+  
+  public function openModal($wisski_individual) {        
+    $response = new AjaxResponse();
+    
+    $modal_form = $this->formBuilder->getForm("Drupal\wisski_jit\Form\GraphModalForm", $wisski_individual);
+    
+    $response->addCommand(new OpenModalDialogCommand(t('Graph'),$modal_form,['width'=> '80%',
+                                                                             'height'=>'550',
+                                                                             'responsive'=>'true',
+                                                                             'dialogClass' => 'GraphModalViewClass',]));
+    
+    return $response;
+  }
+  
 
 /*
     $storage = \Drupal::entityManager()->getStorage('wisski_individual');
@@ -383,5 +448,5 @@ class Sparql11GraphTabController extends ControllerBase {
 
     return $form;
 */
-  }
+  
 }
