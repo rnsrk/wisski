@@ -13,3 +13,12 @@ wisski_jit.json:
     _title: 'View triples'
   requirements:
     _access: 'TRUE'
+
+
+wisski_jit.modal:
+  path: '/wisski/navigate/{wisski_individual}/modal'
+  defaults:
+    _controller: '\Drupal\wisski_jit\Controller\Sparql11GraphTabController::openModal'
+  requirements:
+   
+    _access: 'TRUE'

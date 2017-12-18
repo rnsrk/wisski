@@ -1,12 +1,13 @@
 /* Jit RGraph4WissKI */
 #wki-infovis {
-position: relative;
-z-index: 10;
+    position: relative;
+    z-index: 10;
     display: block;
     float: left;
+    clear: both; 
     width: 71%;
     height: 600px;
-    overflow: hidden;
+    overflow: hidden; 
     border: 1px solid rgb(240,240,240);
 }
 #wki-infovis .node {
@@ -32,23 +33,34 @@ z-index: 10;
     display: block;
     font-weight: bold;
     font-size: 1em;
-    background: rgb(255,255,255);
-    color: rgb(0,0,0);
+    background: rgba(70, 71, 73,0.8);
+    color: rgb(255,255,255);
     z-index: 1;
     padding: 0.1em 0 0.1em 0;
-    border: 1px solid rgb(192,128,128);
+    border: 1px solid rgb(70, 71, 73); 
+    border-radius: 5px;
+}
+
+#wki-infovis .wki-groupname:hover {
+    background: rgb(255,255,255);
+    color: rgb(0,0,0);
+    z-index: 2;
 }
 
 #wki-infocontrol {
-	position: relative;
-z-index: 20;
+    position: relative; 
+    z-index: 20;
+    float: left;
     text-align: right;
     width: 71%;
-    margin-bottom: -19px;
+    margin-bottom: -26px;
 }
+
+
 #wki-infoswitch  {
     font-size: 0.8em;
     color: rgb(187,96,5);
+    background: rgba(0,0,0,0.0);
     border: 0;
     text-align: right;
 }
@@ -75,11 +87,49 @@ z-index: 20;
     font-weight: bold;
     color: #606060;
 }
+
 #wki-infolog {
     clear: left;
     font-size: 0.8em;
     color: rgb(128,128,128);
 }
+
+#wki-modallink {
+    position: relative;
+    width: 20%;
+    float: left;
+    display: flex;
+    z-index: 21;
+    margin-bottom: -50px;
+    /*margin-top: 2em;*/
+    /*margin-left:0.6em;*/
+
+}
+
+#modallink{
+    position:relative;
+    display: block;
+    font-size: 1em;
+    font-weight: bold;
+    font-family: sans-serif;
+    color: rgba(194, 196, 198,0.3);
+    padding: 0.5em;
+    z-index: 40;
+    /*background:rgba(249, 251, 255,0.7);*/
+    border-radius: 10px;
+    margin-top: 3px;
+    margin-left: 3px;
+}
+
+#modallink:hover{
+    background:rgba(249, 251, 255,0.7);
+    color: rgba(194, 196, 198,0.8);
+    border: 2px solid rgba(194, 196, 198,0.8);    
+
+
+}
+
+
 
 /*TOOLTIPS*/
 .tip {
