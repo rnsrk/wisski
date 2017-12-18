@@ -37,6 +37,7 @@ class Query extends WisskiQueryBase {
    * {@inheritdoc}
    */
   public function execute() {
+#    dpm("yay!");
 #    dpm($this);    
     // NOTE: this is not thread-safe... shouldn't bother!
     $this->varCounter = 0;
@@ -391,7 +392,8 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
             drupal_set_message("Bad path id for Wisski views: $pb_and_path[1]", 'error');
           }
           else {
-            $starting_position = $pb->getRelativeStartingPosition($path, TRUE);
+            #$starting_position = $pb->getRelativeStartingPosition($path, TRUE);
+            $starting_position = 0;
 
             $vars[$starting_position] = "x0";
             $i = $this->varCounter++;
@@ -408,7 +410,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
             $query_parts = $query_parts . $sort;
             #}
             
-            $sort_params .= $elem['direction'] . "(?c${i}_out) ";
+            $sort_params = $elem['direction'] . "(STR(?c${i}_out)) ";
             
             $this->orderby = $this->orderby . $sort_params;
             
@@ -496,7 +498,7 @@ $timethis[] = microtime(TRUE);
 #    dpm(microtime(), "before");
     $result = $engine = $this->getEngine()->directQuery($select);
 $timethis[] = microtime(TRUE);
-    #drupal_set_message(serialize($select));
+#    drupal_set_message(serialize($select));
     $adapter_id = $this->getEngine()->adapterId();
     if (WISSKI_DEVEL) \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded result count {cnt}: {result}', array('query' => $select, 'result' => $result, 'cnt' => $result->count()));
     if ($result === NULL) {
