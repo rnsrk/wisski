@@ -18,6 +18,7 @@ function wisski_core_cache_flush() {
 
 function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $override_bundle_id = NULL) {
 
+#rpm([$force_new, $override_bundle_id], gettype($wisski_individual) == 'object' ? $wisski_individual->bundle() : $wisski_individual);
 #  drupal_set_message(" ind: " . serialize($wisski_individual)); 
 
 #  drupal_set_message(serialize(debug_backtrace()));
@@ -39,6 +40,7 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
 #		drupal_set_message("2");
     $entity_id = $wisski_individual;
     $bundle_id = WisskiCacheHelper::getCallingBundle($wisski_individual);
+#rpm($bundle_id, 'call');
   }
 
 #  dpm(microtime(), "1");

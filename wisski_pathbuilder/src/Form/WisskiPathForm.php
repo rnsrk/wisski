@@ -52,6 +52,7 @@ class WisskiPathForm extends EntityForm {
     $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($wisski_pathbuilder);
 #dpm($pb,'before edit');
     // load the adapter of the pb
+
     $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
     
     // load and register the engine

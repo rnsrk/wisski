@@ -52,7 +52,7 @@ class TitleGenerationController extends ControllerBase {
    *   Batch context information.
    */
   public static function processBatch($bundle_id, &$context) {
-    $amount = 1000; // 1000 should be sufficient
+    $amount = 500; // 500 per turn.
     $query = \Drupal::entityQuery('wisski_individual');
     $query->condition('bundle', $bundle_id);
     $offset = isset($context['sandbox']['progress']) ? $context['sandbox']['progress'] : 0;
