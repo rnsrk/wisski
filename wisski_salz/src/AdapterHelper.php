@@ -221,7 +221,7 @@ class AdapterHelper {
     //if we have multiple results, we don't know exactly what to do, for now we return the first
     //@TODO try something more sophisticated
     // there may be duplicate entries...
-    $ids = array_unique($ids);
+    $ids = array_unique(array_keys($ids));
     if (count($ids) > 1) {
       //dpm($ids,'from DB, multiple');
       drupal_set_message("There are multiple entity IDs for a URI. See log reports for details.");
