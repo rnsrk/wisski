@@ -3233,9 +3233,12 @@ if ($path->id() == 'sammler_verweis_') rpm([$pb_path_info, $path->id()], 'ref');
         //take all the definitions of super properties and add them here
         $new_domains = isset($domains[$prop]) ? $domains[$prop] : array();
         $new_ranges = isset($ranges[$prop]) ? $ranges[$prop] : array();
+#        dpm($domains);
         foreach ($supers as $super_prop) {
-          $new_domains += $domains[$super_prop];
-          $new_ranges += $ranges[$super_prop];
+          if(isset($domains[$super_prop]))
+            $new_domains += $domains[$super_prop];
+          if(isset($ranges[$super_prop]))
+            $new_ranges += $ranges[$super_prop];
         }
         $new_domains = array_unique($new_domains);
         $new_ranges = array_unique($new_ranges);
