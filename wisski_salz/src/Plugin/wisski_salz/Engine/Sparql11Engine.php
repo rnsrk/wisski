@@ -376,8 +376,24 @@ abstract class Sparql11Engine extends EngineBase {
     //dpm($this,__FUNCTION__);
     if ($this->isValidUri("<$uri>")) {
       $query = "ASK {{<$uri> ?p ?o.} UNION {?s ?p <$uri>.}}";
+#      dpm($query);
       $result = $this->directQuery($query);
-      return $result->isTrue();
+      
+#      dpm($result);
+#      dpm($result->isTrue());
+      
+      $out = FALSE;
+      
+      if($result->isTrue()) {
+        $out = TRUE;
+      } else if($result->numRows() > 0) {
+        foreach($result as $res) {
+          if($res->value->getValue() == TRUE)
+            $out = TRUE;
+        }
+      }
+            
+      return $out;
     }
     return FALSE;
   }
