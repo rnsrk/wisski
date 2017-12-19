@@ -45,7 +45,7 @@ class Sparql11RdfEngineWithPB extends Sparql11EngineWithPB implements Pathbuilde
     $query = 
       "SELECT DISTINCT ?property "
       ."WHERE {  {"
-        ." { ?property rdfs:range rdfs:Literal . } UNION { ?property a owl:DatatypeProperty . } . "
+        ." { ?property rdfs:range rdfs:Literal . } UNION { ?property a owl:DatatypeProperty . } UNION { ?property a rdf:Property . } UNION { ?property a owl:AnnotationProperty . } UNION { ?property a rdfs:label . } }}"
 #        ."?property a owl:DatatypeProperty. "
 #        ."?property rdfs:domain ?d_superclass. "
 #        ."<$step> rdfs:subClassOf* ?d_superclass. }"
@@ -55,6 +55,7 @@ class Sparql11RdfEngineWithPB extends Sparql11EngineWithPB implements Pathbuilde
       // no idea what this does, I just copied it from below
       // and I really really hope that Dorian did know what it
       // does and it will work forever.      
+/*
       $query .= 
         "{"
           ."{?d_def_prop rdfs:domain ?d_def_class.}"
@@ -86,7 +87,7 @@ class Sparql11RdfEngineWithPB extends Sparql11EngineWithPB implements Pathbuilde
             ."}"
           ."}"
         ."}}}";
-
+*/
     $result = $this->directQuery($query);
 #    dpm($query, 'res');
 
