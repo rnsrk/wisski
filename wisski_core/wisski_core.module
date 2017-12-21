@@ -23,6 +23,10 @@ function wisski_core_cache_flush() {
  */
 function wisski_core_entity_prepare_form(\Drupal\Core\Entity\EntityInterface $entity, $operation, \Drupal\Core\Form\FormStateInterface $form_state) {
 
+  // only act on WissKI-Entities
+  if(! $entity instanceOf \Drupal\wisski_core\Entity\WisskiEntity)
+    return;
+
   // get the storage
   $storage = $form_state->getStorage();
 
@@ -35,6 +39,10 @@ function wisski_core_entity_prepare_form(\Drupal\Core\Entity\EntityInterface $en
 
       // get the field definition
       $fdef = $entity->getFieldDefinition($key);
+
+      // base field?
+      if($fdef instanceof BaseFieldDefinition)
+        continue;
 
       // only act if the field is entity_reference
       if(!empty($fdef) && $fdef->get('field_type') == "entity_reference") {
@@ -66,10 +74,16 @@ function wisski_core_entity_prepare_form(\Drupal\Core\Entity\EntityInterface $en
 
 function wisski_core_entity_prepare_view($entity_type_id, array $entities, array $displays, $view_mode) {
   foreach($entities as $entity) {
+    if(! $entity instanceOf \Drupal\wisski_core\Entity\WisskiEntity)
+      continue;
     foreach($displays as $display) {
       foreach($display->getComponents() as $key => $comp) {
 
 	$fdef = $entity->getFieldDefinition($key);
+
+	if($fdef instanceof BaseFieldDefinition)
+          continue;
+
         if(!empty($fdef) && $fdef->get('field_type') == "entity_reference") {
           $settings = $entity->get($key)->getSettings();
           $target_bundles = $settings['handler_settings']['target_bundles'];
