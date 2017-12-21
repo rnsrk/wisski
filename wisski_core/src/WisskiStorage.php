@@ -216,7 +216,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       //see if we got bundle information cached. Useful for entity reference and more      
       $overall_bundle_ids = array();
       $cached_bundle = WisskiCacheHelper::getCallingBundle($id);
-      
+#      drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));      
       // only use that if it is a top bundle when the checkbox was set. Always use it otherwise.
       if ($cached_bundle) {
         if($only_use_topbundles && empty($mainentityid) && !in_array($cached_bundle, $topBundles))
@@ -224,6 +224,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         else
           $info[$id]['bundle'] = $cached_bundle;
       }
+#      drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
 #      dpm(microtime(), "in4");
       // ask all adapters
       foreach($adapters as $aid => $adapter) {
@@ -249,7 +250,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           $overall_bundle_ids = array_merge($overall_bundle_ids, $bundle_ids);
 
           $bundle_ids = array_slice($bundle_ids,0,1);
-#          drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
+          #drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle) . " for " . serialize($ids));
           foreach($bundle_ids as $bundleid) {
             // be more robust.
             if(empty($bundleid)) {
@@ -259,15 +260,30 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             }
               
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
+            #dpm($field_definitions, "yay");
+#            wpm($field_definitions, 'gei-fd');
             
-            wpm($field_definitions, 'gei-fd');
+#            // see if a field is going to show up.
 #            $view_ids = \Drupal::entityQuery('entity_view_display')
 #              ->condition('id', 'wisski_individual.' . $bundleid . '.', 'STARTS_WITH')
 #              ->execute();
+              
+#            // is there a view display for it?
 #            $entity_view_displays = \Drupal::entityManager()->getStorage('entity_view_display')->loadMultiple($view_ids);
+            
+#            // did we get something?
+#            if(!empty($entity_view_displays))
+#              $entity_view_display = current($entity_view_displays);
+#            else
+#              $entity_view_display = NULL;
+#            dpm($entity_view_displays->getComponent('field_name'), "miau");
+
             try {
 #              dpm(microtime(), "load field $field_name");
               foreach ($field_definitions as $field_name => $field_def) {
+#                dpm($entity_view_display->getComponent($field_name), "miau");
+#                if($field_name 
+              
 #                dpm(microtime(), "loading $field_name");
               
                 $main_property = $field_def->getFieldStorageDefinition()->getMainPropertyName();
@@ -311,12 +327,18 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   continue;                 
                 }
 #                dpm(microtime(), "actual load for field " . $field_name . " in bundle " . $bundleid . " for id " . $id);
+
+#                // check if the field is in the display
+#                if(!empty($entity_view_display) && !$entity_view_display->getComponent($field_name))
+#                  continue;
+                  
                 //here we have a "normal field" so we can assume an array of field values is OK
                 $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
 
 #                dpm(microtime(), "after load" . serialize($new_field_values));
                 if (empty($new_field_values)) continue;
                 $info[$id]['bundle'] = $bundleid;
+/*
                 if ($field_def->getType() === 'entity_reference') {
                   $field_settings = $field_def->getSettings();
 #if (!isset($field_settings['handler_settings']['target_bundles'])) dpm($field_def);
@@ -331,15 +353,20 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     //@TODO create a MASTER BUNDLE and choose that one here
                     $target_bundle_id = current($target_bundles);
                   }
+#                  dpm($target_bundles);
                   $target_ids = $new_field_values[$id][$field_name];
                   if (!is_array($target_ids)) $target_ids = array(array('target_id'=>$target_ids));
                   foreach ($target_ids as $target_id) {
 #dpm($target_id, "bwtb:$aid");                    
                     $target_id = $target_id['target_id'];
                     $this->writeToCache($target_id,$target_bundle_id);
+                    #dpm($info, $field_name);
+                    #dpm($target_id, "wrote to cache");
+                    #dpm($target_bundle_id, "wrote to cache2");
                   }
                   
                 }
+                
                 // NOTE: this is a dirty hack that sets the text format for all long texts
                 // with summary
                 // TODO: make format storable and provide option for default format in case
@@ -356,7 +383,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #                 $value['value'] = $value;
 #                 $value['format'] = 'full_html';
                 }
-
+*/
                 // we integrate a file handling mechanism that must necessarily
                 // also handle other file based fields e.g. "image"
                 //
