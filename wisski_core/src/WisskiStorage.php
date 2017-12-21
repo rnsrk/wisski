@@ -258,6 +258,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               drupal_set_message("I have been looking for a bundle for $id and I got from cache: " . serialize($cached_bundle));
               continue;
             }
+            
+            // do this here because if we only use main bundles we need to store this for the title
+            $this->writeToCache($id, $bundleid);
               
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
             #dpm($field_definitions, "yay");
