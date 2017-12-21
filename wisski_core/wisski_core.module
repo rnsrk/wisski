@@ -37,7 +37,7 @@ function wisski_core_entity_prepare_form(\Drupal\Core\Entity\EntityInterface $en
       $fdef = $entity->getFieldDefinition($key);
 
       // only act if the field is entity_reference
-      if($fdef->get('field_type') == "entity_reference") {
+      if(!empty($fdef) && $fdef->get('field_type') == "entity_reference") {
 
         // get the settings
         $settings = $entity->get($key)->getSettings();
@@ -46,7 +46,7 @@ function wisski_core_entity_prepare_form(\Drupal\Core\Entity\EntityInterface $en
 
         // get all values
         $values = $entity->get($key)->getValue();
-        
+
         // and insert that
         foreach($values as $value) {
           foreach($target_bundles as $target_bundle) {
@@ -70,7 +70,7 @@ function wisski_core_entity_prepare_view($entity_type_id, array $entities, array
       foreach($display->getComponents() as $key => $comp) {
 
 	$fdef = $entity->getFieldDefinition($key);
-        if($fdef->get('field_type') == "entity_reference") {
+        if(!empty($fdef) && $fdef->get('field_type') == "entity_reference") {
           $settings = $entity->get($key)->getSettings();
           $target_bundles = $settings['handler_settings']['target_bundles'];
 
