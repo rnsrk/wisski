@@ -174,7 +174,7 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
 
     foreach($pbs as $pb) {
       
-      $bundle_ids = $pb->getBundleIdsForEntityId($entity_id);
+      $bundle_ids = $pb->getBundleIdForEntityId($entity_id);
     }
   }
 

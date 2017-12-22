@@ -10,7 +10,8 @@ use Drupal\Core\Cache\Cache;
 use Drupal\Core\Url;
 
 use Drupal\wisski_salz\AdapterHelper;
-
+use Drupal\wisski_core\WisskiCacheHelper;
+use Drupal\wisski_core\Entity\WisskiEntity;
 
 /**
  * Provides the WissKI Linkblock
@@ -132,7 +133,9 @@ class WisskiLinkblock extends BlockBase {
 
               if(!empty($tmpdata)) {
                 $dataout[$path->id()]['path'] = $path;
-
+                
+                $dataout[$path->id()]['adapter'] = $adapter;
+              
                 if(!isset($dataout[$path->id()]['data']))
                   $dataout[$path->id()]['data'] = array();
 
@@ -154,8 +157,16 @@ class WisskiLinkblock extends BlockBase {
 #    $out['#cache']['disabled'] = TRUE;
 #    $out[] = [ '#markup' => 'Time : ' . date("H:i:s"),];
 #    drupal_set_message(serialize($dataout));
+    $topBundles = array();
+    $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
+    $only_use_topbundles = $set->get('wisski_use_only_main_bundles');
+
+    if($only_use_topbundles) 
+      $topBundles = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
+
     foreach($dataout as $pathid => $dataarray) {
       $path = $dataarray['path'];
+      $adapter = $dataarray['adapter'];
       
       if(empty($dataarray['data']))
         continue;
@@ -170,13 +181,34 @@ class WisskiLinkblock extends BlockBase {
         if(!empty($url)) {
 
           $entity_id = AdapterHelper::getDrupalIdForUri($url);
-      
+          
+          if(!empty($adapter))
+            $bundles = $adapter->getBundleIdsForEntityId($entity_id);
+          else
+            $bundles = NULL;
+                      
+          $bundle = NULL;
+          if($only_use_topbundles) {
+            $topbundletouse = array_intersect($bundles, $topBundles);
+            if(!empty($topbundletouse))
+              $bundle = current($topbundletouse);
+          } else {
+            $bundle = current($bundles);
+          }
+          
+          // hack if really no bundle was supplied... should never be called!
+          if(empty($bundle)) {
+            $entity =  \Drupal\wisski_core\Entity\WisskiEntity::load($entity_id);
+            $bundle = $entitiy->bundle;
+          }
+#          dpm($entity);
           $url = 'wisski/navigate/' . $entity_id . '/view';
-      
+#          dpm($bundle);
           $out[] = array(
             '#type' => 'link',
-            '#title' => $data['target_id'],
-            '#url' => Url::fromUri('internal:/' . $url),
+#            '#title' => $data['target_id'],
+            '#title' => wisski_core_generate_title($entity_id, FALSE, $bundle),
+            '#url' => Url::fromUri('internal:/' . $url . '?wisski_bundle=' . $bundle),
           );
           $out[] = [ '#markup' => '</br>' ];
         } else {
