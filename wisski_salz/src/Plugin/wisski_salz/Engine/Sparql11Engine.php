@@ -1041,7 +1041,7 @@ abstract class Sparql11Engine extends EngineBase {
     // make from_uris unique and delete to_uri from it
     $uris = (array) $uris; // make it an array 
     $uris = array_unique($uris);
-
+#    dpm($uris, "uris");
     $variables = array_unique(str_split($variables));
     
     if (empty($uris) || empty($variables)) {
@@ -1056,17 +1056,20 @@ abstract class Sparql11Engine extends EngineBase {
       $where_clauses[$v] = 
         "  {\n" .
         "    VALUES ?$v { $uri_values }\n" .
-        "    GRAPH ?g { ?s ?p ?o }\n" .
+        "    OPTIONAL { GRAPH ?g { ?s ?p ?o } }\n" . // without optional it returns nothing in case of one part in the union not returning anything
         "  }\n";
     }
-    $where_clause = "WHERE {\n" . join("  UNION\n", $where_clauses) . '}';
+    
+    // filter if spo is bound - as it must not be in case of optional
+    $where_clause = "WHERE {\n" . join("  UNION\n", $where_clauses) . ' FILTER ( bound(?s) ) . FILTER( bound(?p) ) . FILTER( bound(?o) ) }';
+    
     if ($format == 'count') {
       $query = "SELECT (count(*) as ?c) $where_clause";
     } 
     else {
       $query = "SELECT ?g ?s ?p ?o $where_clause";
     }
-
+#    dpm($query, "query");
     $result = $this->directQuery($query);
     
     // return value depends on $format
