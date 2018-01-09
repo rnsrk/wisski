@@ -244,6 +244,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               // if so - ask for the bundles for that id
               // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
               $bundle_ids = $adapter->getBundleIdsForEntityId($id);
+#              drupal_set_message(serialize($bundle_ids));
             }
           }
 
@@ -255,7 +256,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             // be more robust.
             if(empty($bundleid)) {
               drupal_set_message("Beware, there is somewhere an empty bundle id specified in your pathbuilder!", "warning");
-              drupal_set_message("I have been looking for a bundle for $id and I got from cache: " . serialize($cached_bundle));
+              drupal_set_message("I have been looking for a bundle for $id and I got from cache: " . serialize($cached_bundle) . " and I have left: " . serialize($bundle_ids));
               continue;
             }
             

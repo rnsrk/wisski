@@ -758,9 +758,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
       foreach($pbs as $pb) {
         list($tmptopbundles, $tmpnontopbundles) = $pb->getAllBundleIdsAboutUri($uri_to_find);
+ 
         $topbundles = array_merge($topbundles, $tmptopbundles);
         $nontopbundles = array_merge($nontopbundles, $tmpnontopbundles);
       }
+#      dpm($topbundles);
       
       foreach($nontopbundles as $key => $value) {
         $out = array_merge(array($key => $value), $out);
@@ -771,6 +773,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }
       
     }
+
+#    dpm($out, "out");
 
     return $out;    
     
