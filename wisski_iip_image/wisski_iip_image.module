@@ -74,12 +74,19 @@ function wisski_iip_image_preprocess_colorbox_formatter(&$variables) {
 }
 
 function wisski_iip_image_field_widget_form_alter(&$element, \Drupal\Core\Form\FormStateInterface $form_state, $context) {
-  
+#  dpm($element);  
   if(isset($element['#value_callback']) && in_array('Drupal\image\Plugin\Field\FieldWidget\ImageWidget', $element['#value_callback'])) {
-
+#    dpm($element);
     $entity_type = 'wisski_individual';
     // this seems evil... 
-    $bundle = $form_state->getBuildInfo()['callback_object']->getEntity()->bundle();
+    // and it really was - was not working for subbundles -.-
+    // $bundle = $form_state->getBuildInfo()['callback_object']->getEntity()->bundle();
+
+    // however this does not seem less evil...
+    if(!empty($element['#field_parents']))
+      $bundle = $element['#field_parents'][0];
+    else
+      $bundle = $form_state->getBuildInfo()['callback_object']->getEntity()->bundle();
 
     $field_name = $element['#field_name'];
 
