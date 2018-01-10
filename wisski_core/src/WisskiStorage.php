@@ -1076,6 +1076,15 @@ $tsa['eid'] = $entity_id;
   public function preparePreviewImages() {
     $pref_local = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore();
     if (!$pref_local) {
+      $conf_adapter = \Drupal::config('wisski_core.settings')->get('preview_image_adapters');
+      
+      if(!empty($conf_adapter)) {
+        $this->preview_image_adapters = $conf_adapter;
+        return TRUE;
+      }
+      
+      drupal_set_message("No store for preview images was found. Please select one in the configuration.", "warning");
+      
       return FALSE;
     } else {
       $this->adapter = $pref_local;
