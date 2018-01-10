@@ -94,6 +94,11 @@ class Merger {
    * @return TRUE on success, FALSE otherwise
    */
   public function mergeEntities(array $from_eids, $to_eid, $options = array()) {
+
+#    dpm($from_eids, "from");
+#    dpm($to_eid, "to");
+#    dpm($options, "options");
+#    return;
     
     if (empty($to_eid)) {
       return FALSE;
@@ -105,7 +110,7 @@ class Merger {
     }
 
     $delete = !(isset($options['delete']) && !$options['delete']);
-dpm(array($delete), 'del');
+#dpm(array($delete), 'del');
     
     // the merge is structured as follows:
     // 1. backup the uris associated with the to entity.
@@ -120,11 +125,15 @@ dpm(array($delete), 'del');
     
     // backup to uris
     $to_uris_backup = AdapterHelper::getUrisForDrupalId($to_eid);
-dpm($to_uris_backup, "to backup");
+#dpm($to_uris_backup, "to backup");
 
     // do the copying 
     $quad_count = 0;
     $adapters = Adapter::loadMultiple();
+
+    // track if we found something - if we didn't we don't delete!!!
+    $foundsomething = FALSE;
+
     foreach ($adapters as $aid => $adapter) {
       if (!$this->doesAdapterSupportMerge($adapter)) {
         continue;
@@ -137,13 +146,23 @@ dpm($to_uris_backup, "to backup");
       if (empty($from_uris)) {
         continue;
       }
-dpm(array($to_uri, $from_uris, $aid));
+#dpm(array($to_uri, $from_uris, $aid));
+#return;
       $engine = $adapter->getEngine();
       $quads = $engine->getQuadsContainingUris($from_uris, 'gso');
+
+#      dpm($quads, "quads");
+#      return;
+      
+
       if (empty($quads)) {
         continue;
       }
+      $foundsomething = TRUE;
       $quad_count += count($quads);
+
+#      dpm($quads, "quads");
+#      return;
 
       if (empty($to_uri)) {
         return t("No URI to map to for adapter %a", array('%a' => $adapter->label()));
@@ -152,13 +171,16 @@ dpm(array($to_uri, $from_uris, $aid));
       // log this
       $this->logToDB($aid, 'gso', $from_uris, $to_uri, $quad_count, $quads);
     }
+
+    if(!$foundsomething)
+      drupal_set_message("Merge could not find data... aborting", "warning");
     
     // do the delete
-    if ($delete) {
+    if ($delete && $foundsomething) {
       $entities = entity_load_multiple('wisski_individual', $from_eids);
-dpm("do delete count " . count($entities));
+#dpm("do delete count " . count($entities));
       foreach ($entities as $entity) {
-dpm("do delete " . $entity->id());
+#dpm("do delete " . $entity->id());
         $entity->delete();
       }
     }

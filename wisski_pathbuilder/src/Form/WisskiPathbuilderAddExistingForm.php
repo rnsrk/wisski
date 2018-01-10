@@ -36,7 +36,7 @@ class WisskiPathbuilderAddExistingForm extends EntityForm {
     $options = array();
     
     foreach($paths as $path) {
-      $options[$path->getID()] = $path->getName();
+      $options[$path->getID()] = $path->getName() . " (" . $path->getID() . ")";
     }
     
     $form['path'] = array(

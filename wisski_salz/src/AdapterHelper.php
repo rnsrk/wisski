@@ -564,13 +564,21 @@ class AdapterHelper {
       // if they know that id
       if ($adapter->hasEntity($entity_id)) {
         // if so - ask for the bundles for that id
+
+        $adapter_bundle_ids = $adapter->getBundleIdsForEntityId($entity_id);
+        
         // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
-        $bundle_ids = array_merge($bundle_ids, $adapter->getBundleIdsForEntityId($entity_id));
+        if(!empty($adapter_bundle_ids))
+          $bundle_ids = array_merge($bundle_ids, $adapter_bundle_ids);
       }
     }
     if ($only_top_bundles) {
       $bundle_ids = array_intersect($bundle_ids, WisskiHelper::getTopBundleIds()); 
     }
+        
+    if(empty($bundle_ids))
+      return array();
+    
     return $bundle_ids;
   }
   

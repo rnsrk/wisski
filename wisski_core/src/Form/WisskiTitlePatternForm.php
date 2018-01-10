@@ -38,12 +38,19 @@ class WisskiTitlePatternForm extends EntityForm {
     } else {
       $pattern = $bundle->getTitlePattern();
     }
+#    dpm($pattern);
+
+    // if is not array, skip it
+    if(!is_array($pattern))
+      $pattern = array();
 
     $max_id = -1;
     if (isset($pattern['max_id'])) {
       $max_id = $pattern['max_id'];
       unset($pattern['max_id']);
-    }
+    }# else {
+#      $max_id = 0;
+#    }
     
     $count = count($pattern)-1;
 
@@ -241,11 +248,12 @@ class WisskiTitlePatternForm extends EntityForm {
       ),
     );
 
-    
-    $pattern['max_id'] = $max_id;    
-    $form_storage['cached_pattern'] = $pattern;
-    $form_state->setStorage($form_storage);
-
+    if(!empty($pattern)) {
+#      dpm($pattern);
+      $pattern['max_id'] = $max_id;    
+      $form_storage['cached_pattern'] = $pattern;
+      $form_state->setStorage($form_storage);
+    }
 //dpm(drupal_render($form['path_select_box']));
     return $form;
   }
