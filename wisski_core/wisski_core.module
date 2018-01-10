@@ -158,6 +158,7 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
   } else if($override_bundle_id === NULL) { // This is used when $wisski_individual is just a number
     $entity_id = $wisski_individual;
     $bundle_id = WisskiCacheHelper::getCallingBundle($wisski_individual);
+#rpm($bundle_id, 'call');
   }
 
   if ($override_bundle_id !== NULL) {

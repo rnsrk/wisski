@@ -122,7 +122,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
   }
                                   
   public function getPathTree(){
-    return $this->pathtree;
+    return $this->pathtree ? : array();
   }
   
   public function getPbPaths(){

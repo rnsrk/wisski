@@ -44,7 +44,8 @@
       $elements = parent::viewElements($items, $langcode);    
       
       $elements['#attached']['library'][] = 'wisski_iip_image/iipmooviewer';
-      $elements['#attached']['library'][] = 'wisski_iip_image/iip_integration';      
+      $elements['#attached']['library'][] = 'wisski_iip_image/iip_integration';
+      $elements['#attached']['drupalSettings']['wisski']['iip']['config'] = \Drupal::config('wisski_iip_image.config')->get();
 
       $files = $this->getEntitiesToView($items, $langcode);
 

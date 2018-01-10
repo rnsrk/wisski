@@ -62,7 +62,7 @@ class WisskiEntityFieldRenderer extends EntityFieldRenderer {
       $entities_by_bundles = [];
       $field = $this->view->field[current($field_ids)];
       $aux_entities = [];
-      
+
       foreach ($values as $result_row) {
         if ($entity = $field->getEntity($result_row)) {
           $entities_by_bundles[$entity->bundle()][$result_row->index] = $this->getEntityTranslation($entity, $result_row);
@@ -80,14 +80,15 @@ class WisskiEntityFieldRenderer extends EntityFieldRenderer {
             
             $field_name = $mfield->definition['field_name'];
             
-            $data = $result_row->$field_id;
-            
-            $tmpentity = new WisskiEntity(array('eid' => $result_row->index, 'bundle' => $bundle_id, $field_name  => $data),'wisski_individual',$bundle_id);
+            if (isset($result_row->$field_id)) {
+              $data = $result_row->$field_id;
+              
+              $tmpentity = new WisskiEntity(array('eid' => $result_row->index, 'bundle' => $bundle_id, $field_name  => $data),'wisski_individual',$bundle_id);
 
-            $tmpentity->set($field_name, $data);
+              $tmpentity->set($field_name, $data);
 
-            $aux_entities[$field_id][$result_row->index] = $tmpentity;
-
+              $aux_entities[$field_id][$result_row->index] = $tmpentity;
+            }
           }      
         }
       }

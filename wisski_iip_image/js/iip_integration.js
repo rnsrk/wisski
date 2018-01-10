@@ -1,58 +1,47 @@
-jQuery(document).bind('cbox_complete', function() {
-  var server = "/fcgi-bin/iipsrv.fcgi";
+(function ($, Drupal, drupalSettings) {
 
-  var images = [jQuery.colorbox.element().attr("iip")];
+console.log('bbb', drupalSettings.wisski.iip.config);
+var iipConfig = $.extend({
+  server: "/fcgi-bin/iipsrv.fcgi",
+//  credit: credit,
+  prefix: drupalSettings.path.baseUrl + '/libraries/iipmooviewer/images/',
+  showNavWindow: true,
+  showNavButtons: true,
+  winResize: true,
+  protocol: 'iip',
+}, drupalSettings.wisski.iip.config);
 
-  var prefix = drupalSettings.path.baseUrl + '/libraries/iipmooviewer/images/';
+$(document).bind('cbox_complete', function() {
+
+  iipConfig.image = [jQuery.colorbox.element().attr("iip")];
+
 
 //  var credit = '&copy; <a href="http://www.gnm.de/">Germanisches Nationalmuseum</a>';
 
-  var iipmooviewer = new IIPMooViewer( "cboxLoadedContent", {
-    image: images,
-    server: server,
-//    credit: credit,
-    prefix: prefix,
-//    ' . $scale . '
-    showNavWindow: true,
-    showNavButtons: true,
-    winResize: true,
-    protocol: 'iip',
-  });
+  var iipmooviewer = new IIPMooViewer( "cboxLoadedContent", iipConfig);
 
   jQuery.colorbox.resize({width: 1000, height: 600});
   
 });
 
 
-
-(function ($, Drupal, drupalSettings) {
-  Drupal.behaviors.iip_integration_Behavior = {
+Drupal.behaviors.iip_integration_Behavior = {
     attach: function (context, settings) {
 //       alert("yay!");
 //      $(context).find('input.iipIntegrationBehaviour').once('iipIntegrationBehaviour').each(function () {
       $(context).once('iipIntegrationBehaviour').each(function () {
 //        alert("yay!1");
 
-        var server = "/fcgi-bin/iipsrv.fcgi";
-
-        var images = [$('.wisski-inline-iip').attr("iip")];
+        iipConfig.image = [$('.wisski-inline-iip').attr("iip")];
 
         if($('.wisski-inline-iip').attr('wisski-inline-iip')) {
           var prefix = drupalSettings.path.baseUrl + '/libraries/iipmooviewer/images/';
 
 //  var credit = '&copy; <a href="http://www.gnm.de/">Germanisches Nationalmuseum</a>'
 
-          var iipmooviewer = new IIPMooViewer( "wisski-iip-cont", {
-            image: images,
-            server: server,
-//    credit: credit,
-            prefix: prefix,
-//    ' . $scale . '
-            showNavWindow: true,
-            showNavButtons: true,
-            winResize: true,
-            protocol: 'iip',
-          });
+console.log('aaa', iipConfig);
+
+          var iipmooviewer = new IIPMooViewer( "wisski-iip-cont", iipConfig);
         }
         
 //        jQuery.colorbox.resize({width: 1000, height: 600});
@@ -61,4 +50,5 @@ jQuery(document).bind('cbox_complete', function() {
     }
 
   };
+
 })(jQuery, Drupal, drupalSettings);

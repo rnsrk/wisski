@@ -1095,13 +1095,13 @@ abstract class Sparql11Engine extends EngineBase {
    * @param variables a string containing the triple/quad positions that shall
    *                  be considered for replacement. Possible values are a
    *                  concatenation of these four: g s p o.
-   *                  NULL is the default and behaves like 'so'.
+   *                  The default is 'so'.
    * @param copy a boolean whether to copy or move the original quads, ie. 
    *             whether to perform a DELETE on the original quads
    *                  
    * @return TRUE on success, otherwise FALSE.
    */
-  public function replaceUris(array $from_uris, $to_uri, $variables = NULL, $copy = FALSE) {
+  public function replaceUris(array $from_uris, $to_uri, $variables = 'so', $copy = FALSE) {
      
     // make from_uris unique and delete to_uri from it
     $from_uris = (array) $from_uris; // make it an array 
@@ -1141,6 +1141,57 @@ abstract class Sparql11Engine extends EngineBase {
 
     return TRUE;
 
+  }
+
+
+  /** Retrieves all URIs that match a certain pattern.
+   *
+   * @param pattern The pattern to match against. The pattern must be in Sparql
+   *                regex syntax. The matching is case sensitive.
+   * @param variables a string containing the triple/quad positions that shall
+   *                  be considered for matching. Possible values are a
+   *                  concatenation of these four: g s p o.
+   *                  The default is 'gspo'.
+   * @param operator the Sparql matching operator. Currently supported ops are
+                     CONTAINS (default), STRSTARTS, and REGEX.
+   *                  
+   * @return array with keys and values being the matched URIs.
+   */
+  public function getMatchingUris($pattern, $variables = 'gspo', $operator = 'CONTAINS') {
+    $variables = array_unique(str_split($variables));
+    if (empty($variables)) return [];
+    // the pattern must be escaped as it is embedded as literal.
+    // as the caller knows it is a regex pattern, it is their responsibility
+    // to escape special regex sequences with escapeSparqlRegex().
+    $pattern = $this->escapeSparqlLiteral($pattern);
+    // build the quads first: for every var position to check, we generate one
+    // quad with the var replaced by x
+    $quad_temp = "  GRAPH ?g { ?s ?p ?o } .";
+    $quads = [];
+    foreach ($variables as $v) {
+      // we append the filter to avoid matching bnodes or literals
+      $quads[] = '{ ' . str_replace("?$v", '?x', $quad_temp) . ' FILTER(isURI(?x)) }';
+    }
+    $quads = join("\n  UNION\n", $quads);
+    // the final query
+    $select  = "SELECT DISTINCT ?x WHERE {";
+    $select .= "\n$quads\n";
+    $operator = strtoupper($operator);
+    if (in_array($operator, ['CONTAINS', 'STRSTARTS', 'REGEX'])) {
+      $select .= "  FILTER ($operator(str(?x), \"$pattern\"))";
+    }
+    else {
+      throw new \InvalidArgumentException("bad sparql operator: $operator");
+    }
+    $select .= "}";
+    $result = $this->directQuery($select);
+    // collect the matched uris
+    $uris = [];
+    foreach ($result as $row) {
+      $uri = $row->x->getUri();
+      $uris[$uri] = $uri;
+    }  
+    return $uris;
   }
 
 }

@@ -2149,7 +2149,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
     $pb_path_info = $pb->getPbPath($path->id());
     $has_primitive = !empty($primitive) && $primitive != "empty";
-if ($path->id() == 'sammler_verweis_') rpm([$pb_path_info, $path->id()], 'ref');
     // all paths should have a primitive. only this cases usually have no 
     // primitive:
     // - a group
@@ -2212,28 +2211,26 @@ if ($path->id() == 'sammler_verweis_') rpm([$pb_path_info, $path->id()], 'ref');
           $regex = FALSE;
           $negate = FALSE;
           $safe = FALSE;
-          if($op == '<>')
+          $cast_outvar = "STR($outvar)";
+          if($op == '<>') {
             $op = '!=';
-          
-          if($op == 'STARTS_WITH') {
+          }
+          elseif($op == 'STARTS_WITH') {
             $regex = true;
             $safe = TRUE;
             $primitiveValue = '^' . $this->escapeSparqlRegex($primitiveValue, TRUE);
           }
-          
-          if($op == 'ENDS_WITH') {
+          elseif($op == 'ENDS_WITH') {
             $regex = true;
             $safe = TRUE;
             $primitiveValue = $this->escapeSparqlRegex($primitiveValue, TRUE) . '$';
           }
-          
-          if($op == 'CONTAINS') {
+          elseif($op == 'CONTAINS') {
             $regex = true;
             $safe = TRUE;
             $primitiveValue = $this->escapeSparqlRegex($primitiveValue, TRUE);
           }
-
-          if ($op == 'IN' || $op == 'NOT IN') {
+          elseif ($op == 'IN' || $op == 'NOT IN') {
             $regex = TRUE;
             $negate = $op == 'NOT IN';
             $safe = TRUE;
@@ -2245,23 +2242,38 @@ if ($path->id() == 'sammler_verweis_') rpm([$pb_path_info, $path->id()], 'ref');
           }
           
           if (!$safe) {
-            $primitiveValue = $this->escapeSparqlLiteral($primitiveValue);
+            if (is_numeric($primitiveValue)) {
+              $escapedValue = intval($primitiveValue);
+              $cast_outvar = "xsd:decimal($outvar)";
+            }
+            else {
+              $escapedValue = '"' . $this->escapeSparqlLiteral($primitiveValue) . '"';
+            }
+          } else {
+            $escapedValue = '"' . $primitiveValue . '"';
           }
 
           if ($op == 'BETWEEN') {
-            list($val_min, $val_max) = is_array($primitiveValue) ? $primitiveValue : explode(",", $primitiveValue, 2);
-            $val_min = intval($val_min);
-            $val_max = intval($val_max);
-            $filter = "$outvar >= $val_min & $outvar <= $val_max";
+            list($val_min, $val_max) = is_array($primitiveValue) ? $primitiveValue : explode(";", $primitiveValue, 2);
+            if (is_numeric($val_min) && is_numeric($val_max)) {
+              $val_min = intval($val_min);
+              $val_max = intval($val_max);
+              $cast_outvar = "xsd:decimal($outvar)";
+            }
+            else {
+              $val_min = $this->escapeSparqlLiteral($val_min);
+              $val_max = $this->escapeSparqlLiteral($val_max);
+            }
+            $filter = "$cast_outvar >= $val_min & $cast_outvar <= $val_max";
           }
           elseif($regex) {
             // we have to use STR() otherwise we may get into trouble with
             // datatype and lang comparisons
-            $filter = "REGEX( STR($outvar), \"" . $primitiveValue . '", "i" )';
+            $filter = "REGEX($cast_outvar, " . $escapedValue . ', "i" )';
           } else {
             // we have to use STR() otherwise we may get into trouble with
             // datatype and lang comparisons
-            $filter = "STR($outvar) " . $op . ' "' . $primitiveValue . '"';
+            $filter = "$cast_outvar " . $op . ' ' . $escapedValue;
           }
 
           if ($negate) {

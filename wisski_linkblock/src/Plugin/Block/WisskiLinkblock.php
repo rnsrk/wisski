@@ -37,6 +37,12 @@ class WisskiLinkblock extends BlockBase {
 #    $form = parent::blockForm($form, $form_state);
     
     $config = $this->getConfiguration();
+
+    $form['better_lb'] = [
+      '#type' => 'checkbox',
+      '#title' => 'Use linkblock only with given adapter',
+      '#default_value' => isset($config['better_lb']) ? $config['better_lb'] : 0,
+    ];
     
     $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($linkblockpbid);
     
@@ -55,10 +61,131 @@ class WisskiLinkblock extends BlockBase {
     return $form;
   }
   
+
+  public function blockSubmit($form, FormStateInterface $form_state) {
+    $this->configuration['better_lb'] = $form_state->getValue('better_lb');
+  }
+
+    
+
+  /**
+   * {@inheritdoc}
+   */
+  public function betterBuild() {
+
+    $out = array();
+
+    $individualid = \Drupal::routeMatch()->getParameter('wisski_individual');
+    if ($individualid instanceof \Drupal\wisski_core\Entity\WisskiEntity) $individualid = $individualid->id();
+
+    if(empty($individualid)) {
+      return $out;
+    }
+        
+    $linkblockpbid = "wisski_linkblock";
+    
+    $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($linkblockpbid);
+    
+    if(empty($pb)) {
+      $pb = new \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity(array("id" => $linkblockpbid, "name" => "WissKI Linkblock PB"), "wisski_pathbuilder");
+      $pb->save();
+    }
+    
+    $dataout = array();
+    
+    $bundleid = $pb->getBundleIdForEntityId($individualid);
+       # dpm($datapb);
+    $groups = $pb->getGroupsForBundle($bundleid);
+    
+    foreach($groups as $linkgroup) {
+      $allpbpaths = $pb->getPbPaths();
+      $pbtree = $pb->getPathTree();
+      // if there is nothing, then don't show up!
+      if(empty($allpbpaths) || !isset($allpbpaths[$linkgroup->id()]))
+        return;
+      
+      $pbarray = $allpbpaths[$linkgroup->id()];
+      foreach($pbtree[$linkgroup->id()]['children'] as $child) {
+        $childid = $child['id'];
+
+        // better catch these.            
+        if(empty($childid))
+          continue;
+        
+        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($childid);
+#drupal_set_message("child: " . serialize($childid));            
+#            $adapters = \Drupal\wisski_salz\Entity\WisskiSalzAdapter
+        $adapter = entity_load('wisski_salz_adapter', $pb->getAdapterId());            
+        $engine = $adapter->getEngine();
+        $tmpdata = $engine->pathToReturnValue($path, $pb, $individualid, 0, 'target_id', FALSE);
+        if(!empty($tmpdata)) {
+          $dataout[$path->id()]['path'] = $path;
+          if(!isset($dataout[$path->id()]['data']))
+            $dataout[$path->id()]['data'] = array();
+          $dataout[$path->id()]['data'] = array_merge($dataout[$path->id()]['data'], $tmpdata);
+        }
+      }
+    }
+
+    // cache for 2 seconds so subsequent queries seem to be fast
+    if(!empty($dataout))  
+      $out[]['#cache']['max-age'] = 2;
+    // this does not work
+#    $out['#cache']['disabled'] = TRUE;
+#    $out[] = [ '#markup' => 'Time : ' . date("H:i:s"),];
+#    drupal_set_message(serialize($dataout));
+    foreach($dataout as $pathid => $dataarray) {
+      $path = $dataarray['path'];
+      
+      if(empty($dataarray['data']))
+        continue;
+      
+      $out[] = [ '#markup' => '<h3>' . $path->getName() . '</h3>'];
+      
+      foreach($dataarray['data'] as $data) {
+
+        if(isset($data['wisskiDisamb']))  	    
+          $url = $data['wisskiDisamb'];
+
+        if(!empty($url)) {
+
+          $entity_id = AdapterHelper::getDrupalIdForUri($url);
+      
+          $url = 'wisski/navigate/' . $entity_id . '/view';
+      
+          $out[] = array(
+            '#type' => 'link',
+            '#title' => $data['target_id'],
+            '#url' => Url::fromUri('internal:/' . $url),
+          );
+          $out[] = [ '#markup' => '</br>' ];
+        } else {
+          $out[] = array(
+            '#type' => 'item',
+            '#markup' =>  $data['target_id'],
+          );
+          $out[] = [ '#markup' => '</br>' ];
+        }
+        
+      }  
+    }
+
+    return $out;
+  }
+
+
+
+
+
   /**
    * {@inheritdoc}
    */
   public function build() {
+
+    $config = $this->getConfiguration();
+    if (isset($config['better_lb']) && $config['better_lb']) {
+      return $this->betterBuild();
+    }
 
     $out = array();
 
@@ -95,23 +222,19 @@ class WisskiLinkblock extends BlockBase {
       $bundleid = $datapb->getBundleIdForEntityId($individualid);
        # dpm($datapb);
       $groups = $datapb->getGroupsForBundle($bundleid);
-    
 #      drupal_set_message(serialize($datapb));
     
       foreach($groups as $group) {
         $linkgroup = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($group->id());
 #        drupal_set_message(serialize("yay!"));
         if(!empty($linkgroup)) {
-
           $allpbpaths = $pb->getPbPaths();
           $pbtree = $pb->getPathTree();
-          
           // if there is nothing, then don't show up!
           if(empty($allpbpaths) || !isset($allpbpaths[$linkgroup->id()]))
             return;
           
           $pbarray = $allpbpaths[$linkgroup->id()];
-                    
           foreach($pbtree[$linkgroup->id()]['children'] as $child) {
             $childid = $child['id'];
 
