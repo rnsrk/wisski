@@ -1515,8 +1515,21 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     // this is an important distinction till now!
     // TODO: maybe we can combine reference delete and value delete
-    $is_reference = ($mainprop == 'target_id' || $path->isGroup() || ($pbarray['fieldtype'] == 'entity_reference'));
+    // in case of file we don't need to have a disamb and it is not a real reference.
+    // however we have to change the object.
+    $is_reference = (($mainprop == 'target_id' && !empty($path->getDisamb()))  || $path->isGroup() || ($pbarray['fieldtype'] == 'entity_reference'));
 
+    // this is the special case for files... we have to adjust the object here.
+    // the url of the file is directly used as value to have some more meaning in the
+    // triple store than just an entity id
+    // this might have sideeffects... we will see :)
+    if($mainprop == 'target_id' && empty($path->getDisamb())) {
+      $value = $this->getUriForDrupalId($value);
+    }
+
+
+#dpm($pbarray, "pbarr");
+#dpm($mainprop, "main");
 #    dpm($is_reference, "is ref");
 
     if ($is_reference) {
@@ -1572,7 +1585,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           // the function would chop off too much
           // TODO: check if we can use the new *relative* methods
           $parent_path_array = $parent->getPathArray();
-          $pathcnt = count($parent_path_array) - 1;
+          $pathcnt = (count($parent_path_array) + 1) / 2;
         }
 
         // we have to set disamb manually to the last instance
@@ -1608,22 +1621,23 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
 
       }
+            
+#      $deltriples = $this->generateTriplesForPath($pb, $path, $object_uri, $subject_uri, NULL, $path->getDisamb(), $pathcnt-1, FALSE, NULL, 'normal');
       
       // if it is a entity reference we take that before the disamb!
-      if(!$path->isGroup() && $is_reference)     
+      if(!$path->isGroup() && $is_reference && $path->getDisamb())     
         $prop = $path_array[(($path->getDisamb()-1) * 2) - 1];
-      else
+      else #if($path->isGroup())
         $prop = $path_array[count($path_array) - 2];
-      $inverse = $this->getInverseProperty($prop);
 
+      $inverse = $this->getInverseProperty($prop);
       $delete  = "DELETE DATA {\n";
       foreach ($subject_uris as $subject_uri) {
         $delete .= "  <$subject_uri> <$prop> <$object_uri> .\n";
         $delete .= "  <$object_uri> <$inverse> <$subject_uri> .\n";
       }
       $delete .= ' }';
-
-#      dpm($delete, "sparql");
+#     dpm($delete, "sparql");
 
       $result = $this->directUpdate($delete);    
 
@@ -1798,7 +1812,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
       // assemble the clauses
       $delete = "$delete_clause  }\n}\n$where_clause  }\n}";
-      
+#      dpm(htmlentities($delete), "delete!");      
       $result = $this->directUpdate($delete);
 
     }
@@ -2459,6 +2473,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }
     }
 
+#    dpm($old_values, "old values");
 
     // combined go through the new fields    
     foreach($field_values as $field_id => $field_items) {
@@ -2558,8 +2573,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
       }
       
-#      dpm($write_values, "we have to write");
+//      dpm($write_values, "we have to write");
       // now we write all the new values
+      // TODO: it seems like there is a duplicate write in case of image files..
+      // probably due to the fact that they are not found as old value because the URL is stored.
+      // it does not hurt currently, but it is a performance sink.
       foreach ($write_values as $new_item) {
  #       dpm($mainprop, "mainprop");
         
