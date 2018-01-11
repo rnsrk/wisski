@@ -235,7 +235,7 @@ class AdapterHelper {
     }
     
     $local_adapter = self::getPreferredLocalStore();
-    if (empty($input_adapter_id)) $adapter_id = $local_adapter->id();
+    if (empty($input_adapter_id) && !empty($local_adapter)) $adapter_id = $local_adapter->id();
     else $adapter_id = $input_adapter_id;
     
     // only do this, if there is a local adapter. Skip it otherwise.
