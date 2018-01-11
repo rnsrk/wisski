@@ -361,8 +361,9 @@ class AdapterHelper {
       //try the local store backup
       //first we gather the matchings for other adapters, we can possibly find URIs there that fit our input adapter
       $old_uris = self::getUrisForDrupalId($eid);
-      
-      $same_uri = self::getPreferredLocalStore(TRUE)->findUriForDrupalId($eid,$adapter_id);
+      $local_store = self::getPreferredLocalStore(TRUE);
+      if(!empty($local_store))
+        $same_uri = $local_store->findUriForDrupalId($eid,$adapter_id);
       //dpm($same_uri,'From Store with adapter '.$adapter_id);
       
       if (empty($same_uri)) {
