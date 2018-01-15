@@ -3,6 +3,8 @@
 namespace Drupal\wisski_core\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Entity\RevisionableContentEntityBase;
+
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 
@@ -63,7 +65,7 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *   translatable = FALSE,
  * )
  */
-class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
+class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntityInterface {
 
 #  public static function create(array $values = array()) {
 #    dpm("hallo welt!");
@@ -250,7 +252,8 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
     foreach ($this as $field_name => $field_item_list) {
 
       $out[$field_name] = array();
-      
+
+#      dpm($field_item_list, "save!!");      
       foreach($field_item_list as $weight => $field_item) {
         
         $field_values = $field_item->getValue();
@@ -286,18 +289,30 @@ class WisskiEntity extends ContentEntityBase implements WisskiEntityInterface {
             'properties' => serialize($field_values),
           );
           
+#          dpm($fields_to_save, "fts");
+          
           // add the values to the insert query
           $query->values($fields_to_save);
         }
       }
 
+#      dpm($fields_to_save, "fts");
+
+      // do not do this per field, do it as a bunch.
       // execute the insert query
-      if ($save_field_properties && !empty($this->id())) {     
-        $query->execute();
-      }
+      #if ($save_field_properties && !empty($this->id())) {     
+      #  dpm($query);
+      #  $query->execute();
+      #}
         
       if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) || empty($out[$field_name][0][$main_property])) unset($out[$field_name]);
 #      if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) ) unset($out[$field_name]);
+    }
+    
+    if ($save_field_properties && !empty($this->id())) {     
+      // @todo: somehow this seems to be triggered twice?!
+#      dpm($query);
+      $query->execute();
     }
 
     return $out;
