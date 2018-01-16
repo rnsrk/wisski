@@ -233,7 +233,6 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         else
           $info[$id]['bundle'] = $cached_bundle;
       }
-if ($id == 104) rpm($cached_bundle, 'cb');
 #      drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
 #      dpm(microtime(), "in4");
       // ask all adapters
@@ -287,7 +286,6 @@ if ($id == 104) rpm($cached_bundle, 'cb');
             
             // do this here because if we only use main bundles we need to store this for the title
             $this->writeToCache($id, $bundleid);
-if ($id == 104) rpm($bundleid, 'wtc'.$aid);
               
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
             #dpm($field_definitions, "yay");
