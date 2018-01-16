@@ -89,13 +89,18 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           ->condition('bid',$values[$id]['bundle'])
 #          ->condition('fid',$field_name)
           ->execute()
+#          ->fetchAll();
           ->fetchAllAssoc('fid');
 
 #        dpm($cached_field_values, "argh");
 
         $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($values[$id]['bundle']);
 
-        foreach($cached_field_values as $field_id => $cached_field_value) {
+        foreach($cached_field_values as $key => $cached_field_value) {
+          $field_id = $cached_field_value->fid;
+          
+#          if($field_id == 'b1abe31d92a85c73f932db318068d0d5')
+#            drupal_set_message(serialize($cached_field_value));
 #          dpm($cached_field_value->properties, "sdasdf");
 #          dpm($values[$id][$field_id], "is set to");
 #          dpm(serialize(isset($values[$id][$field_id])), "magic");
@@ -141,6 +146,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             continue;
 
           // now it should be save to set this value
+#          if(!empty($values[$id][$field_id]))
+#            $values[$id][$field_id] = 
+#          else
+#          dpm($cached_value, "loaded from cache.");
           $values[$id][$field_id] = $cached_value;
         }
         
@@ -447,6 +456,7 @@ if ($id == 104) rpm($bundleid, 'wtc'.$aid);
                     ->fetchAllAssoc('delta');
                     // this is evil because same values will be killed then... we go for weight instead.
 #                    ->fetchAllAssoc('ident');
+#                  dpm($cached_field_values, "cfv");
                   if (!empty($cached_field_values)) {
                     $head = array();
                     $tail = array();
@@ -468,7 +478,8 @@ if ($id == 104) rpm($bundleid, 'wtc'.$aid);
                       // iterate through the cached values and delete
                       // anything we find from the cache to correct the weight
                       foreach($cached_field_values as $key => $cached_field_value) {
-                        if($cached_field_value->ident === $nfv[$main_property]) {
+#                        dpm($nfv[$main_property], "mp");
+                        if((string)$cached_field_value->ident === (string)$nfv[$main_property]) {
                           unset($cached_field_values[$key]);
                           $found_cached_field_value = $cached_field_value;
                           break;
@@ -485,8 +496,10 @@ if ($id == 104) rpm($bundleid, 'wtc'.$aid);
                     ksort($head);
                     ksort($tail);                    
 
+#                    dpm($head, "head");
+#                    dpm($tail, "tail");
                     $new_field_values[$id][$field_name] = array_merge($head,$tail);
-
+#                    dpm($new_field_values[$id][$field_name], "miaz");
                   }
                   if (!isset($info[$id]) || !isset($info[$id][$field_name])) $info[$id][$field_name] = $new_field_values[$id][$field_name];
                   else $info[$id][$field_name] = array_merge($info[$id][$field_name],$new_field_values[$id][$field_name]);
@@ -1093,6 +1106,15 @@ $tsa['eid'] = $entity_id;
   public function preparePreviewImages() {
     $pref_local = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore();
     if (!$pref_local) {
+      $conf_adapter = \Drupal::config('wisski_core.settings')->get('preview_image_adapters');
+      
+      if(!empty($conf_adapter)) {
+        $this->preview_image_adapters = $conf_adapter;
+        return TRUE;
+      }
+      
+      drupal_set_message("No store for preview images was found. Please select one in the configuration.", "warning");
+      
       return FALSE;
     } else {
       $this->adapter = $pref_local;
@@ -1129,6 +1151,8 @@ $tsa['eid'] = $entity_id;
     //store, so if there is none, stop here
     if (empty($this->preview_image_adapters)) return NULL;
 
+    $found_preview = FALSE;
+
     // we iterate through all the selected adapters but we stop at the first
     // image that was successfully converted to preview image style as we only
     // need one!
@@ -1163,6 +1187,8 @@ $tsa['eid'] = $entity_id;
         if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug('No preview images available from adapter '.$adapter->id());
         continue;
       }
+      
+      $found_preview = TRUE;
 
       if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug("Images from adapter $adapter_id: ".serialize($images));
       //if there is at least one, take the first of them
@@ -1196,7 +1222,21 @@ $tsa['eid'] = $entity_id;
       }
 
     }
+    
+    if(empty($preview_uri) || empty($found_preview)) {
+      
+      $image_style = $this->getPreviewStyle();
+      $output_uri = drupal_get_path('module', 'wisski_core') . "/images/img_nopic.png";
+#      dpm($output_uri, "out");
+      $preview_uri = $image_style->buildUri($output_uri);
+      if ($out = $image_style->createDerivative($output_uri,$preview_uri)) {
+        WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
+        return $preview_uri;
+      }
+    }
+    
 
+#    dpm("could not find preview for " . $entity_id);
     return NULL;
 
   }

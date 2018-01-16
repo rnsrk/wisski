@@ -129,7 +129,9 @@ class AdapterHelper {
       }
     }
     
-    self::getPreferredLocalStore(TRUE)->setSameUris($uris,$entity_id);
+    $store = self::getPreferredLocalStore(TRUE);
+    if(!empty($store))
+      self::getPreferredLocalStore(TRUE)->setSameUris($uris,$entity_id);
     return TRUE;
   }
   
@@ -233,28 +235,32 @@ class AdapterHelper {
     }
     
     $local_adapter = self::getPreferredLocalStore();
-    if (empty($input_adapter_id)) $adapter_id = $local_adapter->id();
+    if (empty($input_adapter_id) && !empty($local_adapter)) $adapter_id = $local_adapter->id();
     else $adapter_id = $input_adapter_id;
     
-    //if we have nothing cached, ask the store for backup
-    $id = $local_adapter->getEngine()->getDrupalIdForUri($uri,$adapter_id);
+    // only do this, if there is a local adapter. Skip it otherwise.
+    if(!empty($local_adapter)) {
     
-    //if the store knows the answer, return it
-    if (!is_null($id)) {
-      //dpm($id,'from local store');
-      self::setSameUris(array($adapter_id=>$uri),$id);
-      return $id;
-    }
+      //if we have nothing cached, ask the store for backup
+      $id = $local_adapter->getEngine()->getDrupalIdForUri($uri,$adapter_id);
     
-    //possibly another adapter knows this uri already, then the EID MUST be the same
-    //this will only help, if an input adapter was set
-    if (!empty($input_adapter_id)) {
-      $id = self::getDrupalIdForUri($uri,FALSE);
+      //if the store knows the answer, return it
       if (!is_null($id)) {
-        //we know the correct ID now and must connect it with the given adapter
-        //dpm($id,'From another store');
-        self::setSameUris(array($input_adapter_id=>$uri),$id);
+        //dpm($id,'from local store');
+        self::setSameUris(array($adapter_id=>$uri),$id);
         return $id;
+      }
+  
+      //possibly another adapter knows this uri already, then the EID MUST be the same
+      //this will only help, if an input adapter was set
+      if (!empty($input_adapter_id)) {
+        $id = self::getDrupalIdForUri($uri,FALSE);
+        if (!is_null($id)) {
+          //we know the correct ID now and must connect it with the given adapter
+          //dpm($id,'From another store');
+          self::setSameUris(array($input_adapter_id=>$uri),$id);
+          return $id;
+        }
       }
     }
     
@@ -355,8 +361,9 @@ class AdapterHelper {
       //try the local store backup
       //first we gather the matchings for other adapters, we can possibly find URIs there that fit our input adapter
       $old_uris = self::getUrisForDrupalId($eid);
-      
-      $same_uri = self::getPreferredLocalStore(TRUE)->findUriForDrupalId($eid,$adapter_id);
+      $local_store = self::getPreferredLocalStore(TRUE);
+      if(!empty($local_store))
+        $same_uri = $local_store->findUriForDrupalId($eid,$adapter_id);
       //dpm($same_uri,'From Store with adapter '.$adapter_id);
       
       if (empty($same_uri)) {

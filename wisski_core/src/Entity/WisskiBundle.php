@@ -433,9 +433,28 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         #$paths = $pb->getAllPathsForBundleId($this->id(), TRUE);
         $paths = $pb->getAllPathsAndGroupsForBundleId($this->id(), TRUE);
         
-        foreach($paths as $path) {
-          if($path->isGroup())
+#        dpm($paths);
+        
+        while($path = array_shift($paths)) {
+          
+          // see what is in the pathbuilder exactly
+          $pbp = $pb->getPbPath($path->id());
+          
+          // if it is empty or it is disabled, continue
+          if(empty($pbp) || !$pbp['enabled'])
+            continue;
+          
+#          dpm($paths);
+          if($path->isGroup()) {
             $options[$pb_id][$pb_id.'.'.$path->id()] = $path->getName() . ' (group label)';
+
+            // in case of groups, get the subpaths and add them to the path... we continue there
+            // directly to have the paths in the correct order
+            $paths = array_merge($pb->getAllPathsAndGroupsForBundleId($pbp['bundle'], TRUE), $paths);
+#            dpm($pb->getPbPath($path->id()), "yay!");
+            #dpm($pb->getAllPathsAndGroupsForBundleId($path->id(), TRUE));
+            
+          }
           else
             $options[$pb_id][$pb_id.'.'.$path->id()] = $path->getName();
         }
