@@ -1134,6 +1134,8 @@ $tsa['eid'] = $entity_id;
     //store, so if there is none, stop here
     if (empty($this->preview_image_adapters)) return NULL;
 
+    $found_preview = FALSE;
+
     // we iterate through all the selected adapters but we stop at the first
     // image that was successfully converted to preview image style as we only
     // need one!
@@ -1168,6 +1170,8 @@ $tsa['eid'] = $entity_id;
         if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug('No preview images available from adapter '.$adapter->id());
         continue;
       }
+      
+      $found_preview = TRUE;
 
       if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug("Images from adapter $adapter_id: ".serialize($images));
       //if there is at least one, take the first of them
@@ -1201,7 +1205,21 @@ $tsa['eid'] = $entity_id;
       }
 
     }
+    
+    if(empty($preview_uri) || empty($found_preview)) {
+      
+      $image_style = $this->getPreviewStyle();
+      $output_uri = drupal_get_path('module', 'wisski_core') . "/images/img_nopic.png";
+#      dpm($output_uri, "out");
+      $preview_uri = $image_style->buildUri($output_uri);
+      if ($out = $image_style->createDerivative($output_uri,$preview_uri)) {
+        WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
+        return $preview_uri;
+      }
+    }
+    
 
+#    dpm("could not find preview for " . $entity_id);
     return NULL;
 
   }
