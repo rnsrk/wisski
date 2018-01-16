@@ -477,11 +477,13 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
     }
     
     // we restrict the result set to the entities in $entity_ids by adding a
-    // VALUES statement in front of the rest of the where clause
-    if (!empty($entity_ids)) {
-      // entity_ids is an assoc array where the keys are the ids and the values
-      // are the corresp URIs
-      $select .= 'VALUES ?x0 { <' . join('> <', $entity_ids) . '> } ';
+    // VALUES statement in front of the rest of the where clause.
+    // entity_ids is an assoc array where the keys are the ids and the values
+    // are the corresp URIs. When there is no URI (for the adapter) the URI is
+    // empty and needs to be filtered out for the VALUES construct.
+    $filtered_uris = array_filter($entity_ids);
+    if (!empty($filtered_uris)) {
+      $select .= 'VALUES ?x0 { <' . join('> <', $filtered_uris) . '> } ';
     }
 
     $select .= $query_parts . ' }';
@@ -636,7 +638,9 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       
       // redo the sorting
       foreach($rows as $row) {
-        $out_entities[$row->ent_num] = $entity_ids[$row->ent_num];
+        if (isset($entity_ids[$row->ent_num])) {
+          $out_entities[$row->ent_num] = $entity_ids[$row->ent_num];
+        }
       }
       
       $entity_ids = $out_entities;

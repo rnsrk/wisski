@@ -224,6 +224,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         else
           $info[$id]['bundle'] = $cached_bundle;
       }
+if ($id == 104) rpm($cached_bundle, 'cb');
 #      drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
 #      dpm(microtime(), "in4");
       // ask all adapters
@@ -237,20 +238,35 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           if (isset($cached_bundle)) {
             $bundle_ids = array($cached_bundle);
           } else {
+            // take all bundles
+            $bundle_ids = $adapter->getBundleIdsForEntityId($id);
+            if (empty($bundle_ids)) {
+              // if the adapter cannot determine at least one bundle, it will
+              // also not be able to contribute to the field data
+              // TODO: check if this assumption is right!
+              continue; // next adapter
+            }
+            if (!empty($bundle_from_uri) && (empty($bundle_ids) || in_array($bundle_from_uri, $bundle_ids))) {
+              $bundle_ids = array($bundle_from_uri);
+            }
+/*          the following lines have to be replaced by the ones above.
+            the code below would give priority to the uri bundle for entities 
+            in subforms, too.
+            with the code above it is no longer possible to brute force a 
+            certain bundle, however.
             // if the bundle is given via the uri, we use that and only that
             if(!empty($bundle_from_uri))
               $bundle_ids = array($bundle_from_uri);
             else {
               // if so - ask for the bundles for that id
               // we assume bundles to be prioritized i.e. the first bundle in the set is the best guess for the view
-              $bundle_ids = $adapter->getBundleIdsForEntityId($id);
 #              drupal_set_message(serialize($bundle_ids));
-            }
+            }*/
           }
 
           $overall_bundle_ids = array_merge($overall_bundle_ids, $bundle_ids);
 
-          $bundle_ids = array_slice($bundle_ids,0,1);
+          $bundle_ids = array_slice($bundle_ids,0,1); // HACK! (randomly takes the first one
           #drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle) . " for " . serialize($ids));
           foreach($bundle_ids as $bundleid) {
             // be more robust.
@@ -262,6 +278,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             
             // do this here because if we only use main bundles we need to store this for the title
             $this->writeToCache($id, $bundleid);
+if ($id == 104) rpm($bundleid, 'wtc'.$aid);
               
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
             #dpm($field_definitions, "yay");

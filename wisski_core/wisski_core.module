@@ -171,11 +171,11 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
     // this is very complicated... do it anyway...
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
 
-    drupal_set_message(serialize($pbs));
+#    drupal_set_message(serialize($pbs));
 
     foreach($pbs as $pb) {
-      
-      $bundle_ids = $pb->getBundleIdForEntityId($entity_id);
+      $bundle_id = $pb->getBundleIdForEntityId($entity_id);
+      if (!empty($bundle_id)) break;
     }
   }
 
