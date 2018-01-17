@@ -2070,6 +2070,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // and we have an object
         if($key == (($disambposition-1)*2) && !empty($object_in)) {
           $uri = $object_in;
+          if ($write) {
+            // we also write the class in case the object is already known to
+            // the system but not to this adapter and there are no further
+            // data values to be written in this adapter. in this case we would
+            // end up with the uri correctly written to this adapter but the
+            // reading query needs to check the class as well which wouldn't be
+            // there, then.
+            $query .= "<$uri> a <$value> . ";
+          }
         } else {
                   
           // if it is not the disamb-case we add type-triples        

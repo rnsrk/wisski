@@ -481,7 +481,6 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
     // entity_ids is an assoc array where the keys are the ids and the values
     // are the corresp URIs. When there is no URI (for the adapter) the URI is
     // empty and needs to be filtered out for the VALUES construct.
-    
     $filtered_uris = NULL;
     if(!empty($entity_ids))
       $filtered_uris = array_filter($entity_ids);
