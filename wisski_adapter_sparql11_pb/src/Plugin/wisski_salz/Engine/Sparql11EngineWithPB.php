@@ -116,6 +116,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     } else {
       $return = $this->nextClasses($last,$next,$fast_mode);
     }
+
 #    dpm(func_get_args()+array('result'=>$return),__FUNCTION__);
     return $return;
   }
@@ -165,14 +166,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       "SELECT DISTINCT ?property "
       ."WHERE {  {"
         ."?property a owl:DatatypeProperty. "
-#        ."?property rdfs:domain ?d_superclass. "
-#        ."<$step> rdfs:subClassOf* ?d_superclass. }"
+        ."?property rdfs:domain ?d_superclass. "
+        ."<$step> rdfs:subClassOf* ?d_superclass. } }"
       ;
       
       // By Mark: TODO: Please check this. I have absolutely
       // no idea what this does, I just copied it from below
       // and I really really hope that Dorian did know what it
       // does and it will work forever.      
+/*
       $query .= 
         "{"
           ."{?d_def_prop rdfs:domain ?d_def_class.}"
@@ -204,7 +206,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             ."}"
           ."}"
         ."}}}";
-
+*/
     $result = $this->directQuery($query);
 #    dpm($query, 'res');
 
@@ -311,12 +313,16 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     if (!isset($class) && !isset($class_after)) return $this->getProperties();
 #    \Drupal::logger(__METHOD__)->debug('class: '.$class.', class_after: '.$class_after);
+
     $output = $this->getPropertiesFromCache($class,$class_after);
+
     if ($output === FALSE) {
       //drupal_set_message('none in cache');
       $output = $this->getPropertiesFromStore($class,$class_after,$fast_mode);
     }
+
     uksort($output,'strnatcasecmp');
+
     return $output;
   }
 
