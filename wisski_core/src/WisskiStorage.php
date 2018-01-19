@@ -225,13 +225,14 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       //see if we got bundle information cached. Useful for entity reference and more      
       $overall_bundle_ids = array();
       $cached_bundle = WisskiCacheHelper::getCallingBundle($id);
-#      drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));      
+      #drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));      
       // only use that if it is a top bundle when the checkbox was set. Always use it otherwise.
       if ($cached_bundle) {
         if($only_use_topbundles && empty($mainentityid) && !in_array($cached_bundle, $topBundles))
           $cached_bundle = NULL;
         else
           $info[$id]['bundle'] = $cached_bundle;
+        #dpm($cached_bundle, "cb");
       }
 #      drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
 #      dpm(microtime(), "in4");
@@ -246,22 +247,28 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           if (isset($cached_bundle)) {
             $bundle_ids = array($cached_bundle);
           } else {
+          
             // take all bundles
             $bundle_ids = $adapter->getBundleIdsForEntityId($id);
+  
             if (empty($bundle_ids)) {
               // if the adapter cannot determine at least one bundle, it will
               // also not be able to contribute to the field data
               // TODO: check if this assumption is right!
               continue; // next adapter
             }
+
             if (!empty($bundle_from_uri) && (empty($bundle_ids) || in_array($bundle_from_uri, $bundle_ids))) {
               $bundle_ids = array($bundle_from_uri);
             }
-/*          the following lines have to be replaced by the ones above.
+
+/*          By Martin: the following lines have to be replaced by the ones above.
             the code below would give priority to the uri bundle for entities 
             in subforms, too.
             with the code above it is no longer possible to brute force a 
             certain bundle, however.
+            
+            By Mark: Works - also with the transdisciplinary approach
             // if the bundle is given via the uri, we use that and only that
             if(!empty($bundle_from_uri))
               $bundle_ids = array($bundle_from_uri);
@@ -271,7 +278,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #              drupal_set_message(serialize($bundle_ids));
             }*/
           }
-
+#          dpm($bundle_ids, "bids");
           $overall_bundle_ids = array_merge($overall_bundle_ids, $bundle_ids);
 
           $bundle_ids = array_slice($bundle_ids,0,1); // HACK! (randomly takes the first one
@@ -286,7 +293,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             
             // do this here because if we only use main bundles we need to store this for the title
             $this->writeToCache($id, $bundleid);
-              
+#            dpm($bundleid, "bid1");
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
             #dpm($field_definitions, "yay");
 #            wpm($field_definitions, 'gei-fd');
@@ -540,7 +547,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
     $entity_info = WisskiHelper::array_merge_nonempty($entity_info,$info);
 #    dpm(microtime(), "out5");
-    wpm($entity_info, 'gei');
+#    dpm($entity_info, 'gei');
     return $entity_info;
   }
 
