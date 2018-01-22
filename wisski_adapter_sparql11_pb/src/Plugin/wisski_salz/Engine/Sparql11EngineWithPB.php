@@ -1106,18 +1106,27 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
 
     // in case of disamb we contradict the theory below.
-    if(!is_null($disamb) && $disamb === $starting_position) {
+    if(!is_null($disamb)) { //&& $disamb === $starting_position) {
       $sparql .= "?x" . $disamb . " ";
     }
     
     // $starting_position+2 because we can omit x0 in this place - it will always be replaced
     // by the eid of this thing here.
+    /*
+    // We try to be more precise than this approach as it is rather costly...
     for($i = $starting_position+2; $i <= count($path->getPathArray()); $i+=2) {
       $sparql .= "?x" . $i . " ";
     }
-
+    */
+    
+    // get the queried one.
+    $name = 'x' . (count($path->getPathArray())-1);
+    
+    // in case of primitives it is not the above one but "out"
     if(!empty($primitive) && $primitive != "empty")
       $sparql .= "?out ";
+    else if($name != "x" . $disamb) // but in all other cases it is the above one.
+      $sparql .= "?" . $name . " ";
           
     $sparql .= "WHERE { ";
 
@@ -1169,7 +1178,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }
       
 #      $name = 'x' . (count($patharray)-1);
-      $name = 'x' . (count($path->getPathArray())-1);
+#      $name = 'x' . (count($path->getPathArray())-1);
       if(!empty($primitive) && $primitive != "empty") {
         if(empty($main_property)) {
           $out[] = $thing->out->getValue();
