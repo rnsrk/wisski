@@ -267,10 +267,12 @@ class WisskiEntitySearch extends SearchPluginBase {
         if (isset($defaults[$bundle_id]['paths'])) $bundle_path_defaults = $defaults[$bundle_id]['paths'];
         else $bundle_path_defaults = array();
         //dpm($bundle_path_defaults,'defaults '.$bundle_id);
+#        dpm($bundle_path_options, "bpo");
         for ($i = 0; $i < $this->path_limit && $i < count($bundle_path_options); $i++) {
           $list = each($bundle_path_defaults);
           $def_input = '';
           $def_operator = $this->getDefaultOperator();
+//          dpm($list, "list");
           if ($list) {
             list( , list($path_id, $def_input, $def_operator)) = $list;
           } else {
@@ -334,12 +336,13 @@ class WisskiEntitySearch extends SearchPluginBase {
     return array(
       'CONTAINS' => $this->t('Contains'),
       '=' => $this->t('exactly'),
-#      '<>' => $this->t('not equal'),
+      '<>' => $this->t('not equal'),
       '>' => '>',
 #      '>=' => '>=',
       '<' => '<',
 #      '<=' => '<=',
       'STARTS_WITH' => $this->t('Starts with'),
+      'NOT_EMPTY' => $this->t('not empty'),
 #      'ENDS_WITH' => $this->t('Ends with'),
 #      'ALL' => $this->t('all of'),
 #      'IN' => $this->t('one of'),
@@ -390,6 +393,8 @@ class WisskiEntitySearch extends SearchPluginBase {
         }
         break;
       }
+      case 'NOT_EMPTY': {
+      }
     }
     
   }
@@ -398,18 +403,21 @@ class WisskiEntitySearch extends SearchPluginBase {
     
     $vals = $form_state->getValues();
     $keys = array();
+    $ops = array();
     if (isset($vals['advanced']) && isset($vals['advanced']['paths']) && !empty($vals['advanced']['paths'])) {
       foreach($vals['advanced']['paths'] as $bundle_id => $paths) {
         $return[$bundle_id]['query_type'] = $paths['query_type']['selection'];
         unset($paths['query_type']);
         foreach ($paths as $path_parameters) {
-          if ($path_parameters['input_field']) {
+          if ($path_parameters['input_field'] || trim($path_parameters['operator']) == "NOT_EMPTY") {
+            $ops[] = trim($path_parameters['operator']);
             $keys[] = trim($path_parameters['input_field']);
             $return[$bundle_id]['paths'][] = array($path_parameters['path_selection'],trim($path_parameters['input_field']),$path_parameters['operator']);
           }
         }
       }
     }
+    $return['ops'] = $ops;
     $return['bundles'] = array_filter($vals['advanced']['bundles']['select_bundles']);
     $return['entity_title'] = $vals['entity_title'];
     // 'keys' must be set for the Search Plugin, don't know why
@@ -425,4 +433,18 @@ class WisskiEntitySearch extends SearchPluginBase {
     
     return $form['advanced']['paths'];
   }
+  
+  /**
+   * Function to see when something is valid to search.
+   * std is return !empty($this->keywords);
+   */
+  public function isSearchExecutable() {
+    // if any of these is NOT EMPTY we can do the search.
+    foreach($this->searchParameters['ops'] as $op) {
+      if($op == "NOT_EMPTY")
+        return TRUE;
+    }
+    return parent::isSearchExecutable();
+  }
+  
 }
