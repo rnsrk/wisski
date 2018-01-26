@@ -143,6 +143,10 @@ class WisskiPathbuilderForm extends EntityForm {
           drupal_set_message("There is an empty Path in " . serialize($pathform), "error");
           continue;
         }
+
+        if(! (empty($path->getDatatypeProperty()) || $path->getDatatypeProperty() == "empty") && $pbpaths[$path->id()]['fieldtype'] == "entity_reference") {
+          drupal_set_message("Danger Zone: Path '" . $path->label() . "' has field type 'entity reference' but uses " . $path->getDatatypeProperty() . " as datatype property. Please remove the datatype property.", "error");
+        }
         
         $form['pathbuilder_table'][$path->id()]['#item'] = $pathform['#item'];
       
