@@ -7,6 +7,7 @@ use Drupal\search\Plugin\SearchPluginBase;
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
+use Drupal\wisski_core\WisskiCacheHelper;
 
 use Drupal\wisski_core\WisskiHelper;
 
@@ -28,6 +29,15 @@ class WisskiEntitySearch extends SearchPluginBase {
    */
   private $path_limit = 10;
 
+/*
+  public function buildResults() {
+    $built = parent::buildResults();
+    dpm($this, "sis");
+    dpm($built, "yay!");
+
+    return $built;
+  }
+*/
   /**
    * Execute the search.
    *
@@ -39,7 +49,7 @@ class WisskiEntitySearch extends SearchPluginBase {
    */
   public function execute() {
     
-    //dpm($this,__METHOD__);
+#    dpm($this,__METHOD__);
     $results = array();
     if ($this->isSearchExecutable()) {
       $parameters = $this->getParameters();
@@ -95,8 +105,12 @@ class WisskiEntitySearch extends SearchPluginBase {
         // entity. this would prevent WissKI from generating and displaying the
         // right title.
         $title = wisski_core_generate_title($entity_id, FALSE, $bundle_id);
+        #$preview = getPreviewImageUri($entity_id, $bundle_id);
+#        $preview = WisskiCacheHelper::getPreviewImageUri($entity_id);
+#        dpm($preview, "prev");
         if (is_null($title)) $title = $entity_id;
         $return[] = array(
+#          'snippet' => '<img src="' . $preview . '">',
           'link' => Url::fromRoute(
             'entity.wisski_individual.canonical',
             array('wisski_individual' => $entity_id),
@@ -104,6 +118,8 @@ class WisskiEntitySearch extends SearchPluginBase {
           )->toString(),
           'type' => is_null($bundle) ? '' : $bundle->label(),
           'title' => $title,
+          'entity_id' => $entity_id,
+          'bundle_id' => $bundle_id,
         );
       }
     }
@@ -321,8 +337,25 @@ class WisskiEntitySearch extends SearchPluginBase {
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = array(
       '#type' => 'submit',
+      '#name' => 'standard-submit',
       '#value' => $this->t('Search Wisski Entities'),
     );
+    
+    // make a nice export button
+    $form['actions']['export'] = array(
+      '#name' => 'excel_export',
+      '#type' => 'image_button',
+      '#src' => drupal_get_path('module', 'wisski_core') . "/images/export_excel.png",
+      '#attributes' => [ 'alt' => t('Export to Excel'), ],
+      '#op' => 'wisski_excel_export',
+#      '#ajax' => [
+#        '#callback' => [ 'wisski_excel_export' ],
+#      ],
+      '#submit' => array('wisski_excel_export', "data" => $this->execute()),
+#      '#prefix' => '<p>',
+#      '#suffix' => '</p>',
+    );
+                              
     //dpm($form);
   }
 
@@ -353,8 +386,11 @@ class WisskiEntitySearch extends SearchPluginBase {
   }
   
   public function validateChoice(array $element, FormStateInterface $form_state, array $form) {
-  
-    //dpm(func_get_args(),__METHOD__);
+    // in case of excel export, skip.
+    if($form_state->getTriggeringElement()['#name'] == "excel_export")
+      return TRUE;
+         
+#    dpm(func_get_args(),__METHOD__);
     list($bundle_id,$row_num) = explode('.',$element['#attributes']['data-wisski']);
     $vals = $form_state->getValue(array('advanced','paths',$bundle_id,$row_num));
     $input = $vals['input_field'];
@@ -440,10 +476,11 @@ class WisskiEntitySearch extends SearchPluginBase {
    */
   public function isSearchExecutable() {
     // if any of these is NOT EMPTY we can do the search.
-    foreach($this->searchParameters['ops'] as $op) {
-      if($op == "NOT_EMPTY")
-        return TRUE;
-    }
+    if(isset($this->searchParameters['ops']))
+      foreach($this->searchParameters['ops'] as $op) {
+        if($op == "NOT_EMPTY")
+          return TRUE;
+      }
     return parent::isSearchExecutable();
   }
   
