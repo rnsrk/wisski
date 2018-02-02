@@ -228,9 +228,19 @@ class WisskiODBCImportForm extends FormBase {
 //        dpm($row);
 //        dpm($XMLrow);
         while(isset($value[$i])) {
-          $bundleid = $value[$i . '_attr']['id'];
-          $ref_entity_id = $this->wisski_odbc_storeBundle($row, $value[$i], $bundleid, $delimiter, $trim);
-          $entity_fields[$bundleid][] = $ref_entity_id;
+          // this could also be a field id of an entity reference
+          // so we have to check the target.
+          $localbundleid = $value[$i . '_attr']['id'];
+          
+          // load the fieldconfig
+          $fc = FieldConfig::load('wisski_individual.' . $bundleid. '.' . $localbundleid);
+
+          // get the target bundle id of the field config
+          $targetbundleid = $fc->getSettings()['handler_settings']['target_bundles'];
+          $targetbundleid = current($targetbundleid);
+                                        
+          $ref_entity_id = $this->wisski_odbc_storeBundle($row, $value[$i], $targetbundleid, $delimiter, $trim);
+          $entity_fields[$localbundleid][] = $ref_entity_id;
         
           if($ref_entity_id)
             $found_something = true;
