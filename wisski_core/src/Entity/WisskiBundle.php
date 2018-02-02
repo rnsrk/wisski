@@ -263,15 +263,16 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         $i = 0;
 #        dpm($values, "values");
         foreach ($values as $value) {
-
           // fix for empty values, we ignore these for now.
-          if(empty($value))
+          // a numeric 0 oder the string "0" also is empty, but we want to 
+          // print them as is
+          if(empty($value) && $value !== 0 && $value !== "0")
             continue;
 #          dpm($i, "i");
 #          dpm($cardinality, "card");
           if ($i >= $cardinality) break;
 #          dpm($value, 'get');
-          $part .= $value;
+          $part .= "$value";
           if (++$i < $cardinality) $part .= $delimiter;
         } 
       }
