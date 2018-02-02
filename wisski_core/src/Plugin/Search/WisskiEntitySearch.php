@@ -7,6 +7,7 @@ use Drupal\search\Plugin\SearchPluginBase;
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
+use Drupal\wisski_core\WisskiCacheHelper;
 
 use Drupal\wisski_core\WisskiHelper;
 
@@ -28,6 +29,15 @@ class WisskiEntitySearch extends SearchPluginBase {
    */
   private $path_limit = 10;
 
+/*
+  public function buildResults() {
+    $built = parent::buildResults();
+    dpm($this, "sis");
+    dpm($built, "yay!");
+
+    return $built;
+  }
+*/
   /**
    * Execute the search.
    *
@@ -39,7 +49,7 @@ class WisskiEntitySearch extends SearchPluginBase {
    */
   public function execute() {
     
-    //dpm($this,__METHOD__);
+#    dpm($this,__METHOD__);
     $results = array();
     if ($this->isSearchExecutable()) {
       $parameters = $this->getParameters();
@@ -95,8 +105,12 @@ class WisskiEntitySearch extends SearchPluginBase {
         // entity. this would prevent WissKI from generating and displaying the
         // right title.
         $title = wisski_core_generate_title($entity_id, FALSE, $bundle_id);
+        #$preview = getPreviewImageUri($entity_id, $bundle_id);
+#        $preview = WisskiCacheHelper::getPreviewImageUri($entity_id);
+#        dpm($preview, "prev");
         if (is_null($title)) $title = $entity_id;
         $return[] = array(
+#          'snippet' => '<img src="' . $preview . '">',
           'link' => Url::fromRoute(
             'entity.wisski_individual.canonical',
             array('wisski_individual' => $entity_id),
@@ -104,6 +118,8 @@ class WisskiEntitySearch extends SearchPluginBase {
           )->toString(),
           'type' => is_null($bundle) ? '' : $bundle->label(),
           'title' => $title,
+          'entity_id' => $entity_id,
+          'bundle_id' => $bundle_id,
         );
       }
     }
@@ -267,10 +283,12 @@ class WisskiEntitySearch extends SearchPluginBase {
         if (isset($defaults[$bundle_id]['paths'])) $bundle_path_defaults = $defaults[$bundle_id]['paths'];
         else $bundle_path_defaults = array();
         //dpm($bundle_path_defaults,'defaults '.$bundle_id);
+#        dpm($bundle_path_options, "bpo");
         for ($i = 0; $i < $this->path_limit && $i < count($bundle_path_options); $i++) {
           $list = each($bundle_path_defaults);
           $def_input = '';
           $def_operator = $this->getDefaultOperator();
+//          dpm($list, "list");
           if ($list) {
             list( , list($path_id, $def_input, $def_operator)) = $list;
           } else {
@@ -319,8 +337,25 @@ class WisskiEntitySearch extends SearchPluginBase {
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = array(
       '#type' => 'submit',
+      '#name' => 'standard-submit',
       '#value' => $this->t('Search Wisski Entities'),
     );
+    
+    // make a nice export button
+    $form['actions']['export'] = array(
+      '#name' => 'excel_export',
+      '#type' => 'image_button',
+      '#src' => drupal_get_path('module', 'wisski_core') . "/images/export_excel.png",
+      '#attributes' => [ 'alt' => t('Export to Excel'), ],
+      '#op' => 'wisski_excel_export',
+#      '#ajax' => [
+#        '#callback' => [ 'wisski_excel_export' ],
+#      ],
+      '#submit' => array('wisski_excel_export', "data" => $this->execute()),
+#      '#prefix' => '<p>',
+#      '#suffix' => '</p>',
+    );
+                              
     //dpm($form);
   }
 
@@ -334,12 +369,13 @@ class WisskiEntitySearch extends SearchPluginBase {
     return array(
       'CONTAINS' => $this->t('Contains'),
       '=' => $this->t('exactly'),
-#      '<>' => $this->t('not equal'),
+      '<>' => $this->t('not equal'),
       '>' => '>',
 #      '>=' => '>=',
       '<' => '<',
 #      '<=' => '<=',
       'STARTS_WITH' => $this->t('Starts with'),
+      'NOT_EMPTY' => $this->t('not empty'),
 #      'ENDS_WITH' => $this->t('Ends with'),
 #      'ALL' => $this->t('all of'),
 #      'IN' => $this->t('one of'),
@@ -350,8 +386,11 @@ class WisskiEntitySearch extends SearchPluginBase {
   }
   
   public function validateChoice(array $element, FormStateInterface $form_state, array $form) {
-  
-    //dpm(func_get_args(),__METHOD__);
+    // in case of excel export, skip.
+    if($form_state->getTriggeringElement()['#name'] == "excel_export")
+      return TRUE;
+         
+#    dpm(func_get_args(),__METHOD__);
     list($bundle_id,$row_num) = explode('.',$element['#attributes']['data-wisski']);
     $vals = $form_state->getValue(array('advanced','paths',$bundle_id,$row_num));
     $input = $vals['input_field'];
@@ -390,6 +429,8 @@ class WisskiEntitySearch extends SearchPluginBase {
         }
         break;
       }
+      case 'NOT_EMPTY': {
+      }
     }
     
   }
@@ -398,18 +439,21 @@ class WisskiEntitySearch extends SearchPluginBase {
     
     $vals = $form_state->getValues();
     $keys = array();
+    $ops = array();
     if (isset($vals['advanced']) && isset($vals['advanced']['paths']) && !empty($vals['advanced']['paths'])) {
       foreach($vals['advanced']['paths'] as $bundle_id => $paths) {
         $return[$bundle_id]['query_type'] = $paths['query_type']['selection'];
         unset($paths['query_type']);
         foreach ($paths as $path_parameters) {
-          if ($path_parameters['input_field']) {
+          if ($path_parameters['input_field'] || trim($path_parameters['operator']) == "NOT_EMPTY") {
+            $ops[] = trim($path_parameters['operator']);
             $keys[] = trim($path_parameters['input_field']);
             $return[$bundle_id]['paths'][] = array($path_parameters['path_selection'],trim($path_parameters['input_field']),$path_parameters['operator']);
           }
         }
       }
     }
+    $return['ops'] = $ops;
     $return['bundles'] = array_filter($vals['advanced']['bundles']['select_bundles']);
     $return['entity_title'] = $vals['entity_title'];
     // 'keys' must be set for the Search Plugin, don't know why
@@ -425,4 +469,19 @@ class WisskiEntitySearch extends SearchPluginBase {
     
     return $form['advanced']['paths'];
   }
+  
+  /**
+   * Function to see when something is valid to search.
+   * std is return !empty($this->keywords);
+   */
+  public function isSearchExecutable() {
+    // if any of these is NOT EMPTY we can do the search.
+    if(isset($this->searchParameters['ops']))
+      foreach($this->searchParameters['ops'] as $op) {
+        if($op == "NOT_EMPTY")
+          return TRUE;
+      }
+    return parent::isSearchExecutable();
+  }
+  
 }

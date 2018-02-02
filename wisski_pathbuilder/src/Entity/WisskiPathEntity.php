@@ -27,6 +27,7 @@ use Drupal\wisski_pathbuilder\WisskiPathInterface;
   *       "delete" = "Drupal\wisski_pathbuilder\Form\WisskiPathDeleteForm",
   *       "delete_local" = "Drupal\wisski_pathbuilder\Form\WisskiPathDeleteFormLocal",
   *       "delete_fieldtype" = "Drupal\wisski_pathbuilder\Form\WisskiFieldDeleteForm",
+  *       "duplicate" = "Drupal\wisski_pathbuilder\Form\WisskiPathDuplicateForm",
   *     }             
   *    },
   *   config_prefix = "wisski_path",

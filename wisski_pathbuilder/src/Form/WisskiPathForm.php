@@ -67,7 +67,7 @@ class WisskiPathForm extends EntityForm {
   public function form(array $form, FormStateInterface $form_state) {
 #    return array();
     $path = $this->entity;
-        
+    #dpm(microtime(), "in");        
     // the name for this path
     $form['name'] = array(
       '#type' => 'textfield',
@@ -102,7 +102,7 @@ class WisskiPathForm extends EntityForm {
     );
     
     $cache_mode = FALSE;
-    
+    #dpm(microtime(), "in2");
     if ($this->engine->providesCacheMode()) {
       $url = Url::fromRoute(
         'entity.wisski_salz_adapter.edit_form',
@@ -158,7 +158,7 @@ class WisskiPathForm extends EntityForm {
         '#markup' => $complete_text,
       );
     }
-    
+    #dpm(microtime(), "in3");
     //first, set the default values
     if (!isset($this->path_array)) $this->path_array = $path->isNew() ? array() : $path->getPathArray();
     $selected_row = 0;
@@ -204,7 +204,7 @@ class WisskiPathForm extends EntityForm {
 #    return $form;
     $last_row = count($this->path_array) - 1;
     //dpm($this->path_array,'After');
-    
+    #dpm(microtime(), "in4");
     $form['path_content'] = array(
       '#type' => 'container',
       '#prefix' => '<div id=wisski-path-content>',
@@ -294,9 +294,11 @@ class WisskiPathForm extends EntityForm {
       $form['path_content']['path_array'][$current_row] = $form_path_elem;
 
     }
-
+#dpm(microtime(), "in5");
     if ($this->engine->providesDatatypeProperty() && !empty($this->path_array[$last_row]) && $this->path_array[$last_row] !== 'empty') {
+ #     dpm(microtime(), "in5.1");
       $options = $this->engine->getPrimitiveMapping($this->path_array[$last_row]);
+  #    dpm(microtime(), "in5.2");
       if (!empty($options)) {
         $form['path_content']['datatype_property'] = array(
           '#type' => 'select',
@@ -309,7 +311,7 @@ class WisskiPathForm extends EntityForm {
         );
       }
     }
-    
+   # dpm(microtime(), "in6");
     if (!empty($this->path_array)) {
       $disamb_options = array();
       for($i = 0;$i<count($this->path_array);$i++) {
@@ -326,7 +328,7 @@ class WisskiPathForm extends EntityForm {
         '#default_value' => $path->getDisamb() ?:'empty',
       );
     }
-    
+  #  dpm(microtime(), "out");
     //dpm($form,'Form Array');
     return $form;
   }

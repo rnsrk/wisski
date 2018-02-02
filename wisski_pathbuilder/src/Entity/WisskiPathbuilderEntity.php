@@ -335,7 +335,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       // if the field is already there...
       if($field_storages = \Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $fieldid))) {
 #        drupal_set_message(serialize($field_storages));
-        drupal_set_message(t('Field %bundle with id %id was already there.',array('%bundle'=>$field_name, '%id' => $fieldid)));
+        if(WISSKI_DEVEL) drupal_set_message(t('Field %bundle with id %id was already there.',array('%bundle'=>$field_name, '%id' => $fieldid)));
 
         // here we have to check for sanity!
 
@@ -509,7 +509,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       $form_display->setComponent($fieldid, $view_options)->save();
 
     if(!$no_fs) {
-      drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
+      if(WISSKI_DEVEL) drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
     } else {
     }
   }
@@ -654,7 +654,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     if (!empty($field_storages)) {
       if (count($field_storages) > 1) drupal_set_message('There are multiple field storages for this field name: '.$field_name,'warning');
       $field_storage = current($field_storages);
-      drupal_set_message(t('Field %bundle with id %id was already there.',array('%bundle'=>$field_name, '%id' => $fieldid)));
+      if(WISSKI_DEVEL) drupal_set_message(t('Field %bundle with id %id was already there.',array('%bundle'=>$field_name, '%id' => $fieldid)));
       //dpm($field_storage,'storage');
       if ($field_storage->getType() != $field_storage_values['type']) {
         $field_storage->delete();
@@ -664,7 +664,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     } else $create_fs = TRUE;
           
     if ($create_fs) {
-      drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
+      if(WISSKI_DEVEL) drupal_set_message(t('Created new field %field in bundle %bundle for this path',array('%field'=>$field_name,'%bundle'=>$bundle)));
 #        dpm($field_storage_values, 'fsv boc');
       $field_storage = \Drupal::entityManager()->getStorage('field_storage_config')->create($field_storage_values)->enable();
     } else { // if everything is there - why not skip? By Mark: I am unsure if this is a good idea.
@@ -705,12 +705,14 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     
     if ($create_fo) {
       $field_object = \Drupal::entityManager()->getStorage('field_config')->create($field_values);
+      // only save if we create something... otherwise we just loaded, why save it again?
+      $field_object->save();
     }
     
     //@TODO make it possible to set the $required value
     //$field_object->setRequired($required);
 #    dpm($field_object);
-    $field_object->save();
+#    $field_object->save();
 
 #    drupal_set_message("path " . $pathid . " has weight " . serialize($pbpaths[$pathid]['weight']));
     $view_options = array(
@@ -751,11 +753,12 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
         'settings' => array(),
         'weight' => $pbpaths[$pathid]['weight'],
       );
+#      dpm($display_options, "dso");
     }
-
+#    dpm($pbpaths[$pathid], "pbp");
     // find the current display elements
     $display = \Drupal::entityManager()->getStorage('entity_view_display')->load('wisski_individual' . '.'.$bundle.'.default');
-
+#dpm($display, "display");
     $hidden = FALSE;
     
     // no display?
@@ -770,13 +773,20 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
         $hidden = TRUE;  
       else {
         $comp = $display->getComponent($fieldid);
-            
+       
+        // overwrite type explicitely
+        $type = $display_options['type'];
+          
         if(!empty($comp))
           $display_options = array_merge($display_options, $comp);
+
+        $display_options['type'] = $type;
+                  
+#        dpm($display_options, "after");
       }
     }
     
-#    dpm(serialize($hidden) . " and " . serialize($display_options), "hidden for $fieldid");
+#    dpm(serialize($hidden) . " and " . serialize($display_options) . " b " . serialize($view_options), "hidden for $fieldid");
     
     // setComponent enables them
     if(!$hidden)
@@ -797,9 +807,14 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
 
         // there already is one.
         $comp = $form_display->getComponent($fieldid);
-      
+        
+        // overwrite type explicitely
+        $type = $view_options['type'];
+        
         if(!empty($comp))
           $view_options = array_merge($comp, $view_options);  
+        
+        $view_options['type'] = $type;
       }
     }
     
@@ -850,9 +865,9 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       if (!empty($bundles)) {
         $bundle = current($bundles);
         $bundle_name = $bundle->label();
-        drupal_set_message(t('Connected bundle %bundlelabel (%bundleid) with group %groupid.',array('%bundlelabel'=>$bundle_name, '%bundleid'=>$bundleid, '%groupid'=>$groupid)));
+        if(WISSKI_DEVEL) drupal_set_message(t('Connected bundle %bundlelabel (%bundleid) with group %groupid.',array('%bundlelabel'=>$bundle_name, '%bundleid'=>$bundleid, '%groupid'=>$groupid)));
       } else {
-        drupal_set_message(t('Could not connect bundle with id %bundleid with group %groupid. Generating new one.',array('%bundleid'=>$bundleid, '%groupid'=>$groupid)));
+        if(WISSKI_DEVEL) drupal_set_message(t('Could not connect bundle with id %bundleid with group %groupid. Generating new one.',array('%bundleid'=>$bundleid, '%groupid'=>$groupid)));
         // if there was nothing, reset the bundleid as it is wrong.
         $bundleid = NULL;
       }
@@ -871,7 +886,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
 
       // if the bundle is already there...
       if(empty($bundle_name) || !empty(\Drupal::entityManager()->getStorage($mode)->loadByProperties(array('id' => $bundleid)))) {
-        drupal_set_message(t('Bundle %bundle with id %id was already there.',array('%bundle'=>$bundle_name, '%id' => $bundleid)));
+        if(WISSKI_DEVEL) drupal_set_message(t('Bundle %bundle with id %id was already there.',array('%bundle'=>$bundle_name, '%id' => $bundleid)));
 
         // it might be that this was falsely unset.
         // So we fix the correct bundleid here.        
@@ -910,7 +925,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       $efd->removeComponent('uid');
       $efd->save();
       
-      drupal_set_message(t('Created new bundle %bundle for group with id %groupid.',array('%bundle'=>$bundle_name, '%groupid'=>$groupid)));
+      if(WISSKI_DEVEL) drupal_set_message(t('Created new bundle %bundle for group with id %groupid.',array('%bundle'=>$bundle_name, '%groupid'=>$groupid)));
     }    
 
     $menus = $bundle->getWissKIMenus();    
@@ -974,12 +989,12 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
 #      }
 
     if($is_group) {
-      $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => '', 'fieldtype' => '', 'displaywidget' => '', 'formatterwidget' => '');
+      $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => $parentid, 'bundle' => '', 'field' => '', 'fieldtype' => '', 'displaywidget' => '', 'formatterwidget' => '');
     } else {
       //these are the OLD default values, which make the PB create a textfield for every path
       //$pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => '', 'fieldtype' => 'string', 'displaywidget' => 'string_textfield', 'formatterwidget' => 'string');
       //these new values keep the defaults for fieldtype, formatter and widget but will not result ion a generated field automatically
-      $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => 0, 'bundle' => '', 'field' => self::CONNECT_NO_FIELD, 'fieldtype' => 'string', 'displaywidget' => 'string_textfield', 'formatterwidget' => 'string');
+      $pbpaths[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'parent' => $parentid, 'bundle' => '', 'field' => self::CONNECT_NO_FIELD, 'fieldtype' => 'string', 'displaywidget' => 'string_textfield', 'formatterwidget' => 'string');
     }
     
     $this->setPathTree($pathtree);
@@ -1056,10 +1071,33 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
           $last = array_pop($relativePath);
           $first = current($relativePath);
           if($last == $uri || $first == $uri) {
-            if(!empty($group['parent']))
-              $nontopbundles = array_merge($nontopbundles, array($group['bundle'] => $group['bundle']));
+            if(!empty($group['parent'])) {
+              if(empty($group['bundle'])) {
+                $p = entity_load('wisski_path', $group['id']);
+                if(empty($p)) {
+                  drupal_set_message("Group " . $groupid . " does not exist anymore in PB " . $this->getName() . ". We remove it.", "warning");
+                  unset($pbpaths[$groupid]);
+                  $this->setPbPaths($pbpaths);
+                  $this->save();
+                } else
+                  drupal_set_message("Group " . $p->label() . " in PB " . $this->getName() . " has no bundle specified. Please correct. ", "warning");
+              } else
+                $nontopbundles = array_merge($nontopbundles, array($group['bundle'] => $group['bundle']));
+             
+            }
             else
-              $topbundles = array_merge($topbundles, array($group['bundle'] => $group['bundle']));
+              if(empty($group['bundle'])) {
+                $p = entity_load('wisski_path', $group['id']);
+                if(empty($p)) {
+                  drupal_set_message("Group " . $groupid . " does not exist anymore in PB " . $this->getName() . ". We remove it.", "warning");
+                  unset($pbpaths[$groupid]);
+                  $this->setPbPaths($pbpaths);
+                  $this->save();
+                } else
+                  drupal_set_message("Group " . $p->label() . " in PB " . $this->getName() . " has no bundle specified. Please correct. ", "warning");
+              } else
+                $topbundles = array_merge($topbundles, array($group['bundle'] => $group['bundle']));
+             
           }
         }
       }

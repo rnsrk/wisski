@@ -90,6 +90,15 @@ entity.wisski_path.delete_local_form:
     _title: 'Delete Path'
   requirements:
     _permission: 'administer site configuration'
+
+entity.wisski_path.duplicate_form:
+  path: '/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/{wisski_path}/duplicate'
+#  path: '/admin/config/wisski/path/{wisski_path}/duplicate'
+  defaults:
+    _entity_form: 'wisski_path.duplicate'
+    _title: 'Duplicate'
+  requirements:
+    _permission: 'administer site configuration'
     
 entity.wisski_path.delete_core:
   path: '/admin/config/wisski/pathbuilder/{wisski_pathbuilder}/{wisski_field_id}/{wisski_field_type}/deletecore'

@@ -5,6 +5,7 @@ use Drupal\wisski_core\Entity\WisskiEntity;
 
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\wisski_salz\AdapterHelper;
+use Drupal\Core\Field\BaseFieldDefinition;
 
 define('WISSKI_DEVEL', FALSE);
 #define('WISSKI_DEVEL', TRUE);
@@ -15,6 +16,93 @@ function wisski_core_cache_flush() {
   WisskiCacheHelper::flushAllPreviewImageUris();
   drupal_set_message(t('Flushed WissKI specific caches'));
 }
+
+function wisski_excel_export($ob) {
+#  drupal_set_message(serialize($ob));
+#  dpm($ob, "ex");
+
+  $data_rows = $ob['actions']['export']['#submit']['data'];  
+
+  $id = $data_rows[0]['type'];
+  $bundleid = $data_rows[0]['bundle_id'];
+
+  $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($bundleid);
+#dpm($pbs_info, "info");
+  $filename = file_directory_temp() . "/" . $id . ".xls";
+
+  $fh = fopen($filename, "w+");
+
+  $pb_paths = array();
+  $adapters = array();
+  $pbs = array();
+
+  foreach($pbs_info as $pbdata) {
+    $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($pbdata['pb_id']);
+    $allpaths = $pb->getAllPathsForBundleId($bundleid, TRUE);
+    $pb_paths[$pb->id()] = $allpaths;
+    $pbs[$pb->id()] = $pb;
+    $adapters[$pb->id()] = \Drupal\wisski_salz\Entity\Adapter::load($pbdata['adapter_id']);
+  }
+
+  foreach($pb_paths as $key => $paths) {
+    foreach($paths as $path) {
+      $pathname = $path->getName();
+      fwrite($fh, iconv('UTF-8', 'cp1250', $pathname) . "\t");
+    }
+  }
+
+  fwrite($fh, "\n");
+
+  foreach($data_rows as $data_row) {
+    foreach($pb_paths as $pb_id => $paths) {
+      $adapter = $adapters[$pb_id];
+      $pb = $pbs[$pb_id];
+
+      foreach($paths as $path) {
+        $values = $adapter->getEngine()->pathToReturnValue($path, $pb, $data_row['entity_id'], 0, NULL, FALSE);
+
+        fwrite($fh, "\"");
+	
+	$i = 0;
+        foreach($values as $value) {
+          $var = strip_tags($value);
+          $var = str_replace('"', '""', $var);
+          fwrite($fh, iconv('UTF-8', 'cp1250', $var));
+
+          $i++;
+          if($i < count($sprows))
+            fwrite($fh, "\n");
+        }
+        fwrite($fh, "\"");
+        fwrite($fh, "\t");
+      }  
+    }
+    fwrite($fh, "\n");
+  }
+
+  fclose($fh);
+
+#  dpm($data_rows);
+
+  header("Pragma: public");
+  header("Expires: 0");
+  header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+  header("Cache-Control: private",false);
+  header("Content-Type: application/vnd.ms-excel");
+  header("Content-Disposition: attachment; filename=\"" . basename($filename) . "\";" );
+  header("Content-Transfer-Encoding: binary");
+
+  readfile($filename);
+
+  flush();
+
+  unlink($filename);
+
+  exit();
+  
+  return FALSE;
+}
+
 
 /**
  * Use this hook to set the right form display settings for
@@ -330,13 +418,14 @@ function wisski_core_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $fo
  * Add the place where the entity is found in navigate
  */
 function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb &$breadcrumb, \Drupal\Core\Routing\RouteMatchInterface $route_match, array $context) {
+#  dpm($context, "con");
   $routename =  $route_match->getRouteName();
 
   if($routename == 'entity.wisski_individual.canonical') {
     $eid = $route_match->getParameter('wisski_individual');
 
     $bundleid = WisskiCacheHelper::getCallingBundle($eid);
-
+#    dpm($bundleid, "bundleid");
     if(!empty($bundleid)) {
       $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundleid);
       if(!empty($bundle) && !empty($bundle->label())) {
@@ -351,4 +440,8 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
     }
   }
 
+}
+
+function wisski_core_preprocess_breadcrumb(&$variables) {
+  $variables['#cache']['contexts'][] = 'url';
 }
