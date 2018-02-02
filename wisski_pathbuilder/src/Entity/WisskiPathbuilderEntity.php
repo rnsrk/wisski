@@ -1074,17 +1074,30 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
             if(!empty($group['parent'])) {
               if(empty($group['bundle'])) {
                 $p = entity_load('wisski_path', $group['id']);
-                drupal_set_message("Group " . $p->label() . " in PB " . $this->getName() . " has no bundle specified. Please correct. ", "warning");
+                if(empty($p)) {
+                  drupal_set_message("Group " . $groupid . " does not exist anymore in PB " . $this->getName() . ". We remove it.", "warning");
+                  unset($pbpaths[$groupid]);
+                  $this->setPbPaths($pbpaths);
+                  $this->save();
+                } else
+                  drupal_set_message("Group " . $p->label() . " in PB " . $this->getName() . " has no bundle specified. Please correct. ", "warning");
               } else
                 $nontopbundles = array_merge($nontopbundles, array($group['bundle'] => $group['bundle']));
+             
             }
             else
               if(empty($group['bundle'])) {
                 $p = entity_load('wisski_path', $group['id']);
-                drupal_set_message("Group " . $p->label() . " in PB " . $this->getName() . " has no bundle specified. Please correct. ", "warning");
+                if(empty($p)) {
+                  drupal_set_message("Group " . $groupid . " does not exist anymore in PB " . $this->getName() . ". We remove it.", "warning");
+                  unset($pbpaths[$groupid]);
+                  $this->setPbPaths($pbpaths);
+                  $this->save();
+                } else
+                  drupal_set_message("Group " . $p->label() . " in PB " . $this->getName() . " has no bundle specified. Please correct. ", "warning");
               } else
                 $topbundles = array_merge($topbundles, array($group['bundle'] => $group['bundle']));
-              
+             
           }
         }
       }
