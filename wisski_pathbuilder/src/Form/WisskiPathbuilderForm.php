@@ -144,7 +144,7 @@ class WisskiPathbuilderForm extends EntityForm {
           continue;
         }
 
-        if(! (empty($path->getDatatypeProperty()) || $path->getDatatypeProperty() == "empty") && $pbpaths[$path->id()]['fieldtype'] == "entity_reference") {
+        if(! (empty($path->getDatatypeProperty()) || $path->getDatatypeProperty() == "empty") && ($pbpaths[$path->id()]['fieldtype'] == "entity_reference" || $path->isGroup())) {
           drupal_set_message("Danger Zone: Path '" . $path->label() . "' has field type 'entity reference' but uses " . $path->getDatatypeProperty() . " as datatype property. Please remove the datatype property.", "error");
         }
         
