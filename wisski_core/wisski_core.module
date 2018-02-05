@@ -61,8 +61,11 @@ function wisski_excel_export($ob) {
       foreach($paths as $path) {
         $values = $adapter->getEngine()->pathToReturnValue($path, $pb, $data_row['entity_id'], 0, NULL, FALSE);
 
-        fwrite($fh, "\"");
-	
+	if(count($values) == 1 && ( is_numeric(current($values)) || preg_match('/^((\d+)(\.)*)+$/', current($values), $m) != FALSE) )  
+	  fwrite($fh, "=\"");
+	else
+	  fwrite($fh, "\"");	
+
 	$i = 0;
         foreach($values as $value) {
           $var = strip_tags($value);
@@ -70,7 +73,7 @@ function wisski_excel_export($ob) {
           fwrite($fh, iconv('UTF-8', 'cp1250', $var));
 
           $i++;
-          if($i < count($sprows))
+          if($i < count($values))
             fwrite($fh, "\n");
         }
         fwrite($fh, "\"");
