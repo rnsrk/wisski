@@ -450,7 +450,7 @@ wisski_tick("end exec views");
                   // position times 2, starting with 0!
                   $out_prop = 'x' . (($disamb - 1) * 2);
                 }
-                $select = "SELECT ?x0 ?$out_prop WHERE { VALUES ?x0 { ";
+                $select = "SELECT DISTINCT ?x0 ?$out_prop WHERE { VALUES ?x0 { ";
                 $uris_to_eids = []; // keep for reverse mapping of results
                 foreach ($entity_ids as $eid) {
                   if (isset($eid_to_uri_per_aid[$aid]) && isset($eid_to_uri_per_aid[$aid][$eid])) {
@@ -525,6 +525,7 @@ wisski_tick("end exec views");
     }
 #    dpm(serialize($values_per_row[437]));
 #    dpm(microtime(), "end of ...");    
+
     return array_values($values_per_row);
 
   }
