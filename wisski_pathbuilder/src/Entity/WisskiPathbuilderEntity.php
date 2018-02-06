@@ -1275,6 +1275,9 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
   public function getPathForFid($fieldid) {      
     
     $pbpaths = $this->getPbPaths();
+
+    if(empty($pbpaths))
+      return array();
     
     foreach($pbpaths as $potpath) {
       
