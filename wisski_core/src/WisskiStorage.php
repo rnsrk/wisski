@@ -401,24 +401,33 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   }
                   
                 }
-                
+*/                
                 // NOTE: this is a dirty hack that sets the text format for all long texts
                 // with summary
                 // TODO: make format storable and provide option for default format in case
                 // no format can be retrieved from storage
+                //
+                // By Mark: We need this in case we have old data that never was
+                // saved before.
+                // in this case we take the default format, which is the first one.
+                //
                 $hack_type = $field_def->getType();
+#                dpm(\Drupal::entityManager()->getStorage('filter_format')->loadByProperties(array('status' => TRUE)), "ht");
                 if ($hack_type == 'text_with_summary' || $hack_type == 'text_long') {
+                  $formats = \Drupal::entityManager()->getStorage('filter_format')->loadByProperties(array('status' => TRUE));
+                  $format = current($formats);
+#                  dpm($format->get("format"), "format");
                   foreach($new_field_values as &$xid) {
                     foreach($xid as &$xfieldname) {
                       foreach ($xfieldname as &$xindex) {
-#                        $xindex['format'] = 'full_html';
+                        $xindex['format'] = $format->get("format");
                       }
                     }
                   }
 #                 $value['value'] = $value;
 #                 $value['format'] = 'full_html';
                 }
-*/
+
                 // we integrate a file handling mechanism that must necessarily
                 // also handle other file based fields e.g. "image"
                 //
