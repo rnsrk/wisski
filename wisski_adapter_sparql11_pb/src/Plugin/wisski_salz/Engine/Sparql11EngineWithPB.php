@@ -1397,8 +1397,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
     
 
-    if(!empty($field_storage_config))
+    if(!empty($field_storage_config)) {
       $main_property = $field_storage_config->getMainPropertyName();
+      $target_type = $field_storage_config->getSetting("target_type");
+    }
 
     if(!empty($field_id) && empty($bundleid_in)) {
       drupal_set_message("$field_id was queried but no bundle given.", "error");
@@ -1477,10 +1479,19 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           if ($main_property == 'target_id') {
               
             $oldtmp = $tmp;
+            
+            // special case for files - do not ask for a uri.
+            if($target_type == "file") {
+              foreach($tmp as $key => $item) {
+                $tmp[$key]["target_id"] = $item["target_id"];
+                $tmp[$key]["original_target_id"] = $item["target_id"];
+              }
+            } else {
               
-            foreach($tmp as $key => $item) {
-              $tmp[$key]["original_target_id"] = $item["target_id"];
-              $tmp[$key]["target_id"] = $this->getDrupalId(isset($item['wisskiDisamb']) ? $item["wisskiDisamb"] : $item["target_id"]);
+              foreach($tmp as $key => $item) {
+                $tmp[$key]["original_target_id"] = $item["target_id"];
+                $tmp[$key]["target_id"] = $this->getDrupalId(isset($item['wisskiDisamb']) ? $item["wisskiDisamb"] : $item["target_id"]);
+              }
             }
 
           }
@@ -1507,6 +1518,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // get the pb-entry for the field
     // this is a hack and will break if there are several for one field
     $pbarray = $pb->getPbEntriesForFid($fieldid);
+
+    $field_storage_config = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);
+    
+    // store the target type to see if it references to a file for special handling
+    $target_type = NULL;
+    
+    if(!empty($field_storage_config)) {
+      $target_type = $field_storage_config->getSetting("target_type");
+    }
 
     // if there is absolutely nothing, we don't delete something.
     if(empty($pbarray)) {
@@ -1536,16 +1556,20 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // in case of file we don't need to have a disamb and it is not a real reference.
     // however we have to change the object.
     $is_reference = (($mainprop == 'target_id' && !empty($path->getDisamb()))  || $path->isGroup() || ($pbarray['fieldtype'] == 'entity_reference'));
+#    dpm($is_reference, "main");
 
     // this is the special case for files... we have to adjust the object here.
     // the url of the file is directly used as value to have some more meaning in the
     // triple store than just an entity id
     // this might have sideeffects... we will see :)
-    if($mainprop == 'target_id' && empty($path->getDisamb())) {
-      $value = $this->getUriForDrupalId($value);
+    if($target_type == "file" && $mainprop == 'target_id') {
+      if( is_numeric($value)) 
+        $value = $this->getUriForDrupalId($value);
+#      else // it might be that there are spaces in file uris. These are bad for TS-queries.
+#        $value = urlencode($value);
     }
 
-
+#    dpm($value, "value");
 #dpm($pbarray, "pbarr");
 #dpm($mainprop, "main");
 #    dpm($is_reference, "is ref");
@@ -1620,6 +1644,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           $select  = "SELECT DISTINCT ?$subject_var WHERE {";
           $select .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $object_uri, $disamb, $pathcnt, FALSE, NULL, 'entity_reference');
           $select .= "}";
+
+#          dpm($select, "select");
           
           $result = $this->directQuery($select);
 
@@ -2352,11 +2378,30 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     if(empty($path))
       return;
+
+    $field_storage_config = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);
+    
+    $target_type = NULL;
+    
+    if(!empty($field_storage_config)) 
+      $target_type = $field_storage_config->getSetting("target_type");
     
     // we distinguish two modes of how to interpret the value: 
     // entity ref: the value is an entity id that shall be linked to 
     // normal: the value is a literal and may be disambiguated
     $is_entity_ref = ($mainprop == 'target_id' && ($path->isGroup() || $pb->getPbEntriesForFid($fieldid)['fieldtype'] == 'entity_reference'));
+
+    // special case for files:
+    if($target_type == "file" && $mainprop == 'target_id') {
+      if( is_numeric($value)) 
+        $value = $this->getUriForDrupalId($value);
+#      else { // it might be that there are spaces in file uris. These are bad for TS-queries.
+#        $strrpos = strrpos($value, '/');
+#        if($strrpos) { // only act of there is a / in it.
+#          $value = substr($value, 0, $strrpos) . rawurlencode(substr($value, $strrpos));
+#        }
+#      }
+    }
     
     // in case of no entity-reference we do not search because we
     // already get what we want!
