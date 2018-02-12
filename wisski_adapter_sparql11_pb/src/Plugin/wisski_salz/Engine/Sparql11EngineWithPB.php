@@ -1519,7 +1519,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // this is a hack and will break if there are several for one field
     $pbarray = $pb->getPbEntriesForFid($fieldid);
 
-    $field_storage_config = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);
+    $field_storage_config = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $fieldid);
     
     // store the target type to see if it references to a file for special handling
     $target_type = NULL;
@@ -2379,7 +2379,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if(empty($path))
       return;
 
-    $field_storage_config = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);
+    $field_storage_config = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $fieldid);
     
     $target_type = NULL;
     
