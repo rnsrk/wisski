@@ -360,9 +360,13 @@ abstract class Sparql11Engine extends EngineBase {
   * @return @see EasyRdf_Sparql_Client->update
   */
   public function directUpdate($query) {
-    if (WISSKI_DEVEL) \Drupal::logger('UPDATE '.$this->adapterId())->debug('{u}',array('u'=>$query));
+    #if (WISSKI_DEVEL)    
+#    \Drupal::logger('UPDATE IN '.$this->adapterId())->debug('{u}',array('u'=>$query));
+#    return;
     try {
-      return $this->getEndpoint()->update($query);
+      $out = $this->getEndpoint()->update($query);
+#      \Drupal::logger('UPDATE OUT '.$this->adapterId())->debug('{u}',array('u'=>$query));
+      return $out;
     }
     catch (\Exception $e) {
       drupal_set_message('Something went wrong in \''.__FUNCTION__.'\' for adapter "'.$this->adapterId().'"','error');

@@ -166,10 +166,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       "SELECT DISTINCT ?property "
       ."WHERE {  {"
         ."?property a owl:DatatypeProperty. "
-#        ."?property rdfs:domain ?d_superclass. "
-#        ."<$step> rdfs:subClassOf* ?d_superclass. } }"
+        ."?property rdfs:domain ?d_superclass. "
+        ."<$step> rdfs:subClassOf* ?d_superclass. } }"
       ;
-      
+/*      
       // By Mark: TODO: Please check this. I have absolutely
       // no idea what this does, I just copied it from below
       // and I really really hope that Dorian did know what it
@@ -206,7 +206,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             ."}"
           ."}"
         ."}}}";
-
+*/
     $result = $this->directQuery($query);
 #    dpm($query, 'res');
 
@@ -752,18 +752,21 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $query = "SELECT ?class WHERE { GRAPH ?g { <" . $uri . "> a ?class } }";
     
     $result = $this->directQuery($query);
- #   drupal_set_message("$query res: " . serialize($result));
 
     $out = array();
     foreach($result as $thing) {
-    
       $uri_to_find = $thing->class->getUri();
   
       $topbundles = array();
       $nontopbundles = array();
 
       foreach($pbs as $pb) {
-        list($tmptopbundles, $tmpnontopbundles) = $pb->getAllBundleIdsAboutUri($uri_to_find);
+        $bundles = $pb->getAllBundleIdsAboutUri($uri_to_find);
+
+        if(empty($bundles))
+          continue;
+          
+        list($tmptopbundles, $tmpnontopbundles) = $bundles;
  
         $topbundles = array_merge($topbundles, $tmptopbundles);
         $nontopbundles = array_merge($nontopbundles, $tmpnontopbundles);
@@ -1875,6 +1878,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @return the Entity ID
    */
   public function createEntity($entity,$entity_id=NULL) {
+#    dpm("create was called");
     #$uri = $this->getUri($this->getDefaultDataGraphUri());
 #    dpm(func_get_args(),__FUNCTION__);
 #    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()));
@@ -2408,7 +2412,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    drupal_set_message("I add field $field from entity $entity_id that currently has the value $value");
   }
   
-  public function writeFieldValues($entity_id, array $field_values, $pathbuilder, $bundle_id=NULL,$old_values=array(),$force_new=FALSE) {
+  public function writeFieldValues($entity_id, array $field_values, $pathbuilder, $bundle_id=NULL,$old_values=array(),$force_new=FALSE, $initial_write = FALSE) {
 #    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
 #    dpm(func_get_args(), __METHOD__);    
 #    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()));
@@ -2430,9 +2434,19 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
     // here we should check if we really know the entity by asking the TS for it.
     // this would speed everything up largely, I think.
+    // by mark: additionally the below code always is true.
+    // this results in default values of entities not getting initiated. I added
+    // another parameter ($initial_write) for that which simply
+    // ignores the old field values and forces a write.
     $init_entity = $this->loadEntity($entity_id);
+    #$init_entity = $this->hasEntity($entity_id);
+    
+#    dpm($init_entity, "init");
+#    dpm($force_new, "force!");
     
     // if there is nothing, continue.
+    // by mark: currently the storage calls the createEntity. So this never may be used.
+    // simply don't worry about it.
     if (empty($init_entity)) {
 #      dpm('empty entity',__FUNCTION__);
       if ($force_new) {
@@ -2458,6 +2472,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     //drupal_set_message("the old values were: " . serialize($old_values));
 #    dpm($old_values,'old values');
 #    dpm($field_values,'new values');
+#    dpm($initial_write, "init");
+    // in case of an initial write we forget the old values.
+    if($initial_write)
+      $old_values = array();
 
 
     // if there are fields in the old_values that were deleted in the current

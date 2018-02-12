@@ -180,10 +180,11 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginI
    * @param $bundle the ID of the bundle the entities are in
    * @param $origignal_values an array of 'old' field values helping the adapter to decide which values to write, if necessary
    * @param $force_creation set to TRUE if the adapter shall store entity info even if it di not know the entity before
+   * @param $initial_write set to TRUE if it is the first initial write of the entity after its creation. In this case we write everything without considering old values.
    * @TODO check how to include quantitive restrictions on field values
    * @return TRUE if the entity was successfully saved, FALSE or an error_string otherwise
    */
-  public function writeFieldValues($entity_id,array $field_values,$pathbuilder,$bundle = NULL,$original_values=array(),$force_creation=FALSE);
+  public function writeFieldValues($entity_id,array $field_values,$pathbuilder,$bundle = NULL,$original_values=array(),$force_creation=FALSE,$initial_write=FALSE);
 
   /**
    * Checks if the engine knows something about the URI.

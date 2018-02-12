@@ -899,6 +899,7 @@ $tsa = array('pbs' => array_keys($pbs_info));
 
     // we track if this is a newly created entity, if yes, we want to write it to ALL writable adapters
     $create_new = $entity->isNew() && empty($entity_id);
+    $init = $create_new;
     
 $ts = microtime(true);
     
@@ -934,7 +935,7 @@ $ts = microtime(true);
         try {
           //we force the writable adapter to write values for newly created entities even if unknown to the adapter by now
           //@TODO return correct success code
-          $adapter_info = $adapter->writeFieldValues($entity_id, $values, $pb, $bundle_id, $original_values,$create_new);
+          $adapter_info = $adapter->writeFieldValues($entity_id, $values, $pb, $bundle_id, $original_values,$create_new, $init);
 
           // By Mark: perhaps it would be smarter to give the writeFieldValues the entity
           // object because it could make changes to it

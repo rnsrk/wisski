@@ -110,7 +110,7 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
   /**
    * @see EngineInterface::writeFieldValues
    */
-  public function writeFieldValues($entity_id,array $field_values,$pathbuilder,$bundle = NULL,$original_values=array(),$force_creation=FALSE);
+  public function writeFieldValues($entity_id,array $field_values,$pathbuilder,$bundle = NULL,$original_values=array(),$force_creation=FALSE,$initial_write=FALSE);
 
   /**
    * this adapter/engine provides two functions for retrieving path alternatives
