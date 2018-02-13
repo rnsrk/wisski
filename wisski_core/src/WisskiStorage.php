@@ -225,7 +225,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       //see if we got bundle information cached. Useful for entity reference and more      
       $overall_bundle_ids = array();
       $cached_bundle = WisskiCacheHelper::getCallingBundle($id);
-      #drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));      
+#      drupal_set_message($id . " " . serialize($bundle_ids) . " and " . serialize($cached_bundle));      
       // only use that if it is a top bundle when the checkbox was set. Always use it otherwise.
       if ($cached_bundle) {
         if($only_use_topbundles && empty($mainentityid) && !in_array($cached_bundle, $topBundles))
@@ -373,7 +373,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #                dpm(microtime(), "after load" . serialize($new_field_values));
                 if (empty($new_field_values)) continue;
                 $info[$id]['bundle'] = $bundleid;
-/*
+
                 if ($field_def->getType() === 'entity_reference') {
                   $field_settings = $field_def->getSettings();
 #if (!isset($field_settings['handler_settings']['target_bundles'])) dpm($field_def);
@@ -401,7 +401,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   }
                   
                 }
-*/                
+                
                 // NOTE: this is a dirty hack that sets the text format for all long texts
                 // with summary
                 // TODO: make format storable and provide option for default format in case
