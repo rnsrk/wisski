@@ -2363,9 +2363,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           if ($negate) {
             $filter = "NOT( $filter )";
           }
-          
-          $query .= " $outvar . FILTER( $filter ) . ";
 
+          // speed up in case of equivalence
+          if($op == "=" ) {
+            $query .= " '" . $escapedValue . "' . ";
+          } else {         
+            $query .= " $outvar . FILTER( $filter ) . ";
+          }
         }
       } else {
         $query .= " $outvar . ";
