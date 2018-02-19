@@ -2366,7 +2366,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
           // speed up in case of equivalence
           if($op == "=" ) {
-            $query .= " '" . $escapedValue . "' . ";
+            if(is_numeric($primitiveValue))
+              $escapedValue = "'" . $escapedValue . "'";
+            $query .= " " . $escapedValue . " . ";
           } else {         
             $query .= " $outvar . FILTER( $filter ) . ";
           }
@@ -2381,7 +2383,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    if($mode == 'entity_reference')
 #      \Drupal::logger('WissKIsaveProcess')->debug('erg generate: ' . htmlentities($query));
 
-#      dpm($query, "query"); 
+#    dpm($query, "query"); 
     return $query;
   }
   
