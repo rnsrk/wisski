@@ -332,11 +332,13 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         if (\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($eid,$adapter->id())) {
           //finally, having a valid path and adapter, we can ask the adapter for the path's value
           $pbpath = $pb->getPbPath($path_id);
+
+#          dpm($pbpath, "pbp");
           
           // this is the case when the thing is a group
           // in this case we want it to generate the title of the
           // subentity and use that.
-          if($pbpath['bundle'] == $pbpath['field']) {
+          if($pbpath['bundle'] == $pbpath['field'] || $pbpath['fieldtype'] == "entity_reference") {
 
             // get the data from the pathbuilder
             $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", TRUE);
