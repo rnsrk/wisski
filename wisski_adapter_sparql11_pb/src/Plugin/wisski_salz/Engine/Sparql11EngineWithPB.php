@@ -1558,6 +1558,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $is_reference = (($mainprop == 'target_id' && !empty($path->getDisamb()))  || $path->isGroup() || ($pbarray['fieldtype'] == 'entity_reference'));
 #    dpm($is_reference, "main");
 
+#    $image_value = NULL;
+
     // this is the special case for files... we have to adjust the object here.
     // the url of the file is directly used as value to have some more meaning in the
     // triple store than just an entity id
@@ -1565,8 +1567,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if($target_type == "file" && $mainprop == 'target_id') {
       if( is_numeric($value)) 
         $value = $this->getUriForDrupalId($value);
-#      else // it might be that there are spaces in file uris. These are bad for TS-queries.
-#        $value = urlencode($value);
     }
 
 #    dpm($value, "value");
@@ -1714,7 +1714,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $sparql .= $triples;
       
       $sparql .= " }";
-#      dpm(htmlentities($sparql), "sparql");
+#      dpm($sparql, "sparql");
       
       $result = $this->directQuery($sparql);
 
@@ -1729,8 +1729,24 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $the_thing = NULL;
       
       foreach($result as $key => $thing) {
+        
+        $image_value = NULL;
+        
+        // special hack for images which might be received via uri.
+        if($target_type == "file" && $mainprop == 'target_id') {
+          $loc = NULL;
+          $fid = \Drupal::entityManager()->getStorage('wisski_individual')->getFileId($thing->out, $loc);
+          $public = \Drupal::entityManager()->getStorage('wisski_individual')->getPublicUrlFromFileId($fid);
+          
+          $image_value = $public;
+          
+        }
+        
+#        dpm($image_value, "img");
+#        dpm($value, "val");
+        
         // Easy case - it is at the "normal position"
-        if($key === $count && $thing->out == $value) {
+        if($key === $count && ( $thing->out == $value || $image_value == $value)) {
           $the_thing = $thing;
           $position = $count;
           break;
