@@ -268,6 +268,16 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
           $field_values['target_id'] = $storage->getPublicUrlFromFileId($field_values['target_id']);
         }
         $main_property = $field_item->mainPropertyName();
+
+        if(empty($main_property) || empty($field_values[$main_property])) {
+
+          // this is not the best heuristic. better save something that is bigger...
+          $main_property = current(array_keys($field_values));
+
+#          dpm($field_item);
+#          return;
+        }
+
         //we transfer the main property name to the adapters
         $out[$field_name]['main_property'] = $main_property;
         //gathers the ARRAY of field properties for each field list item
@@ -276,6 +286,13 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
 #        drupal_set_message("saved: " . serialize($field_values));
 
         if ($save_field_properties && !empty($this->id())) {
+
+          if(empty($field_values[$main_property])) {
+            drupal_set_message("I could not store value " . serialize($field_values) . " for this field because the main property (" . $main_property . ") is not in there.", "warning");
+#            dpm($field_values);
+#            dpm($main_property, "mp");
+            continue;
+          }
 
           $fields_to_save = array(
             'eid' => $this->id(),
