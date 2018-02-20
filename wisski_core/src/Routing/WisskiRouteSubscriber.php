@@ -12,6 +12,12 @@ use Drupal\search\Routing\SearchPageRoutes;
 class WisskiRouteSubscriber extends RouteSubscriberBase {
 
   protected function alterRoutes(RouteCollection $collection) {
+
+    // skip this if search is not enabled.
+    $moduleHandler = \Drupal::service('module_handler');
+    if (!$moduleHandler->moduleExists('search')){
+      return;
+    }
     
     //\Drupal::logger('wisski')->warning(__METHOD__);
     $page = SearchPage::load('wisski_search');
