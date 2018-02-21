@@ -1732,10 +1732,16 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         
         $image_value = NULL;
         
+#        dpm($target_type, "tt");
+#        dpm($mainprop, "mp");
         // special hack for images which might be received via uri.
         if($target_type == "file" && $mainprop == 'target_id') {
+
+#          dpm("hacking...");
+
           $loc = NULL;
           $fid = \Drupal::entityManager()->getStorage('wisski_individual')->getFileId($thing->out, $loc);
+#          dpm($fid, "fid");
           $public = \Drupal::entityManager()->getStorage('wisski_individual')->getPublicUrlFromFileId($fid);
           
           $image_value = $public;
@@ -2480,6 +2486,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
   
   public function writeFieldValues($entity_id, array $field_values, $pathbuilder, $bundle_id=NULL,$old_values=array(),$force_new=FALSE, $initial_write = FALSE) {
+#    dpm($old_values, "ov");
 #    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
 #    dpm(func_get_args(), __METHOD__);    
 #    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()));
@@ -2530,6 +2537,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // there might have been somebody saving in between...
       // @TODO !!!
       $ofv = \Drupal::entityManager()->getFieldDefinitions('wisski_individual', $bundle_id);
+#      dpm(array_keys($ofv), "ak");
       $old_values = $this->loadFieldValues(array($entity_id), array_keys($ofv), $bundle_id);
       
       if(!empty($old_values))
@@ -2540,6 +2548,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    dpm($old_values,'old values');
 #    dpm($field_values,'new values');
 #    dpm($initial_write, "init");
+
     // in case of an initial write we forget the old values.
     if($initial_write)
       $old_values = array();
@@ -2577,7 +2586,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           
           // if not its a value...
 #          drupal_set_message("I delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
-          $this->deleteOldFieldValue($entity_id, $old_key, $val[$mainprop], $pathbuilder, $key);
+          $this->deleteOldFieldValue($entity_id, $old_key, $val[$mainprop], $pathbuilder, $key, $mainprop);
         }
       }
     }
