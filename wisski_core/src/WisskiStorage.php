@@ -58,6 +58,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   private $adapter;
   private $preview_image_adapters = array();
 
+  private $tableMapping = NULL;
 
   /**
    * {@inheritdoc}
@@ -760,12 +761,33 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   public function getTableMapping(array $storage_definitions = NULL) {
 
     $definitions = $storage_definitions ? : \Drupal::getContainer()->get('entity.manager')->getFieldStorageDefinitions($this->entityTypeId);
+/*
     if (!empty($definitions)) {
       if (\Drupal::moduleHandler()->moduleExists('devel')) {
         #dpm($definitions,__METHOD__);
       } else drupal_set_message('Non-empty call to '.__METHOD__);
     }
-    return NULL;
+*/
+
+    $table_mapping = $this->tableMapping;
+
+/*
+    // Here we should get a new DefaultTableMapping
+    // this has to be integrated... @todo    
+    if (!isset($this->tableMapping)) {
+      $table_mapping = new DefaultTableMapping($this->entityType, $definitions); 
+    }
+    
+    $dedicated_table_definitions = array_filter($definitions, function (FieldStorageDefinitionInterface $definition) use ($table_mapping) {
+      return $table_mapping
+        ->requiresDedicatedTableStorage($definition);
+    });
+
+    dpm($dedicated_table_definitions, "dpm");
+    
+    $this->tableMapping = $table_mapping;
+*/
+    return $table_mapping;
   }
 
   /**

@@ -215,6 +215,7 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
     // if there were already original values - do nothing.
     if(empty($this->original_values))
       $this->original_values = $this->extractFieldData($storage);
+#    drupal_set_message("ori is now: " . serialize($this->original_values));
   }
 
   public function getOriginalValues() {
@@ -246,18 +247,26 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
       $query = db_insert('wisski_entity_field_properties')
         ->fields(array('eid', 'bid', 'fid', 'delta', 'ident', 'properties'));
         
-      }
+    }
 
     //$this is iterable itself, iterates over field list
     foreach ($this as $field_name => $field_item_list) {
 
       $out[$field_name] = array();
+      
+      // the main property is for all items of the field the same
+      // so we buffer it here.
+      $main_property = NULL;
 
 #      dpm($field_item_list, "save!!");      
       foreach($field_item_list as $weight => $field_item) {
         
         $field_values = $field_item->getValue();
         $field_def = $field_item->getFieldDefinition()->getFieldStorageDefinition();
+
+#        dpm($field_name, "fn");
+#        dpm($field_values, "fv");
+
         if (!empty($field_values) && method_exists($field_def,'getDependencies') && in_array('file',$field_def->getDependencies()['module'])) {
           //when loading we assume $target_id to be the file uri
           //this is a workaround since Drupal File IDs do not carry any information when not in drupal context
@@ -267,13 +276,21 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
           }
           $field_values['target_id'] = $storage->getPublicUrlFromFileId($field_values['target_id']);
         }
-        $main_property = $field_item->mainPropertyName();
 
-        if(empty($main_property) || empty($field_values[$main_property])) {
+        // if it is empty it is probably not correctly initialized        
+        if(empty($main_property))
+          $main_property = $field_item->mainPropertyName();
+
+        // if it is not initalized by now we do it by hand.
+        if(empty($main_property) || (!empty($field_values) && empty($field_values[$main_property]))) {
 
           // this is not the best heuristic. better save something that is bigger...
-          $main_property = current(array_keys($field_values));
-
+          if(!empty($field_values))
+            $main_property = current(array_keys($field_values));
+          else
+            $main_property = "value";
+#          dpm($main_property, "reset main prop to");
+#          dpm($field_values, "fv was");
 #          dpm($field_item);
 #          return;
         }
@@ -321,6 +338,8 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
       #  dpm($query);
       #  $query->execute();
       #}
+ 
+#      dpm($out[$field_name], "out");
         
       if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) || empty($out[$field_name][0][$main_property])) unset($out[$field_name]);
 #      if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) ) unset($out[$field_name]);
