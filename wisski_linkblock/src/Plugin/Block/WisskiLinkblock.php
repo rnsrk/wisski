@@ -299,6 +299,8 @@ class WisskiLinkblock extends BlockBase {
       
       foreach($dataarray['data'] as $data) {
 
+        $url = NULL;
+
         if(isset($data['wisskiDisamb']))  	    
           $url = $data['wisskiDisamb'];
 
