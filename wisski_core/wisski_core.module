@@ -114,6 +114,8 @@ function wisski_excel_export($ob) {
  */
 function wisski_core_entity_prepare_form(\Drupal\Core\Entity\EntityInterface $entity, $operation, \Drupal\Core\Form\FormStateInterface $form_state) {
 
+#  dpm($entity->id(), "entity");
+
   // only act on WissKI-Entities
   if(! $entity instanceOf \Drupal\wisski_core\Entity\WisskiEntity)
     return;
@@ -124,7 +126,7 @@ function wisski_core_entity_prepare_form(\Drupal\Core\Entity\EntityInterface $en
   // only act if there is a form display
   if(isset($storage['form_display'])) {
     $form_display = $storage['form_display'];
-
+#    dpm(serialize($form_display), "fd");
     // for every field in this display act    
     foreach($form_display->getComponents() as $key => $comp) {
 
@@ -143,6 +145,8 @@ function wisski_core_entity_prepare_form(\Drupal\Core\Entity\EntityInterface $en
         // get the target bundles
         $target_bundles = $settings['handler_settings']['target_bundles'];
 
+#	dpm($target_bundles, "target");
+
         // get all values
         $values = $entity->get($key)->getValue();
 
@@ -152,6 +156,7 @@ function wisski_core_entity_prepare_form(\Drupal\Core\Entity\EntityInterface $en
             $entity_id = $value['target_id'];
 
             try {
+#		dpm($entity_id, $target_bundle);
               WisskiCacheHelper::putCallingBundle($entity_id,$target_bundle);
             } catch (\Exception $e) {
             }
@@ -185,6 +190,7 @@ function wisski_core_entity_prepare_view($entity_type_id, array $entities, array
               $entity_id = $value['target_id'];
 
               try {
+#		dpm($entity_id, $target_bundle);
                 WisskiCacheHelper::putCallingBundle($entity_id,$target_bundle);
               } catch (\Exception $e) {
               #dpm(func_get_args(), 'writeToCache');
@@ -241,10 +247,10 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
     $entity_id = $wisski_individual->id();
     $bundle_id = $wisski_individual->bundle();
 #    dpm($bundle_id, $entity_id);
-#    if(!empty($entity_id)) {
+    if(!empty($entity_id)) {
 #      // TODO: Why do we need to cache the bundle here?
-#      WisskiCacheHelper::putCallingBundle($entity_id, $bundle_id);
-#    }
+      WisskiCacheHelper::putCallingBundle($entity_id, $bundle_id);
+    }
 
   } else if($override_bundle_id === NULL) { // This is used when $wisski_individual is just a number
     $entity_id = $wisski_individual;
