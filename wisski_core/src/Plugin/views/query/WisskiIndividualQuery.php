@@ -442,15 +442,31 @@ wisski_tick("end exec views");
                 // we need to distinguish references and data primitives
                 $is_reference = $path->getDatatypeProperty() == 'empty';
                 $out_prop = 'out';
+                $disamb = NULL;
                 if ($is_reference) {
                   $disamb = $path->getDisamb();
                   if ($disamb < 2) $disamb = count($path->getPathArray());
                   // NOTE: $disamb is the concept position (starting with 1)
                   // but generateTriplesForPath() names vars by concept 
                   // position times 2, starting with 0!
-                  $out_prop = 'x' . (($disamb - 1) * 2);
+                  $disamb = 'x' . (($disamb - 1) * 2);
+                  $out_prop = NULL;
+                } else {
+                  $disamb = $path->getDisamb();
+                  if(!empty($disamb)) {
+                    $disamb = 'x' . (($disamb - 1) * 2);
+                  }
                 }
-                $select = "SELECT DISTINCT ?x0 ?$out_prop WHERE { VALUES ?x0 { ";
+                
+                $select = "SELECT DISTINCT ?x0 ";
+                if(!empty($disamb))
+                  $select .= '?' . $disamb . ' ';
+                
+                if(!empty($out_prop))
+                  $select .= '?' . $out_prop . ' ';
+                
+                $select .= " WHERE { VALUES ?x0 { ";
+                  
                 $uris_to_eids = []; // keep for reverse mapping of results
                 foreach ($entity_ids as $eid) {
                   if (isset($eid_to_uri_per_aid[$aid]) && isset($eid_to_uri_per_aid[$aid][$eid])) {
@@ -502,6 +518,7 @@ wisski_tick("end exec views");
                       \Drupal::logger('WissKI views')->warning("invalid reference slot {s} for path {pid}", ['s' => $out_prop, 'pid' => $path->getID()]);
                     }
                     elseif ($is_reference) {
+
                       $referenced_uri = $sparql_row->$out_prop->getUri();
                       $referenced_eid = AdapterHelper::getDrupalIdForUri($referenced_uri);
                       $referenced_title = wisski_core_generate_title($referenced_eid);
@@ -509,7 +526,10 @@ wisski_tick("end exec views");
                       #$values_per_row[$eid][$field][] = $referenced_eid;
                     }
                     else {
-                      $values_per_row[$eid][$field][] = $sparql_row->$out_prop->getValue();
+                      if(!empty($disamb))
+                        $values_per_row[$eid][$field][] = array('value' => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+                      else
+                        $values_per_row[$eid][$field][] = $sparql_row->$out_prop->getValue();
                     }
                   }
                 }
