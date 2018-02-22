@@ -118,6 +118,7 @@ class WisskiLinkblock extends BlockBase {
         $adapter = entity_load('wisski_salz_adapter', $pb->getAdapterId());            
         $engine = $adapter->getEngine();
         $tmpdata = $engine->pathToReturnValue($path, $pb, $individualid, 0, 'target_id', FALSE);
+#        dpm($tmpdata, "tmp");
         if(!empty($tmpdata)) {
           $dataout[$path->id()]['path'] = $path;
           if(!isset($dataout[$path->id()]['data']))
@@ -253,7 +254,7 @@ class WisskiLinkblock extends BlockBase {
               $tmpdata = $engine->pathToReturnValue($path, $pb, $individualid, 0, 'target_id', FALSE);
 #              drupal_set_message("path: " . serialize($path));
 #              drupal_set_message(serialize($tmpdata));
-
+#              dpm($tmpdata, "tmp");
               if(!empty($tmpdata)) {
                 $dataout[$path->id()]['path'] = $path;
                 
@@ -322,7 +323,7 @@ class WisskiLinkblock extends BlockBase {
           // hack if really no bundle was supplied... should never be called!
           if(empty($bundle)) {
             $entity =  \Drupal\wisski_core\Entity\WisskiEntity::load($entity_id);
-            $bundle = $entitiy->bundle;
+            $bundle = $entity->bundle;
           }
 #          dpm($entity);
           $url = 'wisski/navigate/' . $entity_id . '/view';
