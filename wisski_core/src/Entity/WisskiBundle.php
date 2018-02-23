@@ -310,6 +310,12 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   public function gatherTitleValues($eid,$path_id) {
     #dpm("yay!");
     $values = array();
+    
+    $moduleHandler = \Drupal::service('module_handler');
+    if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
+      return NULL;
+    }
+    
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
     $adapters = \Drupal\wisski_salz\Entity\Adapter::loadMultiple();
     //we ask all pathbuilders if they know the path
@@ -429,6 +435,13 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     //if we already gathered the data, we can stop here
     if (empty($options)) {
       $options = self::defaultPathOptions();
+      
+      $moduleHandler = \Drupal::service('module_handler');
+      if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
+        return NULL;
+      }
+                        
+      
       //find all paths from all active pathbuilders
       $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
 #      $paths = array();
@@ -573,6 +586,12 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   }
   
   public function getParentBundleIds($get_labels=TRUE) {
+    
+    $moduleHandler = \Drupal::service('module_handler');
+    if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
+      return NULL;
+    }
+                      
     
     $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
     $parents = array();
@@ -1099,7 +1118,13 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     if(!$found_view && !$found_menu_item) {
    
 #      $weight = 0;
-    
+      
+      $moduleHandler = \Drupal::service('module_handler');
+      if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
+        return NULL;
+      }
+                        
+      
       // only act if there is no entity. Otherwise we can just check if everything is ok.
       $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
     

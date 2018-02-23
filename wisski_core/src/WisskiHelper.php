@@ -85,6 +85,12 @@ class WisskiHelper {
    */
   public static function getTopBundleIds($get_full_info=FALSE) {
     
+    $moduleHandler = \Drupal::service('module_handler');
+    if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
+      return NULL;
+    }
+                      
+    
     $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
     if (empty($pbs)) return array();
     $parents = array();

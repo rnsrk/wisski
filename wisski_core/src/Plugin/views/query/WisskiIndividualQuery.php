@@ -419,6 +419,13 @@ wisski_tick("end exec views");
           drupal_set_message("Bad field id for Wisski views: $field", 'error');
         }
         else {
+        
+          $moduleHandler = \Drupal::service('module_handler');
+          if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
+            return NULL;
+          }
+                            
+        
           $pb = entity_load('wisski_pathbuilder', $pb_and_path[0]);
           $path = entity_load('wisski_path', $pb_and_path[1]);
           if (!$pb) {

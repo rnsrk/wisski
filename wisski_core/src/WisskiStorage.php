@@ -74,6 +74,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #    dpm($values, "values");
 #    dpm(microtime(), "after load");
     $pb_cache = array();
+    
+    $moduleHandler = \Drupal::service('module_handler');
+    if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
+      return NULL;
+    }
+                      
 
     // add the values from the cache
     foreach ($ids as $id) {
@@ -93,7 +99,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #          ->fetchAll();
           ->fetchAllAssoc('fid');
 
-#        dpm($cached_field_values, "argh");
+#        dpm($cached_field_values, "argh");                          
 
         $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($values[$id]['bundle']);
 
@@ -865,6 +871,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
 #    dpm($entity->uid->getValue(), 'uid');
 
+    $moduleHandler = \Drupal::service('module_handler');
+    if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
+      return NULL;
+    }
+                      
+
     $uid = $entity->uid;
     // override the user setting
     if(isset($uid) && empty($uid->getValue()['target_id']) ) {
@@ -1009,6 +1021,12 @@ $tsa['eid'] = $entity_id;
    * @TODO must be implemented
    */
   protected function doDeleteFieldItems($entities) {
+
+    $moduleHandler = \Drupal::service('module_handler');
+    if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
+      return NULL;
+    }
+                      
 
     $local_adapters = array();
     $writable_adapters = array();

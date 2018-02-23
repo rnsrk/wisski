@@ -159,6 +159,12 @@ class WisskiEntityViewsData extends EntityViewsData {
     // one could think about the pb module altering this data here and adding
     // the paths for itself rather than letting wisski_core handle pb stuff...
     
+    $moduleHandler = \Drupal::service('module_handler');
+    if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
+      return NULL;
+    }
+                      
+    
     $pbs = entity_load_multiple('wisski_pathbuilder');
     foreach ($pbs as $pbid => $pb) {
       // we load all paths. then we go though the top groups
