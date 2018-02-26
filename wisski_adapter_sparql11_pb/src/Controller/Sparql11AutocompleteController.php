@@ -75,7 +75,7 @@
       
       $sparql .= "LIMIT 10";
       
-      drupal_set_message("engine: " . serialize($sparql));
+#      drupal_set_message("engine: " . serialize($sparql));
 #      dpm(microtime());        
       $result = $engine->directQuery($sparql);
 #      dpm(microtime());
