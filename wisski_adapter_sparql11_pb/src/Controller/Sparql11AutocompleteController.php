@@ -61,7 +61,7 @@
 #          $sparql .= " FILTER CONTAINS(?out, '" . $engine->escapeSparqlLiteral($string) . "') . } ";
         } else {
           $starting_position = (count($path->getPathArray()) - count($pb->getRelativePath($path)))/2;
-          $sparql = "SELECT ?out WHERE { ";
+          $sparql = "SELECT DISTINCT ?out WHERE { ";
           $sparql .= $engine->generateTriplesForPath($pb, $path, NULL, NULL, NULL, NULL, $starting_position, FALSE);
 #          $sparql .= " FILTER regex( STR(?out), '$string') . } ";
           $sparql .= " FILTER CONTAINS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
@@ -75,7 +75,7 @@
       
       $sparql .= "LIMIT 10";
       
-#      drupal_set_message("engine: " . serialize($sparql));
+      drupal_set_message("engine: " . serialize($sparql));
 #      dpm(microtime());        
       $result = $engine->directQuery($sparql);
 #      dpm(microtime());
