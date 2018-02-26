@@ -367,15 +367,16 @@ class WisskiEntitySearch extends SearchPluginBase {
   protected function getSearchOperators() {
   
     return array(
-      'CONTAINS' => $this->t('Contains'),
+      'CONTAINS' => $this->t('contains'),
       '=' => $this->t('exactly'),
       '<>' => $this->t('not equal'),
       '>' => '>',
 #      '>=' => '>=',
       '<' => '<',
 #      '<=' => '<=',
-      'STARTS_WITH' => $this->t('Starts with'),
+      'STARTS_WITH' => $this->t('starts with'),
       'NOT_EMPTY' => $this->t('not empty'),
+      'EMPTY' => $this->t('empty'),
 #      'ENDS_WITH' => $this->t('Ends with'),
 #      'ALL' => $this->t('all of'),
 #      'IN' => $this->t('one of'),
@@ -431,6 +432,8 @@ class WisskiEntitySearch extends SearchPluginBase {
       }
       case 'NOT_EMPTY': {
       }
+      case 'EMPTY': {
+      }
     }
     
   }
@@ -445,7 +448,7 @@ class WisskiEntitySearch extends SearchPluginBase {
         $return[$bundle_id]['query_type'] = $paths['query_type']['selection'];
         unset($paths['query_type']);
         foreach ($paths as $path_parameters) {
-          if ($path_parameters['input_field'] || trim($path_parameters['operator']) == "NOT_EMPTY") {
+          if ($path_parameters['input_field'] || trim($path_parameters['operator']) == "NOT_EMPTY" || trim($path_parameters['operator']) == "EMPTY") {
             $ops[] = trim($path_parameters['operator']);
             $keys[] = trim($path_parameters['input_field']);
             $return[$bundle_id]['paths'][] = array($path_parameters['path_selection'],trim($path_parameters['input_field']),$path_parameters['operator']);
@@ -475,10 +478,12 @@ class WisskiEntitySearch extends SearchPluginBase {
    * std is return !empty($this->keywords);
    */
   public function isSearchExecutable() {
+#    dpm($this->searchParameters['ops'], "hallo!");
     // if any of these is NOT EMPTY we can do the search.
     if(isset($this->searchParameters['ops']))
       foreach($this->searchParameters['ops'] as $op) {
-        if($op == "NOT_EMPTY")
+#        dpm($op, "op");
+        if($op == "NOT_EMPTY" || $op == "EMPTY")
           return TRUE;
       }
     return parent::isSearchExecutable();

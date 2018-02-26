@@ -87,7 +87,7 @@ wisski_tick();
 
     #\Drupal::logger('query adapter ' . $this->getEngine()->adapterId())->debug('query result is {result}', array('result' => serialize($return)));
 wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($return)));
-    
+#  dpm($return, "what");    
     return $return;
 
   }
@@ -166,7 +166,7 @@ wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($ret
   /** recursively go through $condition tree and match entities against it.
    */
   protected function makeQueryConditions(ConditionInterface $condition) {
-    
+#   dpm($condition, "cond");   
     // these fields cannot be queried with this adapter
     $skip_field_ids = array(
       'langcode',
@@ -832,8 +832,18 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     // arg 11 ($relative) must be FALSE, otherwise fields of subgroups yield
     // the entities of the subgroup
     $query_part = $this->getEngine()->generateTriplesForPath($pb, $path, $value, NULL, NULL, 0, $starting_position, FALSE, $operator, 'field', FALSE, $vars);
+#    dpm($query_part, "qp");
     if (!empty($obj_uris)) {
       $query_part .= ' VALUES ?' . $vars[$obj_pos] . ' { ' . join(' ', $obj_uris) . ' }';
+    }
+    
+    // this might be a hack - we search for the first . and
+    // put the optional there.
+    if($operator == "EMPTY") {
+      $pos = strpos($query_part, "} .");
+      $query_part = substr_replace($query_part, "} . OPTIONAL { ", $pos, 3);
+      $query_part = $query_part . " } . FILTER( !bound(?" . $vars['out'] . " ) )";#dpm("yay!");
+#      dpm($query_part_1, "qp1");
     }
 
     return $query_part;
