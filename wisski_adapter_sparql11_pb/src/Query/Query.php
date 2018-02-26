@@ -842,8 +842,13 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     if($operator == "EMPTY") {
       $pos = strpos($query_part, "} .");
       $query_part = substr_replace($query_part, "} . OPTIONAL { ", $pos, 3);
-      $query_part = $query_part . " } . FILTER( !bound(?" . $vars['out'] . " ) )";#dpm("yay!");
-#      dpm($query_part_1, "qp1");
+      $dt = $path->getDataTypeProperty();
+      if(!empty($dt) && $dt != "empty") 
+        $query_part = $query_part . " } . FILTER( !bound(?" . $vars['out'] . " ) )";
+      else // if it has no dt we use the last element.
+        $query_part = $query_part . " } . FILTER( !bound(?" . $vars[count($path->getPathArray())-1] . " ) )";
+#      dpm($query_part, "qp1");
+#      dpm($path, "path");
     }
 
     return $query_part;
