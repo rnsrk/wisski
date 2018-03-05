@@ -51,7 +51,7 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *   },
  *   bundle_entity_type = "wisski_bundle",
  *   label_callback = "wisski_core_generate_title",
- *   permission_granularity = "entity_type",
+ *   permission_granularity = "bundle",
  *   admin_permission = "administer wisski",
  *   fieldable = TRUE,
  *   field_ui_base_route = "entity.wisski_bundle.edit_form",

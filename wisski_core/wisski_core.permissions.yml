@@ -1,9 +1,34 @@
+bypass node access:
+  title: 'Bypass wisski access control'
+  description: 'View, edit and delete all wisski content regardless of permission restrictions.'
+  restrict access: true
+administer wisski bundles:
+  title: 'Administer wisski bundles'
+  description: 'Maintain the types of bundles available and the fields that are associated with those types.'
+  restrict access: true
 administer wisski:
   title: 'Administer WissKI Core modules'
   restrict access: TRUE
-view wisski content:
-  title: 'View WissKI Entities'
+view published wisski content:
+  title: 'View published WissKI Entities'
+view own unpublished wisski content:
+  title: 'View own unpublished WissKI Entities'
+view other unpublished wisski content:
+  title: 'View other unpublished WissKI Entities'
+view wisski revisions:
+  title: 'View all WissKI revision data'
+revert wisski revisions:
+  title: 'Revert all WissKI revision data'
+edit wisski content:
+  title: 'Edit all WissKI Entities'
+delete wisski content:
+  title: 'Delete all WissKI Entities' 
+administer all wisski menus:
+  title: 'Access to all WissKI administration menus'
   restrict access: TRUE
 administer wisski paths:
-  title: 'Administer paths and fields for WissKI entities'
+  title: 'Administer paths and groups for WissKI entities'
   restrict access: TRUE
+
+permission_callbacks:
+  - \Drupal\wisski_core\WisskiPermissions::WisskiBundlePermissions
