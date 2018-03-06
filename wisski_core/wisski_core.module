@@ -431,9 +431,9 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
   $routename =  $route_match->getRouteName();
 
   if($routename == 'entity.wisski_individual.canonical') {
-    $eid = $route_match->getParameter('wisski_individual');
+    $entity = $route_match->getParameter('wisski_individual');
 
-    $bundleid = WisskiCacheHelper::getCallingBundle($eid);
+    $bundleid = WisskiCacheHelper::getCallingBundle($entity->id());
 #    dpm($bundleid, "bundleid");
     if(!empty($bundleid)) {
       $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundleid);

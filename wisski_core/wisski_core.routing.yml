@@ -19,7 +19,7 @@ entity.wisski_individual.list:
     _controller: '\Drupal\wisski_core\Controller\WisskiEntityListController::listing'
     _title: 'Navigate'
   requirements:
-    _permission: 'view wisski content'
+    _permission: 'access navigate'
 
 entity.wisski_individual.lod_get:
   path: '/wisski/get'
@@ -35,7 +35,7 @@ entity.wisski_individual_create.list:
     _controller: '\Drupal\wisski_core\Controller\WisskiEntityListController::listing'
     _title: 'Create WissKI Entity'
   requirements:
-    _permission: 'view wisski content'
+    _permission: 'access create'
 
 entity.wisski_bundle.entity_list:
   path: '/wisski/navigate/{wisski_bundle}/list'
@@ -54,8 +54,8 @@ entity.wisski_individual.canonical:
     _controller: '\Drupal\wisski_core\Controller\WisskiEntityViewForwarder::forward'
     _title_callback: 'wisski_core_generate_title'
   requirements:
-#    _entity_access: 'wisski_individual.view'
-    _access: 'TRUE'
+    _entity_access: 'wisski_individual.view'
+#    _access: 'TRUE'
 
 entity.wisski_individual.edit_form:
   path: '/wisski/navigate/{wisski_individual}/edit'

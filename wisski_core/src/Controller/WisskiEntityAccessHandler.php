@@ -21,18 +21,40 @@ class WisskiEntityAccessHandler extends EntityAccessControlHandler {
    * $operation as defined in the routing.yml file.
    */
   protected function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
-//dpm(func_get_args(),__METHOD__);
-//throw new \Exception('ka-BOOM');
-    switch ($operation) {
-      case 'view':
-        return AccessResult::allowedIfHasPermission($account, 'view wisski content');
+#    return AccessResult::forbidden("You are missing the correct permissions to see this content.")->cachePerPermissions();
+#  dpm(func_get_args(),__METHOD__);
 
-      case 'edit':
-        return AccessResult::allowedIfHasPermission($account, 'administer wisski');
-
-      case 'delete':
-        return AccessResult::allowedIfHasPermission($account, 'administer wisski');
+    // I don't know what this does... but node does it, so we do it, too.
+    $account = $this->prepareUser($account);
+    
+    if ($account->hasPermission('bypass wisski access')) {
+      $result = AccessResult::allowed()->cachePerPermissions();
+      return $result;
     }
+    
+    if($operation == "view" || $operation == "edit" || $operation == "delete") {
+    
+      // @todo: handle published, unpublished, own...
+    
+      // if the user may view any content or he/she may view the whole bundle - exit here.
+      if($account->hasPermission($operation . ' any wisski content') || $account->hasPermission($operation . ' any ' . $entity->bundle() . ' WisskiBundle')) {
+        $result = AccessResult::allowed()->cachePerPermissions();
+        return $result;
+      }
+      
+      // both above was not correct, so it may be that he is the owner of the thing.
+      if($account->hasPermission($operation . ' own wisski content') || $account->hasPermission($operation . ' own ' . $entity->bundle() . ' WisskiBundle')) {
+        if($entity->get('uid')->entity->id() == $account->id()) {
+          $result = AccessResult::allowed()->cachePerPermissions();
+          return $result;
+        }
+      }
+
+      // if none holds, we forbid it.
+      $result = AccessResult::forbidden("You are missing the correct permissions to see this content.")->cachePerPermissions();
+      return $result;      
+    }
+    // update
   
     return AccessResult::allowed();
   }
