@@ -226,7 +226,9 @@ wisski_tick("begin exec views");
           drupal_set_message($e->getMessage(), 'error');
         }
         else {
-          vpr('Exception in @human_name[@view_name]: @message', array('@human_name' => $view->human_name, '@view_name' => $view->name, '@message' => $e->getMessage()));
+          drupal_set_message("Exception: " . $e->getMessage());
+          // vpr does not exist?
+          #vpr('Exception in @human_name[@view_name]: @message', array('@human_name' => $view->human_name, '@view_name' => $view->name, '@message' => $e->getMessage()));
         }
         return;
       }
