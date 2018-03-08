@@ -1,12 +1,12 @@
-annotation:
-  version: 1.x
-  css:
-    component:
-      css/annotation.css: {}
-  js:
-    js/annotation.js: {}
-  dependencies:
-    - core/jquery
+#annotation:
+#  version: 1.x
+#  css:
+#    component:
+#      css/annotation.css: {}
+#  js:
+#    js/annotation.js: {}
+#  dependencies:
+#    - core/jquery
     
 
 annotation.dialog:
