@@ -455,8 +455,13 @@ abstract class Sparql11Engine extends EngineBase {
     $out = array();
     if (empty($results)) return array();
     foreach ($results as $obj) {
-       $out[$obj->adapter->dumpValue('text')] = $obj->uri->getUri();
+#       dpm($obj->adapter->getValue(), "gv");
+#       $out[$obj->adapter->dumpValue('text')] = $obj->uri->getUri();
+      $out[$obj->adapter->getValue()] = $obj->uri->getUri();
     }
+    
+#    dpm($out, "aout");
+    
     return $out;
   }
 
@@ -475,7 +480,9 @@ abstract class Sparql11Engine extends EngineBase {
       $values .= " }";
     } else throw new \Exception('There is no sameAs property set for this adapter');
     $query = "SELECT DISTINCT ?uri WHERE { $values GRAPH <$orig_prop> {<$uri> ?same_as ?uri. ?uri <$orig_prop> '".$this->escapeSparqlLiteral($adapter_id)."'.}}";
+#    dpm($query, "getSameUri");
     $results = $this->directQuery($query);
+#    dpm($results, "result");
     if (empty($results)) return NULL;
     foreach ($results as $obj) {
       return $obj->uri->getUri();
@@ -492,7 +499,7 @@ abstract class Sparql11Engine extends EngineBase {
     $uris[AdapterHelper::getDrupalAdapterNameAlias()] = AdapterHelper::generateWisskiUriFromId($entity_id);
     //we use the originates property as name fot the graph for sameAs info
     $orig_prop = $this->getOriginatesProperty();
-    
+
     if(empty($orig_prop)) {
       drupal_set_message("No Default Graph Uri was set in the store configuration. Please fix it!", "error");
       return FALSE;
@@ -501,6 +508,7 @@ abstract class Sparql11Engine extends EngineBase {
     $origin = "<$orig_prop> a owl:AnnotationProperty. ";
     $same = '';
     foreach ($uris as $adapter_id => $first) {
+      #dpm($this->escapeSparqlLiteral($adapter_id), "adapter!!");
       $origin .= "<$first> <$orig_prop> '".$this->escapeSparqlLiteral($adapter_id)."'. ";
       foreach ($uris as $second) {
         if ($first !== $second) {
