@@ -55,6 +55,12 @@ class AdapterHelper {
    */
   public static function setSameUris($uris,$entity_id=NULL) {
 
+    // if it is an object, make it an id. 
+    if(is_object($entity_id)) {
+      drupal_set_message("setSameUris got an Object instead of an id - this is strange!", "warning");
+      $entity_id = $entity_id->id();
+    }
+
     if (WISSKI_DEVEL) {
       \Drupal::logger("AH:ssu")->debug("$entity_id and {uris}: {bt}", ["uris" => join(" ",$uris),"bt"=>join('//', array_map(function ($a) { return $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5)))]);
     }
@@ -193,6 +199,12 @@ class AdapterHelper {
     }
     $id = self::doGetDrupalIdForUri($uri,$create_on_fail,$input_adapter_id);
     //dpm(array_combine(array('$uri','$create_on_fail','$input_adapter_id'),func_get_args())+array('result'=>$id),__FUNCTION__);
+
+    if(is_object($id)) {
+      drupal_set_message("AdapterHelper::getDrupalIdForUri got an object but should get an id!", "warning");
+      $id = $id->id();
+    }
+
     return $id;
   }
   
@@ -216,7 +228,7 @@ class AdapterHelper {
     
     //if we have exactly one result for the eid return it
     if (count($ids) === 1) {
-      //dpm(key($ids),'from DB');
+      #dpm(key($ids),'from DB');
       return key($ids);
     }
     
@@ -243,7 +255,7 @@ class AdapterHelper {
     
       //if we have nothing cached, ask the store for backup
       $id = $local_adapter->getEngine()->getDrupalIdForUri($uri,$adapter_id);
-    
+      #dpm(serialize($id->id()), "id!");    
       //if the store knows the answer, return it
       if (!is_null($id)) {
         //dpm($id,'from local store');
@@ -553,7 +565,13 @@ class AdapterHelper {
           $route = \Drupal::service('router')->match($url);
           if ($route['_route'] == $route_name) {
             $bundle = isset($parts['query']['wisski_bundle']) ? $parts['query']['wisski_bundle'] : NULL;
-            return array($route['wisski_individual'], $bundle, $route['_route']);
+            
+            // see what is transported in the url - it might be an object!
+            if(is_object($route['wisski_individual']))
+              $the_eid = $route['wisski_individual']->id();
+            else
+              $the_eid = $route['wisski_individual'];
+            return array($the_eid, $bundle, $route['_route']);
           }
         } catch (\Exception $e) {}
       }
