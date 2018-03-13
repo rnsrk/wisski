@@ -243,7 +243,7 @@ class AdapterHelper {
         'There are multiple entity IDs for URI {uri}: {ids}. Please resolve. The first one is taken.',
         ['uri' => $uri, 'ids' => join(', ', $ids)]
       );
-      return key($ids);
+      return current($ids);
     }
     
     $local_adapter = self::getPreferredLocalStore();
