@@ -26,6 +26,14 @@ class WisskiCacheHelper {
 
   static function putEntityTitle($entity_id,$entity_title,$bundle_id=NULL) {
     
+    if(empty($entity_id)) {
+      drupal_set_message("Entity ID was empty - this is evil!", "error");
+      return;
+    }
+    
+    if(is_object($entity_id))
+      $entity_id = $entity_id->id();
+    
     $tags[] = 'wisski_bundled_titles.default';
     $cid = 'wisski_title.'.$entity_id.'.default';
     self::putCacheData($cid,$entity_title,$tags);
