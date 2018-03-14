@@ -240,16 +240,22 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
 
   $create_form_title = FALSE;
 
+#  dpm(serialize($wisski_individual));
+
   if ($wisski_individual instanceof WisskiEntityInterface) {
 
     if ($wisski_individual->isNew()) $create_form_title = TRUE;
 
     $entity_id = $wisski_individual->id();
+#    dpm(serialize($wisski_individual), "eid");
     $bundle_id = $wisski_individual->bundle();
 #    dpm($bundle_id, $entity_id);
     if(!empty($entity_id)) {
 #      // TODO: Why do we need to cache the bundle here?
       WisskiCacheHelper::putCallingBundle($entity_id, $bundle_id);
+    } else {
+      // this should not happen?
+      return;
     }
 
   } else if($override_bundle_id === NULL) { // This is used when $wisski_individual is just a number
@@ -282,7 +288,7 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
     if ($bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)) {
 #      drupal_set_message(serialize($entity_id));
 #      drupal_set_message(serialize($bundle->generateEntityTitle($entity_id,FALSE,$force_new)));
-      if ($create_form_title) $title = html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
+      if ($create_form_title || empty($entity_id)) $title = html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
       else $title = $bundle->generateEntityTitle($entity_id,FALSE,$force_new);
     }
   }
