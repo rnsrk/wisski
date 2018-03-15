@@ -33,9 +33,29 @@ class WisskiEntityAccessHandler extends EntityAccessControlHandler {
     }
     
     if($operation == "view" || $operation == "edit" || $operation == "delete") {
-    
-      // @todo: handle published, unpublished, own...
-    
+
+      // two special cases for view
+      if($operation == "view") {
+#        \Drupal::logger('UPDATE IN '.$operation)->debug('{u}',array('u'=>serialize($entity->get('status')->getValue())));
+        // if it is a published one and you may view published ones...    
+        if($account->hasPermission($operation . ' published wisski content')) {
+
+          // a little bit problematic getting this value....
+          $value = $entity->get('status')->getValue();
+
+          if(isset($value[0]) && isset($value[0]["value"]) && $value[0]["value"] == TRUE) {
+            $result = AccessResult::allowed()->cachePerPermissions();
+            return $result;
+          }
+        }
+              
+        // if we may view our own unpublished content or we may view other unpublished content
+        if(($account->hasPermission($operation . ' own unpublished wisski content') & $entity->get('uid')->entity->id() == $account->id()) || $account->hasPermission($operation . ' other unpublished wisski content')) {
+          $result = AccessResult::allowed()->cachePerPermissions();
+          return $result;
+        }
+      }      
+         
       // if the user may view any content or he/she may view the whole bundle - exit here.
       if($account->hasPermission($operation . ' any wisski content') || $account->hasPermission($operation . ' any ' . $entity->bundle() . ' WisskiBundle')) {
         $result = AccessResult::allowed()->cachePerPermissions();
