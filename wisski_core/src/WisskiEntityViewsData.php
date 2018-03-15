@@ -184,7 +184,8 @@ class WisskiEntityViewsData extends EntityViewsData {
             if(!empty($pbpath))
               $fieldid = $pbpath['field'];
 
-            if(empty($fieldid)) {
+            // if there is no fieldid or it is create no field - do nothing!
+            if(empty($fieldid) || $fieldid == "1ae353e47a8aa3fc995220848780758a") {
               continue; // the warning is left here only for debug purpose.
               drupal_set_message("Path " . $path->getName() . " has no field definition.", "warning");
             }
