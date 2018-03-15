@@ -156,10 +156,18 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
       ->setDisplayConfigurable('form', TRUE);
 
     $fields['status'] = BaseFieldDefinition::create('boolean')
-      ->setLabel(t('Publishing status'))
-      ->setDescription(t('A boolean indicating whether the entity is published.'))
+      ->setLabel(t('Published'))
+#      ->setDescription(t('A boolean indicating whether the entity is published.'))
       ->setTranslatable(TRUE)
-      ->setRevisionable(TRUE);
+      ->setRevisionable(TRUE)
+      ->setDisplayOptions('form', [
+        'type' => 'boolean_checkbox',
+        'settings' => [
+          'display_label' => TRUE,
+          ],
+        'weight' => 120,
+        ])
+      ->setDisplayConfigurable('form', TRUE);
     
     $fields['preview_image'] = BaseFieldDefinition::create('image')
       ->setLabel(t('Preview Image'))
