@@ -159,8 +159,13 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
       ->setLabel(t('Published'))
 #      ->setDescription(t('A boolean indicating whether the entity is published.'))
       ->setTranslatable(TRUE)
-      ->setRevisionable(TRUE)
-      ->setDisplayOptions('form', [
+      ->setRevisionable(TRUE);
+    
+    $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
+    $use_status = $set->get('enable_published_status_everwhere');
+    
+    if($use_status)
+      $fields['status']->setDisplayOptions('form', [
         'type' => 'boolean_checkbox',
         'settings' => [
           'display_label' => TRUE,

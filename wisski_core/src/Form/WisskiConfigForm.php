@@ -85,6 +85,12 @@ class WisskiConfigForm extends FormBase {
       '#default_value' => $settings->get('wisski_use_views_for_navigate'),
       '#title' => $this->t('Do you want to use views for navigation?'),
     );
+
+    $subform['enable_published_status_everwhere'] = array(
+      '#type' => 'checkbox',
+      '#default_value' => $settings->get('enable_published_status_everwhere'),
+      '#title' => $this->t('Do you want to enable published status everywhere? You need to clear cache after enabling!'),
+    );
     
     $subform['pager_max'] = array(
       '#type' => 'number',
@@ -150,6 +156,7 @@ class WisskiConfigForm extends FormBase {
     $settings->set('wisski_preview_image_max_width_pixel',$new_vals['preview_image']['max_width']);
     $settings->set('wisski_preview_image_max_height_pixel',$new_vals['preview_image']['max_height']);
     $settings->set('preview_image_adapters',$new_vals['preview_image']['adapters']);
+    $settings->set('enable_published_status_everwhere',$new_vals['enable_published_status_everwhere']);
     $settings->save();
     drupal_set_message($this->t('Changed global WissKI display settings'));
     $form_state->setRedirect('system.admin_config');
