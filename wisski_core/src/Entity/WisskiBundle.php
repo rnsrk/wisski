@@ -347,9 +347,18 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           if($pbpath['bundle'] == $pbpath['field'] || $pbpath['fieldtype'] == "entity_reference") {
 
             // get the data from the pathbuilder
-            $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", TRUE);
+            
+            // in case of entity_reference which is not a group, be absolute!
+            if($pbpath['fieldtype'] == "entity_reference" && $pbpath['bundle'] != $pbpath['field'])
+              $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", FALSE);
+            else
+              $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", TRUE);
 
-     #       dpm($tmp, "tmp");
+#            dpm($tmp, "tmp");
+#            dpm($path, "path");
+#            dpm($pb, "pb");
+#            dpm($eid, "eid");
+  // absolut?
             $grptitles = array();
 
             // iterate through the data we've got
@@ -415,6 +424,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         } else $values += $new_values;
       } //else dpm('don\'t know path '.$path_id,$pb_id);
     }
+#    dpm($values);
     return $values;
   }
   
