@@ -413,13 +413,16 @@ class WisskiPathbuilderForm extends EntityForm {
   protected function actions(array $form, FormStateInterface $form_state) {
     $element = parent::actions($form, $form_state);
     $element['#type'] = '#dropbutton';
-    $element['generate'] = array(
-      '#type' => 'submit',
-      '#value' => $this->t('Save and generate bundles and fields'),
-      '#submit' => array('::submitForm','::save_and_generate_forms'),
-      '#weight' => -10,
-      '#dropbutton' => 'save',
-    );
+
+    // only add this to "normal" ones...
+    if($this->entity->id() != "wisski_linkblock")
+      $element['generate'] = array(
+        '#type' => 'submit',
+        '#value' => $this->t('Save and generate bundles and fields'),
+        '#submit' => array('::submitForm','::save_and_generate_forms'),
+        '#weight' => -10,
+        '#dropbutton' => 'save',
+      );
     $element['submit']['#value'] = $this->t('Save without form generation');
     $element['submit']['#dropbutton'] = 'save';
     return $element;
