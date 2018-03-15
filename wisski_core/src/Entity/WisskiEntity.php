@@ -312,7 +312,7 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
 
         if ($save_field_properties && !empty($this->id())) {
 
-          if(empty($field_values[$main_property])) {
+          if(!isset($field_values[$main_property])) {
             drupal_set_message("I could not store value " . serialize($field_values) . " for this field because the main property (" . $main_property . ") is not in there.", "warning");
 #            dpm($field_values);
 #            dpm($main_property, "mp");
