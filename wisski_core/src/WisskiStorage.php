@@ -114,8 +114,18 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           
           // empty here might make problems
           // if we loaded something from TS we can skip the cache.
-          if( isset($values[$id][$field_id]) )
+          // By Mark: Unfortunatelly this is not true. There is a rare case
+          // that there is additional information, e.g. in files.
+          if( isset($values[$id][$field_id]) ) {
+            $cached_value = unserialize($cached_field_value->properties);
+            $delta = $cached_field_value->delta;
+
+            // if we really have information, merge that!
+            if(isset($values[$id][$field_id][$delta]) && is_array($values[$id][$field_id][$delta]) && !empty($cached_value))
+              $values[$id][$field_id][$delta] = array_merge($cached_value, $values[$id][$field_id][$delta]); #, $cached_value);
+
             continue;
+          }
             
           // if we didn't load something, we might need the cache.
           // however not if the TS is the normative thing and has no data for this.
@@ -446,6 +456,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 $is_file = in_array('file',$field_def->getFieldStorageDefinition()->getDependencies()['module']);
                 $has_values = !empty($new_field_values[$id][$field_name]);
                 if ($is_file && $has_values) {
+
+#                  dpm($new_field_values[$id][$field_name], "yay!");
                   
                   foreach ($new_field_values[$id][$field_name] as $key => &$properties_array) {
                     // we assume that $value is an image URI which is to be
@@ -461,8 +473,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                       'target_id' => $this->getFileId($file_uri,$local_uri, $id),
                       //this is a fallback
                       //@TODO get the alternative text from the stores
-                      'alt' => substr($local_uri,strrpos($local_uri,'/') + 1),
+#                      'alt' => substr($local_uri,strrpos($local_uri,'/') + 1),
                     );
+#                    dpm($local_uri, "uri");
                   }
                 }
 
@@ -580,7 +593,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
     $local_file_uri = $this->ensureSchemedPublicFileUri($file_uri);
-#    dpm($local_file_uri);
+    #dpm($local_file_uri);
     // we now check for an existing 'file managed' with that uri
     $query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
     $file_ids = $query->execute();
@@ -694,6 +707,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   public function ensureSchemedPublicFileUri($file_uri) {
     if (strpos($file_uri,'public:/') === 0) return $file_uri;
+
+#    dpm($file_uri, "fi");
+#    dpm(\Drupal::service('stream_wrapper.public')->baseUrl(), "fo");
+
     if (strpos($file_uri,\Drupal::service('stream_wrapper.public')->baseUrl()) === 0) {
       return $this->getSchemedUriFromPublicUri($file_uri);
     }
