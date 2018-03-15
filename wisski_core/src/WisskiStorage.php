@@ -1265,7 +1265,15 @@ $tsa['eid'] = $entity_id;
 #    dpm("4.2.5: " . microtime());    
       //process the image with the style
       $preview_uri = $image_style->buildUri($output_uri);
-      //dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
+      #dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
+      
+      // file already exists?
+      if(file_exists($preview_uri)) {
+#        dpm("file exists!");
+        WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
+        return $preview_uri;
+      }
+      
       if ($out = $image_style->createDerivative($output_uri,$preview_uri)) {
         //drupal_set_message('Style did it - uri is ' . $preview_uri);
         WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
