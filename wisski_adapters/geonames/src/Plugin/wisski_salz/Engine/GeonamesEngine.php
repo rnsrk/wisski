@@ -12,7 +12,7 @@ use Drupal\Core\Language\LanguageInterface;
 use Drupal\wisski_adapter_geonames\Query\Query;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity; 
 use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity; 
-use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
+use \Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
 use Drupal\wisski_salz\NonWritableEngineBase;
 use Drupal\wisski_salz\AdapterHelper;
 use DOMDocument;

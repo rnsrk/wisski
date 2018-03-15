@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Contains \Drupal\wisski_pathbuilder\WisskiPathInterface
+ * Contains \Drupal\wisski_pathbuilder\PathbuilderEngineInterface
  */
 
 namespace Drupal\wisski_pathbuilder;

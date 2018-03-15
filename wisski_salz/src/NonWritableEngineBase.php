@@ -97,7 +97,7 @@ abstract class NonWritableEngineBase extends EngineBase {
   }
 
 
-  public function writeFieldValues($entity_id,array $field_values,$pathbuilder,$bundle = NULL,$original_values=array(),$force_creation=FALSE) {
+  public function writeFieldValues($entity_id,array $field_values,$pathbuilder,$bundle = NULL,$original_values=array(),$force_creation=FALSE, $initial_write = false) {
     return EngineInterface::NULL_WRITE;
   }
   
