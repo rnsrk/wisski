@@ -183,8 +183,11 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
         $elements[$delta] = array(
           '#type' => 'link',
           '#title' => $item->value,
-          '#url' => Url::fromUri('internal:/' . $url),
+          '#url' => Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity_id]),
+//          '#url' => Url::fromUri('internal:/' . $url),
         );
+
+#        dpm($url, "url");
         
 #        drupal_set_message(serialize($elements));
       }
