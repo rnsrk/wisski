@@ -395,10 +395,17 @@ class AdapterHelper {
       }
       return $same_uri;
     } else {
-      $same_uris = self::getPreferredLocalStore(TRUE)->getUrisForDrupalId($eid);
-      //dpm($same_uris,'From Store, no adapter');
-      self::setSameUris($same_uris,$eid);
-      return $same_uris;
+    
+      $pref = self::getPreferredLocalStore(TRUE);
+    
+      if($pref) {
+        $same_uris = self::getPreferredLocalStore(TRUE)->getUrisForDrupalId($eid);
+        //dpm($same_uris,'From Store, no adapter');
+        self::setSameUris($same_uris,$eid);
+        return $same_uris;
+      } else {
+        drupal_set_message("There is no preferred local store set.", "warning");
+      }
     }
   }
   
