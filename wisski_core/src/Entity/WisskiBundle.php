@@ -206,7 +206,11 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $count = count($pattern);
     $max = ($count * ($count+1)) / 2;
     $count = 0;
-    while ($count < $max && list($key,$attributes) = each($pattern)) {
+    while ($count < $max && current($pattern) ) { //&& list($key,$attributes) = each($pattern)) {
+      
+      $key = key($pattern);
+      $attributes = current($pattern);
+            
       $count++;
       unset($pattern[$key]);
       reset($pattern);
