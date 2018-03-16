@@ -285,14 +285,17 @@ class WisskiEntitySearch extends SearchPluginBase {
         //dpm($bundle_path_defaults,'defaults '.$bundle_id);
 #        dpm($bundle_path_options, "bpo");
         for ($i = 0; $i < $this->path_limit && $i < count($bundle_path_options); $i++) {
-          $list = each($bundle_path_defaults);
+//          $list = each($bundle_path_defaults);
+          $list = [key($bundle_path_defaults), current($bundle_path_defaults)];
+
           $def_input = '';
           $def_operator = $this->getDefaultOperator();
 //          dpm($list, "list");
           if ($list) {
             list( , list($path_id, $def_input, $def_operator)) = $list;
           } else {
-            $list = each($bundle_path_options);
+//            $list = each($bundle_path_options);
+            $list = [key($bundle_path_options), current($bundle_path_options)];
             if ($list) list($path_id) = $list;
           }
           if ($list !== FALSE) {
