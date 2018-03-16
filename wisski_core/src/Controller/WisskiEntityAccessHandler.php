@@ -26,6 +26,8 @@ class WisskiEntityAccessHandler extends EntityAccessControlHandler {
 
     // I don't know what this does... but node does it, so we do it, too.
     $account = $this->prepareUser($account);
+
+#    \Drupal::logger('UPDATE IN '.$operation)->debug('{u}',array('u'=>serialize($entity) . " and " . $operation));
     
     if ($account->hasPermission('bypass wisski access')) {
       $result = AccessResult::allowed()->cachePerPermissions();
