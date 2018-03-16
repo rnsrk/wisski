@@ -209,14 +209,20 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
       'data' => $this->getLabel($entity),
       'class' => array('menu-label'),
     );
-    if (list($key,$value) = each($parents)) {
-      $row['parent'] = array(
-        'data' => array(
-          '#type' => 'link',
-          '#url' => new Url('entity.entity_view_display.wisski_individual.default',array('wisski_bundle' => $key)),
-          '#title' => $value,
-        ),
-      );
+
+    // this is deprecated
+    //if (list($key,$value) = each($parents)) {
+    
+    if(!empty($parents)) {
+      foreach($parents as $key => $value) { 
+        $row['parent'] = array(
+          'data' => array(
+            '#type' => 'link',
+            '#url' => new Url('entity.entity_view_display.wisski_individual.default',array('wisski_bundle' => $key)),
+            '#title' => $value,
+          ),
+        );
+      }
     } else $row['parent'] = '';
     $row += parent::buildRow($entity);
     $row['operations']['data']['#links']['add'] = array(
