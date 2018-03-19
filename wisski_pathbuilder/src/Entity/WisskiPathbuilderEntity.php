@@ -29,7 +29,7 @@ use Drupal\views\Entity\View;
  *     }
  *   },
  *   config_prefix = "wisski_pathbuilder",
- *   admin_permission = "administer site configuration",
+ *   admin_permission = "administer wisski paths",
  *   entity_keys = {
  *     "id" = "id",
  *     "name" = "name"
