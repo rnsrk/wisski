@@ -20,6 +20,8 @@ access create:
 access find:
   title: 'Access Find'
 
+create any wisski content:
+  title: 'Create any WissKI Entities'
 view any wisski content:
   title: 'View any WissKI Entities'
 view published wisski content:
