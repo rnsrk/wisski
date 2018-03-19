@@ -9,9 +9,6 @@ administer wisski bundles:
 administer wisski:
   title: 'Administer WissKI Core modules'
   restrict access: TRUE
-administer wisski paths:
-  title: 'Administer paths and groups for WissKI entities'
-  restrict access: TRUE
 
 access navigate:
   title: 'Access Navigate'
