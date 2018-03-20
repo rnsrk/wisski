@@ -409,8 +409,10 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
             #foreach($query_parts as $iter => $query_part) {
             $query_parts = $query_parts . $sort;
             #}
-            
-            $sort_params = $elem['direction'] . "(STR(?c${i}_out)) ";
+            if(!empty($path->id()) && !empty($pb->getPbPath($path->id())) && $pb->getPbPath($path->id())["fieldtype"] == "decimal" || $pb->getPbPath($path->id())["fieldtype"] == "number")
+              $sort_params = $elem['direction'] . "(xsd:integer(?c${i}_out)) ";
+            else
+              $sort_params = $elem['direction'] . "(STR(?c${i}_out)) ";
             
             $this->orderby = $this->orderby . $sort_params;
             
