@@ -239,6 +239,13 @@ wisski_tick("begin exec views");
       $this->pager->preExecute($query);
     }
     
+    // early opt out in case of no results
+    if($this->pager->total_items == 0) {
+      $view->result = [];
+      $view->execute_time = microtime(true) - $start;
+      return;
+    }
+    
     if($this->orderby) {
       foreach($this->orderby as $elem) {
         $query->sort($elem['field'], $elem['direction']);
