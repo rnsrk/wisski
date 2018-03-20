@@ -233,8 +233,10 @@ class WisskiLinkblock extends BlockBase {
           $pbtree = $pb->getPathTree();
           // if there is nothing, then don't show up!
           if(empty($allpbpaths) || !isset($allpbpaths[$linkgroup->id()]))
-            return;
-          
+//            return;
+// do not return! this leads to other pbs being unable to answer!
+            continue;
+                      
           $pbarray = $allpbpaths[$linkgroup->id()];
           foreach($pbtree[$linkgroup->id()]['children'] as $child) {
             $childid = $child['id'];
