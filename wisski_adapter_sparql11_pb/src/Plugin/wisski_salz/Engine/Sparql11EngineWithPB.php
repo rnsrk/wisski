@@ -2306,9 +2306,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             $op = '!=';
           }
           elseif($op == 'STARTS_WITH') {
-            $regex = true;
+            $regex = FALSE;
             $safe = TRUE;
-            $primitiveValue = '^' . $this->escapeSparqlRegex($primitiveValue, TRUE);
+            // we don't do this here anymore, but do it with strStarts below
+            // this should be faster on most triplestores than REGEX.
+            //$primitiveValue = '^' . $this->escapeSparqlRegex($primitiveValue, TRUE);
           }
           elseif($op == 'ENDS_WITH') {
             $regex = true;
@@ -2355,6 +2357,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
               $val_max = $this->escapeSparqlLiteral($val_max);
             }
             $filter = "$cast_outvar >= $val_min & $cast_outvar <= $val_max";
+          } else  if($op == "STARTS_WITH") {
+            $filter = "strStarts($cast_outvar, $escapedValue)";
           }
           elseif($regex) {
             // we have to use STR() otherwise we may get into trouble with
