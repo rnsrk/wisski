@@ -50,9 +50,16 @@ class WisskiEntityAccessHandler extends EntityAccessControlHandler {
             return $result;
           }
         }
-              
+        
+        $uid = $entity->get('uid');
+        if(!empty($uid))
+          $uid = $uid->entity;
+
+        if(!empty($uid))
+          $uid = $uid->id();
+        
         // if we may view our own unpublished content or we may view other unpublished content
-        if(($account->hasPermission($operation . ' own unpublished wisski content') & $entity->get('uid')->entity->id() == $account->id()) || $account->hasPermission($operation . ' other unpublished wisski content')) {
+        if((!is_null($uid) && ($account->hasPermission($operation . ' own unpublished wisski content') & $uid == $account->id())) || $account->hasPermission($operation . ' other unpublished wisski content')) {
           $result = AccessResult::allowed()->cachePerPermissions();
           return $result;
         }
@@ -66,7 +73,18 @@ class WisskiEntityAccessHandler extends EntityAccessControlHandler {
       
       // both above was not correct, so it may be that he is the owner of the thing.
       if($account->hasPermission($operation . ' own wisski content') || $account->hasPermission($operation . ' own ' . $entity->bundle() . ' WisskiBundle')) {
-        if($entity->get('uid')->entity->id() == $account->id()) {
+        // get the uid
+        $uid = $entity->get('uid');
+        
+        // see if there was something in the field
+        if(!empty($uid))
+          $uid = $uid->entity; // only get the entity if there was something
+        
+        // only get the id if there was something in there
+        if(!empty($uid))
+          $uid = $uid->id();
+        
+        if(!empty($uid) && $uid == $account->id()) {
           $result = AccessResult::allowed()->cachePerPermissions();
           return $result;
         }
