@@ -243,6 +243,7 @@ wisski_tick("begin exec views");
     if($this->pager->total_items == 0) {
       $view->result = [];
       $view->execute_time = microtime(true) - $start;
+
       return;
     }
     
