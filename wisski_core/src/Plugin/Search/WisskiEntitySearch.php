@@ -269,6 +269,7 @@ class WisskiEntitySearch extends SearchPluginBase {
           '#tree' => TRUE,
           '#title' => $options[$bundle_id],
         );
+#        dpm($bundle_paths, "bps"); 
         foreach ($bundle_paths as $pb => $pb_paths) {
           if (is_string($pb_paths)) {
             //this is a global pseudo-path like 'uri'
@@ -285,9 +286,15 @@ class WisskiEntitySearch extends SearchPluginBase {
         //dpm($bundle_path_defaults,'defaults '.$bundle_id);
 #        dpm($bundle_path_options, "bpo");
         for ($i = 0; $i < $this->path_limit && $i < count($bundle_path_options); $i++) {
-//          $list = each($bundle_path_defaults);
-          $list = [key($bundle_path_defaults), current($bundle_path_defaults)];
-
+          #$list = each($bundle_path_defaults);
+          #dpm($list, "old");
+          if(!empty(current($bundle_path_defaults)))
+            $list = [key($bundle_path_defaults), current($bundle_path_defaults)];
+          else
+            $list = NULL;
+          next($bundle_path_defaults);
+#          dpm($list, "new");
+          
           $def_input = '';
           $def_operator = $this->getDefaultOperator();
 //          dpm($list, "list");
@@ -296,6 +303,8 @@ class WisskiEntitySearch extends SearchPluginBase {
           } else {
 //            $list = each($bundle_path_options);
             $list = [key($bundle_path_options), current($bundle_path_options)];
+            next($bundle_path_options);
+            
             if ($list) list($path_id) = $list;
           }
           if ($list !== FALSE) {
