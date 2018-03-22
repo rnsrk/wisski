@@ -22,8 +22,14 @@ class Standard extends FieldPluginBase {
     $value = $this->getValue($values);
     if (is_array($value)) {
       $return = [];
+
       foreach ($value as $v) {
-        $return[] = $this->sanitizeValue($v);
+        
+        // in case of a disamb-array, go to the value.
+        if(is_array($v) && isset($v["value"]))
+          $return[] = $this->sanitizeValue($v["value"]);
+        else 	         
+          $return[] = $this->sanitizeValue($v);
       }
       return join(', ', $return);
     }
