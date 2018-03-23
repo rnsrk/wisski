@@ -240,7 +240,7 @@ wisski_tick("begin exec views");
     }
     
     // early opt out in case of no results
-    if($this->pager->total_items == 0) {
+    if($this->pager->usePager() && $this->pager->total_items == 0) {
       $view->result = [];
       $view->execute_time = microtime(true) - $start;
 
