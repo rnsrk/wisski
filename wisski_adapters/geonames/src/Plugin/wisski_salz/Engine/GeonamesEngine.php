@@ -143,7 +143,7 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
     }
 
     $cache->set($id, $data);
-
+#    dpm($data);
     return $data;
 
   }
@@ -195,7 +195,7 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
    * {@inheritdoc} 
    */
   public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
-    
+
     if (!$entity_ids) {
       // TODO: get all entities
       $entity_ids = array(
