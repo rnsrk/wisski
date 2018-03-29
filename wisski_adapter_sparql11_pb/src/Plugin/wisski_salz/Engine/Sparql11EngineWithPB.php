@@ -1082,6 +1082,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    */
   public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL, $relative = TRUE) {
 #    drupal_set_message("I got: $eid " . serialize($path));
+$tmpt1 = microtime(TRUE);            
     if(empty($path)) {
       drupal_set_message("No path supplied to ptr. This is evil.", "error");
       return array();
@@ -1135,7 +1136,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     if(!empty($eid)) {
       // rename to uri
+$tmpt5 = microtime(TRUE);            
       $eid = $this->getUriForDrupalId($eid);
+$tmpt6 = microtime(TRUE);            
 
       // if the path is a group it has to be a subgroup and thus entity reference.
       if($path->isGroup()) {
@@ -1146,6 +1149,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       else {
         $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, ($starting_position/2), FALSE, NULL, 'field', $relative);
       }
+$tmpt7 = microtime(TRUE);            
 
     } else {
       drupal_set_message("No EID for data. Error. ", 'error');
@@ -1166,7 +1170,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
 #    drupal_set_message(serialize($sparql));
 
+$tmpt2 = microtime(TRUE);            
     $result = $this->directQuery($sparql);
+$tmpt3 = microtime(TRUE);            
 #    drupal_set_message(serialize($result));
 
     $out = array();
@@ -1231,6 +1237,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
       }
     }
+$tmpt4 = microtime(TRUE);            
+#\Drupal::logger('WissKI Adapter ptrv')->debug($pb->id() . " " . $path->id() ."::". htmlentities(\Drupal\Core\Serialization\Yaml::encode( [$tmpt4-$tmpt1,$tmpt7-$tmpt6, $tmpt5-$tmpt1, $tmpt6-$tmpt5, $tmpt2-$tmpt7, $tmpt3-$tmpt2, $tmpt4-$tmpt3])));
+#dpm([$tmpt4-$tmpt1,$tmpt5-$tmpt1, $tmpt6-$tmpt5, $tmpt2-$tmpt6, $tmpt3-$tmpt2, $tmpt4-$tmpt3], $pb->id() . " " . $path->id());
 
     return $out;
     
@@ -1254,11 +1263,20 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // paths in the pathbuilder.
 
 #    drupal_set_message("I am asked for " . serialize($entity_ids) . " and fields: " . serialize($field_ids));
+$tsa = ['start'=>microtime(true)];
+    $pb_ids = array();
+    $pb_man = \Drupal::service('wisski_pathbuilder.manager');
+    $bundle_infos = $pb_man->getPbsUsingBundle($bundleid_in);
+#dpm([$this->adapterId(), $bundle_infos]);
+    foreach($bundle_infos as $bundle_info) {
+      if ($bundle_info['adapter_id'] == $this->adapterId()) {
+        $pb_id = $bundle_info['pb_id'];
+        $pb_ids[$pb_id] = $pb_id;
+      }
+    }
+    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple($pb_ids);
+$tsa['pbs'] = join(' ', $pb_ids);
 
-    // this approach will be not fast enough in the future...
-    // the pbs have to have a better mapping of where and how to find fields
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
-    
     $out = array();
         
     // get the adapterid that was loaded
@@ -1267,27 +1285,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         
     foreach($pbs as $pb) {
       
-      // if we have no adapter for this pb it may go home.
-      if(empty($pb->getAdapterId()))
-        continue;
-        
-      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
-
-      // if we have not adapter, we may go home, too
-      if(empty($adapter))
-        continue;
-      
-      // if he didn't ask for us...    
-      if($this->getConfiguration()['id'] != $adapter->getEngine()->getConfiguration()['id'])
-        continue;
-        
       // if we find any data, we set this to true.
       $found_any_data = FALSE;
         
       foreach($field_ids as $fkey => $fieldid) {  
         #drupal_set_message("for field " . $fieldid . " with bundle " . $bundleid_in . " I've got " . serialize($this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in, $language)));
-
+$tmpc=microtime(true);
         $got = $this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in, $language);
+$tsa[$pb->id()][$fieldid] = (microtime(TRUE)-$tmpc);
 
 #        drupal_set_message("I've got: " . serialize($got));
         
@@ -1316,7 +1321,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
     
 #    drupal_set_message("I return: " . serialize($out));
-  
+$tsa['ende'] = microtime(TRUE)-$tsa['start'];
+#\Drupal::logger('Sparql Adapter')->debug(str_replace("\n", '<br/>', htmlentities("loadFieldValues:\n".\Drupal\Core\Serialization\Yaml::encode($tsa))));
     
     return $out;
 
@@ -1473,8 +1479,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
           // get the clear path array            
           $clearPathArray = $pb->getRelativePath($path, FALSE);
-            
+$tmpt=microtime(true);
           $tmp = $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property);            
+#\Drupal::logger('WissKI Import lpvff')->debug((microtime(TRUE)-$tmpt). ": $field_id ".$path->id());
 
           if ($main_property == 'target_id') {
               
@@ -2036,6 +2043,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *              The variable ?out will be set to the key "out".
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array()) {
+$tsa = ['start' => microtime(TRUE)];            
 #     \Drupal::logger('WissKIsaveProcess')->debug('generate: ' . serialize(func_get_args()));
 #    if($mode == 'entity_reference')
 #      dpm(func_get_args(), "fun");
@@ -2072,10 +2080,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $datagraphuri = $this->getDefaultDataGraphUri();
     
     $first = TRUE;
+$tsa[1] = microtime(TRUE) - $tsa['start'];            
     
     // iterate through the given path array
     $localkey = 0;
     foreach($clearPathArray as $key => $value) {
+$tsa["p$localkey $value"] = microtime(true) - $tmpt;
+$tmpt = microtime(true);
       $localkey = $key;
 
       if($first) {
@@ -2167,7 +2178,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           } else {
             
             $query .= "GRAPH ${graphvar}_1 { ";
+$tmpc = microtime(true);            
             $inverse = $this->getInverseProperty($prop);
+$tsa["inv$key"] = microtime(true)-$tmpc;
             // if there is not an inverse, don't do any unions
             if(empty($inverse)) {
               if(!empty($olduri))
@@ -2231,6 +2244,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $prop = $value;
       }
     }
+$tsa["p$localkey"] = microtime(true) - $tmpt;
+$tmpt = microtime(true);
 
 
 #\Drupal::logger('testung')->debug($path->getID() . ":".htmlentities($query));
@@ -2394,6 +2409,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #      \Drupal::logger('WissKIsaveProcess')->debug('erg generate: ' . htmlentities($query));
 
 #    dpm($query, "query"); 
+$tsa['prim'] = microtime(true) - $tmpt;
+$tsa['ende'] = microtime(true) - $tsa['start'];
+#\Drupal::logger('Sparql Adapter gtfp')->debug(str_replace("\n", '<br/>', htmlentities($path->id().":\n".\Drupal\Core\Serialization\Yaml::encode($tsa))));
     return $query;
   }
   
@@ -2505,6 +2523,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // 
     // so I ignore everything and just target the field_ids that are mapped to
     // paths in the pathbuilder.
+$tmpt = microtime(TRUE); 
     
     $out = array();
     
@@ -2518,6 +2537,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // ignores the old field values and forces a write.
     $init_entity = $this->loadEntity($entity_id);
     #$init_entity = $this->hasEntity($entity_id);
+#\Drupal::logger('WissKI Import tmpc')->debug("l:".(microtime(TRUE)-$tmpt));
     
 #    dpm($init_entity, "init");
 #    dpm($force_new, "force!");
@@ -2532,6 +2552,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $this->createEntity($entity,$entity_id);
       } else return;
     }
+#\Drupal::logger('WissKI Import tmpc')->debug("c:".(microtime(TRUE)-$tmpt));
     
     if(empty($entity) && !empty($init_entity))
       $entity = $init_entity;
@@ -2547,6 +2568,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if(!empty($old_values))
         $old_values = $old_values[$entity_id];
     }
+#\Drupal::logger('WissKI Import tmpc')->debug("lf:".(microtime(TRUE)-$tmpt));
 
     //drupal_set_message("the old values were: " . serialize($old_values));
 #    dpm($old_values,'old values');
@@ -2594,6 +2616,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
       }
     }
+#\Drupal::logger('WissKI Import tmpc')->debug("df:".(microtime(TRUE)-$tmpt));
 
 #    dpm($old_values, "old values");
 
@@ -2705,140 +2728,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         
         $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder, $mainprop); 
       }
-
-      
-
-      
-/* --- WRITE LOOP: This whole write loop works incorrectly when it comes to the same thing in the fields */
-      /*
-      $remain_values = array();
-      // TODO $val is not set: iterate over fieldvalue!
-      if (!empty($old_value)) {
-        $delete_values = array();
-        if (!is_array($old_value)) {
-          // $old_value contains the value directly
-          $delete_values[] = $old_value;
-          foreach ($field_items as $new_item) {
-            if (empty($new_item)) continue; // empty field item due to cardinality, see else branch
-            if ($old_value == $new_item[$mainprop]) {
-              $remain_values[$new_item[$mainprop]] = $new_item[$mainprop];
-              $delete_values = array();
-              break;
-            }
-          }
-        } else {
-          // $old_value is an array of arrays resembling field list items and
-          // containing field property => value pairs
-          foreach ($old_value as $old_key => $old_item) {
-            if (!is_array($old_item) || empty($old_item)) {
-              // this may be the case if 
-              // - it contains key "main_property"... (not an array)
-              // - it is an empty field that is there because of the 
-              // field's cardinality (empty)
-              continue;
-            }
-            $delete = TRUE;
-            
-            foreach ($field_items as $key => $new_item) {
-              if (empty($new_item)) continue; // empty field item due to cardinality
-              if ($old_item[$mainprop] == $new_item[$mainprop]) {
-                $remain_values[$new_item[$mainprop]] = $new_item[$mainprop];
-                $delete = FALSE;
-                break;
-              }
-            }
-            if ($delete) {
-              $delete_values[] = $old_item[$mainprop];
-            }
-          }
-          if ($delete_values) {
-            foreach ($delete_values as $val) {
-              $this->deleteOldFieldValue($entity_id, $field_id, $val, $pathbuilder);
-            }
-          }
-        }
-      }
-      
-      // now we write all the new values
-      foreach ($field_items as $new_item) {
-        if (!isset($remain_values[$new_item[$mainprop]])) {
-          $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder); 
-        }
-      }
-      */
-
-/* --- WRITE LOOP: this whole loop does not seem to work correctly on changes
-      foreach($field_items as $field_id2 => $val) {
-
-        drupal_set_message(serialize($val[$mainprop]) . " new");
-        #drupal_set_message(serialize($old_values[$field_id]) . " old");
-
-        // check if there are any old values. If not, delete nothing.
-        if(!empty($old_values)) {
-     
-#        dpm(array('popel','old_values' => $old_values, 'val' => $val, $mainprop, $field_id, $field_id2), 'popelchen', 'error');
-/* this section doesn't handle multiple values correctly
-          // if they are the same - skip
-          // I don't know why this should be working, but I leave it here...
-          if($val[$mainprop] == $old_values[$field_id]) 
-            continue;
-          
-          // the real value comparison is this here:
-          if($val[$mainprop] == $old_values[$field_id][$field_id2][$mainprop])
-            continue;
-          
-          // if oldvalues are an array and the value is in there - skip
-          if(is_array($old_values[$field_id]) && !empty($old_values[$field_id][$field_id2]) && in_array($val[$mainprop], $old_values[$field_id][$field_id2]))
-            continue;
-        
-          // there comes a replacement:
-*/      
-/*
-        // for each value we check all the old values if we find a corresponding one
-        // this also handles the case where there is only a change in sequence
-        
-          if (is_array($old_values[$field_id])) {
-            $skip = FALSE;
-            foreach ($old_values[$field_id] as $field_id2 => $values) {
-              if ($field_id2 == 'main_property') continue;
-              if ($values[$mainprop] = $val[$mainprop]) {
-#  dpm(array($val[$mainprop], $values[$mainprop], $val, $old_values), "skip", 'error');
-                $skip = TRUE;
-                break;
-              }
-            }
-            if ($skip) {
-              continue;
-            }
-          }
-
-          
-          // now write to the database
-          
-          drupal_set_message($entity_id . "I really write!" . serialize($val[$mainprop])  . " and " . serialize($old_values[$field_id]) );
-          #return;
-        
-          // first delete the old values
-          // Martin: do we always delete values???
-          if(is_array($old_values[$field_id])) {
-            $this->deleteOldFieldValue($entity_id, $field_id, $old_values[$field_id][$field_id2][$mainprop], $pathbuilder);
-          } else {
-            $this->deleteOldFieldValue($entity_id, $field_id, $old_values[$field_id], $pathbuilder);
-          }
-
-        }
-
-#        dpm(array('$entity_id'=>$entity_id,'$field_id'=>$field_id,'value' => $val[$mainprop],'$pathbuilder'=>$pathbuilder),'try writing');
-        // add the new ones
-        $this->addNewFieldValue($entity_id, $field_id, $val[$mainprop], $pathbuilder); 
-        
-        #drupal_set_message("I would write " . $val[$mainprop] . " to the db and delete " . serialize($old_values[$field_id]) . " for it.");
-        
-      }          
+  
     }
- --- END WRITE LOOP */
-   
-    }
+#\Drupal::logger('WissKI Import tmpc')->debug("da:".(microtime(TRUE)-$tmpt));
+
 
 #    drupal_set_message("out: " . serialize($out));
 
