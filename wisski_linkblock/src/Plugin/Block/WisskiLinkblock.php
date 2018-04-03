@@ -5,7 +5,7 @@ namespace Drupal\wisski_linkblock\Plugin\Block;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity as Pathbuilder;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Url;
 
@@ -38,145 +38,56 @@ class WisskiLinkblock extends BlockBase {
     
     $config = $this->getConfiguration();
 
-    $form['better_lb'] = [
+    $form['multi_pb'] = [
       '#type' => 'checkbox',
-      '#title' => 'Use linkblock only with given adapter',
-      '#default_value' => isset($config['better_lb']) ? $config['better_lb'] : 0,
+      '#title' => 'Use linkblock with any pathbuilder and adapter',
+      '#default_value' => isset($config['multi_pb']) ? $config['multi_pb'] : 0,
     ];
-    
-    $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($linkblockpbid);
-    
-    if(empty($pb)) {
-      $pb = new \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity(array("id" => $linkblockpbid, "name" => "WissKI Linkblock PB"), "wisski_pathbuilder");
-      $pb->save();
-    }
-    
 
-#    $form = \Drupal::formBuilder()->getForm('Drupal\wisski_pathbuilder\Form\WisskiPathbuilderForm');
+    $field_options = array(
+      Pathbuilder::CONNECT_NO_FIELD => $this->t('Do not connect a pathbuilder'),
+      Pathbuilder::GENERATE_NEW_FIELD => $this->t('Create a block specific pathbuilder'),
+    );
     
-#    dpm($pb);
+    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    
+    foreach($pbs as $pb) {
+      $field_options[$pb->id()] = $pb->getName();
+    }                      
 
-    #dpm($form, "form!!");
-    
+    $form['pathbuilder'] = array(
+      '#type' => 'select',
+      '#title' => $this->t('Pathbuilder'),
+      '#description' => $this->t('What pathbuilder do you want to choose as a source for paths for this linkblock?'),
+      '#options' => $field_options,
+      '#default_value' => isset($config['pathbuilder']) ? $config['pathbuilder'] : Pathbuilder::GENERATE_NEW_FIELD,
+    );
+        
     return $form;
   }
   
 
   public function blockSubmit($form, FormStateInterface $form_state) {
-    $this->configuration['better_lb'] = $form_state->getValue('better_lb');
-  }
-
+    $this->configuration['multi_pb'] = $form_state->getValue('multi_pb');
     
-
-  /**
-   * {@inheritdoc}
-   */
-  public function betterBuild() {
-
-    $out = array();
-
-    $individualid = \Drupal::routeMatch()->getParameter('wisski_individual');
-    if ($individualid instanceof \Drupal\wisski_core\Entity\WisskiEntity) $individualid = $individualid->id();
-
-    if(empty($individualid)) {
-      return $out;
-    }
-        
-    $linkblockpbid = "wisski_linkblock";
+#    dpm($form_state->getValues());
     
-    $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($linkblockpbid);
-    
-    if(empty($pb)) {
-      $pb = new \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity(array("id" => $linkblockpbid, "name" => "WissKI Linkblock PB"), "wisski_pathbuilder");
+    // if the user said he wants a new one, he gets a new one!
+    if($form_state->getValue('pathbuilder') == Pathbuilder::GENERATE_NEW_FIELD) {
+      // I don't know why the id is hidden there...
+      $block_id = $form_state->getCompleteFormState()->getValue('id');
+      // title can be received normally.
+      $title = $form_state->getValue('label');
+      
+      // generate a pb with a nice name - but it is unique for this block due to its id.            
+      $pb = new \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity(array("id" => 'pb_' . $block_id, "name" => "" . $title . " (Linkblock)"), "wisski_pathbuilder");   
       $pb->save();
+      
+      $this->configuration['pathbuilder'] = $pb->id();
+    } else {
+      $this->configuration['pathbuilder'] = $form_state->getValue('pathbuilder');
     }
-    
-    $dataout = array();
-    
-    $bundleid = $pb->getBundleIdForEntityId($individualid);
-       # dpm($datapb);
-    $groups = $pb->getGroupsForBundle($bundleid);
-    
-    foreach($groups as $linkgroup) {
-      $allpbpaths = $pb->getPbPaths();
-      $pbtree = $pb->getPathTree();
-      // if there is nothing, then don't show up!
-      if(empty($allpbpaths) || !isset($allpbpaths[$linkgroup->id()]))
-        return;
-      
-      $pbarray = $allpbpaths[$linkgroup->id()];
-      foreach($pbtree[$linkgroup->id()]['children'] as $child) {
-        $childid = $child['id'];
-
-        // better catch these.            
-        if(empty($childid))
-          continue;
-        
-        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($childid);
-#drupal_set_message("child: " . serialize($childid));            
-#            $adapters = \Drupal\wisski_salz\Entity\WisskiSalzAdapter
-        $adapter = entity_load('wisski_salz_adapter', $pb->getAdapterId());            
-        $engine = $adapter->getEngine();
-        $tmpdata = $engine->pathToReturnValue($path, $pb, $individualid, 0, 'target_id', FALSE);
-#        dpm($tmpdata, "tmp");
-        if(!empty($tmpdata)) {
-          $dataout[$path->id()]['path'] = $path;
-          if(!isset($dataout[$path->id()]['data']))
-            $dataout[$path->id()]['data'] = array();
-          $dataout[$path->id()]['data'] = array_merge($dataout[$path->id()]['data'], $tmpdata);
-        }
-      }
-    }
-
-    // cache for 2 seconds so subsequent queries seem to be fast
-    if(!empty($dataout))  
-      $out[]['#cache']['max-age'] = 2;
-    // this does not work
-#    $out['#cache']['disabled'] = TRUE;
-#    $out[] = [ '#markup' => 'Time : ' . date("H:i:s"),];
-#    drupal_set_message(serialize($dataout));
-    foreach($dataout as $pathid => $dataarray) {
-      $path = $dataarray['path'];
-      
-      if(empty($dataarray['data']))
-        continue;
-      
-      $out[] = [ '#markup' => '<h3>' . $path->getName() . '</h3>'];
-      
-      foreach($dataarray['data'] as $data) {
-
-        if(isset($data['wisskiDisamb']))  	    
-          $url = $data['wisskiDisamb'];
-
-        if(!empty($url)) {
-
-          $entity_id = AdapterHelper::getDrupalIdForUri($url);
-      
-          $url = 'wisski/navigate/' . $entity_id . '/view';
-      
-          $out[] = array(
-            '#type' => 'link',
-            '#title' => $data['target_id'],
-            '#url' => Url::fromUri('internal:/' . $url),
-          );
-          $out[] = [ '#markup' => '</br>' ];
-        } else {
-          $out[] = array(
-            '#type' => 'item',
-            '#markup' =>  $data['target_id'],
-          );
-          $out[] = [ '#markup' => '</br>' ];
-        }
-        
-      }  
-    }
-
-    return $out;
   }
-
-
-
-
 
   /**
    * {@inheritdoc}
@@ -184,53 +95,80 @@ class WisskiLinkblock extends BlockBase {
   public function build() {
 
     $config = $this->getConfiguration();
-    if (isset($config['better_lb']) && $config['better_lb']) {
-      return $this->betterBuild();
-    }
+#    if (isset($config['better_lb']) && $config['better_lb']) {
+#      return $this->betterBuild();
+#    }
+
+#  dpm($config);
+
+    // check if we ask for multiple pbs and multiple adapters.
+    $multimode = $config['multi_pb'];
 
     $out = array();
 
+    // what individual is queried?
     $individualid = \Drupal::routeMatch()->getParameter('wisski_individual');
+    // if we get an entity, just use the id for the inner functions
     if ($individualid instanceof \Drupal\wisski_core\Entity\WisskiEntity) $individualid = $individualid->id();
 
+    // if we have no - we're done here.
     if(empty($individualid)) {
       return $out;
     }
         
-    $linkblockpbid = "wisski_linkblock";
+    $linkblockpbid = $config['pathbuilder'];
+    
+    if(empty($linkblockpbid)) {
+      drupal_set_message("No Pathbuilder is specified for Linkblock.", "error");
+      return $out;
+    }
     
     $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($linkblockpbid);
     
     if(empty($pb)) {
-      $pb = new \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity(array("id" => $linkblockpbid, "name" => "WissKI Linkblock PB"), "wisski_pathbuilder");
-      $pb->save();
+      drupal_set_message("Something went wrong while loading data for Linkblock. No Pb was found!", "error");
+      return $out;
     }
     
-#    $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
     
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
-    
+    // load all pbs only in multimode
+    if($multimode)
+      $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    else
+      $pbs = array($pb);
+      
     $dataout = array();
-    
-#    drupal_set_message(serialize($pbs));
-#return $out;
+
+    // load all adapters here so we load them only once...    
+    // in case of multimode, select all adapters
+    if($multimode) 
+      $adapters = \Drupal\wisski_salz\Entity\Adapter::loadMultiple(); //entity_load_multiple('wisski_salz_adapter');            
+    else // else use just the given one.
+      $adapters = array(\Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId()));
+        
     foreach($pbs as $datapb) {
-    
-      // skip the own one...
-      if($pb == $datapb)
+        
+      // skip the own one only in multimode
+      if($pb == $datapb && $multimode)
         continue;
-    
+
+
+      // get the bundleid for the individual    
       $bundleid = $datapb->getBundleIdForEntityId($individualid);
-       # dpm($datapb);
+      
+      // get the group for the bundleid
       $groups = $datapb->getGroupsForBundle($bundleid);
-#      drupal_set_message(serialize($datapb));
-    
+
+      // iterate all groups    
       foreach($groups as $group) {
         $linkgroup = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($group->id());
-#        drupal_set_message(serialize("yay!"));
+
+
+        // if there is any
         if(!empty($linkgroup)) {
           $allpbpaths = $pb->getPbPaths();
           $pbtree = $pb->getPathTree();
+
           // if there is nothing, then don't show up!
           if(empty($allpbpaths) || !isset($allpbpaths[$linkgroup->id()]))
 //            return;
@@ -238,6 +176,8 @@ class WisskiLinkblock extends BlockBase {
             continue;
                       
           $pbarray = $allpbpaths[$linkgroup->id()];
+
+          // for every path in there, load something
           foreach($pbtree[$linkgroup->id()]['children'] as $child) {
             $childid = $child['id'];
 
@@ -248,14 +188,16 @@ class WisskiLinkblock extends BlockBase {
             $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($childid);
 #drupal_set_message("child: " . serialize($childid));            
 #            $adapters = \Drupal\wisski_salz\Entity\WisskiSalzAdapter
-            $adapters = entity_load_multiple('wisski_salz_adapter');            
+           
+#              dpm($adapters);
             
             foreach($adapters as $adapter) {
               $engine = $adapter->getEngine();
 
+              // get the data for this specific thing
               $tmpdata = $engine->pathToReturnValue($path, $pb, $individualid, 0, 'target_id', FALSE);
 #              drupal_set_message("path: " . serialize($path));
-#              drupal_set_message(serialize($tmpdata));
+
 #              dpm($tmpdata, "tmp");
               if(!empty($tmpdata)) {
                 $dataout[$path->id()]['path'] = $path;
@@ -336,7 +278,8 @@ class WisskiLinkblock extends BlockBase {
             '#type' => 'link',
 #            '#title' => $data['target_id'],
             '#title' => wisski_core_generate_title($entity_id, FALSE, $bundle),
-            '#url' => Url::fromUri('internal:/' . $url . '?wisski_bundle=' . $bundle),
+            '#url' => Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity_id]), 
+            //Url::fromUri('internal:/' . $url . '?wisski_bundle=' . $bundle),
           );
           $out[] = [ '#markup' => '</br>' ];
         } else {
