@@ -74,12 +74,20 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
    */
   protected $adapter;
   
-  /**
-   * The create mode for the pathbuilder
-   *
+    /**
+   * The type of the pathbuilder
+   * normally "normal"
+   * but also might be "linkblock"
    * @var string
    */
-  protected $create_mode;
+   protected $type;
+  
+  /**
+   * The create mode for the pathbuilder
+   * DEPRECATED AND UNFUNCTIONAL
+   * @var string
+   */
+#  protected $create_mode;
 
   /**
    * The hierarchical tree of paths consisting of two values:
@@ -104,7 +112,15 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
   public function getID() {
     return $this->id;
   }
-*/    
+*/
+  public function getType(){
+    return $this->type;
+  }
+                         
+  public function setType($name){
+    $this->type = $name;
+  }
+    
   public function getName(){
     return $this->name;
   }
@@ -149,7 +165,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
   public function setPathTree($pathtree){
     $this->pathtree = $pathtree;
   }
-  
+  /*
   public function setCreateMode($create_mode) {
     $this->create_mode = $create_mode;
   }
@@ -157,7 +173,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
   public function getCreateMode() {
     return $this->create_mode;
   }
-  
+  */
   public function generateCid($eid) {
     return 'wisski_pathbuilder:' . $eid;
   }

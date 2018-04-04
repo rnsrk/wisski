@@ -313,7 +313,8 @@ class WisskiPathbuilderForm extends EntityForm {
       '#default_value' => $pathbuilder->getAdapterId(),
       '#options' => $adapterlist, #array(0 => "Pathbuilder"),
     );
-
+    // this is obsolete.
+/*
     // what is the create mode?    
     $form['additional']['create_mode'] = array(
       '#type' => 'select',
@@ -321,7 +322,7 @@ class WisskiPathbuilderForm extends EntityForm {
       '#default_value' => empty($pathbuilder->getCreateMode()) ? 'wisski_bundle' : $pathbuilder->getCreateMode(),
       '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
     );
-    
+*/    
     $form['import'] = array(
       '#type' => 'fieldset',
       '#tree' => FALSE,
@@ -411,11 +412,12 @@ class WisskiPathbuilderForm extends EntityForm {
    * {@inheritdoc}
    */
   protected function actions(array $form, FormStateInterface $form_state) {
+        
     $element = parent::actions($form, $form_state);
     $element['#type'] = '#dropbutton';
 
     // only add this to "normal" ones...
-    if($this->entity->id() != "wisski_linkblock")
+    if($this->entity->getType() != "linkblock" && strpos($this->entity->getName(), "(Linkblock)") === FALSE && $this->entity->getName() != "WissKI Linkblock PB" && !is_null($this->entity->id()))
       $element['generate'] = array(
         '#type' => 'submit',
         '#value' => $this->t('Save and generate bundles and fields'),
@@ -423,11 +425,12 @@ class WisskiPathbuilderForm extends EntityForm {
         '#weight' => -10,
         '#dropbutton' => 'save',
       );
+             
     $element['submit']['#value'] = $this->t('Save without form generation');
     $element['submit']['#dropbutton'] = 'save';
     return $element;
   }
-
+  
   public function export(array &$form, FormStateInterface $form_state) {
     $xmldoc = new SimpleXMLElement("<pathbuilderinterface></pathbuilderinterface>");
     
@@ -946,8 +949,11 @@ class WisskiPathbuilderForm extends EntityForm {
         '@id' => $pathbuilder->id(),
       )), 'error');
     }
-    
-    $form_state->setRedirect('entity.wisski_pathbuilder.collection');
+#    dpm($pathbuilder, "Pb");
+#    if(!is_null($pathbuilder->id())) 
+    $form_state->setRedirect('entity.wisski_pathbuilder.edit_form', array('wisski_pathbuilder'=>$this->entity->id()));
+#    else
+#      $form_state->setRedirect('entity.wisski_pathbuilder.collection');
  }
 }
     

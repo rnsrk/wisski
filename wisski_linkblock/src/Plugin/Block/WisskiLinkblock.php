@@ -81,12 +81,14 @@ class WisskiLinkblock extends BlockBase {
       
       // generate a pb with a nice name - but it is unique for this block due to its id.            
       $pb = new \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity(array("id" => 'pb_' . $block_id, "name" => "" . $title . " (Linkblock)"), "wisski_pathbuilder");   
+      $pb->setType("linkblock");
       $pb->save();
       
       $this->configuration['pathbuilder'] = $pb->id();
     } else {
       $this->configuration['pathbuilder'] = $form_state->getValue('pathbuilder');
     }
+    
   }
 
   /**
