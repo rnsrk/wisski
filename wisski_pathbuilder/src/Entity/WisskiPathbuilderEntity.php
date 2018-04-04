@@ -169,11 +169,11 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
   public function setCreateMode($create_mode) {
     $this->create_mode = $create_mode;
   }
-  
-  public function getCreateMode() {
-    return $this->create_mode;
-  }
   */
+  public function getCreateMode() {
+    return "wisski_bundle";
+  }
+  
   public function generateCid($eid) {
     return 'wisski_pathbuilder:' . $eid;
   }
