@@ -2043,7 +2043,6 @@ $tmpt=microtime(true);
    *              The variable ?out will be set to the key "out".
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array()) {
-$tsa = ['start' => microtime(TRUE)];            
 #     \Drupal::logger('WissKIsaveProcess')->debug('generate: ' . serialize(func_get_args()));
 #    if($mode == 'entity_reference')
 #      dpm(func_get_args(), "fun");
@@ -2080,13 +2079,10 @@ $tsa = ['start' => microtime(TRUE)];
     $datagraphuri = $this->getDefaultDataGraphUri();
     
     $first = TRUE;
-$tsa[1] = microtime(TRUE) - $tsa['start'];            
     
     // iterate through the given path array
     $localkey = 0;
     foreach($clearPathArray as $key => $value) {
-$tsa["p$localkey $value"] = microtime(true) - $tmpt;
-$tmpt = microtime(true);
       $localkey = $key;
 
       if($first) {
@@ -2178,9 +2174,7 @@ $tmpt = microtime(true);
           } else {
             
             $query .= "GRAPH ${graphvar}_1 { ";
-$tmpc = microtime(true);            
             $inverse = $this->getInverseProperty($prop);
-$tsa["inv$key"] = microtime(true)-$tmpc;
             // if there is not an inverse, don't do any unions
             if(empty($inverse)) {
               if(!empty($olduri))
@@ -2244,8 +2238,6 @@ $tsa["inv$key"] = microtime(true)-$tmpc;
         $prop = $value;
       }
     }
-$tsa["p$localkey"] = microtime(true) - $tmpt;
-$tmpt = microtime(true);
 
 
 #\Drupal::logger('testung')->debug($path->getID() . ":".htmlentities($query));
@@ -2409,8 +2401,6 @@ $tmpt = microtime(true);
 #      \Drupal::logger('WissKIsaveProcess')->debug('erg generate: ' . htmlentities($query));
 
 #    dpm($query, "query"); 
-$tsa['prim'] = microtime(true) - $tmpt;
-$tsa['ende'] = microtime(true) - $tsa['start'];
 #\Drupal::logger('Sparql Adapter gtfp')->debug(str_replace("\n", '<br/>', htmlentities($path->id().":\n".\Drupal\Core\Serialization\Yaml::encode($tsa))));
     return $query;
   }

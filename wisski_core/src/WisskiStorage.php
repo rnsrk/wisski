@@ -908,7 +908,6 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     // gather values with property caching
     // set second param of getValues to FALSE: we must not write
     // field values to cache now as there may be no eid yet (on create)
-$ts1 = microtime(true);    
 
     list($values,$original_values) = $entity->getValues($this,FALSE);
     $bundle_id = $values['bundle'][0]['target_id'];
@@ -921,7 +920,6 @@ $ts1 = microtime(true);
     // We have this information cached.
     // Then we filter the writable ones
     $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($bundle_id);
-$tsa = array('pbs' => array_keys($pbs_info));
     $adapters_ids = array();
     $pb_ids = array();
     foreach($pbs_info as $pbid => $info) {
@@ -952,8 +950,6 @@ $tsa = array('pbs' => array_keys($pbs_info));
     $create_new = $entity->isNew() && empty($entity_id);
     $init = $create_new;
     
-$ts = microtime(true);
-    
     // if there is no entity id yet, we register the new entity
     // at the adapters
     if (empty($entity_id)) {    
@@ -966,9 +962,6 @@ $ts = microtime(true);
       drupal_set_message('No local adapter could create the entity','error');
       return;
     }
-    
-$tsa['create'] = microtime(true) - $ts;
-$ts = microtime(true);
     
     foreach($pathbuilders as $pb_id => $pb) {
       
@@ -1019,14 +1012,7 @@ $ts = microtime(true);
         // TODO: eventually there should be a seperate function for the field caching
         
       }
-$tsa["pb $pb_id and adapter $aid"] = microtime(true) - $ts;
-$ts = microtime(true);
     }
-
-$tsa['all'] = microtime(true) - $ts1;
-$tsa['eid'] = $entity_id;
-#ddl($tsa, "time for saving");
-#dpm($tsa, "time for saving");
 
     $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id);
     if ($bundle) $bundle->flushTitleCache($entity_id);
@@ -1064,6 +1050,7 @@ $tsa['eid'] = $entity_id;
     // if there are no adapters by now we die...
     if(empty($writable_adapters)) {
       drupal_set_message("There is no writable storage backend defined.", "error");
+      drupal_set_message("No writable storage backend defined.", "error");
       return;
     }
     
