@@ -46,7 +46,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
       
       foreach($entities as $key => $entity) {
         $menus = $entity->getWissKIMenus();
-        
+
         if($this->type == self::NAVIGATE) {
           $p = new \Drupal\Core\Menu\MenuTreeParameters();
           $p->addCondition('title', $entity->label(), '=');
@@ -152,11 +152,14 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
 
     $p = new \Drupal\Core\Menu\MenuTreeParameters();
     $p->addCondition('title', $entity->label(), '=');
+    $p->addCondition('id', "%" . $entity->id(), 'LIKE');
 
     $menu_tree_data = \Drupal::service('menu.link_tree')->load('navigate', $p);
         
     $menu_tree_data = current($menu_tree_data);
     $entities = $menu_tree_data->link;
+
+#    dpm($menu_tree_data, "yay!");
         
     $row['label'] = array(
       'data' => array(
