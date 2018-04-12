@@ -267,6 +267,8 @@ class WisskiLinkblock extends BlockBase {
           } else {
             $bundle = current($bundles);
           }
+
+#          dpm($data);
           
           // hack if really no bundle was supplied... should never be called!
           if(empty($bundle)) {
@@ -276,14 +278,30 @@ class WisskiLinkblock extends BlockBase {
 #          dpm($entity);
           $url = 'wisski/navigate/' . $entity_id . '/view';
 #          dpm($bundle);
-          $out[] = array(
-            '#type' => 'link',
-#            '#title' => $data['target_id'],
-            '#title' => wisski_core_generate_title($entity_id, FALSE, $bundle),
-            '#url' => Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity_id]), 
-            //Url::fromUri('internal:/' . $url . '?wisski_bundle=' . $bundle),
-          );
-          $out[] = [ '#markup' => '</br>' ];
+
+          // special handling for paths with datatypes - use the value from there for reference
+          // if you don't want this - use disamb directly!
+          if($path->getDatatypeProperty() != "empty") {
+          
+            $out[] = array(
+              '#type' => 'link',
+#  	          '#title' => $data['target_id'],
+              '#title' => $data['target_id'], //wisski_core_generate_title($entity_id, FALSE, $bundle),
+              '#url' => Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity_id]), 
+            );
+            $out[] = [ '#markup' => '</br>' ];
+
+          } else {
+
+            $out[] = array(
+              '#type' => 'link',
+#  	          '#title' => $data['target_id'],
+              '#title' => wisski_core_generate_title($entity_id, FALSE, $bundle),
+              '#url' => Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity_id]), 
+              //Url::fromUri('internal:/' . $url . '?wisski_bundle=' . $bundle),
+            );
+            $out[] = [ '#markup' => '</br>' ];
+          }
         } else {
           $out[] = array(
             '#type' => 'item',
