@@ -104,7 +104,10 @@ class WisskiLinkblock extends BlockBase {
 #  dpm($config);
 
     // check if we ask for multiple pbs and multiple adapters.
-    $multimode = $config['multi_pb'];
+    if(isset($config['multi_pb']))
+      $multimode = $config['multi_pb'];
+    else
+      $multimode = FALSE;
 
     $out = array();
 
