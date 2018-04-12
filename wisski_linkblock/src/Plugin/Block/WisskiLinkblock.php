@@ -120,9 +120,12 @@ class WisskiLinkblock extends BlockBase {
     if(empty($individualid)) {
       return $out;
     }
-        
-    $linkblockpbid = $config['pathbuilder'];
     
+    if(isset($config['pathbuilder']))
+      $linkblockpbid = $config['pathbuilder'];
+    else
+      $linkblockpbid = NULL;
+      
     if(empty($linkblockpbid)) {
       drupal_set_message("No Pathbuilder is specified for Linkblock.", "error");
       return $out;
