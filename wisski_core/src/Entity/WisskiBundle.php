@@ -157,8 +157,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   public function generateEntityTitle($entity_id,$include_bundle=FALSE,$force_new=FALSE) {
     $pattern = $this->getTitlePattern();
-#    drupal_set_message(serialize($pattern));
-#    drupal_set_message("generated: " . $this->applyTitlePattern($pattern,$entity_id));
+    #drupal_set_message(serialize($pattern));
+    #drupal_set_message("generated: " . $this->applyTitlePattern($pattern,$entity_id));
+#    dpm([$pattern, $entity_id], "eid!");
     if (!$force_new) {
       $title = $this->getCachedTitle($entity_id);
       if (isset($title)) {
@@ -170,6 +171,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         return $title;
       }
     }
+    
+#    dpm([$pattern, $entity_id], "eid!");
     
     $pattern = $this->getTitlePattern();
     
