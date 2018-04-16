@@ -1082,7 +1082,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    */
   public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL, $relative = TRUE) {
 #    drupal_set_message("I got: $eid " . serialize($path));
-$tmpt1 = microtime(TRUE);            
+#$tmpt1 = microtime(TRUE);            
     if(empty($path)) {
       drupal_set_message("No path supplied to ptr. This is evil.", "error");
       return array();
@@ -1136,9 +1136,9 @@ $tmpt1 = microtime(TRUE);
 
     if(!empty($eid)) {
       // rename to uri
-$tmpt5 = microtime(TRUE);            
+#$tmpt5 = microtime(TRUE);            
       $eid = $this->getUriForDrupalId($eid);
-$tmpt6 = microtime(TRUE);            
+#$tmpt6 = microtime(TRUE);            
 
       // if the path is a group it has to be a subgroup and thus entity reference.
       if($path->isGroup()) {
@@ -1149,7 +1149,7 @@ $tmpt6 = microtime(TRUE);
       else {
         $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, ($starting_position/2), FALSE, NULL, 'field', $relative);
       }
-$tmpt7 = microtime(TRUE);            
+#$tmpt7 = microtime(TRUE);            
 
     } else {
       drupal_set_message("No EID for data. Error. ", 'error');
@@ -1170,9 +1170,9 @@ $tmpt7 = microtime(TRUE);
     
 #    drupal_set_message(serialize($sparql));
 
-$tmpt2 = microtime(TRUE);            
+#$tmpt2 = microtime(TRUE);            
     $result = $this->directQuery($sparql);
-$tmpt3 = microtime(TRUE);            
+#$tmpt3 = microtime(TRUE);            
 #    drupal_set_message(serialize($result));
 
     $out = array();
@@ -1237,7 +1237,7 @@ $tmpt3 = microtime(TRUE);
         }
       }
     }
-$tmpt4 = microtime(TRUE);            
+#$tmpt4 = microtime(TRUE);            
 #\Drupal::logger('WissKI Adapter ptrv')->debug($pb->id() . " " . $path->id() ."::". htmlentities(\Drupal\Core\Serialization\Yaml::encode( [$tmpt4-$tmpt1,$tmpt7-$tmpt6, $tmpt5-$tmpt1, $tmpt6-$tmpt5, $tmpt2-$tmpt7, $tmpt3-$tmpt2, $tmpt4-$tmpt3])));
 #dpm([$tmpt4-$tmpt1,$tmpt5-$tmpt1, $tmpt6-$tmpt5, $tmpt2-$tmpt6, $tmpt3-$tmpt2, $tmpt4-$tmpt3], $pb->id() . " " . $path->id());
 
@@ -1479,7 +1479,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
           // get the clear path array            
           $clearPathArray = $pb->getRelativePath($path, FALSE);
-$tmpt=microtime(true);
+#$tmpt=microtime(true);
           $tmp = $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property);            
 #\Drupal::logger('WissKI Import lpvff')->debug((microtime(TRUE)-$tmpt). ": $field_id ".$path->id());
 
@@ -2041,9 +2041,11 @@ $tmpt=microtime(true);
    * @param $relative should it be relative to the other groups?
    * @param $variables the variable of index i will be set to the value of key i.
    *              The variable ?out will be set to the key "out".
+   * @param $numbering the initial numbering for the results - typically starting with 0.
+   *              But can be modified by this.
    */
-  public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array()) {
-$tsa = ['start' => microtime(TRUE)];            
+  public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array(), $numbering = 0) {
+#$tsa = ['start' => microtime(TRUE)];            
 #     \Drupal::logger('WissKIsaveProcess')->debug('generate: ' . serialize(func_get_args()));
 #    if($mode == 'entity_reference')
 #      dpm(func_get_args(), "fun");
@@ -2080,13 +2082,13 @@ $tsa = ['start' => microtime(TRUE)];
     $datagraphuri = $this->getDefaultDataGraphUri();
     
     $first = TRUE;
-$tsa[1] = microtime(TRUE) - $tsa['start'];            
+#$tsa[1] = microtime(TRUE) - $tsa['start'];            
     
     // iterate through the given path array
     $localkey = 0;
     foreach($clearPathArray as $key => $value) {
-$tsa["p$localkey $value"] = microtime(true) - $tmpt;
-$tmpt = microtime(true);
+#$tsa["p$localkey $value"] = microtime(true) - $tmpt;
+#$tmpt = microtime(true);
       $localkey = $key;
 
       if($first) {
@@ -2120,14 +2122,14 @@ $tmpt = microtime(true);
       $uri = NULL;
             
       // basic initialisation for all queries
-      $localvar = "?" . (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "x" . $key);
+      $localvar = "?" . (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "x" . ($numbering + $key));
       if (empty($oldvar)) {
         // this is a hack but i don't get the if's below
         // and when there should be set $oldvar
         // TODO: fix this!
-        $oldvar = "?" . (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "x" . $key);
+        $oldvar = "?" . (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "x" . ($numbering + $key));
       }
-      $graphvar = "?g_" . (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "x" . $key);
+      $graphvar = "?g_" . (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "x" . ($numbering + $key));
       
       if($key % 2 == 0) {
         // if it is the first element and we have a subject_in
@@ -2180,7 +2182,7 @@ $tmpt = microtime(true);
             $query .= "GRAPH ${graphvar}_1 { ";
 $tmpc = microtime(true);            
             $inverse = $this->getInverseProperty($prop);
-$tsa["inv$key"] = microtime(true)-$tmpc;
+#$tsa["inv$key"] = microtime(true)-$tmpc;
             // if there is not an inverse, don't do any unions
             if(empty($inverse)) {
               if(!empty($olduri))
@@ -2244,8 +2246,8 @@ $tsa["inv$key"] = microtime(true)-$tmpc;
         $prop = $value;
       }
     }
-$tsa["p$localkey"] = microtime(true) - $tmpt;
-$tmpt = microtime(true);
+#$tsa["p$localkey"] = microtime(true) - $tmpt;
+#$tmpt = microtime(true);
 
 
 #\Drupal::logger('testung')->debug($path->getID() . ":".htmlentities($query));
@@ -2409,8 +2411,8 @@ $tmpt = microtime(true);
 #      \Drupal::logger('WissKIsaveProcess')->debug('erg generate: ' . htmlentities($query));
 
 #    dpm($query, "query"); 
-$tsa['prim'] = microtime(true) - $tmpt;
-$tsa['ende'] = microtime(true) - $tsa['start'];
+#$tsa['prim'] = microtime(true) - $tmpt;
+#$tsa['ende'] = microtime(true) - $tsa['start'];
 #\Drupal::logger('Sparql Adapter gtfp')->debug(str_replace("\n", '<br/>', htmlentities($path->id().":\n".\Drupal\Core\Serialization\Yaml::encode($tsa))));
     return $query;
   }
@@ -2523,7 +2525,7 @@ $tsa['ende'] = microtime(true) - $tsa['start'];
     // 
     // so I ignore everything and just target the field_ids that are mapped to
     // paths in the pathbuilder.
-$tmpt = microtime(TRUE); 
+#$tmpt = microtime(TRUE); 
     
     $out = array();
     
