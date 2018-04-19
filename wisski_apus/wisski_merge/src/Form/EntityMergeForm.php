@@ -30,7 +30,7 @@ class EntityMergeForm extends ContentEntityForm {
     // Form fields defined in form() will be merge treated as entity fields 
     // which we do not want here. At the same time we must override from()
     $form = parent::buildForm($form, $form_state);
-    
+
     $form['info'] = array(
       '#type' => 'details',
       '#title' => $this->t('Hints'),
@@ -82,6 +82,7 @@ class EntityMergeForm extends ContentEntityForm {
     
     $urls = explode("\n", $form_state->getValue('insts'));
     $from_eids = array();
+#    \Drupal::logger('MERGE ')->debug('yay44: @yay', ['@yay' => serialize($urls)]);
     foreach ($urls as $url) {
       $url = trim($url);
       if ($url == '') {
@@ -89,11 +90,13 @@ class EntityMergeForm extends ContentEntityForm {
       }
       if (mb_substr($url, 0, 1) == '<' && mb_substr($url, -1, 1) == '>') {
         $url = mb_substr($url, 1, mb_strlen($url) -2);
-      } elseif (mb_substr($url, 0, 7) !== 'http://') {
+      } elseif (mb_substr($url, 0, 7) !== 'http://' && mb_substr($url, 0, 8) !== 'https://') {
         drupal_set_message(t("Skipping malformed URI: %l. If you know it is right, enclose it in %b", array("%l" => $url, "%b" => "<>")), 'error');
         continue;
       }
+#      \Drupal::logger('MERGE ')->debug('yay2223: @yay', ['@yay' => serialize($url)]);
       $eid = AdapterHelper::extractIdFromWisskiUri($url);
+#      \Drupal::logger('MERGE ')->debug('yay222: @yay', ['@yay' => serialize($eid)]);
       $from_eids[] = $eid;
     }
     
