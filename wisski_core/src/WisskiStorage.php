@@ -586,53 +586,60 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     //first try the cache
     $cid = 'wisski_file_uri2id_'.md5($file_uri);
     if ($cache = \Drupal::cache()->get($cid)) {
-      list($file_uri,$local_file_uri) = $cache->data;
-      return $file_uri;
+      // check if it really exists.
+      if(file_exists($file_uri)) {
+        list($file_uri,$local_file_uri) = $cache->data;
+        return $file_uri;
+      }
     }
     
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
     $local_file_uri = $this->ensureSchemedPublicFileUri($file_uri);
+#    dpm($file_uri, "1");
     #dpm($local_file_uri);
     // we now check for an existing 'file managed' with that uri
     $query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
     $file_ids = $query->execute();
     if (!empty($file_ids)) {
+#      dpm($file_ids, "2");
       // if there is one, we must set the field value to the image's FID
       $value = current($file_ids);
       //dpm('replaced '.$file_uri.' with existing file '.$value);
       //@TODO find out what to do if there is more than one file with that uri
       $local_file_uri = $file_uri;
     } else {
-
+#      dpm("3");
       //try it with a "translated" uri in the public;// scheme
       $schemed_uri = $this->getSchemedUriFromPublicUri($file_uri);
       $query = \Drupal::entityQuery('file')->condition('uri',$schemed_uri);
       $file_ids = $query->execute();
       if (!empty($file_ids)) {
-
+#        dpm("4");
         $value = current($file_ids);
         //dpm('replaced '.$file_uri.' with schemed existing file '.$value);
         $local_file_uri = $schemed_uri;
       } else {
-
+#        dpm("5");
         $query = \Drupal::entityQuery('file')->condition('uri',$local_file_uri);
         $file_ids = $query->execute();
 
         if (!empty($file_ids)) {
+#          dpm("6");
           //we have a local file with the same filename.
           //lets assume this is the file we were looking for
           $value = current($file_ids);
           //dpm('replaced '.$file_uri.' with local file '.$value);
           //@TODO find out what to do if there is more than one file with that uri
         } else {
-
+#          dpm($local_file_uri, "loc");
           $file = NULL;
           // if we have no managed file with that uri, we try to generate one.
           // in the if test we test whether there exists on the server a file 
           // called $local_file_uri: file_destination() with 2nd param returns
           // FALSE if there is such a file!
           if (file_destination($local_file_uri,FILE_EXISTS_ERROR) === FALSE) {
+#            dpm($local_file_uri, "7");
             $file = File::create([
               'uri' => $local_file_uri,
               'uid' => \Drupal::currentUser()->id(),
@@ -659,15 +666,17 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               // is the last part of the URL and if only the filename contains
               // disallowed chars. 
               $tmp = explode("/", $file_uri);
-              $tmp[count($tmp) - 1] = rawurlencode($tmp[count($tmp) - 1]);
+#              $tmp[count($tmp) - 1] = rawurlencode($tmp[count($tmp) - 1]);
               $file_uri = join('/', $tmp);
+              
+#              dpm($file_uri, "fileuri");
 
               $data = @file_get_contents($file_uri);
               if (empty($data)) { 
                 drupal_set_message($this->t('Could not fetch file with uri %uri.',array('%uri'=>$file_uri,)),'error');
               }
 
-              //dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
+              #dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
               $file = file_save_data($data, $local_file_uri);
 
               if ($file) {
@@ -1290,7 +1299,9 @@ $tsa['eid'] = $entity_id;
         WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
         return $preview_uri;
       }
-      
+#      dpm($output_uri, "out");
+#      dpm($preview_uri, "pre");
+#      dpm($image_style->createDerivative($output_uri,$preview_uri), "create!");
       if ($out = $image_style->createDerivative($output_uri,$preview_uri)) {
         //drupal_set_message('Style did it - uri is ' . $preview_uri);
         WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
