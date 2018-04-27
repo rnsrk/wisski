@@ -205,7 +205,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
 #        '#title' => $entity->label(),
       ),
     );
-  
+
     return $row;
   }
   
