@@ -20,8 +20,13 @@ use Drupal\field\Entity\FieldConfig;
  * @author Mark Fichtner
  */
 class WisskiODBCImportForm extends FormBase {
-  
-  protected $useDrupalDb = FALSE;
+    
+  const UPDATE_MODE_APPEND = 'append';
+  const UPDATE_MODE_NEW = 'new';
+  const UPDATE_MODE_ONLY_EXISTING = 'only_existing';
+  const UPDATE_MODE_REPLACE = 'replace';
+  const UPDATE_MODE_SKIP = 'skip';
+  const UPDATE_MODE_TAKE = 'take';
 
   /**
    * {@inheritdoc}.
@@ -99,9 +104,13 @@ class WisskiODBCImportForm extends FormBase {
     if (!$file_url) {
       $form_state->setError($form['source'], $this->t('You must specify an import script.'));
     }
+    $xml = simplexml_load_file($file_url);
+    if (!$xml) {
+      $form_state->setError($form['source'], $this->t('Not a valid XML file'));
+    }
     // as we have saved the file already, we cache its path for submitForm()
     $storage = $form_state->getStorage();
-    $storage['file_url'] = $file_url;
+    $storage['import_script_url'] = $file_url;
     $form_state->setStorage($storage);
   }
   
@@ -114,10 +123,11 @@ class WisskiODBCImportForm extends FormBase {
     // TODO: replace the array parser by DOMDocument or SimpleXML as
     // the xml->array mapping is buggy, e.g. it doesn't account for mixing
     // text and element nodes as subnodes.
-    $file_url = $form_state->getStorage()['file_url'];
-    $arr = $this->xml2array($file_url);
+    $url = $form_state->getStorage()['import_script_url'];
+    $import_script_xml = simplexml_load_file($url);
+
     // parse the db parameters 
-    $db_params = $this->getConnectionParams($arr);
+    $db_params = $this->getConnectionParams($import_script_xml);
     // we have two operation modes: batch and non-batch
     // if limit is 0 we are in non-batch mode, else batch
     $limit = $form_state->getValues()['batch_limit'];
@@ -132,19 +142,20 @@ class WisskiODBCImportForm extends FormBase {
       ];
       // each table import instruction is a separate operation
       $i = 0;
-      while(isset($arr['server'][0]['table'][$i])) {
+      foreach ($import_script_xml->table as $table) {
         $batch['operations'][] = [
           [static::class, 'storeTableBatch'],
-          [$db_params, $i, $arr['server'][0]['table'][$i], $limit],
+          // SimpleXMLElement cannot be serialized. Therefore we store the
+          // serialized xml fragment and parse it when needed
+          [$db_params, $i, $table->asXml(), $limit],
         ];
         $i++;
       }
-      $i--;
       // register the batch; batch_process is called automatically(!?)
       batch_set($batch);
     }
     else { // non-batch mode
-      $this->importInOneGo($arr, $db_params);
+      $this->importInOneGo($import_script_xml, $db_params);
     }
   }
   
@@ -152,34 +163,23 @@ class WisskiODBCImportForm extends FormBase {
   /**
    * Helper operation to parse the db connection parameters
    */
-  protected function getConnectionParams($import_script) {
+  protected function getConnectionParams($import_script_xml) {
     $params = [
       'is_drupal_db' => FALSE,
     ];
-    // if there is a special <connection> node: use it to get the connection 
-    // params, otherwise they are intermingled in the top <server> element
-    if (isset($import_script['server'][0]['connection_attr']['use_drupal_db']) && $import_script['server'][0]['connection_attr']['use_drupal_db']) {
-      // we have to make this if branch as the array will represent a single
-      // empty xml tag differently than multiple or non-empty tags.
+    $connection_xml = $import_script_xml;
+    if (isset($import_script_xml->connection)) {
+      $connection_xml = $import_script_xml->connection;
+    }
+    if (isset($connection_xml['use_drupal_db']) && $connection_xml['use_drupal_db']) {
       $params['is_drupal_db'] = TRUE;
     }
     else {
-      if (isset($import_script['server'][0]['connection'])) {
-        $import_script = $import_script['server'][0]['connection'];
-      }
-      else {
-        $import_script = $import_script['server'];
-      }
-      if (isset($import_script['0_attr']['use_drupal_db']) && $import_script['0_attr']['use_drupal_db']) {
-        $params['is_drupal_db'] = TRUE;
-      }
-      else {
-        $params['dbserver'] = $import_script[0]['url'];
-        $params['dbuser'] = $import_script[0]['user'];
-        $params['dbpass'] = $import_script[0]['password'];
-        $params['db'] = $import_script[0]['database'];
-        $params['dbport'] = isset($import_script[0]['port']) ? $import_script[0]['port'] : '3306';
-      }
+      $params['dbserver'] = (string) $connection_xml->url;
+      $params['dbuser'] = (string) $connection_xml->user;
+      $params['dbpass'] = (string) $connection_xml->password;
+      $params['db'] = (string) $connection_xml->database;
+      $params['dbport'] = isset($connection_xml->port) ? (string) $connection_xml->port : '3306';
     }
     return $params; 
   }
@@ -230,6 +230,8 @@ class WisskiODBCImportForm extends FormBase {
   public static function storeTableBatch($db_params, $table_index, $import_script, $limit, &$context) {
     // get the db connection
     $connection = self::getConnection($db_params);
+    // load the table import declarations  
+    $table_xml = simplexml_load_string($import_script);
     // init the sandbox
     if (empty($context['sandbox'])) {
       $context['message'] = t('Processing table @t', ['@t' => $table_index]);
@@ -237,19 +239,22 @@ class WisskiODBCImportForm extends FormBase {
         'offset' => 0,
         'already_seen' => [],
       ];
+      if (!isset($context['results']['already_seen'])) {
+        $context['results']['already_seen'] = [];
+      }
       // take already seen entities from previous operation
       if (isset($context['results']['table'][$table_index - 1]['already_seen'])) {
         $context['sandbox']['already_seen'] = $context['results']['table'][$table_index - 1]['already_seen'];
       }
       \Drupal::logger('WissKI Import')->info("Start import of table index $table_index");
-      $context['sandbox']['total_rows'] = self::totalRowCount($db_params, $connection, $import_script);
+      $context['sandbox']['total_rows'] = self::totalRowCount($db_params, $connection, $table_xml);
     }
     // get data from last run
     $offset = $context['sandbox']['offset'];
     $already_seen = $context['sandbox']['already_seen'];
     // do the import
     $row_count = self::storeTable(
-      $import_script, 
+      $table_xml, 
       $already_seen, 
       $connection, 
       $db_params['is_drupal_db'],
@@ -262,6 +267,7 @@ class WisskiODBCImportForm extends FormBase {
       $context['finished'] = 1;
       $context['results']['table'][$table_index]['total'] = $offset + $row_count;
       $context['results']['table'][$table_index]['already_seen'] = $already_seen;
+      $context['results']['already_seen'] += $already_seen;
       \Drupal::logger('WissKI Import')->info("Finished import of table index $table_index");
     }
     else {
@@ -285,6 +291,7 @@ class WisskiODBCImportForm extends FormBase {
   public static function finishBatch($success, $results, $operations) {
     if ($success) {
       drupal_set_message(t('Finished import.'));
+      drupal_set_message(t('@num entities have been created or updated.', ['@num' => count($results['already_seen'])]));
       \Drupal::logger('WissKI Import')->info('Successfully completed import');
     }
     else {
@@ -302,16 +309,12 @@ class WisskiODBCImportForm extends FormBase {
   /**
    * non-batch import function
    */
-  public function importInOneGo($arr, $db_params) {
+  public function importInOneGo($import_script_xml, $db_params) {
     $connection = self::getConnection($db_params);
     $alreadySeen = array();
-
-    $i =0;
-    while(isset($arr['server'][0]['table'][$i])) {
-      self::storeTable($arr['server'][0]['table'][$i], $alreadySeen, $connection, $db_params['is_drupal_db']);
-      $i++;
+    foreach ($import_script_xml->table as $table) {
+      self::storeTable($table, $alreadySeen, $connection, $db_params['is_drupal_db']);
     }
-    drupal_set_message("done.");
     self::closeConnection($connection, $db_params);
   }
 
@@ -322,16 +325,16 @@ class WisskiODBCImportForm extends FormBase {
   public static function totalRowCount($db_params, $connection, $table) {
     // we look for a special <countSql> tag that provides a ready-to-be-used
     // sql query
-    $sql = isset($table['countSql']) ? trim($table['countSql']) : '';
+    $sql = isset($table->countSql) ? trim((string) $table->countSql) : '';
     if (!$sql) {
-      $sql = isset($table['sql']) ? trim($table['sql']) : '';
+      $sql = isset($table->sql) ? trim((string) $table->sql) : '';
       if ($sql) {
         // for complete sql queries we cannot compute the count
         return NULL;
       }
       // build the count query
-      $tablename = isset($table['name']) ? $table['name'] : '';
-      $append = isset($table['append']) ? $table['append'] : '';
+      $tablename = isset($table->name) ? (string) $table->name : '';
+      $append = isset($table->append) ? (string) $table->append : '';
       $sql = "SELECT COUNT(*) FROM `$tablename` $append";
     }
 
@@ -365,16 +368,16 @@ class WisskiODBCImportForm extends FormBase {
    */
   public static function storeTable($table, &$alreadySeen, $connection, $is_drupal_db, $offset = 0, $limit = 0) {
     $rowiter = 0;
-    $delimiter = isset($table['delimiter']) ? $table['delimiter'] : '';
-    $trim = isset($table['trim']) ? $table['trim'] : FALSE;  
+    $delimiter = isset($table['delimiter']) ? (string) $table['delimiter'] : '';
+    $trim = isset($table['trim']) ? (string) $table['trim'] : FALSE;  
   
-    $sql = isset($table['sql']) ? trim($table['sql']) : '';
+    $sql = isset($table->sql) ? trim((string) $table->sql) : '';
     // we introduce the special <sql> tag if you want to define a whole sql 
     // select query. This is more readable for more complex cases.
     if (empty($sql)) {
-      $tablename = isset($table['name']) ? $table['name'] : '';
-      $append = isset($table['append']) ? $table['append'] : '';
-      $select = isset($table['select']) ? $table['select'] : '';
+      $tablename = isset($table->name) ? (string) $table->name : '';
+      $append = isset($table->append) ? (string) $table->append : '';
+      $select = isset($table->select) ? (string) $table->select : '';
       if(empty($append))
         $append = "";
       $sql = "SELECT $select FROM `$tablename` $append";
@@ -405,7 +408,7 @@ class WisskiODBCImportForm extends FormBase {
     }
     // iterate thru the result and create entities for each result row
     while($is_drupal_db ? $row = $qry->fetchAssoc() : $row = mysqli_fetch_array($qry)) {
-      foreach($table['row'] as $XMLrow) {
+      foreach($table->row as $XMLrow) {
         $alreadySeen += self::storeRow($row, $XMLrow, $alreadySeen, $delimiter, $trim);
       }
       $rowiter++;
@@ -414,280 +417,266 @@ class WisskiODBCImportForm extends FormBase {
   }
 
   
-  public static function storeRow($row, $XMLrows, $alreadySeen, $delimiter, $trim) {
+  public static function storeRow($row, $XMLrow, $alreadySeen, $delimiter, $trim) {
     $i = 0;
     $entity_ids = [];
-    foreach($XMLrows as $key => $value) { 
-      $i = 0;
-      if($key == "bundle") {
-        while(isset($value[$i])) {
-          $bundleid = $value[$i . '_attr']['id'];
-          $entity_id = self::storeBundle($row, $value[$i], $bundleid, $delimiter, $trim);
-          if ($entity_id) {
-            $entity_ids[$entity_id] = $entity_id;
-          }
-          $i++;
-        }
+    foreach($XMLrow->bundle as $value) { 
+      $bundleid = (string) $value['id'];
+      $entity_id = self::storeBundle($row, $value, $bundleid, $delimiter, $trim);
+      if ($entity_id) {
+        $entity_ids[$entity_id] = $entity_id;
       }
+      $i++;
     }
     return $entity_ids;
   }
+  
+  
+  protected static function parseIdentificationCondition($cond) {
+    if (isset($cond['field'])  && isset($cond['column'])) {
+      $op = isset($cond['operator']) ? (string) $cond['operator'] : '=';
+      return [
+        'field' => (string) $cond['field'],
+        'op' => $op,
+        'value' => (string) $cond['column'],
+      ];
+    }
+    return NULL;
+  }
+  
 
+  protected static function checkUpdateMode($mode) {
+    $modes = ['new', 'replace', 'skip', 'take'];
+    return in_array($mode, $modes) ? $mode : NULL;
+  }
 
-  public static function storeBundle($row, $XMLrows, $bundleid, $delimiter, $trim) {
+  
+  /** Check whether there are update policies defined and which update policy
+   * holds. Policies are evaluated in document order.
+   *
+   * Mode 'new' is the default mode that corresponds to the former
+   * import behavior.
+   *
+   * @return array, where first item is the update mode, the second item is 
+   *         the matching entity and the third one is an array of further 
+   *         duplicates / matching entities. Second is null and third is empty
+   *         array if none are found.
+   */
+  protected static function evaluateUpdatePolicies($bundle_xml, $bundleid, $row_values) {
+    
+    // the default update behavior:
+    $mode = 'new';
+    $matching_eid = NULL;
+    $matching_eids = [];
 
-    $entity_fields = array();
-    $entity_fields["bundle"] = $bundleid;
-    $found_something = false;
-
-    foreach($XMLrows as $key => $value) {
-      $i = 0;
-        
-      if($key == "bundle") {
-        while(isset($value[$i])) {
-          // this could also be a field id of an entity reference
-          // so we have to check the target.
-          $localbundleid = $value[$i . '_attr']['id'];
-
-          // as the id attrib name only specifies the field id and the target 
-          // bundle is guessed, we provide more unambiguous attributes
-          // fieldId and bundleId that override the default id+autodetect
-          if (isset($value[$i . '_attr']['fieldId'])) {
-            $localbundleid = $value[$i . '_attr']['fieldId'];
+    // check if there are tags that override the update mode
+    foreach ($bundle_xml->update_policy as $update_policy_xml) {
+      // check if there are conditions to be met in order for this update policy
+      // to hold. These conditions are also used to identify the set of 
+      // entities that can be used for updating
+      if (isset($update_policy_xml->identification)) {
+        $ident_xml = $update_policy_xml->identification;
+        // prepare an entity query with the given conditions
+        $query = \Drupal::entityQuery('wisski_individual');
+        // set the bundle we search for
+        $query->condition('bundle', $bundleid, '=');
+        foreach ($ident_xml->condition as $condition_xml) {
+          if ($condition = self::parseIdentificationCondition($condition_xml)) {
+            $query->condition($condition['field'], $row_values[$condition['value']], $condition['op']);
           }
-          if (isset($value[$i . '_attr']['bundleId'])) {
-            $targetbundleid = $value[$i . '_attr']['bundleId'];
-          }
-          else {
-            // load the fieldconfig
-            $fc = FieldConfig::load('wisski_individual.' . $bundleid. '.' . $localbundleid);
-            // get the target bundle id of the field config
-            $targetbundleid = $fc->getSettings()['handler_settings']['target_bundles'];
-            $targetbundleid = current($targetbundleid);
-          }
-          
-          // create the referenced entity and set the reference
-          $ref_entity_id = self::storeBundle($row, $value[$i], $targetbundleid, $delimiter, $trim);
-          if ($ref_entity_id) {
-            $entity_fields[$localbundleid][] = $ref_entity_id;
-            $found_something = true;
-          }
-        
-          $i++;
+        }
+        // execute the entity query
+        $matching_eids = $query->execute();
+        // if multiple are found, take the first one (arbitrary!)
+        $matching_eid = array_shift($matching_eids);
+        // if there are no matches, this identification failed and we go to the 
+        // next update policy statement
+        if (!$matching_eid) {
+          continue; // next update_policy_xml
         }
       }
-    
-      if($key == "field") {
-        while(isset($value[$i])) {
-          $attrs = isset($value[$i . '_attr']) ? $value[$i . '_attr'] : array();
-          $fieldid = $attrs['id'];
-          $local_delimiter = isset($attrs['delimiter']) ? $attrs['delimiter'] : NULL;
-          $local_trim = isset($attrs['trim']) ? $attrs['trim'] : NULL;
-        
-          $field_row_id = $value[$i]["fieldname"];
-        
-          // if there is something set on the local delimiters override the global ones
-          // so the local ones can deactivate the global setting because isset 
-          // reacts just on NULL and empty later on reacts on everything.
-          $factual_delimiter = isset($local_delimiter) ? $local_delimiter : $delimiter;
-          $factual_trim = isset($local_trim) ? $local_trim : $trim;
-        
-          // if there is a delimiter set and we find it
-          if(!empty($factual_delimiter) && strpos($row[$field_row_id], $factual_delimiter)) {
-            // separate the parts
-            $field_row_array = explode($factual_delimiter, $row[$field_row_id]);
-          
-            // go through it, trim and add it.
-            foreach($field_row_array as $one_part) {
-              $entity_fields[$fieldid][] = ($trim) ? trim($one_part) : $one_part;
-            }
-        
-          // else - do the normal way, just trim and add.
-          } else {
-            $entity_fields[$fieldid][] = ($trim) ? trim($row[$field_row_id]) : $row[$field_row_id];
-          }
-        
-          // if we found something, we have to go on, otherwise we can skip later.
-          if(!empty($row[$field_row_id]))
-            $found_something = true;
+      
+      // all conditions passed the test. we can set the mode and stop looping
+      // over the update policies
+      $mode = isset($update_policy_xml['mode']) ? (string) $update_policy_xml['mode'] : '';
+      break;
 
-          $i++;
-        }
-      }  
+    }
+
+    if (!self::checkUpdateMode($mode)) {
+      drupal_set_message("Bad update mode: '%m'", ['%m' => $mode]);
+      // default mode, see above
+      $mode = 'new';
+    }
+
+    return [strtolower($mode), $matching_eid, $matching_eids];
+
+  }
+
+
+  public static function storeBundle($row, $bundle_xml, $bundleid, $delimiter, $trim) {
     
+    list($update_mode, $update_eid, $further_eids) = self::evaluateUpdatePolicies($bundle_xml, $bundleid, $row);
+    // $further_eids is not used currently
+    // What to do with it?
+    
+    if ($update_mode == self::UPDATE_MODE_TAKE && $update_eid) {
+      // the TAKE mode returns an existing entity as is or -- if not 
+      // existent -- creates a new one according to the import declaration.
+      // This is useful e.g. for cross-linking to entities created by previous
+      // rows using more complex disambiguation criteria or where normal WissKI
+      // disambiguation is cumbersome, e.g. when using entity reference fields.
+      return $update_eid;
+    }
+
+    if ($update_mode == self::UPDATE_MODE_SKIP && $update_eid) {
+      // the SKIP mode is like TAKE mode but instead of the entity ID it 
+      // returns NULL when there is a matching entity.
+      // This can be used for a top <bundle> tag instead of TAKE or to only 
+      // make entity references to new entities.
+      return NULL;
+    }
+
+    if ($update_mode == self::UPDATE_MODE_ONLY_EXISTING) {
+      // the ONLY_EXISTING mode returns the matching entity or NULL. It does
+      // not create new entities.
+      // This mode can be used if an entity reference should only be created if
+      // there is already a matching entity.
+      // Note that $update_eid is exactly what we want to return!
+      return $update_eid;
+    }
+    
+    if ($update_mode == self::UPDATE_MODE_NEW) {
+      // the NEW mode always creates a new entity regardless of whether we
+      // found a matching one.
+      // NEW mode acts like APPEND mode with no matching entity. Thus, we
+      // unset the matching entity ID and hijack APPEND
+      $update_eid = NULL;
+      $update_mode = self::UPDATE_MODE_APPEND;
+    }
+
+    // gather field values
+    // we have to distinguish normal field values and references
+    $entity_fields = array();
+    $field_modes = array();
+    $found_something = false;
+        
+    foreach ($bundle_xml->bundle as $sub_bundle_xml) {
+      // this could also be a field id of an entity reference
+      // so we have to check the target.
+      $fieldid = (string) $sub_bundle_xml['id'];
+      // as the id attrib name only specifies the field id and the target 
+      // bundle is guessed, we provide more unambiguous attributes
+      // fieldId and bundleId that override the default id+autodetect
+      if (isset($sub_bundle_xml['fieldId'])) {
+        $fieldid = (string) $sub_bundle_xml['fieldId'];
+      }
+      if (isset($sub_bundle_xml['bundleId'])) {
+        $targetbundleid = (string) $sub_bundle_xml['bundleId'];
+      }
+      else {
+        // load the fieldconfig
+        $fc = FieldConfig::load('wisski_individual.' . $bundleid. '.' . $fieldid);
+        // get the target bundle id of the field config
+        $targetbundleid = $fc->getSettings()['handler_settings']['target_bundles'];
+        $targetbundleid = current($targetbundleid);
+      }
+      
+      // cache the update mode
+      $field_modes[$fieldid] = 
+          isset($sub_bundle_xml['update_mode']) 
+          ? (string) $sub_bundle_xml['update_mode'] 
+          : $update_mode;
+
+      // create the referenced entity and set the reference
+      $ref_entity_id = self::storeBundle($row, $sub_bundle_xml, $targetbundleid, $delimiter, $trim);
+      if ($ref_entity_id) {
+        $entity_fields[$fieldid][] = $ref_entity_id;
+        $found_something = true;
+      }
+    }
+    
+    foreach ($bundle_xml->field as $field_xml) {
+      $fieldid = (string) $field_xml['id'];
+      $local_delimiter = isset($field_xml['delimiter']) ? (string) $field_xml['delimiter'] : NULL;
+      $local_trim = isset($field_xml['trim']) ? (string) $field_xml['trim'] : NULL;
+      // cache the update mode
+      $local_update_mode = isset($field_xml['update_mode']) ? (string) $field_xml['update_mode'] : $update_mode;
+      $field_modes[$fieldid] = $local_update_mode;
+      // the row column
+      $field_row_id = (string) $field_xml->fieldname;
+      // if there is something set on the local delimiters override the global ones
+      // so the local ones can deactivate the global setting because isset 
+      // reacts just on NULL and empty later on reacts on everything.
+      $factual_delimiter = isset($local_delimiter) ? $local_delimiter : $delimiter;
+      $factual_trim = isset($local_trim) ? $local_trim : $trim;
+      // if there is a delimiter set and we find it
+      if(!empty($factual_delimiter) && strpos($row[$field_row_id], $factual_delimiter)) {
+        // separate the parts
+        $field_row_array = explode($factual_delimiter, $row[$field_row_id]);
+      
+        // go through it, trim and add it.
+        foreach($field_row_array as $one_part) {
+          $entity_fields[$fieldid][] = ($trim) ? trim($one_part) : $one_part;
+        }
+      // else - do the normal way, just trim and add.
+      } else {
+        $entity_fields[$fieldid][] = ($trim) ? trim($row[$field_row_id]) : $row[$field_row_id];
+      }
+      // if we found something, we have to go on, otherwise we can skip later.
+      if(!empty($row[$field_row_id]))
+        $found_something = true;
     }
 
     // if absolutely nothing was stored - don't create an entity, as it will only
     // take time and produce nothing
-    if(!$found_something)
-      return;
+    if(!$found_something) {
+      return $update_eid;
+    }
 
-    // generate entity
-    $entity = entity_create('wisski_individual', $entity_fields);
-    $entity->save();
-  
-    // return the id
-    return $entity->id();
+    if ($update_eid == NULL) {
+      // there is nothing to update so we just create a new entity
+      // and return its ID.
+      // we have to set the bundle manually
+      $entity_fields["bundle"] = $bundleid;
+      $entity = entity_create('wisski_individual', $entity_fields);
+      if ($entity) {
+        $entity->save();
+      }
+      return $entity->id();
+    }
+
+    $entity = entity_load('wisski_individual', $update_eid);
+    if ($entity) {
+      self::updateEntityFields($entity, $entity_fields, $field_modes);
+      $entity->save();
+      return $entity->id();
+    }
+    // should only happen if entity loading fails
+    return NULL;
+  }
+
+
+  protected static function updateEntityFields($entity, $fields, $field_modes) {
+    foreach ($fields as $name => $values) {
+      $values = (array) $values;
+      // @var $fil \Drupal\Core\Field\FieldItemListInterface
+      $fil = $entity->get($name);
+      $mode = $field_modes[$name];
+      if ($mode == self::UPDATE_MODE_SKIP && !$fil->isEmpty()) {
+        // we do not add anything if there is something
+        continue;
+      }
+      if ($mode == self::UPDATE_MODE_REPLACE) {
+        // delete all the existing values
+        while (!$fil->isEmpty()) {
+          $fil->removeItem(0);
+        }
+      }
+      foreach ($values as $value) {
+        $fil->appendItem($value);
+      }
+    }
   }
   
-
-  /**
-   * Helper function to parse the import script
-   * TODO: replace with DOMDocument or SimpleXML as this is a bit buggy
-   */
-  protected function xml2array($url, $get_attributes = 1, $priority = 'tag') {
-    $contents = "";
-    if (!function_exists('xml_parser_create'))
-    {
-        return array ();
-    }
-    $parser = xml_parser_create('');
-    if (!($fp = @ fopen($url, 'rb')))
-    {
-        return array ();
-    }
-    while (!feof($fp))
-    {
-        $contents .= fread($fp, 8192);
-    }
-    fclose($fp);
-    xml_parser_set_option($parser, XML_OPTION_TARGET_ENCODING, "UTF-8");
-    xml_parser_set_option($parser, XML_OPTION_CASE_FOLDING, 0);
-    xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE, 1);
-    xml_parse_into_struct($parser, trim($contents), $xml_values);
-    xml_parser_free($parser);
-    if (!$xml_values)
-        return; //Hmm...
-    $xml_array = array ();
-    $parents = array ();
-    $opened_tags = array ();
-    $arr = array ();
-    $current = & $xml_array;
-    $repeated_tag_index = array ();
-    //drupal_set_message(serialize($xml_values));
-    foreach ($xml_values as $data)
-    {
-        unset ($attributes, $value);
-        extract($data);
-        $result = array ();
-        $attributes_data = array ();
-        if (isset ($value))
-        {
-            if ($priority == 'tag')
-                $result = $value;
-            else
-                $result['value'] = $value;
-        }
-        if (isset ($attributes) and $get_attributes)
-        {
-            foreach ($attributes as $attr => $val)
-            {
-                if ($priority == 'tag')
-                    $attributes_data[$attr] = $val;
-                else
-                    $result['attr'][$attr] = $val; //Set all the attributes in a array called 'attr'
-            }
-        }
-        if ($type == "open")
-        {
-            $parent[$level -1] = & $current;
-            
-            if (!is_array($current) or (!in_array($tag, array_keys($current))))
-            {
-/*
-                $current[$tag] = $result;
-                if ($attributes_data)
-                    $current[$tag . '_attr'] = $attributes_data;
-                $repeated_tag_index[$tag . '_' . $level] = 1;
-                $current = & $current[$tag];
-*/
-//              drupal_set_message(serialize($current));
-//              drupal_set_message(serialize($tag));
-              
-              $current[$tag][0] = $result;
-              $repeated_tag_index[$tag . '_' . $level] = 1;
-              if ($attributes_data)
-                $current[$tag]['0_attr'] = $attributes_data;
-              $last_item_index = $repeated_tag_index[$tag . '_' . $level] - 1;
-              $current = & $current[$tag][$last_item_index];
-                                              
-            }
-            else
-            {
-                if (isset ($current[$tag][0]))
-                {
-                    $current[$tag][$repeated_tag_index[$tag . '_' . $level]] = $result;
-                    $current[$tag][$repeated_tag_index[$tag . '_' . $level] . '_attr'] = $attributes_data;
-                    $repeated_tag_index[$tag . '_' . $level]++;
-                }
-                else
-                {
-                    $current[$tag] = array (
-                        $current[$tag],
-                        $result
-                    );
-                    $repeated_tag_index[$tag . '_' . $level] = 2;
-                    if (isset ($current[$tag . '_attr']))
-                    {
-                        $current[$tag]['0_attr'] = $current[$tag . '_attr'];
-                        unset ($current[$tag . '_attr']);
-                    }
-                }
-                $last_item_index = $repeated_tag_index[$tag . '_' . $level] - 1;
-                $current = & $current[$tag][$last_item_index];
-            }
-        }
-        elseif ($type == "complete")
-        {
-            if (!isset ($current[$tag]))
-            {
-                $current[$tag] = $result;
-                $repeated_tag_index[$tag . '_' . $level] = 1;
-                if ($priority == 'tag' and $attributes_data)
-                    $current[$tag . '_attr'] = $attributes_data;
-            }
-            else
-            {
-                if (isset ($current[$tag][0]) and is_array($current[$tag]))
-                {
-                    $current[$tag][$repeated_tag_index[$tag . '_' . $level]] = $result;
-                    if ($priority == 'tag' and $get_attributes and $attributes_data)
-                    {
-                        $current[$tag][$repeated_tag_index[$tag . '_' . $level] . '_attr'] = $attributes_data;
-                    }
-                    $repeated_tag_index[$tag . '_' . $level]++;
-                }
-                else
-                {
-                    $current[$tag] = array (
-                        $current[$tag],
-                        $result
-                    );
-                    $repeated_tag_index[$tag . '_' . $level] = 1;
-                    if ($priority == 'tag' and $get_attributes)
-                    {
-                        if (isset ($current[$tag . '_attr']))
-                        {
-//                            drupal_set_message(serialize($current));
-//                            drupal_set_message(serialize($tag));
-                            $current[$tag]['0_attr'] = $current[$tag . '_attr'];
-                            unset ($current[$tag . '_attr']);
-                        }
-                        if ($attributes_data)
-                        {
-                            $current[$tag][$repeated_tag_index[$tag . '_' . $level] . '_attr'] = $attributes_data;
-                        }
-                    }
-                    $repeated_tag_index[$tag . '_' . $level]++; //0 and 1 index is already taken
-                }
-            }
-        }
-        elseif ($type == 'close')
-        {
-            $current = & $parent[$level -1];
-        }
-    }
-    return ($xml_array);
-  }
-             
 }                                                                                                                                                                                                                                                                          
