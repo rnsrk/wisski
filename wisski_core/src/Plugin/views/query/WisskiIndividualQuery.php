@@ -524,22 +524,27 @@ wisski_tick("end exec views");
 #                dpm(microtime(), "before");
                 $result = $engine->directQuery($select);
 
-#                dpm([$select, $result], 'select' . $path->getID());
+#               dpm([$select, $result], 'select' . $path->getID());
 
 #                dpm(microtime(), "after");
                 foreach ($result as $sparql_row) {
                   if (isset($uris_to_eids[$sparql_row->x0->getUri()])) {
 #                    dpm($uris_to_eids[$sparql_row->x0->getUri()], $sparql_row->x0->getUri());
                     $eid = $uris_to_eids[$sparql_row->x0->getUri()];
-                    if (!isset($sparql_row->$out_prop) || $sparql_row->$out_prop === NULL) {
+#                    dpm($eid, "eid!!");
+#                    dpm($is_reference, "is ref");
+                    if (!$is_reference && (!isset($sparql_row->$out_prop) || $sparql_row->$out_prop === NULL)) {
                       \Drupal::logger('WissKI views')->warning("invalid reference slot {s} for path {pid}", ['s' => $out_prop, 'pid' => $path->getID()]);
                     }
                     elseif ($is_reference) {
-
-                      $referenced_uri = $sparql_row->$out_prop->getUri();
+#                      dpm($disamb, "yuhu!");
+                      $referenced_uri = $sparql_row->$disamb->getUri();
+#                      dpm($referenced_uri);
                       $referenced_eid = AdapterHelper::getDrupalIdForUri($referenced_uri);
+#                      dpm($referenced_eid);
                       $referenced_title = wisski_core_generate_title($referenced_eid);
-                      $values_per_row[$eid][$field][] = $referenced_title;
+#                      dpm($referenced_title);
+                      $values_per_row[$eid][$field][] = array('value' => $referenced_title, 'target_id' => $referenced_eid, 'wisskiDisamb' => $referenced_uri);
                       #$values_per_row[$eid][$field][] = $referenced_eid;
                     }
                     else {
@@ -548,6 +553,7 @@ wisski_tick("end exec views");
                       else
                         $values_per_row[$eid][$field][] = $sparql_row->$out_prop->getValue();
                     }
+#                    dpm($values_per_row[$eid]);
                   }
                 }
 #if ($field == 'wisski_path_sammlungsobjekt__91') rpm([$path, $result, $values_per_row], '91');

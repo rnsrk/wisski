@@ -152,14 +152,48 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
 
     $p = new \Drupal\Core\Menu\MenuTreeParameters();
     $p->addCondition('title', $entity->label(), '=');
-    $p->addCondition('id', "%" . $entity->id(), 'LIKE');
+#    $p->addCondition('id', "%" . $entity->id() . "%", 'LIKE');
 
     $menu_tree_data = \Drupal::service('menu.link_tree')->load('navigate', $p);
-        
+ 
+# dpm($menu_tree_data, "yay!");
+ 
+    foreach($menu_tree_data as $key => $one_ob) {
+      #dpm($one_ob->link->getRouteParameters(), "yasa");
+      
+      $link = $one_ob->link;
+      
+      if(empty($link))
+        return;
+      
+      $rpm = $link->getRouteParameters();
+      
+      // either for bundles
+      // there are route parameters and there is a route parameter wisski_bundle
+      if($rpm && $rpm['wisski_bundle'] && $rpm['wisski_bundle'] != $entity->id()) {
+        unset($menu_tree_data[$key]);
+        continue;
+      }
+
+      // or the above did not hold
+      // so we are in views-mode
+      if($link && !$rpm && strpos($link->getPluginId(), $entity->id()) === FALSE) {
+        unset($menu_tree_data[$key]);  
+        continue;
+      }    
+    }       
+
+    if(empty($menu_tree_data))
+      return;
+
     $menu_tree_data = current($menu_tree_data);
+    
     $entities = $menu_tree_data->link;
 
 #    dpm($menu_tree_data, "yay!");
+
+    if(empty($entities))
+      return;
         
     $row['label'] = array(
       'data' => array(

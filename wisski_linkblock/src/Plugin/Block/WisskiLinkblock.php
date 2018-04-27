@@ -104,7 +104,10 @@ class WisskiLinkblock extends BlockBase {
 #  dpm($config);
 
     // check if we ask for multiple pbs and multiple adapters.
-    $multimode = $config['multi_pb'];
+    if(isset($config['multi_pb']))
+      $multimode = $config['multi_pb'];
+    else
+      $multimode = FALSE;
 
     $out = array();
 
@@ -117,9 +120,12 @@ class WisskiLinkblock extends BlockBase {
     if(empty($individualid)) {
       return $out;
     }
-        
-    $linkblockpbid = $config['pathbuilder'];
     
+    if(isset($config['pathbuilder']))
+      $linkblockpbid = $config['pathbuilder'];
+    else
+      $linkblockpbid = NULL;
+      
     if(empty($linkblockpbid)) {
       drupal_set_message("No Pathbuilder is specified for Linkblock.", "error");
       return $out;
@@ -267,6 +273,8 @@ class WisskiLinkblock extends BlockBase {
           } else {
             $bundle = current($bundles);
           }
+
+#          dpm($data);
           
           // hack if really no bundle was supplied... should never be called!
           if(empty($bundle)) {
@@ -276,14 +284,30 @@ class WisskiLinkblock extends BlockBase {
 #          dpm($entity);
           $url = 'wisski/navigate/' . $entity_id . '/view';
 #          dpm($bundle);
-          $out[] = array(
-            '#type' => 'link',
-#            '#title' => $data['target_id'],
-            '#title' => wisski_core_generate_title($entity_id, FALSE, $bundle),
-            '#url' => Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity_id]), 
-            //Url::fromUri('internal:/' . $url . '?wisski_bundle=' . $bundle),
-          );
-          $out[] = [ '#markup' => '</br>' ];
+
+          // special handling for paths with datatypes - use the value from there for reference
+          // if you don't want this - use disamb directly!
+          if($path->getDatatypeProperty() != "empty") {
+          
+            $out[] = array(
+              '#type' => 'link',
+#  	          '#title' => $data['target_id'],
+              '#title' => $data['target_id'], //wisski_core_generate_title($entity_id, FALSE, $bundle),
+              '#url' => Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity_id]), 
+            );
+            $out[] = [ '#markup' => '</br>' ];
+
+          } else {
+
+            $out[] = array(
+              '#type' => 'link',
+#  	          '#title' => $data['target_id'],
+              '#title' => wisski_core_generate_title($entity_id, FALSE, $bundle),
+              '#url' => Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity_id]), 
+              //Url::fromUri('internal:/' . $url . '?wisski_bundle=' . $bundle),
+            );
+            $out[] = [ '#markup' => '</br>' ];
+          }
         } else {
           $out[] = array(
             '#type' => 'item',

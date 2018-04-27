@@ -157,8 +157,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   public function generateEntityTitle($entity_id,$include_bundle=FALSE,$force_new=FALSE) {
     $pattern = $this->getTitlePattern();
-#    drupal_set_message(serialize($pattern));
-#    drupal_set_message("generated: " . $this->applyTitlePattern($pattern,$entity_id));
+    #drupal_set_message(serialize($pattern));
+    #drupal_set_message("generated: " . $this->applyTitlePattern($pattern,$entity_id));
+#    dpm([$pattern, $entity_id], "eid!");
     if (!$force_new) {
       $title = $this->getCachedTitle($entity_id);
       if (isset($title)) {
@@ -170,6 +171,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         return $title;
       }
     }
+    
+#    dpm([$pattern, $entity_id], "eid!");
     
     $pattern = $this->getTitlePattern();
     
@@ -353,11 +356,15 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             // get the data from the pathbuilder
             
             // in case of entity_reference which is not a group, be absolute!
-            if($pbpath['fieldtype'] == "entity_reference" && $pbpath['bundle'] != $pbpath['field'])
-              $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", FALSE);
-            else
+            if($pbpath['fieldtype'] == "entity_reference" && $pbpath['bundle'] != $pbpath['field']) {
+              // in case of entity reference this may not be absolute... I don't know why it was
+              // use case: Edit form with some sub-value field and there is an entity reference in it. 
+              // Then we may not do this here. Example is divination historische einordnung
               $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", TRUE);
-
+            } else {
+              $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", TRUE);
+            }
+#            dpm($pbpath, "pbp");
 #            dpm($tmp, "tmp");
 #            dpm($path, "path");
 #            dpm($pb, "pb");
@@ -420,6 +427,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, count($group->getPathArray())-1, NULL, FALSE); 
             } else // if not they are relative.
               $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, TRUE);
+            
+#            dpm($new_values, "new values");
             if (WISSKI_DEVEL) \Drupal::logger($pb_id.' '.$path_id.' '.__FUNCTION__)->debug('Entity '.$eid."{out}",array('out'=>serialize($new_values)));
           }
         }  
