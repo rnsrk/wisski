@@ -96,9 +96,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           ->condition('bid',$values[$id]['bundle'])
 #          ->condition('fid',$field_name)
           ->execute()
-#          ->fetchAll();
-          ->fetchAllAssoc('fid');
-
+          ->fetchAll();
+#          ->fetchAllAssoc('fid');
+// fetchAllAssoc('fid') is wrong here because
+// if you have duplicateable fields it will fail!
 #        dpm($cached_field_values, "argh");                          
 
         $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($values[$id]['bundle']);
