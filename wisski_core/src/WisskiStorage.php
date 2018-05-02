@@ -205,6 +205,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     // if it is not NULL we have a sub-form    
     $mainentityid = key($this->entities);
 
+#    dpm($mainentityid);
+
 #    drupal_set_message("key is: " . serialize($mainentityid));
 
     // this is an array of the known entities.
@@ -235,21 +237,35 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     $info = array();
     // for every id
     foreach($ids as $id) {
+#      dpm($mainentityid, "main");
+#      dpm($id, "id");
 #      dpm(microtime(), "in3");
       //make sure the entity knows its ID at least
       $info[$id]['eid'] = $id;
       
       //see if we got bundle information cached. Useful for entity reference and more      
       $overall_bundle_ids = array();
-      $cached_bundle = WisskiCacheHelper::getCallingBundle($id);
+
+      // by mark:
+      // in case of a main form always use the uri-parameter if provided
+      // this is always better than trying something else!
+      if( empty($mainentityid) && !empty($bundle_from_uri) ) {
+#        $cached_bundle = WisskiCacheHelper::getCallingBundle($id);
+#        dpm($id . " " . serialize($bundle_ids) . " and " . serialize($cached_bundle));
+        $cached_bundle = $bundle_from_uri;
+        
+        $this->writeToCache($id, $cached_bundle);
+      } else {
+        $cached_bundle = WisskiCacheHelper::getCallingBundle($id);
 #      drupal_set_message($id . " " . serialize($bundle_ids) . " and " . serialize($cached_bundle));      
-      // only use that if it is a top bundle when the checkbox was set. Always use it otherwise.
-      if ($cached_bundle) {
-        if($only_use_topbundles && empty($mainentityid) && !in_array($cached_bundle, $topBundles))
-          $cached_bundle = NULL;
-        else
-          $info[$id]['bundle'] = $cached_bundle;
+        // only use that if it is a top bundle when the checkbox was set. Always use it otherwise.
+        if ($cached_bundle) {
+          if($only_use_topbundles && empty($mainentityid) && !in_array($cached_bundle, $topBundles))
+            $cached_bundle = NULL;
+          else
+            $info[$id]['bundle'] = $cached_bundle;
         #dpm($cached_bundle, "cb");
+        }
       }
 #      drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
 #      dpm(microtime(), "in4");
@@ -296,6 +312,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             }*/
           }
 #          dpm($bundle_ids, "bids");
+#          dpm($overall_bundle_ids, "obids");
           $overall_bundle_ids = array_merge($overall_bundle_ids, $bundle_ids);
 
           $bundle_ids = array_slice($bundle_ids,0,1); // HACK! (randomly takes the first one
@@ -309,7 +326,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             }
             
             // do this here because if we only use main bundles we need to store this for the title
-            $this->writeToCache($id, $bundleid);
+            if($cached_bundle != $bundleid);
+              $this->writeToCache($id, $bundleid);
 #            dpm($bundleid, "bid1");
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
             #dpm($field_definitions, "yay");
