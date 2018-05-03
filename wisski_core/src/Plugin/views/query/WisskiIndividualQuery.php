@@ -332,31 +332,47 @@ wisski_tick("end exec views");
     
 #rpm($this->fields, "fields");
 #    dpm(microtime(), "before load");
+    // Mark: this mechanism seems to be rather slow and it is overpacing
+    // for many systems.
+    // so we make it smaller here... we don't simply load everything
+    // but we try to create the entity in the end and throw it away again.
+/*
     $ids_to_load = array();
     if (isset($fields['_entity'])) {
       foreach ($values_per_row as &$row) {
         $ids_to_load[] = $row['eid'];
-#        $row['_entity'] = entity_load('wisski_individual', $row['eid']);
+        $row['_entity'] = entity_load('wisski_individual', $row['eid']);
+        dpm(serialize($row['_entity']), "entity");
       }
     }
     
+
     $loaded_ids = entity_load_multiple('wisski_individual', $ids_to_load);
 #    dpm(serialize($ids_to_load));
 #    dpm(serialize(entity_load(437)));
 #    dpm(serialize($loaded_ids));
     if (isset($fields['_entity'])) {
       foreach ($values_per_row as &$row) {
+#        dpm($row);
+#        $row['_entity'] = entity_load('wisski_individual', $row['eid']);;
+#        $bid = reset($bundle_ids);
+#        $row['_entity'] = entity_create('wisski_individual', array('eid' => $row['eid'], 'bundle' => $bid));
+#        dpm($row['_entity'], "ent");
         $row['_entity'] = $loaded_ids[$row['eid']];
       }
     }
+    */
 #    dpm(serialize($values_per_row));
 
 #    dpm($row, "row");
+    
+    $do_dummy_load = $fields['_entity'];
     
 #    dpm(microtime(), "after load");
     
     unset($fields['eid']);
     unset($fields['_entity']);
+    
 
     while (($field = array_shift($fields)) !== NULL) {
 #      dpm(microtime(), "beginning one thing");
@@ -366,8 +382,12 @@ wisski_tick("end exec views");
           $bid = reset($bundle_ids);
         else
           $bid = NULL;
-
+        
         foreach ($values_per_row as $eid => &$row) {
+
+          if(empty($row['bundle']))
+            $row['bundle'] = $bid;
+
           $row['title'] = wisski_core_generate_title($eid, FALSE, $bid);
         }
         
@@ -390,7 +410,11 @@ wisski_tick("end exec views");
           } else { // take the ones we have before.
             $bids = $bundle_ids;
           }
+
           $bid = reset($bids);
+          if(empty($row['bundle']))
+            $row['bundle'] = $bid;
+
 #          dpm(microtime(), "br");          
           $preview_image_uri = \Drupal::entityTypeManager()->getStorage('wisski_individual')->getPreviewImageUri($eid,$bid);
           
@@ -531,6 +555,10 @@ wisski_tick("end exec views");
                   if (isset($uris_to_eids[$sparql_row->x0->getUri()])) {
 #                    dpm($uris_to_eids[$sparql_row->x0->getUri()], $sparql_row->x0->getUri());
                     $eid = $uris_to_eids[$sparql_row->x0->getUri()];
+                    
+                    $pbp = $pb->getPbPath($path->getID());
+                    $realfield = $pbp['field'];
+#                    dpm($pbp, "realfield!");
 #                    dpm($eid, "eid!!");
 #                    dpm($is_reference, "is ref");
                     if (!$is_reference && (!isset($sparql_row->$out_prop) || $sparql_row->$out_prop === NULL)) {
@@ -545,13 +573,18 @@ wisski_tick("end exec views");
                       $referenced_title = wisski_core_generate_title($referenced_eid);
 #                      dpm($referenced_title);
                       $values_per_row[$eid][$field][] = array('value' => $referenced_title, 'target_id' => $referenced_eid, 'wisskiDisamb' => $referenced_uri);
+                      // duplicate the information to the field for the entity-management
+                      $values_per_row[$eid][$realfield][] = array('value' => $referenced_title, 'target_id' => $referenced_eid, 'wisskiDisamb' => $referenced_uri);
                       #$values_per_row[$eid][$field][] = $referenced_eid;
                     }
                     else {
-                      if(!empty($disamb))
+                      if(!empty($disamb)) {
                         $values_per_row[$eid][$field][] = array('value' => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
-                      else
+                        $values_per_row[$eid][$realfield][] = array('value' => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+                      } else {
                         $values_per_row[$eid][$field][] = $sparql_row->$out_prop->getValue();
+                        $values_per_row[$eid][$realfield][] = $sparql_row->$out_prop->getValue();
+                      }
                     }
 #                    dpm($values_per_row[$eid]);
                   }
@@ -568,6 +601,20 @@ wisski_tick("end exec views");
     }
 #    dpm(serialize($values_per_row[437]));
 #    dpm(microtime(), "end of ...");    
+
+    if ($do_dummy_load) {
+      foreach ($values_per_row as &$row) {
+#        dpm($row);
+#        $row['_entity'] = entity_load('wisski_individual', $row['eid']);;
+#        $bid = reset($bundle_ids);
+#        $tmp = entity_create('wisski_individual', $row);
+        $row['_entity'] = entity_create('wisski_individual', $row);
+#        dpm($row, "row");
+#        dpm(serialize($row['_entity']), "ent");
+#        $row['_entity'] = $loaded_ids[$row['eid']];
+      }
+    }
+#    dpm(microtime(), "after end of ...");
 
     return array_values($values_per_row);
 
