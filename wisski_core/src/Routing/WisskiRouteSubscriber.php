@@ -41,7 +41,7 @@ class WisskiRouteSubscriber extends RouteSubscriberBase {
         $collection->add($key,$routes[$key]);      
       }
       $req = $route->getRequirement('_permission');
-      $route->setRequirement('_permission',$req.',view wisski content');
+      $route->setRequirement('_permission',$req.',access find');
     }
   }
 }
