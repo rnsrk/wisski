@@ -118,7 +118,7 @@ class WisskiEntityAccessHandler extends EntityAccessControlHandler {
     }
     
     // if the user may view any content or he/she may view the whole bundle - exit here.
-    if($account->hasPermission('create any wisski content') || $account->hasPermission('create ' . $entity->bundle() . ' WisskiBundle')) {
+    if($account->hasPermission('create any wisski content') || $account->hasPermission('create ' . $entity_bundle . ' WisskiBundle')) {
       $result = AccessResult::allowed()->cachePerPermissions();
       return $result;
     }
