@@ -687,7 +687,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       'position' => 0,
       'display_options' => array(
         'access' => array('type' => 'perm', 'options' => array( 'perm' => 'view any wisski content') ),
-        'cache' => FALSE, #array('type' => 'tag', 'options' => array() ),
+        'cache' => array(), #array('type' => 'tag', 'options' => array() ),
         'query' => array('type' => 'views_query', 'options' => array() ),
         'exposed_form' => array('type' => 'basic', 'options' => array(
           'submit_button' => 'Apply',
