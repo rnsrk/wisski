@@ -357,6 +357,7 @@ class WisskiEntitySearch extends SearchPluginBase {
     $form['actions']['export'] = array(
       '#name' => 'excel_export',
       '#type' => 'image_button',
+      '#title' => 'Export to Excel',
       '#src' => drupal_get_path('module', 'wisski_core') . "/images/export_excel.png",
       '#attributes' => [ 'alt' => t('Export to Excel'), ],
       '#op' => 'wisski_excel_export',
