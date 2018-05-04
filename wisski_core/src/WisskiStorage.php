@@ -60,27 +60,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
   private $tableMapping = NULL;
 
-  /**
-   * {@inheritdoc}
-   */
-  protected function doLoadMultiple(array $ids = NULL) {
-#    dpm("yay, I do loadmultiple!");
-#   dpm(microtime(), "first!");
-  //dpm($ids,__METHOD__);
-    $entities = array();
-
-    // this loads everything from the triplestore
-    $values = $this->getEntityInfo($ids);
+  public function addCacheValues($ids, $values) {
+#    dpm($ids, "ids");
 #    dpm($values, "values");
-#    dpm(microtime(), "after load");
-    $pb_cache = array();
-    
-    $moduleHandler = \Drupal::service('module_handler');
-    if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
-      return NULL;
-    }
-                      
-
     // add the values from the cache
     foreach ($ids as $id) {
       
@@ -186,7 +168,137 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         }
       }
     }
+    return $entities;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function doLoadMultiple(array $ids = NULL) {
+#    dpm("yay, I do loadmultiple!");
+#   dpm(microtime(), "first!");
+  //dpm($ids,__METHOD__);
+    $entities = array();
+
+    // this loads everything from the triplestore
+    $values = $this->getEntityInfo($ids);
+#    dpm($values, "values");
+#    dpm(microtime(), "after load");
+    $pb_cache = array();
     
+    $moduleHandler = \Drupal::service('module_handler');
+    if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
+      return NULL;
+    }
+                      
+/*
+    // add the values from the cache
+    foreach ($ids as $id) {
+      
+      //@TODO combine this with getEntityInfo
+      if (!empty($values[$id])) {
+#ddl($values, 'values');
+        if (!isset($values[$id]['bundle'])) continue;
+
+        // load the cache
+        $cached_field_values = db_select('wisski_entity_field_properties','f')
+          ->fields('f',array('fid', 'ident','delta','properties'))
+          ->condition('eid',$id)
+          ->condition('bid',$values[$id]['bundle'])
+#          ->condition('fid',$field_name)
+          ->execute()
+          ->fetchAll();
+#          ->fetchAllAssoc('fid');
+// fetchAllAssoc('fid') is wrong here because
+// if you have duplicateable fields it will fail!
+#        dpm($cached_field_values, "argh");                          
+
+        $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($values[$id]['bundle']);
+
+        foreach($cached_field_values as $key => $cached_field_value) {
+          $field_id = $cached_field_value->fid;
+          
+#          if($field_id == 'b1abe31d92a85c73f932db318068d0d5')
+#            drupal_set_message(serialize($cached_field_value));
+#          dpm($cached_field_value->properties, "sdasdf");
+#          dpm($values[$id][$field_id], "is set to");
+#          dpm(serialize(isset($values[$id][$field_id])), "magic");
+          
+          // empty here might make problems
+          // if we loaded something from TS we can skip the cache.
+          // By Mark: Unfortunatelly this is not true. There is a rare case
+          // that there is additional information, e.g. in files.
+          if( isset($values[$id][$field_id]) ) {
+            $cached_value = unserialize($cached_field_value->properties);
+            $delta = $cached_field_value->delta;
+
+            // if we really have information, merge that!
+            if(isset($values[$id][$field_id][$delta]) && is_array($values[$id][$field_id][$delta]) && !empty($cached_value))
+              $values[$id][$field_id][$delta] = array_merge($cached_value, $values[$id][$field_id][$delta]); #, $cached_value);
+
+            continue;
+          }
+            
+          // if we didn't load something, we might need the cache.
+          // however not if the TS is the normative thing and has no data for this.
+#          $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($values[$id]['bundle']);
+#          dpm($pbs_info);
+          
+          $continue = FALSE;
+          // iterate through all infos
+          foreach($pbs_info as $pb_info) {
+            
+            // lazy-load the pb
+            if(empty($pb_cache[$pb_info['pb_id']]))
+              $pb_cache[$pb_info['pb_id']] = WisskiPathbuilderEntity::load($pb_info['pb_id']);
+            $pb = $pb_cache[$pb_info['pb_id']];
+                        
+            if(!empty($pb->getPbEntriesForFid($field_id))) {
+#              drupal_set_message("I found something for $field_id");
+              // if we have a field in any pathbuilder matching this
+              // we continue.
+              $continue = TRUE;
+              break;
+            }
+          }
+          
+          // do it
+          if($continue)
+            continue;
+          
+                  
+#          dpm($cached_field_value->properties, "I am alive!");
+
+          $cached_value = unserialize($cached_field_value->properties);
+          
+          if(empty($cached_value))
+            continue;
+
+          // now it should be save to set this value
+#          if(!empty($values[$id][$field_id]))
+#            $values[$id][$field_id] = 
+#          else
+#          dpm($cached_value, "loaded from cache.");
+          $values[$id][$field_id] = $cached_value;
+        }
+        
+#        dpm($values, "values after");
+             
+        try {
+#        dpm("yay!");
+#          dpm(serialize($values[$id]));
+          $entity = $this->create($values[$id]);
+#          dpm(serialize($entity), "yay!");
+          $entity->enforceIsNew(FALSE);
+          $entities[$id] = $entity;
+#          dpm($entities);
+        } catch (\Exception $e) {
+          drupal_set_message("An error occured: " . $e->getMessage(), "error");
+        }
+      }
+    }
+*/
+    $entities = $this->addCacheValues($ids, $values);    
 #    dpm(microtime(), "last!");
 #    dpm(array('in'=>$ids,'out'=>$entities),__METHOD__);
     return $entities;

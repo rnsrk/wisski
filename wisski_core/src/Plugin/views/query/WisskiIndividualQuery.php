@@ -336,17 +336,19 @@ wisski_tick("end exec views");
     // for many systems.
     // so we make it smaller here... we don't simply load everything
     // but we try to create the entity in the end and throw it away again.
+    // the storage already does this anway...
+
+#    $ids_to_load = array();
 /*
-    $ids_to_load = array();
     if (isset($fields['_entity'])) {
       foreach ($values_per_row as &$row) {
-        $ids_to_load[] = $row['eid'];
+#        $ids_to_load[] = $row['eid'];
         $row['_entity'] = entity_load('wisski_individual', $row['eid']);
-        dpm(serialize($row['_entity']), "entity");
+ #       dpm(serialize($row['_entity']), "entity");
       }
     }
-    
-
+*/  
+/*
     $loaded_ids = entity_load_multiple('wisski_individual', $ids_to_load);
 #    dpm(serialize($ids_to_load));
 #    dpm(serialize(entity_load(437)));
@@ -372,6 +374,9 @@ wisski_tick("end exec views");
     
     unset($fields['eid']);
     unset($fields['_entity']);
+  
+    $pb_cache = array();
+    $path_cache = array();
     
 
     while (($field = array_shift($fields)) !== NULL) {
@@ -445,6 +450,7 @@ wisski_tick("end exec views");
 #        dpm(microtime(), "after bundles");
       }
       elseif (strpos($field, "wisski_path_") === 0 && strpos($field, "__") !== FALSE) {
+        
         // the if is rather a hack but currently I have no idea how to access
         // the field information wisski_field from WisskiEntityViewsData.
         
@@ -459,9 +465,20 @@ wisski_tick("end exec views");
             return NULL;
           }
                             
-        
-          $pb = entity_load('wisski_pathbuilder', $pb_and_path[0]);
-          $path = entity_load('wisski_path', $pb_and_path[1]);
+          if(isset($pb_cache[$pb_and_path[0]]))
+            $pb = $pb_cache[$pb_and_path[0]];
+          else
+            $pb = entity_load('wisski_pathbuilder', $pb_and_path[0]);
+          
+          $pb_cache[$pb_and_path[0]] = $pb;
+            
+          if(isset($path_cache[$pb_and_path[1]]))
+            $path = $path_cache[$pb_and_path[1]];
+          else
+            $path = entity_load('wisski_path', $pb_and_path[1]);
+ 
+          $path_cache[$pb_and_path[1]] = $path;
+            
           if (!$pb) {
             drupal_set_message("Bad pathbuilder id for Wisski views: $pb_and_path[0]", 'error');
           }
@@ -469,6 +486,46 @@ wisski_tick("end exec views");
             drupal_set_message("Bad path id for Wisski views: $pb_and_path[1]", 'error');
           }
           else {
+          
+            $pbp = $pb->getPbPath($path->getID());
+            $field_to_check = $pbp['field'];
+            
+            $first_row = current($values_per_row);
+            
+          
+#            dpm($values_per_row[$eid]['bundle']);
+            $field_def = \Drupal::service('entity_field.manager')->getFieldMap();#->getFieldDefinitions('wisski_individual',$values_per_row[$eid]['bundle']);
+            $fieldmap = \Drupal::service('entity_field.manager')->getFieldMap();
+            
+            if(!empty($fieldmap) && isset($fieldmap['wisski_individual']) && isset($fieldmap['wisski_individual'][$field_to_check]) && isset($fieldmap['wisski_individual'][$field_to_check]['bundles'])) {
+              $fbundles = $fieldmap['wisski_individual'][$field_to_check]['bundles'];
+#                    dpm(current($fbundles), "fb");
+            
+              $field_def = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual',current($fbundles));
+              $main_prop = $field_def[$field_to_check]->getFieldStorageDefinition()->getMainPropertyName();
+#              dpm($main_prop, "found it! for field " . $field_to_check);
+            } else {
+              $main_prop = "value";
+#              dpm($main_prop, "did not find it " . $field_to_check);
+            }
+
+#            dpm($main_prop, "main prop!");            
+#            dpm($realfield, "realfield");
+#                    dpm(\Drupal::service('entity_field.manager')->getFieldMap(), "fieldmap");
+#                    $field_def = \Drupal::service('plugin.manager.field.field_type')->getDefinitions();
+#                    dpm(serialize($field_def[$realfield]), "fdef");
+#                    dpm($field_def[$realfield]->getFieldStorageDefinition()->getMainPropertyName(), "mp!");
+            
+
+            // skip the fields that we already loaded...            
+#            if($first_row['_entity']->$field_to_check) {
+#              dpm($field_to_check, "I am not checking");
+#              continue;
+//              dpm(serialize($first_row['_entity']->$field_to_check), "field to check!!!");
+#            }
+            
+#            dpm($field_to_check, "I am checking");
+          
             $adapter = entity_load('wisski_salz_adapter', $pb->getAdapterId());
             $aid = $adapter->id();
             if (!$adapter) {
@@ -555,9 +612,26 @@ wisski_tick("end exec views");
                   if (isset($uris_to_eids[$sparql_row->x0->getUri()])) {
 #                    dpm($uris_to_eids[$sparql_row->x0->getUri()], $sparql_row->x0->getUri());
                     $eid = $uris_to_eids[$sparql_row->x0->getUri()];
-                    
+
+/*                    
                     $pbp = $pb->getPbPath($path->getID());
                     $realfield = $pbp['field'];
+                    dpm($values_per_row[$eid]['bundle']);
+#                    $field_def = \Drupal::service('entity_field.manager')->getFieldMap();#->getFieldDefinitions('wisski_individual',$values_per_row[$eid]['bundle']);
+                    $fieldmap = \Drupal::service('entity_field.manager')->getFieldMap();
+                    
+                    $fbundles = $fieldmap['wisski_individual'][$realfield]['bundles'];
+#                    dpm(current($fbundles), "fb");
+                    
+                    $field_def = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual',current($fbundles));
+                    dpm($realfield, "realfield");
+                    dpm(\Drupal::service('entity_field.manager')->getFieldMap(), "fieldmap");
+#                    $field_def = \Drupal::service('plugin.manager.field.field_type')->getDefinitions();
+                    dpm(serialize($field_def[$realfield]), "fdef");
+                    dpm($field_def[$realfield]->getFieldStorageDefinition()->getMainPropertyName(), "mp!");
+*/
+#                    $field_ob = \Drupal\field\Entity\FieldConfig::load($realfield);
+#                    dpm($field_ob->getFieldStorageDefinition()->getMainPropertyName(), "yay!");	
 #                    dpm($pbp, "realfield!");
 #                    dpm($eid, "eid!!");
 #                    dpm($is_reference, "is ref");
@@ -574,18 +648,20 @@ wisski_tick("end exec views");
 #                      dpm($referenced_title);
                       $values_per_row[$eid][$field][] = array('value' => $referenced_title, 'target_id' => $referenced_eid, 'wisskiDisamb' => $referenced_uri);
                       // duplicate the information to the field for the entity-management
-                      $values_per_row[$eid][$realfield][] = array('value' => $referenced_title, 'target_id' => $referenced_eid, 'wisskiDisamb' => $referenced_uri);
+                      $values_per_row[$eid][$field_to_check][] = array('value' => $referenced_title, 'target_id' => $referenced_eid, 'wisskiDisamb' => $referenced_uri);
                       #$values_per_row[$eid][$field][] = $referenced_eid;
                     }
                     else {
                       if(!empty($disamb)) {
-                        $values_per_row[$eid][$field][] = array('value' => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
-                        $values_per_row[$eid][$realfield][] = array('value' => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+                        $values_per_row[$eid][$field][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+                        $values_per_row[$eid][$field_to_check][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
                       } else {
                         $values_per_row[$eid][$field][] = $sparql_row->$out_prop->getValue();
-                        $values_per_row[$eid][$realfield][] = $sparql_row->$out_prop->getValue();
+                        $values_per_row[$eid][$field_to_check][] = $sparql_row->$out_prop->getValue();
                       }
                     }
+#                    $entity_dump[$eid] = \Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($values_per_row[$eid]), $values_per_row);
+                    
 #                    dpm($values_per_row[$eid]);
                   }
                 }
@@ -595,6 +671,7 @@ wisski_tick("end exec views");
           }
         }
 #        dpm(microtime(), "after field");
+      
       }
     
 
@@ -608,12 +685,16 @@ wisski_tick("end exec views");
 #        $row['_entity'] = entity_load('wisski_individual', $row['eid']);;
 #        $bid = reset($bundle_ids);
 #        $tmp = entity_create('wisski_individual', $row);
-        $row['_entity'] = entity_create('wisski_individual', $row);
+        $entities = \Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($eid => $eid), $values_per_row);
+#        dpm(serialize($entities), "ent");
+        $row['_entity'] = $entities[$eid];#\Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($values_per_row[$eid]), $values_per_row);
+#        $row['_entity'] = entity_create('wisski_individual', $row);
 #        dpm($row, "row");
 #        dpm(serialize($row['_entity']), "ent");
 #        $row['_entity'] = $loaded_ids[$row['eid']];
       }
     }
+
 #    dpm(microtime(), "after end of ...");
 
     return array_values($values_per_row);
