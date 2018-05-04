@@ -367,13 +367,18 @@ wisski_tick("end exec views");
 #    dpm(serialize($values_per_row));
 
 #    dpm($row, "row");
-    
-    $do_dummy_load = $fields['_entity'];
+
+    if(isset($fields['_entity'])) {   
+      $do_dummy_load = $fields['_entity'];
+    } else
+      $do_dummy_load = FALSE;
     
 #    dpm(microtime(), "after load");
     
     unset($fields['eid']);
-    unset($fields['_entity']);
+
+    if(isset($fields['_entity']))
+      unset($fields['_entity']);
   
     $pb_cache = array();
     $path_cache = array();
@@ -680,14 +685,14 @@ wisski_tick("end exec views");
 #    dpm(microtime(), "end of ...");    
 
     if ($do_dummy_load) {
-      foreach ($values_per_row as &$row) {
+      foreach ($values_per_row as $lkey => &$row) {
 #        dpm($row);
 #        $row['_entity'] = entity_load('wisski_individual', $row['eid']);;
 #        $bid = reset($bundle_ids);
 #        $tmp = entity_create('wisski_individual', $row);
-        $entities = \Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($eid => $eid), $values_per_row);
+        $entities = \Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($lkey => $lkey), $values_per_row);
 #        dpm(serialize($entities), "ent");
-        $row['_entity'] = $entities[$eid];#\Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($values_per_row[$eid]), $values_per_row);
+        $row['_entity'] = $entities[$lkey];#\Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($values_per_row[$eid]), $values_per_row);
 #        $row['_entity'] = entity_create('wisski_individual', $row);
 #        dpm($row, "row");
 #        dpm(serialize($row['_entity']), "ent");
