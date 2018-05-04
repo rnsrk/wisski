@@ -686,8 +686,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       'display_title' => 'Master',
       'position' => 0,
       'display_options' => array(
-        'access' => array('type' => 'perm', 'options' => array( 'perm' => 'view wisski content' ) ),
-        'cache' => array('type' => 'tag', 'options' => array() ),
+        'access' => array('type' => 'perm', 'options' => array( 'perm' => 'view any wisski content, view any ' . $bundleid . ' WisskiBundle, view own ' . $bundleid . ' WisskiBundle' ) ),
+        'cache' => FALSE, #array('type' => 'tag', 'options' => array() ),
         'query' => array('type' => 'views_query', 'options' => array() ),
         'exposed_form' => array('type' => 'basic', 'options' => array(
           'submit_button' => 'Apply',
@@ -990,7 +990,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
        'relationships' => array(),
        'arguments' => array(),
        'display_extenders' => array(),
-       'use_ajax' => true,
+       'use_ajax' => FALSE,
     ),
      'cache_metadata' => 
     array(
