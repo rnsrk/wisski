@@ -172,7 +172,9 @@ class WisskiPathForm extends EntityForm {
     
       $input = $form_state->getUserInput();
       //dpm($input,'user input');
-      $fast_mode = $input['fast_mode'];
+      if(isset($input['fast_mode'])) 
+        $fast_mode = $input['fast_mode'];
+
       //all of the path_array elements have their respective row number and trigger type stored in attributes
       $attributes = $trigger['#attributes'];
       //dpm($trigger,'Trigger');
