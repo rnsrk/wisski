@@ -23,6 +23,11 @@ function wisski_excel_export($ob) {
 
   $data_rows = $ob['actions']['export']['#submit']['data'];  
 
+  if(empty($data_rows)) {
+    drupal_set_message("Please do a search and export the results in excel afterwards.", "error");
+    return;
+  }
+
   $id = $data_rows[0]['type'];
   $bundleid = $data_rows[0]['bundle_id'];
 
