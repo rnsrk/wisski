@@ -106,6 +106,14 @@ class WisskiEntityAccessHandler extends EntityAccessControlHandler {
    * will be created during the 'add' process.
    */
   protected function checkCreateAccess(AccountInterface $account, array $context, $entity_bundle = NULL) {
+
+    $route_match = \Drupal::service('current_route_match');
+    $bundle_from_url = $route_match->getParameter('wisski_bundle');
+    // try to get it from url if not available otherwise
+    if(empty($entity_bundle) && !empty($bundle_from_url))
+      $entity_bundle = $bundle_from_url->ID();
+                          
+
     //dpm(func_get_args(),__METHOD__);
     //return AccessResult::allowedIfHasPermission($account, 'administer wisski');
     $account = $this->prepareUser($account);
