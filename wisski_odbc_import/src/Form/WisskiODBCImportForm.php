@@ -368,8 +368,8 @@ class WisskiODBCImportForm extends FormBase {
    */
   public static function storeTable($table, &$alreadySeen, $connection, $is_drupal_db, $offset = 0, $limit = 0) {
     $rowiter = 0;
-    $delimiter = isset($table['delimiter']) ? (string) $table['delimiter'] : '';
-    $trim = isset($table['trim']) ? (string) $table['trim'] : FALSE;  
+    $delimiter = isset($table->delimiter) ? (string) $table->delimiter : '';
+    $trim = isset($table->trim) ? (string) $table->trim : FALSE;  
   
     $sql = isset($table->sql) ? trim((string) $table->sql) : '';
     // we introduce the special <sql> tag if you want to define a whole sql 
@@ -515,7 +515,7 @@ class WisskiODBCImportForm extends FormBase {
 
 
   public static function storeBundle($row, $bundle_xml, $bundleid, $delimiter, $trim) {
-    
+
     list($update_mode, $update_eid, $further_eids) = self::evaluateUpdatePolicies($bundle_xml, $bundleid, $row);
     // $further_eids is not used currently
     // What to do with it?
