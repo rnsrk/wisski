@@ -501,7 +501,8 @@ wisski_tick("end exec views");
 #            dpm($values_per_row[$eid]['bundle']);
             $field_def = \Drupal::service('entity_field.manager')->getFieldMap();#->getFieldDefinitions('wisski_individual',$values_per_row[$eid]['bundle']);
             $fieldmap = \Drupal::service('entity_field.manager')->getFieldMap();
-            
+
+            // get the main property name             
             if(!empty($fieldmap) && isset($fieldmap['wisski_individual']) && isset($fieldmap['wisski_individual'][$field_to_check]) && isset($fieldmap['wisski_individual'][$field_to_check]['bundles'])) {
               $fbundles = $fieldmap['wisski_individual'][$field_to_check]['bundles'];
 #                    dpm(current($fbundles), "fb");
@@ -686,6 +687,14 @@ wisski_tick("end exec views");
 
     if ($do_dummy_load) {
       foreach ($values_per_row as $lkey => &$row) {
+        // if we don't have a bundle we're in danger zone!
+        if(empty($row['bundle'])) {
+          $bids = AdapterHelper::getBundleIdsForEntityId($lkey, TRUE);
+          
+          $row['bundles'] = $bids;
+          $bid = reset($bids);  // TODO: make a more sophisticated choice rather than the first one
+          $row['bundle'] = $bid;
+        }
 #        dpm($row);
 #        $row['_entity'] = entity_load('wisski_individual', $row['eid']);;
 #        $bid = reset($bundle_ids);
