@@ -63,6 +63,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   public function addCacheValues($ids, $values) {
 #    dpm($ids, "ids");
 #    dpm($values, "values");
+    
+    // default initialisation.
+    $entities = NULL;
+    
     // add the values from the cache
     foreach ($ids as $id) {
       
