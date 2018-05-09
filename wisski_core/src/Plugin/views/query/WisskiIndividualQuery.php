@@ -327,6 +327,13 @@ wisski_tick("end exec views");
     }
 
     $fields = $this->fields;
+
+    // store here only fields that may be attached to the entity.
+    // typically our "wisski-path-special-fields" for the view may
+    // not be attached. 
+    $pseudo_entity_fields = array();
+    
+
     #dpm($fields);
 #    dpm(serialize($values_per_row));
     
@@ -395,10 +402,13 @@ wisski_tick("end exec views");
         
         foreach ($values_per_row as $eid => &$row) {
 
-          if(empty($row['bundle']))
+          if(empty($row['bundle'])) {
             $row['bundle'] = $bid;
+            $pseudo_entity_fields[$eid]['bundle'] = $row['bundle'];
+          }
 
           $row['title'] = wisski_core_generate_title($eid, FALSE, $bid);
+          $pseudo_entity_fields[$eid]['title'] = $row['title'];
         }
         
 #        dpm(microtime(), "after generate title");
@@ -422,9 +432,11 @@ wisski_tick("end exec views");
           }
 
           $bid = reset($bids);
-          if(empty($row['bundle']))
+          if(empty($row['bundle'])) {
             $row['bundle'] = $bid;
-
+            $pseudo_entity_fields[$eid]['bundle'] = $row['bundle'];  
+          }
+          
 #          dpm(microtime(), "br");          
           $preview_image_uri = \Drupal::entityTypeManager()->getStorage('wisski_individual')->getPreviewImageUri($eid,$bid);
           
@@ -435,7 +447,7 @@ wisski_tick("end exec views");
 
           global $base_path;
           $row['preview_image'] = '<a href="' . $base_path . 'wisski/navigate/'.$eid.'/view?wisski_bundle='.$bid.'"><img src="'. $preview_image_uri .'" /></a>';
-
+          $pseudo_entity_fields[$eid]['bundle'] = $row['preview_image'];
         }
 #        dpm(microtime(), "after preview image");
       }
@@ -451,6 +463,9 @@ wisski_tick("end exec views");
           $row['bundle'] = $bid;
           $bundle = entity_load('wisski_bundle', $bid);
           $row['bundle_label'] = $bundle->label();
+          $pseudo_entity_fields[$eid]['bundle'] = $row['bundle'];
+          $pseudo_entity_fields[$eid]['bundles'] = $row['bundles'];
+          $pseudo_entity_fields[$eid]['bundle_label'] = $row['bundle_label'];
         }
 #        dpm(microtime(), "after bundles");
       }
@@ -494,6 +509,9 @@ wisski_tick("end exec views");
           
             $pbp = $pb->getPbPath($path->getID());
             $field_to_check = $pbp['field'];
+            
+            if($field_to_check != $field)
+              $no_entity_field[] = $field;
             
             $first_row = current($values_per_row);
             
@@ -666,6 +684,7 @@ wisski_tick("end exec views");
                         $values_per_row[$eid][$field_to_check][] = $sparql_row->$out_prop->getValue();
                       }
                     }
+                    $pseudo_entity_fields[$eid][$field_to_check] = $values_per_row[$eid][$field_to_check];
 #                    $entity_dump[$eid] = \Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($values_per_row[$eid]), $values_per_row);
                     
 #                    dpm($values_per_row[$eid]);
@@ -682,7 +701,7 @@ wisski_tick("end exec views");
     
 
     }
-#    dpm(serialize($values_per_row[437]));
+#    dpm(serialize($values_per_row));
 #    dpm(microtime(), "end of ...");    
 
     if ($do_dummy_load) {
@@ -694,14 +713,21 @@ wisski_tick("end exec views");
           $row['bundles'] = $bids;
           $bid = reset($bids);  // TODO: make a more sophisticated choice rather than the first one
           $row['bundle'] = $bid;
+          $pseudo_entity_fields[$lkey]['bundles'] = $values_per_row[$lkey]['bundles'];
+          $pseudo_entity_fields[$lkey]['bundle'] = $values_per_row[$lkey]['bundle'];
         }
 #        dpm($row);
 #        $row['_entity'] = entity_load('wisski_individual', $row['eid']);;
 #        $bid = reset($bundle_ids);
 #        $tmp = entity_create('wisski_individual', $row);
-        $entities = \Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($lkey => $lkey), $values_per_row);
+#        dpm($pseudo_entity_fields, "psd");
+        $entities = \Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($lkey => $lkey), $pseudo_entity_fields);
+#        foreach($row as $field_name => $data) {
+#          $entities[$lkey]->$field_name = $data;
+#        }
 #        dpm(serialize($entities), "ent");
         $row['_entity'] = $entities[$lkey];#\Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($values_per_row[$eid]), $values_per_row);
+#        $row['_entity'] = entity_load('wisski_individual', $row['eid']);
 #        $row['_entity'] = entity_create('wisski_individual', $row);
 #        dpm($row, "row");
 #        dpm(serialize($row['_entity']), "ent");
