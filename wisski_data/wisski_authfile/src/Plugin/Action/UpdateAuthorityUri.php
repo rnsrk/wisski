@@ -92,7 +92,7 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
     }
 
     $adapters = $this->parseMap($this->configuration['auth_adapters']);
-    $fields = $this->parseMap($this->configuration['fields']);
+    $fields = explode("\n", $this->configuration['fields']);
     if (empty($fields)) {
       return;
     }
@@ -101,20 +101,21 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
     $new_auth_uris = [];
 
     // go through all field definitions and see if there is such a field for the entity
-    foreach ($fields as $entry_field_id => $uri_field_id) {
+    foreach ($fields as $field_path) {
       // fetch the entity ids of the entries
-      $entry_eids = $this->getFieldValues($object, $entry_field_id);
-      if (empty($entry_eids)) continue;
-
+      $field_path = trim($field_path);
+      if (empty($field_path)) {
+        continue;
+      }
+      $uris = $this->getFieldValues($object, $field_path);
       // go thru each entry and extract the uri
-      foreach (entity_load_multiple('wisski_individual', $entry_eids) as $entry) {
-        $uri = $this->getFieldValues($entry, $uri_field_id);  // uri is an array!
-        if (empty($uri)) continue;
-        $uri = $uri[0];
+      foreach ($uris as $uri) {
         // check if it matches any adapter patterns
         foreach ($adapters as $aid => $pattern) {
           if (preg_match("$pattern", $uri)) {
             // record the matches, use a combined string for easier matching
+            // we can safely use the blank as separator as the aid may not 
+            // contain whitespace
             $new_auth_uris["$aid $uri"] = "$aid $uri";
           }
         }
@@ -139,7 +140,6 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
       list($aid, $uri) = explode(" ", $aid_uri, 2);
       $delete_uris[$uri] = $uri;
     }    
-#dpm([$delete_uris, $old_auth_uris, $new_auth_uris, $uris_by_adapter, $adapters], 'do tel');
     if (!empty($delete_uris)) {
       AdapterHelper::removeSameUris($delete_uris, $object->id());
     }
@@ -184,8 +184,18 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
     }
     return $fields;
   }
+  
 
-  protected function getFieldValues($entity, $field_id) {
+  /**
+   * Starting with the given entity, descend the tree of referenced entities 
+   * according to the given path of fields, finally returning the array of all
+   * found leaf values
+   */
+  protected function getFieldValues($entity, $field_path) {
+    $parts1 = explode('.', $field_path, 2);
+    $parts2 = explode(' ', $parts1[0], 2);
+    $field_id = $parts2[0];
+    $rest_path = (isset($parts2[1]) ? $parts2[1] : '') . (isset($parts1[1]) ? $parts1[1] : '');
     $field_def = $entity->getFieldDefinition($field_id);
     if (!$field_def) {
       return [];
@@ -198,7 +208,16 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
         $values[] = $item->get($main_property)->getValue();
       }
     }
-    return $values;
+    if (empty($rest_path)) {
+      return $values;
+    }
+    else {
+      $new_values = [];
+      foreach (entity_load_multiple('wisski_individual', $values) as $new_entity) {
+        $new_values = array_merge($new_values, $this->getFieldValues($new_entity, $rest_path));
+      }
+      return $new_values;
+    }
   }
 
 }

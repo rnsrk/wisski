@@ -120,19 +120,27 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
     // if there is a URI and there are authority file and entry id the URI
     // will be overwritten.
     // get the authority file entity id
-    $auth_field_list = $object->get($this->configuration['file_eid_field']);
-    if ($auth_field_list && $auth_field = $auth_field_list->first()) {
-      $auth = $auth_field->get($auth_field::mainPropertyName())->getValue();
-      // check if we have some uri pattern for this authority file
-      if (isset($patterns[$auth])) {
-        // get the entry id
-        $id_field_list = $object->get($this->configuration['entry_id_field']);
-        if ($id_field_list && $id_field = $id_field_list->first()) {
-          $id = $id_field->get($id_field::mainPropertyName())->getValue();
-          // build the uri and add it to the entity
-          if (!empty($id)) {
-            $uri = str_replace('{id}', $id, $patterns[$auth]);
-          }
+    $auth_file_field_id = $this->configuration['file_eid_field'];
+    $auth = NULL;
+    if (!empty($auth_file_field_id)) {
+      // we select a certain authority
+      $auth_field_list = $object->get($auth_file_field_id);
+      if ($auth_field_list && $auth_field = $auth_field_list->first()) {
+        $auth = $auth_field->get($auth_field::mainPropertyName())->getValue();
+      }
+    }
+    else {
+      $auth = '*';
+    }
+    // check if we have some uri pattern for this authority file
+    if (!empty($auth) && isset($patterns[$auth])) {
+      // get the entry id
+      $id_field_list = $object->get($this->configuration['entry_id_field']);
+      if ($id_field_list && $id_field = $id_field_list->first()) {
+        $id = $id_field->get($id_field::mainPropertyName())->getValue();
+        // build the uri and add it to the entity
+        if (!empty($id)) {
+          $uri = str_replace('{id}', $id, $patterns[$auth]);
         }
       }
     }
