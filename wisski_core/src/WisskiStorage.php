@@ -1116,7 +1116,14 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       $success = FALSE;
 #      drupal_set_message("I ask adapter " . serialize($adapter) . " for id " . serialize($entity->id()) . " and get: " . serialize($adapter->hasEntity($id)));
       // if they know that id
-      if($create_new || $adapter->hasEntity($entity_id)) {
+      // Martin: The former if test excluded the case where the entity was
+      // there already but the adapter had no information about it, so that
+      // nothing is saved in this case (into this store!). This means that
+      // for an existing entity nothing can be added on save. This is the case
+      // e.g. when an entity from an authority is only referred to first and
+      // later someone wants to add local information. This was not possible 
+      // with this if. Thats why we always want it to be true.
+      if(TRUE || $create_new || $adapter->hasEntity($entity_id)) {
         
         // perhaps we have to check for the field definitions - we ignore this for now.
         //   $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundle_idid);
