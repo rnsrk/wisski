@@ -364,8 +364,19 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
     
     // handle sorting
     $sort_params = "";
-    foreach($this->sort as $sortkey => $elem) {
+#    dpm("before!");
+    while($this->sort) {
+#      dpm("after!");
+      $sortkey = key($this->sort);
+      $elem = current($this->sort);
+ 
+#      dpm(serialize($sortkey), "sortkey!");
+      
+      if(is_null($sortkey))
+        break;
+      
 #      dpm($elem);
+      
 #      if($elem['field'] == "title") {
 #        $select->orderBy('ngram', $elem['direction']);
 #      }
@@ -392,35 +403,109 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
             drupal_set_message("Bad path id for Wisski views: $pb_and_path[1]", 'error');
           }
           else {
-            #$starting_position = $pb->getRelativeStartingPosition($path, TRUE);
-            $starting_position = 0;
+          
+#            dpm($path);
+#            dpm($pb->getPbPath($path->id()));
 
-            $vars[$starting_position] = "x0";
-            $i = $this->varCounter++;
-            for ($j = count($path->getPathArray()); $j > $starting_position; $j--) {
-              $vars[$j] = "c${i}_x$j";
-            }
-            $vars['out'] = "c${i}_out";
+            $pbp = $pb->getPbPath($path->id());
 
-            $sort_part = $this->getEngine()->generateTriplesForPath($pb, $path, "", NULL, NULL, 0, $starting_position, FALSE, '=', 'field', FALSE, $vars);            
+            $additional_sort = array();
 
-            $sort = " OPTIONAL { " . $sort_part . " } ";
+            // hack for entity-reference-sorting... 
+            if($pbp['fieldtype'] == "entity_reference") {
 
-            #foreach($query_parts as $iter => $query_part) {
-            $query_parts = $query_parts . $sort;
-            #}
-            if(!empty($path->id()) && !empty($pb->getPbPath($path->id())) && $pb->getPbPath($path->id())["fieldtype"] == "decimal" || $pb->getPbPath($path->id())["fieldtype"] == "number")
-              $sort_params = $elem['direction'] . "(xsd:integer(?c${i}_out)) ";
-            else
-              $sort_params = $elem['direction'] . "(STR(?c${i}_out)) ";
+
+#              dpm($pbp, "pbp");
+                            
+              $field_values = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(array('field_name'=>$pbp['field'],'entity_type' => 'wisski_individual', ));  
+
+              $field_values = current($field_values);
+
+#              dpm($field_values, "fv");
+              $targets = $field_values->getSetting('handler_settings')['target_bundles'];
+#              dpm($targets, "tar");
+              
+              $bundleid = current($targets);
+                            
+#              dpm($bundleid, "bundle!");
+              $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundleid);
+#              dpm($bundle->getTitlePattern(), "titlepattern!");              
+
+              $title_pattern = $bundle->getTitlePattern();
+              
+              $starting_position = 0;
+              $vars[$starting_position] = "x0";
+                 
+              $original_sort = $this->sort;
+              
+              $direction = $original_sort[$sortkey]['direction'];
+              $langcode = $original_sort[$sortkey]['langcode'];
+              
+              unset($original_sort[$sortkey]);
+              
+              $vars[$starting_position] = "x0";
+              $i = $this->varCounter++;
+              for ($j = count($path->getPathArray()); $j > $starting_position; $j--) {
+                $vars[$j] = "c${i}_x$j";
+              }
+#              dpm($vars, "vars");
+#              $vars['out'] = "c${i}_out";
+              
+              $triples = $this->getEngine()->generateTriplesForPath($pb, $path, "", NULL, NULL, 0, $starting_position, FALSE, '=', 'field', FALSE, $vars);
+               
+              foreach($title_pattern as $pkey => $pattern) {
+                if($pattern['type'] == "path") {
+                  list($pb_id,$path_id) = explode('.',$pattern['name']);
+#                  $additional_sort[] = $pattern[
+                  #$additional_sort[] = array("pb" => $pb_id, "path" => $path_id);
+                  $original_sort[] = array("field" => "wisski_path_" . $pb_id . "__" . $path_id, "direction" => $direction, "langcode" => $langcode, "start_numbering" => count($path->getPathArray())+1, "triples" => $triples);
+                }
+              } 
+              
+              $this->sort = $original_sort;
+
+#              dpm($this->sort, "sort new!");
+            } else {
+              // standard ordering - not by entity reference!
+              #$starting_position = $pb->getRelativeStartingPosition($path, TRUE);
+              $starting_position = 0;
+              
+              if(isset($elem['start_numbering']))
+                $inc = $elem['start_numbering'];
+              else
+                $inc = 0;
+
+              $vars[$starting_position] = "x0";
+              $i = $this->varCounter++;
+              for ($j = count($path->getPathArray()); $j > $starting_position; $j--) {
+                $vars[$j] = "c${i}_x" . ($j+$inc);
+              }
+              $vars['out'] = "c${i}_out";
+#              dpm($vars, "vars");
+
+              $sort_part = $this->getEngine()->generateTriplesForPath($pb, $path, "", NULL, NULL, 0, $starting_position, FALSE, '=', 'field', FALSE, $vars, $inc);            
+
+              if(isset($elem['triples']))
+                $sort = " OPTIONAL { " . $elem['triples'] . $sort_part . " } ";
+              else             
+                $sort = " OPTIONAL { " . $sort_part . " } ";
+
+              #foreach($query_parts as $iter => $query_part) {
+              $query_parts = $query_parts . $sort;
+              #}
+              if(!empty($path->id()) && !empty($pb->getPbPath($path->id())) && $pb->getPbPath($path->id())["fieldtype"] == "decimal" || $pb->getPbPath($path->id())["fieldtype"] == "number")
+                $sort_params = $elem['direction'] . "(xsd:integer(?c${i}_out)) ";
+              else
+                $sort_params = $elem['direction'] . "(STR(?c${i}_out)) ";
             
-            $this->orderby = $this->orderby . $sort_params;
-            
+              $this->orderby = $this->orderby . $sort_params;
+            }      
 #            dpm($query_parts);
 #            $query_parts 
           }
         }
       }
+      next($this->sort);
     } 
     
 #   dpm($query_parts);   
@@ -500,6 +585,9 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
       $select .= " LIMIT $limit OFFSET $offset";
     }
 
+#    dpm($select, "sel");
+#    if(count($select) > 1200)
+#    return;
 $timethis[] = microtime(TRUE);
 #    dpm(microtime(), "before");
     $result = $engine = $this->getEngine()->directQuery($select);
@@ -679,13 +767,23 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
 #            drupal_set_message(serialize($group));
 #            drupal_set_message(serialize($starting_position));
             
-            $vars[$starting_position] = 'x0';
+            $vars[$starting_position*2] = 'x0';
+#            dpm($vars, "vars");
+#            dpm($starting_position, "start");
             for ($j = count($group->getPathArray()); $j > $starting_position; $j--) {
-              $vars[$j] = "c${i}_x$j";
+              // if we don't have an even result, we do nothing - there may be only even xs
+              if($j%2 != 0)
+                continue;
+#              dpm("setting for $j");
+              if(!isset($vars[$j]))
+                $vars[$j] = "c${i}_x$j";
             }
             $vars['out'] = "c${i}_out";
+#            dpm($vars, "vars");
 
             $sparql_part = $engine->generateTriplesForPath($pb, $group, '', NULL, NULL, 0, $starting_position, FALSE, '=', 'field', TRUE, $vars);
+
+#            dpm($sparql_part, "part");
 
             if(!in_array($sparql_part, $query_parts))
               $query_parts[] = $sparql_part;
