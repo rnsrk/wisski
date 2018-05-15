@@ -20,7 +20,7 @@ use Drupal\wisski_adapter_sparql11_pb\Query\Query;
 use \EasyRdf;
 
 /**
- * Wiki implementation of an external entity storage client.
+ * Standard Sparql 1.1 endpoint adapter engine.
  *
  * @Engine(
  *   id = "sparql11_with_pb",
@@ -29,6 +29,38 @@ use \EasyRdf;
  * )
  */
 class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineInterface  {
+
+  protected $allow_inverse_property_pattern;
+
+  public function defaultConfiguration() {
+    return parent::defaultConfiguration() + [
+      'allow_inverse_property_pattern' => FALSE,
+    ];
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setConfiguration(array $configuration) {
+
+    // this does not exist
+    parent::setConfiguration($configuration);
+    $this->allow_inverse_property_pattern = $this->configuration['allow_inverse_property_pattern'];
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getConfiguration() {
+    return array(
+      'allow_inverse_property_pattern' => $this->allow_inverse_property_pattern,
+    ) + parent::getConfiguration();
+  }
+
+
+
 
 
   /******************* BASIC Pathbuilder Support ***********************/
@@ -76,6 +108,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $last = NULL;
     if (!empty($history)) {
       $candidate = array_pop($history);
+      $inv_sign = '';
+      if ($this->allow_inverse_property_pattern && $candidate[0] == '^') {
+        $candidate = substr($candidate, 1);
+        $inv_sign = '^';
+      }
       if ($candidate === $empty_uri) {
 //        \Drupal::logger('WissKI path alternatives')->error('Not a valid URI: "'.$candidate.'"');
         //as a fallback we assume that the full history is given so that every second step is a property
@@ -83,8 +120,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $search_properties = (0 === count($history) % 2);
       }
       elseif ($this->isValidUri('<'.$candidate.'>')) {
-        $last = $candidate;
-        if ($this->isAProperty($last) === FALSE) $search_properties = TRUE; 
+        $last = "$inv_sign$candidate";
+        if ($this->isAProperty($candidate) === FALSE) $search_properties = TRUE; 
       } else {
         if (WISSKI_DEVEL) \Drupal::logger('WissKI path alternatives')->debug('invalid URI '.$candidate);
         return array();
@@ -94,12 +131,17 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $next = NULL;
     if (!empty($future)) {
       $candidate = array_shift($future);
+      $inv_sign = '';
+      if ($this->allow_inverse_property_pattern && $candidate[0] == '^') {
+        $candidate = substr($candidate, 1);
+        $inv_sign = '^';
+      }
       if ($candidate !== $empty_uri) {
         if ($this->isValidUri('<'.$candidate.'>')) {
-          $next = $candidate;
+          $next = "$inv_sign$candidate";
           if ($search_properties === NULL) {
-            if ($this->isAProperty($next) === FALSE) $search_properties = TRUE;
-          } elseif ($this->isAProperty($next) === $search_properties) {
+            if ($this->isAProperty($candidate) === FALSE) $search_properties = TRUE;
+          } elseif ($this->isAProperty($candidate) === $search_properties) {
             drupal_set_message('History and Future are inconsistent','error');
           }
         } else {
@@ -159,6 +201,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    */
   public function getPrimitiveMapping($step) {
     
+    // in case of properties we can skip this
+    if ($step[0] == '^') return array();
+
     $info = [];
 
     // this might need to be adjusted for other standards than rdf/owl
@@ -319,6 +364,19 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if ($output === FALSE) {
       //drupal_set_message('none in cache');
       $output = $this->getPropertiesFromStore($class,$class_after,$fast_mode);
+    }
+
+    if ($this->allow_inverse_property_pattern) {
+      // we get all the inverse properties by reverting class before and class
+      // after and adding a "^"
+      $output2 = $this->getPropertiesFromCache($class_after,$class);
+      if ($output2 === FALSE) {
+        //drupal_set_message('none in cache');
+        $output2 = $this->getPropertiesFromStore($class_after,$class,$fast_mode);
+      }
+      foreach ($output2 as $p) {
+        $output["^$p"] = "^$p";
+      }
     }
 
     uksort($output,'strnatcasecmp');
@@ -569,17 +627,46 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 
   public function nextClasses($property=NULL,$property_after = NULL,$fast_mode=FALSE) {
-    
-    if (!isset($property) && !isset($property_after)) return $this->getClasses();
-#    \Drupal::logger(__METHOD__)->debug('property: '.$property.', property_after: '.$property_after);
-    $output = $this->getClassesFromCache($property,$property_after);
-#    dpm($output, "output");
-    if ($output === FALSE) {
-      //drupal_set_message('none in cache');
-      $output = $this->getClassesFromStore($property,$property_after,$fast_mode);
+    if (!isset($property) && !isset($property_after)) {
+      return $this->getClasses();
     }
-    uksort($output,'strnatcasecmp');
-    return $output;
+    elseif (isset($property) && $property[0] == '^') {
+      if (isset($property_after)) {
+        if ($property_after[0] == '^') {
+          return $this->nextClasses(substr($property_after, 1), substr($property, 1), $fast_mode);
+        }
+        else {
+          $classes1 = $this->nextClasses(NULL, $property_after, $fast_mode);
+          $classes2 = $this->nextClasses(NULL, substr($property, 1), $fast_mode);
+          return array_intersect($classes1, $classes2);
+        }
+      }
+      else {  // $property_after == NULL
+        return $this->nextClasses(NULL, substr($property, 1), $fast_mode);
+      }
+    }
+    elseif (isset($property_after) && $property_after[0] == '^') {
+      // remember: $property[0] != '^' (otherwise we would be in branch above!)
+      if (isset($property)) {
+        $classes1 = $this->nextClasses($property, NULL, $fast_mode);
+        $classes2 = $this->nextClasses(substr($property_after, 1), NULL, $fast_mode);
+        return array_intersect($classes1, $classes2);
+      }
+      else {
+        return $this->nextClasses(substr($property_after, 1), NULL, $fast_mode);
+      }
+    }
+    else {
+#    \Drupal::logger(__METHOD__)->debug('property: '.$property.', property_after: '.$property_after);
+      $output = $this->getClassesFromCache($property,$property_after);
+#    dpm($output, "output");
+      if ($output === FALSE) {
+        //drupal_set_message('none in cache');
+        $output = $this->getClassesFromStore($property,$property_after,$fast_mode);
+      }
+      uksort($output,'strnatcasecmp');
+      return $output;
+    }
   }
 
   protected function getClassesFromCache($property,$property_after = NULL) {
@@ -2168,13 +2255,32 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         }
         
         // magic function
+        // this if writes the triples from one x to another (x_1 y_1 x_n+1)
+        // for x0 $prop is not set and thus it does not match!
+        //
+        // for $prop we recognize a leading '^' for inverting the property
+        // direction, see '^' as sparql property chain operator
         if($key > 0 && !empty($prop)) {
         
           if($write) {
-              
-            $query .= "<$olduri> <$prop> <$uri> . ";
+            
+            if ($prop[0] == '^') {
+              // we cannot use the '^' for sparql update
+              $prop = substr($prop, 1);
+              $query .= "<$uri> <$prop> <$olduri> . ";
+            }
+            else {
+              $query .= "<$olduri> <$prop> <$uri> . ";
+            }
+
           } else {
             
+            $inv_sign = '';
+            if ($prop[0] == '^') {
+              $inv_sign = '^';
+              $prop = substr($prop, 1);
+            }
+
             $query .= "GRAPH ${graphvar}_1 { ";
             $inverse = $this->getInverseProperty($prop);
             // if there is not an inverse, don't do any unions
@@ -2184,7 +2290,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               else
                 $query .= "$oldvar ";
           
-              $query .= "<$prop> ";
+              $query .= "$inv_sign<$prop> ";
                     
               if(!empty($uri))
                 $query .= "<$uri> . ";
@@ -2198,7 +2304,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               else
                 $query .= "$oldvar ";
           
-              $query .= "<$prop> ";
+              $query .= "$inv_sign<$prop> ";
                     
               if(!empty($uri))
                 $query .= "<$uri> . ";
@@ -2214,7 +2320,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               else
                 $query .= "$localvar "; 
           
-              $query .= "<$inverse> ";
+              $query .= "$inv_sign<$inverse> ";
 
               if(!empty($olduri))
                 $query .= "<$olduri> . ";
@@ -2963,6 +3069,14 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     else
       $always_reason = TRUE;
     
+    $form['allow_inverse_property_pattern'] = array(
+      '#type' => 'checkbox',
+      '#title' => 'Inverse property selection',
+      '#default_value' => $this->allow_inverse_property_pattern,
+      '#return_value' => TRUE,
+      '#description' => 'Allows selecting properties in inverse direction in pathbuilder. These properties are marked with a leading "^". E.g. for "^ex:prop1", the triple x2 ex:prop x1 must hold instead of x1 ex:prop1 x2.',
+    );
+    
     $form['reasoner'] = array(
       '#type' => 'details',
       '#title' => $this->t('Compute Type and Property Hierarchy and Domains and Ranges'),
@@ -3055,6 +3169,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $always_reason[$this->adapterId()] = $val;
     
     \Drupal::state()->set('wisski_always_reason', $always_reason);
+
+    $this->allow_inverse_property_pattern = $form_state->getValue('allow_inverse_property_pattern');
   
   }  
   
