@@ -447,7 +447,7 @@ wisski_tick("end exec views");
 
           global $base_path;
           $row['preview_image'] = '<a href="' . $base_path . 'wisski/navigate/'.$eid.'/view?wisski_bundle='.$bid.'"><img src="'. $preview_image_uri .'" /></a>';
-          $pseudo_entity_fields[$eid]['bundle'] = $row['preview_image'];
+          $pseudo_entity_fields[$eid]['preview_image'] = $row['preview_image'];
         }
 #        dpm(microtime(), "after preview image");
       }
@@ -579,6 +579,10 @@ wisski_tick("end exec views");
                     $disamb = 'x' . (($disamb - 1) * 2);
                   }
                 }
+
+#                dpm($pbp);
+#                $starting_position = $pb->getRelativeStartingPosition($pbp['parent'], FALSE);
+#                dpm($starting_position, "start");
                 
                 $select = "SELECT DISTINCT ?x0 ";
                 if(!empty($disamb))
@@ -708,6 +712,7 @@ wisski_tick("end exec views");
       foreach ($values_per_row as $lkey => &$row) {
         // if we don't have a bundle we're in danger zone!
         if(empty($row['bundle'])) {
+#          dpm("empty!");
           $bids = AdapterHelper::getBundleIdsForEntityId($lkey, TRUE);
           
           $row['bundles'] = $bids;
