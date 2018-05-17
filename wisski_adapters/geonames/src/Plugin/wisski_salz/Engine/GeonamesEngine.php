@@ -73,7 +73,7 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
 
 
   public function fetchData($uri = NULL, $id = NULL) {
-    
+#    drupal_set_message(serialize($uri) . " asas");    
     if (!$id) {
       if (!$uri) {
         return FALSE;

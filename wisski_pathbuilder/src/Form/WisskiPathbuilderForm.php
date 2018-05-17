@@ -499,7 +499,11 @@ class WisskiPathbuilderForm extends EntityForm {
 
     $importmode = $form_state->getValue('import_mode');
 
+#    dpm($importfile, "importfile!!");
+
     $xmldoc = new SimpleXMLElement($importfile, 0, TRUE);
+    
+#    dpm($xmldoc, "doc!");
     
     $pb = $this->entity;
     

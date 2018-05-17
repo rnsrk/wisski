@@ -300,6 +300,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
    *
    */
   public function generateIdForBundle($group_id) {
+#    dpm("$group_id results in " . ('b' . substr(md5($this->id() . '_' . $group_id . '_' . $this->getCreateMode()), 0, -1 )));
     return 'b' . substr(md5($this->id() . '_' . $group_id . '_' . $this->getCreateMode()), 0, -1 );
   }
   

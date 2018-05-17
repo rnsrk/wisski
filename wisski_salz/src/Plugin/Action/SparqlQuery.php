@@ -34,6 +34,7 @@ class SparqlQuery extends ConfigurableActionBase {
       'adapter_id' => '',
       'sparql' => '',
       'query_method' => 'Update',
+      'add_namespaces' => FALSE,
     );
   }
 
@@ -68,6 +69,11 @@ class SparqlQuery extends ConfigurableActionBase {
       ],
       '#default_value' => $this->configuration['query_method'],
       '#required' => TRUE,
+    );
+    $form['add_namespaces'] = array(
+      '#type' => 'checkbox',
+      '#title' => t("Use default namespaces"),
+      '#default_value' => $this->configuration['add_namespaces'],
     );
     $form['sparql'] = array(
       '#type' => 'textarea',
@@ -105,9 +111,15 @@ class SparqlQuery extends ConfigurableActionBase {
           '%aid' => $this->configuration['adapter_id'],
       ]);
     }
+    $engine = $adapter->getEngine();
     $queryMethod = 'direct' . $this->configuration['query_method'];
-#rpm([$queryMethod, $this->configuration], "action");    
-    $result = $adapter->getEngine()->$queryMethod($this->configuration['sparql']);
+    $namespaces = '';
+    if ($this->configuration['add_namespaces']) {
+      foreach ($engine->getNamespaces() as $prefix => $uri) {
+        $namespaces .= "PREFIX $prefix: <$uri>\n";
+      }
+    }
+    $result = $engine->$queryMethod($namespaces . $this->configuration['sparql']);
     // what to do with the result?
   }
 

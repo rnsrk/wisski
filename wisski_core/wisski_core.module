@@ -32,6 +32,8 @@ function wisski_excel_export($ob) {
   $bundleid = $data_rows[0]['bundle_id'];
 
   $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($bundleid);
+#  $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual',$bundleid);
+
 #dpm($pbs_info, "info");
   $filename = file_directory_temp() . "/" . $id . ".xls";
 
@@ -58,6 +60,9 @@ function wisski_excel_export($ob) {
 
   fwrite($fh, "\n");
 
+  // local cache
+  $field_definitions_per_bundle = array();
+
   foreach($data_rows as $data_row) {
     foreach($pb_paths as $pb_id => $paths) {
       $adapter = $adapters[$pb_id];
@@ -65,6 +70,51 @@ function wisski_excel_export($ob) {
 
       foreach($paths as $path) {
         $values = $adapter->getEngine()->pathToReturnValue($path, $pb, $data_row['entity_id'], 0, NULL, FALSE);
+
+	// as this is complex, only do a calculation if there was a value
+	if(count($values) > 0) {
+
+	  // get the pbp
+  	  $pbp = $pb->getPbPath($path->getID());
+	  $pb_bundle = $pbp['bundle'];
+
+	  $field_definitions = NULL;
+
+	  // only act if a bundle is set.
+	  if(isset($pb_bundle) && !isset($field_definitions_per_bundle[$pb_bundle])) {
+	    // get it from the definitions
+            $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual',$pb_bundle);
+	    // add it to the local cache
+	    $field_definitions_per_bundle[$pb_bundle] = $field_definitions;
+          } else if( isset($pb_bundle) && isset($field_definitions_per_bundle[$pb_bundle])) {
+	    // fetch it from the local cache.
+	    $field_definitions = $field_definitions_per_bundle[$pb_bundle];
+	  }
+
+	  // only act if it is not a group!
+	  if(isset($field_definitions) && !$path->isGroup()) {
+
+	    $fieldid = $pbp['field'];
+	
+	    if(isset($fieldid) && isset($field_definitions[$fieldid])) {
+	      $field_def = $field_definitions[$fieldid];
+#	      dpm($field_def, "fd");
+	      if($field_def->getType() == "entity_reference") {
+	        #dpm($values, "val");
+#	        $new_values = array();
+		
+		foreach($values as $vk => $value) {
+		  $d_eid = AdapterHelper::getDrupalIdForUri($value);
+	          $title = wisski_core_generate_title($d_eid);
+		  $values[$vk] = $title;
+                }
+#	        $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($pb_bundle);
+#	        dpm($title, "title");
+#	        dpm("juhu!");
+	      }
+	    }
+	  }
+	}
 
 	if(count($values) == 1 && ( is_numeric(current($values)) || preg_match('/^((\d+)(\.)*)+$/', current($values), $m) != FALSE) )  
 	  fwrite($fh, "=\"");

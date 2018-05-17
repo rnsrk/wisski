@@ -1,4 +1,0 @@
-Pathbuilder:
-	(1) "use existing path" macht Unsinn: wenn man in einem PB einen Pfad
-	 anlegt, im anderen wiederverwendet, in einem der beiden löscht,
-	 verschwindet er aus beiden.
