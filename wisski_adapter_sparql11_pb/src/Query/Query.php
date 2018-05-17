@@ -185,6 +185,17 @@ wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($ret
     $entity_ids = NULL;
     // ... and query parts
     $query_parts = array();
+    
+    // fetch the bundle in advance e.g. for title generation
+    $needs_a_bundle = NULL;    
+    foreach($condition->conditions() as $ij => $cond) {
+      $field = $cond['field'];
+      $value = $cond['value'];
+      
+      if ($field == "bundle") {
+        $needs_a_bundle = current($value);
+      }
+    }
 
     // $condition is actually a tree of checks that can be OR'ed or AND'ed.
     // We walk the tree and build up sparql conditions / a where clause in
@@ -245,8 +256,8 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
         // TODO: we could handle the special case of title+bundle query as this
         // can be packed into one db query and not unintentionally explode the
         // intermediate result set
-
-        $eids = $this->executeEntityTitleCondition($operator, $value);
+#        dpm("yay!");
+        $eids = $this->executeEntityTitleCondition($operator, $value, $needs_a_bundle);
         $entity_ids = $this->join($conjunction, $entity_ids, $eids);
         if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
           // the condition evaluated to an empty set of entities 
@@ -423,7 +434,8 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
       }
     } 
     
-#   dpm($query_parts);   
+#   dpm($query_parts);
+#  dpm($entity_ids);   
     // 
     if ($entity_ids === NULL) {
       return array($query_parts, $entity_ids);
@@ -505,6 +517,7 @@ $timethis[] = microtime(TRUE);
     $result = $engine = $this->getEngine()->directQuery($select);
 $timethis[] = microtime(TRUE);
 #    drupal_set_message(serialize($select));
+#    dpm($result, "res");
     $adapter_id = $this->getEngine()->adapterId();
     if (WISSKI_DEVEL) \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded result count {cnt}: {result}', array('query' => $select, 'result' => $result, 'cnt' => $result->count()));
     if ($result === NULL) {
@@ -579,7 +592,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
   }
 
 
-  protected function executeEntityTitleCondition($operator, $value) {
+  protected function executeEntityTitleCondition($operator, $value, $bundleid = NULL) {
     $entity_ids = NULL;
     if (empty($value)) {
       // if no value is given, then condition is always true.
@@ -601,8 +614,9 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
 
       // first fetch all entity ids that match the title pattern
       $select = \Drupal::service('database')
-          ->select('wisski_title_n_grams','w')
-          ->fields('w', array('ent_num'));
+        ->select('wisski_title_n_grams','w')
+        ->fields('w', array('ent_num'));
+
       if ($operator == '=' || $operator == "!=" || $operator == "LIKE") {
         $select->condition('ngram', $value, $operator);
       }
@@ -614,13 +628,17 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         return $entity_ids; // NULL
       }
 
+#      dpm($bundleid, "bundleid!");      
+      if($bundleid)
+        $select->condition('bundle', $bundleid);
+
       // handle sorting - currently only for title.
       foreach($this->sort as $elem) {
         if($elem['field'] == "title") {
           $select->orderBy('ngram', $elem['direction']);
         }
       }
-#      dpm($select);
+#      dpm($select, "sel!");
 
       $rows = $select
           ->execute()
@@ -630,6 +648,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         $entity_ids[$row->ent_num] = $row->ent_num;
       }
 
+#      dpm($entity_ids, "eids!");
       // now fetch the uris for the eids as we have to return both
       $query = \Drupal::database()->select('wisski_salz_id2uri', 't')
         ->distinct()
@@ -646,7 +665,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
           $out_entities[$row->ent_num] = $entity_ids[$row->ent_num];
         }
       }
-      
+#      dpm( $out_entities, "out!");
       $entity_ids = $out_entities;
     
     }
