@@ -288,6 +288,7 @@ class WisskiPathbuilderForm extends EntityForm {
     if($this->operation == 'edit') {
       $form['additional']['name'] = array(
         '#type' => 'textfield',
+        '#maxlength' => 2048,
         '#title' => $this->t('Name'),
         '#default_value' => $pathbuilder->getName(),
         '#description' => $this->t("Name of the Pathbuilder-Tree."),
@@ -333,6 +334,7 @@ class WisskiPathbuilderForm extends EntityForm {
       '#type' => 'textfield',
       '#title' => $this->t('Pathbuilder Definition Import'),
       '#description' => $this->t('Path to a pathbuilder definition file.'),
+      '#maxlength' => 2048,
 #      '#default_value' => $pathbuilder->getCreateMode(),
 #      '#options' => array('field_collection' => 'field_collection', 'wisski_bundle' => 'wisski_bundle'),
     );
