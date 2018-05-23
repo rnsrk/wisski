@@ -847,6 +847,8 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
    *
    */
   public function generateBundleForGroup($groupid) {
+    $regenerate = FALSE;
+    
     // what is the mode of the pb?
     if(in_array($groupid, array_keys($this->getMainGroups())))
       $mode = 'wisski_bundle';
@@ -886,12 +888,15 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       } else {
         if(WISSKI_DEVEL) drupal_set_message(t('Could not connect bundle with id %bundleid with group %groupid. Generating new one.',array('%bundleid'=>$bundleid, '%groupid'=>$groupid)));
         // if there was nothing, reset the bundleid as it is wrong.
-        $bundleid = NULL;
+        // this is an evil asumption... we keep it in this case!
+        //$bundleid = NULL;
+        $regenerate = TRUE;
       }
     }
     
     // if we have a bundleid here, we can stop - if not we have to generate one.
-    if(empty($bundleid)) {
+    // also if we have to regenerate it, we try this.
+    if(empty($bundleid) || $regenerate) {
     
       $my_real_group = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($groupid);
     
@@ -899,7 +904,8 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       $bundle_name = $my_real_group->getName();
 
       // generate a 32 char name
-      $bundleid = $this->generateIdForBundle($groupid);
+      if(empty($bundleid))
+        $bundleid = $this->generateIdForBundle($groupid);
 
       // if the bundle is already there...
       if(empty($bundle_name) || !empty(\Drupal::entityManager()->getStorage($mode)->loadByProperties(array('id' => $bundleid)))) {
