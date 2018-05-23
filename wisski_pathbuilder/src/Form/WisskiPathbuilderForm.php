@@ -340,6 +340,7 @@ class WisskiPathbuilderForm extends EntityForm {
     );
     
     $field_options = array(
+      'keep' => $this->t('Keep settings from import file'), 
       Pathbuilder::CONNECT_NO_FIELD => $this->t('Do not create fields and bundles'),
       Pathbuilder::GENERATE_NEW_FIELD => $this->t('Create new fields and bundles'),
     );
@@ -349,7 +350,7 @@ class WisskiPathbuilderForm extends EntityForm {
       '#title' => $this->t('Set default mode to'),
       '#description' => $this->t('What should the fields and groups mode be set to?'),
       '#options' => $field_options,
-      '#default_value' => Pathbuilder::GENERATE_NEW_FIELD,
+      '#default_value' => 'keep',
     );
     
     $form['import']['importbutton'] = array(
@@ -447,22 +448,40 @@ class WisskiPathbuilderForm extends EntityForm {
     
 #    dpm($paths);
     foreach($paths as $key => $path) {
+    
+      $pbp = $pathbuilder->getPbPath($path['id']);
+#      dpm($path, "path!");
       
       $this_path = $xmldoc->addChild("path");
       
       $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
       
-#      dpm($pathob);
+#      dpm($pbp);
+#      dpm($path);
       
+      /*
       foreach($path as $subkey => $value) {
         
         // for now we skip the following:
-        if(in_array($subkey, array('bundle', 'field', 'path')))
-          continue;
+        // By Mark: We don't skip this anymore... we need it anyway!
+//        if(in_array($subkey, array('bundle', 'field', 'path')))
+//          continue;
         
         if($subkey == "parent")
           $subkey = "group_id";
         
+        $this_path->addChild($subkey, htmlspecialchars($value));
+      }
+      */
+      
+      foreach($pbp as $subkey => $value) {
+
+        if(in_array($subkey, array('relativepath')))
+          continue;
+ 
+        if($subkey == "parent")
+          $subkey = "group_id";
+ 
         $this_path->addChild($subkey, htmlspecialchars($value));
       }
       
@@ -570,11 +589,25 @@ class WisskiPathbuilderForm extends EntityForm {
       
       $pbpaths[$path_in_wisski->id()]['enabled'] = html_entity_decode((string)$path->enabled);
       $pbpaths[$path_in_wisski->id()]['weight'] = html_entity_decode((string)$path->weight);
-      if(((int)$path->is_group) === 1) 
-        $pbpaths[$path_in_wisski->id()]['bundle'] = html_entity_decode((string)$importmode);
-      else
-        $pbpaths[$path_in_wisski->id()]['field'] = html_entity_decode((string)$importmode);
+      if(html_entity_decode((string)$importmode) != "keep") {
+        if(((int)$path->is_group) === 1) 
+          $pbpaths[$path_in_wisski->id()]['bundle'] = html_entity_decode((string)$importmode);
+        else
+          $pbpaths[$path_in_wisski->id()]['field'] = html_entity_decode((string)$importmode);
+      } else {
+        $pbpaths[$path_in_wisski->id()]['bundle'] = html_entity_decode((string)$path->bundle);
+        $pbpaths[$path_in_wisski->id()]['field'] = html_entity_decode((string)$path->field);
+      }
       
+      if($path->fieldtype)
+        $pbpaths[$path_in_wisski->id()]['fieldtype'] = html_entity_decode((string)$path->fieldtype);
+
+      if($path->displaywidget)
+        $pbpaths[$path_in_wisski->id()]['displaywidget'] = html_entity_decode((string)$path->displaywidget);
+      
+      if($path->formatterwidget)
+        $pbpaths[$path_in_wisski->id()]['formatterwidget'] = html_entity_decode((string)$path->formatterwidget);      
+       
       $pb->setPbPaths($pbpaths);
       
     }
