@@ -545,45 +545,47 @@ class WisskiPathbuilderForm extends EntityForm {
       if(!empty($path_in_wisski)) {
         drupal_set_message("Path with id " . $uuid . " was already existing - skipping.");
         
-        $pb->addPathToPathTree($path_in_wisski->id(), $parentid, $path_in_wisski->isGroup());
+        $pb->addPathToPathTree($path_in_wisski->id(), $parentid, $path_in_wisski->isGroup());        
 
-        continue;
-      }
+//        continue;
+      } else { // normal case - import the path!
       
-      $path_array = array();
-      $count = 0;
-      foreach ($path->path_array->children() as $n) {
-        $path_array[$count] = html_entity_decode((string) $n);
-        $count++;
-      }
+        $path_array = array();
+        $count = 0;
+        foreach ($path->path_array->children() as $n) {
+          $path_array[$count] = html_entity_decode((string) $n);
+          $count++;
+        }
       
-      // it does not exist, create one!
-      $pathdata = array(
-        'id' => html_entity_decode((string)$path->id),
-        'name' => html_entity_decode((string)$path->name),
-        'path_array' => $path_array,
-        'datatype_property' => html_entity_decode((string)$path->datatype_property),
-        'short_name' => html_entity_decode((string)$path->short_name),
-        'length' => html_entity_decode((string)$path->length),
-        'disamb' => html_entity_decode((string)$path->disamb),
-        'description' => html_entity_decode((string)$path->description),
-        'type' => (((int)$path->is_group) === 1) ? 'Group' : 'Path', 
+        // it does not exist, create one!
+        $pathdata = array(
+          'id' => html_entity_decode((string)$path->id),
+          'name' => html_entity_decode((string)$path->name),
+          'path_array' => $path_array,
+          'datatype_property' => html_entity_decode((string)$path->datatype_property),
+          'short_name' => html_entity_decode((string)$path->short_name),
+          'length' => html_entity_decode((string)$path->length),
+          'disamb' => html_entity_decode((string)$path->disamb),
+          'description' => html_entity_decode((string)$path->description),
+          'type' => (((int)$path->is_group) === 1) ? 'Group' : 'Path', 
 #        'field' => Pathbuilder::GENERATE_NEW_FIELD,
-      );
+        );
       
-      // in D8 we do no longer allow a path/group without a name.
-      // we have to set it to a dummy value.
-      if ($pathdata['name'] == '') {
-        $pathdata['name'] = "_empty_";
-        drupal_set_message(t('Path with id @id (@uuid) has no name. Name has been set to "_empty_".', array('@id' => $pathdata['id'], '@uuid' => $uuid)), 'warning');
+        // in D8 we do no longer allow a path/group without a name.
+        // we have to set it to a dummy value.
+        if ($pathdata['name'] == '') {
+          $pathdata['name'] = "_empty_";
+          drupal_set_message(t('Path with id @id (@uuid) has no name. Name has been set to "_empty_".', array('@id' => $pathdata['id'], '@uuid' => $uuid)), 'warning');
+        }
+      
+        $path_in_wisski = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::create($pathdata);
+      
+        $path_in_wisski->save();
+      
+        $pb->addPathToPathTree($path_in_wisski->id(), $parentid, $path_in_wisski->isGroup());
       }
       
-      $path_in_wisski = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::create($pathdata);
-      
-      $path_in_wisski->save();
-      
-      $pb->addPathToPathTree($path_in_wisski->id(), $parentid, $path_in_wisski->isGroup());
-      
+          
       // check enabled or disabled
       $pbpaths = $pb->getPbPaths();
       
