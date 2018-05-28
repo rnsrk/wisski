@@ -162,29 +162,29 @@ class MultiSparqlQuery extends ConfigurableActionBase {
           }
         }
 
-        $all_results[] = $engine->$queryMethod($namespaces . $this->configuration['query_part_' . $i]['sparql_' . $i]);
+        $all_results[] = array( 'source' => $this->configuration['query_part_' . $i]['adapter_id_' . $i], 'engine' => $engine,  'results' => $engine->$queryMethod($namespaces . $this->configuration['query_part_' . $i]['sparql_' . $i]));
 #        dpm($namespaces . $this->configuration['query_part_' . $i]['sparql_' . $i], "yay!");
       }
     }
 
     $keys = array();
     $values = array();
-    
+    /*
     foreach($all_results as $key1 => $results) {
       #dpm(serialize($results), "res");
       
       $values[$key1] = array();
       
-      foreach($results as $key2 => $result) {
+      foreach($results['results'] as $key2 => $result) {
         
         $values[$key1][$key2] = "(";
         // key3 is x or y or whatever was selected
         foreach($result as $key3 => $value) {
           $keys[$key1][$key3] = $key3;
           
-          if($value->getUri())
+          if($value->getUri()) {          
             $values[$key1][$key2] .= "<" . $value->getUri() . "> ";
-          else
+          } else
             $values[$key1][$key2] .= '"' . $value->getValue() . '" ';
 #          dpm(serialize($value), "res");  
         }
@@ -193,7 +193,7 @@ class MultiSparqlQuery extends ConfigurableActionBase {
 #        dpm($value, "val");
       }
     }
-    
+    */
 //    dpm($values, "values");
 //    dpm($keys, "keys");
 
@@ -217,6 +217,36 @@ class MultiSparqlQuery extends ConfigurableActionBase {
             $namespaces .= "PREFIX $prefix: <$uri>\n";
           }
         }
+     
+        foreach($all_results as $key1 => $results) {
+        #dpm(serialize($results), "res");
+      
+        $values[$key1] = array();
+      
+        foreach($results['results'] as $key2 => $result) {
+        
+          $values[$key1][$key2] = "(";
+          // key3 is x or y or whatever was selected
+          foreach($result as $key3 => $value) {
+            $keys[$key1][$key3] = $key3;
+          
+            if($value->getUri()) {
+              $newuri = $engine->getSameUri($value->getUri(), $this->configuration['query_part_' . $i]['adapter_id_' . $i]); //, $results['source']);
+#              dpm(serialize($newuri), "newuri");
+              if($newuri)
+                $values[$key1][$key2] .= "<" . $newuri . "> ";
+              else
+                $values[$key1][$key2] .= "<" . $value->getUri() . "> ";
+            } else
+              $values[$key1][$key2] .= '"' . $value->getValue() . '" ';
+#          dpm(serialize($value), "res");  
+            }
+        
+            $values[$key1][$key2] .= ") ";
+#        dpm($value, "val");
+          }
+        }
+        
         
         $value_string = "VALUES (";
                 
