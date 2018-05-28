@@ -29,6 +29,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       else $other_queries[$adapter->id()] = $query;
     }
     $this->dependent_queries = array_merge($preferred_queries,$other_queries);
+#    dpm($this->dependent_queries, "dep!");
   }
   
   public function execute() {
@@ -47,16 +48,26 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     }  
     
     if ($this->count) {
-      $result = 0;
+      $result = array();
       foreach ($this->dependent_queries as $adapter_id => $query) {
-        $query = $query->count();
+//        $query = $query->count();
         $sub_result = $query->execute() ? : 0;
-        //dpm($adapter_id.' counted '.$sub_result);
+#        dpm($adapter_id.' counted '. serialize($sub_result));
+
+/*
         if (is_numeric($sub_result))
           $result += $sub_result;
         else drupal_set_message("Wrong result type from adapter $adapter_id: numeric expected, given " . gettype($subresult), 'error');
+*/
+
+        // this is rather complicated. I don't know why php does this like that...
+        if(!is_array($sub_result))
+          $sub_result = array();
+        $result = array_unique(array_merge($result, $sub_result), SORT_REGULAR);
+    
       }
-      //dpm('we counted '.$result);
+      $result = count($result);
+ #     dpm('we counted '.$result);
       if (!empty(self::$empties)) $result -= count(self::$empties);
       return $result;
     } else {
@@ -194,7 +205,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    */
   public function condition($field, $value = NULL, $operator = NULL, $langcode = NULL) {
     parent::condition($field,$value,$operator,$langcode);
-    foreach ($this->dependent_queries as $query) $query->condition($field,$value,$operator.$langcode);
+    foreach ($this->dependent_queries as $query) {
+#      dpm("doing condition " . serialize($field) . " to value " . serialize($value));
+      $query->condition($field,$value,$operator.$langcode);
+    }
     return $this;
   }
 

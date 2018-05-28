@@ -65,6 +65,8 @@ wisski_tick();
       $return = $this->buildAndExecSparql($where_clause, NULL, $this->count, $limit, $offset, $this->orderby);
       if (!$this->count) {
         $return = array_keys($return);
+      } else {
+ //       dpm($return, "ret!");
       }
     }
     else {
@@ -188,6 +190,8 @@ wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($ret
     
     // fetch the bundle in advance e.g. for title generation
     $needs_a_bundle = NULL;    
+    $is_a_pathquery = FALSE;
+    $contributes_to_pathquery = FALSE;
     foreach($condition->conditions() as $ij => $cond) {
       $field = $cond['field'];
       $value = $cond['value'];
@@ -195,94 +199,9 @@ wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($ret
       if ($field == "bundle") {
         $needs_a_bundle = current($value);
       }
-    }
-
-    // $condition is actually a tree of checks that can be OR'ed or AND'ed.
-    // We walk the tree and build up sparql conditions / a where clause in
-    // $query_parts.
-    //
-    // We must handle the special case of an entity id and title/label
-    // condition, which is not executed against the triple store but the RDB.
-    // We keep track of these entities in $entity_ids and perform sparql
-    // subqueries in case the ids and the clauses have to be mixed
-    // (holds for ANDs).
-
-    foreach ($condition->conditions() as $ij => $cond) {
       
-      $field = $cond['field'];
-      $value = $cond['value'];
-      $operator = $cond['operator'];
-wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition" : "now for '".join(";",(array)$value)."' in field '$field'");
-#\Drupal::logger('query path cond')->debug("$ij::$field::$value::$operator::$conjunction");     
-
-      // we dispatch over the field
-
-      if ($field instanceof ConditionInterface) {
-        // this is a nested condition so we have to recurse
-
-        list($qp, $eids) = $this->makeQueryConditions($field);
-        $entity_ids = $this->join($conjunction, $entity_ids, $eids);
-        if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
-          // the condition evaluated to an empty set of entities 
-          // and we have to AND; so the result set will be empty.
-          // The rest of the conditions can be skipped 
-          return array('', array());
-        }
-        $query_parts[] = $qp;
-
-      }
-      elseif ($field == "eid") {
-        // directly ask Drupal's entity id.
-
-        $eids = $this->executeEntityIdCondition($operator, $value);
-        $entity_ids = $this->join($conjunction, $entity_ids, $eids);
-        if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
-          // the condition evaluated to an empty set of entities 
-          // and we have to AND; so the result set will be empty.
-          // The rest of the conditions can be skipped 
-          return array('', array());
-        }
-
-      }
-      elseif ($field == "bundle") {
-        // the bundle is being mapped to pb groups
-
-        $query_parts[] = $this->makeBundleCondition($operator, $value);
-      
-      }
-      elseif ($field == "title" || $field == 'label') {
-        // we treat label and title the same (there really should be no difference)
-        // directly ask the title
-        // TODO: we could handle the special case of title+bundle query as this
-        // can be packed into one db query and not unintentionally explode the
-        // intermediate result set
-#        dpm("yay!");
-        $eids = $this->executeEntityTitleCondition($operator, $value, $needs_a_bundle);
-        $entity_ids = $this->join($conjunction, $entity_ids, $eids);
-        if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
-          // the condition evaluated to an empty set of entities 
-          // and we have to AND; so the result set will be empty.
-          // The rest of the conditions can be skipped 
-          return array('', array());
-        }
-
-      }
-      elseif (in_array($field, $skip_field_ids)) {
-        // these fields are not supported on purpose
-        //$this->missingImplMsg("Field '$field' intentionally not queryable in entity query", array('condition' => $condition));
-      } 
-      // for the rest of the fields we need to distinguish between field and path
-      // query mode 
-      //
-      // TODO: we should not need to distinguish between both modes as we can
-      // tell them apart by the dot. This would make query more flexible and
-      // allow for queries that contain both path and field conditions.
-      elseif ($this->isPathQuery() || strpos($field, '.') !== FALSE) {
-        // the field is actually a path so we can query it directly
-
-        // the search field id encodes the pathbuilder id and the path id:
-        // decode them!
-        // TODO: we could omit the pb and search all pbs the contain the path
+      if ($this->isPathQuery() || strpos($field, '.') !== FALSE) {
+        $is_a_pathquery = TRUE;
         $pb_and_path = explode(".", $field);
         if (count($pb_and_path) != 2) {
           // bad encoding! can't handle
@@ -291,55 +210,168 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
         }
         $pbid = $pb_and_path[0];
         $pbs = $this->getPbs();
+
+        // if this is not set the field can not contribute.
         if (!isset($pbs[$pbid])) {
-          // we cannot handle this path as its pb belongs to another engine's
-          // pathbuilder
-          continue; // with next condition
+          continue;
+        } else {
+#          dpm("it contributes!!!" . $pbid, "yes!");
+          $contributes_to_pathquery = TRUE;
         }
-        $pb = $pbs[$pbid];
-        // get the path
-        $path_id = $pb_and_path[1];
-        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path_id);
-        if(empty($path)) {
-          drupal_set_message($this->t('Bad path id "%id" in entity query', ['%id' => $path_id]));
-          continue; // with next condition
-        }
+      }
+    }
+    
+#    dpm(serialize($this->isPathQuery()) . " and " . serialize($contributes_to_pathquery));
+    // if this is a pathquery and it does not contribute - we stop here.
+    if($is_a_pathquery && !$contributes_to_pathquery) {
+#      dpm("it is a path query and it does not contribute!");
+      // get out here.
+      return array('', NULL);
+    } else {
 
-        $new_query_part = $this->makePathCondition($pb, $path, $operator, $value);
+      // $condition is actually a tree of checks that can be OR'ed or AND'ed.
+      // We walk the tree and build up sparql conditions / a where clause in
+      // $query_parts.
+      //
+      // We must handle the special case of an entity id and title/label
+      // condition, which is not executed against the triple store but the RDB.
+      // We keep track of these entities in $entity_ids and perform sparql
+      // subqueries in case the ids and the clauses have to be mixed
+      // (holds for ANDs).
+
+      foreach ($condition->conditions() as $ij => $cond) {
         
-        if (is_null($new_query_part)) {
-          if ($conjunction == 'AND') {
-            // the condition would definitely evaluate to an empty set of 
-            // entities and we have to AND; so the result set will be empty.
+        $field = $cond['field'];
+        $value = $cond['value'];
+        $operator = $cond['operator'];
+wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition" : "now for '".join(";",(array)$value)."' in field '$field'");
+#\Drupal::logger('query path cond')->debug("$ij::$field::$value::$operator::$conjunction");     
+
+        // we dispatch over the field
+
+        if ($field instanceof ConditionInterface) {
+          // this is a nested condition so we have to recurse
+          
+          list($qp, $eids) = $this->makeQueryConditions($field);
+          $entity_ids = $this->join($conjunction, $entity_ids, $eids);
+          if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
+            // the condition evaluated to an empty set of entities 
+            // and we have to AND; so the result set will be empty.
             // The rest of the conditions can be skipped 
             return array('', array());
           }
-          // else: we are in OR mode so we can just skip the condition that 
-          // would evaluate to an empty set
-        }
-        else {
-          $query_parts[] = $new_query_part;
-        }
+          $query_parts[] = $qp;
 
-      } 
-      else {
-        // the field must be mapped to one or many paths which are then queried
+        }
+        elseif ($field == "eid") {
+          // directly ask Drupal's entity id.
 
-        $new_query_part = $this->makeFieldCondition($field, $operator, $value);
-        if (is_null($new_query_part)) {
-          if ($conjunction == 'AND') {
-            // the condition would definitely evaluate to an empty set of 
-            // entities and we have to AND; so the result set will be empty.
+          $eids = $this->executeEntityIdCondition($operator, $value);
+          $entity_ids = $this->join($conjunction, $entity_ids, $eids);
+          if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
+            // the condition evaluated to an empty set of entities 
+            // and we have to AND; so the result set will be empty.
             // The rest of the conditions can be skipped 
             return array('', array());
           }
-          // else: we are in OR mode so we can just skip the condition that 
-          // would evaluate to an empty set
-        }
-        else {
-          $query_parts[] = $new_query_part;
-        }
 
+        }
+        elseif ($field == "bundle") {
+          // the bundle is being mapped to pb groups
+
+          $query_parts[] = $this->makeBundleCondition($operator, $value);
+      
+        }
+        elseif ($field == "title" || $field == 'label') {
+          // we treat label and title the same (there really should be no difference)
+          // directly ask the title
+          // TODO: we could handle the special case of title+bundle query as this
+          // can be packed into one db query and not unintentionally explode the
+          // intermediate result set
+#        dpm("yay!");
+          $eids = $this->executeEntityTitleCondition($operator, $value, $needs_a_bundle);
+          $entity_ids = $this->join($conjunction, $entity_ids, $eids);
+          if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
+            // the condition evaluated to an empty set of entities 
+            // and we have to AND; so the result set will be empty.
+            // The rest of the conditions can be skipped 
+            return array('', array());
+          }
+
+        }
+        elseif (in_array($field, $skip_field_ids)) {
+          // these fields are not supported on purpose
+          //$this->missingImplMsg("Field '$field' intentionally not queryable in entity query", array('condition' => $condition));
+        } 
+        // for the rest of the fields we need to distinguish between field and path
+        // query mode 
+        //
+        // TODO: we should not need to distinguish between both modes as we can
+        // tell them apart by the dot. This would make query more flexible and
+        // allow for queries that contain both path and field conditions.
+        elseif ($this->isPathQuery() || strpos($field, '.') !== FALSE) {
+          // the field is actually a path so we can query it directly
+    
+          // the search field id encodes the pathbuilder id and the path id:
+          // decode them!
+          // TODO: we could omit the pb and search all pbs the contain the path
+          $pb_and_path = explode(".", $field);
+          if (count($pb_and_path) != 2) {
+            // bad encoding! can't handle
+            drupal_set_message($this->t('Bad pathbuilder and path id "%id" in entity query condition', ['%id' => $field]));
+            continue; // with next condition
+          }
+          $pbid = $pb_and_path[0];
+          $pbs = $this->getPbs();
+          if (!isset($pbs[$pbid])) {
+            // we cannot handle this path as its pb belongs to another engine's
+            // pathbuilder
+            continue; // with next condition
+          }
+          $pb = $pbs[$pbid];
+          // get the path
+          $path_id = $pb_and_path[1];
+          $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path_id);
+          if(empty($path)) {
+            drupal_set_message($this->t('Bad path id "%id" in entity query', ['%id' => $path_id]));
+            continue; // with next condition
+          }
+
+          $new_query_part = $this->makePathCondition($pb, $path, $operator, $value);
+          
+          if (is_null($new_query_part)) {
+            if ($conjunction == 'AND') {
+              // the condition would definitely evaluate to an empty set of 
+              // entities and we have to AND; so the result set will be empty.
+              // The rest of the conditions can be skipped 
+              return array('', array());
+            }
+            // else: we are in OR mode so we can just skip the condition that 
+            // would evaluate to an empty set
+          }
+          else {
+            $query_parts[] = $new_query_part;
+          }
+
+        } 
+        else {
+          // the field must be mapped to one or many paths which are then queried
+          
+          $new_query_part = $this->makeFieldCondition($field, $operator, $value);
+          if (is_null($new_query_part)) {
+            if ($conjunction == 'AND') {
+              // the condition would definitely evaluate to an empty set of 
+              // entities and we have to AND; so the result set will be empty.
+              // The rest of the conditions can be skipped 
+              return array('', array());
+            }
+            // else: we are in OR mode so we can just skip the condition that 
+            // would evaluate to an empty set
+          }
+          else {
+            $query_parts[] = $new_query_part;
+          }
+        }
       }
     }
     
@@ -484,6 +516,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
   protected function buildAndExecSparql($query_parts, $entity_ids, $count = FALSE, $limit = 0, $offset = 0, $sort_params = "") {
     
     if ($count) {
+      // we don't do this anymore...
       $select = 'SELECT (COUNT(DISTINCT ?x0) as ?cnt) WHERE { ';
     }
     else {
@@ -516,9 +549,10 @@ $timethis[] = microtime(TRUE);
 #    dpm(microtime(), "before");
     $result = $engine = $this->getEngine()->directQuery($select);
 $timethis[] = microtime(TRUE);
-#    drupal_set_message(serialize($select));
+//    drupal_set_message(serialize($select));
 #    dpm($result, "res");
     $adapter_id = $this->getEngine()->adapterId();
+//    drupal_set_message("I answered: " . $adapter_id);
     if (WISSKI_DEVEL) \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded result count {cnt}: {result}', array('query' => $select, 'result' => $result, 'cnt' => $result->count()));
     if ($result === NULL) {
       throw new \Exception("query failed (null): $select");
@@ -546,7 +580,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         }
       }
     }
-#    drupal_set_message(serialize($return));
+//    drupal_set_message("I return for $adapter_id and query " . $select . " data: " . serialize($return));
     return $return;
 
   }
