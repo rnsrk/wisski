@@ -49,6 +49,9 @@ wisski_tick();
     // a list of entity ids that the pattern should be restricted to
     list($where_clause, $entity_ids) = $this->makeQueryConditions($this->condition);
 
+#    dpm($where_clause, "where clause");
+#    dpm($entity_ids, "eids");
+
     if (empty($where_clause) && empty($entity_ids)) {
       $return = $this->count ? 0 : array();
     }
@@ -63,10 +66,11 @@ wisski_tick();
       list($limit, $offset) = $this->getPager();
 
       $return = $this->buildAndExecSparql($where_clause, NULL, $this->count, $limit, $offset, $this->orderby);
+#      dpm(serialize($return), "got: ");
       if (!$this->count) {
         $return = array_keys($return);
       } else {
- //       dpm($return, "ret!");
+//        dpm($return, "ret!");
       }
     }
     else {
@@ -89,7 +93,7 @@ wisski_tick();
 
     #\Drupal::logger('query adapter ' . $this->getEngine()->adapterId())->debug('query result is {result}', array('result' => serialize($return)));
 wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($return)));
-#  dpm($return, "what");    
+#    dpm($return, "what");    
     return $return;
 
   }
@@ -549,7 +553,7 @@ $timethis[] = microtime(TRUE);
 #    dpm(microtime(), "before");
     $result = $engine = $this->getEngine()->directQuery($select);
 $timethis[] = microtime(TRUE);
-//    drupal_set_message(serialize($select));
+#    dpm(serialize($select), $this->getEngine()->adapterId());
 #    dpm($result, "res");
     $adapter_id = $this->getEngine()->adapterId();
 //    drupal_set_message("I answered: " . $adapter_id);

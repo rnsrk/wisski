@@ -67,7 +67,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     
       }
       $result = count($result);
- #     dpm('we counted '.$result);
+#     dpm('we counted '.$result);
+#      dpm(serialize(self::$empties), "empties!");
       if (!empty(self::$empties)) $result -= count(self::$empties);
       return $result;
     } else {
@@ -88,6 +89,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         //set $query->count = FALSE;
         $query = $query->normalQuery();
         $sub_result = $query->execute();
+#        dpm("res!");
         $result = array_unique(array_merge($result,$sub_result));
       }
       if (!empty(self::$empties)) $result = array_diff($result,self::$empties);
@@ -101,22 +103,42 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     $query = array_shift($queries);
     $act_offset = $offset;
     $act_limit = $limit;
+    $all_results = array();
     $results = array();
     while (!empty($query)) {
       $query = $query->normalQuery();
       $query->range($act_offset,$act_limit);
       $new_results = $query->execute();
+#      dpm("got: " . serialize($new_results));
       $res_count = count($new_results);
       if (!empty(self::$empties)) $new_results = array_diff($new_results,self::$empties);
-      $post_res_count = count($new_results);      
+      //$post_res_count = count($new_results);      
       //dpm($post_res_count,$act_offset.' '.$act_limit);
+      $old_sum = count($results);
       $results = array_unique(array_merge($results,$new_results));
+      $curr_sum = count($results);
+      
+      $res_count = $curr_sum - $old_sum;
+      $post_res_count = $curr_sum - $old_sum;
+
+#      dpm(serialize($res_count), "res");
+      
       if ($res_count === 0) {
-        $query->count();
+        //$query->count();
+        unset($query->range);
         $res_count = $query->execute();
-        if (!is_numeric($res_count)) $res_count = 0;
+        #dpm($res_count, "res!");
+        if(!is_array($res_count))
+          $res_count = array();
+
+        $before = count($all_results);
+        $all_results = array_unique(array_merge($all_results,$res_count));
+        $after = count($all_results);
+        
+//        if (!is_numeric($res_count)) $res_count = count($res_count);
+        
         //dpm($res_count,$key.' full count');
-        $act_offset = $act_offset - $res_count;
+        $act_offset = $act_offset - ($after - $before);
         if ($act_offset < 0) $act_offset = 0;
         $query = array_shift($queries);
       } elseif ($post_res_count < $res_count) {
@@ -130,6 +152,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         $query = array_shift($queries);
       } else break;
     }
+#    dpm($results, "res!");
     return $results;
   }
 
