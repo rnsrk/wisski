@@ -44,6 +44,12 @@ class FieldString extends ViewsString {
         'method' => 'opSimple',
         'values' => 1,
       ),
+      'EMPTY' => array(
+        'title' => t('Is empty'),
+        'short' => t('empty'),
+        'method' => 'opSimple',
+        'values' => 1,
+      ),
       'IN' => array(
         'title' => t('One of'),
         'short' => t('in'),
