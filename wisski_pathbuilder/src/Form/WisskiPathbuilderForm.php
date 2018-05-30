@@ -599,17 +599,17 @@ class WisskiPathbuilderForm extends EntityForm {
       } else {
         $pbpaths[$path_in_wisski->id()]['bundle'] = html_entity_decode((string)$path->bundle);
         $pbpaths[$path_in_wisski->id()]['field'] = html_entity_decode((string)$path->field);
-      }
       
-      if($path->fieldtype)
-        $pbpaths[$path_in_wisski->id()]['fieldtype'] = html_entity_decode((string)$path->fieldtype);
+      
+        if($path->fieldtype)
+          $pbpaths[$path_in_wisski->id()]['fieldtype'] = html_entity_decode((string)$path->fieldtype);
 
-      if($path->displaywidget)
-        $pbpaths[$path_in_wisski->id()]['displaywidget'] = html_entity_decode((string)$path->displaywidget);
+        if($path->displaywidget)
+          $pbpaths[$path_in_wisski->id()]['displaywidget'] = html_entity_decode((string)$path->displaywidget);
       
-      if($path->formatterwidget)
-        $pbpaths[$path_in_wisski->id()]['formatterwidget'] = html_entity_decode((string)$path->formatterwidget);      
-       
+        if($path->formatterwidget)
+          $pbpaths[$path_in_wisski->id()]['formatterwidget'] = html_entity_decode((string)$path->formatterwidget);      
+      }
       $pb->setPbPaths($pbpaths);
       
     }
