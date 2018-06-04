@@ -190,7 +190,7 @@ class WisskiLinkblock extends BlockBase {
             $childid = $child['id'];
 
             // better catch these.            
-            if(empty($childid))
+            if(empty($childid) || ( isset($allpbpaths[$childid]) && $allpbpaths[$childid]['enabled'] == 0 ) )
               continue;
             
             $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($childid);
