@@ -196,15 +196,24 @@ wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($ret
     $needs_a_bundle = NULL;    
     $is_a_pathquery = FALSE;
     $contributes_to_pathquery = FALSE;
+#    dpm($condition, "cond");
     foreach($condition->conditions() as $ij => $cond) {
       $field = $cond['field'];
+#      dpm($field, "field");
       $value = $cond['value'];
+      
+#      dpm($value, "value");
+      
+      if ($field instanceof ConditionInterface) {
+        // we don't handle this here!
+        continue;
+      }
       
       if ($field == "bundle") {
         $needs_a_bundle = current($value);
       }
       
-      if ($this->isPathQuery() || strpos($field, '.') !== FALSE) {
+      if ($this->isPathQuery() && strpos($field, '.') !== FALSE) {
         $is_a_pathquery = TRUE;
         $pb_and_path = explode(".", $field);
         if (count($pb_and_path) != 2) {
