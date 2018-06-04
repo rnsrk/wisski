@@ -49,7 +49,7 @@ dpm(__METHOD__, __METHOD__);
   /**
    * {@inheritdoc}
    */
-  function query() {
+  function query($group_by = false) {
     # $this->value may be an array or a single value depending on the "Allow multiple values" option
     $values = $this->value;
     if (empty($values)) {
