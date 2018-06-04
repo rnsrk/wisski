@@ -209,7 +209,7 @@ wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($ret
         $pb_and_path = explode(".", $field);
         if (count($pb_and_path) != 2) {
           // bad encoding! can't handle
-          drupal_set_message($this->t('Bad pathbuilder and path id "%id" in entity query condition', ['%id' => $field]));
+          drupal_set_message(new \Drupal\Core\StringTranslation\TranslatableMarkup('Bad pathbuilder and path id "%id" in entity query condition', ['%id' => $field]));
           continue; // with next condition
         }
         $pbid = $pb_and_path[0];
