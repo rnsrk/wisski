@@ -1,0 +1,21 @@
+readmore:
+  version: 1.x
+  js:
+    js/readmore_formatter.js: {}
+  dependencies:
+    - wisski_adapter_sparql11_pb/readmorejs
+    - core/jquery
+    - core/drupalSettings
+
+readmorejs:
+  remote: https://github.com/jedfoster/Readmore.js
+  version: 2.2.0
+  license:
+    name: MIT
+    remote: https://github.com/jedfoster/Readmore.js/blob/v2.2.0/LICENSE
+    gpl-compatible: true
+  js:
+    https://cdnjs.cloudflare.com/ajax/libs/Readmore.js/2.2.0/readmore.min.js: { type: external, minified: true }
+  dependencies:
+    - core/jquery
+
