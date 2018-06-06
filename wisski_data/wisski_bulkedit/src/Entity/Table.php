@@ -166,7 +166,6 @@ class Table extends ConfigEntityBase implements TableInterface {
       return FALSE;
     }
     $this->schema = $schema;
-    $this->tableName = $tableName;
     $this->timestamp = time();
     $this->save();
     return TRUE;
