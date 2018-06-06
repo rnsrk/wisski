@@ -210,7 +210,7 @@ wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($ret
       }
       
       if ($field == "bundle") {
-        $needs_a_bundle = current($value);
+        $needs_a_bundle = current((array) $value);
       }
       
       if ($this->isPathQuery() && strpos($field, '.') !== FALSE) {
