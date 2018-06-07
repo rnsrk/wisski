@@ -15,7 +15,6 @@ use Drupal\wisski_bulkedit\Entity\Table;
 use League\Csv\Reader;
 
 class AddForm extends EntityForm {
-  
 
   /**
    * {@inheritdoc}
@@ -139,13 +138,25 @@ class AddForm extends EntityForm {
     $form_state->setRedirect('entity.wisski_bulkedit_table.collection');
     return $return;
   }
+  
+  
+  protected function leagueCsvVersion() {
+    return method_exists('/League/Csv/Reader', 'getHeaderOffset') ? 9 : 8;
+  }
 
 
   protected function importCsv($csv) {
     if (empty($csv)) return 0;
     $c = 0;
     $insert = NULL;
-    foreach ($csv as $record) {
+    $records = [];
+    if ($this->leagueCsvVersion() == 8) {
+      $records = $csv->fetchAssoc();
+    }
+    elseif ($this->leagueCsvVersion() == 9) {
+      $records = $csv;
+    }
+    foreach ($records as $record) {
       if ($c % 100 == 0) {
         if ($insert !== NULL) $insert->execute();
         $insert = $this->entity->getDbConnection()
@@ -172,8 +183,13 @@ class AddForm extends EntityForm {
       $columns = $columns[1];
     }
     elseif ($csv) {
-      $csv->setHeaderOffset(0);
-      $columns = $csv->getHeader();
+      if ($this->leagueCsvVersion() == 8) {
+        $columns = $csv->fetchOne();
+      }
+      elseif ($this->leagueCsvVersion() == 8) {
+        $csv->setHeaderOffset(0);
+        $columns = $csv->getHeader();
+      }
     }
     if (empty($columns)) {
       return FALSE;
