@@ -30,7 +30,8 @@ wpm(func_get_args());
     
     // if no URI was given, we abort with an error
     if ($uri === NULL) {
-      throw new \InvalidArgumentException("You must specify a URI using one of the following query parameters: " . join(", ", $param_preference));
+      drupal_set_message($this->t("No URI given. You must specify a URI using one of the following query parameters: %p", ['%p' => join(", ", $param_preference)]), 'error');
+      throw new NotFoundHttpException(t("No URI given."));
     }
 
     // cleanse URI: remove surrounding <> or expand prefix
@@ -44,6 +45,7 @@ wpm(func_get_args());
     // check whether some adapter knows the URI
     // if not we display a page not found
     if (!AdapterHelper::checkUriExists($uri)) {
+      drupal_set_message($this->t("The URI %uri is unknown to the system", ['%uri' => $uri]), 'error');
       throw new NotFoundHttpException(t("The given URI is unknown to the system."));
     }
     

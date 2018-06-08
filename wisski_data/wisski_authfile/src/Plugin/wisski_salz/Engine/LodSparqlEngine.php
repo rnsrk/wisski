@@ -27,8 +27,6 @@ use EasyRdf_Namespace;
 use EasyRdf_Literal;
 use EasyRdf_Resource;
 
-use asdfgh;
-
 
 /**
  * A simple adapter engine for linked open data repositories that can be 
@@ -497,6 +495,12 @@ class LodSparqlEngine extends Sparql11EngineWithPB {
       $output[$prop] = $prop;
     }
     uksort($output,'strnatcasecmp');
+
+    if ($this->allow_inverse_property_pattern) {
+      foreach ($output as $p) {
+        $output["^$p"] = "^$p";
+      }
+    }
     return $output;
   } 
 
