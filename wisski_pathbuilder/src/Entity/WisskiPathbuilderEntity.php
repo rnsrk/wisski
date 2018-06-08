@@ -439,7 +439,10 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     
       if($type == 'wisski_bundle') {
         $field_values['settings']['handler'] = "default:wisski_individual";
-        $field_values['settings']['handler_settings']['target_bundles'][$this->generateIdForBundle($pathid)] = $this->generateIdForBundle($pathid);
+
+        $bid_loc = isset($pbpaths[$pathid]['bundle']) ? $pbpaths[$pathid]['bundle'] : $this->generateIdForBundle($pathid);
+
+        $field_values['settings']['handler_settings']['target_bundles'][$bid_loc] = $bid_loc;
         $field_values['field_type'] = "entity_reference";
       }
 
