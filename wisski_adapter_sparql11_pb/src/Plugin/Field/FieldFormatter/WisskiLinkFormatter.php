@@ -381,6 +381,7 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
         } else {
           $elements['#attributes']['class'] = array("field-readmore " . $unique_id);
         }
+#        $elements['#attached']['library'][] = 'wisski_adapter_sparql11_pb/readmorejs';
         $elements['#attached']['library'][] = 'wisski_adapter_sparql11_pb/readmore';
         $elements['#attached']['drupalSettings']['readmoreSettings'][$unique_id] = $settings;
       }
