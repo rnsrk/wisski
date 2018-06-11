@@ -415,7 +415,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
       $query_parts = $query_parts[0];
     }
     elseif ($conjunction == 'AND') {
-      $query_parts = join(' . ', $query_parts);
+      $query_parts = join(' ', $query_parts);
     }
     else {
       // OR
