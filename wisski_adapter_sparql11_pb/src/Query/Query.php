@@ -363,7 +363,8 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
             // would evaluate to an empty set
           }
           else {
-            $query_parts[] = $new_query_part;
+            if(!empty($new_query_part))
+              $query_parts[] = $new_query_part;
           }
 
         } 
@@ -382,7 +383,8 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
             // would evaluate to an empty set
           }
           else {
-            $query_parts[] = $new_query_part;
+            if(!empty($new_query_part))
+              $query_parts[] = $new_query_part;
           }
         }
       }
@@ -403,6 +405,8 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
       }
     }
 
+#    dpm($query_parts, "qp");
+
     // flatten query parts array
     if (empty($query_parts)) {
       $query_parts = '';
@@ -411,12 +415,14 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
       $query_parts = $query_parts[0];
     }
     elseif ($conjunction == 'AND') {
-      $query_parts = join(' ', $query_parts);
+      $query_parts = join(' . ', $query_parts);
     }
     else {
       // OR
       $query_parts = ' {{ ' . join(' } UNION { ', $query_parts) . ' }} ';
     }  
+    
+#    dpm($query_parts, "qpout");
     
     // handle sorting
     $sort_params = "";
