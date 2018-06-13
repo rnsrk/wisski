@@ -97,6 +97,9 @@ class StringArgument extends ViewsString {
       'STARTS_WITH' => [
         'label' => $this->t('Starts with'),
       ],
+      'ENDS_WITH' => [
+        'label' => $this->t('Ends with'),
+      ],
       '<' => [
         'label' => $this->t('Is less than'),
       ],

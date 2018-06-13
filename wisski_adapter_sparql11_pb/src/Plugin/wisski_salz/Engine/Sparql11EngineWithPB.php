@@ -2429,7 +2429,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           elseif($op == 'ENDS_WITH') {
             $regex = true;
             $safe = TRUE;
-            $primitiveValue = $this->escapeSparqlRegex($primitiveValue, TRUE) . '$';
+//            $primitiveValue = $this->escapeSparqlRegex($primitiveValue, TRUE) . '$';
           }
           elseif($op == 'CONTAINS') {
             $regex = true;
@@ -2473,6 +2473,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             $filter = "$cast_outvar >= $val_min & $cast_outvar <= $val_max";
           } else  if($op == "STARTS_WITH") {
             $filter = "strStarts($cast_outvar, $escapedValue)";
+          } else if ($op == "ENDS_WITH") {
+            $filter = "strEnds($cast_outvar, $escapedValue)";
           }
           elseif($regex) {
             // we have to use STR() otherwise we may get into trouble with

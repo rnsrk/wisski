@@ -44,6 +44,12 @@ class PathString extends ViewsString {
         'method' => 'opSimple',
         'values' => 1,
       ),
+      'ENDS_WITH' => array(
+        'title' => t('Ends with'),
+        'short' => t('ends'),
+        'method' => 'opSimple',
+        'values' => 1,
+      ),
     );
 
     return $operators;

@@ -673,7 +673,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       if ($operator == '=' || $operator == "!=" || $operator == "LIKE") {
         $select->condition('ngram', $value, $operator);
       }
-      elseif ($operator == 'CONTAINS' || $operator == "STARTS_WITH") {
+      elseif ($operator == 'CONTAINS' || $operator == "STARTS_WITH" || $operator == "ENDS_WITH") {
         $select->condition('ngram', ($operator == 'CONTAINS' ? "%" : "") . $select->escapeLike($value) . "%", 'LIKE');
       } 
       else {
