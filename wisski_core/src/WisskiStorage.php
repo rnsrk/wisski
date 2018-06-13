@@ -716,18 +716,18 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   }
 
   public function getFileId($file_uri,&$local_file_uri='', $entity_id = 0) {
-    #drupal_set_message('Image uri: '.$file_uri);
+    drupal_set_message('Image uri: '.$file_uri);
     if (empty($file_uri)) return NULL;
     //first try the cache
     $cid = 'wisski_file_uri2id_'.md5($file_uri);
     if ($cache = \Drupal::cache()->get($cid)) {
       // check if it really exists.
-      if(file_exists($file_uri)) {
+      if(file_exists($file_uri) && filesize($file_ur) > 0) {
         list($file_uri,$local_file_uri) = $cache->data;
         return $file_uri;
       }
     }
-    
+        
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
     $local_file_uri = $this->ensureSchemedPublicFileUri($file_uri);
@@ -761,12 +761,24 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
         if (!empty($file_ids)) {
 #          dpm("6");
-          //we have a local file with the same filename.
-          //lets assume this is the file we were looking for
-          $value = current($file_ids);
+
+          #dpm($local_file_uri, "loc");
+          
+          if(file_exists($local_file_uri) && filesize($local_file_uri) > 0) {
+            //we have a local file with the same filename.
+            //lets assume this is the file we were looking for
+            $value = current($file_ids);
+          } else {
+#            dpm("yay!");
+            file_delete(current($file_ids));
+            $file_ids = NULL;
+          }
+          
           //dpm('replaced '.$file_uri.' with local file '.$value);
           //@TODO find out what to do if there is more than one file with that uri
-        } else {
+        } 
+        
+        if(empty($file_ids)) {
 #          dpm($local_file_uri, "loc");
           $file = NULL;
           // if we have no managed file with that uri, we try to generate one.
@@ -803,6 +815,13 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               $tmp = explode("/", $file_uri);
 #              $tmp[count($tmp) - 1] = rawurlencode($tmp[count($tmp) - 1]);
               $file_uri = join('/', $tmp);
+
+              // replace space.
+              // we need to replace space to %20
+              // because urls are like http://projektdb.gnm.de/provenienz2014/sites/default/files/Z 2156.jpg
+              $file_uri = str_replace(' ', '%20', $file_uri); 
+
+
               
 #              dpm($file_uri, "fileuri");
 
@@ -811,7 +830,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 drupal_set_message($this->t('Could not fetch file with uri %uri.',array('%uri'=>$file_uri,)),'error');
               }
 
-              #dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
+#              dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
               $file = file_save_data($data, $local_file_uri);
 
               if ($file) {
