@@ -1590,7 +1590,27 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
           }
 
-          $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);        
+          // merge it manually as recursive merge does not work properly in case of multi arrays.
+          if ($main_property == 'target_id') {
+            foreach($tmp as $key => $item) {
+              $skip = false;
+            // check if the value is already there...
+              foreach($out[$eid][$field_id] as $field) {
+                if($field["target_id"] == $item["target_id"]) {
+                  $skip = TRUE;
+                  break;
+                }
+              }
+              
+              // if we don't skip, add it via array_merge...
+              if(!$skip) 
+                $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);
+            
+            }
+          } else { // "normal" behaviour
+//          dpm($tmp, "merging with " . serialize($out[$eid][$field_id]));
+            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);
+          }
         }
         
         if(empty($out[$eid][$field_id]))
