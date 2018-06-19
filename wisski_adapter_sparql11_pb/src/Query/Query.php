@@ -363,7 +363,8 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
             // would evaluate to an empty set
           }
           else {
-            $query_parts[] = $new_query_part;
+            if(!empty($new_query_part))
+              $query_parts[] = $new_query_part;
           }
 
         } 
@@ -382,7 +383,8 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
             // would evaluate to an empty set
           }
           else {
-            $query_parts[] = $new_query_part;
+            if(!empty($new_query_part))
+              $query_parts[] = $new_query_part;
           }
         }
       }
@@ -403,6 +405,8 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
       }
     }
 
+#    dpm($query_parts, "qp");
+
     // flatten query parts array
     if (empty($query_parts)) {
       $query_parts = '';
@@ -417,6 +421,8 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
       // OR
       $query_parts = ' {{ ' . join(' } UNION { ', $query_parts) . ' }} ';
     }  
+    
+#    dpm($query_parts, "qpout");
     
     // handle sorting
     $sort_params = "";
@@ -667,7 +673,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       if ($operator == '=' || $operator == "!=" || $operator == "LIKE") {
         $select->condition('ngram', $value, $operator);
       }
-      elseif ($operator == 'CONTAINS' || $operator == "STARTS_WITH") {
+      elseif ($operator == 'CONTAINS' || $operator == "STARTS_WITH" || $operator == "ENDS_WITH") {
         $select->condition('ngram', ($operator == 'CONTAINS' ? "%" : "") . $select->escapeLike($value) . "%", 'LIKE');
       } 
       else {

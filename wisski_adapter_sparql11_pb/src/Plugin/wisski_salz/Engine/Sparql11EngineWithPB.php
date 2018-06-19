@@ -1590,7 +1590,27 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
           }
 
-          $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);        
+          // merge it manually as recursive merge does not work properly in case of multi arrays.
+          if ($main_property == 'target_id') {
+            foreach($tmp as $key => $item) {
+              $skip = false;
+            // check if the value is already there...
+              foreach($out[$eid][$field_id] as $field) {
+                if($field["target_id"] == $item["target_id"]) {
+                  $skip = TRUE;
+                  break;
+                }
+              }
+              
+              // if we don't skip, add it via array_merge...
+              if(!$skip) 
+                $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);
+            
+            }
+          } else { // "normal" behaviour
+//          dpm($tmp, "merging with " . serialize($out[$eid][$field_id]));
+            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);
+          }
         }
         
         if(empty($out[$eid][$field_id]))
@@ -2429,7 +2449,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           elseif($op == 'ENDS_WITH') {
             $regex = true;
             $safe = TRUE;
-            $primitiveValue = $this->escapeSparqlRegex($primitiveValue, TRUE) . '$';
+//            $primitiveValue = $this->escapeSparqlRegex($primitiveValue, TRUE) . '$';
           }
           elseif($op == 'CONTAINS') {
             $regex = true;
@@ -2473,6 +2493,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             $filter = "$cast_outvar >= $val_min & $cast_outvar <= $val_max";
           } else  if($op == "STARTS_WITH") {
             $filter = "strStarts($cast_outvar, $escapedValue)";
+          } else if ($op == "ENDS_WITH") {
+            $filter = "strEnds($cast_outvar, $escapedValue)";
           }
           elseif($regex) {
             // we have to use STR() otherwise we may get into trouble with

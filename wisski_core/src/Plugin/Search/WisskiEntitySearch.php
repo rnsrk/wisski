@@ -388,6 +388,7 @@ class WisskiEntitySearch extends SearchPluginBase {
       '<' => '<',
 #      '<=' => '<=',
       'STARTS_WITH' => $this->t('starts with'),
+      'ENDS_WITH' => $this->t('ends with'),
       'NOT_EMPTY' => $this->t('not empty'),
       'EMPTY' => $this->t('empty'),
 #      'ENDS_WITH' => $this->t('Ends with'),
