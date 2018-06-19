@@ -64,15 +64,16 @@ class AddForm extends EntityForm {
       '#title' => $this->t('Table settings'),
       '#tree' => TRUE,
     ];
-    $form['table_settings']['col_names'] = [
+    $form['table_settings']['col_spec'] = [
       '#type' => 'textarea',
-      '#title' => $this->t('Override column names'),
-      '#description' => $this->t('One column name per row. If left empty, the first row is interpreted as column names.'),
+      '#title' => $this->t('Override column names and specification'),
+      '#description' => $this->t('One column name per row. If left empty, the first row of the uploaded file is interpreted as column names. Line begins with column name. Column type and size/length may be appended, separated by whitespace. Type defaults to varchar'),
     ];
     $form['table_settings']['col_size'] = [
       '#type' => 'number',
       '#title' => $this->t('Column size'),
       '#default_value' => 1000,
+      '#min' => 1,
     ];
     $form['table_settings']['autoinc_field'] = [
       '#type' => 'textfield',
@@ -178,9 +179,8 @@ class AddForm extends EntityForm {
     $settings = $form_state->getValue(['table_settings']);
 
     // we either take the given column names or we extract them from the data
-    if (trim($settings['col_names']) != '') {
-      preg_match_all('/^\s*(\S|\S.*\S)\s*$/um', $settings['col_names'], $columns);
-      $columns = $columns[1];
+    if (trim($settings['col_spec']) != '') {
+      preg_match_all('/^\s*((?P<name>\S+)|"(?P<name2>[^"]+)"|\'(?P<name3>[^\']+)\')(\s+(?P<type>[a-z]+)?(\s+(?P<size>[0-9a-z]+))?)?\s*$/um', $settings['col_spec'], $columns, PREG_SET_ORDER);
     }
     elseif ($csv) {
       if ($this->leagueCsvVersion() == 8) {
@@ -190,17 +190,30 @@ class AddForm extends EntityForm {
         $csv->setHeaderOffset(0);
         $columns = $csv->getHeader();
       }
+      $columns = array_map(function($a) { return ['name' => $a]; }, $columns);
     }
     if (empty($columns)) {
       return FALSE;
     }
     // for each column make a varchar field and set it the same size
     $schema = [];
-    foreach ($columns as $col) {
-      $schema[$col] = [
-        'type' => 'varchar',
-        'length' => $settings['col_size'] ?: 333,
+    foreach ($columns as $spec) {
+      $name = (isset($spec['name3']) && !empty($spec['name3']))
+              ? $spec['name3']
+              : ((isset($spec['name2']) && !empty($spec['name2']))
+                  ? $spec['name2']
+                  : $spec['name']);
+      $schema[$name] = [
+        'type' => (isset($spec['type']) && !empty($spec['type'])) ? $spec['type'] : 'varchar',
+        'size' => 'normal',
       ];
+      $size = (isset($spec['size']) && !empty($spec['size'])) ? $spec['size'] : $settings['col_size'];
+      if (is_numeric($size)) {
+        $schema[$name]['length'] = $size;
+      }
+      else {
+        $schema[$name]['size'] = $size;
+      }
     }
     if (empty($schema)) return FALSE;
     $schema = ['fields' => $schema];
@@ -211,7 +224,7 @@ class AddForm extends EntityForm {
         'size' => 'normal',
         'not null' => TRUE,
       ];
-      $schema['primary key'] = ['__id__'];
+      $schema['primary key'] = [$autoinc_field];
     }
     return $schema;
   }
