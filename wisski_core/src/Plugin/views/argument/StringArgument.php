@@ -116,7 +116,7 @@ class StringArgument extends ViewsString {
   /**
    * {@inheritdoc}
    */
-  public function query() {
+  public function query($group_by = false) {
     // note that $this->value may not be set already, we have to set it here
     $this->prepareValue();
     // make sure the value member always holds an array for ease of use
