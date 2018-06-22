@@ -254,12 +254,17 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
     $field = $items->getFieldDefinition();
     $field_settings = $this->getFieldSettings();
     $elements = [];
-#    drupal_set_message(serialize($items));
+//    drupal_set_message(serialize($field->getLabel() == "Entity name"));
+#    drupal_set_message(serialize($items[0]->getParent()->getEntity()->id()));
 
 #    drupal_set_message("yay!" . microtime());
     
     foreach($items as $delta => $item) {
+#      dpm($item);
       $values = $item->toArray();
+ #     dpm($delta);
+
+#     dpm($item->getEntity());
       
 #      drupal_set_message("item: " . serialize($values['value']));
       
@@ -270,11 +275,29 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
 #        '#default_value' => $values['value'],
 #      );
 #      dpm($item->wisskiDisamb);
-      if(empty($item->wisskiDisamb)) {
+#      dpm(serialize($item));
+
+      $parentid = 0;
+      // the parentid might also be relevant in case of entity name
+      if($field->getLabel() == "Entity name") {
+        $parent = $item->getParent();
+
+        if($parent)
+          $parentid = $item->getParent()->getEntity()->id();
+      }
+      
+      if(empty($item->wisskiDisamb) && empty($parentid)) {
         $elements[$delta] = array(
           '#type' => 'inline_template',
           '#template' => '{{ value|nl2br }}',
           '#context' => ['value' => $item->value],
+        );
+      } else if(!empty($parentid)) {
+        $elements[$delta] = array(
+          '#type' => 'link',
+          '#title' => $item->value,
+          '#url' => Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $parentid]),
+//          '#url' => Url::fromUri('internal:/' . $url),
         );
       } else {
 #        drupal_set_message("got: " . serialize($item->wisskiDisamb));
