@@ -116,7 +116,8 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
       ->setRequired(TRUE)
       ->setTranslatable(TRUE)
       ->setRevisionable(TRUE)
-      ->setDefaultValue('')
+      ->setDefaultValueCallback("wisski_core_generate_title")
+//      ->setDefaultValue('')
       ->setSetting('max_length', 255)
       ->setDisplayOptions('form', array(
         'type' => 'string_textfield',
@@ -178,7 +179,8 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
       ->setLabel(t('Preview Image'))
       ->setDescription(t('A reference to an image file that is used as the preview image of the entity'))
       ->setSetting('target_type','file')
-      ->setDefaultValue(NULL);
+      ->setDefaultValue(NULL)
+      ->setDisplayConfigurable('view', TRUE);
     
     return $fields;
   }
