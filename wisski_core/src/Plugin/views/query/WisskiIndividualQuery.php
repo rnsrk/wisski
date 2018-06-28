@@ -116,7 +116,12 @@ class WisskiIndividualQuery extends QueryPluginBase {
         'direction' => strtoupper($order),
       );
     }
-    
+    if ($table == "rand") {
+      $this->orderby[] = array(
+        'field' => $table,
+        'direction' => strtoupper($order),
+      );
+    }
   }
 
   /** This function is called by Drupal\views\Plugin\views\HandlerBase
@@ -210,6 +215,7 @@ wisski_tick("begin exec views");
         //  Fetch number of pager items differently based on data locality.
         // Execute the local count query.
         $this->pager->total_items = $count_query->execute();
+#        dpm($this->pager->total_items, "total");
 #        dpm(microtime(), "after count");
         if (!empty($this->pager->options['offset'])) {
           $this->pager->total_items -= $this->pager->options['offset'];
@@ -234,6 +240,8 @@ wisski_tick("begin exec views");
       }
     }
 
+//    dpm($this->pager->total_items, "total");
+
     // Let the pager set limit and offset.
     if ($this->pager) {
       $this->pager->preExecute($query);
@@ -246,7 +254,7 @@ wisski_tick("begin exec views");
 
       return;
     }
-    
+
     if($this->orderby) {
       foreach($this->orderby as $elem) {
         $query->sort($elem['field'], $elem['direction']);
@@ -278,6 +286,7 @@ wisski_tick("begin exec views");
 #        dpm(microtime(), "before frv");
         // Get the fields for each entity, give it its ID, and then add to the result array.
         // This is later used for field rendering
+#        dpm($entity_ids, "eids");
         $values_per_row = $this->fillResultValues($entity_ids, $bundle_ids, $filter_regex);
 #        dpm(microtime(), "after frv");
 #dpm([$values_per_row, $entity_ids], __METHOD__);
