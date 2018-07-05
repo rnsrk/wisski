@@ -482,6 +482,10 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
 #            $query_parts 
           }
         }
+      } else {
+        if($field == "rand") {
+          $this->orderby = $this->orderby . ' RAND() ';
+        }
       }
     } 
     
@@ -556,6 +560,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
 
     $select .= $query_parts . ' }';
     
+#    dpm($sort_params);
     if($sort_params) {
       $select .= " ORDER BY " . $sort_params;
     }
@@ -599,7 +604,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         }
       }
     }
-//    drupal_set_message("I return for $adapter_id and query " . $select . " data: " . serialize($return));
+#    drupal_set_message("I return for $adapter_id and query " . $select . " data: " . serialize($return));
     return $return;
 
   }

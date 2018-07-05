@@ -422,7 +422,7 @@ abstract class Sparql11Engine extends EngineBase {
   }
 
   public function getDrupalIdForUri($uri,$adapter_id=NULL) {
-    
+  #  dpm($uri, "asking for");
     $entity_uri = $this->getSameUri($uri,AdapterHelper::getDrupalAdapterNameAlias());
     if (empty($entity_uri)) return NULL;
     return AdapterHelper::extractIdFromWisskiUri($entity_uri);
@@ -450,6 +450,7 @@ abstract class Sparql11Engine extends EngineBase {
       $values .= " }";
     } else throw new \Exception('There is no sameAs property set for this adapter');
     $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> {<$uri> ?same_as ?uri. ?uri <$orig_prop> ?adapter. }}";
+#    dpm($query, "query");
     $results = $this->directQuery($query);
     
     $out = array();
@@ -469,7 +470,7 @@ abstract class Sparql11Engine extends EngineBase {
    * {@inheritdoc}
    */
   public function getSameUri($uri, $adapter_id) {
-  
+#    dpm($uri, "uri!");
     $orig_prop = $this->getOriginatesProperty();
     $same_props = $this->getSameAsProperties();
     if ($prop = current($same_props)) {
@@ -479,7 +480,7 @@ abstract class Sparql11Engine extends EngineBase {
       }
       $values .= " }";
     } else throw new \Exception('There is no sameAs property set for this adapter');
-    $query = "SELECT DISTINCT ?uri WHERE { $values GRAPH <$orig_prop> {<$uri> ?same_as ?uri. ?uri <$orig_prop> '".$this->escapeSparqlLiteral($adapter_id)."'.}}";
+    $query = "SELECT DISTINCT ?uri WHERE { $values GRAPH <$orig_prop> { { <$uri> ?same_as ?uri } UNION { <$uri> ?same_as ?tmp1 . ?tmp1 ?same_as ?uri } . ?uri <$orig_prop> '".$this->escapeSparqlLiteral($adapter_id)."'.}} ORDER BY DESC(?uri)";
 #    dpm($query, "getSameUri");
     $results = $this->directQuery($query);
 #    dpm($results, "result");

@@ -82,6 +82,7 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
       'imagecache_external_style' => '',
       'imagecache_external_link' => '',
       'use_readmore' => 1,
+      'use_title_pattern' => 1,
     ) + parent::defaultSettings();
   }
 
@@ -192,6 +193,13 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
       '#description' => $this->t('Class added to collapsed blocks.'),
       '#default_value' => $this->getSetting('collapsedClass'),
     ];
+    
+    $elements['use_title_pattern'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Use title pattern'),
+      '#description' => $this->t('Use title pattern for display of disambiguation.'),
+      '#default_value' => $this->getSetting('use_title_pattern'),
+    ];
 
     return $elements;
   }
@@ -240,6 +248,7 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
     $summary[] = $this->t('Expanded class: @value', ['@value' => $this->getSetting('expandedClass')]);
     $summary[] = $this->t('Collapsed class: @value', ['@value' => $this->getSetting('collapsedClass')]);
 
+    
     return $summary;
   }
 
@@ -308,6 +317,12 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
         $url = 'wisski/navigate/' . $entity_id . '/view';
         
 #        drupal_set_message("url: " . serialize($url));
+
+#        drupal_set_message(serialize($item->value));
+
+        if($settings['use_title_pattern']) {
+          $item->value = wisski_core_generate_title($entity_id);
+        }
         
         $elements[$delta] = array(
           '#type' => 'link',
