@@ -356,6 +356,27 @@ class AdapterHelper {
       # if ($return !== FALSE) return $return;
       $return = $out->fetchCol(1);
       $return = array_unique($return); 
+      
+ #     dpm($return, "ret");
+      
+      // special case for our own uris... clear these here!
+      foreach($return as $key => $value) {
+        if(strpos($value, "/wisski/navigate") !== FALSE) {
+          unset($return[$key]);
+          // this would be better here...
+/*
+          $query_del = db_delete('wisski_salz_id2uri');
+          $query_del->condition('eid', $eid);
+          if(isset($adapter_id))
+            $query_del->condition('adapter_id',$adapter_id);
+          $query_del->condition('uri', $value);
+          
+          $query_del->execute();
+          dpm($value, "Deleted one row!"); 
+          */
+        }
+      }
+      
       if (count($return) > 1) {
         drupal_set_message("There seems to be associated multiple instances with one entity id. See logs.", 'warning');
         \Drupal::logger('wisski salz')->warning("There seems to be associated entity id {id} with multiple instances: {uris}", array('id' => $eid, 'uris' => join(', ', $return)));
