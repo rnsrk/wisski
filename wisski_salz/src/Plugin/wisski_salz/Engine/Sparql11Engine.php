@@ -423,9 +423,24 @@ abstract class Sparql11Engine extends EngineBase {
 
   public function getDrupalIdForUri($uri,$adapter_id=NULL) {
   #  dpm($uri, "asking for");
-    $entity_uri = $this->getSameUri($uri,AdapterHelper::getDrupalAdapterNameAlias());
-    if (empty($entity_uri)) return NULL;
-    return AdapterHelper::extractIdFromWisskiUri($entity_uri);
+    // easy case - the uri has the id itself.
+    if(strpos($uri, "/wisski/navigate/") !== FALSE)
+      return AdapterHelper::extractIdFromWisskiUri($uri);
+    
+    // if not, we have to search it.
+    $entity_uris = $this->getSameUris($uri,AdapterHelper::getDrupalAdapterNameAlias());
+    
+    if (empty($entity_uris)) return NULL;
+
+    // our uri has to be something like /wisski/navigate/.../view
+#    dpm($entity_uris, "uris!");    
+    foreach($entity_uris as $entity_uri) {
+      if(strpos($entity_uri, "/wisski/navigate/") !== FALSE)
+        return AdapterHelper::extractIdFromWisskiUri($entity_uri);
+    }
+    
+    drupal_set_message("No entity id could be extracted for uri $uri - sorry. ", "error");
+    return NULL;
   }
   
   public function getUrisForDrupalId($id) {
@@ -449,7 +464,8 @@ abstract class Sparql11Engine extends EngineBase {
       }
       $values .= " }";
     } else throw new \Exception('There is no sameAs property set for this adapter');
-    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> {<$uri> ?same_as ?uri. ?uri <$orig_prop> ?adapter. }}";
+#    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> {<$uri> ?same_as ?uri. ?uri <$orig_prop> ?adapter. }}";
+    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> ?same_as ?uri } UNION { <$uri> ?same_as ?tmp1 . ?tmp1 ?same_as ?uri } . ?uri <$orig_prop> ?adapter .}} ORDER BY DESC(?uri)";
 #    dpm($query, "query");
     $results = $this->directQuery($query);
     
