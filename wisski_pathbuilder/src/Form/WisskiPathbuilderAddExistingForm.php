@@ -66,6 +66,10 @@ class WisskiPathbuilderAddExistingForm extends EntityForm {
     // do it if it is not already there    
     if(is_null($pb->getPbPath($value)))
       $pb->addPathToPathTree($value, 0, $path->isGroup());   
+    else {
+      drupal_set_message("Path $value was already there... resetting his properties");
+      $pb->addPathToPathTree($value, 0, $path->isGroup());
+    }
     
     // save it    
     $status = $pb->save();
