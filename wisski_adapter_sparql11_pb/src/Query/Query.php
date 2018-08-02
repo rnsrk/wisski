@@ -42,7 +42,7 @@ class Query extends WisskiQueryBase {
     // NOTE: this is not thread-safe... shouldn't bother!
     $this->varCounter = 0;
 
-wpm($this->condition->conditions(),$this->getEngine()->adapterId().': '.__METHOD__);
+#dpm($this->condition->conditions(),$this->getEngine()->adapterId().': '.__METHOD__);
 wisski_tick();
     // compile the condition clauses into
     // sparql graph patterns and
@@ -573,8 +573,6 @@ $timethis[] = microtime(TRUE);
 #    dpm(microtime(), "before");
     $result = $engine = $this->getEngine()->directQuery($select);
 $timethis[] = microtime(TRUE);
-#    dpm(serialize($select), $this->getEngine()->adapterId());
-#    dpm($result, "res");
     $adapter_id = $this->getEngine()->adapterId();
 //    drupal_set_message("I answered: " . $adapter_id);
     if (WISSKI_DEVEL) \Drupal::logger("query adapter $adapter_id")->debug('(sub)query {query} yielded result count {cnt}: {result}', array('query' => $select, 'result' => $result, 'cnt' => $result->count()));
@@ -798,7 +796,8 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       $path = $pb->getPathForFid($field);
       if (!empty($path)) {
         $path_available = TRUE;
-        $new_query_part = $this->makePathCondition($pb, $path, $operator, $value);
+        $pbarray = $pb->getPbPath($path->id());
+        $new_query_part = $this->makePathCondition($pb, $path, $operator, $value, $pbarray['parent']);
         if ($new_query_part !== NULL) {
           $query_parts[] = $new_query_part;
           $count++;
@@ -827,21 +826,25 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
 
 
   protected function makePathCondition($pb, $path, $operator, $value, $starting_group = NULL) {
-    #$sort_order = NULL;
-    #if (!empty($this->sort)) {
-    #  foreach ($this->sort as $elem) {
-    #    if ($elem['field'] == 
-    #  }
-    #}
-    // build up an array for separating the variables of the sparql 
-    // subqueries.
-    // only the first var x0 get to be the same so that everything maps
-    // to the same entity
+    
+    if (!$operator) $operator = '=';
     if ($starting_group === NULL) {
       $starting_position = 0;
     }
     else {
-      $starting_position = $pb->getRelativeStartingPosition($path, FALSE);
+      $cur_group = entity_load('wisski_path', $starting_group);
+      if (!$cur_group) {
+        // no valid group given:
+        // treat it as relative path
+        $starting_position = $pb->getRelativeStartingPosition($path, FALSE);
+      }
+      else {
+        // the starting position is where the group ends (the group's class)
+        // is included, however.
+        // NOTE: ATTENTION: starting position is counted in old WissKI style,
+        // ie. only concepts are counted
+        $starting_position = (count($cur_group->getPathArray()) - 1) / 2;
+      }
     }
     #\Drupal::logger('query path cond')->debug("start path cond:".$this->varCounter.";$operator:$value;".($path->getDatatypeProperty()?:"no dt"));
     
@@ -900,9 +903,13 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       }
     }
 
-    $vars[$starting_position] = "x0";
+    // build up an array for separating the variables of the sparql 
+    // subqueries.
+    // only the first var x0 get to be the same so that everything maps
+    // to the same entity
+    $vars[$starting_position * 2] = "x0";
     $i = $this->varCounter++;
-    for ($j = count($path->getPathArray()); $j > $starting_position; $j--) {
+    for ($j = count($path->getPathArray()); $j > $starting_position * 2; $j--) {
       $vars[$j] = "c${i}_x$j";
     }
     $vars['out'] = "c${i}_out";
