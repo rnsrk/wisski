@@ -400,7 +400,7 @@ class LodSparqlEngine extends Sparql11EngineWithPB {
   /**
    * {@inheritdoc} 
    */
-  public function createEntity($entity) {
+  public function createEntity($entity, $entity_id = NULL) {
     return;
   }
   
@@ -545,7 +545,7 @@ class LodSparqlEngine extends Sparql11EngineWithPB {
   /**
    * {@inheritdoc} 
    */
-  public function getPathAlternatives($history = [], $future = []) {
+  public function getPathAlternatives($history = [], $future = [], $fast_mode = false, $empty_uri = 'empty') {
     if (count($history) % 2 == 0) {
       $keys = $this->getAllClasses();
       return array_combine($keys, $keys);
