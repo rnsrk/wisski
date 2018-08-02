@@ -422,6 +422,15 @@ wisski_tick("end exec views");
         
 #        dpm(microtime(), "after generate title");
       }
+      elseif ($field =='preferred_uri') {
+        $localstore = AdapterHelper::getPreferredLocalStore();
+        if ($localstore) {
+          $values_per_row[$eid]['preferred_uri'] = AdapterHelper::getUrisForDrupalId($eid, $localstore);
+        }
+        else {
+          $values_per_row[$eid]['preferred_uri'] = '';
+        }
+      }
       elseif ($field == 'preview_image') {
 #        dpm("prew");
 #        dpm(microtime(), "beginning image prev");        
