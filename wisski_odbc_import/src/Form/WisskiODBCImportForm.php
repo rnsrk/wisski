@@ -23,10 +23,20 @@ class WisskiODBCImportForm extends FormBase {
     
   const UPDATE_MODE_APPEND = 'append';
   const UPDATE_MODE_NEW = 'new';
-  const UPDATE_MODE_ONLY_EXISTING = 'only_existing';
+  const UPDATE_MODE_TAKE_EXISTING = 'take_existing';
   const UPDATE_MODE_REPLACE = 'replace';
   const UPDATE_MODE_SKIP = 'skip';
   const UPDATE_MODE_TAKE = 'take';
+  
+  
+  public static function log() {
+    static $logger = NULL;
+    if ($logger === NULL) {
+      $logger = \Drupal::logger('WissKI ODBC Import');
+    }
+    return $logger;
+  }
+
 
   /**
    * {@inheritdoc}.
@@ -61,6 +71,11 @@ class WisskiODBCImportForm extends FormBase {
         '#upload_validators' => array(
           'file_validate_extensions' => array(),  // => array('xml')
         ),  
+      ),
+      'paste' => array(
+        '#type' => 'textarea',
+        '#title' => $this->t('Direct paste'),
+        '#rows' => 4,
       ),
     );
 
@@ -100,18 +115,26 @@ class WisskiODBCImportForm extends FormBase {
     else {
       $file_url = $form_state->getValues()['url'];
     }
-    // if no file is given, it is an error
-    if (!$file_url) {
+    if ($file_url) {
+      $xml = simplexml_load_file($file_url);
+    }
+    elseif ($xml_content = $form_state->getValues()['paste']) {
+      $xml = simplexml_load_string($xml_content);
+    }
+    else {
+      // if no file is given, it is an error
       $form_state->setError($form['source'], $this->t('You must specify an import script.'));
     }
-    $xml = simplexml_load_file($file_url);
+    // if we came here, the user uploaded some data, but it may be invalid
     if (!$xml) {
-      $form_state->setError($form['source'], $this->t('Not a valid XML file'));
+      $form_state->setError($form['source'], $this->t('No valid XML.'));
     }
-    // as we have saved the file already, we cache its path for submitForm()
-    $storage = $form_state->getStorage();
-    $storage['import_script_url'] = $file_url;
-    $form_state->setStorage($storage);
+    else {
+      // as we have saved the file already, we cache its path for submitForm()
+      $storage = $form_state->getStorage();
+      $storage['import_script_content'] = $xml->asXml();
+      $form_state->setStorage($storage);
+    }
   }
   
   
@@ -119,12 +142,11 @@ class WisskiODBCImportForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    // parse the import script file into an xml array
-    // TODO: replace the array parser by DOMDocument or SimpleXML as
-    // the xml->array mapping is buggy, e.g. it doesn't account for mixing
-    // text and element nodes as subnodes.
-    $url = $form_state->getStorage()['import_script_url'];
-    $import_script_xml = simplexml_load_file($url);
+    // parse the import script file into SimpleXMLElement.
+    // we already fetched and parsed the xml during validation so we can be
+    // sure it's ok
+    $xml_content = $form_state->getStorage()['import_script_content'];
+    $import_script_xml = simplexml_load_string($xml_content);
 
     // parse the db parameters 
     $db_params = $this->getConnectionParams($import_script_xml);
@@ -152,10 +174,15 @@ class WisskiODBCImportForm extends FormBase {
         $i++;
       }
       // register the batch; batch_process is called automatically(!?)
+      self::log()->info('Start import as batch with {ops} operations.', ['ops' => count($batch['operations'])]); 
       batch_set($batch);
     }
     else { // non-batch mode
-      $this->importInOneGo($import_script_xml, $db_params);
+      self::log()->info('Start import in one go.'); 
+      $cnt = $this->importInOneGo($import_script_xml, $db_params);
+      drupal_set_message(t('Finished import.'));
+      drupal_set_message(t('@num entities have been created or updated.', ['@num' => $cnt]));
+      self::log()->info('Completed import. {num} entities have been created or updated.', ['@num' => $cnt]);
     }
   }
   
@@ -246,7 +273,7 @@ class WisskiODBCImportForm extends FormBase {
       if (isset($context['results']['table'][$table_index - 1]['already_seen'])) {
         $context['sandbox']['already_seen'] = $context['results']['table'][$table_index - 1]['already_seen'];
       }
-      \Drupal::logger('WissKI Import')->info("Start import of table index $table_index");
+      self::log()->info("Start import of table index $table_index");
       $context['sandbox']['total_rows'] = self::totalRowCount($db_params, $connection, $table_xml);
     }
     // get data from last run
@@ -268,7 +295,7 @@ class WisskiODBCImportForm extends FormBase {
       $context['results']['table'][$table_index]['total'] = $offset + $row_count;
       $context['results']['table'][$table_index]['already_seen'] = $already_seen;
       $context['results']['already_seen'] += $already_seen;
-      \Drupal::logger('WissKI Import')->info("Finished import of table index $table_index");
+      self::log()->info("Finished import of table index $table_index");
     }
     else {
       // we didn't count total rows, so just make up some %-number
@@ -292,11 +319,13 @@ class WisskiODBCImportForm extends FormBase {
     if ($success) {
       drupal_set_message(t('Finished import.'));
       drupal_set_message(t('@num entities have been created or updated.', ['@num' => count($results['already_seen'])]));
-      \Drupal::logger('WissKI Import')->info('Successfully completed import');
+      self::log()->info(
+          'Successfully completed import. {num} entities have been created or updated. Entity IDs:{ids}',
+          ['num' => count($results['already_seen']), 'ids' => join(", ", $results['already_seen'])]);
     }
     else {
       drupal_set_message(t('Errors importing tables. @c tables could not be imported.', ['@c' => count($operations)]), 'error');
-      \Drupal::logger('WissKI Import')->error(
+      self::log()->error(
         'Errors while processing import: {operations} operations left',
         [
           'operations' => count($operations),
@@ -316,6 +345,7 @@ class WisskiODBCImportForm extends FormBase {
       self::storeTable($table, $alreadySeen, $connection, $db_params['is_drupal_db']);
     }
     self::closeConnection($connection, $db_params);
+    return count($alreadySeen);
   }
 
   
@@ -413,6 +443,26 @@ class WisskiODBCImportForm extends FormBase {
       }
       $rowiter++;
     }
+    // done with import!
+    // we now may want to do a postprocessing db query (cleanup or something)
+    if (isset($table->postprocess_sql)) {
+      foreach ($table->postprocess_sql as $pp_sql) {
+        $sql = trim((string) $pp_sql);
+        if ($is_drupal_db) {
+          try {
+            $connection->query($sql);
+          }
+          catch (\Exception $e) {
+            drupal_set_message($e->getMessage(), 'error');
+            return;
+          }
+        }
+        else {
+          mysqli_query($connection, $sql);
+        }
+      }
+    }
+    // return the number of db rows
     return $rowiter;
   }
 
@@ -432,22 +482,45 @@ class WisskiODBCImportForm extends FormBase {
   }
   
   
-  protected static function parseIdentificationCondition($cond) {
-    if (isset($cond['field'])  && isset($cond['column'])) {
-      $op = isset($cond['operator']) ? (string) $cond['operator'] : '=';
+  protected static function parseUpdateCondition($cond, $row_values) {
+    $operator = isset($cond['operator']) ? (string) $cond['operator'] : '=';
+    $value    = isset($cond['value'])    ? (string) $cond['value']    : NULL;
+    $field    = isset($cond['field'])    ? (string) $cond['field']    : NULL;
+    $column   = isset($cond['column'])   ? (string) $cond['column']   : NULL;
+    // if there is a field att, we prepare a entity query condition  
+    if ($field !== NULL) {  
+      if ($column !== NULL) {
+        // we prefer the column attr over the "fixed" value att
+        $value = $row_values[$column];
+      }
       return [
-        'field' => (string) $cond['field'],
-        'op' => $op,
-        'value' => (string) $cond['column'],
+        'field' => $field,
+        'operator' => $operator,
+        'value' => $value,
       ];
     }
+#dpm([$column, $row_values[$column], $operator, $value], 'col cmp');
+    // if there is no field att but a column and a value att, we compare both.
+    // currently only equality and inequality can be checked
+    if ($column !== NULL && $value !== NULL) {
+      if ($operator == '=') {
+        return $row_values[$column] == $value;
+      }
+      elseif ($operator = '!=') {
+        return $row_values[$column] != $value;
+      }
+    }
+    // all other cannot be handled
     return NULL;
   }
   
 
   protected static function checkUpdateMode($mode) {
-    $modes = ['new', 'replace', 'skip', 'take'];
-    return in_array($mode, $modes) ? $mode : NULL;
+    $modes = ['new', 'replace', 'skip', 'take', 'take_existing'];
+    if (in_array($mode, $modes)) {
+      return $mode;
+    }
+    return NULL;
   }
 
   
@@ -471,19 +544,68 @@ class WisskiODBCImportForm extends FormBase {
 
     // check if there are tags that override the update mode
     foreach ($bundle_xml->update_policy as $update_policy_xml) {
-      // check if there are conditions to be met in order for this update policy
-      // to hold. These conditions are also used to identify the set of 
-      // entities that can be used for updating
+      // First check if there are conditions to be met in order for this update
+      // policy to be applied.
+      if (isset($update_policy_xml->conditions)) {
+        // once there is a <conditions> element, at least one <conditions>
+        // must evaluate to TRUE!
+        $condition_is_true = FALSE;
+        // one may express multiple <conditions> which are handled as OR
+        foreach ($update_policy_xml->conditions as $conditions_xml) {
+          // multiple <condition> elements are combined as AND
+          foreach ($conditions_xml->condition as $condition_xml) {
+            $true_false = self::parseUpdateCondition($condition_xml, $row_values);
+            if ($true_false === FALSE) {
+              // the condition was evaluated to false, so we can break here;
+              // there may be subsequent <conditions> elements that need to be
+              // checked
+#dpm([$condition_xml->asXml(), $row_values], 'cond to false');
+              continue 2; // next conditions_xml
+            }
+            // other values of $true_false:
+            // - TRUE just means that we go to the next condition.
+            // - NULL means that the condition is wrong, so we ignore it.
+            // - an array is actually an entity query condition which we do not
+            // support atm
+          }
+          // all <condition> elements evaluated to TRUE
+          // => we can use this policy
+          $condition_is_true = TRUE;
+          break;  // last conditions_xml; proceed with if in next line
+        }
+#dpm([$condition_is_true, $conditions_xml->asXml(), $row_values], 'conds to');
+        if (!$condition_is_true) {
+          // the conditions aren't met => the update policy can't be applied
+          continue;  // next update_policy_xml
+        }
+      }
+      // Try to identify the set of entities that can be used for updating.
+      // This is also done by conditions, this time for an entity query.
+      // Note that identification is optional! But once there is an 
+      // <identification> element, the conditions must match some entities
+      // in order for the update policy to be applied.
       if (isset($update_policy_xml->identification)) {
         $ident_xml = $update_policy_xml->identification;
         // prepare an entity query with the given conditions
         $query = \Drupal::entityQuery('wisski_individual');
         // set the bundle we search for
         $query->condition('bundle', $bundleid, '=');
+        $condition_count = 0;
         foreach ($ident_xml->condition as $condition_xml) {
-          if ($condition = self::parseIdentificationCondition($condition_xml)) {
-            $query->condition($condition['field'], $row_values[$condition['value']], $condition['op']);
+          $condition = self::parseUpdateCondition($condition_xml, $row_values);
+          if (is_array($condition)) {
+            $query->condition($condition['field'], $condition['value'], $condition['operator']);
+            $condition_count++;
           }
+          elseif ($condition === FALSE) {
+            // the condition was already evaluated to false
+            continue 2;
+          }
+        }
+        // besides the bundle there is no valid condition;
+        // i.e. we cannot identify something
+        if (!$condition_count) {
+          continue;
         }
         // execute the entity query
         $matching_eids = $query->execute();
@@ -492,19 +614,20 @@ class WisskiODBCImportForm extends FormBase {
         // if there are no matches, this identification failed and we go to the 
         // next update policy statement
         if (!$matching_eid) {
+#dpm($query, 'mismatch');
           continue; // next update_policy_xml
         }
       }
-      
+
       // all conditions passed the test. we can set the mode and stop looping
       // over the update policies
       $mode = isset($update_policy_xml['mode']) ? (string) $update_policy_xml['mode'] : '';
+#dpm([$update_policy_xml->asXml(), $mode, $matching_eid, $matching_eids, $row_values], 'upd'); 
       break;
 
     }
 
     if (!self::checkUpdateMode($mode)) {
-      drupal_set_message("Bad update mode: '%m'", ['%m' => $mode]);
       // default mode, see above
       $mode = 'new';
     }
@@ -537,8 +660,8 @@ class WisskiODBCImportForm extends FormBase {
       return NULL;
     }
 
-    if ($update_mode == self::UPDATE_MODE_ONLY_EXISTING) {
-      // the ONLY_EXISTING mode returns the matching entity or NULL. It does
+    if ($update_mode == self::UPDATE_MODE_TAKE_EXISTING) {
+      // the TAKE_EXISTING mode returns the matching entity or NULL. It does
       // not create new entities.
       // This mode can be used if an entity reference should only be created if
       // there is already a matching entity.
@@ -631,9 +754,12 @@ class WisskiODBCImportForm extends FormBase {
     // if absolutely nothing was stored - don't create an entity, as it will only
     // take time and produce nothing
     if(!$found_something) {
+#dpm([$update_mode, $update_eid, $entity_fields], 'nothing:'.$bundleid);
       return $update_eid;
     }
 
+    
+    // the create new entity case:
     if ($update_eid == NULL) {
       // there is nothing to update so we just create a new entity
       // and return its ID.
@@ -643,11 +769,15 @@ class WisskiODBCImportForm extends FormBase {
       if ($entity) {
         $entity->save();
       }
+#dpm([$update_mode, $entity->id(), $entity_fields], 'tocreate:'.$bundleid);
       return $entity->id();
     }
-
+#dpm([$update_mode, $update_eid, $entity_fields, $field_modes], 'toupdate:'.$bundleid);
+    
+    // the entity update case:
     $entity = entity_load('wisski_individual', $update_eid);
     if ($entity) {
+      self::log()->debug('Update entity {eid} with fields {fields}', ['eid' => $update_eid, 'fields' => serialize($entity_fields)]);
       self::updateEntityFields($entity, $entity_fields, $field_modes);
       $entity->save();
       return $entity->id();
