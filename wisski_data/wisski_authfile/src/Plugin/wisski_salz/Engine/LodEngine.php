@@ -665,7 +665,7 @@ dpm($path_array, 'pa');
   /**
    * {@inheritdoc} 
    */
-  public function getPathAlternatives($history = [], $future = []) {
+  public function getPathAlternatives($history = [], $future = [], $fast_mode = false, $empty_uri = 'empty' ) {
     if (count($history) % 2 == 0) {
       $keys = array_keys($this->configuration['possible_steps']);
       return array_combine($keys, $keys);
