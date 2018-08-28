@@ -358,6 +358,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
     $uri = AdapterHelper::getUrisForDrupalId($eid, $this->adapterId());
     $data = $this->fetchData($uri);
+#    dpm($data, "data");
     if (!$data) {
       return [];
     }
@@ -369,11 +370,23 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       if (isset($data_walk[$step])) {
         $data_walk = $data_walk[$step];
       } else {
+        // this is oversimplified in case there is another path in question but this
+        // one had no data. E.g. a preferred name exists, but no variant name and 
+        // the variant name is questioned. Then it will resolve most of the array
+        // up to the property and then stop here. 
+        //
+        // in this case nothing should stay in $data_walk because
+        // the foreach below would generate empty data if there is something
+        // left.
+        // By Mark: I don't know if this really is what should be here, martin
+        // @Martin: Pls check :)
+        $data_walk = array();
         continue; // go to the next path
       }
     } while (!empty($path_array));
     // now data_walk contains only the values
     $out = array();
+##    dpm($data_walk, "walk");
     foreach ($data_walk as $value) {
       if (empty($main_property)) {
         $out[] = $value;
@@ -381,7 +394,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         $out[] = array($main_property => $value);
       }
     }
-    
+#    drupal_set_message(serialize($out));
     return $out;
 
   }
