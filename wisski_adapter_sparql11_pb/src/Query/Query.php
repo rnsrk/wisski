@@ -650,6 +650,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
 
   protected function executeEntityTitleCondition($operator, $value, $bundleid = NULL) {
     $entity_ids = NULL;
+#    dpm($value, "val!");
     if (empty($value)) {
       // if no value is given, then condition is always true.
       // this may be the case when a field's mere existence is checked;
@@ -704,16 +705,18 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         $entity_ids[$row->ent_num] = $row->ent_num;
       }
 
+
 #      dpm($entity_ids, "eids!");
       // now fetch the uris for the eids as we have to return both
       $query = \Drupal::database()->select('wisski_salz_id2uri', 't')
         ->distinct()
         ->fields('t', array('eid', 'uri'))
         ->condition('adapter_id', $this->getEngine()->adapterId())
-        ->condition('eid', $entity_ids, 'IN');
+        ->condition('eid', $entity_ids, 'IN') // we need to add this line below as the wisski navigate url is not the one we need...
+        ->condition('uri', '%/wisski/navigate/%', 'NOT LIKE');
       $entity_ids = $query->execute()->fetchAllKeyed();
-    
-      $out_entities = array();
+#      dpm($entity_ids, "sec");
+//      $out_entities = array();
       
       // redo the sorting
       foreach($rows as $row) {
