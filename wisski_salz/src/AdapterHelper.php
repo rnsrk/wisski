@@ -322,7 +322,7 @@ class AdapterHelper {
       return FALSE;
     }
     $result = self::doGetUrisForDrupalId($eid,$adapter_id);
-    //dpm(array('$eid'=>$eid,'$adapter_id'=>isset($adapter_id)? $adapter_id : 'NULL')+array('return'=>$result),__FUNCTION__);
+ #   dpm(array('$eid'=>$eid,'$adapter_id'=>isset($adapter_id)? $adapter_id : 'NULL')+array('return'=>$result),__FUNCTION__);
     return $result;
   }
   
@@ -346,6 +346,7 @@ class AdapterHelper {
       ->condition('eid',$eid);
     if (isset($adapter_id)) $query->condition('adapter_id',$adapter_id);
     $out = $query->execute();
+#    dpm($out, "out");
     //dpm($out,'From DB');
     //if we get an answer from DB return it
     if (isset($adapter_id)) {
@@ -376,7 +377,7 @@ class AdapterHelper {
           */
         }
       }
-      
+#      dpm($return, "return");
       if (count($return) > 1) {
         drupal_set_message("There seems to be associated multiple instances with one entity id. See logs.", 'warning');
         \Drupal::logger('wisski salz')->warning("There seems to be associated entity id {id} with multiple instances: {uris}", array('id' => $eid, 'uris' => join(', ', $return)));
@@ -384,8 +385,22 @@ class AdapterHelper {
       if (!empty($return)) return $return[0];
     } else {
       //with unspecified adapter, we want an associative array keyed by adapter with URIs as values
-      $return = $out->fetchAllKeyed();
-      //dpm($return,'Multiple adapters');
+      #$return = $out->fetchAllKeyed();
+      // the above does not work as there might be more than one uri per store...
+      $return = $out->fetchCol(1);
+      
+      #dpm($return,'Multiple adapters');
+      $return = array_unique($return); 
+      
+ #     dpm($return, "ret");
+      
+      // special case for our own uris... clear these here!
+      foreach($return as $key => $value) {
+        if(strpos($value, "/wisski/navigate") !== FALSE) {
+          unset($return[$key]);
+        }
+      }      
+      
       if (!empty($return)) return $return;
     }
     
