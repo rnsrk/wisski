@@ -628,7 +628,8 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
           ->distinct()
           ->fields('t', array('eid', 'uri'))
           ->condition('adapter_id', $this->getEngine()->adapterId())
-          ->condition('eid', $values, 'IN');
+          ->condition('eid', $values, 'IN')
+          ->condition('uri', '%/wisski/navigate/%', 'NOT LIKE');
         $entity_ids = $query->execute()->fetchAllKeyed();
       }
       elseif ($operator == 'BETWEEN') {
@@ -637,13 +638,17 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
           ->distinct()
           ->fields('t', array('eid', 'uri'))
           ->condition('adapter_id', $this->getEngine()->adapterId())
-          ->condition('eid', $values, 'BETWEEN');
+          ->condition('eid', $values, 'BETWEEN')
+          ->condition('uri', '%/wisski/navigate/%', 'NOT LIKE');
         $entity_ids = $query->execute()->fetchAllKeyed();
       }
       else {
         $this->missingImplMsg("Operator '$operator' in eid field query", array('condition' => $this->condition));
       }
     }
+#    dpm($value, "val");
+#    dpm($operator, "op");
+#    dpm($entity_ids, "ent");
     return $entity_ids;
   }
 
