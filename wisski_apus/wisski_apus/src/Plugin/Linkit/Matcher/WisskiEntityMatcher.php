@@ -166,8 +166,14 @@ class WisskiEntityMatcher extends EntityMatcher {
         }
       }
     }
-    \Drupal::logger("WissKI APUS")->info("linkit matches are {n2} with {n1} entities", array("n1" => count($entities), "n2" => count($matches)));
-  
+
+#    if(!empty($entities) && !empty($matches))
+#    dpm($entities, "ent!");
+#    dpm($matches, "mat!");
+    if(is_array($entities) && is_array($matches)) 
+      \Drupal::logger("WissKI APUS")->info("linkit matches are {n2} with {n1} entities", array("n1" => count($entities), "n2" => count($matches)));
+    else
+      \Drupal::logger("WissKI APUS")->info("linkit matches are {n2} with {n1} entities", array("n1" => count($entities), "n2" => $matches));
     return $suggestions;
 
   }
