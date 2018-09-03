@@ -53,7 +53,11 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   private $entity_info = array();
 
-  private $entities = NULL;
+
+  /**
+   * Internal cache - needed since drupal 8.6
+   */
+  private $stored_entities = NULL;
 
   //cache the style in this object in case it will be used for multiple entites
   private $image_style;
@@ -317,16 +321,20 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * @return array keyed by entity id containing entity field info
    */
   protected function getEntityInfo(array $ids,$cached = FALSE) {
-#    drupal_set_message(serialize($this));
+#    drupal_set_message(serialize($ids) . " : " . serialize($this));
 #    dpm(microtime(), "in1 asking for " . serialize($ids));
-#    dpm($this->entities, "yay!");
+#    dpm($this->latestRevisionIds, "yay123!");
     // get the main entity id
     // if this is NULL then we have a main-form
     // if it is not NULL we have a sub-form    
     if(!empty($this->entities)) 
       $mainentityid = key($this->entities);
+    else if(!empty($this->stored_entities))
+      $mainentityid = key($this->stored_entities);
     else
       $mainentityid = NULL;
+
+  
 
 #    dpm($mainentityid);
 
@@ -360,6 +368,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     $info = array();
     // for every id
     foreach($ids as $id) {
+    
+      $this->stored_entities[$id] = $id;
+    
 #      dpm($mainentityid, "main");
 #      dpm($id, "id");
 #      dpm(microtime(), "in3");
@@ -390,6 +401,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         #dpm($cached_bundle, "cb");
         }
       }
+            
 #      drupal_set_message(serialize($bundle_ids) . " and " . serialize($cached_bundle));
 #      dpm(microtime(), "in4");
       // ask all adapters
