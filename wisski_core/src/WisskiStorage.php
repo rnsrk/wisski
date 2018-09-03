@@ -53,6 +53,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   private $entity_info = array();
 
+  private $entities = NULL;
+
   //cache the style in this object in case it will be used for multiple entites
   private $image_style;
   private $adapter;
@@ -317,10 +319,14 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   protected function getEntityInfo(array $ids,$cached = FALSE) {
 #    drupal_set_message(serialize($this));
 #    dpm(microtime(), "in1 asking for " . serialize($ids));
+#    dpm($this->entities, "yay!");
     // get the main entity id
     // if this is NULL then we have a main-form
     // if it is not NULL we have a sub-form    
-    $mainentityid = key($this->entities);
+    if(!empty($this->entities)) 
+      $mainentityid = key($this->entities);
+    else
+      $mainentityid = NULL;
 
 #    dpm($mainentityid);
 
