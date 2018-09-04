@@ -26,8 +26,9 @@ $ts = microtime(TRUE);
     $fields_by_type = \Drupal::config('wisski_triplify.triplify_fields')->get('by_type');
     $fields_by_id = \Drupal::config('wisski_triplify.triplify_fields')->get('by_id');
 
-    $uris = AdapterHelper::getUrisForDrupalId($entity->id());
-
+    $uris = AdapterHelper::getOnlyOneUriPerAdapterForDrupalId($entity->id());
+#    $uris = AdapterHelper::getUrisForDrupalId($entity->id());
+#    dpm($uris, "uris!");
     if (empty($uris)) return array();
     
     $triples = array(); // here go the triples from all fields, we do one big write
@@ -95,13 +96,18 @@ $ts = microtime(TRUE);
           $tmp = $item->getValue();
           if (isset($tmp['wisskiDisamb'])) {
             $disamb_uri = $tmp['wisskiDisamb'];
-            $disamb_eid = AdapterHelper::getDrupalIdForUri($disamb_uri);
-            if (!empty($disamb_eid)) {
-              $disamb_uris = AdapterHelper::getUrisForDrupalId($disamb_eid);
-            }
+            $disamb_eid = AdapterHelper::getOnlyOneUriPerAdapterForDrupalId($disamb_uri);
+#            $disamb_eid = AdapterHelper::getDrupalIdForUri($disamb_uri);
+#            if (!empty($disamb_eid)) {
+#              $disamb_uris = AdapterHelper::getUrisForDrupalId($disamb_eid);
+#            }
           }
           
+#          dpm($adapters, "found adap");
+          
           foreach ($adapters as $aid) {
+#            dpm($uris[$aid], "uris!" . $aid);            
+            
             if (isset($uris[$aid])) {
               $pref_disamb_uri = isset($disamb_uris[$aid]) ? $disamb_uris[$aid] : $disamb_uri;
               $data = array(
@@ -128,6 +134,8 @@ $ts = microtime(TRUE);
       }
 
     }
+
+#dpm($triples, "trip!");
 
     foreach ($triples as $aid => $triples_array) {
       $doc_inst = $uris[$aid];

@@ -304,9 +304,46 @@ class AdapterHelper {
     return NULL;
   }
   
+  /**
+   * Gets "the primary" uri per adapter... this is used in many cases, but is 
+   * highly difficult...
+   */
+  public static function getOnlyOneUriPerAdapterForDrupalId($eid,$adapter_id=NULL) {
+    if (!is_numeric($eid)) {
+      //we probably got a URI as input, check that and return the input if it's valid
+      //otherwise we cant do anything
+      //use this block in other functions, too, if there is the probability of getting wrong inputs
+      if (WISSKI_DEVEL) {
+        drupal_set_message(__METHOD__ . ": Expected entity id, got URI: $eid", 'warning');
+        \Drupal::logger('wisski salz')->warning(__METHOD__ . ": Expected entity id, got URI: $eid: {bt}", ["bt"=>join('//', array_map(function ($a) { return (isset($a['class']) ? $a['class'] . '::' : '') . $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 8)))]);
+      }
+      if (isset($adapter_id)) {
+        $adapter = is_object($adapter_id) ? $adapter_id : Adapter::load($adapter_id);      
+        if ($adapter && $adapter->getEngine()->isValidUri($eid)) return $eid;
+      }
+      return FALSE;
+    }
+
+    $result = self::doGetUrisForDrupalId($eid,$adapter_id);
+    
+    // re-order for triplify
+    // only use the keys!
+    if(!empty($result)) {
+      foreach($result as $key => $value) {
+        if(isset($value->uri)) {
+          unset($result[$key]);
+          $result[$value->adapter_id] = $value->uri;
+        }
+      }
+    }
+    
+    #$result = self::doGetUrisForDrupalId($eid,$adapter_id);
+ #   dpm(array('$eid'=>$eid,'$adapter_id'=>isset($adapter_id)? $adapter_id : 'NULL')+array('return'=>$result),__FUNCTION__);
+    return $result;
+  }
+  
   public static function getUrisForDrupalId($eid,$adapter_id=NULL) {
-    
-    
+        
     if (!is_numeric($eid)) {
       //we probably got a URI as input, check that and return the input if it's valid
       //otherwise we cant do anything
@@ -322,6 +359,9 @@ class AdapterHelper {
       return FALSE;
     }
     $result = self::doGetUrisForDrupalId($eid,$adapter_id);
+
+    #  $result = array_keys($result);
+
  #   dpm(array('$eid'=>$eid,'$adapter_id'=>isset($adapter_id)? $adapter_id : 'NULL')+array('return'=>$result),__FUNCTION__);
     return $result;
   }
@@ -331,7 +371,7 @@ class AdapterHelper {
    * returns a set of URIs that are associated with the given Drupal entity ID
    * if there is no URI set for the given adapter, we will always try to create one.
    * @param $eid the entity's Drupal ID
-   * @param $adapter_id if set the function will return at most one uri namely the one used in the adapter with this ID
+   * @param $adapter_id if set the function will return URIs
    * @return an assocative array keyed by adapter ID with the associated URIs as values or | the URI associated with the input adapter
    */
   public static function doGetUrisForDrupalId($eid,$adapter_id=NULL) {
@@ -387,20 +427,21 @@ class AdapterHelper {
       //with unspecified adapter, we want an associative array keyed by adapter with URIs as values
       #$return = $out->fetchAllKeyed();
       // the above does not work as there might be more than one uri per store...
-      $return = $out->fetchCol(1);
-      
+#      dpm($out->fetchAll(), "all!");
+#      $return = $out->fetchCol(1);
+      $return = $out->fetchAll();      
       #dpm($return,'Multiple adapters');
-      $return = array_unique($return); 
+#      $return = array_unique($return); 
       
  #     dpm($return, "ret");
       
       // special case for our own uris... clear these here!
       foreach($return as $key => $value) {
-        if(strpos($value, "/wisski/navigate") !== FALSE) {
+        if(strpos($value->uri, "/wisski/navigate") !== FALSE) {
           unset($return[$key]);
         }
       }      
-      
+            
       if (!empty($return)) return $return;
     }
     
@@ -436,7 +477,7 @@ class AdapterHelper {
     
       if($pref) {
         $same_uris = self::getPreferredLocalStore(TRUE)->getUrisForDrupalId($eid);
-        //dpm($same_uris,'From Store, no adapter');
+        #dpm($same_uris,'From Store, no adapter');
         self::setSameUris($same_uris,$eid);
         return $same_uris;
       } else {
