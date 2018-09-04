@@ -343,7 +343,7 @@ class AdapterHelper {
   }
   
   public static function getUrisForDrupalId($eid,$adapter_id=NULL) {
-        
+    #dpm("caller!");        
     if (!is_numeric($eid)) {
       //we probably got a URI as input, check that and return the input if it's valid
       //otherwise we cant do anything
@@ -359,6 +359,17 @@ class AdapterHelper {
       return FALSE;
     }
     $result = self::doGetUrisForDrupalId($eid,$adapter_id);
+
+    if(!empty($result)) {
+      foreach($result as $key => $value) {
+        if(isset($value->uri)) {
+          drupal_set_message("Warning - this is the old behaviour. You should not use this!", "warning");
+          dpm("track");
+          unset($result[$key]);
+          $result[$value->adapter_id] = $value->uri;
+        }
+      }
+    }
 
     #  $result = array_keys($result);
 
