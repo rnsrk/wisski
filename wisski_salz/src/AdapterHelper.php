@@ -360,7 +360,7 @@ class AdapterHelper {
     }
     $result = self::doGetUrisForDrupalId($eid,$adapter_id);
 
-    if(!empty($result)) {
+    if(!empty($result) && is_array($result)) {
       foreach($result as $key => $value) {
         if(isset($value->uri)) {
           drupal_set_message("Warning - this is the old behaviour. You should not use this!", "warning");
