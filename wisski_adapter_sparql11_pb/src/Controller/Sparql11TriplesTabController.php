@@ -32,8 +32,8 @@ class Sparql11TriplesTabController extends ControllerBase {
     // if it is empty, the entity is the starting point
     if(empty($target_uri)) {
 
-      $target_uri = AdapterHelper::getUrisForDrupalId($entity->id());
-      
+#      $target_uri = AdapterHelper::getUrisForDrupalId($entity->id());
+      $target_uri = AdapterHelper::getOnlyOneUriPerAdapterForDrupalId($entity->id());      
       $target_uri = current($target_uri);
       
     } else // if not we want to view something else
