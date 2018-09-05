@@ -504,6 +504,17 @@ class AdapterHelper {
   public static function deleteUrisForDrupalId($entity_id) {
 
     $same_uris = self::doGetUrisForDrupalId($entity_id);
+
+    if(!empty($same_uris)) {
+      foreach($same_uris as $key => $value) {
+        if(isset($value->uri)) {
+          unset($same_uris[$key]);
+          $same_uris[$value->adapter_id] = $value->uri;
+        }
+      }
+    }
+
+
     $same_uris[] = self::generateWisskiUriFromId($entity_id);
 
     // delete from local store
