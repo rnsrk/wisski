@@ -460,7 +460,8 @@ class AdapterHelper {
     if (isset($adapter_id)) {
       //try the local store backup
       //first we gather the matchings for other adapters, we can possibly find URIs there that fit our input adapter
-      $old_uris = self::getUrisForDrupalId($eid);
+//      $old_uris = self::getUrisForDrupalId($eid);
+      $old_uris = self::doGetUrisForDrupalIdAsArray($eid);
       $local_store = self::getPreferredLocalStore(TRUE);
       if(!empty($local_store))
         $same_uri = $local_store->findUriForDrupalId($eid,$adapter_id);
@@ -497,25 +498,35 @@ class AdapterHelper {
     }
   }
   
+  function doGetUrisForDrupalIdAsArray($entity_id) {
+  
+    $uris = self::doGetUrisForDrupalId($entity_id);
+    
+    $uris_out = array();
+    
+    if(!empty($uris)) {
+      foreach($uris as $key => $value) {
+        if(isset($value->uri)) {
+          $uris_out[$value->uri] = $value->uri;
+        }
+      }
+    }
+      
+    return $uris_out;
+  
+  }
+  
 
   /** Deletes the mapping between the given entity ID and its associated URIs.
    * It does NOT delete other data associated with the ID or the URIs!
    */
   public static function deleteUrisForDrupalId($entity_id) {
 
-    $same_uris = self::doGetUrisForDrupalId($entity_id);
+    $same_uris = self::doGetUrisForDrupalIdAsArray($entity_id);
 
-    if(!empty($same_uris)) {
-      foreach($same_uris as $key => $value) {
-        if(isset($value->uri)) {
-          unset($same_uris[$key]);
-          $same_uris[$value->adapter_id] = $value->uri;
-        }
-      }
-    }
+    $my_id = self::generateWisskiUriFromId($entity_id);
 
-
-    $same_uris[] = self::generateWisskiUriFromId($entity_id);
+    $same_uris[$my_id] = $my_id;
 
     // delete from local store
     // with TRUE it returns the engine instead of adapter
