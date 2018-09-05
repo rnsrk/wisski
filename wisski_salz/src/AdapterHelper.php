@@ -498,7 +498,7 @@ class AdapterHelper {
     }
   }
   
-  function doGetUrisForDrupalIdAsArray($entity_id) {
+  public static function doGetUrisForDrupalIdAsArray($entity_id) {
   
     $uris = self::doGetUrisForDrupalId($entity_id);
     
