@@ -2416,6 +2416,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
       
       if(!empty($primitiveValue)) {
+#        dpm($primitiveValue, "prim");
         
         if ($write) {
           // we have to escape it otherwise the sparql query may break
@@ -2466,10 +2467,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             }
             $primitiveValue = join('|', $values);
           }
+#          dpm($primitiveValue, "prim");
           
           if (!$safe) {
             if (is_numeric($primitiveValue)) {
-              $escapedValue = intval($primitiveValue);
+#              dpm("yo!");
+#              $escapedValue = intval($primitiveValue);
+              $escapedValue = $primitiveValue;
               $cast_outvar = "xsd:decimal($outvar)";
             }
             else {
@@ -2478,6 +2482,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           } else {
             $escapedValue = '"' . $primitiveValue . '"';
           }
+          
+#          dpm($escapedValue, "esc");
 
           if ($op == 'BETWEEN') {
             list($val_min, $val_max) = is_array($primitiveValue) ? $primitiveValue : explode(";", $primitiveValue, 2);
