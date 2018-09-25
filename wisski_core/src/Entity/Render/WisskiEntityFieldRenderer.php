@@ -50,7 +50,7 @@ class WisskiEntityFieldRenderer extends EntityFieldRenderer {
    */
   protected function buildFields(array $values) {
     $build = [];
-
+#    dpm("yay!");
     // most of the code is copied from the original file.
     if ($values && ($field_ids = $this->getRenderableFieldIds())) {
       $entity_type_id = $this->getEntityTypeId();
@@ -74,16 +74,48 @@ class WisskiEntityFieldRenderer extends EntityFieldRenderer {
             $bundles = $field_storage_definitions[$mfield->definition['field_name']]->getBundles();
             
             $bundle_id = current($bundles);
-            
+
+#            dpm(serialize($field_storage_definitions[$mfield->definition['field_name']]['settings']['target_type']), "seria");
+
             if($bundle_id == $entity->bundle())
               continue;
             
             $field_name = $mfield->definition['field_name'];
+
+            $is_file = in_array('file',$field_storage_definitions[$mfield->definition['field_name']]->getDependencies()['module']);
             
             if (isset($result_row->$field_id)) {
               $data = $result_row->$field_id;
+#              dpm($data, "data");
+#              $tmpentity = new WisskiEntity(array('eid' => $result_row->index, 'bundle' => $bundle_id, $field_name  => $data),'wisski_individual',$bundle_id);
+#              dpm($entity->id(), "eid parent");
+              $tmpentity = new WisskiEntity(array('eid' => $entity->id(), 'bundle' => $bundle_id, $field_name  => $data),'wisski_individual',$bundle_id);
               
-              $tmpentity = new WisskiEntity(array('eid' => $result_row->index, 'bundle' => $bundle_id, $field_name  => $data),'wisski_individual',$bundle_id);
+              // this kills the url.... which probably is bad!
+              $tmpentity->enforceIsNew();
+#               $tmpentity = $entity;
+
+#              $tmpentity->set('id', $entity->id());
+
+#              $tmpentity->id() = $entity->id();
+              
+#              dpm(serialize($tmpentity), "sads");
+#              dpm($tmpentity->id(), "id");
+#              dpm($tmpentity->isNew(), "isnew");
+              
+              if($is_file) {
+                $storage = \Drupal::entityTypeManager()->getStorage('wisski_individual');
+                
+                foreach($data as $key => $dat) {
+#                  dpm($data, "data");
+                
+#                  dpm($storage->getFileId(current($data)), "fid");
+                  
+                  $data[$key] = $storage->getFileId($dat);
+                
+                }
+                                  
+              }
 
               $tmpentity->set($field_name, $data);
 
@@ -92,7 +124,7 @@ class WisskiEntityFieldRenderer extends EntityFieldRenderer {
           }      
         }
       }
-      
+#      dpm($aux_entities, "aux");
       // Determine unique sets of fields that can be processed by the same
       // display. Fields that appear several times in the View open additional
       // "overflow" displays.
@@ -116,15 +148,17 @@ class WisskiEntityFieldRenderer extends EntityFieldRenderer {
         // these are used for the fields that are not
         // directly attached to the requested entities
         // that are used as key visuals  
-        foreach($aux_entities as $field_id => $tmp_entities) {
-          
+        foreach($aux_entities as $field_id => $tmp_entities) {         
           
           $field = $this->view->field[$field_id];
           $field_name = $field->definition['field_name'];
-          
+#          dpm($field_name, "fn");
           $bundles = $field_storage_definitions[$field_name]->getBundles();
           
           $bundle_id = current($bundles);                     
+          
+#          dpm($bundle_id, "bun");
+#          dpm($entity_type_id, "eit");
           
           // Create the display, and configure the field display options.
           $display = EntityViewDisplay::create([
@@ -137,14 +171,20 @@ class WisskiEntityFieldRenderer extends EntityFieldRenderer {
             'type' => $field->options['type'],
             'settings' => $field->options['settings'],
           ]);
-        
+#          dpm($field->options['type'], "type");
+#          dpm($field->options['settings'], "set");
+#          dpm($tmp_entities, "tmp");
           // generate the field-thingies
           $auxdata = $display->buildMultiple($tmp_entities);
+
+#          dpm($auxdata, "aux");
 
           // and copy them to the values array.
           foreach($auxdata as $key => $val) {
             $build[$key][$field_id] = $val[$field_name];
           }
+          
+#          dpm($build, "build");
         }
         
         // this is copied from the original code
@@ -180,7 +220,7 @@ class WisskiEntityFieldRenderer extends EntityFieldRenderer {
         }
       }
     }
-
+#    dpm($build, "build");
     return $build;
   }
 
