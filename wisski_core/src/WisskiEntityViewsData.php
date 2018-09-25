@@ -203,7 +203,7 @@ class WisskiEntityViewsData extends EntityViewsData {
                   "@pb" => $pb->getName(),
               ]),
               'field' => [
-                'id' => 'wisski_field', #'wisski_standard',
+                'id' => 'wisski_entityfield', #'wisski_standard',
                 'field_name' => $fieldid,
                 'entity_type' => $this->entityType->id(),
                 'wisski_field' => "$pbid.$pid",
