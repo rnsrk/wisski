@@ -132,9 +132,12 @@ class WisskiIndividualQuery extends QueryPluginBase {
    * @param value ??
    * @param operator ??
    */ 
-   public function addWhere($group, $field, $value = NULL, $operator = NULL) {
-     // do nothing
-   }
+  public function addWhere($group, $field, $value = NULL, $operator = NULL) {
+#     drupal_set_message("AddWhere was called with " . serialize($group) . " and " . serialize($field) . " and " . $value . " and " . $operator, "warning");
+//    $this->condition('id', 'wisski_individual.' . $bundleid . '.', 'STARTS_WITH');  
+     // do nothing - this is already gathered below due $query is modified for 
+     // every filter in the view.
+  }
 
   /** This function is called by Drupal\views\Plugin\views\HandlerBase
   * maybe we should eventually break up the inheritance from there/QueryPluginBase if possible.
@@ -191,7 +194,7 @@ wisski_tick("begin exec views");
     $filter_regex = array();
 
     $bundle_ids = array();
-    
+#    dpm($view->filter, "filt");
     if(!empty($view->filter)) {
       foreach($view->filter as $key => $one_filter) {
         if($key == "bundle") {
@@ -199,8 +202,14 @@ wisski_tick("begin exec views");
         } else {
 #          dpm(serialize($one_filter));
 #          $filter_regex[$key][] = array('op' => $one_filter->operator, 'val' => $one_filter->value);
-#          dpm($key, "key");
-          $query->condition($key, $one_filter->value);
+#          dpm($one_filter->configuration['wisski_field'], "key");
+          
+          // see if it is a wisski field or not...
+          if(isset($one_filter->configuration['wisski_field'])) {
+            $query->condition($one_filter->configuration['wisski_field'], $one_filter->value, $one_filter->operator);
+          } else {
+            $query->condition($key, $one_filter->value, $one_filter->operator);
+          }
         }
       }
     }    
