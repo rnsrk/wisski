@@ -163,8 +163,12 @@ class WisskiEntityViewsData extends EntityViewsData {
     if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
       return NULL;
     }
-                      
+    $field_storage_def = \Drupal::entityManager()->getFieldStorageDefinitions('wisski_individual');                      
+    $fdef_for_bundle = array();
     
+    // this has to be defined to use parent-functions.
+    $this->entityManager = \Drupal::entityManager();
+        
     $pbs = entity_load_multiple('wisski_pathbuilder');
     foreach ($pbs as $pbid => $pb) {
       // we load all paths. then we go though the top groups
@@ -190,7 +194,82 @@ class WisskiEntityViewsData extends EntityViewsData {
               drupal_set_message("Path " . $path->getName() . " has no field definition.", "warning");
             }
             
-            $data[$base_table]["wisski_path_${pbid}__$pid"] = [
+            $field = $field_storage_def[$fieldid];
+
+            $standard_values = array();            
+                        
+            if(!empty($field)) {
+#              dpm($field->getType(), "fn");
+              
+              $bundleid = $pbpath['bundle'];
+              
+#              dpm($bundleid, "bun");              
+#              dpm(\Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundleid)[$fieldid], "fdef");
+#
+              if(!isset($fdef_for_bundle[$bundleid]))
+                $fdef_for_bundle[$bundleid] = \Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundleid);
+              
+              if(isset($fdef_for_bundle[$bundleid])) {
+                $fdef = $fdef_for_bundle[$bundleid][$fieldid];
+                
+                if(isset($fdef)) {
+
+#              $fdef = \Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundleid)[$fieldid];
+#                $this->entityManager = \Drupal::entityManager();
+#              dpm($field_storage_def[$fieldid], "yay");
+                  $standard_values = $this->mapSingleFieldViewsData($data, $fieldid, $field->getType(), $fieldid, $field->getType(), TRUE, $fdef);
+#                  dpm($standard_values, "val");
+                }
+              }
+            }
+            
+            // begin with the standard values... it does not hurt if there are no...
+            $data[$base_table]["wisski_path_${pbid}__$pid"] = $standard_values;
+            
+            // override this
+            // It would have been brilliant if we could combine both pb ID
+            // and path ID by a dot for forming the field's ID as wisski 
+            // entity query encodes paths like that. But Drupal views does 
+            // not allow dots... :(
+            $data[$base_table]["wisski_path_${pbid}__$pid"]['id'] = "wisski_path_{$pbid}__$pid";
+
+            // override the title
+            $data[$base_table]["wisski_path_${pbid}__$pid"]['title'] = $this->t("@group -> @path (@id) in @pb", [
+                  "@group" => $group->getName(),
+                  "@path" => $path->getName(),
+                  "@id" => $pid,
+                  "@pb" => $pb->getName(),
+              ]);
+              
+            // override the field-properties, as we do know better, what to do with them...
+            $data[$base_table]["wisski_path_${pbid}__$pid"]['field'] = [
+                'id' => 'wisski_entityfield', #'wisski_standard',
+                'field_name' => $fieldid,
+                'entity_type' => $this->entityType->id(),
+                'wisski_field' => "$pbid.$pid",
+              ];
+             
+            // override this only if the standard did not set something
+            if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id']))
+              $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id'] = 'wisski_field_string'; 
+            $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['pb'] = $pbid;
+            $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['path'] = $pid;
+            $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['wisski_field'] = "$pbid.$pid";
+            
+            // override this only if the standard did not set something
+            if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['sort']['id']))
+              $data[$base_table]["wisski_path_${pbid}__$pid"]['sort']['id'] = 'standard'; 
+            
+            // override this only if the standard did not set something
+            if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['id']))
+              $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['id'] = 'wisski_string'; 
+            $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['pb'] = $pbid;
+            $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['path'] = $pid;
+            $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['wisski_field'] = "$pbid.$pid";
+
+            $data[$base_table]["wisski_path_${pbid}__$pid"]['entity type'] = $this->entityType->id();
+/*
+            $data[$base_table]["wisski_path_${pbid}__$pid"] = 
               // It would have been brilliant if we could combine both pb ID
               // and path ID by a dot for forming the field's ID as wisski 
               // entity query encodes paths like that. But Drupal views does 
@@ -224,7 +303,7 @@ class WisskiEntityViewsData extends EntityViewsData {
                 'wisski_field' => "$pbid.$pid",
               ],
               'entity type' => $this->entityType->id(),
-            ];
+            ]; */
           }
         }
       }
