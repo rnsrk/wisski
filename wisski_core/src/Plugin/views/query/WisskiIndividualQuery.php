@@ -123,6 +123,18 @@ class WisskiIndividualQuery extends QueryPluginBase {
       );
     }
   }
+  
+  /**
+   * We override this function as the standard sort plugins use it
+   *
+   * @param group ??
+   * @param field the WisskiEntity entity query field by which to sort
+   * @param value ??
+   * @param operator ??
+   */ 
+   public function addWhere($group, $field, $value = NULL, $operator = NULL) {
+     // do nothing
+   }
 
   /** This function is called by Drupal\views\Plugin\views\HandlerBase
   * maybe we should eventually break up the inheritance from there/QueryPluginBase if possible.
