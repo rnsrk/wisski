@@ -200,6 +200,11 @@ wisski_tick("begin exec views");
         if($key == "bundle") {
           $bundle_ids = array_merge($bundle_ids, $one_filter->value);
         } else {
+        
+          // special case - omit filter for empty values.
+          if($one_filter->value == "" && $one_filter->operator == "=") {
+            continue;
+          }
 #          dpm(serialize($one_filter));
 #          $filter_regex[$key][] = array('op' => $one_filter->operator, 'val' => $one_filter->value);
 #          dpm($one_filter->configuration['wisski_field'], "key");
