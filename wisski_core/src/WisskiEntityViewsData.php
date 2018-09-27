@@ -193,8 +193,11 @@ class WisskiEntityViewsData extends EntityViewsData {
               continue; // the warning is left here only for debug purpose.
               drupal_set_message("Path " . $path->getName() . " has no field definition.", "warning");
             }
+  
+            $field = NULL;
             
-            $field = $field_storage_def[$fieldid];
+            if(isset($field_storage_def[$fieldid]))
+              $field = $field_storage_def[$fieldid];
 
             $standard_values = array();            
                         
