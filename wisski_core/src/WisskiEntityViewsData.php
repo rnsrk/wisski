@@ -251,9 +251,9 @@ class WisskiEntityViewsData extends EntityViewsData {
                 'entity_type' => $this->entityType->id(),
                 'wisski_field' => "$pbid.$pid",
               ];
-             
-            // override this only if the standard did not set something
-            if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id']))
+#            dpm($data[$base_table]["wisski_path_${pbid}__$pid"]['filter'], "filter!!! $pid");             
+            // override this only if the standard did not set something or it has set "standard" which seems to be stupid
+            if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id']) || $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id'] == "standard")
               $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id'] = 'wisski_field_string'; 
             $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['pb'] = $pbid;
             $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['path'] = $pid;
