@@ -59,7 +59,7 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
    * {@inheritdoc} 
    */
   public function hasEntity($entity_id) {
-    $uris = AdapterHelper::getUrisForDrupalId($entity_id);
+    $uris = AdapterHelper::doGetUrisForDrupalIdAsArray($entity_id);
     if (empty($uris)) return FALSE;
     foreach ($uris as $uri) {
       // fetchData also checks if the URI matches the GND URI pattern
