@@ -320,16 +320,28 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
 
 #        drupal_set_message(serialize($item->value));
 
-        if($settings['use_title_pattern']) {
-          $item->value = wisski_core_generate_title($entity_id);
+        $generated_title = "";
+
+        if($settings['use_title_pattern'] && !empty(AdapterHelper::getBundleIdsForEntityId($entity_id, TRUE)) ) {
+#          dpm("I generate title for $entity_id");
+          $generated_title = wisski_core_generate_title($entity_id);
+#          dpm($generated_title, "yay!");
         }
         
-        $elements[$delta] = array(
-          '#type' => 'link',
-          '#title' => $item->value,
-          '#url' => Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity_id]),
+        if($generated_title != "") {
+          $elements[$delta] = array(
+            '#type' => 'link',
+            '#title' => $generated_title,
+            '#url' => Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity_id]),
 //          '#url' => Url::fromUri('internal:/' . $url),
-        );
+          );
+        } else {
+          $elements[$delta] = array(
+            '#type' => 'inline_template',
+            '#template' => '{{ value|nl2br }}',
+            '#context' => ['value' => $item->value],
+          );
+        }
 
 #        dpm($url, "url");
         
