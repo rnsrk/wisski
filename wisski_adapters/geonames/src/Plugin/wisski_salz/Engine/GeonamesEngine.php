@@ -51,6 +51,8 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
       'gn:alternateName' => NULL,
       'wgs84:lat' => NULL,
       'wgs84:long' => NULL,
+      // By Mark: this is a generated field - such the strange namespace ;D
+      'nosebear:WKT' => NULL,
     ],
   ];
 
@@ -129,6 +131,11 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
           $resources = $newResources;
         }
         if ($dtProp) {
+          if($dtProp == 'nosebear:WKT') {
+#            dpm($propChain, "propchain!");
+            continue;
+            //$data[$concept][$propChain][] = "Miauz, genau.";
+          }
           foreach ($resources as $resource) {
             foreach ($graph->all($resource, $dtProp) as $thing) {
               if ($thing instanceof EasyRdf_Literal) {
@@ -141,6 +148,14 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
         }      
       }
     }
+    
+#    dpm($data, "yay, data!");
+#    dpm($concept, "con");
+    if( !empty($data[$concept]['wgs84:lat']) && !empty($data[$concept]['wgs84:long']) ) {
+      $data[$concept]['nosebear:WKT'][] = 'POINT(' . $data[$concept]['wgs84:long'][0] . ' ' . $data[$concept]['wgs84:lat'][0] . ')'; 
+    }
+    
+#    dpm($data, "out");
 
     $cache->set($id, $data);
 #    dpm($data);
