@@ -655,6 +655,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
 
   protected function executeEntityTitleCondition($operator, $value, $bundleid = NULL) {
     $entity_ids = NULL;
+    $out_entities = array();
 #    dpm($value, "val!");
     if (empty($value)) {
       // if no value is given, then condition is always true.
