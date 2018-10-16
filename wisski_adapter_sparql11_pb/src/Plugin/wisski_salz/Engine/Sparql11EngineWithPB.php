@@ -209,10 +209,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // this might need to be adjusted for other standards than rdf/owl
     $query = 
       "SELECT DISTINCT ?property "
-      ."WHERE {  {"
-        ."?property a owl:DatatypeProperty. "
-        ."?property rdfs:domain ?d_superclass. "
-        ."<$step> rdfs:subClassOf* ?d_superclass. } }"
+      ."WHERE { { GRAPH ?g1 {"
+        ."?property a owl:DatatypeProperty . } . } . "
+        ."{ GRAPH ?g3 { ?property rdfs:subPropertyOf* ?d_subprop } } . { GRAPH ?g4 { ?d_subprop rdfs:domain ?d_superclass . } . } . "
+        ."{ GRAPH ?g5 { <$step> rdfs:subClassOf* ?d_superclass. } . } . }"
       ;
 /*      
       // By Mark: TODO: Please check this. I have absolutely
