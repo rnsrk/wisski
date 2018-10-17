@@ -16,6 +16,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Url;
 use Drupal\wisski_salz\AdapterHelper;
 use Drupal\Component\Utility\Html;
+use Drupal\wisski_core\WisskiCacheHelper;
    
 /**
  * Plugin implementation of the 'wisski_link_formatter' formatter.
@@ -322,7 +323,14 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
 
         $generated_title = "";
 
-        if($settings['use_title_pattern'] && !empty(AdapterHelper::getBundleIdsForEntityId($entity_id, TRUE)) ) {
+        // are there any bundles?
+        $buns = AdapterHelper::getBundleIdsForEntityId($entity_id, TRUE);
+
+        if($settings['use_title_pattern'] && !empty($buns) ) {
+          // if there is a bundle we have to tell the system that it should cache this!
+          $the_bundle = current($buns);
+          WisskiCacheHelper::putCallingBundle($entity_id,$the_bundle);          
+          
 #          dpm("I generate title for $entity_id");
           $generated_title = wisski_core_generate_title($entity_id);
 #          dpm($generated_title, "yay!");
