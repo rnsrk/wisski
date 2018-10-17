@@ -129,7 +129,7 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
 #    dpm($new_auth_uris, "yay?");
 #    return;
     // now collect all old authority uris
-    $uris_by_adapter = AdapterHelper::getUrisForDrupalId($object->id());
+    $uris_by_adapter = AdapterHelper::doGetUrisForDrupalIdAsArray($object->id());//::getUrisForDrupalId($object->id());
     $old_uris = [];
     $old_auth_uris = [];
     foreach ($uris_by_adapter as $aid => $uri) {
