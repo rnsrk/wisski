@@ -86,6 +86,8 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
    * {@inheritdoc}
    */
   public function execute($object = NULL) {
+#    return;
+#    dpm(serialize($object), "yay!");
     /** \Drupal\wisski_core\Entity\WisskiEntity $object */
     if (empty($object)) {
       return;
@@ -108,6 +110,8 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
         continue;
       }
       $uris = $this->getFieldValues($object, $field_path);
+#      return;
+#      dpm($uris, "uris");
       // go thru each entry and extract the uri
       foreach ($uris as $uri) {
         // check if it matches any adapter patterns
@@ -122,6 +126,8 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
       }
     }
     
+#    dpm($new_auth_uris, "yay?");
+#    return;
     // now collect all old authority uris
     $uris_by_adapter = AdapterHelper::getUrisForDrupalId($object->id());
     $old_uris = [];
@@ -143,6 +149,8 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
     if (!empty($delete_uris)) {
       AdapterHelper::removeSameUris($delete_uris, $object->id());
     }
+
+#    return;
 
     // add the new uri
     // we need the whole bunch of current uris as the setSameUris() will
@@ -195,8 +203,10 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
     $parts1 = explode('.', $field_path, 2);
     $parts2 = explode(' ', $parts1[0], 2);
     $field_id = $parts2[0];
+#    dpm($field_id, "fid");
     $rest_path = (isset($parts2[1]) ? $parts2[1] : '') . (isset($parts1[1]) ? $parts1[1] : '');
     $field_def = $entity->getFieldDefinition($field_id);
+#    return;
     if (!$field_def) {
       return [];
     }
@@ -208,6 +218,10 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
         $values[] = $item->get($main_property)->getValue();
       }
     }
+#    dpm($values, "val");
+#    dpm($rest_path, "rest");
+#    return;
+#    dpm($values, "val");
     if (empty($rest_path)) {
       return $values;
     }

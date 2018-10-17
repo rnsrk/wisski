@@ -32,6 +32,18 @@ function wisski_authfile_wisski_individual_update(Drupal\Core\Entity\EntityInter
     wisski_authfile_update_authority_uri($entity);
 }
 
+function wisski_authfile_entity_prepare_view($entity_type_id, array $entities, array $displays, $view_mode) {
+#  dpm($entity_type_id, "enttype");
+
+  if($entity_type_id == "wisski_individual") {
+    foreach($entities as $entity) {
+#      dpm(serialize($entity->id()), "ent");
+      wisski_authfile_update_authority_uri($entity);
+      wisski_authfile_complete_authority_entry($entity);
+    }
+  }
+}
+
 
 function wisski_authfile_complete_authority_entry($entity) {
   $actions = entity_load_multiple_by_properties('action', array('plugin' => 'wisski_authfile_complete_info'));
