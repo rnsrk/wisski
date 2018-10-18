@@ -117,11 +117,11 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
 #    drupal_set_message(serialize($uri_field_list)); 
     $uri = NULL;
     if ($uri_field_list && $uri_field = $uri_field_list->first()) {
-#      dpm($uri_field, "uf");
+#      dpm(serialize($uri_field), "uf");
       $uri = $uri_field->get($uri_field::mainPropertyName())->getValue();
     }
     
-    $old_uri = $uri;
+    $olduri = $uri;
 #    dpm($uri, "uri");
     // if there is a URI and there are authority file and entry id the URI
     // will be overwritten.
