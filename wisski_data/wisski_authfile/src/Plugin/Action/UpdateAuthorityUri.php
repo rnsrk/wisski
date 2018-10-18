@@ -110,6 +110,7 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
         continue;
       }
       $uris = $this->getFieldValues($object, $field_path);
+#      dpm($field_path, "fp");
 #      return;
 #      dpm($uris, "uris");
       // go thru each entry and extract the uri
@@ -156,6 +157,7 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
     // we need the whole bunch of current uris as the setSameUris() will
     // not handle correctly only partial set of uris
     $to_add = $new_auth_uris + array_diff($old_uris, $old_auth_uris);
+#    dpm($to_add, "add");
     $new_uris = [];
     foreach ($to_add as $aid_uri) {
       list($aid, $uri) = explode(" ", $aid_uri, 2);
@@ -203,7 +205,7 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
     $parts1 = explode('.', $field_path, 2);
     $parts2 = explode(' ', $parts1[0], 2);
     $field_id = $parts2[0];
-#    dpm($field_id, "fid");
+ #   dpm($field_id, "fid");
     $rest_path = (isset($parts2[1]) ? $parts2[1] : '') . (isset($parts1[1]) ? $parts1[1] : '');
     $field_def = $entity->getFieldDefinition($field_id);
 #    return;
@@ -211,6 +213,7 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
       return [];
     }
     $values = [];
+
     $field_list = $entity->get($field_id);
     if (!$field_list->isEmpty()) {
       $main_property = $field_def->getFieldStorageDefinition()->getMainPropertyName();
@@ -218,18 +221,19 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
         $values[] = $item->get($main_property)->getValue();
       }
     }
+      
 #    dpm($values, "val");
 #    dpm($rest_path, "rest");
 #    return;
 #    dpm($values, "val");
-    if (empty($rest_path)) {
-      return $values;
-    }
-    else {
+    if (empty($rest_path)) {    
+      return $values; 
+    } else {     
       $new_values = [];
       foreach (entity_load_multiple('wisski_individual', $values) as $new_entity) {
         $new_values = array_merge($new_values, $this->getFieldValues($new_entity, $rest_path));
       }
+#      dpm($new_values, "yay!!");
       return $new_values;
     }
   }

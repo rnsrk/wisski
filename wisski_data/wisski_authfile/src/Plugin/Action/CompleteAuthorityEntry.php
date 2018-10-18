@@ -102,7 +102,8 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
    */
   public function execute($object = NULL) {
     /** \Drupal\wisski_core\Entity\WisskiEntity $object */
-
+#    dpm($object->id());
+#    drupal_set_message("yyayy!" . microtime());
     if (empty($object) || $object->bundle() != $this->configuration['bundle']) {
       return;
     }
@@ -113,14 +114,20 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
     }
     // get the uri
     $uri_field_list = $object->get($this->configuration['entry_uri_field']);
+#    drupal_set_message(serialize($uri_field_list)); 
     $uri = NULL;
     if ($uri_field_list && $uri_field = $uri_field_list->first()) {
+#      dpm($uri_field, "uf");
       $uri = $uri_field->get($uri_field::mainPropertyName())->getValue();
     }
+    
+    $old_uri = $uri;
+#    dpm($uri, "uri");
     // if there is a URI and there are authority file and entry id the URI
     // will be overwritten.
     // get the authority file entity id
     $auth_file_field_id = $this->configuration['file_eid_field'];
+#    dpm($auth_file_field_id, "yay!");
     $auth = NULL;
     if (!empty($auth_file_field_id)) {
       // we select a certain authority
@@ -132,22 +139,68 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
     else {
       $auth = '*';
     }
+
+    // due to overall smartness of users - do a trim.
+    $auth = trim($auth);
+
+#    dpm($auth, "auth");
+#    dpm($patterns, "patty!");
     // check if we have some uri pattern for this authority file
     if (!empty($auth) && isset($patterns[$auth])) {
       // get the entry id
       $id_field_list = $object->get($this->configuration['entry_id_field']);
       if ($id_field_list && $id_field = $id_field_list->first()) {
         $id = $id_field->get($id_field::mainPropertyName())->getValue();
+        
+        // due to overall smartness of users - do a trim.
+        $id = trim($id);
+        
         // build the uri and add it to the entity
         if (!empty($id)) {
           $uri = str_replace('{id}', $id, $patterns[$auth]);
         }
       }
     }
-#dpm($uri);    
-    if (!empty($uri)) {
+#    dpm($uri);    
+#    dpm($olduri); 
+    // only write if:
+    // either: uri is not empty but old uri is -> generate the uri because it was not filled by now
+    // or: uri is not empty, old uri is not empty but they differ -> overwrite
+    if ( (!empty($uri) && empty($olduri)) || ( !empty($uri) && !empty($olduri) && $olduri != $uri) ) {
       $uri = trim($uri);
       $object->set($this->configuration['entry_uri_field'], $uri);
+      
+      // write this
+      $real_preferred = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore(FALSE,TRUE);
+
+      $engine = $real_preferred->getEngine();
+      
+      $pb = $engine->getPbsForThis();
+
+      $bundle = $object->bundle();
+      
+      $entity_id = $object->id();
+
+      $mainprop = "value";
+      if(isset($uri_field))
+        $mainprop = $uri_field::mainPropertyName();
+      
+
+#      dpm($bundle, "bun");
+
+      $fv = array($this->configuration['entry_uri_field'] => array ( array($mainprop => $uri), "main_property" => $mainprop));
+
+
+      $engine->writeFieldValues($entity_id, $fv, current($pb), $bundle);
+      
+#      dpm($object->id(), "bun");
+
+#      dpm(serialize($real_preferred), "real");
+#      dpm($real_preferred->getEngine()->getPbsForThis(), "real2");
+      
+#writeFieldValues($entity_id, array $field_values, $pathbuilder, $bundle_id=NULL,$old_values=array(),$force_new=FALSE, $initial_write = FALSE)
+#      dpm($object->get(), "yay");
+#      $object->save();
     }
 
   }

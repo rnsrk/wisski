@@ -11,7 +11,7 @@
  * for WissKI's entity type
  */
 function wisski_authfile_wisski_individual_presave(Drupal\Core\Entity\EntityInterface $entity) {
-  wisski_authfile_complete_authority_entry($entity);
+#  wisski_authfile_complete_authority_entry($entity);
 }
 
 
@@ -20,7 +20,7 @@ function wisski_authfile_wisski_individual_presave(Drupal\Core\Entity\EntityInte
  * for WissKI's entity type
  */
 function wisski_authfile_wisski_individual_insert(Drupal\Core\Entity\EntityInterface $entity) {
-    wisski_authfile_update_authority_uri($entity);
+#    wisski_authfile_update_authority_uri($entity);
 }
 
 
@@ -29,7 +29,7 @@ function wisski_authfile_wisski_individual_insert(Drupal\Core\Entity\EntityInter
  * for WissKI's entity type
  */
 function wisski_authfile_wisski_individual_update(Drupal\Core\Entity\EntityInterface $entity) {
-    wisski_authfile_update_authority_uri($entity);
+#    wisski_authfile_update_authority_uri($entity);
 }
 
 function wisski_authfile_entity_prepare_view($entity_type_id, array $entities, array $displays, $view_mode) {
@@ -38,8 +38,9 @@ function wisski_authfile_entity_prepare_view($entity_type_id, array $entities, a
   if($entity_type_id == "wisski_individual") {
     foreach($entities as $entity) {
 #      dpm(serialize($entity->id()), "ent");
-      wisski_authfile_update_authority_uri($entity);
       wisski_authfile_complete_authority_entry($entity);
+      wisski_authfile_update_authority_uri($entity);
+
     }
   }
 }
