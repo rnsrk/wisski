@@ -276,7 +276,7 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
 
 #     dpm($item->getEntity());
       
-#      drupal_set_message("item: " . serialize($values['value']));
+      #drupal_set_message("item: " . serialize($values['value']));
       
 #      $elements[$delta] = array(
         #'#theme' => 'text',
@@ -310,7 +310,7 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
 //          '#url' => Url::fromUri('internal:/' . $url),
         );
       } else {
-#        drupal_set_message("got: " . serialize($item->wisskiDisamb));
+        #drupal_set_message("got: " . serialize($item->wisskiDisamb));
         
         $url = $item->wisskiDisamb;
 #        $url = str_replace('/', '\\', $url);
@@ -326,14 +326,21 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
         // are there any bundles?
         $buns = AdapterHelper::getBundleIdsForEntityId($entity_id, TRUE);
 
-        if($settings['use_title_pattern'] && !empty($buns) ) {
+        #dpm($buns, "buns");
+        
+        #dpm($settings, "yay!");
+
+        if(!empty($buns)) {
           // if there is a bundle we have to tell the system that it should cache this!
           $the_bundle = current($buns);
-          WisskiCacheHelper::putCallingBundle($entity_id,$the_bundle);          
+          WisskiCacheHelper::putCallingBundle($entity_id,$the_bundle);
+        }
+
+        if($settings['use_title_pattern'] && !empty($buns) ) {
           
-#          dpm("I generate title for $entity_id");
+        #  dpm("I generate title for $entity_id");
           $generated_title = wisski_core_generate_title($entity_id);
-#          dpm($generated_title, "yay!");
+        #  dpm($generated_title, "yay!");
         }
         
         if($generated_title != "") {
@@ -342,6 +349,12 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
             '#title' => $generated_title,
             '#url' => Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity_id]),
 //          '#url' => Url::fromUri('internal:/' . $url),
+          );
+        } else if(!empty($buns)) { // if there is a form to link to
+          $elements[$delta] = array(
+            '#type' => 'link',
+            '#title' => $item->value,
+            '#url' => Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity_id]),
           );
         } else {
           $elements[$delta] = array(
