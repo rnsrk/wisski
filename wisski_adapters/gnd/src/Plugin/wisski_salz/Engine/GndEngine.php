@@ -31,7 +31,7 @@ use EasyRdf_Literal;
  */
 class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterface {
   
-  protected $uriPattern  = "!^http://d-nb.info/gnd/(\w+)$!u";
+  protected $uriPattern  = "!^http://d-nb.info/gnd/(.+)$!u";
   protected $fetchTemplate = "http://d-nb.info/gnd/{id}/about/lds";
   
   /**
