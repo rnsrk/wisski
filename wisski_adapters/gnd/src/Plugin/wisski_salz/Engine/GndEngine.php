@@ -65,6 +65,10 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         'gnd:preferredNameForThePlaceOrGeographicName' => NULL,
         'gnd:variantNameForThePlaceOrGeographicName' => NULL,
         ),
+      'TerritorialCorporateBodyOrAdministrativeUnit' => array(
+        'gnd:preferredNameForThePlaceOrGeographicName' => NULL,
+        'gnd:variantNameForThePlaceOrGeographicName' => NULL,
+        ),
       'SubjectHeading' => array(
         'gnd:preferredNameForTheSubjectHeading' => NULL,
         'gnd:variantNameForTheSubjectHeading' => NULL,
