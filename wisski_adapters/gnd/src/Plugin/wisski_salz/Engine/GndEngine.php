@@ -68,6 +68,9 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       'TerritorialCorporateBodyOrAdministrativeUnit' => array(
         'gnd:preferredNameForThePlaceOrGeographicName' => NULL,
         'gnd:variantNameForThePlaceOrGeographicName' => NULL,
+        'geo:hasGeometry' => array(
+          'sf:Point' => NULL,
+          ),
         ),
       'SubjectHeading' => array(
         'gnd:preferredNameForTheSubjectHeading' => NULL,
@@ -76,6 +79,9 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       'Work' => array(
         'gnd:preferredNameForTheWork' => NULL,
         'gnd:variantNameForTheWork' => NULL,
+        ),
+      'sf:Point' => array(
+        'geo:asWKT' => NULL,
         ),
 
   );
@@ -409,10 +415,33 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
    * {@inheritdoc} 
    */
   public function getPathAlternatives($history = [], $future = []) {
+#    dpm($history);
     if (empty($history)) {
       $keys = array_keys($this->possibleSteps);
       return array_combine($keys, $keys);
     } else {
+#      dpm($history, "hist");
+      $steps = $this->possibleSteps;
+      
+#      dpm($steps, "keys");
+      // go through the history deeper and deeper!
+      foreach($history as $hist) {
+#        $keys = array_keys($this->possibleSteps);
+        
+        // if this is not set, we can not go in there.
+        if(!isset($steps[$hist])) {
+          return array();
+        } else {
+          $steps = $steps[$hist];
+        }
+      }
+      
+      // see if there is something
+      $keys = array_keys($steps);
+      
+      if(!empty($keys))
+        return array_combine($keys, $keys);
+      
       return array();
     }
   }
