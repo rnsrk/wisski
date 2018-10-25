@@ -40,6 +40,8 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
    */
   protected $rdfNamespaces = array(
     'gnd' => 'http://d-nb.info/standards/elementset/gnd#',
+    'geo' => 'http://www.opengis.net/ont/geosparql#',
+    'sf' => 'http://www.opengis.net/ont/sf#',    
   );
   
 
@@ -68,9 +70,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       'TerritorialCorporateBodyOrAdministrativeUnit' => array(
         'gnd:preferredNameForThePlaceOrGeographicName' => NULL,
         'gnd:variantNameForThePlaceOrGeographicName' => NULL,
-        'geo:hasGeometry' => array(
-          'sf:Point' => NULL,
-          ),
+        'geo:hasGeometry geo:asWKT' => NULL, 
         ),
       'SubjectHeading' => array(
         'gnd:preferredNameForTheSubjectHeading' => NULL,
@@ -80,10 +80,6 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         'gnd:preferredNameForTheWork' => NULL,
         'gnd:variantNameForTheWork' => NULL,
         ),
-      'sf:Point' => array(
-        'geo:asWKT' => NULL,
-        ),
-
   );
 
 
@@ -150,6 +146,9 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     }
 
     $data = array();
+
+
+// Property Chains don't work with unnamed bnodes :/
     foreach ($this->possibleSteps as $concept => $rdfPropertyChains) {
       foreach ($rdfPropertyChains as $propChain => $tmp) {
         $pChain = explode(' ', $propChain);
@@ -158,20 +157,41 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
           // last property is a datatype property
           $dtProp = array_pop($pChain);
         }
+#        dpm($dtProp, "yay!");
         $resources = array($uri => $uri);
         foreach ($pChain as $prop) {
           $newResources = array();
           foreach ($resources as $resource) {
+#            dpm($graph->properties($resource), "props");
+#            dpm($graph->allResources($resource, $prop), "Getting Resource $resource for prop $prop");
             foreach ($graph->allResources($resource, $prop) as $r) {
-              $newResources[$r] = $r;
+#              dpm($r, "er");
+#              if(!empty($r->getUri())
+              $newResources[$r->getUri()] = $r;
             }
           }
+#          dpm($resources, "old");
+#          dpm($newResources, "new");
           $resources = $newResources;
         }
         if ($dtProp) {
           foreach ($resources as $resource) {
             foreach ($graph->all($resource, $dtProp) as $thing) {
-              if ($thing instanceof EasyRdf_Literal) {
+#              dpm($thing->getDatatype(), "thing");
+              
+              if($thing->getDatatype() == "geo:wktLiteral") {
+                // unluckily GND is not very WKT-conforming...
+                $value = $thing->getValue();
+                $value = str_replace("+", "", $value);
+                $value = str_replace("Point", "POINT", $value);
+                $value = str_replace(" ( ", "(", $value);
+                $value = str_replace(" ) ", ")", $value);
+
+#                $value = "POINT ( 011 011 )";
+ 
+                
+                $data[$concept][$propChain][] = $value;
+              } else if ($thing instanceof EasyRdf_Literal) {
                 $data[$concept][$propChain][] = $thing->getValue();
 //              } else {
 //                $data[$field][] = $thing->getUri();
@@ -183,7 +203,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     }
 
     $cache->set($id, $data);
-
+#    dpm($data, "data");
     return $data;
 
   }
@@ -376,6 +396,8 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     $path_array = $path->getPathArray();
     $path_array[] = $path->getDatatypeProperty();
     $data_walk = $data;
+#    dpm($data_walk, "data");
+#    dpm($path_array, "pa");
     do {
       $step = array_shift($path_array);
       if (isset($data_walk[$step])) {
@@ -397,7 +419,8 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     } while (!empty($path_array));
     // now data_walk contains only the values
     $out = array();
-##    dpm($data_walk, "walk");
+#    dpm($data_walk, "walk");
+#    return $out;
     foreach ($data_walk as $value) {
       if (empty($main_property)) {
         $out[] = $value;
