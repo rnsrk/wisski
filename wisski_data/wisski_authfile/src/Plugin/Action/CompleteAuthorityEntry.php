@@ -13,6 +13,9 @@ use Drupal\Core\Annotation\Translation;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
 
+use Drupal\wisski_salz\Entity\Adapter;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+
 
 /**
 * Generates the title for the given WissKI entities.
@@ -171,13 +174,34 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
       $object->set($this->configuration['entry_uri_field'], $uri);
       
       // write this
-      $real_preferred = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore(FALSE,TRUE);
-
-      $engine = $real_preferred->getEngine();
-      
-      $pb = $engine->getPbsForThis();
-
+      // we can not assume that this is always the preferred local - although this might be common sense.
+//      $real_preferred = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore(FALSE,TRUE);
       $bundle = $object->bundle();
+
+      // get all valid pbs because we dont know where to write :/      
+      $pbs = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($bundle);
+      
+      // iterate
+      foreach($pbs as $pb_info) {
+      
+        // prepare later used variables (dangerzone!!)
+        
+        $adapter_id = $pb_info['adapter_id'];
+        
+        $pb = WisskiPathbuilderEntity::load($pb_info['pb_id']);
+
+        $adapter = Adapter::load($adapter_id);
+
+        $engine = $adapter->getEngine();
+
+        // if the engine is not writeable we cant use that and there is probably another one!        
+        if($engine->isWritable())
+          break;        
+      }
+      
+      // @todo: (by Mark:) What if there are several of these? Currently we
+      // just take the first one. This might be bad and should be set somewhere in the
+      // authority control, isnt it?!
       
       $entity_id = $object->id();
 
@@ -185,22 +209,16 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
       if(isset($uri_field))
         $mainprop = $uri_field::mainPropertyName();
       
-
-#      dpm($bundle, "bun");
-
       $fv = array($this->configuration['entry_uri_field'] => array ( array($mainprop => $uri), "main_property" => $mainprop));
 
+      if(!empty($pb) && !empty($fv) && !empty($bundle) ) 
+        $engine->writeFieldValues($entity_id, $fv, $pb, $bundle);
+      else {
+        // provide some debug if something went wrongly....
+        drupal_set_message("I could not find PB (" . serialize($pb) . ") or fv (" . serialize($fv) . ") or bundle (" . serialize($bundle) . ") in Engine (" . serialize($engine) . ")", "error");
+        drupal_set_message("I was looking for field (" . serialize($this->configuration['entry_uri_field']) . " to store the uri into it.", "error");
+      }      
 
-      $engine->writeFieldValues($entity_id, $fv, current($pb), $bundle);
-      
-#      dpm($object->id(), "bun");
-
-#      dpm(serialize($real_preferred), "real");
-#      dpm($real_preferred->getEngine()->getPbsForThis(), "real2");
-      
-#writeFieldValues($entity_id, array $field_values, $pathbuilder, $bundle_id=NULL,$old_values=array(),$force_new=FALSE, $initial_write = FALSE)
-#      dpm($object->get(), "yay");
-#      $object->save();
     }
 
   }
