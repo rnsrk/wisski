@@ -387,6 +387,11 @@ abstract class Sparql11Engine extends EngineBase {
 #      dpm($result->isTrue());
       
       $out = FALSE;
+
+      // if we know nothing - stop it!      
+      if(!$result) {
+        return FALSE;
+      }
       
       if($result->isTrue()) {
         $out = TRUE;
