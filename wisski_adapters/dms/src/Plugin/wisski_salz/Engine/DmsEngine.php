@@ -542,34 +542,46 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
    *
    */ 
   public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE) {
-
+#    dpm(microtime(), "mic");
     $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password) );
 
 #    dpm($offset, "offset");
 #    dpm(serialize($count), "cnt");
 
     if($count) {
-      $query = "SELECT COUNT(DISTINCT docid) FROM " . $this->table;
+#      $query = "SELECT COUNT(DISTINCT docid) FROM " . $this->table;
+      $query = "SELECT COUNT(docid) FROM " . $this->table;
       
+#      $query = "select sum (spart.rows) from sys.partitions spart where spart.object_id = object_id(" . $this->table . ") and spart.index_id < 2";
+            
       $ret = sqlsrv_query($con, $query);
       
-#      while($a_ret = sqlsrv_fetch_array($ret))  {
-#        dpm($a_ret);
-#      }
+      $cnt = 0;
       
-      return 99;
+      while($a_ret = sqlsrv_fetch_array($ret))  {
+#        dpm($a_ret, "ret");
+        $cnt = $a_ret[0];
+      }
+#      dpm(microtime(), "micent");
+      return $cnt;
     } else {
 #    
       $limitstr = "";
       if($limit > 0)
         $limitstr = " TOP " . $limit;
-        
-      $query = "SELECT" . $limitstr . " * FROM " . $this->table . " WHERE 1=1";
+      
+      $fromnumber = $offset;
+      $tonumber = $offset+$limit;  
+      
+#      dpm($fromnumber, "from");
+#      dpm($tonumber, "to");
+      
+      $query = "SELECT * FROM ( SELECT *, ROW_NUMBER() over (ORDER BY docid) as ct FROM " . $this->table . " ) sub where ct > " . $fromnumber . " and ct <= " . $tonumber . "";
 #        
       $ret = sqlsrv_query($con, $query);
 #            
 #  $result = array();
-#               
+#     dpm(microtime(), "micin");          
       $outarr = array();
       while($a_ret = sqlsrv_fetch_array($ret))  {
 
@@ -578,7 +590,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         $uriname = AdapterHelper::getDrupalIdForUri($uri,TRUE,$this->adapterId());
         $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
       }
- 
+#      dpm(microtime(), "micend");
       return $outarr;
     }
   }
