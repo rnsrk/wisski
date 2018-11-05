@@ -20,6 +20,7 @@ abstract class WisskiQueryBase extends QueryBase implements QueryInterface, Quer
   const PATH_QUERY = 2;
 
   public function __construct(EntityTypeInterface $entity_type,$condition,array $namespaces,EngineInterface $parent_engine=NULL) {
+#    dpm($parent_engine, "par");
     $namespaces = array_merge($namespaces,QueryBase::getNamespaces($this));
     parent::__construct($entity_type,$condition,$namespaces);
     $this->parent_engine = $parent_engine;
@@ -31,8 +32,12 @@ abstract class WisskiQueryBase extends QueryBase implements QueryInterface, Quer
   }
   
   public function normalQuery() {
-  
     $this->count = FALSE;
+    return $this;
+  }
+  
+  public function countQuery() {
+    $this->count = TRUE;
     return $this;
   }
   

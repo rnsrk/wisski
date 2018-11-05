@@ -33,7 +33,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   }
   
   public function execute() {
-  
+#    dpm("yay!");  
     if (!isset($this->empties)) {
       $bundle_id = NULL;
       foreach($this->condition->conditions() as $cond) {
@@ -49,9 +49,12 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     
     if ($this->count) {
       $result = array();
-      foreach ($this->dependent_queries as $adapter_id => $query) {
+      
+      // only do this if more than one adapter!!!
+      if(count($this->dependent_queries) > 1) {
+        foreach ($this->dependent_queries as $adapter_id => $query) {
 //        $query = $query->count();
-        $sub_result = $query->execute() ? : 0;
+          $sub_result = $query->execute() ? : 0;
 #        dpm($adapter_id.' counted '. serialize($sub_result));
 
 /*
@@ -60,13 +63,17 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         else drupal_set_message("Wrong result type from adapter $adapter_id: numeric expected, given " . gettype($subresult), 'error');
 */
 
-        // this is rather complicated. I don't know why php does this like that...
-        if(!is_array($sub_result))
-          $sub_result = array();
-        $result = array_unique(array_merge($result, $sub_result), SORT_REGULAR);
-    
+          // this is rather complicated. I don't know why php does this like that...
+          if(!is_array($sub_result))
+            $sub_result = array();
+          $result = array_unique(array_merge($result, $sub_result), SORT_REGULAR); 
+        }
+        $result = count($result);
+      } else {
+        $query = current($this->dependent_queries);
+        $result = $query->countQuery()->execute() ? : 0;
       }
-      $result = count($result);
+      
 #     dpm('we counted '.$result);
 #      dpm(serialize(self::$empties), "empties!");
       if (!empty(self::$empties)) $result -= count(self::$empties);
