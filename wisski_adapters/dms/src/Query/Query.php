@@ -79,9 +79,11 @@ class Query extends WisskiQueryBase {
       // eids are a special case
       if ($eidquery !== NULL) {
         
-        $eidquery = current($eidquery);
+        if(is_array($eidquery))
+          $eidquery = current($eidquery);
         
-        $bundlequery = current($bundlequery);
+        if(is_array($bundlequery)) 
+          $bundlequery = current($bundlequery);
         
         // load the id, this hopefully helps.
         $thing['eid'] = $eidquery;
@@ -109,8 +111,8 @@ class Query extends WisskiQueryBase {
       foreach($this->condition->conditions() as $condition) {
         $field = $condition['field'];
         $value = $condition['value'];
-        drupal_set_message("you are evil!" . microtime() . serialize($this));
-        return;
+#        drupal_set_message("you are evil!" . microtime() . serialize($this));
+#        return;
 
 #        drupal_set_message("my cond is: " . serialize($condition));
 

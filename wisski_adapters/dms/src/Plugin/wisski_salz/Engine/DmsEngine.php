@@ -61,6 +61,8 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         'creator' => NULL,
         'date' => NULL,
         'place' => NULL,
+        'imguri' => NULL,
+        'dep' => NULL,
         ),
   );
 
@@ -544,13 +546,15 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
   public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE) {
 #    dpm(microtime(), "mic");
     $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password) );
+#    dpm(microtime(), "mic2");
 
 #    dpm($offset, "offset");
 #    dpm(serialize($count), "cnt");
 
     if($count) {
 #      $query = "SELECT COUNT(DISTINCT docid) FROM " . $this->table;
-      $query = "SELECT COUNT(docid) FROM " . $this->table;
+#      $query = "SELECT COUNT(dbo.XmlFiles.DocumentId) AS DocCount FROM dbo.XmlFiles";  #" . $this->table;
+      $query = "select max(ROWS) from sysindexes where id = object_id('dbo.XmlFiles')";
       
 #      $query = "select sum (spart.rows) from sys.partitions spart where spart.object_id = object_id(" . $this->table . ") and spart.index_id < 2";
             
