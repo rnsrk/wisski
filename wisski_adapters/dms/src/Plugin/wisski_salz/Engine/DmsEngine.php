@@ -586,14 +586,14 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         $where .= "WHERE";
 
 #      dpm($cond);
-      if($cond['operator'] == "starts")
-        $where .= " " . $path->getDatatypeProperty() . " LIKE '" . $cond['value'] . "%' ";      
-      else if($cond['operator'] == "ends")
-        $where .= " " . $path->getDatatypeProperty() . " LIKE '%" . $cond['value'] . "' ";
+      if($cond['operator'] == "starts" || $cond['operator'] == "STARTS_WITH")
+        $where .= " convert(varchar(1000)," . $path->getDatatypeProperty() . ") LIKE '" . $cond['value'] . "%' ";      
+      else if($cond['operator'] == "ends" || $cond['operator'] == "ENDS_WITH")
+        $where .= " convert(varchar(1000)," . $path->getDatatypeProperty() . ") LIKE '%" . $cond['value'] . "' ";
       else if($cond['operator'] == "in" || $cond['operator'] == "CONTAINS")
-        $where .= " " . $path->getDatatypeProperty() . " LIKE '%" . $cond['value'] . "%' ";
+        $where .= " convert(varchar(1000)," . $path->getDatatypeProperty() . ") LIKE '%" . $cond['value'] . "%' ";
       else if($cond['operator'] == "=")
-        $where .= " " . $path->getDatatypeProperty() . " = '" . $cond['value'] . "' ";
+        $where .= " convert(varchar(1000)," . $path->getDatatypeProperty() . ") = '" . $cond['value'] . "' ";
       else
         drupal_set_message("Operator " . $cond['operator'] . " not supported - sorry.", "error");
       
