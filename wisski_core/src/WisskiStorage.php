@@ -618,7 +618,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     // we use the special property original_target_id as the
                     // loadPropertyValuesForField()/pathToReturnValues()
                     // replaces the URI with the corresp. file entity id.
-                    if (!isset($properties_array['original_target_id'])) continue;
+                    if (!isset($properties_array['original_target_id']) && !isset($properties_array['target_id'])) continue;
+                    else if(isset($properties_array['target_id']) && !isset($properties_array['original_target_id'])) $properties_array['original_target_id'] = $properties_array['target_id'];
                     $file_uri = $properties_array['original_target_id'];
                     
                     $local_uri = '';
