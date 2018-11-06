@@ -63,6 +63,13 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         'place' => NULL,
         'imguri' => NULL,
         'dep' => NULL,
+        'imguri2' => NULL,
+        'imguri3' => NULL,
+        'mattech' => NULL,
+        'literature' => NULL,
+        'dimensions' => NULL,
+        'inscription' => NULL,
+        'description' => NULL,
         ),
   );
 
@@ -551,13 +558,55 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #    dpm($offset, "offset");
 #    dpm(serialize($count), "cnt");
 
+#    dpm($conditions, "cond");
+    
+    $where = "";
+    
+    // build conditions for where
+    foreach($conditions as $cond) {
+      // if it is a bundle condition, skip it...
+      if($cond['field'] == "bundle")
+        continue;
+        
+      $pb_and_path = explode(".", $cond['field']);
+      
+      $pathid = $pb_and_path[1];
+      
+      if(empty($pathid))
+        continue;
+            
+      $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
+      
+      if(empty($path))
+        continue;         
+      
+      if($where != "")
+        $where .= " AND";
+      else
+        $where .= "WHERE";
+
+#      dpm($cond);
+      if($cond['operator'] == "starts")
+        $where .= " " . $path->getDatatypeProperty() . " LIKE '" . $cond['value'] . "%' ";      
+      else if($cond['operator'] == "ends")
+        $where .= " " . $path->getDatatypeProperty() . " LIKE '%" . $cond['value'] . "' ";
+      else if($cond['operator'] == "in" || $cond['operator'] == "CONTAINS")
+        $where .= " " . $path->getDatatypeProperty() . " LIKE '%" . $cond['value'] . "%' ";
+      else if($cond['operator'] == "=")
+        $where .= " " . $path->getDatatypeProperty() . " = '" . $cond['value'] . "' ";
+      else
+        drupal_set_message("Operator " . $cond['operator'] . " not supported - sorry.", "error");
+      
+    }
+    
+
     if($count) {
-#      $query = "SELECT COUNT(DISTINCT docid) FROM " . $this->table;
+      $query = "SELECT COUNT(DISTINCT docid) FROM " . $this->table . " $where";
 #      $query = "SELECT COUNT(dbo.XmlFiles.DocumentId) AS DocCount FROM dbo.XmlFiles";  #" . $this->table;
-      $query = "select max(ROWS) from sysindexes where id = object_id('dbo.XmlFiles')";
+#      $query = "select max(ROWS) from sysindexes where id = object_id('dbo.XmlFiles')";
       
 #      $query = "select sum (spart.rows) from sys.partitions spart where spart.object_id = object_id(" . $this->table . ") and spart.index_id < 2";
-            
+#      dpm($query, "query");
       $ret = sqlsrv_query($con, $query);
       
       $cnt = 0;
@@ -580,7 +629,11 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #      dpm($fromnumber, "from");
 #      dpm($tonumber, "to");
       
-      $query = "SELECT * FROM ( SELECT *, ROW_NUMBER() over (ORDER BY docid) as ct FROM " . $this->table . " ) sub where ct > " . $fromnumber . " and ct <= " . $tonumber . "";
+      if($tonumber > 0)
+        $query = "SELECT * FROM ( SELECT *, ROW_NUMBER() over (ORDER BY docid) as ct FROM " . $this->table . " $where) sub where ct > " . $fromnumber . " and ct <= " . $tonumber . "";
+      else
+        $query = "SELECT * FROM " . $this->table . " $where ";
+#      dpm($query, "query");
 #        
       $ret = sqlsrv_query($con, $query);
 #            

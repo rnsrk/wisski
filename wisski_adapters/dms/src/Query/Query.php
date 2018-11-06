@@ -8,6 +8,7 @@ use Drupal\wisski_adapter_dms\Plugin\wisski_salz\Engine\DmsEngine;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\wisski_salz\AdapterHelper;
+use Drupal\wisski_salz\Query\Condition;
 
 class Query extends WisskiQueryBase {
 
@@ -51,7 +52,7 @@ class Query extends WisskiQueryBase {
 //wisski_tick('prepared '.$pb->id());
 #    return;
     // care about everything...
-    if ($this->isFieldQuery()) {
+    if (TRUE ) { //$this->isFieldQuery()) {
 #      dpm("fq!");
       // bad hack, but this is how it was...
       // TODO: handle correctly multiple pbs
@@ -60,7 +61,7 @@ class Query extends WisskiQueryBase {
       
       $eidquery = NULL;
       $bundlequery = NULL;
-      
+            
       foreach ($this->condition->conditions() as $condition) {
         $field = $condition['field'];
         $value = $condition['value'];
@@ -105,7 +106,7 @@ class Query extends WisskiQueryBase {
           return $giveback;
         }
       }
-      
+#      dpm("half");    
       //wisski_tick("field query half");
       
       foreach($this->condition->conditions() as $condition) {
@@ -115,7 +116,7 @@ class Query extends WisskiQueryBase {
 #        return;
 
 #        drupal_set_message("my cond is: " . serialize($condition));
-
+        
         // just return something if it is a bundle-condition
         if($field == 'bundle') {
 #  	        drupal_set_message("I go and look for : " . serialize($value) . " and " . serialize($limit) . " and " . serialize($offset) . " and " . $this->count);
@@ -131,105 +132,41 @@ class Query extends WisskiQueryBase {
           //wisski_tick('Field query out 3');
           return array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()));
         }
+        
+#        dpm($field, "fi");
+        if($field instanceof Condition) {
+#          dpm($field, "field");
+#          dpm($field->conditions(), "cond");
+          
+          foreach($field->conditions() as $subcondition) {
+#            dpm($subcondition, "sub");
+#            dpm($subcondition['field'], "val");
+            
+            $pb_and_path = explode(".", $subcondition['field']);
+            
+            $pathid = $pb_and_path[1];
+            
+            $pbp = $pb->getPbPath($pathid);
+            
+            $value = $subcondition['value'];
+            
+            $bundle = $pbp['bundle'];
+            if($this->count) {
+              $ret = $engine->loadIndividualsForBundle($bundle, $pb, NULL, NULL, TRUE, $field->conditions());
+              return $ret;
+            } else {
+              $ret = $engine->loadIndividualsForBundle($bundle, $pb, NULL, NULL, FALSE, $field->conditions());
+#              dpm($ret, "got");
+              return array_keys($ret);
+            }
+            
+          }
+        }
       }
 
     //wisski_tick("afterprocessing");
     
     } elseif ($this->isPathQuery()) {
-      // we don't support this by now.
-      return;
-      
-      // if this is a path query act upon it accordingly
-#      dpm("pq");
-      //wisski_tick("path query");
-
-      // construct the query
-      $query = "";
-      // what bundle is it - for the bundle cache
-      $bundle_id = "";
-      
-      // we count 
-      $i = 0;
-      
-      // TODO: this does not handle nested conditions, ie.
-      // it does only handle OR/AND(cond1, cond2, ...) where
-      // condn must be a path
-      // this is sufficient for Drupal Search but might not suffice for
-      // more elaborate searches
-      foreach($this->condition->conditions() as $condition) {
-        $each_condition_group = $condition['field'];
-        $conjunction = strtoupper($each_condition_group->getConjunction());
-        
-        foreach($each_condition_group->conditions() as $cond) {
-
-          // condition groups may be and'ed or or'ed
-
-          $value = $cond['value'];
-          $op = $cond['operator'];
-
-          // save the bundle for the bundle cache    
-          if($cond['field'] == 'bundle') {
-            $bundle_id = $value;
-            continue;
-          }
-          
-          $pb_and_path = explode(".", $cond['field']);
-          $pbid = $pb_and_path[0];
-          if (!isset($pbs[$pbid])) {
-            // we cannot handle this path as its pb belongs to another engine
-            continue;
-          }
-          $pb = $pbs[$pbid];
-          // get the path
-          $path_id = $pb_and_path[1];
-          $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path_id);
-          // if it is no valid path - skip    
-          if(empty($path)) {
-            continue;
-          }
-          
-          // build up an array for separating the variables of the sparql 
-          // subqueries.
-          // only the first var x0 get to be the same so that everything maps
-          // to the same entity
-          $vars[0] = "";
-          for ($j = count($path->getPathArray()); $j > 0; $j--) {
-            $vars[$j] = "c${i}_";
-          }
-          $vars['out'] = "c${i}_";
-          
-          // 
-          $querypart = $engine->generateTriplesForPath($pb, $path, $value, NULL, NULL, 0, 0, FALSE, $op, 'field', TRUE, $vars);
-
-          if ($conjunction == 'OR' && $i != 0) {
-            $query .= ' } UNION {';
-          }
-          $query .= $querypart;
-
-          $i++;
-
-        }
-
-        if ($conjunction == 'OR' && !empty($query)) {
-          $query = "{{ $query }}";
-        }
-
-      }
-        
-     // if no query was constructed - there is nothing to search.    
-      // this may be the case when all paths belong to other engines.
-      if(empty($query))
-        return array();
-    
-      $query = "SELECT DISTINCT ?x0 WHERE { $query }";
-      $result = $engine->directQuery($query);
-    
-      foreach($result as $hit) {
-        if (!isset($hit->x0)) continue;
-        $entity_id = AdapterHelper::getDrupalIdForUri($hit->x0->getUri());
-        $ents[$entity_id] = $entity_id;
-      }
-      //wisski_tick('path query out');                  
     }
 
     return array_keys($ents);
