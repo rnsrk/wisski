@@ -621,7 +621,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     if (!isset($properties_array['original_target_id']) && !isset($properties_array['target_id'])) continue;
                     else if(isset($properties_array['target_id']) && !isset($properties_array['original_target_id'])) $properties_array['original_target_id'] = $properties_array['target_id'];
                     $file_uri = $properties_array['original_target_id'];
-                    
+#                    dpm($file_uri, "got");                    
                     $local_uri = '';
                     $properties_array = array(
                       'target_id' => $this->getFileId($file_uri,$local_uri, $id),
@@ -1442,6 +1442,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       //if there is at least one, take the first of them
       //@TODO, possibly we can try something mor sophisticated to find THE preview image
       $input_uri = current($images);
+      
+      if(empty($input_uri)) {
+        if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug('No preview images available from adapter '.$adapter->id());
+        continue;
+      }
+      
 #    dpm("4.2.4.1: " . microtime());
       //now we have to ensure there is the correct image file on our server
       //and we get a derivate in preview size and we have this derivates URI
