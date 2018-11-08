@@ -313,7 +313,10 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
 
       if(!empty($bundle_id)) {
         if ($bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)) {
-          $title = html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
+	  $title = $bundle->generateEntityTitle($wisski_individual,FALSE,$force_new);
+
+	  if(empty($title))
+            $title = html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
 
           return $title;
         }

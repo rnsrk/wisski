@@ -155,8 +155,16 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   protected $cached_titles;
   
-  public function generateEntityTitle($entity_id,$include_bundle=FALSE,$force_new=FALSE) {
+  public function generateEntityTitle($entity,$include_bundle=FALSE,$force_new=FALSE) {
     $pattern = $this->getTitlePattern();
+
+    // reduce to the id because for historical reasons...
+    if(is_object($entity))
+      $entity_id = $entity->id();
+    else
+      $entity_id = $entity;
+
+
     #drupal_set_message(serialize($pattern));
     #drupal_set_message("generated: " . $this->applyTitlePattern($pattern,$entity_id));
 #    dpm([$pattern, $entity_id], "eid!");
@@ -177,9 +185,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $pattern = $this->getTitlePattern();
     
     //now do the work
-    $title = $this->applyTitlePattern($pattern,$entity_id);
+    $title = $this->applyTitlePattern($pattern,$entity);
     
-    $this->setCachedTitle($entity_id,$title);
+    if(!empty($entity_id))
+      $this->setCachedTitle($entity_id,$title);
     
     if ($include_bundle && $title !== FALSE) {
       drupal_set_message('Enhance Title '.$title);
@@ -192,7 +201,13 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    * Applies the title pattern to generate the entity title,
    * this is a seperate function since we want to be able to apply it again in case we end up with an empty title
    */
-  private function applyTitlePattern($pattern,$entity_id) {
+  private function applyTitlePattern($pattern,$entity) {
+    
+    // reduce to the id because for historical reasons...
+    if(is_object($entity))
+      $entity_id = $entity->id();
+    else
+      $entity_id = $entity;
     
 #    dpm($pattern,__FUNCTION__);
     if(isset($pattern['max_id']))
@@ -251,7 +266,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             break;
           default: {
             list($pb_id,$path_id) = explode('.',$attributes['name']);
-            $values = $this->gatherTitleValues($entity_id,$path_id);
+            $values = $this->gatherTitleValues($entity, $path_id, $pb_id);
 #            dpm($values,'gathered values for '.$path_id);
           }
         }
@@ -314,7 +329,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     }
   }
   
-  public function gatherTitleValues($eid,$path_id) {
+  public function gatherTitleValues($eid, $path_id, $pb_id = NULL) {
     #dpm("yay!");
     $values = array();
     
@@ -322,6 +337,55 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
       return NULL;
     }
+
+    // this is the case for create-dialog-thingies where the id is still empty
+    if(is_object($eid) ) {
+      if(empty($eid->id())) {
+        // try to build it with the values at hand...
+        
+        if(!empty($pb_id)) {
+          $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($pb_id);
+          $path = $pb->getPbPath($path_id);
+          
+          if(isset($path['field'])) {
+            
+            // get all the values from the current entity
+            $values = $eid->getValues();
+            
+            $out_values = array();
+            
+            // go in there and gather these
+            foreach($values as $value) {
+              $my_field_values = $value[$path['field']];
+              if(isset($my_field_values)) {
+              
+                // what is the main prop
+                $mainprop = 'value';
+                
+                if(isset($my_field_values['main_property']))
+                  $mainprop = $my_field_values['main_property'];
+                
+                foreach($my_field_values as $key => $my_field_value) {
+                  // problem here: key can be 0 and this evaluates successful then...
+                  if(!empty($key) && $key == "main_property")
+                    continue;
+                    
+                  $out_values[] = $my_field_value[$mainprop];
+                }
+              }
+            }
+            
+            // return what we've got
+            return $out_values;
+          }
+        } else {
+          drupal_set_message("This should not happen! WissKI Bundle Title Generation error", "error");
+        }
+      } else {
+        $eid = $eid->id();
+      }
+    }                  
+
     
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
     $adapters = \Drupal\wisski_salz\Entity\Adapter::loadMultiple();
