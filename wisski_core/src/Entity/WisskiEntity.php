@@ -197,6 +197,13 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
     if ($this->label === NULL) {
       $this->label = parent::label();
     }
+
+    // this occurs on creation only!
+    if($this->label === NULL) {
+    #      dpm("yay!");
+      $this->label = wisski_core_generate_title($this);
+    }
+    
     return $this->label;
   }
 

@@ -309,12 +309,20 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
 #      // TODO: Why do we need to cache the bundle here?
       WisskiCacheHelper::putCallingBundle($entity_id, $bundle_id);
     } else {
-      // this should not happen?
-      return;
+       // this happens on create dialog - try to get the best of it!
+
+      if(!empty($bundle_id)) {
+        if ($bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)) {
+          $title = html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
+
+          return $title;
+        }
+      }
     }
 
   } else if($override_bundle_id === NULL) { // This is used when $wisski_individual is just a number
     $entity_id = $wisski_individual;
+#    dpm("from cache!");
     $bundle_id = WisskiCacheHelper::getCallingBundle($wisski_individual);
 #rpm($bundle_id, 'call');
   }
