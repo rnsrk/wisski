@@ -348,31 +348,27 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           $path = $pb->getPbPath($path_id);
           
           if(isset($path['field'])) {
+                        
+            if(!$eid->hasField($path['field'])) {
+              return;
+            }
             
             // get all the values from the current entity
-            $values = $eid->getValues();
+            $values = $eid->get($path['field'])->getValue();
+
+            if(empty($values)) {
+              return;
+            }
             
             $out_values = array();
             
             // go in there and gather these
             foreach($values as $value) {
-              $my_field_values = $value[$path['field']];
-              if(isset($my_field_values)) {
-              
                 // what is the main prop
-                $mainprop = 'value';
-                
-                if(isset($my_field_values['main_property']))
-                  $mainprop = $my_field_values['main_property'];
-                
-                foreach($my_field_values as $key => $my_field_value) {
-                  // problem here: key can be 0 and this evaluates successful then...
-                  if(!empty($key) && $key == "main_property")
-                    continue;
-                    
-                  $out_values[] = $my_field_value[$mainprop];
-                }
-              }
+                // hopefully we dont need that
+                // $mainprop = 'value';
+                                    
+              $out_values[] = $value['value'];
             }
             
             // return what we've got
