@@ -68,6 +68,16 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
   const MENU_CREATE = 1;
   const MENU_ENABLE = 2;
+
+  /**
+   * A pb cache because loading is pain
+   */
+  protected $pb_cache = array();
+  
+  /**
+   * An adapter cache because loading is pain!
+   */ 
+  protected $adapter_cache = array();
   
   /**
    * The field based pattern for the entity title generation.
@@ -337,14 +347,21 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
       return NULL;
     }
-
+    #dpm(serialize($eid), "eid!!");
+    
     // this is the case for create-dialog-thingies where the id is still empty
     if(is_object($eid) ) {
       if(empty($eid->id())) {
         // try to build it with the values at hand...
-        
+#        dpm(serialize($eid), "eid!!");
         if(!empty($pb_id)) {
-          $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($pb_id);
+          if(isset($this->pb_cache[$pb_id]))
+            $pb = $this->pb_cache[$pb_id];
+          else {
+            $this->pb_cache = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+            $pb = $this->pb_cache[$pb_id];
+          }
+           
           $path = $pb->getPbPath($path_id);
           
           if(isset($path['field'])) {
@@ -382,9 +399,17 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       }
     }                  
 
+    if(empty($this->pb_cache)) {
+      $this->pb_cache = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    }
     
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
-    $adapters = \Drupal\wisski_salz\Entity\Adapter::loadMultiple();
+    $pbs = $this->pb_cache;
+
+    if(empty($this->adapter_cache)) {      
+      $this->adapter_cache = \Drupal\wisski_salz\Entity\Adapter::loadMultiple();
+    }
+    
+    $adapters = $this->adapter_cache;
     //we ask all pathbuilders if they know the path
     foreach ($pbs as $pb_id => $pb) {
       if ($pb->hasPbPath($path_id)) {
