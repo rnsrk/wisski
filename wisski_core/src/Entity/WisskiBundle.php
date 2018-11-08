@@ -347,11 +347,17 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
       return NULL;
     }
-    #dpm(serialize($eid), "eid!!");
+#    dpm(serialize($eid), "eid!!");
     
     // this is the case for create-dialog-thingies where the id is still empty
     if(is_object($eid) ) {
       if(empty($eid->id())) {
+      
+        // early opt out if it is not a new entity but we dont have the entity id - which probably is bad!
+        if(!$eid->isNew()) {
+          return;
+        }
+      
         // try to build it with the values at hand...
 #        dpm(serialize($eid), "eid!!");
         if(!empty($pb_id)) {
