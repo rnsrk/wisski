@@ -564,12 +564,19 @@ wisski_tick("end exec views");
             $field_def = \Drupal::service('entity_field.manager')->getFieldMap();#->getFieldDefinitions('wisski_individual',$values_per_row[$eid]['bundle']);
             $fieldmap = \Drupal::service('entity_field.manager')->getFieldMap();
 
+            $is_file = FALSE;
+
             // get the main property name             
             if(!empty($fieldmap) && isset($fieldmap['wisski_individual']) && isset($fieldmap['wisski_individual'][$field_to_check]) && isset($fieldmap['wisski_individual'][$field_to_check]['bundles'])) {
               $fbundles = $fieldmap['wisski_individual'][$field_to_check]['bundles'];
 #                    dpm(current($fbundles), "fb");
             
               $field_def = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual',current($fbundles));
+
+#              dpm(serialize($field_def[$field_to_check]->getFieldStorageDefinition()->getDependencies()), "def");
+              
+              $is_file = in_array('file',$field_def[$field_to_check]->getFieldStorageDefinition()->getDependencies()['module']);
+              
               $main_prop = $field_def[$field_to_check]->getFieldStorageDefinition()->getMainPropertyName();
 #              dpm($main_prop, "found it! for field " . $field_to_check);
             } else {
@@ -728,8 +735,15 @@ wisski_tick("end exec views");
                         $values_per_row[$eid][$field][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
                         $values_per_row[$eid][$field_to_check][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
                       } else {
-                        $values_per_row[$eid][$field][] = $sparql_row->$out_prop->getValue();
-                        $values_per_row[$eid][$field_to_check][] = $sparql_row->$out_prop->getValue();
+                        if(!empty($is_file)) {
+                          $storage = \Drupal::entityTypeManager()->getStorage('wisski_individual');
+                          $val = $storage->getFileId($sparql_row->$out_prop->getValue());
+                          $values_per_row[$eid][$field][] = array($main_prop => $val);
+                          $values_per_row[$eid][$field_to_check][] = array($main_prop => $val);
+                        } else {
+                          $values_per_row[$eid][$field][] = array($main_prop => $sparql_row->$out_prop->getValue());
+                          $values_per_row[$eid][$field_to_check][] = array($main_prop => $sparql_row->$out_prop->getValue());
+                        }
                       }
                     }
                     $pseudo_entity_fields[$eid][$field_to_check] = $values_per_row[$eid][$field_to_check];
