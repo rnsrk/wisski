@@ -102,7 +102,8 @@ class WisskiEntityFieldRenderer extends EntityFieldRenderer {
 #              dpm(serialize($tmpentity), "sads");
 #              dpm($tmpentity->id(), "id");
 #              dpm($tmpentity->isNew(), "isnew");
-              
+// This is not needed anymore due to the changes in the query!
+/*              
               if($is_file) {
                 $storage = \Drupal::entityTypeManager()->getStorage('wisski_individual');
                 
@@ -116,7 +117,7 @@ class WisskiEntityFieldRenderer extends EntityFieldRenderer {
                 }
                                   
               }
-
+*/
               $tmpentity->set($field_name, $data);
 
               $aux_entities[$field_id][$result_row->index] = $tmpentity;
