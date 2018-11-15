@@ -765,6 +765,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   }
 
   public function getFileId($file_uri,&$local_file_uri='', $entity_id = 0) {
+    $value = NULL;
+    
 #    drupal_set_message('Image uri: '.$file_uri);
     if (empty($file_uri)) return NULL;
     //first try the cache
