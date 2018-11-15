@@ -97,9 +97,10 @@ class PathbuilderManager {
     
     foreach($pbs_and_paths as $pb_id => $paths) {
       
-      if(empty(self::$pbs))
+      if(empty(self::$pbs)) {
         $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
-      else
+        self::$pbs = $pbs; 
+      } else
         $pbs = self::$pbs;
 
       $pb = $pbs[$pb_id];
@@ -107,9 +108,10 @@ class PathbuilderManager {
       foreach($paths as $pathid) {
         #  dpm($pathid, "assa");
         
-        if(empty(self::$paths))
+        if(empty(self::$paths)) {
           $paths = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::loadMultiple();
-        else
+          self::$paths = $paths;
+        } else
           $paths = self::$paths;
         
         $path = $paths[$pathid];
@@ -144,7 +146,15 @@ class PathbuilderManager {
   
   public function calculateImagePaths() {
     $info = array();
-    $pbs = entity_load_multiple('wisski_pathbuilder');
+
+#    $pbs = entity_load_multiple('wisski_pathbuilder');
+
+    if(empty(self::$pbs)) {
+      $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+      self::$pbs = $pbs;
+    } else
+      $pbs = self::$pbs;
+
     foreach ($pbs as $pbid => $pb) {
       $groups = $pb->getMainGroups();
 
@@ -186,7 +196,13 @@ class PathbuilderManager {
   private function calculateBundlesAndStartingConcepts() {
     self::$pbsUsingBundle = array();
     self::$bundlesWithStartingConcept = array();
-    $pbs = entity_load_multiple('wisski_pathbuilder');
+    
+    if(empty(self::$pbs)) {
+      $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+      self::$pbs = $pbs;
+    } else
+      $pbs = self::$pbs;
+    
     foreach ($pbs as $pbid => $pb) {
       foreach ($pb->getAllGroups() as $group) {
         $pbpath = $pb->getPbPath($group->getID());
