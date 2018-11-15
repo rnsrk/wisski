@@ -166,6 +166,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   protected $cached_titles;
   
   public function generateEntityTitle($entity,$include_bundle=FALSE,$force_new=FALSE) {
+#    dpm(microtime(), "begin title");
     $pattern = $this->getTitlePattern();
 
     // reduce to the id because for historical reasons...
@@ -178,8 +179,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     #drupal_set_message(serialize($pattern));
     #drupal_set_message("generated: " . $this->applyTitlePattern($pattern,$entity_id));
 #    dpm([$pattern, $entity_id], "eid!");
+#    dpm(serialize($force_new), "force new?");
     if (!$force_new) {
       $title = $this->getCachedTitle($entity_id);
+ #     dpm(microtime(), "got cached title " . serialize($title) . "for entity $entity with pattern " . serialize($pattern));
       if (isset($title)) {
         #drupal_set_message('Title from cache');
         if ($include_bundle) {
@@ -204,6 +207,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       drupal_set_message('Enhance Title '.$title);
       $title = $this->label().': '.$title;
     }   
+    
+#    dpm(microtime(), "generated title $title");
+    
+#    dpm(microtime(), "end title");
     return $title;
   }
   
@@ -212,7 +219,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    * this is a seperate function since we want to be able to apply it again in case we end up with an empty title
    */
   private function applyTitlePattern($pattern,$entity) {
-    
+ #   dpm(microtime(), "apply");
     // reduce to the id because for historical reasons...
     if(is_object($entity))
       $entity_id = $entity->id();
@@ -342,7 +349,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   public function gatherTitleValues($eid, $path_id, $pb_id = NULL) {
     #dpm("yay!");
     $values = array();
-    
+#    dpm(microtime(), "gather");
     $moduleHandler = \Drupal::service('module_handler');
     if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
       return NULL;
@@ -364,6 +371,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           if(isset($this->pb_cache[$pb_id]))
             $pb = $this->pb_cache[$pb_id];
           else {
+#            dpm(microtime(), "pb cache is not set!");
             $this->pb_cache = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
             $pb = $this->pb_cache[$pb_id];
           }
@@ -406,7 +414,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     }                  
 
     if(empty($this->pb_cache)) {
+#      dpm(microtime(), "pb cache was not set!");
       $this->pb_cache = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+#      dpm(microtime(), "pb cache was not set2!");
     }
     
     $pbs = $this->pb_cache;
@@ -507,7 +517,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               //drupal_set_message(t("Bundle %b is associated with no groups", array('%b' => $this->id)));
               continue;
             }
-       #     dpm("normal handling");          
+#            dpm(microtime(), "normal handling");          
             // if the bundle and this object are not the same, the eid is the one of the
             // main bundle and the paths have to be absolute. In this case
             // we have to call it with false. 
@@ -519,7 +529,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             } else // if not they are relative.
               $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, TRUE);
             
-#            dpm($new_values, "new values");
+#            dpm(microtime(), "new values");
             if (WISSKI_DEVEL) \Drupal::logger($pb_id.' '.$path_id.' '.__FUNCTION__)->debug('Entity '.$eid."{out}",array('out'=>serialize($new_values)));
           }
         }  
@@ -643,11 +653,12 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   }
 
   public function getCachedTitle($entity_id) {
-    
+#    dpm(microtime(), "got cached title!");
     if (!isset($this->cached_titles[$entity_id])) {  
       if ($title = WisskiCacheHelper::getEntityTitle($entity_id,$this->id())) $this->cached_titles[$entity_id] = $title;
       else return NULL;
     }//dpm($this->cached_titles,'cached titles');
+#    dpm(microtime(), "delivered.");
     return $this->cached_titles[$entity_id];
   }
   

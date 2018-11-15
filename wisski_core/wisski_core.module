@@ -293,7 +293,12 @@ function wisski_core_entity_view(array &$build, \Drupal\Core\Entity\EntityInterf
  * Base Field is sometimes provided - and we need to be sure that this is not the case in all other cases...
  */
 function wisski_core_generate_title($wisski_individual, $base_field = NULL, $force_new=FALSE, $override_bundle_id = NULL) {
-  dpm($force_new, "force new in core.module?");
+
+  if(!is_bool($force_new)) {
+    drupal_set_message("Danger Zone: force_new was not boolean!", "error");
+  }
+
+#  dpm($force_new, "force new in core.module?");
 #  dpm(microtime(), "called once!!");
   $create_form_title = FALSE;
 
