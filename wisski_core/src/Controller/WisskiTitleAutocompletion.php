@@ -12,9 +12,11 @@ class WisskiTitleAutocompletion {
   public function autocomplete(Request $request) {
     
     $string = $request->query->get('q');
+
+    $bundles = $request->query->get('bundles');
     
     $matches = array($string);
-    
+#    dpm($request, "string");    
     if ($string) {
       // just query the ngram table
       $select = \Drupal::service('database')
@@ -22,6 +24,7 @@ class WisskiTitleAutocompletion {
       $rows = $select
           ->fields('w', array('ngram'))
           ->condition('ngram', "%" . $select->escapeLike($string) . "%", 'LIKE')
+          ->condition('bundle', array_keys($bundles), 'IN')
           ->range(0, $this->limit)
           ->execute()
           ->fetchCol();
