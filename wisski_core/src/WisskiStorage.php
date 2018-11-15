@@ -46,7 +46,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   }
   */
   
-
+  private $pbmanager = NULL;
+   
+  
   /**
    * stores mappings from entity IDs to arrays of storages, that handle the id
    * and arrays of bundles the entity is in
@@ -767,23 +769,130 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     if (empty($file_uri)) return NULL;
     //first try the cache
     $cid = 'wisski_file_uri2id_'.md5($file_uri);
+#    dpm(microtime(), "in fid");
     if ($cache = \Drupal::cache()->get($cid)) {
       // check if it really exists.
-      if(file_exists($file_uri) && filesize($file_ur) > 0) {
+#      dpm(microtime(), "got fid");
+      if(file_exists($file_uri) && filesize($file_uri) > 0) {
         list($file_uri,$local_file_uri) = $cache->data;
         return $file_uri;
       }
     }
+    
+#    dpm(microtime(), "out");
 #   dpm("yay!");       
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
     $local_file_uri = $this->ensureSchemedPublicFileUri($file_uri);
-#    dpm($file_uri, "1");
+    #dpm($file_uri, "1");
     #dpm($local_file_uri);
     // we now check for an existing 'file managed' with that uri
-    $query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
+
+    // Mark: I don't think that this ever can be fulfilled. I think 
+    // most of the time only local_file_uri can be guessed.
+    // For sureness: old code below!
+    //$query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
+
+    $query = \Drupal::entityQuery('file')->condition('uri',$local_file_uri)->range(0,1);        
+
     $file_ids = $query->execute();
     if (!empty($file_ids)) {
+#      dpm(microtime(), "out fid");
+#      dpm($file_ids, "2");
+      // if there is one, we must set the field value to the image's FID
+      if(file_exists($local_file_uri) && filesize($local_file_uri) > 0) {
+        $value = current($file_ids);
+      } else {
+        file_delete(current($file_ids));
+        $file_ids = NULL;
+      }
+    }         
+    
+    if(empty($file_ids)) {
+#     dpm($local_file_uri, "loc");
+      $file = NULL;
+      // if we have no managed file with that uri, we try to generate one.
+      // in the if test we test whether there exists on the server a file 
+      // called $local_file_uri: file_destination() with 2nd param returns
+      // FALSE if there is such a file!
+      if (file_destination($local_file_uri,FILE_EXISTS_ERROR) === FALSE) {
+#            dpm($local_file_uri, "7");
+        $file = File::create([
+          'uri' => $local_file_uri,
+          'uid' => \Drupal::currentUser()->id(),
+          'status' => FILE_STATUS_PERMANENT,
+        ]);
+
+        $file->setFileName(drupal_basename($local_file_uri));
+        $mime_type = \Drupal::service('file.mime_type.guesser')->guess($local_file_uri);
+
+        $file->setMimeType($mime_type);
+
+        $file->save();
+        $value = $file->id();
+            
+      } else {
+        try {
+      
+          // we have to encode the image url, 
+          // see http://php.net/manual/en/function.file-get-contents.php
+          // NOTE: although the docs say we must use urlencode(), the docs
+          // for urlencode() and rawurlencode() specify that rawurlencode
+          // must be used for url path part.
+          // TODO: this encode hack only works properly if the file name 
+          // is the last part of the URL and if only the filename contains
+          // disallowed chars. 
+          $tmp = explode("/", $file_uri);
+#              $tmp[count($tmp) - 1] = rawurlencode($tmp[count($tmp) - 1]);
+          $file_uri = join('/', $tmp);
+
+          // replace space.
+          // we need to replace space to %20
+          // because urls are like http://projektdb.gnm.de/provenienz2014/sites/default/files/Z 2156.jpg
+          $file_uri = str_replace(' ', '%20', $file_uri); 
+
+
+         
+#              dpm($file_uri, "fileuri");
+
+          $data = @file_get_contents($file_uri);
+          if (empty($data)) { 
+            drupal_set_message($this->t('Could not fetch file with uri %uri.',array('%uri'=>$file_uri,)),'error');
+          }
+
+#              dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
+          $file = file_save_data($data, $local_file_uri);
+
+          if ($file) {
+            $value = $file->id();
+            //dpm('replaced '.$file_uri.' with new file '.$value);
+          } else {
+            drupal_set_message('Error saving file','error');
+            //dpm($data,$file_uri);
+          }
+        }
+        catch (EntityStorageException $e) {
+          drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
+        }
+      }
+
+      if (!empty($file)) {
+        // we have to register the usage of this file entity otherwise 
+        // Drupal will complain that it can't refer to this file when 
+        // saving the WissKI individual
+        // (it is unclear to me why Drupal bothers about that...)
+        \Drupal::service('file.usage')->add($file, 'wisski_core', 'wisski_individual', $entity_id);
+      }
+    }
+    
+    
+    
+    /*
+    $query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
+        
+    $file_ids = $query->execute();
+    if (!empty($file_ids)) {
+#      dpm(microtime(), "out fid");
 #      dpm($file_ids, "2");
       // if there is one, we must set the field value to the image's FID
       $value = current($file_ids);
@@ -792,7 +901,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       $local_file_uri = $file_uri;
     } else {
 #      dpm("3");
-      //try it with a "translated" uri in the public;// scheme
+#      dpm(microtime(), "out fid");
+      //try it with a "translated" uri in the public:// scheme
       $schemed_uri = $this->getSchemedUriFromPublicUri($file_uri);
 #      dpm($schemed_uri, "su");
       $query = \Drupal::entityQuery('file')->condition('uri',$schemed_uri);
@@ -806,7 +916,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #        dpm("5");
         $query = \Drupal::entityQuery('file')->condition('uri',$local_file_uri);
         $file_ids = $query->execute();
-
+#        dpm(microtime(), "out fid");
         if (!empty($file_ids)) {
 #          dpm("6");
 
@@ -904,6 +1014,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         }
       }
     }
+    */
 #    dpm($value,'image fid');
 #    dpm($local_file_uri, "loc");
     //set cache
@@ -1456,7 +1567,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       //ask the local adapter for any image for this entity
 #      $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
       $images = array();
+      #dpm(microtime(), "in storage1");
+      
       $images = \Drupal::service('wisski_pathbuilder.manager')->getPreviewImage($entity_id, $bundle_id, $adapter);
+      #dpm(microtime(), "in storage2");
 
 #      $image_field_ids = \Drupal\wisski_core\WisskiHelper::getFieldsForBundleId($bundle_id, 'image', NULL, TRUE);
 
@@ -1534,6 +1648,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         
       }
       
+      #dpm(microtime(), "in storage3");
+      
 #      dpm($images, "yay");
 #    dpm("4.2.4: " . microtime());
 
@@ -1554,7 +1670,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         continue;
       }
       
-#    dpm("4.2.4.1: " . microtime());
+    #dpm("4.2.4.1: " . microtime());
       //now we have to ensure there is the correct image file on our server
       //and we get a derivate in preview size and we have this derivates URI
       //as the desired output
@@ -1564,18 +1680,19 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       #$this->storage->getFileId($input_uri,$output_uri);
       // generalized this line for external use
       $this->getFileId($input_uri, $output_uri);
-#    dpm("4.2.4.2: " . microtime());
+    #dpm("4.2.4.2: " . microtime());
       //try to get the WissKI preview image style
       $image_style = $this->getPreviewStyle();
-#    dpm("4.2.5: " . microtime());    
+    #dpm("4.2.5: " . microtime());    
       //process the image with the style
       $preview_uri = $image_style->buildUri($output_uri);
       #dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
       
       // file already exists?
       if(file_exists($preview_uri)) {
-#        dpm("file exists!");
+        #dpm(microtime(), "file exists!");
         WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
+        #dpm(microtime(), "file exists 2");
         return $preview_uri;
       }
 #      dpm($output_uri, "out");
@@ -1650,7 +1767,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           'upscale' => FALSE,
         ),
       );
-wpm($config,'image style config');
+#wpm($config,'image style config');
       //add the resize effect to the style
       $image_style->addImageEffect($config);
       
