@@ -1578,6 +1578,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       
 #      dpm($this->getCacheValues(array($entity_id, )), "cache!");
 
+#      dpm($images, "images");
+
       if(count($images) > 1) {
 
         $bids = array();
@@ -1627,6 +1629,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               // delta is the weight
               $deltas[$image] = $cfv->delta;              
             }
+            
+            // didn't find anything?
+            if(empty($deltas)) {
+              $deltas[$image] = 0;
+              $found_weight = TRUE;
+            }
  
             // did we find a weight?           
             if($deltas[$image] != 0) {
@@ -1647,6 +1655,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                                                            
         
       }
+ 
+#      dpm($images, "out");
       
       #dpm(microtime(), "in storage3");
       
