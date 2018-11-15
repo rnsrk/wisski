@@ -66,6 +66,34 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
   private $tableMapping = NULL;
 
+  public function getCacheValues($ids, $field_id = array(), $bundle_id = array()) {
+  
+    foreach($ids as $id) {
+      $cached_field_values = db_select('wisski_entity_field_properties','f')
+        ->fields('f',array('fid', 'ident','delta','properties'))
+        ->condition('eid',$id);
+#        ->condition('bid',$values[$id]['bundle'])
+#          ->condition('fid',$field_name)
+
+      if(!empty($field_ids)) {
+        $cached_field_values = $cached_field_values->condition('fid', $field_id);
+      }
+        
+      if(!empty($bundle_ids)) {
+        $cached_field_values = $cached_field_values->condition('bid', $bundle_id);
+      }
+
+      $cached_field_values = $cached_field_values->execute()
+        ->fetchAll();
+
+      return $cached_field_values;    
+    
+    }
+    
+    
+  
+  }
+
   public function addCacheValues($ids, $values) {
 #    dpm($ids, "ids");
 #    dpm($values, "values");
@@ -746,7 +774,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         return $file_uri;
       }
     }
-        
+#   dpm("yay!");       
     // another hack, make sure we have a good local name
     // @TODO do not use md5 since we cannot assume that to be consistent over time
     $local_file_uri = $this->ensureSchemedPublicFileUri($file_uri);
@@ -766,12 +794,13 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #      dpm("3");
       //try it with a "translated" uri in the public;// scheme
       $schemed_uri = $this->getSchemedUriFromPublicUri($file_uri);
+#      dpm($schemed_uri, "su");
       $query = \Drupal::entityQuery('file')->condition('uri',$schemed_uri);
       $file_ids = $query->execute();
       if (!empty($file_ids)) {
 #        dpm("4");
         $value = current($file_ids);
-        //dpm('replaced '.$file_uri.' with schemed existing file '.$value);
+        #dpm('replaced '.$file_uri.' with schemed existing file '.$value);
         $local_file_uri = $schemed_uri;
       } else {
 #        dpm("5");
@@ -875,7 +904,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         }
       }
     }
-    //dpm($value,'image fid');
+#    dpm($value,'image fid');
+#    dpm($local_file_uri, "loc");
     //set cache
     \Drupal::cache()->set($cid,array($value,$local_file_uri));
     return $value;
@@ -1427,6 +1457,82 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #      $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
       $images = array();
       $images = \Drupal::service('wisski_pathbuilder.manager')->getPreviewImage($entity_id, $bundle_id, $adapter);
+
+#      $image_field_ids = \Drupal\wisski_core\WisskiHelper::getFieldsForBundleId($bundle_id, 'image', NULL, TRUE);
+
+#      dpm($adapter->getEngine()->loadPropertyValuesForField(current($image_field_ids), array(), array($entity_id => $entity_id)),  "fv!");
+      
+#      dpm($this->getCacheValues(array($entity_id, )), "cache!");
+
+      if(count($images) > 1) {
+
+        $bids = array();
+        $deltas = array();
+        $fids = array();
+
+        foreach($images as $image) { 	       
+
+          $to_look_for = $image;
+
+          $old_to_look_for = NULL;
+          $fid_to_look_for = NULL;
+
+          $found_weight = FALSE;
+
+          while(!$found_weight && $old_to_look_for != $to_look_for) {
+
+            $old_to_look_for = $to_look_for;
+
+            // get the weight
+            $cached_field_values = db_select('wisski_entity_field_properties','f')
+              ->fields('f',array('eid', 'fid', 'bid', 'ident','delta','properties'));
+#           ->condition('eid',$id)
+#           ->condition('bid',$values[$id]['bundle'])
+                        
+            if(!empty($fid_to_look_for)) {
+              $cached_field_values = $cached_field_values->condition('fid', $fid_to_look_for);
+            }
+            
+            $cached_field_values = $cached_field_values->condition('ident', $to_look_for)
+              ->execute()
+              ->fetchAll();
+              
+#            dpm($cached_field_values, "looked for: " . $to_look_for);
+          
+            foreach($cached_field_values as $cfv) {
+              // the eid from the image should be the ident of the field
+              $to_look_for = $cfv->eid;
+
+              // Mark: this is sloppy
+              // in wisski this generally holds
+              // however if you do entity reference to the image - this might not hold
+              // then it probably should not be in fid, but in the properties or something
+              // there you will have to change something in this case!!!              
+              $fid_to_look_for = $cfv->bid;
+              
+              // delta is the weight
+              $deltas[$image] = $cfv->delta;              
+            }
+ 
+            // did we find a weight?           
+            if($deltas[$image] != 0) {
+              $found_weight = TRUE;
+            }
+          }        
+        }
+
+#        dpm($image, "image");
+#        dpm($deltas, "weight");        
+
+        // sort for weight
+        asort($deltas);
+        
+        // give out only the lightest one!
+        $images = array(current(array_keys($deltas)));
+        
+                                                           
+        
+      }
       
 #      dpm($images, "yay");
 #    dpm("4.2.4: " . microtime());
