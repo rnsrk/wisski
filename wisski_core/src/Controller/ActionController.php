@@ -58,7 +58,7 @@ class ActionController extends ControllerBase {
     }
     else {
       foreach ($eids as $eid) {
-        wisski_core_generate_title($eid, FALSE, $bundle_id);
+        wisski_core_generate_title($eid, NULL, FALSE, $bundle_id);
       }
       $context['sandbox']['progress'] = $offset + count($eids);
       // we do not know the total number of individuals so we just

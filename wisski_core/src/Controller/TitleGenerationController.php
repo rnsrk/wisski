@@ -66,7 +66,7 @@ class TitleGenerationController extends ControllerBase {
     }
     else {
       foreach ($eids as $eid) {
-        wisski_core_generate_title($eid, TRUE, $bundle_id);
+        wisski_core_generate_title($eid, NULL, TRUE, $bundle_id);
       }
       $context['sandbox']['progress'] = $offset + count($eids);
       // we do not know the total number of individuals so we just

@@ -104,7 +104,7 @@ class WisskiEntitySearch extends SearchPluginBase {
         // in which neither a title nor a bundle id have been cached for the
         // entity. this would prevent WissKI from generating and displaying the
         // right title.
-        $title = wisski_core_generate_title($entity_id, FALSE, $bundle_id);
+        $title = wisski_core_generate_title($entity_id, NULL, FALSE, $bundle_id);
         #$preview = getPreviewImageUri($entity_id, $bundle_id);
 #        $preview = WisskiCacheHelper::getPreviewImageUri($entity_id);
 #        dpm($preview, "prev");

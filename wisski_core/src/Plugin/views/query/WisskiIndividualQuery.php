@@ -53,6 +53,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
    * {@inheritdoc}
    */
   public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+#    dpm(microtime(), "init");
     parent::init($view, $display, $options);
     $this->query = \Drupal::entityTypeManager()->getStorage('wisski_individual')->getQuery();
     $this->pager = $view->pager;  // TODO: do we need to set it here if pager is only inited in this->build()?
@@ -63,6 +64,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
    * Builds the necessary info to execute the query.
    */
   function build(ViewExecutable $view) {
+#    dpm(microtime(), "build in!");
     $view->initPager();
 
     // Let the pager modify the query to add limits.
@@ -75,6 +77,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
 
     $view->build_info['wisski_query'] = $this->query;
     $view->build_info['wisski_count_query'] = $count_query;
+#    dpm(microtime(), "build out!");
   }
 
 
@@ -184,9 +187,9 @@ class WisskiIndividualQuery extends QueryPluginBase {
   function execute(ViewExecutable $view) {
 #  dpm($this->orderby, "orderby!");
 #    dpm($view->field);
-#dpm(microtime(), "first!");
-wisski_tick();
-wisski_tick("begin exec views");
+#dpm(microtime(), "begin execute");
+#wisski_tick();
+#wisski_tick("begin exec views");
     $query = $view->build_info['wisski_query'];
     $count_query = $view->build_info['wisski_count_query'];
     $args = $view->build_info['query_args'];
@@ -267,7 +270,7 @@ wisski_tick("begin exec views");
     }
 
 //    dpm($this->pager->total_items, "total");
-
+#    dpm(microtime(), "begin pre-exe");
     // Let the pager set limit and offset.
     if ($this->pager) {
       $this->pager->preExecute($query);
@@ -296,7 +299,7 @@ wisski_tick("begin exec views");
       // Set the range on the local query.
       $query->range($offset, $limit);
     }
-
+#    dpm(microtime(), "end pre-exe");
     $view->result = array();
     try {
 #      dpm(microtime(), "before ex");
@@ -342,8 +345,10 @@ wisski_tick("begin exec views");
     }
 #    dpm(microtime(), "thrd!");
 
+#    dpm(microtime(), "end execute");
+
     $view->execute_time = microtime(true) - $start;
-wisski_tick("end exec views");
+#wisski_tick("end exec views");
   }
 
   
@@ -442,7 +447,7 @@ wisski_tick("end exec views");
             $pseudo_entity_fields[$eid]['bundle'] = $row['bundle'];
           }
 
-          $row['title'] = wisski_core_generate_title($eid, FALSE, $bid);
+          $row['title'] = wisski_core_generate_title($eid, NULL, FALSE, $bid);
           $pseudo_entity_fields[$eid]['title'] = $row['title'];
         }
         
@@ -483,7 +488,7 @@ wisski_tick("end exec views");
           
 #          dpm(microtime(), "br");          
           $preview_image_uri = \Drupal::entityTypeManager()->getStorage('wisski_individual')->getPreviewImageUri($eid,$bid);
-          
+#          dpm(microtime(), "brout");          
 
           if(strpos($preview_image_uri, "public://") !== FALSE) {
             $preview_image_uri = str_replace("public:/", \Drupal::service('stream_wrapper.public')->baseUrl(), $preview_image_uri);
@@ -493,7 +498,7 @@ wisski_tick("end exec views");
           $row['preview_image'] = '<a href="' . $base_path . 'wisski/navigate/'.$eid.'/view?wisski_bundle='.$bid.'"><img src="'. $preview_image_uri .'" /></a>';
           $pseudo_entity_fields[$eid]['preview_image'] = $row['preview_image'];
         }
-#        dpm(microtime(), "after preview image");
+ #       dpm(microtime(), "after preview image");
       }
       elseif ($field == 'bundle' || $field == 'bundle_label' || $field == 'bundles') {
 #        dpm($values_per_row, "vpr");

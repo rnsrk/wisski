@@ -39,7 +39,7 @@ class GenerateTitle extends ActionBase {
    */
   public function execute($object = NULL) {
     if (!empty($object)) {
-      wisski_core_generate_title($object, TRUE);
+      wisski_core_generate_title($object, NULL, TRUE);
     }
   }
 

@@ -290,9 +290,11 @@ function wisski_core_entity_view(array &$build, \Drupal\Core\Entity\EntityInterf
 
 /*
  * Title callback function
+ * Base Field is sometimes provided - and we need to be sure that this is not the case in all other cases...
  */
-function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $override_bundle_id = NULL) {
-
+function wisski_core_generate_title($wisski_individual, $base_field = NULL, $force_new=FALSE, $override_bundle_id = NULL) {
+  dpm($force_new, "force new in core.module?");
+#  dpm(microtime(), "called once!!");
   $create_form_title = FALSE;
 
 #  dpm(serialize($wisski_individual));
@@ -337,9 +339,10 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
 
   // if we still have no bundle, we have to force-fetch one.
   if(empty($bundle_id)) {
+#    dpm(microtime(), "difficult");
     // this is very complicated... do it anyway...
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
-
+#    dpm(microtime(), "difficult2");
 #    drupal_set_message(serialize($pbs));
 
     foreach($pbs as $pb) {
@@ -352,6 +355,7 @@ function wisski_core_generate_title($wisski_individual, $force_new=FALSE, $overr
   // only do this if we have a bundle now
   if (!empty($bundle_id)) {
     if ($bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)) {
+#      dpm(microtime(), "yay!");
 #      drupal_set_message(serialize($entity_id));
 #      drupal_set_message(serialize($bundle->generateEntityTitle($entity_id,FALSE,$force_new)));
       if ($create_form_title || empty($entity_id)) $title = html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
