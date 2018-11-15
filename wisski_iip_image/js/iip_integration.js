@@ -1,10 +1,11 @@
 (function ($, Drupal, drupalSettings) {
 
-console.log('bbb', drupalSettings.wisski.iip.config);
+//console.log('bbb', drupalSettings.wisski.iip.config);
 var iipConfig = $.extend({
   server: "/fcgi-bin/iipsrv.fcgi",
 //  credit: credit,
-  prefix: drupalSettings.path.baseUrl + '/libraries/iipmooviewer/images/',
+// drupalSettings.path.baseUrl
+  prefix: drupalSettings.path.baseUrl + 'libraries/iipmooviewer/images/',
   showNavWindow: true,
   showNavButtons: true,
   winResize: true,
@@ -35,11 +36,12 @@ Drupal.behaviors.iip_integration_Behavior = {
         iipConfig.image = [$('.wisski-inline-iip').attr("iip")];
 
         if($('.wisski-inline-iip').attr('wisski-inline-iip')) {
-          var prefix = drupalSettings.path.baseUrl + '/libraries/iipmooviewer/images/';
+//          alert(drupalSettings.path.baseUrl);
+          var prefix = drupalSettings.path.baseUrl + 'libraries/iipmooviewer/images/';
 
 //  var credit = '&copy; <a href="http://www.gnm.de/">Germanisches Nationalmuseum</a>'
 
-console.log('aaa', iipConfig);
+//console.log('aaa', iipConfig);
 
           var iipmooviewer = new IIPMooViewer( "wisski-iip-cont", iipConfig);
         }
