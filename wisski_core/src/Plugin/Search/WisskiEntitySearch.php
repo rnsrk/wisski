@@ -53,6 +53,7 @@ class WisskiEntitySearch extends SearchPluginBase {
     $results = array();
     if ($this->isSearchExecutable()) {
       $parameters = $this->getParameters();
+      
       if (isset($parameters['entity_title']) && $string = $parameters['entity_title']) {
         
         $select = \Drupal::service('database')
@@ -60,6 +61,7 @@ class WisskiEntitySearch extends SearchPluginBase {
         $rows = $select
             ->fields('w', array('ent_num', 'bundle'))
             ->condition('ngram', "%" . $select->escapeLike($string) . "%", 'LIKE')
+            ->condition('bundle', $parameters['bundles'], 'IN')
             ->execute()
             ->fetchAll();
         
@@ -123,6 +125,7 @@ class WisskiEntitySearch extends SearchPluginBase {
         );
       }
     }
+#    dpm($return, "yay!!");
     return $return;
   }
 
@@ -131,10 +134,12 @@ class WisskiEntitySearch extends SearchPluginBase {
     //dpm($form,__FUNCTION__);
     //dpm($this,__METHOD__);
     unset($form['basic']);
+    unset($form['help_link']);
 
     if (!empty($_GET)) $defaults = $_GET;
     elseif (!empty($_POST)) $defaults = $_POST;
     //if (isset($defaults)) dpm($defaults,'Defaults');
+    /*
     $form['entity_title'] = array(
       '#type' => 'textfield',
       '#autocomplete_route_name' => 'wisski.titles.autocomplete',
@@ -144,6 +149,7 @@ class WisskiEntitySearch extends SearchPluginBase {
       '#description' => $this->t('Finds titles from the cache table'),
       '#attributes' => array('placeholder' => $this->t('Entity Title')),
     );
+    */
     $storage = $form_state->getStorage();
     $paths = (isset($storage['paths'])) ? $storage['paths']: array();
     $input = $form_state->getUserInput();
@@ -193,7 +199,19 @@ class WisskiEntitySearch extends SearchPluginBase {
     }
     $bundle_count = \Drupal::entityQuery('wisski_bundle')->count()->execute();
     
-    //dpm($selection,'selection');
+#    dpm($selection, "sel!");
+    
+    $form['entity_title'] = array(
+      '#type' => 'textfield',
+      '#autocomplete_route_name' => 'wisski.titles.autocomplete',
+      '#autocomplete_route_parameters' => isset($selection) ? array('bundles' => $selection) : array(),
+      '#default_value' => '',
+      '#title' => $this->t('Search by Entity Title'),
+      '#description' => $this->t('Finds titles from the cache table'),
+      '#attributes' => array('placeholder' => $this->t('Entity Title')),
+    );
+    
+    #dpm($selection,'selection');
     $storage['paths'] = $paths;
     //dpm($paths,'Paths');
     $storage['options'] = $options;
@@ -472,9 +490,12 @@ class WisskiEntitySearch extends SearchPluginBase {
     }
     $return['ops'] = $ops;
     $return['bundles'] = array_filter($vals['advanced']['bundles']['select_bundles']);
+    if(empty($return['bundles']))
+      $return['bundles'] = array_keys($vals['advanced']['bundles']['select_bundles']);
     $return['entity_title'] = $vals['entity_title'];
     // 'keys' must be set for the Search Plugin, don't know why
     $return['keys'] = $vals['entity_title'] ? : implode(', ',$keys);
+//    dpm($vals, "ret!");
     return $return;
   }
 
