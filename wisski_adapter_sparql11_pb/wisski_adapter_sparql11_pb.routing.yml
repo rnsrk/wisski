@@ -11,4 +11,4 @@ wisski_adapter_sparql11_pb.wisski_individual.triples:
     _controller: '\Drupal\wisski_adapter_sparql11_pb\Controller\Sparql11TriplesTabController::forward'
     _title: 'View triples'
   requirements:
-    _access: 'TRUE'
+    _permission: 'access triples'
