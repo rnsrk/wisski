@@ -203,12 +203,14 @@ class WisskiIndividualQuery extends QueryPluginBase {
         if($key == "bundle") {
           $bundle_ids = array_merge($bundle_ids, $one_filter->value);
         } else {
-        
+
+#          dpm(serialize($one_filter), "one filter");        
           // special case - omit filter for empty values.
-          if($one_filter->value == "" && $one_filter->operator == "=") {
+          if($one_filter->value == "" && $one_filter->operator != 'is_empty') {
             continue;
           }
 #          dpm(serialize($one_filter));
+#          dpm($one_filter->value, "value");
 #          $filter_regex[$key][] = array('op' => $one_filter->operator, 'val' => $one_filter->value);
 #          dpm($one_filter->configuration['wisski_field'], "key");
           
