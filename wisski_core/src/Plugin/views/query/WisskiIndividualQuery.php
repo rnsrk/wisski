@@ -740,14 +740,17 @@ class WisskiIndividualQuery extends QueryPluginBase {
                     else {
                       if(!empty($disamb)) {
                         if(!empty($is_file)) {
-                          $storage = \Drupal::entityTypeManager()->getStorage('wisski_individual');
-                          $val = $storage->getFileId($sparql_row->$out_prop->getValue());
-                          $values_per_row[$eid][$field][] = array($main_prop => $val, 'wisskiDisamb' => $sparql_row->$disamb->getUri());
-                          $values_per_row[$eid][$field_to_check][] = array($main_prop => $val, 'wisskiDisamb' => $sparql_row->$disamb->getUri());
-                        } else {
-                          $values_per_row[$eid][$field][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
-                          $values_per_row[$eid][$field_to_check][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+                          drupal_set_message("On your image path there is a disamb set. How do you think the system now should behave? Make the image clickable or what?!", "warning");
                         }
+#                          $storage = \Drupal::entityTypeManager()->getStorage('wisski_individual');
+#                          $val = $storage->getFileId($sparql_row->$out_prop->getValue());
+#                          // in case of files: throw the disamb away!
+#                          $values_per_row[$eid][$field][] = array($main_prop => $val);
+#                          $values_per_row[$eid][$field_to_check][] = array($main_prop => $val);
+#                        } else {
+                        $values_per_row[$eid][$field][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+                        $values_per_row[$eid][$field_to_check][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+#                        }
                       } else {
 #                        dpm(serialize($is_file), "is file!!");
                         if(!empty($is_file)) {
