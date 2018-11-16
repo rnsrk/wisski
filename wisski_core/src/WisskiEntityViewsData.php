@@ -213,15 +213,17 @@ class WisskiEntityViewsData extends EntityViewsData {
                 $fdef_for_bundle[$bundleid] = \Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundleid);
               
               if(isset($fdef_for_bundle[$bundleid])) {
-                $fdef = $fdef_for_bundle[$bundleid][$fieldid];
+                if(isset($fdef_for_bundle[$bundleid][$fieldid]))) {
+                  $fdef = $fdef_for_bundle[$bundleid][$fieldid];
                 
-                if(isset($fdef)) {
+                  if(isset($fdef)) {
 
 #              $fdef = \Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundleid)[$fieldid];
 #                $this->entityManager = \Drupal::entityManager();
 #              dpm($field_storage_def[$fieldid], "yay");
-                  $standard_values = $this->mapSingleFieldViewsData($data, $fieldid, $field->getType(), $fieldid, $field->getType(), TRUE, $fdef);
+                    $standard_values = $this->mapSingleFieldViewsData($data, $fieldid, $field->getType(), $fieldid, $field->getType(), TRUE, $fdef);
 #                  dpm($standard_values, "val");
+                  }
                 }
               }
             }
