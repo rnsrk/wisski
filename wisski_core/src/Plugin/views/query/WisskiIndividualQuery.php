@@ -782,6 +782,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
 
     }
 #    dpm(serialize($values_per_row));
+#    return;
 #    dpm(microtime(), "end of ...");    
 
     if ($do_dummy_load) {
@@ -797,6 +798,10 @@ class WisskiIndividualQuery extends QueryPluginBase {
           $pseudo_entity_fields[$lkey]['bundles'] = $values_per_row[$lkey]['bundles'];
           $pseudo_entity_fields[$lkey]['bundle'] = $values_per_row[$lkey]['bundle'];
         }
+        
+        // compatibility for old systems like herbar...
+        if(!isset($pseudo_entity_fields[$lkey]['eid']))
+          $pseudo_entity_fields[$lkey]['eid'] = array('value' => $lkey);
 #        dpm($row);
 #        $row['_entity'] = entity_load('wisski_individual', $row['eid']);;
 #        $bid = reset($bundle_ids);
@@ -813,12 +818,15 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #        dpm($row, "row");
 #        dpm(serialize($row['_entity']), "ent");
 #        $row['_entity'] = $loaded_ids[$row['eid']];
+#      dpm($row['_entity']->id(), "entity");
       }
     }
 
 #    dpm(microtime(), "after end of ...");
 
 #    dpm($values_per_row, "vpr");
+
+#    return;
 
     return array_values($values_per_row);
 
