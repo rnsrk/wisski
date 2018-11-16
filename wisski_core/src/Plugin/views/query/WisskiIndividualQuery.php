@@ -739,9 +739,17 @@ class WisskiIndividualQuery extends QueryPluginBase {
                     }
                     else {
                       if(!empty($disamb)) {
-                        $values_per_row[$eid][$field][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
-                        $values_per_row[$eid][$field_to_check][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+                        if(!empty($is_file)) {
+                          $storage = \Drupal::entityTypeManager()->getStorage('wisski_individual');
+                          $val = $storage->getFileId($sparql_row->$out_prop->getValue());
+                          $values_per_row[$eid][$field][] = array($main_prop => $val, 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+                          $values_per_row[$eid][$field_to_check][] = array($main_prop => $val, 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+                        } else {
+                          $values_per_row[$eid][$field][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+                          $values_per_row[$eid][$field_to_check][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+                        }
                       } else {
+#                        dpm(serialize($is_file), "is file!!");
                         if(!empty($is_file)) {
                           $storage = \Drupal::entityTypeManager()->getStorage('wisski_individual');
                           $val = $storage->getFileId($sparql_row->$out_prop->getValue());
@@ -806,6 +814,8 @@ class WisskiIndividualQuery extends QueryPluginBase {
     }
 
 #    dpm(microtime(), "after end of ...");
+
+#    dpm($values_per_row, "vpr");
 
     return array_values($values_per_row);
 
