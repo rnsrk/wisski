@@ -1633,9 +1633,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             }
             
             // didn't find anything?
-            if(empty($deltas)) {
+            if(empty($deltas) || empty($deltas[$image])) {
               $deltas[$image] = 0;
-              $found_weight = TRUE;
+//              $found_weight = TRUE;
             }
  
             // did we find a weight?           
