@@ -22,11 +22,17 @@ class WisskiTitle extends Urlfield {
   public function render(ResultRow $values) {
     
     $value = $this->getValue($values);
+#    dpm(serialize($values), "vals");
     $entity = $values->_entity;
     if(!empty($entity))
       $eid = $entity->id();
-    else
-      $eid = NULL;
+    else {
+      if(!empty($values->eid)) {
+        $eid = $values->eid;
+      } else {
+        $eid = NULL;
+      }
+    }
 //   dpm(Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $eid]), "url");
 #    dpm(serialize($eid), "eid");
 //    dpm(serialize($values), "val");
