@@ -19,7 +19,8 @@ use Drupal\views\Plugin\views\filter\StringFilter as ViewsString;
 class FieldString extends ViewsString {
 
   function operators() {
-    $operators = array(
+    $operators = parent::operators();
+    $operators_new = array(
       '=' => array(
         'title' => t('Is equal to'),
         'short' => t('='),
@@ -63,6 +64,10 @@ class FieldString extends ViewsString {
         'values' => 1,
       ),
     );
+    
+    $operators = array_merge($operators, $operators_new);
+
+#    dpm($operators, "op");
 
     return $operators;
   }

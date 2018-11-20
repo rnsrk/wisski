@@ -255,7 +255,9 @@ class WisskiEntityViewsData extends EntityViewsData {
               ];
 #            dpm($data[$base_table]["wisski_path_${pbid}__$pid"], "filter!!! $pid");             
             // override this only if the standard did not set something or it has set "standard" which seems to be stupid
-            if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id']) || $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id'] == "standard" ||
+            if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id']) || 
+               $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id'] == "standard" ||
+               $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id'] == "string" ||
                // special case for entity reference, because we dont want to have int filter there...
                (isset($data[$base_table]["wisski_path_${pbid}__$pid"]["relationship"]) && $data[$base_table]["wisski_path_${pbid}__$pid"]["relationship"]["base"] == "wisski_individual" && $data[$base_table]["wisski_path_${pbid}__$pid"]["relationship"]["base field"] == "eid") )
               $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id'] = 'wisski_field_string'; 
@@ -266,10 +268,11 @@ class WisskiEntityViewsData extends EntityViewsData {
             // override this only if the standard did not set something
             if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['sort']['id']))
               $data[$base_table]["wisski_path_${pbid}__$pid"]['sort']['id'] = 'standard'; 
-            
+#           dpm(serialize($data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['id']), $pbid.$pid);     
             // override this only if the standard did not set something
             if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['id']) )
               $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['id'] = 'wisski_string'; 
+#            dpm(serialize($data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['id']), $pbid.$pid);
             $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['pb'] = $pbid;
             $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['path'] = $pid;
             $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['wisski_field'] = "$pbid.$pid";
