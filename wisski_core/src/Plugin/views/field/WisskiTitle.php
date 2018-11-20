@@ -23,7 +23,10 @@ class WisskiTitle extends Urlfield {
     
     $value = $this->getValue($values);
     $entity = $values->_entity;
-    $eid = $entity->id();
+    if(!empty($entity))
+      $eid = $entity->id();
+    else
+      $eid = NULL;
 //   dpm(Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $eid]), "url");
 #    dpm(serialize($eid), "eid");
 //    dpm(serialize($values), "val");
@@ -41,7 +44,7 @@ class WisskiTitle extends Urlfield {
       return join(', ', $return);
     }
     else {
-      if (!empty($this->options['display_as_link'])) {
+      if (!empty($this->options['display_as_link']) && !empty($eid)) {
         return \Drupal::l($this->sanitizeValue($value), Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $eid])); //"<a href='" . Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity]) . "'>" . $this->sanitizeValue($value) . "</a>";
       } else {
         return $this->sanitizeValue($value, 'url');
