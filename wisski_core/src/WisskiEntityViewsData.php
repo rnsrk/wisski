@@ -117,7 +117,7 @@ class WisskiEntityViewsData extends EntityViewsData {
       'id' => 'title',
       'title' => 'Title',
       'field' => [
-        'id' => 'standard', // is standard the right thing here?
+        'id' => 'wisski_title',//'standard', // is standard the right thing here?
       ],
       'filter' => [
         'id' => 'wisski_field_string',
