@@ -976,7 +976,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
              'alter_text' => false,
              'text' => '',
              'make_link' => true,
-             'path' => '/wisski/navigate/{{eid}}/view?wisski_bundle=' . $bundleid,
+//             'path' => '/wisski/navigate/{{eid}}/view?wisski_bundle=' . $bundleid,
              'absolute' => false,
              'external' => false,
              'replace_spaces' => false,
