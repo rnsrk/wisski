@@ -302,7 +302,7 @@ class WisskiLinkblock extends BlockBase {
             $out[] = array(
               '#type' => 'link',
 #  	          '#title' => $data['target_id'],
-              '#title' => wisski_core_generate_title($entity_id, FALSE, $bundle),
+              '#title' => wisski_core_generate_title($entity_id, NULL, FALSE, $bundle),
               '#url' => Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity_id]), 
               //Url::fromUri('internal:/' . $url . '?wisski_bundle=' . $bundle),
             );
