@@ -197,10 +197,12 @@ class WisskiIndividualQuery extends QueryPluginBase {
     $filter_regex = array();
 
     $bundle_ids = array();
+    $entity_id = NULL;
 #    dpm($view->filter, "filt");
     if(!empty($view->filter)) {
       foreach($view->filter as $key => $one_filter) {
         if($key == "bundle") {
+#          dpm(serialize($one_filter), "onefilter!!");
           $bundle_ids = array_merge($bundle_ids, $one_filter->value);
         } else {
 
@@ -236,6 +238,46 @@ class WisskiIndividualQuery extends QueryPluginBase {
         $count_query->addTag($tag);
       }
     }
+
+    // if an aditional argument is set, look if it is the eid!    
+    if(isset($view->build_info['substitutions'])) {
+      $substitutions = $view->build_info['substitutions'];
+      
+      foreach($substitutions as $sbs_key => $sbs_value) {
+        if(strpos($sbs_key, "eid")) {
+          $entity_id = $sbs_value;
+          break;
+        }
+      }
+    }
+
+    // check if the entity has the correct bundle
+    if(!empty($entity_id)) {
+      $bids = AdapterHelper::getBundleIdsForEntityId($entity_id, TRUE);
+      
+      $found = FALSE;
+      foreach($bundle_ids as $bundleid) {
+      
+        // if we find it somewhere, set it to true.
+        if(in_array($bundleid, $bids) != FALSE) {
+          $found = TRUE;
+        }
+      
+      }
+      
+      // did we find something?
+      if(!$found) {
+        // if not, early exit!
+        return;
+      }
+      
+ #     dpm($bids);
+      
+    }
+    
+//    dpm(serialize($substitutions), "yay!");
+#    dpm($entity_id, "eid");
+#    dpm($bundle_ids, "bundleids");
 #    dpm($view, "view");
     $start = microtime(true);
 
