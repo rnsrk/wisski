@@ -119,7 +119,16 @@ class Query extends WisskiQueryBase {
         
         // just return something if it is a bundle-condition
         if($field == 'bundle') {
+          
+          if(is_array($value))
+            $value = current($value);
+          
+          if(empty($pb->getGroupsForBundle($value))) {
+            return array();
+          }
+          
 #  	        drupal_set_message("I go and look for : " . serialize($value) . " and " . serialize($limit) . " and " . serialize($offset) . " and " . $this->count);
+#          dpm(serialize($this->count), "sis");
           if($this->count) {
 #   	         drupal_set_message("I give back to you: " . serialize($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE)));
             //wisski_tick('Field query out 2');

@@ -2,15 +2,15 @@
 
 /**
  * @file
- * Contains Drupal\wisski_adapter_dms\Plugin\wisski_salz\Engine\ZoteroEngine.
+ * Contains Drupal\wisski_adapter_zotero\Plugin\wisski_salz\Engine\ZoteroEngine.
  */
 
-namespace Drupal\wisski_adapter_dms\Plugin\wisski_salz\Engine;
+namespace Drupal\wisski_adapter_zotero\Plugin\wisski_salz\Engine;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Language\LanguageInterface;
-use Drupal\wisski_adapter_dms\Query\Query;
+use Drupal\wisski_adapter_zotero\Query\Query;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity; 
 use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity; 
 use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
@@ -32,7 +32,7 @@ use EasyRdf_Literal;
  */
 class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInterface {
 
-  protected $uriPattern  = "!^http://objektkatalog.gnm.de/object/(.+)$!u";
+  protected $uriPattern  = "!^https://api.zotero.org/literature/(.+)$!u";
   
   /**
    * Workaround for super-annoying easyrdf buggy behavior:
@@ -43,52 +43,83 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
     'geo' => 'http://www.opengis.net/ont/geosparql#',
     'sf' => 'http://www.opengis.net/ont/sf#',    
   );
+
+  protected $all_items = 'itemFields';
+  protected $version = '3';
   
-
-
-  protected $possibleSteps = array(
-      'Object' => array(
-        'docid' => NULL,
-        'invnr' => NULL,
-        'imgid' => NULL,
-        'depid' => NULL,
-        'xml' => NULL,
-        'objectmetadataproviso' => NULL,
-        'acquisitionproviso' => NULL,
-        'LastEdition' => NULL,
-        'appellation' => NULL,
-        'title' => NULL,
-        'creator' => NULL,
-        'date' => NULL,
-        'place' => NULL,
-        'imguri' => NULL,
-        'dep' => NULL,
-        'imguri2' => NULL,
-        'imguri3' => NULL,
-        'mattech' => NULL,
-        'literature' => NULL,
-        'dimensions' => NULL,
-        'inscription' => NULL,
-        'description' => NULL,
-        ),
-  );
+  protected $possibleSteps = array();
 
   protected $server;
-  protected $database;
-  protected $user;
-  protected $password;
-  protected $table;
+  protected $api_key;
+  protected $user_group;
+  protected $is_user_or_group;
 
   public function defaultConfiguration() {
     return parent::defaultConfiguration() + [
-      'server' => "tcp:server-sql.gnm.de,1433",
-      'database' => "gnm_data",
-      'user' => '',
-      'password' => '',
-      'table' => 'dms2objektkatalog',
+      'server' => "https://api.zotero.org",
+      'api_key' => "",
+      'user_group' => '',
+      'is_user_or_group' => 'user',
     ];
   }
 
+  public function loadSteps() {
+    $url = $this->server . '/' . $this->all_items . '?v=' . $this->version . '&key=' . $this->api_key;
+    ini_set("allow_url_fopen", 1);
+    
+    $json = file_get_contents($url);
+    
+#    dpm(serialize($http_response_header), "header");
+    
+    $objs = json_decode($json);
+    
+    $steps = array();
+    
+#    dpm($objs, "obj");
+    
+    foreach($objs as $obj) {
+      if(isset($obj->field))
+        $steps['Literature'][$obj->field] = NULL;
+    }
+    
+    $this->possibleSteps = $steps;
+#    dpm($this->possible_steps);
+  }
+  
+  public function loadAllItems($count = FALSE, $limit = 25, $offset = 0) {
+    $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items?v=' . $this->version . '&limit=' . $limit . '&start=' . $offset . '&key=' . $this->api_key;
+#    dpm($url);
+    ini_set("allow_url_fopen", 1);
+    
+    $json = file_get_contents($url);
+    
+    // get the header for count
+    $header = $http_response_header;
+    
+#    dpm($header, "header");
+    
+    $objs = json_decode($json);
+    
+    $data = array();
+    
+    foreach($objs as $obj) {
+      $data[$obj->key] = $obj->data;
+    }
+
+    if($count) {
+      foreach($header as $head) {
+#        dpm($head, "head");
+        if(strpos($head, "Total-Results: ") !== FALSE) {
+          $ret = intval(substr($head, strlen("Total-Results: ")));
+#          dpm($ret, "ret!");
+          return $ret;
+        }
+      }
+      return 0;
+    } else   
+      return $data;
+  
+  }
 
   /**
    * {@inheritdoc}
@@ -98,10 +129,9 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
     // this does not exist
     parent::setConfiguration($configuration);
     $this->server = $this->configuration['server'];
-    $this->database = $this->configuration['database'];
-    $this->user = $this->configuration['user'];
-    $this->password = $this->configuration['password'];
-    $this->table = $this->configuration['table'];
+    $this->api_key = $this->configuration['api_key'];
+    $this->user_group = $this->configuration['user_group'];
+    $this->is_user_or_group = $this->configuration['is_user_or_group'];
   }
 
 
@@ -111,10 +141,9 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
   public function getConfiguration() {
     return array(
       'server' => $this->server,
-      'database' => $this->database,
-      'user' => $this->user,
-      'password' => $this->password,
-      'table' => $this->table,
+      'api_key' => $this->api_key,
+      'user_group' => $this->user_group,
+      'is_user_or_group' => $this->is_user_or_group,
     ) + parent::getConfiguration();
   }
 
@@ -127,37 +156,31 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 
     $form['server'] = array(
       '#type' => 'textfield',
-      '#title' => 'Connection string for server',
+      '#title' => 'Base Url of the server',
       '#default_value' => $this->server,
       '#return_value' => $this->server,
     );
     
-    $form['database'] = array(
+    $form['api_key'] = array(
       '#type' => 'textfield',
-      '#title' => 'Database that should be accessed',
-      '#default_value' => $this->database,
-      '#return_value' => $this->database,
+      '#title' => 'The Zotero Api Key - should be generated on the zotero website in your user profile.',
+      '#default_value' => $this->api_key,
+      '#return_value' => $this->api_key,
     );
 
-    $form['user'] = array(
+    $form['user_group'] = array(
       '#type' => 'textfield',
-      '#title' => 'The user for the database',
-      '#default_value' => $this->user,
-      '#return_value' => $this->user,
+      '#title' => 'The user/group to access',
+      '#default_value' => $this->user_group,
+      '#return_value' => $this->user_group,
     );
 
-    $form['password'] = array(
-      '#type' => 'textfield',
-      '#title' => 'The password for the database',
-      '#default_value' => $this->password,
-      '#return_value' => $this->password,
-    );
-
-    $form['table'] = array(
-      '#type' => 'textfield',
-      '#title' => 'The table name for the table to access',
-      '#default_value' => $this->table,
-      '#return_value' => $this->table,
+    $form['is_user_or_group'] = array(
+      '#type' => 'radios',
+      '#title' => 'Is this a user or a group account?',
+      '#options' => array('user' => $this->t('User'), 'group' => $this->t('Group')), 
+      '#default_value' => $this->is_user_or_group,
+      '#return_value' => $this->is_user_or_group,
     );
     
     return $form;
@@ -170,10 +193,9 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
     parent::submitConfigurationForm($form, $form_state);
     
     $this->server = $form_state->getValue('server');
-    $this->database = $form_state->getValue('database');
-    $this->user = $form_state->getValue('user');
-    $this->password = $form_state->getValue('password');
-    $this->table = $form_state->getValue('table');  
+    $this->api_key = $form_state->getValue('api_key');
+    $this->user_group = $form_state->getValue('user_group');
+    $this->is_user_or_group = $form_state->getValue('is_user_or_group');
   }  
   
   
@@ -228,30 +250,40 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 #    return NULL;
     
     // 
-    $cache = \Drupal::cache('wisski_adapter_dms');
+    $cache = \Drupal::cache('wisski_adapter_zotero');
     $data = $cache->get($id);
     if ($data) {
       return $data->data;
     }
 
-    $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password) );
-#    
-    $query = "SELECT TOP 1 * FROM " . $this->table . " WHERE invnr = '" . $id . "'";
-#        
-    $ret = sqlsrv_query($con, $query);
+    $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items/' . $id . '?v=' . $this->version . '&limit=' . $limit . '&start=' . $offset . '&key=' . $this->api_key;
+#    dpm($url);
+
+    ini_set("allow_url_fopen", 1);
+    
+    $json = file_get_contents($url);
 #            
 #  $result = array();
-#               
+#   
+
+    $obj = json_decode($json);
+    
+    $data = array();
+    
+#    dpm($data, "dat");
+#    return;
+            
     $outarr = array();
     
-    $keys = array_keys($this->possibleSteps['Object']);
+#    if(empty($this->possibleSteps))
+#      $this->loadSteps();
+    
+#    $keys = array_keys($this->possibleSteps['Literature']);
 #    dpm($keys, "key");    
-    while($a_ret = sqlsrv_fetch_array($ret))  {
-      foreach($keys as $step) {
-        $data['Object'][$step] = array($a_ret[$step]);
-      }
+    // @TODO CREATORS is still a problem!!!
+    foreach($obj->data as $key => $objdata) {
+      $data['Literature'][$key] = array($objdata);
     }
-
 
     $cache->set($id, $data);
 #    dpm($data, "data");
@@ -305,7 +337,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
    * {@inheritdoc} 
    */
   public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
-#    dpm("load field values!");    
+    dpm("load field values!");    
     if (!$entity_ids) {
       // TODO: get all entities
       $entity_ids = array(
@@ -488,33 +520,16 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
    * {@inheritdoc} 
    */
   public function getPathAlternatives($history = [], $future = []) {
-#    dpm($history);
+#    dpm($this->loadSteps(), "loaded!");
+
+    if(empty($this->possibleSteps))
+      $this->loadSteps();
+
     if (empty($history)) {
       $keys = array_keys($this->possibleSteps);
       return array_combine($keys, $keys);
     } else {
-#      dpm($history, "hist");
-      $steps = $this->possibleSteps;
-      
-#      dpm($steps, "keys");
-      // go through the history deeper and deeper!
-      foreach($history as $hist) {
-#        $keys = array_keys($this->possibleSteps);
-        
-        // if this is not set, we can not go in there.
-        if(!isset($steps[$hist])) {
-          return array();
-        } else {
-          $steps = $steps[$hist];
-        }
-      }
-      
-      // see if there is something
-      $keys = array_keys($steps);
-      
-      if(!empty($keys))
-        return array_combine($keys, $keys);
-      
+      // we don't want to return anything anway.
       return array();
     }
   }
@@ -551,8 +566,11 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
    *
    */ 
   public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE) {
+#    dpm('limit:' . $limit . 'offset' . $offset . 'count' . serialize($count) . serialize($bundleid) . " " . serialize($pathbuilder), "I am called.");
+#    $data = $this->loadAllItems();
+#    return;
 #    dpm(microtime(), "mic");
-    $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password) );
+#    $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password) );
 #    dpm(microtime(), "mic2");
 
 #    dpm($offset, "offset");
@@ -563,6 +581,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
     $where = "";
     
     // build conditions for where
+    /*
     foreach($conditions as $cond) {
       // if it is a bundle condition, skip it...
       if($cond['field'] == "bundle")
@@ -587,7 +606,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 
 #      dpm($cond);
       if($cond['operator'] == "starts" || $cond['operator'] == "STARTS_WITH")
-        $where .= " convert(varchar(1000)," . $path->getDatatypeProperty() . ") LIKE '" . $cond['value'] . "%' ";      
+        $where .= "&itemKey=$path->getDatatypeProperty() . ") LIKE '" . $cond['value'] . "%' ";      
       else if($cond['operator'] == "ends" || $cond['operator'] == "ENDS_WITH")
         $where .= " convert(varchar(1000)," . $path->getDatatypeProperty() . ") LIKE '%" . $cond['value'] . "' ";
       else if($cond['operator'] == "in" || $cond['operator'] == "CONTAINS")
@@ -598,56 +617,35 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
         drupal_set_message("Operator " . $cond['operator'] . " not supported - sorry.", "error");
       
     }
+    */
     
+#    dpm($count, "count");
 
-    if($count) {
-      $query = "SELECT COUNT(DISTINCT docid) FROM " . $this->table . " $where";
-#      $query = "SELECT COUNT(dbo.XmlFiles.DocumentId) AS DocCount FROM dbo.XmlFiles";  #" . $this->table;
-#      $query = "select max(ROWS) from sysindexes where id = object_id('dbo.XmlFiles')";
-      
-#      $query = "select sum (spart.rows) from sys.partitions spart where spart.object_id = object_id(" . $this->table . ") and spart.index_id < 2";
-#      dpm($query, "query");
-      $ret = sqlsrv_query($con, $query);
-      
-      $cnt = 0;
-      
-      while($a_ret = sqlsrv_fetch_array($ret))  {
-#        dpm($a_ret, "ret");
-        $cnt = $a_ret[0];
+    if((empty($limit) && empty($offset)) || $count) {
+      $data = $this->loadAllItems(TRUE, 1, 0);
+ #    dpm($data, "datacnt");
+      $arr = array();
+ 
+      for($i = 0; $i < $data; $i++) {
+        $arr[$i] = array('eid' => $i, 'bundle' => $i, 'name' => $i);
       }
-#      dpm(microtime(), "micent");
-      return $cnt;
+ 
+      return $arr;
     } else {
-#    
-      $limitstr = "";
-      if($limit > 0)
-        $limitstr = " TOP " . $limit;
+      $data = $this->loadAllItems(FALSE, $limit, $offset);
       
-      $fromnumber = $offset;
-      $tonumber = $offset+$limit;  
-      
-#      dpm($fromnumber, "from");
-#      dpm($tonumber, "to");
-      
-      if($tonumber > 0)
-        $query = "SELECT * FROM ( SELECT *, ROW_NUMBER() over (ORDER BY docid) as ct FROM " . $this->table . " $where) sub where ct > " . $fromnumber . " and ct <= " . $tonumber . "";
-      else
-        $query = "SELECT * FROM " . $this->table . " $where ";
-#      dpm($query, "query");
-#        
-      $ret = sqlsrv_query($con, $query);
-#            
-#  $result = array();
-#     dpm(microtime(), "micin");          
+#      dpm($data, "data");
+
       $outarr = array();
-      while($a_ret = sqlsrv_fetch_array($ret))  {
+      
+      foreach($data as $dat) {
 
-        $uri = "http://objektkatalog.gnm.de/object/" . $a_ret['invnr'];
-
+        $uri = "https://api.zotero.org/literature/" . $dat->key;
         $uriname = AdapterHelper::getDrupalIdForUri($uri,TRUE,$this->adapterId());
+        
         $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
       }
-#      dpm(microtime(), "micend");
+      
       return $outarr;
     }
   }
