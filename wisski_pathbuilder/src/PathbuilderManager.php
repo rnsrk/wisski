@@ -95,6 +95,8 @@ class PathbuilderManager {
   public function getPreviewImage($entity_id, $bundle_id, $adapter) {
     $pbs_and_paths = $this->getImagePathsAndPbsForBundle($bundle_id);
     
+#    dpm($pbs_and_paths, "yay!");
+    
     foreach($pbs_and_paths as $pb_id => $paths) {
       
       if(empty(self::$pbs)) {
@@ -103,25 +105,48 @@ class PathbuilderManager {
       } else
         $pbs = self::$pbs;
 
-      $pb = $pbs[$pb_id];
+      $pb = $pbs[$pb_id];      
 
-      foreach($paths as $pathid) {
-        #  dpm($pathid, "assa");
-        
-        if(empty(self::$paths)) {
-          $paths = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::loadMultiple();
-          self::$paths = $paths;
-        } else
-          $paths = self::$paths;
-        
-        $path = $paths[$pathid];
-        
-        $values = $adapter->getEngine()->pathToReturnValue($path, $pb, $entity_id, 0, NULL, FALSE);
 
-        if(!empty($values))
-          return $values;
+      $the_pathid = NULL;
+      $weight = 99999999999; // beat this ...
 
+      // go through all paths and look for the lowest weight
+      foreach($paths as $key => $pathid) {
+        $pbp = $pb->getPbPath($pathid);
+        
+        if(isset($pbp['weight'])) {
+          if($paths[$pbp['weight']] < $weight) {
+            // only take this if the weight is better or the same.
+            $the_pathid = $pathid;
+            $weight = $paths[$pbp['weight']];
+          }
+        } else if(empty($the_pathid)) {
+          // if there was nothing before, something is better at least.
+          $the_pathid = $pathid;
+        }        
       }
+      
+#        dpm($pathid, "assa");
+
+      // nothing found?
+      if(empty($the_pathid)) {
+        return array();
+      }
+                        
+      if(empty(self::$paths)) {
+        $paths = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::loadMultiple();
+        self::$paths = $paths;
+      } else
+        $paths = self::$paths;
+        
+      $path = $paths[$the_pathid];
+        
+      $values = $adapter->getEngine()->pathToReturnValue($path, $pb, $entity_id, 0, NULL, FALSE);
+
+      if(!empty($values))
+        return $values;
+
     }
     return array();
   }
