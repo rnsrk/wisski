@@ -1587,6 +1587,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         $bids = array();
         $deltas = array();
         $fids = array();
+        
+        $ever_found_weight = FALSE;
 
         foreach($images as $image) { 	       
 
@@ -1629,7 +1631,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               $fid_to_look_for = $cfv->bid;
               
               // delta is the weight
-              $deltas[$image] = $cfv->delta;              
+              $deltas[$image] = intval($cfv->delta);              
             }
             
             // didn't find anything?
@@ -1641,6 +1643,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             // did we find a weight?           
             if($deltas[$image] != 0) {
               $found_weight = TRUE;
+              $ever_found_weight = TRUE;
             }
           }        
         }
@@ -1649,7 +1652,13 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #        dpm($deltas, "weight");        
 
         // sort for weight
-        asort($deltas);
+        if($ever_found_weight)
+          asort($deltas);
+
+#        dpm($found_weight);  
+#        dpm($deltas, "after");
+        
+#        dpm(array_keys($deltas), "ak");
         
         // give out only the lightest one!
         $images = array(current(array_keys($deltas)));
@@ -1658,7 +1667,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         
       }
  
-#      dpm($images, "out");
+      #dpm($images, "out");
       
       #dpm(microtime(), "in storage3");
       
