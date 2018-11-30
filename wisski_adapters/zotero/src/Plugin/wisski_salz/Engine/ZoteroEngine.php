@@ -32,7 +32,7 @@ use EasyRdf_Literal;
  */
 class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInterface {
 
-  protected $uriPattern  = "!^https://api.zotero.org/literature/(.+)$!u";
+  protected $uriPattern  = "!^https://www.zotero.org/(.+)s/(.+)/items/itemKey/(.+)$!u";
   
   /**
    * Workaround for super-annoying easyrdf buggy behavior:
@@ -78,16 +78,26 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 #    dpm($objs, "obj");
     
     foreach($objs as $obj) {
-      if(isset($obj->field))
+      if(isset($obj->field)) {
         $steps['Literature'][$obj->field] = NULL;
+        
+#        if($obj->field == "creators") {
+#          $steps['Literature'][$obj->field . ' creatorType'] = NULL;
+#          $steps['Literature'][$obj->field . ' firstName'] = NULL;
+#          $steps['Literature'][$obj->field . ' lastName'] = NULL;
+#        }
+        
+      }
     }
+    
+    $steps['Literature']['creators'] = NULL;
     
     $this->possibleSteps = $steps;
 #    dpm($this->possible_steps);
   }
   
-  public function loadAllItems($count = FALSE, $limit = 25, $offset = 0) {
-    $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items?v=' . $this->version . '&limit=' . $limit . '&start=' . $offset . '&key=' . $this->api_key;
+  public function loadAllItems($count = FALSE, $limit = 25, $offset = 0, $where = "") {
+    $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items?v=' . $this->version . $where . '&limit=' . $limit . '&start=' . $offset . '&key=' . $this->api_key;
 #    dpm($url);
     ini_set("allow_url_fopen", 1);
     
@@ -231,33 +241,43 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 
 
   public function fetchData($uri, $id = NULL) {
-
+    
 
     if (!$id) {
       if (!$uri) {
         return FALSE;
       } elseif (preg_match($this->uriPattern, $uri, $matches)) {
-        $id = $matches[1];
+        $id = $matches[3];
+        $gu_id = $matches[2];
       } else {
         // not a URI
         return FALSE;
       }
     }
 
+    // not our id? 
+    if($gu_id != $this->user_group)
+      return;
+
     
 #    dpm($id, "yay!");
     
 #    return NULL;
+
+#    dpm(serialize($this));
     
     // 
     $cache = \Drupal::cache('wisski_adapter_zotero');
     $data = $cache->get($id);
+#    dpm($data, "data from cache");
     if ($data) {
       return $data->data;
     }
 
     $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items/' . $id . '?v=' . $this->version . '&limit=' . $limit . '&start=' . $offset . '&key=' . $this->api_key;
 #    dpm($url);
+
+#    dpm(serialize($this);
 
     ini_set("allow_url_fopen", 1);
     
@@ -270,19 +290,23 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
     
     $data = array();
     
-#    dpm($data, "dat");
+#    dpm($obj, "dat");
 #    return;
             
     $outarr = array();
     
-#    if(empty($this->possibleSteps))
-#      $this->loadSteps();
-    
-#    $keys = array_keys($this->possibleSteps['Literature']);
-#    dpm($keys, "key");    
-    // @TODO CREATORS is still a problem!!!
     foreach($obj->data as $key => $objdata) {
       $data['Literature'][$key] = array($objdata);
+
+      if($key == "creators") {
+      
+        $data['Literature'][$key] = array();
+      
+        foreach($objdata as $creator) {
+          $data['Literature'][$key][] = $creator->lastName . ', ' . $creator->firstName;
+        }
+      }
+
     }
 
     $cache->set($id, $data);
@@ -581,12 +605,13 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
     $where = "";
     
     // build conditions for where
-    /*
+    
     foreach($conditions as $cond) {
       // if it is a bundle condition, skip it...
       if($cond['field'] == "bundle")
         continue;
-        
+
+      /*        
       $pb_and_path = explode(".", $cond['field']);
       
       $pathid = $pb_and_path[1];
@@ -598,31 +623,20 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
       
       if(empty($path))
         continue;         
-      
-      if($where != "")
-        $where .= " AND";
-      else
-        $where .= "WHERE";
-
+      */
+      $where .= "&q=";
 #      dpm($cond);
-      if($cond['operator'] == "starts" || $cond['operator'] == "STARTS_WITH")
-        $where .= "&itemKey=$path->getDatatypeProperty() . ") LIKE '" . $cond['value'] . "%' ";      
-      else if($cond['operator'] == "ends" || $cond['operator'] == "ENDS_WITH")
-        $where .= " convert(varchar(1000)," . $path->getDatatypeProperty() . ") LIKE '%" . $cond['value'] . "' ";
-      else if($cond['operator'] == "in" || $cond['operator'] == "CONTAINS")
-        $where .= " convert(varchar(1000)," . $path->getDatatypeProperty() . ") LIKE '%" . $cond['value'] . "%' ";
-      else if($cond['operator'] == "=")
-        $where .= " convert(varchar(1000)," . $path->getDatatypeProperty() . ") = '" . $cond['value'] . "' ";
-      else
-        drupal_set_message("Operator " . $cond['operator'] . " not supported - sorry.", "error");
-      
+    
+      // @todo this probably has to be escaped somehow?!
+      $where .= urlencode($cond['value']);
+      break;
     }
-    */
+    
     
 #    dpm($count, "count");
 
     if((empty($limit) && empty($offset)) || $count) {
-      $data = $this->loadAllItems(TRUE, 1, 0);
+      $data = $this->loadAllItems(TRUE, 1, 0, $where);
  #    dpm($data, "datacnt");
       $arr = array();
  
@@ -632,7 +646,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
  
       return $arr;
     } else {
-      $data = $this->loadAllItems(FALSE, $limit, $offset);
+      $data = $this->loadAllItems(FALSE, $limit, $offset, $where);
       
 #      dpm($data, "data");
 
@@ -640,7 +654,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
       
       foreach($data as $dat) {
 
-        $uri = "https://api.zotero.org/literature/" . $dat->key;
+        $uri = "https://www.zotero.org/" . $this->is_user_or_group . "s/" . $this->user_group . "/items/itemKey/" . $dat->key;
         $uriname = AdapterHelper::getDrupalIdForUri($uri,TRUE,$this->adapterId());
         
         $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
