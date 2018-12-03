@@ -287,6 +287,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #        dpm(microtime(), "before count");
         //  Fetch number of pager items differently based on data locality.
         // Execute the local count query.
+#        dpm($count_query->count, "count?"
         $this->pager->total_items = $count_query->execute();
 #        dpm($this->pager->total_items, "total");
 #        dpm(microtime(), "after count");
@@ -658,7 +659,10 @@ class WisskiIndividualQuery extends QueryPluginBase {
             else {
               $engine = $adapter->getEngine();
               if (!($engine instanceof Sparql11EngineWithPB)) {
-                drupal_set_message("Adapter cannot be queried by path in WissKI views for path " . $path->getName() . " in pathbuilder " . $pb->getName(), 'error');
+                // lets just hope it can handle it somehow...
+                // @todo - this is not funny!!!
+                continue;
+//                drupal_set_message("Adapter cannot be queried by path in WissKI views for path " . $path->getName() . " in pathbuilder " . $pb->getName(), 'error');
               }
               else {
                 // we need to distinguish references and data primitives
