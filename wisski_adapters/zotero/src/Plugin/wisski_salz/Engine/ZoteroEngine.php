@@ -91,13 +91,15 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
     }
     
     $steps['Literature']['creators'] = NULL;
+    $steps['Literature']['directLink'] = NULL;
+    $steps['Literature']['itemType'] = NULL;
     
     $this->possibleSteps = $steps;
 #    dpm($this->possible_steps);
   }
   
   public function loadAllItems($count = FALSE, $limit = 25, $offset = 0, $where = "") {
-    $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items?v=' . $this->version . $where . '&limit=' . $limit . '&start=' . $offset . '&key=' . $this->api_key;
+    $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items/top?v=' . $this->version . $where . '&limit=' . $limit . '&start=' . $offset . '&key=' . $this->api_key;
 #    dpm($url);
     ini_set("allow_url_fopen", 1);
     
@@ -274,7 +276,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
       return $data->data;
     }
 
-    $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items/' . $id . '?v=' . $this->version . '&limit=' . $limit . '&start=' . $offset . '&key=' . $this->api_key;
+    $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items/' . $id . '?v=' . $this->version . '&limit=1&start=0&key=' . $this->api_key;
 #    dpm($url);
 
 #    dpm(serialize($this);
@@ -308,6 +310,8 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
       }
 
     }
+    
+    $data['Literature']['directLink'][] = $uri;
 
     $cache->set($id, $data);
 #    dpm($data, "data");
@@ -659,6 +663,8 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
         
         $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
       }
+      
+#      dpm($outarr, "outarr");
       
       return $outarr;
     }

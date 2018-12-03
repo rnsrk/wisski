@@ -139,7 +139,10 @@ class Query extends WisskiQueryBase {
 #            dpm(array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions())), "muhaha!");
 #            return;           
           //wisski_tick('Field query out 3');
-          return array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()));
+          
+          $ret = array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()));
+          
+          return $ret;
         }
         
 #        dpm($field, "fi");
