@@ -71,6 +71,10 @@ class Query extends WisskiQueryBase {
         if($field == "eid")
           $eidquery = $value;
       }
+            
+      if(empty($pb->getGroupsForBundle(current($bundlequery)))) {
+        return array();
+      }
       
 #        dpm($eidquery,"eidquery");
 #        dpm($bundlequery, "bundlequery");
@@ -108,6 +112,8 @@ class Query extends WisskiQueryBase {
       }
 #      dpm("half");    
       //wisski_tick("field query half");
+
+#      dpm($this->sort, "sort");      
       
       foreach($this->condition->conditions() as $condition) {
         $field = $condition['field'];
@@ -123,10 +129,6 @@ class Query extends WisskiQueryBase {
           if(is_array($value))
             $value = current($value);
           
-          if(empty($pb->getGroupsForBundle($value))) {
-            return array();
-          }
-          
 #  	        drupal_set_message("I go and look for : " . serialize($value) . " and " . serialize($limit) . " and " . serialize($offset) . " and " . $this->count);
 #          dpm(serialize($this->count), "sis");
           if($this->count) {
@@ -140,7 +142,7 @@ class Query extends WisskiQueryBase {
 #            return;           
           //wisski_tick('Field query out 3');
           
-          $ret = array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()));
+          $ret = array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions(), $this->sort));
           
           return $ret;
         }

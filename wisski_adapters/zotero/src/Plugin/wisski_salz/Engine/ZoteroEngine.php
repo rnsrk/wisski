@@ -98,8 +98,8 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 #    dpm($this->possible_steps);
   }
   
-  public function loadAllItems($count = FALSE, $limit = 25, $offset = 0, $where = "") {
-    $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items/top?v=' . $this->version . $where . '&limit=' . $limit . '&start=' . $offset . '&key=' . $this->api_key;
+  public function loadAllItems($count = FALSE, $limit = 25, $offset = 0, $where = "", $sort = "") {
+    $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items/top?v=' . $this->version . $where . $sort . '&limit=' . $limit . '&start=' . $offset . '&key=' . $this->api_key;
 #    dpm($url);
     ini_set("allow_url_fopen", 1);
     
@@ -593,7 +593,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
    * the fun is - we only can handle objects, so we give them to them.
    *
    */ 
-  public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE) {
+  public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE, $sorts = FALSE) {
 #    dpm('limit:' . $limit . 'offset' . $offset . 'count' . serialize($count) . serialize($bundleid) . " " . serialize($pathbuilder), "I am called.");
 #    $data = $this->loadAllItems();
 #    return;
@@ -607,6 +607,45 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 #    dpm($conditions, "cond");
     
     $where = "";
+
+    $sort = "";
+
+    foreach($sorts as $subsort) {
+    
+      $pos = strpos($subsort['field'], $pathbuilder->id() . "__");
+    
+#      dpm($pos, "pos");
+#      dpm($sort['field'], "sort");
+#      dpm($pathbuilder->id(), "id");
+    
+      if($pos === FALSE)
+        continue;
+    
+      $pathid = substr($subsort['field'], $pos + strlen($pathbuilder->id() . "__"));
+      
+      $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
+      
+      $dt = $path->getDatatypeProperty();
+
+      if($dt == "creators");
+        $dt = "creator";
+      
+      $sort .= "&sort=" . $dt . "&direction=" . strtolower($subsort['direction']);
+#      dpm($sort, "sort");
+      // this can only handle one!
+      continue;      
+#      dpm($path, "path!");
+#      
+#      dpm($sort['field'], "sort");
+#            
+#      dpm($pathid, "pid");
+#      
+#      $pbp = $pathbuilder->getPbPath($pathid);
+#      
+#      dpm($pbp, "pbp");
+      
+    }
+
     
     // build conditions for where
     
@@ -650,7 +689,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
  
       return $arr;
     } else {
-      $data = $this->loadAllItems(FALSE, $limit, $offset, $where);
+      $data = $this->loadAllItems(FALSE, $limit, $offset, $where, $sort);
       
 #      dpm($data, "data");
 
