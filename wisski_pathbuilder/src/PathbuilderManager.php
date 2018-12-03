@@ -114,6 +114,9 @@ class PathbuilderManager {
       // go through all paths and look for the lowest weight
       foreach($paths as $key => $pathid) {
         $pbp = $pb->getPbPath($pathid);
+
+        if(empty($pbp['enabled']))
+          continue;
         
         if(isset($pbp['weight'])) {
           if($paths[$pbp['weight']] < $weight) {
