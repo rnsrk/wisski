@@ -136,6 +136,20 @@ class WisskiIIIFController {
     // iterate through all images. 
     foreach($images as $image) {
       $local_uri = $storage->ensureSchemedPublicFileUri($image);
+      
+      // get the file name - last part of the uri
+      $exp = explode('/', $local_uri);
+      
+      $last_part = $exp[count($exp)-1];
+      
+      // if pdf - skip it!
+      if(stripos($last_part, ".pdf") !== FALSE) {
+        continue;
+      }
+      
+      $filenames[] = $last_part;
+      
+      // get the pyramid
       $local_paths[] = $local_uri;
 
       $local_pyramid = $style->buildUri($local_uri);
@@ -151,9 +165,6 @@ class WisskiIIIFController {
         $remaining = $local_pyramid;
       }
       
-      $exp = explode('/', $remaining);
-      
-      $filenames[] = $exp[count($exp)-1];
       $file_paths[] = $remaining;      
     }
     
