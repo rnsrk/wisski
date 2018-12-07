@@ -20,10 +20,10 @@ class WisskiIIIFController {
     //
     // Many thanks go to joseph.padfield@ng-london.org.uk
 
-    $iiif_url = "https://tafelmalerei.gnm.de/fcgi-bin/iipsrv.fcgi?IIIF=";
+    $iiif_url = "http://objekte-im-netz.fau.de/iipsrv/iipsrv.fcgi?IIIF=";
 
     // the base-path provided to the IIIF-Server - should be subtracted from our paths!
-    $iiif_base_path = "/srv/www/htdocs/sites/default/files/styles/wisski_pyramid/public/";
+    $iiif_base_path = ""; ///srv/www/htdocs/sites/default/files/styles/wisski_pyramid/public/";
 
     global $base_url;
 
@@ -79,7 +79,7 @@ class WisskiIIIFController {
     // go through all adapters and get all images for this.
     foreach($adapters as $adapter) {
       if($adapter->hasEntity($entity_id) && method_exists($adapter->getEngine(), "getImagesForEntityId")) {
-        $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
+        $images = array_merge($images, $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id));
       }
       
     }
@@ -188,7 +188,7 @@ class WisskiIIIFController {
           "image_name" => $wisski_individual->label(),
           "image_height" => $height,
           "image_width" => $width,
-          "image_ppmm" => false,
+          "image_ppmm" => FALSE,
           "image_caption" => $wisski_individual->label(),
           "image_path" => $filepath,
         );      
@@ -210,7 +210,7 @@ class WisskiIIIFController {
           "service" => array(
             "@context" => "http://iiif.io/api/annex/services/physdim/1/context.json",
             "profile" => "http://iiif.io/api/annex/services/physdim",
-            "physicalScale" => '.$scale.',
+            "physicalScale" => $scale,
             "physicalUnits" => "mm"
           )
         );

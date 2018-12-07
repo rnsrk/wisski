@@ -71,6 +71,10 @@ class Query extends WisskiQueryBase {
         if($field == "eid")
           $eidquery = $value;
       }
+
+      if(empty($bundlequery)) {
+        return array();
+      }
             
       if(empty($pb->getGroupsForBundle(current($bundlequery)))) {
         return array();
