@@ -20,10 +20,10 @@ class WisskiIIIFController {
     //
     // Many thanks go to joseph.padfield@ng-london.org.uk
 
-    $iiif_url = "http://objekte-im-netz.fau.de/iipsrv/iipsrv.fcgi?IIIF=";
+    $iiif_url = "http://tafelmalerei.gnm.de/fcgi-bin/iipsrv.fcgi?IIIF=";
 
     // the base-path provided to the IIIF-Server - should be subtracted from our paths!
-    $iiif_base_path = ""; ///srv/www/htdocs/sites/default/files/styles/wisski_pyramid/public/";
+    $iiif_base_path = "/srv/www/htdocs/sites/default/files/styles/wisski_pyramid/public/";
 
     global $base_url;
 
