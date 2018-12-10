@@ -28,6 +28,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 class MiradorController extends ControllerBase {
 
   public function start() {
+
     $form = array();
     
     $form['#markup'] = '<div id="viewer"></div>';

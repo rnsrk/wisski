@@ -1,0 +1,20 @@
+<?php
+
+/**
+ * @file
+ * WissKI Mirador Views module help and theme functions.
+ */
+
+// Store WissKI Mirador preprocess theme functions in a separate .inc file.
+\Drupal::moduleHandler()->loadInclude('wisski_mirador', 'inc', 'wisski_mirador.theme');
+
+/**
+ * Implements hook_theme().
+ */
+function wisski_mirador_theme($existing, $type, $theme, $path) {
+  return array(
+    'wisski_mirador' => array(
+      'file' => 'wisski_mirador.theme.inc',
+    ),
+  );
+}

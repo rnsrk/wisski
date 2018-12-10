@@ -8,3 +8,4 @@ libraries:
  - wisski_mirador/mirador
 dependencies:
  - wisski_adapter_sparql11_pb
+ - drupal:views

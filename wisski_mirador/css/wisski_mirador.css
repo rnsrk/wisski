@@ -1,0 +1,9 @@
+
+#viewer {
+      display: block;
+      width: 600px;
+      height: 600px;
+      margin: 1em 5%;
+      position: relative;
+    }
+

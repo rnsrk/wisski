@@ -1,10 +1,32 @@
-(function ($, Drupal) {
+(function (jq, Drupal, drupalSettings) {
   Drupal.behaviors.wisski_mirador_Behavior = {
     attach: function (context, settings) {
-      $('div#viewer', context).once('wisski_mirador').each(function () {
-        //alert("Hallo welt!");
-        //$.getScript( "/libraries/mirador/build/mirador/mirador.js" )
+//      alert($.fn.jquery);
+      jq('div#viewer', context).once('wisski_mirador').each(function () {
+//        alert($.fn.jquery);
+//        alert(jQuery19.fn.jquery);
+//        (function($, jQuery) {
+//          alert(jQuery.fn.jquery);
+
+          console.log('yay', drupalSettings.wisski.mirador.data);          
+        
+          $(function() {
+            jQuery = jQuery19;
+            $ = jQuery19;          
+//            alert(jQuery.fn.jquery);
+            Mirador({
+              id: "viewer",
+              data:  drupalSettings.wisski.mirador.data
+            });
+          });
+          jQuery.noConflict(true);
+          alert(jQuery.fn.jquery);
+          
+//        })(jQuery19, jQuery19);
+                
+//        alert(jQuery.fn.jquery);
+//        alert($.fn.jquery);
       });
     }
   };
-})(jQuery, Drupal);
+})(jQuery, Drupal, drupalSettings);
