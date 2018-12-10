@@ -19,11 +19,19 @@ class WisskiIIIFController {
     // Iperion-ch Simple IIIF Manifest builder: Version 1.0
     //
     // Many thanks go to joseph.padfield@ng-london.org.uk
-
-    $iiif_url = "http://tafelmalerei.gnm.de/fcgi-bin/iipsrv.fcgi?IIIF=";
+    
+    $settings = \Drupal::configFactory()->getEditable('wisski_iip_image.wisski_iiif_settings');
+        
+    if(empty($settings->get('iiif_server'))) {
+      drupal_set_message("IIIF is not configured properly. Please do that <a href='admin/config/wisski/iiif_settings'>here</a>.", "error");
+      return array();
+    }
+    
+    // url of the iiif server        
+    $iiif_url = $settings->get('iiif_server');
 
     // the base-path provided to the IIIF-Server - should be subtracted from our paths!
-    $iiif_base_path = "/srv/www/htdocs/sites/default/files/styles/wisski_pyramid/public/";
+    $iiif_base_path = $settings->get('iiif_prefix');
 
     global $base_url;
 
@@ -36,7 +44,6 @@ class WisskiIIIFController {
 
 
     // Get the logo for display purpose.
-    global $base_url;
     $logo = theme_get_setting('logo.url');
     
     if(empty($logo)) 
@@ -57,11 +64,8 @@ class WisskiIIIFController {
       //For simple manifests this does not need to change, does not need to resolve
       "sequence_id" => $base_url,
       // this should be customisable later on!
-      "licence" => "https://creativecommons.org/licenses/by-nc-nd/4.0/",
-      "attribution" => "These images are provided with the WissKI Infrastructure. These works are
-      licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0
-      International License (CC BY-NC-ND 4.0)
-      https://creativecommons.org/licenses/by-nc-nd/4.0/"
+      "licence" => $settings->get("iiif_licence"),
+      "attribution" => $settings->get("iiif_attribution"),
     );
 
     // load all adapters

@@ -48,8 +48,27 @@ class WisskiMirador extends StylePluginBase {
     
     $ent_list = array();
     
+    $site_config = \Drupal::config('system.site');
+    
+    $to_print = "";
+    
+    if(!empty($site_config->get('name')))
+      $to_print .= $site_config->get('name');
+    if(!$site_config->get('slogan')) {
+      if(!empty($to_print) && !empty($site_config->get('slogan'))) {
+        $to_print .= " (" . $site_config->get('slogan') . ") ";
+      } else {
+        $to_print .= $site_config->get('slogan');
+      }
+    }
+        
+    global $base_url;
+    
+    if(empty($to_print))
+      $to_print .= $base_url;   
+    
     foreach($results as $result) {
-      $ent_list[] = array("manifestUri" => "https://tafelmalerei.gnm.de/wisski/navigate/" . $result->eid . "/iiif_manifest", "location" => "wisski_mira");
+      $ent_list[] = array("manifestUri" => $base_url . "/wisski/navigate/" . $result->eid . "/iiif_manifest", "location" => $to_print);
     } 
     
 #    dpm($ent_list, "ente gut...");
@@ -58,7 +77,7 @@ class WisskiMirador extends StylePluginBase {
     
     $form['#attached']['drupalSettings']['wisski']['mirador']['data'] = $ent_list;
         
-    $form['#markup'] = '<div style="width:200px; height:300px;"  id="viewer"></div>';
+    $form['#markup'] = '<div id="viewer"></div>';
     $form['#allowed_tags'] = array('div', 'select', 'option','a', 'script');
 #    #$form['#attached']['drupalSettings']['wisski_jit'] = $wisski_individual;
     $form['#attached']['library'][] = "wisski_mirador/mirador";

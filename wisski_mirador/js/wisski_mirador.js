@@ -8,7 +8,7 @@
 //        (function($, jQuery) {
 //          alert(jQuery.fn.jquery);
 
-          console.log('yay', drupalSettings.wisski.mirador.data);          
+//          console.log('yay', drupalSettings.wisski.mirador.data);          
         
           $(function() {
             jQuery = jQuery19;
@@ -20,7 +20,7 @@
             });
           });
           jQuery.noConflict(true);
-          alert(jQuery.fn.jquery);
+//          alert(jQuery.fn.jquery);
           
 //        })(jQuery19, jQuery19);
                 
