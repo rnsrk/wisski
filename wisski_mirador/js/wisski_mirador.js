@@ -10,12 +10,13 @@
 
 //          console.log('yay', drupalSettings.wisski.mirador.data);          
         
-          $(function() {
+          jq(function() {
             jQuery = jQuery19;
             $ = jQuery19;          
 //            alert(jQuery.fn.jquery);
             Mirador({
               id: "viewer",
+              buildPath: "libraries/mirador/",
               data:  drupalSettings.wisski.mirador.data
             });
           });
