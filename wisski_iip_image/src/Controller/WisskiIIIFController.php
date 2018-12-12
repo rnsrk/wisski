@@ -228,21 +228,21 @@ class WisskiIIIFController {
         "@id" => $nm,
         "@type" => "sc:Canvas",
         "label" => $cp,
-        "height" => $d[image_height],
-        "width" => $d[image_width],
+        "height" => $d['image_height'],
+        "width" => $d['image_width'],
         "images" => [ [
           "@type" => "oa:Annotation",
           "motivation" => "sc:painting",
           "on" => $nm,
           "resource" => [
-            "@id" => "$iiif_url$d[image_path]/full/full/0/default.jpg",
+            "@id" => $iiif_url . $d['image_path'] . "/full/full/0/default.jpg",
             "@type" => "dctypes:Image",
             "format" => "image/jpeg",
-            "height" => $d[image_height],
-            "width" => $d[image_width],
+            "height" => $d['image_height'],
+            "width" => $d['image_width'],
             "service" => [
               "@context" => "http://iiif.io/api/image/2/context.json",
-              "@id" => "$iiif_url$d[image_path]",
+              "@id" => $iiif_url . $d['image_path'],
               "profile" => "http://iiif.io/api/image/2/level2.json"
             ]
           ] 
@@ -257,19 +257,19 @@ class WisskiIIIFController {
     
     $data = [
       "@context" => "http://iiif.io/api/presentation/2/context.json",
-      "@id" => "$manifest[id]",
+      "@id" => $manifest['id'],
       "@type" => "sc:Manifest",
-      "label" => $manifest[label],
-      "license" => $manifest[licence],
-      "attribution" => $manifest[attribution],
-      "logo" => "$manifest[logo]",
+      "label" => $manifest['label'],
+      "license" => $manifest['licence'],
+      "attribution" => $manifest['attribution'],
+      "logo" => $manifest['logo'],
       "metadata" => [
         [
           "label" => "Description",
-          "value" => $manifest[comment]
+          "value" => $manifest['comment']
         ]
       ],
-      "description" => $manifest[comment],
+      "description" => $manifest['comment'],
       "viewingDirection" => "left-to-right",
       "viewingHint" => "individuals",
       "sequences" => [
