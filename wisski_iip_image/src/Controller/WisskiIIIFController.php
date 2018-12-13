@@ -157,7 +157,7 @@ class WisskiIIIFController {
       $local_pyramid = $style->buildUri($local_uri);
 
       // if there is nothing, create a derivative
-      if(!file_exists($local_pyramid))
+      if(!file_exists($local_pyramid) || empty(filesize($local_pyramid)) )
         $style->createDerivative($local_uri,$local_pyramid);
       
       $local_pyramid = \Drupal::service('file_system')->realpath($local_pyramid);
