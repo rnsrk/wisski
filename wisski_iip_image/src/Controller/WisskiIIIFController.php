@@ -53,7 +53,7 @@ class WisskiIIIFController {
     // specific details or a database call for dynamic details.
     $manifest = array (
       //manifest comment
-      "comment" => "This is an IIIF manifest generated from a WissKI system at " . $base_url,
+      "comment" => "The original dataset with additional metadata can be found <a href='" . $base_url . "/wisski/navigate/" . $wisski_individual->id() . "/view'>here</a>. This IIIF manifest is generated from the WissKI system at " . $base_url,
       "id" => $manifest_url,
       //Unique display label for the manifest
       "label" => $wisski_individual->label(), //"A few small images just to display a working manifest",
@@ -194,7 +194,7 @@ class WisskiIIIFController {
           "image_name" => $wisski_individual->label(),
           "image_height" => $height,
           "image_width" => $width,
-          "image_ppmm" => FALSE,
+          "image_ppmm" => 314.96,
           "image_caption" => $wisski_individual->label(),
           "image_path" => $filepath,
         );      
@@ -209,7 +209,7 @@ class WisskiIIIFController {
       $cp = $d["image_caption"];
       if ($d["image_ppmm"])
       {
-        $scale = ($d["image_ppmm"]/$d["image_width"])/$d["image_width"];
+        $scale = ($d["image_ppmm"]/$d["image_width"]); //$d["image_width"];
         // Can be added to the canvas below, but does not allow you so set
         // scale for each image just for each set of images.
         $addRuler = array(
@@ -251,7 +251,8 @@ class WisskiIIIFController {
       ];
       
       if(!empty($addRuler)) {
-        $canvases = array_merge($canvases, $addRuler);
+        $num = count($canvases)-1;
+        $canvases[$num] = array_merge($canvases[$num], $addRuler);
       }
     }
     
