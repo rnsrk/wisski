@@ -614,6 +614,11 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 
 #    dpm($conditions, "cond");
     
+    // if there is nothing there, do nothing!
+    if(empty($pathbuilder->getGroupsForBundle($bundleid))) {
+      return array();
+    }
+    
     $where = "";
 
     $sort = "";
