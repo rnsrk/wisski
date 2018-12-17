@@ -305,7 +305,15 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
         $data['Literature'][$key] = array();
       
         foreach($objdata as $creator) {
-          $data['Literature'][$key][] = $creator->lastName . ', ' . $creator->firstName;
+          if(isset($creator->lastName) && isset($creator->firstName)) {
+            $data['Literature'][$key][] = $creator->lastName . ', ' . $creator->firstName;
+          } else if(isset($creator->lastName)) {
+            $data['Literature'][$key][] = $creator->lastName;
+          } else if(isset($creator->firstName)) {
+            $data['Literature'][$key][] = $creator->firstName;
+          } else if(isset($creator->name)) {
+            $data['Literature'][$key][] = $creator->name;
+          }
         }
       }
 
