@@ -14,7 +14,7 @@ class Query extends WisskiQueryBase {
 
 
   public function execute() {
-#    dpm("exe!");
+//    dpm("exe!");
 
     $result = array();
 
@@ -61,23 +61,34 @@ class Query extends WisskiQueryBase {
       
       $eidquery = NULL;
       $bundlequery = NULL;
+
+      $special_skip = FALSE;
             
       foreach ($this->condition->conditions() as $condition) {
         $field = $condition['field'];
         $value = $condition['value'];
-        
+#        dpm($field, "field");
         if($field == "bundle")
           $bundlequery = $value;
         if($field == "eid")
           $eidquery = $value;
+        
+        // the condition is a nested condition e.g. when it comes to search.
+        if($field instanceof Condition) {
+          $special_skip = TRUE;
+        }
+        
       }
 
-      if(empty($bundlequery)) {
-        return array();
-      }
+#      dpm(serialize($this->condition->conditions()), "bun");
+      if(!$special_skip) {
+        if(empty($bundlequery)) {
+          return array();
+        }
             
-      if(empty($pb->getGroupsForBundle(current($bundlequery)))) {
-        return array();
+        if(empty($pb->getGroupsForBundle(current($bundlequery)))) {
+          return array();
+        }
       }
       
 #        dpm($eidquery,"eidquery");
@@ -173,8 +184,9 @@ class Query extends WisskiQueryBase {
               $ret = $engine->loadIndividualsForBundle($bundle, $pb, NULL, NULL, TRUE, $field->conditions());
               return $ret;
             } else {
-              $ret = $engine->loadIndividualsForBundle($bundle, $pb, NULL, NULL, FALSE, $field->conditions());
+              $ret = $engine->loadIndividualsForBundle($bundle, $pb, 999999, 0, FALSE, $field->conditions());
 #              dpm($ret, "got");
+#              dpm($field->conditions(), "cond");
               return array_keys($ret);
             }
             

@@ -618,30 +618,31 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 
     $sort = "";
 
-    foreach($sorts as $subsort) {
+    if(!empty($sorts)) {
+      foreach($sorts as $subsort) {
     
-      $pos = strpos($subsort['field'], $pathbuilder->id() . "__");
+        $pos = strpos($subsort['field'], $pathbuilder->id() . "__");
     
 #      dpm($pos, "pos");
 #      dpm($sort['field'], "sort");
 #      dpm($pathbuilder->id(), "id");
     
-      if($pos === FALSE)
-        continue;
+        if($pos === FALSE)
+          continue;
     
-      $pathid = substr($subsort['field'], $pos + strlen($pathbuilder->id() . "__"));
+        $pathid = substr($subsort['field'], $pos + strlen($pathbuilder->id() . "__"));
       
-      $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
+        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
       
-      $dt = $path->getDatatypeProperty();
+        $dt = $path->getDatatypeProperty();
 
-      if($dt == "creators");
-        $dt = "creator";
+        if($dt == "creators");
+          $dt = "creator";
       
-      $sort .= "&sort=" . $dt . "&direction=" . strtolower($subsort['direction']);
+        $sort .= "&sort=" . $dt . "&direction=" . strtolower($subsort['direction']);
 #      dpm($sort, "sort");
       // this can only handle one!
-      continue;      
+        continue;      
 #      dpm($path, "path!");
 #      
 #      dpm($sort['field'], "sort");
@@ -652,6 +653,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 #      
 #      dpm($pbp, "pbp");
       
+      }
     }
 
     
