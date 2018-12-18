@@ -119,10 +119,10 @@ class PathbuilderManager {
           continue;
         
         if(isset($pbp['weight'])) {
-          if($paths[$pbp['weight']] < $weight) {
+          if($pbp['weight'] < $weight) {
             // only take this if the weight is better or the same.
             $the_pathid = $pathid;
-            $weight = $paths[$pbp['weight']];
+            $weight = $pbp['weight'];
           }
         } else if(empty($the_pathid)) {
           // if there was nothing before, something is better at least.
