@@ -310,7 +310,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   
   public function setDrupalId($uri,$eid) {
     
-    $thios->setSameUris(array($this->adapterId()=>$uri),$eid);
+    $this->setSameUris(array($this->adapterId()=>$uri),$eid);
   }
       
   public function getUriForDrupalId($id) {
