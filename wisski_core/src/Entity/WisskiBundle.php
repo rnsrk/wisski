@@ -398,8 +398,12 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
                 // what is the main prop
                 // hopefully we dont need that
                 // $mainprop = 'value';
-                                    
-              $out_values[] = $value['value'];
+              if(isset($value['value']))
+                $out_values[] = $value['value'];
+              else {
+                // ??
+              }
+                
             }
             
             // return what we've got
