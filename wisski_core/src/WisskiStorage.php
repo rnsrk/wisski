@@ -528,9 +528,15 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   //the bundle key will be set via the loop variable $bundleid
                   if ($field_name === 'bundle') continue;
 #                  drupal_set_message("Hello i am a base field ".$field_name);
+
+                  $new_field_values = array();
+                  // special case for entity name - call the title generator!
+                  if ($field_name === 'name') $new_field_values[$id][$field_name] = array(wisski_core_generate_title($id));
+
                   //this is a base field and cannot have multiple values
                   //@TODO make sure, we load the RIGHT value
-                  $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
+                  if(empty($new_field_values)) 
+                    $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
 
                   if (empty($new_field_values)) continue;
 #                  drupal_set_message("Hello i am still alive ". serialize($new_field_values));
