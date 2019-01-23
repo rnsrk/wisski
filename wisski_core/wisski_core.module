@@ -324,7 +324,7 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
 
 	  if(empty($title))
             $title = html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
-
+#	  dpm($title, "ret1");
           return $title;
         }
       }
@@ -376,7 +376,7 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
     else
       drupal_set_message(t('No title could be generated for entity ' . $entity_id . ' with bundle ' . $bundle->label()),'warning');
   }
-
+#  dpm($title, "ret2");
   return $title;
   
 }
@@ -509,30 +509,44 @@ function wisski_core_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $fo
  */
 function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb &$breadcrumb, \Drupal\Core\Routing\RouteMatchInterface $route_match, array $context) {
 #	dpm("yay2");
-#  dpm($context, "con");
+//  dserialize($context), "con");
+
   $routename =  $route_match->getRouteName();
 
-#  dpm($routename, "route");
+  // where do we come from?
+  $request = \Drupal::request();
+  $referer = $request->headers->get('referer');
 
-  if($routename == 'entity.wisski_individual.canonical' || $routename == 'entity.wisski_individual.edit_form' ) {
-    $entity = $route_match->getParameter('wisski_individual');
+  // what exactly is the route where we come from?
+  $router = \Drupal::service('router.no_access_checks');
+  $result = $router->match($referer);
 
-    $bundleid = WisskiCacheHelper::getCallingBundle($entity->id());
+  if(!empty($result) && isset($result['view_id'])) {
+    // the parent is a view - so we probably want to render this...
+    $link = \Drupal\Core\Link::createFromRoute($result['_title'], $result['_route']);
+
+    $breadcrumb->addLink($link);
+  } else {
+    // it is no view
+    if($routename == 'entity.wisski_individual.canonical' || $routename == 'entity.wisski_individual.edit_form' ) {
+      $entity = $route_match->getParameter('wisski_individual');
+
+      $bundleid = WisskiCacheHelper::getCallingBundle($entity->id());
 #    dpm($bundleid, "bundleid");
-    if(!empty($bundleid)) {
-      $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundleid);
-      if(!empty($bundle) && !empty($bundle->label())) {
-        $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
-        $use_views = $set->get('wisski_use_views_for_navigate');
-        if(!$use_views)
-          $link = \Drupal\Core\Link::createFromRoute($bundle->label(), "entity.wisski_bundle.entity_list", array("wisski_bundle" => $bundleid));
-        else
-          $link = \Drupal\Core\Link::fromTextAndUrl($bundle->label(), \Drupal\Core\Url::fromUserInput('/wisski_views/' . $bundleid));
-        $breadcrumb->addLink($link);
+      if(!empty($bundleid)) {
+        $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundleid);
+        if(!empty($bundle) && !empty($bundle->label())) {
+          $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
+          $use_views = $set->get('wisski_use_views_for_navigate');
+          if(!$use_views)
+            $link = \Drupal\Core\Link::createFromRoute($bundle->label(), "entity.wisski_bundle.entity_list", array("wisski_bundle" => $bundleid));
+          else
+            $link = \Drupal\Core\Link::fromTextAndUrl($bundle->label(), \Drupal\Core\Url::fromUserInput('/wisski_views/' . $bundleid));
+          $breadcrumb->addLink($link);
+        }
       }
     }
   }
-
 }
 
 function wisski_core_preprocess_breadcrumb(&$variables) {
