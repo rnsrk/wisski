@@ -513,22 +513,26 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
 
   $routename =  $route_match->getRouteName();
 
-  // where do we come from?
-  $request = \Drupal::request();
-  $referer = $request->headers->get('referer');
+  // only do something if we are looking at a wisski individual  
+  if($routename == 'entity.wisski_individual.canonical' || $routename == 'entity.wisski_individual.edit_form' ) {
 
-  // what exactly is the route where we come from?
-  $router = \Drupal::service('router.no_access_checks');
-  $result = $router->match($referer);
+    // where do we come from?
+    $request = \Drupal::request();
+    $referer = $request->headers->get('referer');
 
-  if(!empty($result) && isset($result['view_id'])) {
-    // the parent is a view - so we probably want to render this...
-    $link = \Drupal\Core\Link::createFromRoute($result['_title'], $result['_route']);
+    // what exactly is the route where we come from?
+    $router = \Drupal::service('router.no_access_checks');
+    $result = $router->match($referer);
 
-    $breadcrumb->addLink($link);
-  } else {
+
+    if(!empty($result) && isset($result['view_id'])) {
+      // the parent is a view - so we probably want to render this...
+      $link = \Drupal\Core\Link::createFromRoute($result['_title'], $result['_route']);
+
+      $breadcrumb->addLink($link);
+    } else {
     // it is no view
-    if($routename == 'entity.wisski_individual.canonical' || $routename == 'entity.wisski_individual.edit_form' ) {
+//    if($routename == 'entity.wisski_individual.canonical' || $routename == 'entity.wisski_individual.edit_form' ) {
       $entity = $route_match->getParameter('wisski_individual');
 
       $bundleid = WisskiCacheHelper::getCallingBundle($entity->id());
