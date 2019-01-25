@@ -1087,7 +1087,12 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
         
     // iterate through all groups
     foreach($pbpaths as $groupid => $group) {
-
+      
+      // this is no group!
+      if(!empty($group['fieldtype']) && !empty($group['field_type_informative'])) {
+        continue;
+      }
+      
       // only if this holds it is a group.
       if(empty($group['field']) || $group['field'] == $group['bundle']) {
 
