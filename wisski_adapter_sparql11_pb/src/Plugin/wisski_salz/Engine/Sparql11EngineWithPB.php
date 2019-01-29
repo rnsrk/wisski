@@ -1686,7 +1686,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #    dpm($value, "value");
 #dpm($pbarray, "pbarr");
 #dpm($mainprop, "main");
-#    dpm($is_reference, "is ref");
+#    dpm(serialize($is_reference), "is ref");
 
     if ($is_reference) {
       // delete a reference
@@ -1795,7 +1795,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         $delete .= "  <$object_uri> <$inverse> <$subject_uri> .\n";
       }
       $delete .= ' }';
-#     dpm($delete, "sparql");
+#      dpm($delete, "sparql");
 
       $result = $this->directUpdate($delete);    
 
@@ -2437,29 +2437,36 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           $negate = FALSE;
           $safe = FALSE;
           $cast_outvar = "STR($outvar)";
+          
+          if($op == "STARTS")
+            $op = "STARTS_WITH";
+          
+          if($op == "ENDS")
+            $op = "ENDS_WITH";
+          
           if($op == '<>') {
             $op = '!=';
           }
-          elseif($op == 'STARTS_WITH') {
+          elseif($op == 'STARTS_WITH' || $op == 'starts_with') {
             $regex = FALSE;
             $safe = TRUE;
             // we don't do this here anymore, but do it with strStarts below
             // this should be faster on most triplestores than REGEX.
             //$primitiveValue = '^' . $this->escapeSparqlRegex($primitiveValue, TRUE);
           }
-          elseif($op == 'ENDS_WITH') {
+          elseif($op == 'ENDS_WITH' || $op == 'ends_with') {
             $regex = true;
             $safe = TRUE;
 //            $primitiveValue = $this->escapeSparqlRegex($primitiveValue, TRUE) . '$';
           }
-          elseif($op == 'CONTAINS') {
+          elseif($op == 'CONTAINS' || $op == 'contains') {
             $regex = true;
             $safe = TRUE;
             $primitiveValue = $this->escapeSparqlRegex($primitiveValue, TRUE);
           }
-          elseif ($op == 'IN' || $op == 'NOT IN') {
+          elseif ($op == 'IN' || $op == 'NOT IN' || $op == 'in' || $op == 'not in' || $op == 'not_in') {
             $regex = TRUE;
-            $negate = $op == 'NOT IN';
+            $negate = ($op == 'NOT IN' || $op == 'not in');
             $safe = TRUE;
             $values = is_array($primitiveValue) ? $primitiveValue : explode(",", $primitiveValue);
             foreach ($values as &$v) {
@@ -2485,7 +2492,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           
 #          dpm($escapedValue, "esc");
 
-          if ($op == 'BETWEEN') {
+          if ($op == 'BETWEEN' || $op == 'between') {
             list($val_min, $val_max) = is_array($primitiveValue) ? $primitiveValue : explode(";", $primitiveValue, 2);
             if (is_numeric($val_min) && is_numeric($val_max)) {
               $val_min = intval($val_min);
@@ -2497,9 +2504,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               $val_max = $this->escapeSparqlLiteral($val_max);
             }
             $filter = "$cast_outvar >= $val_min & $cast_outvar <= $val_max";
-          } else  if($op == "STARTS_WITH") {
+          } else  if($op == "STARTS_WITH" || $op == 'starts_with') {
             $filter = "strStarts($cast_outvar, $escapedValue)";
-          } else if ($op == "ENDS_WITH") {
+          } else if ($op == "ENDS_WITH" || $op == 'ends_with') {
             $filter = "strEnds($cast_outvar, $escapedValue)";
           }
           elseif($regex) {
@@ -2843,13 +2850,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         }
       }
       
-//      dpm($write_values, "we have to write");
+#      dpm($write_values, "we have to write");
       // now we write all the new values
       // TODO: it seems like there is a duplicate write in case of image files..
       // probably due to the fact that they are not found as old value because the URL is stored.
       // it does not hurt currently, but it is a performance sink.
       foreach ($write_values as $new_item) {
- #       dpm($mainprop, "mainprop");
+#        dpm($mainprop, "mainprop");
         
         $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder, $mainprop); 
       }
