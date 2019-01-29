@@ -520,10 +520,14 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
     $request = \Drupal::request();
     $referer = $request->headers->get('referer');
 
+    global $base_url;
+
+    if(strpos($referer, $base_url) !== FALSE)
+      $referer = substr($referer, strlen($base_url));
+
     // what exactly is the route where we come from?
     $router = \Drupal::service('router.no_access_checks');
     $result = $router->match($referer);
-
 
     if(!empty($result) && isset($result['view_id'])) {
       // the parent is a view - so we probably want to render this...
