@@ -1365,8 +1365,11 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
    
   public function getImagePathIDsForGroup($groupid, $recursive = true, $subtree = NULL) {
     $pbpaths = $this->getPbPaths();
-     
-    $group = $pbpaths[$groupid];
+
+    $group = NULL;
+
+    if(isset($pbpaths[$groupid]))    
+      $group = $pbpaths[$groupid];
     
     if(empty($group))
       return array();
