@@ -564,10 +564,26 @@ function wisski_core_preprocess_breadcrumb(&$variables) {
 
 
 function wisski_core_preprocess_layout(&$variables) {
+#dpm(serialize($variables['content']['first']['bb13d2d2eeb21077883eaaac27af6cb6']['#bundle']));
+
+#dpm(array_keys($variables['content']['first']['bb13d2d2eeb21077883eaaac27af6cb6']));
+
   if(isset($variables['content']) && isset($variables['content']['#wisski_individual'])) {
     $entity = $variables['content']['#wisski_individual'];
     $bundle = $entity->bundle();
-    
+
     $variables['wisski_bundle'] = $bundle;
+  } else { /* best guess find... hopefully this holds! */
+    if(isset($variables['content'])) {
+      foreach($variables['content'] as $section_key => $section) {
+        foreach($section as $subsection_key => $subsection) {
+          if(isset($subsection['#bundle'])) {
+            $bundle = $subsection['#bundle'];
+            $variables['wisski_bundle'] = $bundle;
+            return;
+          }
+        }
+      }
+    }
   }
 }
