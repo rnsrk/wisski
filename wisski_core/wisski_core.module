@@ -561,3 +561,13 @@ function wisski_core_preprocess_breadcrumb(&$variables) {
 #  dpm("yay!");
   $variables['#cache']['contexts'][] = 'url';
 }
+
+
+function wisski_core_preprocess_layout(&$variables) {
+  if(isset($variables['content']) && isset($variables['content']['#wisski_individual'])) {
+    $entity = $variables['content']['#wisski_individual'];
+    $bundle = $entity->bundle();
+    
+    $variables['wisski_bundle'] = $bundle;
+  }
+}
