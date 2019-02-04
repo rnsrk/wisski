@@ -32,6 +32,23 @@ function wisski_core_update_8001(&$sandbox) {
   
 }
 
+/**
+ * Add Wisski menu
+ */
+function wisski_core_update_8002() {
+  // Create a new menu item.
+  $menu = \Drupal::entityTypeManager()->getStorage('menu');
+  $menu->create([
+    'id' => 'wisski',
+    'label' => 'WissKI Menu',
+    'description' => 'Links related to the WissKI module.',
+    'langcode' => 'en',
+    'locked' => true,
+    'dependencies' => [ 'enforced' => [ 'module' => [ 'wisski_core' ] ] ],
+  ])->save();
+
+}
+
 
 
 
