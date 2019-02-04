@@ -7,6 +7,8 @@ use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\wisski_salz\AdapterHelper;
 use Drupal\Core\Field\BaseFieldDefinition;
 
+use Drupal\wisski_core\WisskiToolbarHandler;
+
 define('WISSKI_DEVEL', FALSE);
 #define('WISSKI_DEVEL', TRUE);
 
@@ -586,4 +588,16 @@ function wisski_core_preprocess_layout(&$variables) {
       }
     }
   }
+}
+
+/**
+ * Implementation for hook_toolbar
+ */
+function wisski_core_toolbar() {
+
+  // get the instance.
+  return \Drupal::service('class_resolver')
+    ->getInstanceFromDefinition(WisskiToolbarHandler::class)
+    ->toolbar();
+
 }
