@@ -579,7 +579,7 @@ function wisski_core_preprocess_layout(&$variables) {
     if(isset($variables['content'])) {
       foreach($variables['content'] as $section_key => $section) {
         foreach($section as $subsection_key => $subsection) {
-          if(isset($subsection['#bundle'])) {
+          if(is_array($subsection) && isset($subsection['#bundle'])) {
             $bundle = $subsection['#bundle'];
             $variables['wisski_bundle'] = $bundle;
             return;
@@ -601,3 +601,4 @@ function wisski_core_toolbar() {
     ->toolbar();
 
 }
+
