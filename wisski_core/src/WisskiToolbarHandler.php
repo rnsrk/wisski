@@ -137,7 +137,7 @@ class WisskiToolbarHandler implements ContainerInjectionInterface {
     $parameters = new MenuTreeParameters();
     $parameters->onlyEnabledLinks()->setTopLevelOnly();
 
-    $tree = $this->menuLinkTree->load('main', $parameters);
+    $tree = $this->menuLinkTree->load('wisski', $parameters);
 
     $manipulators = [
       ['callable' => 'menu.default_tree_manipulators:checkAccess'],

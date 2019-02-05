@@ -36,6 +36,28 @@ wisski.browse_entities:
 #  route_name: search.view_wisski_search
 #  weight: 10
 
+wisski.create_entities_menu:
+  title: 'Create'
+  description: 'Create WissKI entities'
+  menu_name: 'wisski'
+  route_name: entity.wisski_individual_create.list
+  weight: 30
+
+wisski.browse_entities_menu:
+  title: 'Navigate'
+  description: 'Browse WissKI entities'
+  menu_name: 'wisski'
+  route_name: entity.wisski_individual.list
+  weight: 20
+
+#wisski.search_entities_menu:
+#  title: 'Find'
+#  description: 'Search WissKI entities'
+#  menu_name: 'wisski'
+#  route_name: search.view_wisski_search
+#  weight: 10
+
+
 wisski.config_menu:
   title: 'WissKI Configuration'
   description: 'Specify display configurations, Flush caches etc.'

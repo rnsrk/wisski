@@ -615,5 +615,14 @@ function wisski_core_menu_links_discovered_alter(&$links) {
        'weight' => 10,
 //      'parent' => 'system.admin_reports',
     );
+
+    $links['wisski.search_entities'] = array(
+      'title' => 'Find',
+      'route_name' => 'search.view_wisski_search',
+      'description' => new \Drupal\Core\StringTranslation\TranslatableMarkup('Search WissKI entities'),
+      'menu_name' => 'wisski',
+       'weight' => 10,
+//      'parent' => 'system.admin_reports',
+    );
   }
 }
