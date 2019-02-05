@@ -602,3 +602,18 @@ function wisski_core_toolbar() {
 
 }
 
+/**
+ * Implementation for hook_menu_links_discovered_alter
+ */
+function wisski_core_menu_links_discovered_alter(&$links) {
+  if (\Drupal::moduleHandler()->moduleExists('search')) {
+    $links['wisski.search_entities'] = array(
+      'title' => 'Find',
+      'route_name' => 'search.view_wisski_search',
+      'description' => new \Drupal\Core\StringTranslation\TranslatableMarkup('Search WissKI entities'),
+      'menu_name' => 'main',
+       'weight' => 10,
+//      'parent' => 'system.admin_reports',
+    );
+  }
+}

@@ -29,12 +29,12 @@ wisski.browse_entities:
   route_name: entity.wisski_individual.list
   weight: 20
 
-wisski.search_entities:
-  title: 'Find'
-  description: 'Search WissKI entities'
-  menu_name: 'main'
-  route_name: search.view_wisski_search
-  weight: 10
+#wisski.search_entities:
+#  title: 'Find'
+#  description: 'Search WissKI entities'
+#  menu_name: 'main'
+#  route_name: search.view_wisski_search
+#  weight: 10
 
 wisski.config_menu:
   title: 'WissKI Configuration'
