@@ -41,7 +41,7 @@ wisski.create_entities_menu:
   description: 'Create WissKI entities'
   menu_name: 'wisski'
   route_name: entity.wisski_individual_create.list
-  weight: 30
+  weight: 10
 
 wisski.browse_entities_menu:
   title: 'Navigate'
