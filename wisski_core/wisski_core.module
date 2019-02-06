@@ -578,11 +578,13 @@ function wisski_core_preprocess_layout(&$variables) {
   } else { /* best guess find... hopefully this holds! */
     if(isset($variables['content'])) {
       foreach($variables['content'] as $section_key => $section) {
-        foreach($section as $subsection_key => $subsection) {
-          if(is_array($subsection) && isset($subsection['#bundle'])) {
-            $bundle = $subsection['#bundle'];
-            $variables['wisski_bundle'] = $bundle;
-            return;
+        if(is_array($section) {
+          foreach($section as $subsection_key => $subsection) {
+            if(is_array($subsection) && isset($subsection['#bundle'])) {
+              $bundle = $subsection['#bundle'];
+              $variables['wisski_bundle'] = $bundle;
+              return;
+            }
           }
         }
       }
