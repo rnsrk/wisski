@@ -141,6 +141,15 @@ class WisskiIndividualQuery extends QueryPluginBase {
      // do nothing - this is already gathered below due $query is modified for 
      // every filter in the view.
   }
+  
+  /**
+   * We override this function as the standard sort plugins use it
+   * 
+   * @param ????
+   */
+  public function addWhereExpression($group, $snippet, $args = array()) {
+  
+  }
 
   /** This function is called by Drupal\views\Plugin\views\HandlerBase
   * maybe we should eventually break up the inheritance from there/QueryPluginBase if possible.

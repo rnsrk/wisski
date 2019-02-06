@@ -106,5 +106,11 @@ class FieldString extends ViewsString {
     $this->query->query->condition($field, $value, $this->operator);
     
   }
+  
+  function placeholder() {
+    $field = isset($this->configuration['wisski_field']) ? $this->configuration['wisski_field'] : $this->realField;
+    $this->query->query->condition($field, $this->value, $this->operator);
+
+  }
 
 }
