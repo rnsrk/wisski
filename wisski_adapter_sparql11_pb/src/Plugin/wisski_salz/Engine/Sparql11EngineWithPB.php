@@ -2473,7 +2473,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               $v = $this->escapeSparqlRegex($v, TRUE);
             }
             $primitiveValue = join('|', $values);
-          }
+          } else if(strtoupper($op) == "LONGERTHAN" || strtoupper($op) == "SHORTERTHAN") {
+            $regex = FALSE;
+            $safe = TRUE;
+          } 
 #          dpm($primitiveValue, "prim");
           
           if (!$safe) {
@@ -2508,8 +2511,14 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             $filter = "strStarts($cast_outvar, $escapedValue)";
           } else if ($op == "ENDS_WITH" || $op == 'ends_with') {
             $filter = "strEnds($cast_outvar, $escapedValue)";
-          }
-          elseif($regex) {
+          } else if (strtoupper($op) == "LONGERTHAN" || strtoupper($op) == "SHORTERTHAN") {
+            $filter = "strlen($outvar) ";
+            if(strtoupper($op) == "LONGERTHAN")
+              $filter .= ">";
+            else
+              $filter .= "<";
+            $filter .= " $primitiveValue";
+          } elseif($regex) {
             // we have to use STR() otherwise we may get into trouble with
             // datatype and lang comparisons
             $filter = "REGEX($cast_outvar, " . $escapedValue . ', "i" )';
