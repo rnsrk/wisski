@@ -510,7 +510,8 @@ class WisskiIndividualQuery extends QueryPluginBase {
       elseif ($field =='preferred_uri') {
         $localstore = AdapterHelper::getPreferredLocalStore();
         if ($localstore) {
-          $values_per_row[$eid]['preferred_uri'] = AdapterHelper::getUrisForDrupalId($eid, $localstore);
+          // By Mark: I am not entirely sure, if I want to create a uri here...
+          $values_per_row[$eid]['preferred_uri'] = AdapterHelper::getUrisForDrupalId($eid, $localstore, TRUE);
         }
         else {
           $values_per_row[$eid]['preferred_uri'] = '';
