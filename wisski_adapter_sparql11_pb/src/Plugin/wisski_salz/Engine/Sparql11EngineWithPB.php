@@ -799,7 +799,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getBundleIdsForEntityId($entityid) {
     
     if (is_numeric($entityid)) {
-      $uri = $this->getUriForDrupalId($entityid);    
+      $uri = $this->getUriForDrupalId($entityid, FALSE);    
     } else {
       $uri = $entityid;
     }
@@ -1227,7 +1227,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if(!empty($eid)) {
       // rename to uri
 #$tmpt5 = microtime(TRUE);            
-      $eid = $this->getUriForDrupalId($eid);
+      $eid = $this->getUriForDrupalId($eid, TRUE);
 #$tmpt6 = microtime(TRUE);            
 
       // if the path is a group it has to be a subgroup and thus entity reference.
@@ -1683,7 +1683,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // this might have sideeffects... we will see :)
     if($target_type == "file" && $mainprop == 'target_id') {
       if( is_numeric($value)) 
-        $value = $this->getUriForDrupalId($value);
+        $value = $this->getUriForDrupalId($value, FALSE);
     }
 
 #    dpm($value, "value");
@@ -1696,7 +1696,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       // this differs from normal field values as there is no literal
       // and the entity has to be matched to the uri
       
-      $subject_uri = $this->getUriForDrupalId($entity_id);
+      $subject_uri = $this->getUriForDrupalId($entity_id, FALSE);
 #      dpm($subject_uri, "subj");
       if (empty($subject_uri)) {
         // the adapter doesn't know of this entity. some other adapter needs
@@ -1706,7 +1706,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       $subject_uris = array($subject_uri);
       
       // value is the Drupal id of the referenced entity
-      $object_uri = $this->getUriForDrupalId($value);
+      $object_uri = $this->getUriForDrupalId($value, FALSE);
 #      dpm($object_uri, "obj");
       if (empty($object_uri)) {
         // the adapter doesn't know of this entity. some other adapter needs
@@ -1805,7 +1805,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     } // end reference branch
     else {  // no reference
     
-      $subject_uri = $this->getUriForDrupalId($entity_id);
+      $subject_uri = $this->getUriForDrupalId($entity_id, FALSE);
       $starting_position = $pb->getRelativeStartingPosition($path, TRUE);
       $clearPathArray = $pb->getRelativePath($path, TRUE);
           
@@ -2019,7 +2019,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     
     //if there is an eid we try to get the entity URI form cache
     //if there is none $uri will be FALSE
-    $uri = $this->getUriForDrupalId($eid);
+    $uri = $this->getUriForDrupalId($eid, FALSE);
     
 #    $sparql = "DELETE { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o } } " . 
 #              "WHERE { { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o . FILTER ( <$uri> = ?s ) } } " .
@@ -2060,7 +2060,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     //dpm($eid,$entity_id);
     //if there is an eid we try to get the entity URI form cache
     //if there is none $uri will be FALSE
-    if (!empty($eid)) $uri = $this->getUriForDrupalId($eid);
+    if (!empty($eid)) $uri = $this->getUriForDrupalId($eid, TRUE);
     else $uri = $this->getUri($this->getDefaultDataGraphUri());
     // get the adapterid that was loaded
     // haha, this is the engine-id...
@@ -2588,7 +2588,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // special case for files:
     if($target_type == "file" && $mainprop == 'target_id') {
       if( is_numeric($value)) 
-        $value = $this->getUriForDrupalId($value);
+        $value = $this->getUriForDrupalId($value, TRUE);
 #      else { // it might be that there are spaces in file uris. These are bad for TS-queries.
 #        $strrpos = strrpos($value, '/');
 #        if($strrpos) { // only act of there is a / in it.
@@ -2615,7 +2615,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     } 
     
     // rename to uri
-    $subject_uri = $this->getUriForDrupalId($entity_id);
+    $subject_uri = $this->getUriForDrupalId($entity_id, TRUE);
     
 
     $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
@@ -2627,9 +2627,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     if($is_entity_ref) {
       // if it is a group - we take the whole group path as disamb pos
       if($path->isGroup())
-        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value), (count($path->getPathArray())+1)/2, $start, TRUE, '', 'entity_reference');
+        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), (count($path->getPathArray())+1)/2, $start, TRUE, '', 'entity_reference');
       else // if it is a field it has a disamb pos!
-        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value), $path->getDisamb(), $start, TRUE, '', 'entity_reference');        
+        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), $path->getDisamb(), $start, TRUE, '', 'entity_reference');        
     } else {
       if(empty($path->getDisamb()))
         $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE);
