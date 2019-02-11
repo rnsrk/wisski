@@ -713,7 +713,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
                     $uri = $eid_to_uri_per_aid[$aid][$eid];
                   } 
                   else {
-                    $uri = $engine->getUriForDrupalId($eid);
+                    $uri = $engine->getUriForDrupalId($eid, FALSE);
                     if ($uri) {
                       if (!isset($eid_to_uri_per_aid[$aid])) {
                         $eid_to_uri_per_aid[$aid] = [];
