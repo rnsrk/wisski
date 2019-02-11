@@ -447,7 +447,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           continue;
         }
         
-        if (\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($eid,$adapter->id())) {
+        // only do this if there is data!
+        if (\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($eid, $adapter->id(), FALSE)) {
           //finally, having a valid path and adapter, we can ask the adapter for the path's value
           $pbpath = $pb->getPbPath($path_id);
 
