@@ -147,7 +147,7 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
   
   public function getDrupalId($uri);
   
-  public function getUriForDrupalId($id);
+  public function getUriForDrupalId($id, $create);
 
   /**
    * Gets the bundle and loads every individual in the TS

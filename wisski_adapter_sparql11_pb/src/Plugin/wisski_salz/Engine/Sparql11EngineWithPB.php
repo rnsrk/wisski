@@ -1156,9 +1156,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    */
   public function hasEntity($entity_id) {
   
-    $uri = $this->getUriForDrupalId($entity_id);
+    $uri = $this->getUriForDrupalId($entity_id, FALSE);
 
-    $out = $this->checkUriExists($uri);
+    $out = NULL;
+    
+    if($uri)
+      $out = $this->checkUriExists($uri);
 
     return $out;
   }

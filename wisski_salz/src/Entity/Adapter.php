@@ -286,8 +286,8 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
     return $this->getEngine()->getDrupalId($uri);
   }
   
-  public function getUriForDrupalId($id) {
-    return $this->getEngine()->getUriForDrupalId($id);
+  public function getUriForDrupalId($id, $create = TRUE) {
+    return $this->getEngine()->getUriForDrupalId($id, $create);
   }
 
   /**

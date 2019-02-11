@@ -313,9 +313,9 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     $this->setSameUris(array($this->adapterId()=>$uri),$eid);
   }
       
-  public function getUriForDrupalId($id) {
+  public function getUriForDrupalId($id, $create = TRUE) {
     
-    return \Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($id,$this->adapterId());
+    return \Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($id, $this->adapterId(), $create);
   }
   
   /**
