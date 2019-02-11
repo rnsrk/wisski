@@ -308,7 +308,7 @@ class AdapterHelper {
    * Gets "the primary" uri per adapter... this is used in many cases, but is 
    * highly difficult...
    */
-  public static function getOnlyOneUriPerAdapterForDrupalId($eid,$adapter_id=NULL) {
+  public static function getOnlyOneUriPerAdapterForDrupalId($eid, $adapter_id=NULL, $create = TRUE) {
     if (!is_numeric($eid)) {
       //we probably got a URI as input, check that and return the input if it's valid
       //otherwise we cant do anything
@@ -324,7 +324,7 @@ class AdapterHelper {
       return FALSE;
     }
 
-    $result = self::doGetUrisForDrupalId($eid,$adapter_id);
+    $result = self::doGetUrisForDrupalId($eid, $adapter_id, $create);
     
     // re-order for triplify
     // only use the keys!
@@ -342,7 +342,7 @@ class AdapterHelper {
     return $result;
   }
   
-  public static function getUrisForDrupalId($eid,$adapter_id=NULL) {
+  public static function getUrisForDrupalId($eid, $adapter_id=NULL, $create = TRUE) {
     #dpm("caller!");        
     if (!is_numeric($eid)) {
       //we probably got a URI as input, check that and return the input if it's valid
@@ -358,7 +358,7 @@ class AdapterHelper {
       }
       return FALSE;
     }
-    $result = self::doGetUrisForDrupalId($eid,$adapter_id);
+    $result = self::doGetUrisForDrupalId($eid, $adapter_id, $create);
 
     if(!empty($result) && is_array($result)) {
       foreach($result as $key => $value) {
@@ -462,7 +462,7 @@ class AdapterHelper {
       //try the local store backup
       //first we gather the matchings for other adapters, we can possibly find URIs there that fit our input adapter
 //      $old_uris = self::getUrisForDrupalId($eid);
-      $old_uris = self::doGetUrisForDrupalIdAsArray($eid);
+      $old_uris = self::doGetUrisForDrupalIdAsArray($eid, $create);
       $local_store = self::getPreferredLocalStore(TRUE);
       if(!empty($local_store))
         $same_uri = $local_store->findUriForDrupalId($eid,$adapter_id);
@@ -500,9 +500,9 @@ class AdapterHelper {
     }
   }
   
-  public static function doGetUrisForDrupalIdAsArray($entity_id) {
+  public static function doGetUrisForDrupalIdAsArray($entity_id, $create = TRUE) {
   
-    $uris = self::doGetUrisForDrupalId($entity_id);
+    $uris = self::doGetUrisForDrupalId($entity_id, NULL, $create);
     
     $uris_out = array();
     
@@ -524,7 +524,7 @@ class AdapterHelper {
    */
   public static function deleteUrisForDrupalId($entity_id) {
 
-    $same_uris = self::doGetUrisForDrupalIdAsArray($entity_id);
+    $same_uris = self::doGetUrisForDrupalIdAsArray($entity_id, FALSE);
 
     $my_id = self::generateWisskiUriFromId($entity_id);
 
