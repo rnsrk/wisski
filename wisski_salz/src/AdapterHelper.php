@@ -383,9 +383,10 @@ class AdapterHelper {
    * if there is no URI set for the given adapter, we will always try to create one.
    * @param $eid the entity's Drupal ID
    * @param $adapter_id if set the function will return URIs
+   * @param $create if a new uri should be created or not
    * @return an assocative array keyed by adapter ID with the associated URIs as values or | the URI associated with the input adapter
    */
-  public static function doGetUrisForDrupalId($eid,$adapter_id=NULL) {
+  public static function doGetUrisForDrupalId($eid, $adapter_id=NULL, $create = TRUE) {
     
     $adapter = is_object($adapter_id) ? $adapter_id : NULL;
     $adapter_id = is_null($adapter) ? $adapter_id : $adapter->id();
@@ -475,8 +476,9 @@ class AdapterHelper {
           if ($adapter->checkUriExists($old_uri)) $same_uri = $old_uri;
         }
         if (empty($same_uri)) {
-          //create on fail
-          $same_uri = $adapter->getEngine()->generateFreshIndividualUri();
+          //create on fail and if we should create
+          if($create)
+            $same_uri = $adapter->getEngine()->generateFreshIndividualUri();
         }
       }
       if (!empty($same_uri)) {
