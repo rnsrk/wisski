@@ -52,9 +52,25 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       
       // only do this if more than one adapter!!!
       if(count($this->dependent_queries) > 1) {
-        foreach ($this->dependent_queries as $adapter_id => $query) {
+        $is_sparql = TRUE;
+                
+        // check if all queries are sparql queries...
+        foreach($this->dependent_queries as $adapter_id => $query) {
+          if($query instanceOf \Drupal\wisski_adapter_sparql11_pb\Query\Query || 
+             $query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
+             $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query ) {
+            // if it is a sparql11-query we are save!
+          } else {
+            $is_sparql = FALSE;        
+          }
+        }
+        
+        if(!$is_sparql) {
+          // this is complicated!     
+          foreach ($this->dependent_queries as $adapter_id => $query) {
+
 //        $query = $query->count();
-          $sub_result = $query->execute() ? : 0;
+            $sub_result = $query->execute() ? : 0;
 #        dpm($adapter_id.' counted '. serialize($sub_result));
 
 /*
@@ -64,11 +80,65 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 */
 
           // this is rather complicated. I don't know why php does this like that...
-          if(!is_array($sub_result))
-            $sub_result = array();
-          $result = array_unique(array_merge($result, $sub_result), SORT_REGULAR); 
+            if(!is_array($sub_result))
+              $sub_result = array();
+            $result = array_unique(array_merge($result, $sub_result), SORT_REGULAR); 
+          }
+        } else {
+          // if everything is sparql we do a federated query
+          // see https://www.w3.org/TR/sparql11-federated-query/
+          
+          $first_query = NULL;
+          
+          $max_query_parts = "";
+
+          foreach ($this->dependent_queries as $adapter_id => $query) {
+
+            if($query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
+               $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
+              // this is null anyway... so skip it
+              continue;
+            }
+            
+            // get the query parts
+            $parts = $query->getQueryParts();
+            $parts = $parts['where'];
+
+            // only take the maximum, because up to now we mainly do path mode, which is bad anyway
+            // @todo: a clean implementation here would be better!
+            if(strlen($parts) > strlen($max_query_parts))
+              $max_query_parts = $parts;
+            
+            // preserve the first query object for later use
+            if(empty($first_query)) {
+              $first_query = $query;
+              continue;
+            }
+          }
+
+          foreach ($this->dependent_queries as $adapter_id => $query) {
+
+            if($query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
+               $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
+              // this is null anyway... so skip it
+              continue;
+            }
+            
+            $conf = $query->getEngine()->getConfiguration();
+            
+            $read_url = $conf['read_url'];
+          
+            // construct the service-string
+            $service_string = " { SERVICE <" . $read_url . "> { " . $max_query_parts . " } }";
+                     
+            $first_query->addDependentParts($service_string);
+            
+          }
+          
+          $result = $first_query->countQuery()->execute() ? : 0; 
+          
         }
-        $result = count($result);
+//        $result = count($result);
       } else {
         $query = current($this->dependent_queries);
         $result = $query->countQuery()->execute() ? : 0;

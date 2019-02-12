@@ -50,7 +50,6 @@ abstract class Sparql11Engine extends EngineBase {
     ];
   }
 
-
   /**
    * {@inheritdoc}
    */

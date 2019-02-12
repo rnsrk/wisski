@@ -20,6 +20,11 @@ class Query extends WisskiQueryBase {
   private $pathbuilders = NULL;
   
   /**
+   * Add a variable for dependent query parts
+   */
+  private $dependent_parts = array();
+  
+  /**
    * A counter used for naming variables in multi-path sparql queries
    *
    * @var integer
@@ -33,6 +38,28 @@ class Query extends WisskiQueryBase {
    */
   protected $orderby = "";
 
+  /**
+   * A function to add dependent parts 
+   * typically a SERVICE-string like:
+   * SERVICE <http...serviceurl> { ?s ?p ?o }
+   * hopefully it uses the correct variables....
+   */ 
+  public function addDependentParts($parts) {
+    $this->$dependent_parts[] = $parts;
+  }
+  
+  /**
+   * Get an array of query parts to build up the dependent queries.
+   * currently it contains:
+   * - The where string
+   * - The eids (values-part)
+   */
+  public function getQueryParts() {
+    list($where_clause, $entity_ids) = $this->makeQueryConditions($this->condition);
+        
+    return array("where" => $where_clause, "eids" => $entity_ids);
+  }
+  
   /**
    * {@inheritdoc}
    */
@@ -560,7 +587,26 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
       $select .= 'VALUES ?x0 { <' . join('> <', $filtered_uris) . '> } ';
     }
 
-    $select .= $query_parts . ' }';
+    if(COUNT($this->$dependent_parts) == 0) {
+      $select .= $query_parts;
+    } else { 
+    
+      $first = TRUE;
+      // add dependent parts?
+      foreach($this->$dependent_parts as $part) {
+    
+        if(!$first) {
+          $select .= " UNION ";
+        } 
+      
+        $select .= $part;
+
+        $first = FALSE;
+      }
+    }
+    
+    
+    $select .= ' }';
     
 #    dpm($sort_params);
     if($sort_params) {
@@ -573,6 +619,8 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
 
 $timethis[] = microtime(TRUE);
 #    dpm(microtime(), "before");
+    dpm($select, "query");
+
     $result = $engine = $this->getEngine()->directQuery($select);
 $timethis[] = microtime(TRUE);
     $adapter_id = $this->getEngine()->adapterId();

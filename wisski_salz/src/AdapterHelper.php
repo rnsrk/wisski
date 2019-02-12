@@ -477,8 +477,10 @@ class AdapterHelper {
         }
         if (empty($same_uri)) {
           //create on fail and if we should create
-          if($create)
+          if($create) {
+            dpm("I create a new one - danger zone!");
             $same_uri = $adapter->getEngine()->generateFreshIndividualUri();
+          }
         }
       }
       if (!empty($same_uri)) {
