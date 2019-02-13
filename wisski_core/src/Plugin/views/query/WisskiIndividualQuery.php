@@ -660,8 +660,12 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #            }
             
 #            dpm($field_to_check, "I am checking");
-          
-            $adapter = entity_load('wisski_salz_adapter', $pb->getAdapterId());
+
+            // this is the old mode... basically we want to ask any adapter :/          
+//            $adapter = entity_load('wisski_salz_adapter', $pb->getAdapterId());
+            $adapters = entity_load_multiple('wisski_salz_adapter');
+            
+            foreach($adapters as $adapter) {
             $aid = $adapter->id();
             if (!$adapter) {
               drupal_set_message("Bad adapter id for pathbuilder $pb_and_path[0]: " . $pb->getAdapterId(), 'error');
@@ -828,6 +832,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
                 }
 #if ($field == 'wisski_path_sammlungsobjekt__91') rpm([$path, $result, $values_per_row], '91');
               }
+            }
             }
           }
         }
