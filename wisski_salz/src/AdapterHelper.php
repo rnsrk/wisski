@@ -123,12 +123,14 @@ class AdapterHelper {
             ->condition('rid',$row->rid)
             ->execute();
         } else {
+          dpm($aid, "insert one: ");
           //this is a completely new matching for this adapter
           db_insert('wisski_salz_id2uri')
             ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
             ->execute();
         }
       } else {
+        dpm($aid, "insert two: ");
         db_insert('wisski_salz_id2uri')
           ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
           ->execute();
@@ -283,6 +285,7 @@ class AdapterHelper {
       return NULL;
     }
     
+    dpm($input_adapter_id, "insert three: ");
     //eid creation works by inserting data and retrieving the newly set line number as eid
     $id = db_insert('wisski_salz_id2uri')
       ->fields(array('uri'=>$uri,'adapter_id'=>$input_adapter_id))
@@ -462,7 +465,12 @@ class AdapterHelper {
       //try the local store backup
       //first we gather the matchings for other adapters, we can possibly find URIs there that fit our input adapter
 //      $old_uris = self::getUrisForDrupalId($eid);
-      $old_uris = self::doGetUrisForDrupalIdAsArray($eid, $create);
+      
+      // @TODO: By Mark: This would be correct here. However every shitty function above
+      // wants to have an array keyed by adapters - which is really really stupid!
+      // we don't want this anymore in future!
+//      $old_uris = self::doGetUrisForDrupalIdAsArray($eid, $create);
+      $old_uris = self::getOnlyOneUriPerAdapterForDrupalId($eid, NULL, $create);
       $local_store = self::getPreferredLocalStore(TRUE);
       if(!empty($local_store))
         $same_uri = $local_store->findUriForDrupalId($eid,$adapter_id);
@@ -483,6 +491,7 @@ class AdapterHelper {
           }
         }
       }
+
       if (!empty($same_uri)) {
         self::setSameUris($old_uris + array($adapter_id=>$same_uri),$eid);
       }
