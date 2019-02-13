@@ -50,7 +50,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         // this is null anyway... so skip it
         continue;
       }
-        
+            
       if($is_count)
         $query->countQuery();
       else
@@ -91,7 +91,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       // add it to the first query                     
       $total_service_array[] = $service_string;
     }
-    
+        
     $first_query->setDependentParts($total_service_array);
     
     return $first_query;
@@ -118,7 +118,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       // only do this if more than one adapter!!!
       if(count($this->dependent_queries) > 1) {
         $is_sparql = TRUE;
-                
+
         // check if all queries are sparql queries...
         foreach($this->dependent_queries as $adapter_id => $query) {
           if($query instanceOf \Drupal\wisski_adapter_sparql11_pb\Query\Query || 
@@ -129,6 +129,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
             $is_sparql = FALSE;        
           }
         }
+        
+#        dpm(serialize($is_sparql), "is it?");
         
         if(!$is_sparql) {
           // this is complicated!     
@@ -144,7 +146,9 @@ class WisskiQueryDelegator extends WisskiQueryBase {
           }
         } else {
           $first_query = $this->getFederatedQuery(TRUE);
+#          dpm(serialize($first_query), "first query");
           $result = $first_query->countQuery()->execute() ? : 0;
+#          dpm(serialize($result), "res");
         }
 //        $result = count($result);
       } else {

@@ -87,10 +87,12 @@ wisski_tick();
 #    dpm($where_clause, "where clause in adapter query");
 #    dpm($entity_ids, "eids");
 
-    if (empty($where_clause) && empty($entity_ids)) {
+    // if we have dependent parts, we always want to go to buildAndExecute...
+
+    if (empty($where_clause) && empty($entity_ids) && empty($this->$dependent_parts)) {
       $return = $this->count ? 0 : array();
     }
-    elseif (empty($where_clause)) {
+    elseif (empty($where_clause) && empty($this->$dependent_parts)) {
       list($limit, $offset) = $this->getPager();
       if ($limit !== NULL) {
         $entity_ids = array_slice($entity_ids, $offset, $limit, TRUE);
@@ -101,7 +103,7 @@ wisski_tick();
       list($limit, $offset) = $this->getPager();
 
       $return = $this->buildAndExecSparql($where_clause, NULL, $this->count, $limit, $offset, $this->orderby);
-#      dpm(serialize($return), "got: ");
+ #     dpm(serialize($return), "got: ");
       if (!$this->count) {
         $return = array_keys($return);
       } else {
