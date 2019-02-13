@@ -49,6 +49,14 @@ class Query extends WisskiQueryBase {
   }
   
   /**
+   * A function to set dependent parts 
+   * via an array
+   */ 
+  public function setDependentParts($parts) {
+    $this->$dependent_parts = $parts;
+  }
+  
+  /**
    * Get an array of query parts to build up the dependent queries.
    * currently it contains:
    * - The where string
@@ -76,7 +84,7 @@ wisski_tick();
     // a list of entity ids that the pattern should be restricted to
     list($where_clause, $entity_ids) = $this->makeQueryConditions($this->condition);
 
-#    dpm($where_clause, "where clause");
+#    dpm($where_clause, "where clause in adapter query");
 #    dpm($entity_ids, "eids");
 
     if (empty($where_clause) && empty($entity_ids)) {
@@ -619,7 +627,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
 
 $timethis[] = microtime(TRUE);
 #    dpm(microtime(), "before");
-    dpm($select, "query");
+#    dpm($select, "query");
 
     $result = $engine = $this->getEngine()->directQuery($select);
 $timethis[] = microtime(TRUE);

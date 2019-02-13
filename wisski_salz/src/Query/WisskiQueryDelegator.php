@@ -32,6 +32,71 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 #    dpm($this->dependent_queries, "dep!");
   }
   
+  /**
+   * Add all parameters for a federated query to one of the query objects 
+   * and return this.
+   */
+  protected function getFederatedQuery($is_count = FALSE) {
+    // if everything is sparql we do a federated query
+    // see https://www.w3.org/TR/sparql11-federated-query/
+    $first_query = NULL;
+      
+    $max_query_parts = "";
+
+    foreach ($this->dependent_queries as $adapter_id => $query) {
+
+      if($query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
+        $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
+        // this is null anyway... so skip it
+        continue;
+      }
+        
+      if($is_count)
+        $query->countQuery();
+      else
+        $query->normalQuery();
+        
+      // get the query parts
+      $parts = $query->getQueryParts();
+      $parts = $parts['where'];
+
+      // only take the maximum, because up to now we mainly do path mode, which is bad anyway
+      // @todo: a clean implementation here would be better!
+      if(strlen($parts) > strlen($max_query_parts))
+        $max_query_parts = $parts;
+          
+        // preserve the first query object for later use
+      if(empty($first_query)) {
+        $first_query = $query;
+        continue;
+      }
+    }
+    
+    $total_service_array = array();
+
+    foreach ($this->dependent_queries as $adapter_id => $query) {
+      if($query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
+         $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
+        // this is null anyway... so skip it
+        continue;
+      }
+          
+      $conf = $query->getEngine()->getConfiguration();
+          
+      $read_url = $conf['read_url'];
+          
+      // construct the service-string
+      $service_string = " { SERVICE <" . $read_url . "> { " . $max_query_parts . " } }";
+
+      // add it to the first query                     
+      $total_service_array[] = $service_string;
+    }
+    
+    $first_query->setDependentParts($total_service_array);
+    
+    return $first_query;
+  }
+  
   public function execute() {
 #    dpm("yay!");  
     if (!isset($this->empties)) {
@@ -71,13 +136,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
 //        $query = $query->count();
             $sub_result = $query->execute() ? : 0;
-#        dpm($adapter_id.' counted '. serialize($sub_result));
-
-/*
-        if (is_numeric($sub_result))
-          $result += $sub_result;
-        else drupal_set_message("Wrong result type from adapter $adapter_id: numeric expected, given " . gettype($subresult), 'error');
-*/
 
           // this is rather complicated. I don't know why php does this like that...
             if(!is_array($sub_result))
@@ -85,58 +143,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
             $result = array_unique(array_merge($result, $sub_result), SORT_REGULAR); 
           }
         } else {
-          // if everything is sparql we do a federated query
-          // see https://www.w3.org/TR/sparql11-federated-query/
-          
-          $first_query = NULL;
-          
-          $max_query_parts = "";
-
-          foreach ($this->dependent_queries as $adapter_id => $query) {
-
-            if($query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
-               $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
-              // this is null anyway... so skip it
-              continue;
-            }
-            
-            // get the query parts
-            $parts = $query->getQueryParts();
-            $parts = $parts['where'];
-
-            // only take the maximum, because up to now we mainly do path mode, which is bad anyway
-            // @todo: a clean implementation here would be better!
-            if(strlen($parts) > strlen($max_query_parts))
-              $max_query_parts = $parts;
-            
-            // preserve the first query object for later use
-            if(empty($first_query)) {
-              $first_query = $query;
-              continue;
-            }
-          }
-
-          foreach ($this->dependent_queries as $adapter_id => $query) {
-
-            if($query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
-               $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
-              // this is null anyway... so skip it
-              continue;
-            }
-            
-            $conf = $query->getEngine()->getConfiguration();
-            
-            $read_url = $conf['read_url'];
-          
-            // construct the service-string
-            $service_string = " { SERVICE <" . $read_url . "> { " . $max_query_parts . " } }";
-                     
-            $first_query->addDependentParts($service_string);
-            
-          }
-          
-          $result = $first_query->countQuery()->execute() ? : 0; 
-          
+          $first_query = $this->getFederatedQuery(TRUE);
+          $result = $first_query->countQuery()->execute() ? : 0;
         }
 //        $result = count($result);
       } else {
@@ -158,17 +166,62 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         $this->initializePager();
       }
       $result = array();
+  
+      if(count($this->dependent_queries) > 1) {
+        $is_sparql = TRUE;
+                
+        // check if all queries are sparql queries...
+        foreach($this->dependent_queries as $adapter_id => $query) {
+          if($query instanceOf \Drupal\wisski_adapter_sparql11_pb\Query\Query || 
+             $query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
+             $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query ) {
+            // if it is a sparql11-query we are save!
+          } else {
+            $is_sparql = FALSE;        
+          }
+        }
+        
+        if(!$is_sparql) {
+          // this is complicated
+          
+          if ($pager || !empty($this->range)) {
+            // use the old behaviour if we have a pager
+            return $this->pagerQuery($this->range['length'],$this->range['start']);
+          } else {
+            // if we dont have a pager, iterate it and sum it up 
+            // @todo: This here is definitely evil. We should give some warning!
+            foreach ($this->dependent_queries as $query) {
+              $query = $query->normalQuery();
+              $sub_result = $query->execute();
+              $result = array_unique(array_merge($result,$sub_result));
+              
+              if (!empty(self::$empties)) $result = array_diff($result,self::$empties);
+              return $result;
+            }
+          }
+        } else {
+          // if it is sparql, do a federated query!
+          $first_query = $this->getFederatedQuery(FALSE);
+          if ($pager || !empty($this->range)) {
+            $first_query = $first_query->normalQuery();
+            $first_query->range($this->range['start'],$this->range['length']);
+          } else {
+            $first_query = $first_query->normalQuery();
+          }
+          
+          return $first_query->execute();
+        }
+      } else {
+        // if we dont have a dependent query, do it the easy way!
+        if ($pager || !empty($this->range)) {
+          return $this->pagerQuery($this->range['length'],$this->range['start']);
+        } else {
+          $query = $query->normalQuery();
+          return $query->execute();
+        }
+      }
       
-      if ($pager || !empty($this->range)) {
-        return $this->pagerQuery($this->range['length'],$this->range['start']);
-      }
-      foreach ($this->dependent_queries as $query) {
-        //set $query->count = FALSE;
-        $query = $query->normalQuery();
-        $sub_result = $query->execute();
-#        dpm("res!");
-        $result = array_unique(array_merge($result,$sub_result));
-      }
+      // this is probably unreachable...
       if (!empty(self::$empties)) $result = array_diff($result,self::$empties);
       return $result;
     }
@@ -233,73 +286,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     return $results;
   }
 
-/*
-  protected function pagerQuery($limit,$offset) {
-
-    //old version below
-    //wisski_tick();
-    
-    $results = array();
-    $act_offset = $offset;
-    $act_limit = $limit;
-    foreach ($this->dependent_queries as $key => $query) {
-      $query = $query->normalQuery();
-      $query->range($act_offset,$act_limit);
-      $new_results = $query->execute();
-      if (!empty(self::$empties)) $new_results = array_diff($new_results,self::$empties);
-      $res_count = count($new_results);
-      dpm($res_count,$key.' '.$act_offset.' '.$act_limit);
-      $results = array_unique(array_merge($results,$new_results));
-      if ($res_count === 0) {
-        $query->count();
-        $res_count = $query->execute();
-        if (!is_numeric($res_count)) $res_count = 0;
-        //dpm($res_count,$key.' full count');
-        $act_offset = $act_offset - $res_count;
-      } elseif ($res_count < $act_limit) {
-        $act_limit = $act_limit - $res_count;
-        $act_offset = 0;
-      } else break;
-    }
-    
-    return array_slice($results,0,$limit);
-  }
-*/  
-
-/*  
-  protected function pagerQuery($limit,$offset) {
-    
-    //wisski_tick();
-    $num_queries = count($this->dependent_queries);
-    $running_queries = array();
-    //we now go and ask all sub_queries whether they have enough answers to fill the offset.
-    //If not, the following queries have to fill more
-    foreach ($this->dependent_queries as $key => $query) {
-      $query = $query->count();
-      $sub_count = $query->execute() ? : 0;
-      $sub_count = (int) $sub_count;
-      if ($sub_count * $num_queries < $offset) {
-        //we enlearge the offset for following queries
-        $num_queries--;
-      } else $running_queries[] = $key;
-    }
-    $sub_queries = array_intersect_key($this->dependent_queries,array_flip($running_queries));
-    $results = array();
-    //wisski_tick('Count');
-    foreach ($sub_queries as $key => $query) {
-      $query = $query->normalQuery();
-      $query->range($offset / $num_queries,$limit);
-      $new_results = $query->execute();
-      //wisski_tick('query '.$key);
-      $results = array_unique(array_merge($results,$new_results));
-      //wisski_tick('rest '.$key);
-    }
-    //wisski_tick('Gather');
-    asort($results);
-    //wisski_tick('sort');
-    return array_slice($results,0,$limit);
-  }
-*/  
   /**
    * {@inheritdoc}
    */
@@ -365,16 +351,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     foreach ($this->dependent_queries as $query) $query->setFieldQuery(); 
   }
   
-  /**
-   * {@inheritdoc}
-   */
-// removed: we do this in execute() now
-//  public function count() {
-//    parent::count();
-//    foreach ($this->dependent_queries as $query) $query->count();
-//    return $this;
-//  }
-
   /**
    * {@inheritdoc}
    */
