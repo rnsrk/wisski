@@ -859,11 +859,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           // because urls are like http://projektdb.gnm.de/provenienz2014/sites/default/files/Z 2156.jpg
           $file_uri = str_replace(' ', '%20', $file_uri); 
 
-
-         
-#              dpm($file_uri, "fileuri");
-
-          $data = @file_get_contents($file_uri);
+          $data = @file_get_contents($file_uri, false, $context);
+          
           if (empty($data)) { 
             drupal_set_message($this->t('Could not fetch file with uri %uri.',array('%uri'=>$file_uri,)),'error');
           }
@@ -895,134 +892,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     
     
     
-    /*
-    $query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
-        
-    $file_ids = $query->execute();
-    if (!empty($file_ids)) {
-#      dpm(microtime(), "out fid");
-#      dpm($file_ids, "2");
-      // if there is one, we must set the field value to the image's FID
-      $value = current($file_ids);
-      //dpm('replaced '.$file_uri.' with existing file '.$value);
-      //@TODO find out what to do if there is more than one file with that uri
-      $local_file_uri = $file_uri;
-    } else {
-#      dpm("3");
-#      dpm(microtime(), "out fid");
-      //try it with a "translated" uri in the public:// scheme
-      $schemed_uri = $this->getSchemedUriFromPublicUri($file_uri);
-#      dpm($schemed_uri, "su");
-      $query = \Drupal::entityQuery('file')->condition('uri',$schemed_uri);
-      $file_ids = $query->execute();
-      if (!empty($file_ids)) {
-#        dpm("4");
-        $value = current($file_ids);
-        #dpm('replaced '.$file_uri.' with schemed existing file '.$value);
-        $local_file_uri = $schemed_uri;
-      } else {
-#        dpm("5");
-        $query = \Drupal::entityQuery('file')->condition('uri',$local_file_uri);
-        $file_ids = $query->execute();
-#        dpm(microtime(), "out fid");
-        if (!empty($file_ids)) {
-#          dpm("6");
 
-          #dpm($local_file_uri, "loc");
-          
-          if(file_exists($local_file_uri) && filesize($local_file_uri) > 0) {
-            //we have a local file with the same filename.
-            //lets assume this is the file we were looking for
-            $value = current($file_ids);
-          } else {
-#            dpm("yay!");
-            file_delete(current($file_ids));
-            $file_ids = NULL;
-          }
-          
-          //dpm('replaced '.$file_uri.' with local file '.$value);
-          //@TODO find out what to do if there is more than one file with that uri
-        } 
-        
-        if(empty($file_ids)) {
-#          dpm($local_file_uri, "loc");
-          $file = NULL;
-          // if we have no managed file with that uri, we try to generate one.
-          // in the if test we test whether there exists on the server a file 
-          // called $local_file_uri: file_destination() with 2nd param returns
-          // FALSE if there is such a file!
-          if (file_destination($local_file_uri,FILE_EXISTS_ERROR) === FALSE) {
-#            dpm($local_file_uri, "7");
-            $file = File::create([
-              'uri' => $local_file_uri,
-              'uid' => \Drupal::currentUser()->id(),
-              'status' => FILE_STATUS_PERMANENT,
-            ]);
-
-            $file->setFileName(drupal_basename($local_file_uri));
-            $mime_type = \Drupal::service('file.mime_type.guesser')->guess($local_file_uri);
-
-            $file->setMimeType($mime_type);
-
-            $file->save();
-            $value = $file->id();
-            
-          } else {
-            try {
-              
-              // we have to encode the image url, 
-              // see http://php.net/manual/en/function.file-get-contents.php
-              // NOTE: although the docs say we must use urlencode(), the docs
-              // for urlencode() and rawurlencode() specify that rawurlencode
-              // must be used for url path part.
-              // TODO: this encode hack only works properly if the file name 
-              // is the last part of the URL and if only the filename contains
-              // disallowed chars. 
-              $tmp = explode("/", $file_uri);
-#              $tmp[count($tmp) - 1] = rawurlencode($tmp[count($tmp) - 1]);
-              $file_uri = join('/', $tmp);
-
-              // replace space.
-              // we need to replace space to %20
-              // because urls are like http://projektdb.gnm.de/provenienz2014/sites/default/files/Z 2156.jpg
-              $file_uri = str_replace(' ', '%20', $file_uri); 
-
-
-              
-#              dpm($file_uri, "fileuri");
-
-              $data = @file_get_contents($file_uri);
-              if (empty($data)) { 
-                drupal_set_message($this->t('Could not fetch file with uri %uri.',array('%uri'=>$file_uri,)),'error');
-              }
-
-#              dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
-              $file = file_save_data($data, $local_file_uri);
-
-              if ($file) {
-                $value = $file->id();
-                //dpm('replaced '.$file_uri.' with new file '.$value);
-              } else {
-                drupal_set_message('Error saving file','error');
-                //dpm($data,$file_uri);
-              }
-            }
-            catch (EntityStorageException $e) {
-              drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
-            }
-          }
-
-          if (!empty($file)) {
-            // we have to register the usage of this file entity otherwise 
-            // Drupal will complain that it can't refer to this file when 
-            // saving the WissKI individual
-            // (it is unclear to me why Drupal bothers about that...)
-            \Drupal::service('file.usage')->add($file, 'wisski_core', 'wisski_individual', $entity_id);
-          }
-        }
-      }
-    }
-    */
 #    dpm($value,'image fid');
 #    dpm($local_file_uri, "loc");
     //set cache
@@ -1557,7 +1427,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       
       if ($adapter === NULL || !is_object($adapter)) {
         // we lazy-load adapters
+#        dpm("4.2.99: " . microtime());
         $adapter = entity_load('wisski_salz_adapter', $adapter_id);
+#        dpm("4.2.999: " . microtime());
         if (empty($adapter)) {
           unset($this->preview_image_adapters[$adapter_id]);
           continue;
@@ -1565,7 +1437,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           $this->preview_image_adapters[$adapter_id] = $adapter;
         }
       }
-
+#      dpm(microtime(), "is_get_uris_evil?");
       if (empty(\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($entity_id, $adapter->id(), FALSE))) {
         // this is wrong here - any other backend might know the image!
         /*
@@ -1579,10 +1451,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       //ask the local adapter for any image for this entity
 #      $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
       $images = array();
-      #dpm(microtime(), "in storage1");
+#      dpm(microtime(), "in storage1");
       
       $images = \Drupal::service('wisski_pathbuilder.manager')->getPreviewImage($entity_id, $bundle_id, $adapter);
-      #dpm(microtime(), "in storage2");
+#      dpm(microtime(), "in storage2");
 
 #      $image_field_ids = \Drupal\wisski_core\WisskiHelper::getFieldsForBundleId($bundle_id, 'image', NULL, TRUE);
 
@@ -1711,17 +1583,17 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       #$this->storage->getFileId($input_uri,$output_uri);
       // generalized this line for external use
       $this->getFileId($input_uri, $output_uri);
-    #dpm("4.2.4.2: " . microtime());
+#    dpm("4.2.4.2: " . microtime());
       //try to get the WissKI preview image style
       $image_style = $this->getPreviewStyle();
-    #dpm("4.2.5: " . microtime());    
+#    dpm("4.2.5: " . microtime());    
       //process the image with the style
       $preview_uri = $image_style->buildUri($output_uri);
       #dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
       
       // file already exists?
       if(file_exists($preview_uri)) {
-        #dpm(microtime(), "file exists!");
+#        dpm(microtime(), "file exists!");
         WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
         #dpm(microtime(), "file exists 2");
         return $preview_uri;

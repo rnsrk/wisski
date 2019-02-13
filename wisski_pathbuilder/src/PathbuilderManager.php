@@ -144,9 +144,9 @@ class PathbuilderManager {
         $paths = self::$paths;
         
       $path = $paths[$the_pathid];
-        
+#      dpm(microtime(), "ptr?");
       $values = $adapter->getEngine()->pathToReturnValue($path, $pb, $entity_id, 0, NULL, FALSE);
-
+#      dpm(microtime(), "ptr!");
       if(!empty($values))
         return $values;
 

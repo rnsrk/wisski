@@ -553,7 +553,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
           $row['preview_image'] = '<a href="' . $base_path . 'wisski/navigate/'.$eid.'/view?wisski_bundle='.$bid.'"><img src="'. $preview_image_uri .'" /></a>';
           $pseudo_entity_fields[$eid]['preview_image'] = $row['preview_image'];
         }
- #       dpm(microtime(), "after preview image");
+#        dpm(microtime(), "after preview image");
       }
       elseif ($field == 'bundle' || $field == 'bundle_label' || $field == 'bundles') {
 #        dpm($values_per_row, "vpr");

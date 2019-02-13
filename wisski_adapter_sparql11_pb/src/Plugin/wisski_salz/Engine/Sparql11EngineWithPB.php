@@ -1259,10 +1259,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $sparql .= " } ";
     
 #    drupal_set_message(serialize($sparql) . " on " . serialize($this));
-
+#    dpm(microtime(), "mic1");
 #$tmpt2 = microtime(TRUE);            
     $result = $this->directQuery($sparql);
-#$tmpt3 = microtime(TRUE);            
+#$tmpt3 = microtime(TRUE);  
+#    dpm(microtime(), "mic2");          
 #    drupal_set_message(serialize($result));
 
     $out = array();
