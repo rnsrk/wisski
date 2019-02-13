@@ -1566,10 +1566,14 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         }
       }
 
-      if (empty(\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($entity_id,$adapter->id()))) {
+      if (empty(\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($entity_id, $adapter->id(), FALSE))) {
+        // this is wrong here - any other backend might know the image!
+        /*
         if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug($adapter->id().' does not know the entity '.$entity_id);
         WisskiCacheHelper::putPreviewImageUri($entity_id,'none');
         return NULL;
+        */
+        continue;
       }
 
       //ask the local adapter for any image for this entity
