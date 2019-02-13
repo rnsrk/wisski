@@ -45,7 +45,7 @@ class Query extends WisskiQueryBase {
    * hopefully it uses the correct variables....
    */ 
   public function addDependentParts($parts) {
-    $this->$dependent_parts[] = $parts;
+    $this->dependent_parts[] = $parts;
   }
   
   /**
@@ -53,7 +53,7 @@ class Query extends WisskiQueryBase {
    * via an array
    */ 
   public function setDependentParts($parts) {
-    $this->$dependent_parts = $parts;
+    $this->dependent_parts = $parts;
   }
   
   /**
@@ -89,10 +89,10 @@ wisski_tick();
 
     // if we have dependent parts, we always want to go to buildAndExecute...
 
-    if (empty($where_clause) && empty($entity_ids) && empty($this->$dependent_parts)) {
+    if (empty($where_clause) && empty($entity_ids) && empty($this->dependent_parts)) {
       $return = $this->count ? 0 : array();
     }
-    elseif (empty($where_clause) && empty($this->$dependent_parts)) {
+    elseif (empty($where_clause) && empty($this->dependent_parts)) {
       list($limit, $offset) = $this->getPager();
       if ($limit !== NULL) {
         $entity_ids = array_slice($entity_ids, $offset, $limit, TRUE);
@@ -597,13 +597,13 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
       $select .= 'VALUES ?x0 { <' . join('> <', $filtered_uris) . '> } ';
     }
 
-    if(COUNT($this->$dependent_parts) == 0) {
+    if(count($this->dependent_parts) == 0) {
       $select .= $query_parts;
     } else { 
     
       $first = TRUE;
       // add dependent parts?
-      foreach($this->$dependent_parts as $part) {
+      foreach($this->dependent_parts as $part) {
     
         if(!$first) {
           $select .= " UNION ";
