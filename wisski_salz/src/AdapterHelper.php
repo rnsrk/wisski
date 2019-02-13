@@ -123,14 +123,14 @@ class AdapterHelper {
             ->condition('rid',$row->rid)
             ->execute();
         } else {
-          dpm($aid, "insert one: ");
+
           //this is a completely new matching for this adapter
           db_insert('wisski_salz_id2uri')
             ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
             ->execute();
         }
       } else {
-        dpm($aid, "insert two: ");
+
         db_insert('wisski_salz_id2uri')
           ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
           ->execute();
