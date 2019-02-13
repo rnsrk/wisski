@@ -123,14 +123,18 @@ class AdapterHelper {
             ->condition('rid',$row->rid)
             ->execute();
         } else {
-
+          if($aid == NULL) 
+            dpm("danger zone!!!", "error");
           //this is a completely new matching for this adapter
           db_insert('wisski_salz_id2uri')
             ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
             ->execute();
+#          dpm("case one");
         }
       } else {
-
+#        dpm("case two");
+        if($aid == NULL)
+          dpm("danger zone!!!", "error");
         db_insert('wisski_salz_id2uri')
           ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
           ->execute();
@@ -287,20 +291,22 @@ class AdapterHelper {
     
     //eid creation works by inserting data and retrieving the newly set line number as eid
     $id = db_insert('wisski_salz_id2uri')
-      ->fields(array('uri'=>$uri,'adapter_id'=>$input_adapter_id))
+      ->fields(array('uri'=>$uri,'adapter_id'=>$adapter_id))
       ->execute();
     db_update('wisski_salz_id2uri')
       ->fields(array('eid'=>$id))
       ->condition('rid',$id)
       ->execute();
+        
     if (WISSKI_DEVEL) {
       \Drupal::logger("AH:difu")->debug("$id and $uri and $input_adapter_id: {bt}", ["bt"=>join('//', array_map(function ($a) { return $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 8)))]);
     } 
     //don't forget to inform the services about the new id
-    if (self::setSameUris(array($input_adapter_id=>$uri),$id)) {
+    if (self::setSameUris(array($adapter_id=>$uri),$id)) {
       //dpm($id,'set anew');
       return $id;
     }
+
     //dpm('fail','creation failed');
     //if we end up here we, can't do any more
     return NULL;
@@ -485,7 +491,7 @@ class AdapterHelper {
         if (empty($same_uri)) {
           //create on fail and if we should create
           if($create) {
-            dpm("I create a new one - danger zone!");
+//            dpm("I create a new one - danger zone!");
             $same_uri = $adapter->getEngine()->generateFreshIndividualUri();
           }
         }
