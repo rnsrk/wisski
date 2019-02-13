@@ -58,12 +58,27 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         
       // get the query parts
       $parts = $query->getQueryParts();
-      $parts = $parts['where'];
+      $where = $parts['where'];
+      $eids = $parts['eids'];
+
+      $filtered_uris = NULL;
+
+      $eids_part = "";
+      
+      // we got eids?
+      if(!empty($eids))
+        $filtered_uris = array_filter($eids);
+      if (!empty($filtered_uris)) {
+        $eids_part .= 'VALUES ?x0 { <' . join('> <', $filtered_uris) . '> } ';
+      }      
+
+      // build up a whole string from that      
+      $string_part = $where . "" . $eids_part;
 
       // only take the maximum, because up to now we mainly do path mode, which is bad anyway
       // @todo: a clean implementation here would be better!
-      if(strlen($parts) > strlen($max_query_parts))
-        $max_query_parts = $parts;
+      if(strlen($string_part) > strlen($max_query_parts))
+        $max_query_parts = $string_part;
           
         // preserve the first query object for later use
       if(empty($first_query)) {
@@ -72,27 +87,28 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       }
     }
     
-    $total_service_array = array();
+    if(!empty($max_query_parts)) {   
+      $total_service_array = array();
 
-    foreach ($this->dependent_queries as $adapter_id => $query) {
-      if($query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
-         $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
-        // this is null anyway... so skip it
-        continue;
+      foreach ($this->dependent_queries as $adapter_id => $query) {
+        if($query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
+           $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
+          // this is null anyway... so skip it
+          continue;
+        }
+          
+        $conf = $query->getEngine()->getConfiguration();
+          
+        $read_url = $conf['read_url'];
+          
+        // construct the service-string
+        $service_string = " { SERVICE <" . $read_url . "> { " . $max_query_parts . " } }";
+
+        // add it to the first query                     
+        $total_service_array[] = $service_string;
       }
-          
-      $conf = $query->getEngine()->getConfiguration();
-          
-      $read_url = $conf['read_url'];
-          
-      // construct the service-string
-      $service_string = " { SERVICE <" . $read_url . "> { " . $max_query_parts . " } }";
-
-      // add it to the first query                     
-      $total_service_array[] = $service_string;
+      $first_query->setDependentParts($total_service_array);
     }
-        
-    $first_query->setDependentParts($total_service_array);
     
     return $first_query;
   }

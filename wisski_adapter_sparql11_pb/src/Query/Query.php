@@ -86,7 +86,7 @@ wisski_tick();
 
 #    dpm($where_clause, "where clause in adapter query");
 #    dpm($entity_ids, "eids");
-
+#    dpm($this->dependent_parts, "dep");
     // if we have dependent parts, we always want to go to buildAndExecute...
 
     if (empty($where_clause) && empty($entity_ids) && empty($this->dependent_parts)) {
@@ -549,6 +549,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
         // the clauses and ids would produce a cross product.
         // this subquery is (hopefully) much faster.
         $entity_ids = $this->buildAndExecSparql($query_parts, $entity_ids);
+#        dpm($entity_ids, "ents!");
         return array('', $entity_ids);
       }
       else {
@@ -629,7 +630,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
 
 $timethis[] = microtime(TRUE);
 #    dpm(microtime(), "before");
-#    dpm($select, "query");
+#    dpm(htmlentities($select), "query");
 
     $result = $engine = $this->getEngine()->directQuery($select);
 $timethis[] = microtime(TRUE);
