@@ -285,7 +285,6 @@ class AdapterHelper {
       return NULL;
     }
     
-    dpm($input_adapter_id, "insert three: ");
     //eid creation works by inserting data and retrieving the newly set line number as eid
     $id = db_insert('wisski_salz_id2uri')
       ->fields(array('uri'=>$uri,'adapter_id'=>$input_adapter_id))
