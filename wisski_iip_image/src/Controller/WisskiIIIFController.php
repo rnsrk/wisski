@@ -165,7 +165,8 @@ class WisskiIIIFController {
       
       // if there is something we have to erase this to get a proper
       // path
-      if(strpos($local_pyramid, $iiif_base_path) === 0) { 	
+      
+      if($iiif_base_path && strpos($local_pyramid, $iiif_base_path) === 0) { 	
         $remaining = substr($local_pyramid, strlen($iiif_base_path));
       } else {
         $remaining = $local_pyramid;
