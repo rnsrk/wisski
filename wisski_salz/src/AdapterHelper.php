@@ -54,7 +54,7 @@ class AdapterHelper {
    * @return TRUE on success, FALSE otherwise
    */
   public static function setSameUris($uris,$entity_id=NULL) {
-
+#    dpm($uris);
     // if it is an object, make it an id. 
     if(is_object($entity_id)) {
       drupal_set_message("setSameUris got an Object instead of an id - this is strange!", "warning");
@@ -129,10 +129,10 @@ class AdapterHelper {
           db_insert('wisski_salz_id2uri')
             ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
             ->execute();
-#          dpm("case one");
+ #         dpm($aid, "case one");
         }
       } else {
-#        dpm("case two");
+#        dpm($aid, "case two");
         if($aid == NULL)
           dpm("danger zone!!!", "error");
         db_insert('wisski_salz_id2uri')
@@ -288,6 +288,8 @@ class AdapterHelper {
       //dpm('fail','don\'t create');
       return NULL;
     }
+    
+#    dpm($adapter_id, "case three");
     
     //eid creation works by inserting data and retrieving the newly set line number as eid
     $id = db_insert('wisski_salz_id2uri')
