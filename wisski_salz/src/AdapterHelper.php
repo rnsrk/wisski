@@ -129,7 +129,7 @@ class AdapterHelper {
           db_insert('wisski_salz_id2uri')
             ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
             ->execute();
- #         dpm($aid, "case one");
+#          dpm($aid, "case one");
         }
       } else {
 #        dpm($aid, "case two");
