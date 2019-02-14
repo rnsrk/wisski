@@ -84,15 +84,17 @@ wisski_tick();
     // a list of entity ids that the pattern should be restricted to
     list($where_clause, $entity_ids) = $this->makeQueryConditions($this->condition);
 
-    #dpm($where_clause, "where clause in adapter query");
-    #dpm($entity_ids, "eids");
-    #dpm($this->dependent_parts, "dep");
+#    dpm($where_clause, "where clause in adapter query");
+#    dpm($entity_ids, "eids");
+#    dpm($this->dependent_parts, "dep");
     // if we have dependent parts, we always want to go to buildAndExecute...
 
-    if (empty($where_clause) && empty($entity_ids)) {
+    // we can only opt out if there really is nothing!
+    if (empty($where_clause) && empty($entity_ids) && empty($this->dependent_parts)) {
       $return = $this->count ? 0 : array();
     }
-    elseif (empty($where_clause)) {
+    elseif (empty($where_clause) && empty($this->dependent_parts)) {
+    // we can use the entity ids if we have no other dependencies
       list($limit, $offset) = $this->getPager();
       if ($limit !== NULL) {
         $entity_ids = array_slice($entity_ids, $offset, $limit, TRUE);
@@ -100,6 +102,7 @@ wisski_tick();
       $return = $this->count ? count($entity_ids) : array_keys($entity_ids);
     }
     elseif (empty($entity_ids)) {
+      // By Mark: I dont know if we want to have dependent parts here....
       list($limit, $offset) = $this->getPager();
 
       $return = $this->buildAndExecSparql($where_clause, NULL, $this->count, $limit, $offset, $this->orderby);

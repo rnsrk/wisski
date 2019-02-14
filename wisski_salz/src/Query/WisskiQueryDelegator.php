@@ -110,6 +110,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         // add it to the first query                     
         $total_service_array[] = $service_string;
       }
+#      dpm($total_service_array, "tos");
       $first_query->setDependentParts($total_service_array);
     }
     
