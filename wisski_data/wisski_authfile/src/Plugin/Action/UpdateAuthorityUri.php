@@ -157,7 +157,10 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
     // we need the whole bunch of current uris as the setSameUris() will
     // not handle correctly only partial set of uris
     $to_add = $new_auth_uris + array_diff($old_uris, $old_auth_uris);
-#    dpm($to_add, "add");
+        
+    //dpm($old_uris, "old uris");
+    //dpm($old_auth_uris, "old_auth_uris");
+    //dpm($to_add, "add");
     $new_uris = [];
     foreach ($to_add as $aid_uri) {
       list($aid, $uri) = explode(" ", $aid_uri, 2);

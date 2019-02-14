@@ -55,6 +55,7 @@ class AdapterHelper {
    */
   public static function setSameUris($uris,$entity_id=NULL) {
 #    dpm($uris);
+
     // if it is an object, make it an id. 
     if(is_object($entity_id)) {
       drupal_set_message("setSameUris got an Object instead of an id - this is strange!", "warning");
@@ -68,19 +69,23 @@ class AdapterHelper {
     if (empty($uris)) return TRUE;
     //dpm($uris,__FUNCTION__.' '.$entity_id);
     $drupal_aid = self::getDrupalAdapterNameAlias();
+
     if (array_key_exists($drupal_aid, $uris)) {
       //if we know the eid from the array, set it here
       if (empty($entity_id)) $entity_id = $uris[$drupal_aid];
       //do not save the URI-ified EID to the database
       unset($uris[$drupal_aid]);
     }
+
+#    dpm($uris, "asking for uris!");
+
     $set_ids = db_select('wisski_salz_id2uri','m')
       ->fields('m',array('rid','uri','eid','adapter_id'))
       ->condition('uri',$uris,'IN')
       ->execute()
       ->fetchCol(2);
     //fetch the 'eid' column into $set_ids
-    //dpm($set_ids,'set IDs');
+#    dpm($set_ids,'set IDs');
     $set_ids = array_unique($set_ids);
 #dpm([$set_ids, $entity_id], 'ids eid');
     if (is_null($entity_id)) {  
@@ -98,25 +103,38 @@ class AdapterHelper {
       //dpm($set_ids+array('new'=>$entity_id),'IDs');
       return FALSE;
     }
+    
+#    dpm($entity_id, "eid?");
+
+    if(empty($entity_id)) {
+      dpm("No entity id could be detected. Exit!", "error.");
+      return;
+    }
+        
     $rows = db_select('wisski_salz_id2uri','m')
       ->fields('m',array('rid','uri','eid','adapter_id'))
-      ->condition('uri',$uris,'IN')
+      ->condition('eid', $entity_id)
+#      ->condition('uri',$uris,'IN')
       ->execute()
       ->fetchAllAssoc('adapter_id');
     //dpm($rows,'matchings from DB');
     foreach ($uris as $aid => $uri) {
+      #dpm($aid, "aid");
+      #dpm($rows, "rows");
+      #dpm($uri, "uri");
+      #dpm($entity_id, "entity_id");
       if (isset($rows[$aid]) && $row = $rows[$aid]) {
         //in this case we have info from this adapter
         //is it for the given URI?
         if ($row->uri === $uri) {
-          if ($row->eid !== $entity_id) {
+          if ((string)$row->eid !== (string)$entity_id) {
             //we consider this an EID update for this matching
             db_update('wisski_salz_id2uri')
               ->fields(array('eid'=>$entity_id))
               ->condition('rid',$row->rid)
               ->execute();
           }
-        } elseif ($row->eid === $entity_id) {
+        } elseif ((string)$row->eid === (string)$entity_id) {
           //this is a URI update for this matching
           db_update('wisski_salz_id2uri')
             ->fields(array('uri'=>$uri))
@@ -126,10 +144,15 @@ class AdapterHelper {
           if($aid == NULL) 
             dpm("danger zone!!!", "error");
           //this is a completely new matching for this adapter
+          // By Mark: This is untrue... it just means that the entity id is the same
+          // but the uri is not. This means that there are multiple uris and by
+          // simply inserting it it will make everything worse!
+          
           db_insert('wisski_salz_id2uri')
             ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
             ->execute();
-#          dpm($aid, "case one");
+          
+       #   dpm($aid, "case one");
         }
       } else {
 #        dpm($aid, "case two");
