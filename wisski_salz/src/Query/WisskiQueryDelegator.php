@@ -61,6 +61,9 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       $where = $parts['where'];
       $eids = $parts['eids'];
 
+#      dpm($where, "where");
+#      dpm($eids, "eids");
+
       $filtered_uris = NULL;
 
       $eids_part = "";
@@ -114,7 +117,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   }
   
   public function execute() {
-#    dpm("yay!");  
+#    dpm(microtime(), "yay!");  
     if (!isset($this->empties)) {
       $bundle_id = NULL;
       foreach($this->condition->conditions() as $cond) {
@@ -129,6 +132,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     }  
     
     if ($this->count) {
+#      dpm("we have a count query!");
       $result = array();
       
       // only do this if more than one adapter!!!
@@ -177,6 +181,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       if (!empty(self::$empties)) $result -= count(self::$empties);
       return $result;
     } else {
+#      dpm("we have no count query!");
       $pager = FALSE;
       if ($this->pager) {
         $pager = TRUE;
@@ -188,6 +193,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       $result = array();
   
       if(count($this->dependent_queries) > 1) {
+#        dpm("we have a dependent query");
         $is_sparql = TRUE;
                 
         // check if all queries are sparql queries...
@@ -220,6 +226,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
             }
           }
         } else {
+#          dpm("it is sparql");
           // if it is sparql, do a federated query!
           $first_query = $this->getFederatedQuery(FALSE);
           if ($pager || !empty($this->range)) {
@@ -228,8 +235,9 @@ class WisskiQueryDelegator extends WisskiQueryBase {
           } else {
             $first_query = $first_query->normalQuery();
           }
-          
-          return $first_query->execute();
+          $ret = $first_query->execute();
+#          dpm($ret, "ret");
+          return $ret;
         }
       } else {
         // if we dont have a dependent query, do it the easy way!

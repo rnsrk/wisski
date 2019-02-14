@@ -361,7 +361,8 @@ class WisskiIndividualQuery extends QueryPluginBase {
       // Execute the local query.
       $entity_ids = $query->execute();
 #      dpm(microtime(), "after ex");
-      
+#      dpm($entity_ids, "eids!");
+            
       if (empty($entity_ids)) {
         $view->result = [];
       }
@@ -747,11 +748,11 @@ class WisskiIndividualQuery extends QueryPluginBase {
 
                 $select .= "}";
 
-#                dpm($select, "select " . $path->getID() .': '.$path->getDatatypeProperty() );
+                #dpm($select, "select " . $path->getID() .': '.$path->getDatatypeProperty() . " on " . $adapter->id() );
 #                dpm(microtime(), "before");
                 $result = $engine->directQuery($select);
 
-#               dpm([$select, $result], 'select' . $path->getID());
+               #dpm([$select, $result], 'select' . $path->getID());
 
 #                dpm(microtime(), "after");
                 foreach ($result as $sparql_row) {

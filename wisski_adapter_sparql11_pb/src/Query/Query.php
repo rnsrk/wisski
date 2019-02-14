@@ -84,15 +84,15 @@ wisski_tick();
     // a list of entity ids that the pattern should be restricted to
     list($where_clause, $entity_ids) = $this->makeQueryConditions($this->condition);
 
-#    dpm($where_clause, "where clause in adapter query");
-#    dpm($entity_ids, "eids");
-#    dpm($this->dependent_parts, "dep");
+    #dpm($where_clause, "where clause in adapter query");
+    #dpm($entity_ids, "eids");
+    #dpm($this->dependent_parts, "dep");
     // if we have dependent parts, we always want to go to buildAndExecute...
 
-    if (empty($where_clause) && empty($entity_ids) && empty($this->dependent_parts)) {
+    if (empty($where_clause) && empty($entity_ids)) {
       $return = $this->count ? 0 : array();
     }
-    elseif (empty($where_clause) && empty($this->dependent_parts)) {
+    elseif (empty($where_clause)) {
       list($limit, $offset) = $this->getPager();
       if ($limit !== NULL) {
         $entity_ids = array_slice($entity_ids, $offset, $limit, TRUE);
@@ -116,10 +116,14 @@ wisski_tick();
       list($limit, $offset) = $this->getPager();
       // we must not use count directly (3rd param, see above)
       $entity_ids_too = $this->buildAndExecSparql($where_clause, NULL, FALSE, $limit, $offset);
+      #dpm($entity_ids_too, "too");
+      #dpm($entity_ids, "too2");
       // combine the resulting entities with the ones already found.
       // we have to OR them: an AND conjunction would have been resolved in 
       // makeQueryConditions().
+      // @TODO: Check AND! This might be wrong again (by Mark)
       $entity_ids = $this->join('OR', $entity_ids, $entity_ids_too);
+      #dpm($entity_ids, "too3");
       // now we again have to apply the pager
       if ($limit !== NULL) {
         $entity_ids = array_slice($entity_ids, $offset, $limit, TRUE);
@@ -200,7 +204,12 @@ wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($ret
     }
     else {
       // OR
-      return array_merge($array1, $array2);
+      // This seems to be wrong because it does renumbering
+      // but the key is an eid here -> renumbering is evil!
+      //return array_merge($array1, $array2);
+      
+      return $array1 + $array2;
+      
     }
 
   }
@@ -548,9 +557,14 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
         // don't know if the parent condition is OR in which case
         // the clauses and ids would produce a cross product.
         // this subquery is (hopefully) much faster.
-        $entity_ids = $this->buildAndExecSparql($query_parts, $entity_ids);
-#        dpm($entity_ids, "ents!");
-        return array('', $entity_ids);
+
+        // By Mark: This might have been faster, but it is a pain in multi-storage-systems
+        // we can't do a query on a single store here... it will not have all results!
+        //$entity_ids = $this->buildAndExecSparql($query_parts, $entity_ids);
+        //return array('', $entity_ids);
+        
+        // Therefore we do the full thing!
+        return array($query_parts, $entity_ids);
       }
       else {
         // OR
@@ -585,20 +599,20 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
     else {
       $select = 'SELECT DISTINCT ?x0 WHERE { ';
     }
-    
-    // we restrict the result set to the entities in $entity_ids by adding a
-    // VALUES statement in front of the rest of the where clause.
-    // entity_ids is an assoc array where the keys are the ids and the values
-    // are the corresp URIs. When there is no URI (for the adapter) the URI is
-    // empty and needs to be filtered out for the VALUES construct.
-    $filtered_uris = NULL;
-    if(!empty($entity_ids))
-      $filtered_uris = array_filter($entity_ids);
-    if (!empty($filtered_uris)) {
-      $select .= 'VALUES ?x0 { <' . join('> <', $filtered_uris) . '> } ';
-    }
 
-    if(count($this->dependent_parts) == 0) {
+    if(count($this->dependent_parts) == 0) {    
+      // we restrict the result set to the entities in $entity_ids by adding a
+      // VALUES statement in front of the rest of the where clause.
+      // entity_ids is an assoc array where the keys are the ids and the values
+      // are the corresp URIs. When there is no URI (for the adapter) the URI is
+      // empty and needs to be filtered out for the VALUES construct.
+      $filtered_uris = NULL;
+      if(!empty($entity_ids))	
+        $filtered_uris = array_filter($entity_ids);
+      if (!empty($filtered_uris)) {	
+        $select .= 'VALUES ?x0 { <' . join('> <', $filtered_uris) . '> } ';
+      }
+
       $select .= $query_parts;
     } else { 
     
@@ -630,7 +644,7 @@ wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition"
 
 $timethis[] = microtime(TRUE);
 #    dpm(microtime(), "before");
-#    dpm(htmlentities($select), "query");
+#    dpm($select, "query");
 
     $result = $engine = $this->getEngine()->directQuery($select);
 $timethis[] = microtime(TRUE);
