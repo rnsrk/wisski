@@ -107,16 +107,24 @@ class AdapterHelper {
 #    dpm($entity_id, "eid?");
 
     if(empty($entity_id)) {
-      dpm("No entity id could be detected. Exit!", "error.");
-      return;
-    }
-        
-    $rows = db_select('wisski_salz_id2uri','m')
-      ->fields('m',array('rid','uri','eid','adapter_id'))
-      ->condition('eid', $entity_id)
+      dpm("No entity id could be detected. Danger Zone!", "error.");
+      
+      $rows = db_select('wisski_salz_id2uri','m')
+        ->fields('m',array('rid','uri','eid','adapter_id')) 
+#        ->condition('eid', $entity_id)
+        ->condition('uri',$uris,'IN')
+        ->execute()
+        ->fetchAllAssoc('adapter_id');
+    } else {
+      // normal case    
+      $rows = db_select('wisski_salz_id2uri','m')
+        ->fields('m',array('rid','uri','eid','adapter_id')) 
+        ->condition('eid', $entity_id)
 #      ->condition('uri',$uris,'IN')
-      ->execute()
-      ->fetchAllAssoc('adapter_id');
+        ->execute()
+        ->fetchAllAssoc('adapter_id');
+    }
+    
     //dpm($rows,'matchings from DB');
     foreach ($uris as $aid => $uri) {
       #dpm($aid, "aid");
@@ -152,10 +160,10 @@ class AdapterHelper {
             ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
             ->execute();
           
-       #   dpm($aid, "case one");
+ #         dpm($aid, "case one");
         }
       } else {
-#        dpm($aid, "case two");
+ #       dpm($aid, "case two");
         if($aid == NULL)
           dpm("danger zone!!!", "error");
         db_insert('wisski_salz_id2uri')
