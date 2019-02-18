@@ -107,7 +107,7 @@ class AdapterHelper {
 #    dpm($entity_id, "eid?");
 
     if(empty($entity_id)) {
-      dpm("No entity id could be detected. Danger Zone!", "error.");
+      \Drupal::logger("AH:ssu")->debug("No entity id could be detected for uris: {uris}: {bt}", ["uris" => join(" ",$uris),"bt"=>join('//', array_map(function ($a) { return $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5)))]);
       
       $rows = db_select('wisski_salz_id2uri','m')
         ->fields('m',array('rid','uri','eid','adapter_id')) 
