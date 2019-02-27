@@ -101,7 +101,7 @@ wisski_tick();
       }
       $return = $this->count ? count($entity_ids) : array_keys($entity_ids);
     }
-    elseif (empty($entity_ids)) {
+    elseif (empty($entity_ids) || !empty($this->dependent_parts)) {
       // By Mark: I dont know if we want to have dependent parts here....
       list($limit, $offset) = $this->getPager();
 
@@ -113,14 +113,14 @@ wisski_tick();
 //        dpm($return, "ret!");
       }
     }
-    else {
+    else { // this should only happen if there are no dependent parts!!!
       // there are conditions left and found entities.
       // this can only occur if the conjunction of $this->condition is OR
       list($limit, $offset) = $this->getPager();
       // we must not use count directly (3rd param, see above)
       $entity_ids_too = $this->buildAndExecSparql($where_clause, NULL, FALSE, $limit, $offset);
-      #dpm($entity_ids_too, "too");
-      #dpm($entity_ids, "too2");
+#      dpm($entity_ids_too, "too");
+#      dpm($entity_ids, "too2");
       // combine the resulting entities with the ones already found.
       // we have to OR them: an AND conjunction would have been resolved in 
       // makeQueryConditions().
@@ -650,6 +650,7 @@ $timethis[] = microtime(TRUE);
 #    dpm($select, "query");
 
     $result = $engine = $this->getEngine()->directQuery($select);
+#    dpm($result, "resquery");
 $timethis[] = microtime(TRUE);
     $adapter_id = $this->getEngine()->adapterId();
 //    drupal_set_message("I answered: " . $adapter_id);
