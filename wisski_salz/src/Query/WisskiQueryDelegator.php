@@ -43,11 +43,17 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       
     $max_query_parts = "";
 
+    $count = count($this->dependent_queries);
+
     foreach ($this->dependent_queries as $adapter_id => $query) {
 
       if($query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
         $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
         // this is null anyway... so skip it
+        
+        // reduce count
+        $count--;
+        
         continue;
       }
             
@@ -105,7 +111,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         $read_url = $conf['read_url'];
           
         // construct the service-string
-        $service_string = " { SERVICE <" . $read_url . "> { " . $max_query_parts . " } }";
+        if($count > 1) 
+          $service_string = " { SERVICE <" . $read_url . "> { " . $max_query_parts . " } }";
+        else
+          $service_string = $max_query_parts;
 
         // add it to the first query                     
         $total_service_array[] = $service_string;
