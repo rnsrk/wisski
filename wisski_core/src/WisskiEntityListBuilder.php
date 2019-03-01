@@ -1,12 +1,9 @@
 <?php
 
 namespace Drupal\wisski_core;
+use \Drupal\Core\Entity\EntityListBuilder;
 
-use Drupal\Core\Entity\EntityListBuilder;
-
-/**
- *
- */
-class WisskiEntityListBuilder extends EntityListBuilder {
+class WisskiEntityListBuilder extends EntityListBuilder
+{
 
 }

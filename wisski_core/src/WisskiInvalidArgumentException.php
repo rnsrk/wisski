@@ -2,9 +2,7 @@
 
 namespace Drupal\wisski_core;
 
-/**
- *
- */
-class WisskiInvalidArgumentException extends \InvalidArgumentException {
+class WisskiInvalidArgumentException extends \InvalidArgumentException
+{
 
 }

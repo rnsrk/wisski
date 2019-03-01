@@ -1,81 +1,87 @@
 <?php
 
-/**
- * @file ***************** *\
- *  ADMIN PAGES        *
-\* ***************** .*/
+
+/* ***************** *\
+*  ADMIN PAGES        *
+\* ***************** */
+
+
 
 /**
  * @author Martin Scholz
  */
-function wisski_textanly_admin_analyse_anno2token($op, $ap) {
+function wisski_textanly_admin_analyse_anno2token($op, $ap) 
+{
 
-  switch ($op) {
+    switch ($op) {
 
     case 'key_info':
-      return [
-        'input' => [
+        return array(
+        'input' => array(
           'tokens',
           'annos',
-        ],
-        'output' => [
+        ),
+        'output' => array(
           'a2t',
-        ],
-      ];
+        )
+      );
 
     default:
 
-      return NULL;
+        return null;
 
-  }
+    }
 
 }
 
-/**
- * Call an external preprocessor for lemma and part-of-speech.
- *
- * @return token array where tokens are enhanced with keys 'lemma' and 'pos'
- *   where information was available
- *
- * @author Martin Scholz
- */
-function wisski_textanly_analyse_anno2token($analyser, $text_struct, $ticket) {
 
-  if (!isset($text_struct['annos']) || empty($text_struct['annos'])
+
+
+
+/* Call an external preprocessor for lemma and part-of-speech
+*
+* @return token array where tokens are enhanced with keys 'lemma' and 'pos'
+* where information was available
+*
+* @author Martin Scholz
+*
+*/
+function wisski_textanly_analyse_anno2token($analyser, $text_struct, $ticket) 
+{
+  
+    if (!isset($text_struct['annos']) || empty($text_struct['annos'])
         || !isset($text_struct['tokens']) || empty($text_struct['tokens'])
-    ) {
-    return $text_struct;
-  }
+    ) { 
+        return $text_struct;
+    }
+  
+    $tokens = $text_struct['tokens'];
+    $l = count($tokens);
+    $a2t = array_fill(0, $l, null);
 
-  $tokens = $text_struct['tokens'];
-  $l = count($tokens);
-  $a2t = array_fill(0, $l, NULL);
-
-  foreach ($text_struct['annos'] as $i => $a) {
-    list($s, $e) = $a['range'];
-    for ($j = 0; $j < $l; $j++) {
-      if ($tokens[$j][2] > $s) {
-        if ($a2t[$j] === NULL) {
-          $a2t[$j] = [];
+    foreach ($text_struct['annos'] as $i => $a) {
+        list($s, $e) = $a['range'];
+        for ($j = 0; $j < $l; $j++) {
+            if ($tokens[$j][2] > $s) {
+                if ($a2t[$j] === null) { $a2t[$j] = array();
+                }
+                $a2t[$j][] = $i;
+                break;
+            }
         }
-        $a2t[$j][] = $i;
-        break;
-      }
+        for (++$j; $j < $l; $j++) {
+            if ($tokens[$j][1] >= $e) {
+                continue 2; // with next anno
+            }
+            if ($a2t[$j] === null) { $a2t[$j] = array();
+            }
+            $a2t[$j][] = $i;
+        }
     }
-    for (++$j; $j < $l; $j++) {
-      if ($tokens[$j][1] >= $e) {
-        // With next anno.
-        continue 2;
-      }
-      if ($a2t[$j] === NULL) {
-        $a2t[$j] = [];
-      }
-      $a2t[$j][] = $i;
-    }
-  }
-
-  $text_struct['a2t'] = $a2t;
-
-  return $text_struct;
+  
+    $text_struct['a2t'] = $a2t;
+      
+    return $text_struct;  
 
 }
+

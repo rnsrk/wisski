@@ -1,14 +1,20 @@
 <?php
 
+/**
+ * @file
+ * Contains \Drupal\wisski_bulkedit\Entity\Table.
+ */
+
 namespace Drupal\wisski_bulkedit\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\wisski_bulkedit\TableInterface;
+use Drupal\Core\Entity\EntityWithPluginCollectionInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Database\SchemaObjectExistsException;
-
 /**
  * Defines the WissKI Salz Table entity.
- *
+ * 
  * @ConfigEntityType(
  *   id = "wisski_bulkedit_table",
  *   label = @Translation("WissKI Bulkedit Table"),
@@ -40,172 +46,163 @@ use Drupal\Core\Database\SchemaObjectExistsException;
  *   }
  * )
  */
-class Table extends ConfigEntityBase implements TableInterface {
+class Table extends ConfigEntityBase implements TableInterface
+{
+  
+    const TABLE_PREFIX = 'wisski_bulkedit_table_';
 
-  const TABLE_PREFIX = 'wisski_bulkedit_table_';
+    /**
+     * The ID of the table
+     *
+     * @var string
+     */
+    protected $id;
 
-  /**
-   * The ID of the table.
-   *
-   * @var string
-   */
-  protected $id;
+    /**
+     * The ID of the table
+     *
+     * @var string
+     */
+    protected $tableName;
 
-  /**
-   * The ID of the table.
-   *
-   * @var string
-   */
-  protected $tableName;
+    /**
+     * The Table label.
+     *
+     * @var string
+     */
+    protected $label;
 
-  /**
-   * The Table label.
-   *
-   * @var string
-   */
-  protected $label;
+    /**
+     * The table creation timestamp.
+     *
+     * @var integer/long
+     */
+    protected $timestamp;
 
-  /**
-   * The table creation timestamp.
-   *
-   * @var integerlong
-   */
-  protected $timestamp;
+    /**
+     * The schema for the table.
+     *
+     * @var array
+     */
+    protected $schema;
 
-  /**
-   * The schema for the table.
-   *
-   * @var array
-   */
-  protected $schema;
-
-  /**
-   *
-   */
-  public function timestamp() {
-    return $this->timestamp;
-  }
-
-  /**
-   *
-   */
-  public function tableName($with_drupal_prefix = TRUE) {
-    if (!$this->tableName) {
-      $this->tableName = self::TABLE_PREFIX . $this->id;
+  
+    public function timestamp() 
+    {
+        return $this->timestamp;
     }
-    $name = $this->tableName;
-    if ($with_drupal_prefix) {
-      $name = \Drupal::database()->tablePrefix($name) . $name;
-    }
-    return $name;
-  }
 
-  /**
-   *
-   */
-  public function countColumns() {
-    if (!empty($this->schema) && $this->tableExists()) {
-      return count($this->schema['fields']);
-    }
-    return NULL;
-  }
 
-  /**
-   *
-   */
-  public function countRows() {
-    if (!$this->tableExists()) {
-      return NULL;
-    }
-    $count = $this->getDbConnection()
-      ->select($this->tableName(), 't')
-      ->countQuery()
-      ->execute()
-      ->fetchField();
-    return $count ?: 0;
-  }
-
-  /**
-   *
-   */
-  public function getRowSize($row = NULL) {
-    if ($row === NULL) {
-      $row = 0;
-    }
-    if (!empty($this->schema)) {
-      $field = NULL;
-      if (is_string($row)) {
-        if (isset($this->schema['fields'][$row])) {
-          $field = $this->schema['fields'][$row];
+    public function tableName($with_drupal_prefix = true) 
+    {
+        if (!$this->tableName) {
+            $this->tableName = self::TABLE_PREFIX . $this->id;
         }
-      }
-      elseif (is_int($row)) {
-        $i = 0;
-        foreach ($this->schema['fields'] as $f) {
-          if ($i == $row) {
-            $field = $f;
-            break;
-          }
+        $name = $this->tableName;
+        if ($with_drupal_prefix) {
+            $name = \Drupal::database()->tablePrefix($name) . $name;
         }
-      }
-      if ($field) {
-        if (isset($field['length'])) {
-          return $field['length'];
+        return $name;
+    }
+
+
+    public function countColumns() 
+    {
+        if (!empty($this->schema) && $this->tableExists()) {
+            return count($this->schema['fields']);
         }
-        elseif (isset($field['size'])) {
-          return $field['size'];
+        return null;
+    }
+
+    public function countRows() 
+    {
+        if (!$this->tableExists()) { return null;
         }
-      }
+        $count = $this->getDbConnection()
+            ->select($this->tableName(), 't')
+            ->countQuery()
+            ->execute()
+            ->fetchField();
+        return $count ?: 0;
     }
-    return NULL;
-  }
 
-  /**
-   *
-   */
-  public function getDbConnection() {
-    return \Drupal::database();
-  }
-
-  /**
-   *
-   */
-  public function makeTable($schema) {
-    $dbschema = $this->getDbConnection()->schema();
-    try {
-      $dbschema->createTable($this->tableName(), $schema);
+    public function getRowSize($row = null) 
+    {
+        if ($row === null) {
+            $row = 0;
+        }
+        if (!empty($this->schema)) {
+            $field = null;
+            if (is_string($row)) {
+                if (isset($this->schema['fields'][$row])) {
+                    $field = $this->schema['fields'][$row];
+                }
+            }
+            elseif (is_int($row)) {
+                $i = 0;
+                foreach ($this->schema['fields'] as $f) {
+                    if ($i == $row) {
+                        $field = $f;
+                        break;
+                    }
+                }
+            }
+            if ($field) {
+                if (isset($field['length'])) {
+                    return $field['length'];
+                }
+                elseif (isset($field['size'])) {
+                    return $field['size'];
+                }
+            }
+        }
+        return null;
     }
-    catch (SchemaObjectExistsException $e) {
-      return FALSE;
+
+  
+    public function getDbConnection() 
+    {
+        return \Drupal::database();
     }
-    $this->schema = $schema;
-    $this->timestamp = time();
-    $this->save();
-    return TRUE;
-  }
+  
 
-  /**
-   *
-   */
-  public function tableExists() {
-    $dbschema = $this->getDbConnection()->schema();
-    return $dbschema->tableExists($this->tableName());
-  }
+    public function makeTable($schema) 
+    {
+        $dbschema = $this->getDbConnection()->schema();
+        try {
+            $dbschema->createTable($this->tableName(), $schema);
+        } catch (SchemaObjectExistsException $e) {
+            return false;
+        }
+        $this->schema = $schema;
+        $this->timestamp = time();
+        $this->save();
+        return true;
+    }
+  
+  
+    public function tableExists() 
+    {
+        $dbschema = $this->getDbConnection()->schema();
+        return $dbschema->tableExists($this->tableName());
+    }
+  
+  
 
-  /**
-   *
-   */
-  protected function dropTable() {
-    $dbschema = $this->getDbConnection()->schema();
-    return $dbschema->dropTable($this->tableName());
-  }
+    protected function dropTable() 
+    {
+        $dbschema = $this->getDbConnection()->schema();
+        return $dbschema->dropTable($this->tableName()); 
+    }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function delete() {
-    $this->dropTable();
-    return parent::delete();
-  }
-
+  
+    /**
+     * {@inheritdoc}
+     */
+    public function delete() 
+    {
+        $this->dropTable();
+        return parent::delete();
+    }
+  
 }

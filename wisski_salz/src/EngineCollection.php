@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Contains \Drupal\wisski_salz\EngineCollection.
+ */
+
 namespace Drupal\wisski_salz;
 
 use Drupal\Core\Plugin\DefaultSingleLazyPluginCollection;
@@ -7,7 +12,11 @@ use Drupal\Core\Plugin\DefaultSingleLazyPluginCollection;
 /**
  * A collection of engine plugins.
  */
-class EngineCollection extends DefaultSingleLazyPluginCollection {
+class EngineCollection extends DefaultSingleLazyPluginCollection
+{
+  
+    //** this is empty till now but may be necessary **//
 
-  // ** this is empty till now but may be necessary **//.
+
+
 }

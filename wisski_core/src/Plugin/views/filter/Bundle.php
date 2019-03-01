@@ -1,8 +1,14 @@
 <?php
+/**
+ * @file
+ * Contains \Drupal\wisski_core\Plugin\views\filter\StringFilter.
+ */
 
 namespace Drupal\wisski_core\Plugin\views\filter;
 
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Plugin\views\filter\Bundle as ViewsBundle;
+use Drupal\wisski_core\WisskiHelper;
 
 /**
  * Filter handler for string.
@@ -11,39 +17,41 @@ use Drupal\views\Plugin\views\filter\Bundle as ViewsBundle;
  *
  * @ViewsFilter("wisski_bundle")
  */
-class Bundle extends ViewsBundle {
+class Bundle extends ViewsBundle
+{
 
-  /**
-   *
-   */
-  public function operators() {
-    $operators = [
-      'IN' => [
+    function operators() 
+    {
+        $operators = array(
+        'IN' => array(
         'title' => t('Is equal to'),
         'short' => t('='),
         'method' => 'opIn',
         'values' => 1,
-      ],
-    ];
+        ),
+        );
 
-    return $operators;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function query() {
-    $info = $this->operators();
-    if (!empty($info[$this->operator]['method'])) {
-      $this->{$info[$this->operator]['method']}();
+        return $operators;
     }
-  }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function opIn() {
-    $this->query->query->condition($this->realField, $this->value, $this->operator);
-  }
+    /**
+     * {@inheritdoc}
+     */
+    function query() 
+    {
+        $info = $this->operators();
+        if (!empty($info[$this->operator]['method'])) {
+            $this->{$info[$this->operator]['method']}();
+        }
+    }
+
+
+    /**
+     * {@inheritdoc}
+     */
+    function opIn() 
+    {
+        $this->query->query->condition($this->realField, $this->value, $this->operator);
+    }
 
 }

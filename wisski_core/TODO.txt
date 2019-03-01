@@ -4,3 +4,4 @@
   - in den Annotations->links die links mit den routen abgleichen hinweise in der routing.yml
 - in src/Form klären, welche alten Forms wohin gehören / was neu geschrieben werden muss
 - in src/Query/Query.php alles sinnvoll implementieren. Das ist nur ein Vorschlag, hiervon sollten die Adapter erben
+  

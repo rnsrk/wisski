@@ -1,48 +1,44 @@
 <?php
 
 /**
- * @file
- */
-
-/**
- * Implements hook_schema()
+ * implements hook_schema()
  */
 function wisski_adapter_dms_schema() {
 
-  $schema['wisski_adapter_dms'] = [
+  $schema['wisski_adapter_dms'] = array(
     'description' => 'Stores searchable entity fields for quick lookup',
-    'fields' => [
-      'adapter_id' => [
+    'fields' => array(
+      'adapter_id' => array(
         'description' => 'the adapter ID',
         'type' => 'varchar',
         'length' => '128',
         'not null' => TRUE,
-      ],
-      'uri' => [
+      ),
+      'uri' => array(
         'description' => 'uri of the entity',
         'type' => 'varchar',
         'length' => '2048',
         'not null' => TRUE,
-      ],
-      'field' => [
+      ),
+      'field' => array(
         'description' => 'the field',
         'type' => 'varchar',
         'length' => '128',
         'not null' => TRUE,
-      ],
-      'value' => [
+      ),
+     'value' => array(
         'description' => 'field values',
         'type' => 'text',
         'size' => 'normal',
         'not null' => TRUE,
-      ],
-    ],
-    'indexes' => [
-      'uri' => ['uri'],
-      'adapter_id' => ['adapter_id'],
-      'value' => ['value'],
-    ],
-  ];
+      ),
+    ),
+    'indexes' => array(
+      'uri' => array('uri'),
+      'adapter_id' => array('adapter_id'),
+      'value' => array('value'),
+    ),
+  );
 
   return $schema;
 }
