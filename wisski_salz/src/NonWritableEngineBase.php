@@ -94,9 +94,9 @@ abstract class NonWritableEngineBase extends EngineBase
     {
         $ns = array();
         $db_spaces = db_select('wisski_core_ontology_namespaces', 'ns')
-            ->fields('ns')
-            ->execute()
-            ->fetchAllAssoc('short_name');
+                  ->fields('ns')
+                  ->execute()
+                  ->fetchAllAssoc('short_name');
         foreach ($db_spaces as $space) {
             $ns[$space->short_name] = $space->long_name;
         }

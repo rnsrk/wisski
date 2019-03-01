@@ -40,9 +40,9 @@ class AdapterHelper
     
         // delete from database table
         $query = db_delete('wisski_salz_id2uri')
-            ->condition('eid', $entity_id)
-            ->condition('uri', $uris)
-            ->execute();
+        ->condition('eid', $entity_id)
+        ->condition('uri', $uris)
+        ->execute();
     
         return $query;  // # deleted rows
     
@@ -98,10 +98,10 @@ class AdapterHelper
         // dpm($uris, "asking for uris!");
 
         $set_ids = db_select('wisski_salz_id2uri', 'm')
-            ->fields('m', array('rid','uri','eid','adapter_id'))
-            ->condition('uri', $uris, 'IN')
-            ->execute()
-            ->fetchCol(2);
+        ->fields('m', array('rid','uri','eid','adapter_id'))
+        ->condition('uri', $uris, 'IN')
+        ->execute()
+        ->fetchCol(2);
         //fetch the 'eid' column into $set_ids
         // dpm($set_ids,'set IDs');
         $set_ids = array_unique($set_ids);
@@ -136,19 +136,19 @@ class AdapterHelper
             );
       
             $rows = db_select('wisski_salz_id2uri', 'm')
-                ->fields('m', array('rid','uri','eid','adapter_id')) 
+            ->fields('m', array('rid','uri','eid','adapter_id')) 
             // ->condition('eid', $entity_id)
-                ->condition('uri', $uris, 'IN')
-                ->execute()
-                ->fetchAllAssoc('adapter_id');
+            ->condition('uri', $uris, 'IN')
+            ->execute()
+            ->fetchAllAssoc('adapter_id');
         } else {
             // normal case    
             $rows = db_select('wisski_salz_id2uri', 'm')
-                ->fields('m', array('rid','uri','eid','adapter_id')) 
-                ->condition('eid', $entity_id)
+            ->fields('m', array('rid','uri','eid','adapter_id')) 
+            ->condition('eid', $entity_id)
             // ->condition('uri',$uris,'IN')
-                ->execute()
-                ->fetchAllAssoc('adapter_id');
+            ->execute()
+            ->fetchAllAssoc('adapter_id');
         }
     
         //dpm($rows,'matchings from DB');
@@ -164,16 +164,16 @@ class AdapterHelper
                     if ((string)$row->eid !== (string)$entity_id) {
                         //we consider this an EID update for this matching
                         db_update('wisski_salz_id2uri')
-                            ->fields(array('eid'=>$entity_id))
-                            ->condition('rid', $row->rid)
-                            ->execute();
+                        ->fields(array('eid'=>$entity_id))
+                        ->condition('rid', $row->rid)
+                        ->execute();
                     }
                 } elseif ((string)$row->eid === (string)$entity_id) {
                     //this is a URI update for this matching
                     db_update('wisski_salz_id2uri')
-                        ->fields(array('uri'=>$uri))
-                        ->condition('rid', $row->rid)
-                        ->execute();
+                    ->fields(array('uri'=>$uri))
+                    ->condition('rid', $row->rid)
+                    ->execute();
                 } else {
                     if($aid == null) { 
                         dpm("danger zone!!!", "error");
@@ -184,8 +184,8 @@ class AdapterHelper
                     // simply inserting it it will make everything worse!
           
                     db_insert('wisski_salz_id2uri')
-                        ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
-                        ->execute();
+                    ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
+                    ->execute();
           
                     // dpm($aid, "case one");
                 }
@@ -195,8 +195,8 @@ class AdapterHelper
                     dpm("danger zone!!!", "error");
                 }
                 db_insert('wisski_salz_id2uri')
-                    ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
-                    ->execute();
+                ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
+                ->execute();
             }
         }
     
@@ -219,14 +219,14 @@ class AdapterHelper
     {
 
         $eid = db_select('wisski_salz_id2uri', 'm')
-            ->fields('m', array('eid'))
-            ->condition('uri', $uri);
+        ->fields('m', array('eid'))
+        ->condition('uri', $uri);
         if (isset($input_adapter_id)) { $eid->condition('adapter_id', $input_adapter_id);
         }
         $query = db_select('wisski_salz_id2uri', 'm')
-            ->fields('m', array('adapter_id','uri'))
-            ->condition('eid', $eid, 'IN')
-            ->execute();
+        ->fields('m', array('adapter_id','uri'))
+        ->condition('eid', $eid, 'IN')
+        ->execute();
         $out = $query->fetchAllKeyed();
         if (!empty($out)) { return $out;
         }
@@ -247,15 +247,15 @@ class AdapterHelper
     {
   
         $eid = db_select('wisski_salz_id2uri', 'm')
-            ->fields('m', array('eid'))
-            ->condition('uri', $uri);
+        ->fields('m', array('eid'))
+        ->condition('uri', $uri);
         if (isset($input_adapter_id)) { $eid->condition('adapter_id', $input_adapter_id);
         }
         $query = db_select('wisski_salz_id2uri', 'm')
-            ->fields('m', array('uri'))
-            ->condition('eid', $eid, 'IN')
-            ->condition('adapter_id', $output_adapter_id)
-            ->execute();
+        ->fields('m', array('uri'))
+        ->condition('eid', $eid, 'IN')
+        ->condition('adapter_id', $output_adapter_id)
+        ->execute();
         $out = $query->fetchField();
         if (!empty($out)) { return $out;
         }
@@ -299,8 +299,8 @@ class AdapterHelper
         // drupal_set_message($uri);
         // dpm(func_get_args(),__FUNCTION__);
         $query = db_select('wisski_salz_id2uri', 'm')
-            ->fields('m')
-            ->condition('uri', $uri);
+        ->fields('m')
+        ->condition('uri', $uri);
         if (isset($input_adapter_id)) { $query->condition('adapter_id', $input_adapter_id);
         }
         $ids = $query->execute()->fetchAllAssoc('eid');
@@ -367,12 +367,12 @@ class AdapterHelper
     
         //eid creation works by inserting data and retrieving the newly set line number as eid
         $id = db_insert('wisski_salz_id2uri')
-            ->fields(array('uri'=>$uri,'adapter_id'=>$adapter_id))
-            ->execute();
+        ->fields(array('uri'=>$uri,'adapter_id'=>$adapter_id))
+        ->execute();
         db_update('wisski_salz_id2uri')
-            ->fields(array('eid'=>$id))
-            ->condition('rid', $id)
-            ->execute();
+        ->fields(array('eid'=>$id))
+        ->condition('rid', $id)
+        ->execute();
         
         if (WISSKI_DEVEL) {
             \Drupal::logger("AH:difu")->debug(
@@ -508,8 +508,8 @@ class AdapterHelper
         //dpm($eid,__FUNCTION__.' '.$adapter_id);
         //first try the DB
         $query = db_select('wisski_salz_id2uri', 'm')
-            ->fields('m', array('adapter_id','uri'))
-            ->condition('eid', $eid);
+        ->fields('m', array('adapter_id','uri'))
+        ->condition('eid', $eid);
         if (isset($adapter_id)) { $query->condition('adapter_id', $adapter_id);
         }
         $out = $query->execute();
@@ -667,11 +667,11 @@ class AdapterHelper
 
         // delete from table
         $query = db_delete('wisski_salz_id2uri')
-            ->condition('eid', $entity_id)
-            ->execute();
+        ->condition('eid', $entity_id)
+        ->execute();
         $query = db_delete('wisski_title_n_grams')
-            ->condition('ent_num', $entity_id)
-            ->execute();
+        ->condition('ent_num', $entity_id)
+        ->execute();
     
         // erase caches
         WisskiCacheHelper::flushCallingBundle($entity_id);
@@ -708,9 +708,9 @@ class AdapterHelper
     {
     
         $res = db_select('wisski_salz_id2uri', 'u')
-            ->fields('u', array('eid'))
-            ->orderBy('eid', 'DESC')
-            ->execute()->fetch();
+        ->fields('u', array('eid'))
+        ->orderBy('eid', 'DESC')
+        ->execute()->fetch();
         if (empty($res)) { return 1;
         } else { return $res->eid + 1;
         }

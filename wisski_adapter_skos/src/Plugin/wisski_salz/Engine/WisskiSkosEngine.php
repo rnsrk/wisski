@@ -2544,14 +2544,14 @@ class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterf
     private function putNamespace($short_name,$long_name) 
     {
         $result = db_select('wisski_salz_sparql11_ontology_namespaces', 'ns')
-            ->fields('ns')
-            ->condition('short_name', $short_name, '=')
-            ->execute()
-            ->fetchAssoc();
+              ->fields('ns')
+              ->condition('short_name', $short_name, '=')
+              ->execute()
+              ->fetchAssoc();
         if (empty($result)) {
             db_insert('wisski_salz_sparql11_ontology_namespaces')
-                ->fields(array('short_name' => $short_name,'long_name' => $long_name))
-                ->execute();
+              ->fields(array('short_name' => $short_name,'long_name' => $long_name))
+              ->execute();
         } else {
             //      drupal_set_message('Namespace '.$short_name.' already exists in DB');
         }
@@ -2561,9 +2561,9 @@ class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterf
     {
         $ns = array();
         $db_spaces = db_select('wisski_salz_sparql11_ontology_namespaces', 'ns')
-            ->fields('ns')
-            ->execute()
-            ->fetchAllAssoc('short_name');
+                  ->fields('ns')
+                  ->execute()
+                  ->fetchAllAssoc('short_name');
         foreach ($db_spaces as $space) {
             $ns[$space->short_name] = $space->long_name;
         }
@@ -3050,8 +3050,8 @@ class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterf
     
         $table_name = $this->adapterId().'_'.$type;
         $query = \Drupal::service('database')
-            ->select($table_name, 't')
-            ->fields('t');
+              ->select($table_name, 't')
+              ->fields('t');
         if (!is_null($condition_field) && !is_null($condition_value)) {
             $query = $query->condition($condition_field, $condition_value);
         }
