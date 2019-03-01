@@ -1575,8 +1575,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
         // make an entity query for all relevant pbs with this adapter.
         $relevant_pb_ids = \Drupal::service('entity.query')
-        ->get('wisski_pathbuilder')
-        ->condition('adapter', $this->adapterId())->execute();
+            ->get('wisski_pathbuilder')
+            ->condition('adapter', $this->adapterId())->execute();
 
     
         // this approach will be not fast enough in the future...
@@ -3189,14 +3189,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     private function putNamespace($short_name,$long_name) 
     {
         $result = db_select('wisski_core_ontology_namespaces', 'ns')
-              ->fields('ns')
-              ->condition('short_name', $short_name, '=')
-              ->execute()
-              ->fetchAssoc();
+            ->fields('ns')
+            ->condition('short_name', $short_name, '=')
+            ->execute()
+            ->fetchAssoc();
         if (empty($result)) {
             db_insert('wisski_core_ontology_namespaces')
-              ->fields(array('short_name' => $short_name,'long_name' => $long_name))
-              ->execute();
+                ->fields(array('short_name' => $short_name,'long_name' => $long_name))
+                ->execute();
         } else {
             //      drupal_set_message('Namespace '.$short_name.' already exists in DB');
         }
@@ -3209,9 +3209,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     {
         $ns = array();
         $db_spaces = db_select('wisski_core_ontology_namespaces', 'ns')
-                  ->fields('ns')
-                  ->execute()
-                  ->fetchAllAssoc('short_name');
+            ->fields('ns')
+            ->execute()
+            ->fetchAllAssoc('short_name');
         foreach ($db_spaces as $space) {
             $ns[$space->short_name] = $space->long_name;
         }
@@ -3790,8 +3790,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     
         $table_name = $this->adapterId().'_'.$type;
         $query = \Drupal::service('database')
-              ->select($table_name, 't')
-              ->fields('t');
+            ->select($table_name, 't')
+            ->fields('t');
         if (!is_null($condition_field) && !is_null($condition_value)) {
             $query = $query->condition($condition_field, $condition_value);
         }

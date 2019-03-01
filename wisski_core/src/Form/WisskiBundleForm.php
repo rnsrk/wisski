@@ -111,7 +111,7 @@ class WisskiBundleForm extends EntityForm
     public function save(array $form, FormStateInterface $form_state) 
     {
         /**
- * @var  \Drupal\wisski_core\WisskiBundleInterface $bundle 
+ * @var \Drupal\wisski_core\WisskiBundleInterface $bundle 
 */
         $bundle = $this->entity;
 

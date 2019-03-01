@@ -74,8 +74,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   
         foreach($ids as $id) {
             $cached_field_values = db_select('wisski_entity_field_properties', 'f')
-            ->fields('f', array('fid', 'ident','delta','properties'))
-            ->condition('eid', $id);
+                ->fields('f', array('fid', 'ident','delta','properties'))
+                ->condition('eid', $id);
             // ->condition('bid',$values[$id]['bundle'])
             // ->condition('fid',$field_name)
 
@@ -117,12 +117,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
                 // load the cache
                 $cached_field_values = db_select('wisski_entity_field_properties', 'f')
-                ->fields('f', array('fid', 'ident','delta','properties'))
-                ->condition('eid', $id)
-                ->condition('bid', $values[$id]['bundle'])
+                    ->fields('f', array('fid', 'ident','delta','properties'))
+                    ->condition('eid', $id)
+                    ->condition('bid', $values[$id]['bundle'])
                 // ->condition('fid',$field_name)
-                ->execute()
-                ->fetchAll();
+                    ->execute()
+                    ->fetchAll();
                 // ->fetchAllAssoc('fid');
                 // fetchAllAssoc('fid') is wrong here because
                 // if you have duplicateable fields it will fail!
@@ -696,12 +696,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                                 //try finding the weights and sort the values accordingly
                                 if (isset($new_field_values[$id][$field_name])) {
                                     $cached_field_values = db_select('wisski_entity_field_properties', 'f')
-                                    ->fields('f', array('ident','delta','properties'))
-                                    ->condition('eid', $id)
-                                    ->condition('bid', $bundleid)
-                                    ->condition('fid', $field_name)
-                                    ->execute()
-                                    ->fetchAllAssoc('delta');
+                                        ->fields('f', array('ident','delta','properties'))
+                                        ->condition('eid', $id)
+                                        ->condition('bid', $bundleid)
+                                        ->condition('fid', $field_name)
+                                        ->execute()
+                                        ->fetchAllAssoc('delta');
                                     // this is evil because same values will be killed then... we go for weight instead.
                                     // ->fetchAllAssoc('ident');
                                     // dpm($cached_field_values, "cfv");

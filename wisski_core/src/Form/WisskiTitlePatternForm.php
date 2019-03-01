@@ -517,7 +517,7 @@ class WisskiTitlePatternForm extends EntityForm
     {
     
         /**
- * @var  \Drupal\wisski_core\WisskiBundleInterface $bundle 
+ * @var \Drupal\wisski_core\WisskiBundleInterface $bundle 
 */
         $bundle = $this->entity;
     

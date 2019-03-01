@@ -726,21 +726,21 @@ class Query extends WisskiQueryBase
             if ($operator == 'IN' || $operator == "=" || empty($operator)) {
                 $values = (array) $value;
                 $query = \Drupal::database()->select('wisski_salz_id2uri', 't')
-                ->distinct()
-                ->fields('t', array('eid', 'uri'))
-                ->condition('adapter_id', $this->getEngine()->adapterId())
-                ->condition('eid', $values, 'IN')
-                ->condition('uri', '%/wisski/navigate/%', 'NOT LIKE');
+                    ->distinct()
+                    ->fields('t', array('eid', 'uri'))
+                    ->condition('adapter_id', $this->getEngine()->adapterId())
+                    ->condition('eid', $values, 'IN')
+                    ->condition('uri', '%/wisski/navigate/%', 'NOT LIKE');
                 $entity_ids = $query->execute()->fetchAllKeyed();
             }
             elseif ($operator == 'BETWEEN') {
                 $values = (array) $value;
                 $query = \Drupal::database()->select('wisski_salz_id2uri', 't')
-                ->distinct()
-                ->fields('t', array('eid', 'uri'))
-                ->condition('adapter_id', $this->getEngine()->adapterId())
-                ->condition('eid', $values, 'BETWEEN')
-                ->condition('uri', '%/wisski/navigate/%', 'NOT LIKE');
+                    ->distinct()
+                    ->fields('t', array('eid', 'uri'))
+                    ->condition('adapter_id', $this->getEngine()->adapterId())
+                    ->condition('eid', $values, 'BETWEEN')
+                    ->condition('uri', '%/wisski/navigate/%', 'NOT LIKE');
                 $entity_ids = $query->execute()->fetchAllKeyed();
             }
             else {
@@ -779,8 +779,8 @@ class Query extends WisskiQueryBase
 
             // first fetch all entity ids that match the title pattern
             $select = \Drupal::service('database')
-            ->select('wisski_title_n_grams', 'w')
-            ->fields('w', array('ent_num'));
+                ->select('wisski_title_n_grams', 'w')
+                ->fields('w', array('ent_num'));
 
             if ($operator == '=' || $operator == "!=" || $operator == "LIKE") {
                 $select->condition('ngram', $value, $operator);
@@ -818,11 +818,11 @@ class Query extends WisskiQueryBase
             // dpm($entity_ids, "eids!");
             // now fetch the uris for the eids as we have to return both
             $query = \Drupal::database()->select('wisski_salz_id2uri', 't')
-            ->distinct()
-            ->fields('t', array('eid', 'uri'))
-            ->condition('adapter_id', $this->getEngine()->adapterId())
-            ->condition('eid', $entity_ids, 'IN') // we need to add this line below as the wisski navigate url is not the one we need...
-            ->condition('uri', '%/wisski/navigate/%', 'NOT LIKE');
+                ->distinct()
+                ->fields('t', array('eid', 'uri'))
+                ->condition('adapter_id', $this->getEngine()->adapterId())
+                ->condition('eid', $entity_ids, 'IN') // we need to add this line below as the wisski navigate url is not the one we need...
+                ->condition('uri', '%/wisski/navigate/%', 'NOT LIKE');
             $entity_ids = $query->execute()->fetchAllKeyed();
             // dpm($entity_ids, "sec");
             //      $out_entities = array();
@@ -1064,9 +1064,9 @@ class Query extends WisskiQueryBase
     {
         // we start a new query
         $result = \Drupal::entityQuery('wisski_individual')
-        ->condition('title', $title_search_string, $operator)
-        ->condition('bundle', $bundle_ids, 'IN')
-        ->execute();
+            ->condition('title', $title_search_string, $operator)
+            ->condition('bundle', $bundle_ids, 'IN')
+            ->execute();
         return $result;
     }
 

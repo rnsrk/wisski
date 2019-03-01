@@ -84,93 +84,93 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
         $fields = array();
     
         $fields['eid'] = BaseFieldDefinition::create('integer')
-        ->setLabel(t('Entity ID'))
-        ->setDescription(t('The ID of this entity.'))
-        ->setReadOnly(true)
-        ->setSetting('unsigned', true);
+            ->setLabel(t('Entity ID'))
+            ->setDescription(t('The ID of this entity.'))
+            ->setReadOnly(true)
+            ->setSetting('unsigned', true);
 
         $fields['uuid'] = BaseFieldDefinition::create('uuid')
-        ->setLabel(t('UUID'))
-        ->setDescription(t('This entity\'s UUID.'))
-        ->setReadOnly(true);
+            ->setLabel(t('UUID'))
+            ->setDescription(t('This entity\'s UUID.'))
+            ->setReadOnly(true);
 
         $fields['vid'] = BaseFieldDefinition::create('integer')
-        ->setLabel(t('Revision ID'))
-        ->setDescription(t('The revision ID.'))
-        ->setReadOnly(true)
-        ->setSetting('unsigned', true);
+            ->setLabel(t('Revision ID'))
+            ->setDescription(t('The revision ID.'))
+            ->setReadOnly(true)
+            ->setSetting('unsigned', true);
 
         $fields['bundle'] = BaseFieldDefinition::create('entity_reference')
-        ->setLabel(t('Bundle'))
-        ->setDescription(t('The bundle.'))
-        ->setSetting('target_type', 'wisski_bundle')
-        ->setReadOnly(true);
+            ->setLabel(t('Bundle'))
+            ->setDescription(t('The bundle.'))
+            ->setSetting('target_type', 'wisski_bundle')
+            ->setReadOnly(true);
     
         // TODO: wisski entities are not translatable. do we thus need the lang code?
         $fields['langcode'] = BaseFieldDefinition::create('language')
-        ->setLabel(t('Language code'))
-        ->setDescription(t('Language code.'))
-        ->setRevisionable(true);
+            ->setLabel(t('Language code'))
+            ->setDescription(t('Language code.'))
+            ->setRevisionable(true);
 
         $fields['name'] = BaseFieldDefinition::create('string')
-        ->setLabel(t('Entity name'))
-        ->setDescription(t('The human readable name of this entity.'))
-        ->setRequired(true)
-        ->setTranslatable(true)
-        ->setRevisionable(true)
-        ->setDefaultValueCallback("wisski_core_generate_title")
+            ->setLabel(t('Entity name'))
+            ->setDescription(t('The human readable name of this entity.'))
+            ->setRequired(true)
+            ->setTranslatable(true)
+            ->setRevisionable(true)
+            ->setDefaultValueCallback("wisski_core_generate_title")
         //      ->setDefaultValue('')
-        ->setSetting('max_length', 255)
-        ->setDisplayOptions(
-            'form', array(
-            'type' => 'string_textfield',
-            'weight' => -5,
+            ->setSetting('max_length', 255)
+            ->setDisplayOptions(
+                'form', array(
+                'type' => 'string_textfield',
+                'weight' => -5,
+                )
             )
-        )
-        ->setDisplayConfigurable('form', true)
-        ->setDisplayOptions(
-            'view', array(
-            'label' => 'hidden',
-            'type' => 'string',
-            'weight' => -5,
+            ->setDisplayConfigurable('form', true)
+            ->setDisplayOptions(
+                'view', array(
+                'label' => 'hidden',
+                'type' => 'string',
+                'weight' => -5,
+                )
             )
-        )
-        ->setDisplayConfigurable('view', true);
+            ->setDisplayConfigurable('view', true);
 
         $fields['uid'] = BaseFieldDefinition::create('entity_reference')
-        ->setLabel(t('Creator ID'))
-        ->setDescription(t('The user ID of the entity creator.'))
-        ->setRevisionable(true)
-        ->setDefaultValue(0)
-        ->setSetting('target_type', 'user')
-        ->setTranslatable(true)
-        ->setDisplayOptions(
-            'view', array(
-            'label' => 'hidden',
-            'type' => 'author',
-            'weight' => 0,
+            ->setLabel(t('Creator ID'))
+            ->setDescription(t('The user ID of the entity creator.'))
+            ->setRevisionable(true)
+            ->setDefaultValue(0)
+            ->setSetting('target_type', 'user')
+            ->setTranslatable(true)
+            ->setDisplayOptions(
+                'view', array(
+                'label' => 'hidden',
+                'type' => 'author',
+                'weight' => 0,
+                )
             )
-        )
-        ->setDisplayConfigurable('view', true)
-        ->setDisplayOptions(
-            'form', array(
-            'type' => 'entity_reference_autocomplete',
-            'weight' => 5,
-            'settings' => array(
-            'match_operator' => 'CONTAINS',
-            'size' => '60',
-            'autocomplete_type' => 'tags',
-            'placeholder' => '',
-            ),
+            ->setDisplayConfigurable('view', true)
+            ->setDisplayOptions(
+                'form', array(
+                'type' => 'entity_reference_autocomplete',
+                'weight' => 5,
+                'settings' => array(
+                'match_operator' => 'CONTAINS',
+                'size' => '60',
+                'autocomplete_type' => 'tags',
+                'placeholder' => '',
+                ),
+                )
             )
-        )
-        ->setDisplayConfigurable('form', true);
+            ->setDisplayConfigurable('form', true);
 
         $fields['status'] = BaseFieldDefinition::create('boolean')
-        ->setLabel(t('Published'))
+            ->setLabel(t('Published'))
         // ->setDescription(t('A boolean indicating whether the entity is published.'))
-        ->setTranslatable(true)
-        ->setRevisionable(true);
+            ->setTranslatable(true)
+            ->setRevisionable(true);
     
         $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
         $use_status = $set->get('enable_published_status_everwhere');
@@ -185,15 +185,15 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
                 'weight' => 120,
                 ]
             )
-            ->setDisplayConfigurable('form', true);
+                ->setDisplayConfigurable('form', true);
         }
     
         $fields['preview_image'] = BaseFieldDefinition::create('image')
-        ->setLabel(t('Preview Image'))
-        ->setDescription(t('A reference to an image file that is used as the preview image of the entity'))
-        ->setSetting('target_type', 'file')
-        ->setDefaultValue(null)
-        ->setDisplayConfigurable('view', true);
+            ->setLabel(t('Preview Image'))
+            ->setDescription(t('A reference to an image file that is used as the preview image of the entity'))
+            ->setSetting('target_type', 'file')
+            ->setDefaultValue(null)
+            ->setDisplayConfigurable('view', true);
     
         return $fields;
     }
@@ -280,10 +280,10 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
         if ($save_field_properties) {
             //clear the field values for this field in entity in bundle
             db_delete('wisski_entity_field_properties')
-            ->condition('eid', $this->id())
-            ->condition('bid', $this->bundle())
+                ->condition('eid', $this->id())
+                ->condition('bid', $this->bundle())
             // ->condition('fid',$field_name)
-            ->execute();
+                ->execute();
       
             // prepare the insert query.
             $query = db_insert('wisski_entity_field_properties')

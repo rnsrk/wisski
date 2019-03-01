@@ -302,7 +302,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface
     /**
      * {@inheritdoc}
      */
-    public abstract function checkUriExists ($uri);
+    public abstract function checkUriExists($uri);
 
     /**
      * Gets the PB object for a given adapter id

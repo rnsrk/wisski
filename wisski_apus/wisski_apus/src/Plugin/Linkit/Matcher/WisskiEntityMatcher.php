@@ -116,9 +116,9 @@ class WisskiEntityMatcher extends EntityMatcher
         if ($string) {
             $bundles = array();
             $query = db_select('wisski_title_n_grams', 'm')
-            ->fields('m', array('ent_num', 'bundle', 'ngram'))
-            ->condition('ngram', '%' . db_like($string) . '%', 'LIKE')
-            ->range(0, 2 * $this->limit);
+                ->fields('m', array('ent_num', 'bundle', 'ngram'))
+                ->condition('ngram', '%' . db_like($string) . '%', 'LIKE')
+                ->range(0, 2 * $this->limit);
             // Bundle check.
             if (!empty($this->configuration['bundles'])) {
                 $query->condition('bundle', $this->configuration['bundles'], 'IN');

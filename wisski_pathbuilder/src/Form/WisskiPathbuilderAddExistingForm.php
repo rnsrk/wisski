@@ -80,7 +80,7 @@ class WisskiPathbuilderAddExistingForm extends EntityForm
     
         // $form_state->setRedirect('entity.wisski_pathbuilder.edit_form');
         $redirect_url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.edit_form')
-                             ->setRouteParameters(array('wisski_pathbuilder'=>$pb->id()));
+            ->setRouteParameters(array('wisski_pathbuilder'=>$pb->id()));
                              
         $form_state->setRedirectUrl($redirect_url);
                                  

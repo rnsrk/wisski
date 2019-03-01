@@ -153,8 +153,8 @@ class WisskiToolbarHandler implements ContainerInjectionInterface
         $build = $this->menuLinkTree->build($tree);
 
         CacheableMetadata::createFromRenderArray($build)
-        ->addCacheableDependency($this->config)
-        ->applyTo($build);
+            ->addCacheableDependency($this->config)
+            ->applyTo($build);
 
         return $build;
     }

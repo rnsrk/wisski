@@ -234,7 +234,7 @@ function wisski_textanly_admin_analyse_vocab($op, $ap)
 
 
 /**
- * @author  Florian Wittmann
+ * @author Florian Wittmann
  */
 function wisski_textanly_build_has_pos_reverse($text) 
 {
