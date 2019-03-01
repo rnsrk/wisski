@@ -185,7 +185,6 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
       foreach($pbs as $pb_info) {
       
         // prepare later used variables (dangerzone!!)
-        
         $adapter_id = $pb_info['adapter_id'];
         
         $pb = WisskiPathbuilderEntity::load($pb_info['pb_id']);
@@ -202,7 +201,6 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
       // @todo: (by Mark:) What if there are several of these? Currently we
       // just take the first one. This might be bad and should be set somewhere in the
       // authority control, isnt it?!
-      
       $entity_id = $object->id();
 
       $mainprop = "value";

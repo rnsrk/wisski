@@ -2466,7 +2466,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           elseif($op == 'CONTAINS' || $op == 'contains') {
             $regex = true;
             $safe = TRUE;
+#            dpm($primitiveValue, "prim");
             $primitiveValue = $this->escapeSparqlRegex($primitiveValue, TRUE);
+#            dpm($primitiveValue, "prim");
           }
           elseif ($op == 'IN' || $op == 'NOT IN' || $op == 'in' || $op == 'not in' || $op == 'not_in') {
             $regex = TRUE;

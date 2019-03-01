@@ -992,6 +992,7 @@ abstract class Sparql11Engine extends EngineBase {
           // contains behaves like regex but we also have to escape the special
           // regex chars
           $term = $search['term'];
+#          dpm(serialize($term), "term");
           return "(REGEX(STR($dtVar), '" . $this->escapeSparqlRegex($term, TRUE) . "'))";
         case 'REGEX':
           $term = $search['term'];
