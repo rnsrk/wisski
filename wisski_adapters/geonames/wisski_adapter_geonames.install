@@ -1,44 +1,48 @@
 <?php
 
 /**
- * implements hook_schema()
+ * @file
+ */
+
+/**
+ * Implements hook_schema()
  */
 function wisski_adapter_geonames_schema() {
 
-  $schema['wisski_adapter_geonames'] = array(
+  $schema['wisski_adapter_geonames'] = [
     'description' => 'Stores searchable entity fields for quick lookup',
-    'fields' => array(
-      'adapter_id' => array(
+    'fields' => [
+      'adapter_id' => [
         'description' => 'the adapter ID',
         'type' => 'varchar',
         'length' => '128',
         'not null' => TRUE,
-      ),
-      'uri' => array(
+      ],
+      'uri' => [
         'description' => 'uri of the entity',
         'type' => 'varchar',
         'length' => '2048',
         'not null' => TRUE,
-      ),
-      'field' => array(
+      ],
+      'field' => [
         'description' => 'the field',
         'type' => 'varchar',
         'length' => '128',
         'not null' => TRUE,
-      ),
-     'value' => array(
+      ],
+      'value' => [
         'description' => 'field values',
         'type' => 'text',
         'size' => 'normal',
         'not null' => TRUE,
-      ),
-    ),
-    'indexes' => array(
-      'uri' => array('uri'),
-      'adapter_id' => array('adapter_id'),
-      'value' => array('value'),
-    ),
-  );
+      ],
+    ],
+    'indexes' => [
+      'uri' => ['uri'],
+      'adapter_id' => ['adapter_id'],
+      'value' => ['value'],
+    ],
+  ];
 
   return $schema;
 }

@@ -1,49 +1,63 @@
 <?php
 
 /**
- * Implementation of Hook_help
+ * @file
  */
-function wisski_ckeditor_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+
+/**
+ * Implementation of Hook_help.
+ */use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ *
+ */
+function wisski_ckeditor_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'help.page.wisski_ckeditor':
       return '<p>' . t('This extends the ckeditor with wisski text analysis abilities.') . '</p>';
   }
 }
 
-
+/**
+ *
+ */
 function wisski_ckeditor_menu() {
 
-  $items = array();
+  $items = [];
 
-  $items['node/%/export'] = array(
+  $items['node/%/export'] = [
     'title' => 'Export',
     'page callback' => 'wisski_ckeditor_export',
     'access callback' => TRUE,
     'type' => MENU_LOCAL_ACTION,
-  );
+  ];
 
   return $items;
 }
 
-
+/**
+ *
+ */
 function wisski_ckeditor_export() {
   return "bla";
 }
 
-
+/**
+ *
+ */
 function wisski_ckeditor_ckeditor_plugin() {
-  return array(
-    'wisski_apus_adapter' => array(
+  return [
+    'wisski_apus_adapter' => [
       'name' => 'wisski_apus_adapter',
       'desc' => t('WissKI Annotation Commons: Provides common features and buttons to annotate and link to instances'),
       'path' => drupal_get_path('module', 'wisski_ckeditor') . '/js/wisski_apus_adapter/',
-      'buttons' => array(
-        'ToggleSubject' => array(
+      'buttons' => [
+        'ToggleSubject' => [
           'label' => 'Toggle Subject',
-          'icon' => 'icons/togglesubject.png'
-        ),
-      ),
-    ),
-  );
+          'icon' => 'icons/togglesubject.png',
+        ],
+      ],
+    ],
+  ];
 
 }

@@ -1,9 +1,17 @@
 <?php
 
 /**
- * Implements hook_help().
+ * @file
  */
-function wisski_editlayout_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+
+/**
+ * Implements hook_help().
+ */use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ *
+ */
+function wisski_editlayout_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'help.page.wisski_editlayout':
       return '<p>' . t('This is the WissKI module for a better layout ' .
@@ -11,9 +19,11 @@ function wisski_editlayout_help($route_name, \Drupal\Core\Routing\RouteMatchInte
   }
 }
 
+/**
+ *
+ */
+function wisski_editlayout_form_wisski_individual_form_alter(&$form) {
 
-function wisski_editlayout_form_wisski_individual_form_alter (&$form) {
-  
   $form['#attached']['library'][] = 'wisski_editlayout/std';
 
 }

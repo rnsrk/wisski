@@ -18,17 +18,13 @@ use Drupal\rest\Plugin\views\display\RestExport as OriginalRestExport;
  *   returns_response = TRUE
  * )
  */
-class RestExport extends OriginalRestExport
-{
-  
-    /**
-     * {@inheritdoc}
-     */
-    public function usesExposed() 
-    {
-        return false;
-    }
+class RestExport extends OriginalRestExport {
 
-
+  /**
+   * {@inheritdoc}
+   */
+  public function usesExposed() {
+    return FALSE;
+  }
 
 }

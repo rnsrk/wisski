@@ -1,8 +1,12 @@
 <?php
 
+use Drupal\Core\Entity\EntityDeleteForm;
+
 namespace Drupal\wisski_core\Form;
 
-class WisskiBundleDeleteForm extends \Drupal\Core\Entity\EntityDeleteForm
-{
+/**
+ *
+ */
+class WisskiBundleDeleteForm extends EntityDeleteForm {
 
 }
