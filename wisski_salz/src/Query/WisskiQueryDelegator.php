@@ -254,6 +254,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         if ($pager || !empty($this->range)) {
           return $this->pagerQuery($this->range['length'],$this->range['start']);
         } else {
+          $query = current($this->dependent_queries);
           $query = $query->normalQuery();
           return $query->execute();
         }
