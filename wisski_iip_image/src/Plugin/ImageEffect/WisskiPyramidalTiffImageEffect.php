@@ -28,68 +28,74 @@ use Drupal\image\ConfigurableImageEffectBase;
  * )
  */
  
-class WisskiPyramidalTiffImageEffect extends ConfigurableImageEffectBase implements ContainerFactoryPluginInterface {
+class WisskiPyramidalTiffImageEffect extends ConfigurableImageEffectBase implements ContainerFactoryPluginInterface
+{
 
-  /**
-   * {@inheritdoc}
-   */
-  public function defaultConfiguration() {
-    return [
-      'level' => 10,
-      ] + parent::defaultConfiguration();
-  }
+    /**
+     * {@inheritdoc}
+     */
+    public function defaultConfiguration() 
+    {
+        return [
+        'level' => 10,
+        ] + parent::defaultConfiguration();
+    }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function getSummary() {
-    return [
-      '#theme' => 'image_effects_convolution_sharpen_summary',
-      '#data' => $this->configuration,
-      ] + parent::getSummary();
-  }
+    /**
+     * {@inheritdoc}
+     */
+    public function getSummary() 
+    {
+        return [
+        '#theme' => 'image_effects_convolution_sharpen_summary',
+        '#data' => $this->configuration,
+        ] + parent::getSummary();
+    }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+    /**
+     * {@inheritdoc}
+     */
+    public function buildConfigurationForm(array $form, FormStateInterface $form_state) 
+    {
 
-    $form['level'] = array(
-      '#type' => 'number',
-      '#title' => t('Sharpen level'),
-      '#description' => t('Typically 1 - 50.'),
-      '#default_value' => $this->configuration['level'],
-      '#required' => TRUE,
-      '#allow_negative' => FALSE,
-    );
-    return $form;
-  }
+        $form['level'] = array(
+        '#type' => 'number',
+        '#title' => t('Sharpen level'),
+        '#description' => t('Typically 1 - 50.'),
+        '#default_value' => $this->configuration['level'],
+        '#required' => true,
+        '#allow_negative' => false,
+        );
+        return $form;
+    }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
-    parent::submitConfigurationForm($form, $form_state);
-    $this->configuration['level'] = $form_state->getValue('level');
-  }
+    /**
+     * {@inheritdoc}
+     */
+    public function submitConfigurationForm(array &$form, FormStateInterface $form_state) 
+    {
+        parent::submitConfigurationForm($form, $form_state);
+        $this->configuration['level'] = $form_state->getValue('level');
+    }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function applyEffect(ImageInterface $image) {
-    // Apply any effects to the image here.
+    /**
+     * {@inheritdoc}
+     */
+    public function applyEffect(ImageInterface $image) 
+    {
+        // Apply any effects to the image here.
 
-    $image->apply('pyramid', array());
-#    drupal_set_message("yay, I am here!");
+        $image->apply('pyramid', array());
+        // drupal_set_message("yay, I am here!");
     
-#    drupal_set_message(serialize($image->apply('pyramid', array())));
+        // drupal_set_message(serialize($image->apply('pyramid', array())));
 
-#    drupal_set_message("done.");
+        // drupal_set_message("done.");
     
-#    $source = $image->getSource();
+        // $source = $image->getSource();
     
-#    $result = shell_exec("convert " . $source . " -define tiff:tile-geometry=256x256 -compress jpeg 'ptif:" . escapeshellarg($destination) . "'";);
+        // $result = shell_exec("convert " . $source . " -define tiff:tile-geometry=256x256 -compress jpeg 'ptif:" . escapeshellarg($destination) . "'";);
     
-    return TRUE;
-  }
+        return true;
+    }
 }

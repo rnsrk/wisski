@@ -1,19 +1,20 @@
 <?php
 
-function wisski_apus_dialog_select_entity() {
+function wisski_apus_dialog_select_entity() 
+{
 
-  $params = (object) array(
+    $params = (object) array(
     'search_string' => '',
     'search_mode' => 'contains',
     'classes' => '',
-  );
-  wisski_core_parse_http_params($params, 'params');
+    );
+    wisski_core_parse_http_params($params, 'params');
 
-  $form = array();
+    $form = array();
 
   
 
-  return drupal_render($form);
+    return drupal_render($form);
 
 }
 

@@ -12,31 +12,34 @@ use Drupal\views\ResultRow;
  *
  * @ViewsField("wisski_standard")
  */
-class Standard extends FieldPluginBase {
+class Standard extends FieldPluginBase
+{
   
-  /**
-   * {@inheritdoc}
-   */ 
-  public function render(ResultRow $values) {
+    /**
+     * {@inheritdoc}
+     */ 
+    public function render(ResultRow $values) 
+    {
     
-    $value = $this->getValue($values);
-    if (is_array($value)) {
-      $return = [];
+        $value = $this->getValue($values);
+        if (is_array($value)) {
+            $return = [];
 
-      foreach ($value as $v) {
+            foreach ($value as $v) {
         
-        // in case of a disamb-array, go to the value.
-        if(is_array($v) && isset($v["value"]))
-          $return[] = $this->sanitizeValue($v["value"]);
-        else 	         
-          $return[] = $this->sanitizeValue($v);
-      }
-      return join(', ', $return);
+                // in case of a disamb-array, go to the value.
+                if(is_array($v) && isset($v["value"])) {
+                    $return[] = $this->sanitizeValue($v["value"]);
+                } else {              
+                    $return[] = $this->sanitizeValue($v);
+                }
+            }
+            return join(', ', $return);
+        }
+        else {
+            return $this->sanitizeValue($value);
+        }
     }
-    else {
-      return $this->sanitizeValue($value);
-    }
-  }
 
 }   
 

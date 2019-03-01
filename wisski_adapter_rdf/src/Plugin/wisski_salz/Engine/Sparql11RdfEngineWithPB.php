@@ -29,34 +29,38 @@ use \EasyRdf;
  *   description = @Translation("Provides access to a SPARQL 1.1 endpoint with RDF and is configurable via a Pathbuilder")
  * )
  */
-class Sparql11RdfEngineWithPB extends Sparql11EngineWithPB implements PathbuilderEngineInterface  {
+class Sparql11RdfEngineWithPB extends Sparql11EngineWithPB implements PathbuilderEngineInterface
+{
 
 
-  /******************* BASIC Pathbuilder Support ***********************/
+    /*******************
+     * BASIC Pathbuilder Support 
+     ***********************/
   
-  /**
-   * @{inheritdoc}
-   */
-  public function getPrimitiveMapping($step) {
+    /**
+     * @{inheritdoc}
+     */
+    public function getPrimitiveMapping($step) 
+    {
     
-    $info = [];
+        $info = [];
 
-    // this might need to be adjusted for other standards than rdf/owl
-    $query = 
-      "SELECT DISTINCT ?property "
-      ."WHERE {  {"
+        // this might need to be adjusted for other standards than rdf/owl
+        $query = 
+        "SELECT DISTINCT ?property "
+        ."WHERE {  {"
         ." { ?property rdfs:range rdfs:Literal . } UNION { ?property a owl:DatatypeProperty . } UNION { ?property a rdf:Property . } UNION { ?property a owl:AnnotationProperty . } UNION { ?property a rdfs:label . } }}"
-#        ."?property a owl:DatatypeProperty. "
-#        ."?property rdfs:domain ?d_superclass. "
-#        ."<$step> rdfs:subClassOf* ?d_superclass. }"
-      ;
+        // ."?property a owl:DatatypeProperty. "
+        // ."?property rdfs:domain ?d_superclass. "
+        // ."<$step> rdfs:subClassOf* ?d_superclass. }"
+        ;
       
-      // By Mark: TODO: Please check this. I have absolutely
-      // no idea what this does, I just copied it from below
-      // and I really really hope that Dorian did know what it
-      // does and it will work forever.      
-/*
-      $query .= 
+        // By Mark: TODO: Please check this. I have absolutely
+        // no idea what this does, I just copied it from below
+        // and I really really hope that Dorian did know what it
+        // does and it will work forever.      
+        /*
+        $query .= 
         "{"
           ."{?d_def_prop rdfs:domain ?d_def_class.}"
           ." UNION "
@@ -87,82 +91,88 @@ class Sparql11RdfEngineWithPB extends Sparql11EngineWithPB implements Pathbuilde
             ."}"
           ."}"
         ."}}}";
-*/
-    $result = $this->directQuery($query);
-#    dpm($query, 'res');
+        */
+        $result = $this->directQuery($query);
+        // dpm($query, 'res');
 
-    if (count($result) == 0) return array();
+        if (count($result) == 0) { return array();
+        }
     
-    $output = array();
-    foreach ($result as $obj) {
-      $prop = $obj->property->getUri();
-      $output[$prop] = $prop;
-    }
-    uksort($output,'strnatcasecmp');
-    return $output;
-  } 
+        $output = array();
+        foreach ($result as $obj) {
+            $prop = $obj->property->getUri();
+            $output[$prop] = $prop;
+        }
+        uksort($output, 'strnatcasecmp');
+        return $output;
+    } 
 
-  public function getInverseProperty($property_uri) {
+    public function getInverseProperty($property_uri) 
+    {
 
-  /* cache version
-    $inverses = array();
-    $cid = 'wisski_reasoner_inverse_properties';
-    if ($cache = \Drupal::cache()->get($cid)) {
-      $inverses = $cache->data;
-      if (isset($properties[$property_uri])) return $inverses[$property_uri];
-    }
-    */
+        /* cache version
+        $inverses = array();
+        $cid = 'wisski_reasoner_inverse_properties';
+        if ($cache = \Drupal::cache()->get($cid)) {
+        $inverses = $cache->data;
+        if (isset($properties[$property_uri])) return $inverses[$property_uri];
+        }
+        */
     
-    //DB version
-    $inverse = $this->retrieve('inverses','inverse','property',$property_uri);
-    if (!empty($inverse)) return current($inverse);
+        //DB version
+        $inverse = $this->retrieve('inverses', 'inverse', 'property', $property_uri);
+        if (!empty($inverse)) { return current($inverse);
+        }
 
-    $min = max(strrpos($property_uri, '/'), strrpos($property_uri, '#'));
+        $min = max(strrpos($property_uri, '/'), strrpos($property_uri, '#'));
     
-    if(empty($min))
-      return NULL;
+        if(empty($min)) {
+            return null;
+        }
 
-    $min = $min +1;
+        $min = $min +1;
     
-    $front = substr($property_uri, 0, $min);
-    $end = substr($property_uri, $min);
+        $front = substr($property_uri, 0, $min);
+        $end = substr($property_uri, $min);
     
-    preg_match('/^([a-zA-Z0-9]*)([^a-zA-Z0-9])/', $end, $matches);
-    #dpm($property_uri, "searched");
-    #dpm(serialize($min), "min");
-    #dpm($matches, "found");
-    #dpm($front, "front");
-    #dpm($end, "end");        
-    if(empty($matches))
-      return NULL;
+        preg_match('/^([a-zA-Z0-9]*)([^a-zA-Z0-9])/', $end, $matches);
+        // dpm($property_uri, "searched");
+        // dpm(serialize($min), "min");
+        // dpm($matches, "found");
+        // dpm($front, "front");
+        // dpm($end, "end");        
+        if(empty($matches)) {
+            return null;
+        }
       
-    $inversestart = $matches[1];
+        $inversestart = $matches[1];
         
-    if($inversestart[strlen($inversestart)-1] == "i")
-      $inversestart = substr($inversestart, 0, -1);
-    else
-      $inversestart = $inversestart . 'i';
+        if($inversestart[strlen($inversestart)-1] == "i") {
+            $inversestart = substr($inversestart, 0, -1);
+        } else {
+            $inversestart = $inversestart . 'i';
+        }
 
-#      dpm($inversestart, "inv");
+        // dpm($inversestart, "inv");
 
-    // up to now this was the current code. However this is evil in case there are several answers.
-    // it will then return the upper one which is bad.
-    // so in case there is an easy answer, give the easy answer.
-    $results = $this->directQuery(
-      "SELECT ?prop WHERE {"
-        ." GRAPH ?g1 {?prop a rdf:Property } . FILTER(contains(xsd:string(?prop), '" . $inversestart . $matches[2] . "')) . "
-      ."}"
-    );
+        // up to now this was the current code. However this is evil in case there are several answers.
+        // it will then return the upper one which is bad.
+        // so in case there is an easy answer, give the easy answer.
+        $results = $this->directQuery(
+            "SELECT ?prop WHERE {"
+            ." GRAPH ?g1 {?prop a rdf:Property } . FILTER(contains(xsd:string(?prop), '" . $inversestart . $matches[2] . "')) . "
+            ."}"
+        );
     
-    $inverse = '';
-    foreach ($results as $row) {
-      $inverse = $row->prop->getUri();
+        $inverse = '';
+        foreach ($results as $row) {
+            $inverse = $row->prop->getUri();
+        }
+    
+        // dpm($inverse, "inv");
+        $inverses[$property_uri] = $inverse;
+        //    \Drupal::cache()->set($cid,$inverses);
+        return $inverse;
     }
-    
-#    dpm($inverse, "inv");
-    $inverses[$property_uri] = $inverse;
-//    \Drupal::cache()->set($cid,$inverses);
-    return $inverse;
-  }
   
 }

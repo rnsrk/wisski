@@ -13,26 +13,28 @@ use Drupal\views\Render\ViewsRenderPipelineMarkup;
  *
  * @ViewsField("wisski_preview_image")
  */
-class PreviewImage extends FieldPluginBase {
+class PreviewImage extends FieldPluginBase
+{
   
-  /**
-   * {@inheritdoc}
-   */ 
-  public function render(ResultRow $values) {
+    /**
+     * {@inheritdoc}
+     */ 
+    public function render(ResultRow $values) 
+    {
     
-    $value = $this->getValue($values);
-#    dpm($value);
-    if (is_array($value)) {
-      $return = [];
-      foreach ($value as $v) {
-        $return[] = ViewsRenderPipelineMarkup::create($v); #$this->sanitizeValue($v);
-      }
-      return join(', ', $return);
+        $value = $this->getValue($values);
+        // dpm($value);
+        if (is_array($value)) {
+            $return = [];
+            foreach ($value as $v) {
+                $return[] = ViewsRenderPipelineMarkup::create($v); // $this->sanitizeValue($v);
+            }
+            return join(', ', $return);
+        }
+        else {
+            return ViewsRenderPipelineMarkup::create($value); // $this->sanitizeValue($value);
+        }
     }
-    else {
-      return ViewsRenderPipelineMarkup::create($value); #$this->sanitizeValue($value);
-    }
-  }
 
 }   
 

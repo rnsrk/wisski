@@ -20,55 +20,61 @@ use Drupal\linkit\ConfigurableAttributeBase;
  *   description = @Translation("Basic input field for the evidence attribute.")
  * )
  */
-class Evidence extends ConfigurableAttributeBase {
+class Evidence extends ConfigurableAttributeBase
+{
 
-  /**
-   * {@inheritdoc}
-   */
-  public function buildFormElement($default_value) {
+    /**
+     * {@inheritdoc}
+     */
+    public function buildFormElement($default_value) 
+    {
     
-    $options = array(
-      'automatic_analysis' => $this->t('Automatic analysis'),
-      'user' => $this->t('User'),
-      'other_source' => $this->t('Other Source'),
-    );
+        $options = array(
+        'automatic_analysis' => $this->t('Automatic analysis'),
+        'user' => $this->t('User'),
+        'other_source' => $this->t('Other Source'),
+        );
     
-    $element = [
-      '#type' => 'select',
-      '#title' => t('Evidence'),
-      '#default_value' => $default_value,
-      '#options' => $options,
-    ];
+        $element = [
+        '#type' => 'select',
+        '#title' => t('Evidence'),
+        '#default_value' => $default_value,
+        '#options' => $options,
+        ];
 
-    return $element;
-  }
+        return $element;
+    }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function defaultConfiguration() {
-    return parent::defaultConfiguration() + [
-    ];
-  }
+    /**
+     * {@inheritdoc}
+     */
+    public function defaultConfiguration() 
+    {
+        return parent::defaultConfiguration() + [
+        ];
+    }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    $form = array();
-    return $form;
-  }
+    /**
+     * {@inheritdoc}
+     */
+    public function buildConfigurationForm(array $form, FormStateInterface $form_state) 
+    {
+        $form = array();
+        return $form;
+    }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {
-  }
+    /**
+     * {@inheritdoc}
+     */
+    public function validateConfigurationForm(array &$form, FormStateInterface $form_state) 
+    {
+    }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
-  }
+    /**
+     * {@inheritdoc}
+     */
+    public function submitConfigurationForm(array &$form, FormStateInterface $form_state) 
+    {
+    }
 
 }

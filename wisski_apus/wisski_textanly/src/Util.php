@@ -7,7 +7,8 @@
 namespace Drupal\wisski_apus;
 
 
-class Util {
+class Util
+{
 
 }
 

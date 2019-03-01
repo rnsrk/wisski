@@ -9,31 +9,32 @@
 
 
 /**
-* @author Martin Scholz
-*/
-function wisski_textanly_admin_analyse_set_lang($op, $ap) {
+ * @author Martin Scholz
+ */
+function wisski_textanly_admin_analyse_set_lang($op, $ap) 
+{
 
-  switch ($op) {
+    switch ($op) {
 
     case 'edit':
 
-      if (!$ap->settings) {
-        $ap->settings = array(
+        if (!$ap->settings) {
+            $ap->settings = array(
             'lang' => 'de',
-            );
-      }
+              );
+        }
 
-      $fieldset = array();
-      $fieldset['lang'] = array(
+        $fieldset = array();
+        $fieldset['lang'] = array(
           '#type' => 'textfield',
           '#title' => t('Language'),
           '#default_value' => $ap->settings['lang'],
           );
 
-      return $fieldset;
+        return $fieldset;
 
     case 'key_info':
-      return array(
+        return array(
         'input' => array(
         ),
         'output' => array(
@@ -43,9 +44,9 @@ function wisski_textanly_admin_analyse_set_lang($op, $ap) {
 
     default:
 
-      return NULL;
+        return null;
 
-  }
+    }
 
 }
 
@@ -58,13 +59,13 @@ function wisski_textanly_admin_analyse_set_lang($op, $ap) {
 
 
 /** 
-* @author Martin Scholz
-*
-*/
-function wisski_textanly_analyse_set_lang($analyser, $text_struct, $ticket) {
+ * @author Martin Scholz
+ */
+function wisski_textanly_analyse_set_lang($analyser, $text_struct, $ticket) 
+{
   
-  $text_struct['lang'] = $analyser->settings['lang'];
-  return $text_struct;
+    $text_struct['lang'] = $analyser->settings['lang'];
+    return $text_struct;
 
 }
 
