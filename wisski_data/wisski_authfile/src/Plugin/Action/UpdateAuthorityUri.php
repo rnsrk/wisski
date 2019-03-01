@@ -182,8 +182,8 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
     if (empty($lines)) {
       return [];
     }
-    $fieldss = [];
-    foreach ($lines as $i => $line) {
+#    $fieldss = [];
+    foreach ($lines as $line) {
       $line = trim($line);
       if (empty($line)) {
         continue;

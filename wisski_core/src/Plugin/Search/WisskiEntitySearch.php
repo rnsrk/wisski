@@ -378,11 +378,11 @@ class WisskiEntitySearch extends SearchPluginBase {
       '#title' => 'Export to Excel',
       '#src' => drupal_get_path('module', 'wisski_core') . "/images/export_excel.png",
       '#attributes' => [ 'alt' => t('Export to Excel'), ],
-      '#op' => 'wisski_excel_export',
+      '#op' => 'wisski_core_excel_export',
 #      '#ajax' => [
 #        '#callback' => [ 'wisski_excel_export' ],
 #      ],
-      '#submit' => array('wisski_excel_export', "data" => $this->execute()),
+      '#submit' => array('wisski_core_excel_export', "data" => $this->execute()),
 #      '#prefix' => '<p>',
 #      '#suffix' => '</p>',
     );

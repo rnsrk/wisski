@@ -45,7 +45,7 @@ class Query extends WisskiQueryBase {
     
     // if we have not adapter, we may go home, too
     if(empty($adapterid))
-      continue;
+      return;
     
     // get all pbs
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();

@@ -78,7 +78,7 @@ class Query extends WisskiQueryBase {
     $this->varCounter = 0;
 
 #dpm($this->condition->conditions(),$this->getEngine()->adapterId().': '.__METHOD__);
-wisski_tick();
+#wisski_tick();
     // compile the condition clauses into
     // sparql graph patterns and
     // a list of entity ids that the pattern should be restricted to
@@ -136,7 +136,7 @@ wisski_tick();
 #dpm([$limit, $offset], 'pager');
 
     #\Drupal::logger('query adapter ' . $this->getEngine()->adapterId())->debug('query result is {result}', array('result' => serialize($return)));
-wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($return)));
+#wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($return)));
 #    dpm($return, "what");    
     return $return;
 
@@ -308,7 +308,7 @@ wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($ret
         $operator = $cond['operator'];
         // just to be sure!
         $operator = strtoupper($operator);
-wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition" : "now for '".join(";",(array)$value)."' in field '$field'");
+#wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition" : "now for '".join(";",(array)$value)."' in field '$field'");
 #\Drupal::logger('query path cond')->debug("$ij::$field::$value::$operator::$conjunction");     
 
         // we dispatch over the field

@@ -686,7 +686,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       // if there is nothing, do nothing!
       // I am unsure if that ever could occur
       if(empty($parentpath))
-        continue;
+        return;
       
       
       // we have to handle groups other than paths

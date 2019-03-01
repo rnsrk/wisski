@@ -61,7 +61,6 @@ class WisskiEntityListBuilder extends EntityListBuilder {
         $this->preview_image_adapters = array($pref_local);
       }
     }
-wpm($this->preview_image_adapters, 'preview adapters');    
     
     //gather the page attributes from the request, this resembles a REST query
     $request_query = \Drupal::request()->query;
@@ -247,7 +246,6 @@ wpm($this->preview_image_adapters, 'preview adapters');
     $storage = $this->getStorage();
     $query = $storage->getQuery();
     
-    wpm('do not sort!');
 #    $query->sort($this->entityType->getKey('id'));
 
     // Only add the pager if a limit is specified.
@@ -269,9 +267,9 @@ wpm($this->preview_image_adapters, 'preview adapters');
       $query->condition('bundle',$this->bundle->id());
 
       //execute the query
-wisski_tick();
+#wisski_tick();
       $entity_ids = $query->execute();
-wisski_tick('query');
+#wisski_tick('query');
 
       foreach ($entity_ids as $eid) {
         //we expect the user to load one of the entites in the near future
@@ -423,7 +421,7 @@ $timethis = microtime(TRUE);
     $row['operations'] = $this->getOperationLinks($entity_id);
 $timethis = microtime(TRUE) - $timethis;
 $timeall += $timethis;
-wpm($timethis, "$timeall all over");
+
     return $row;
   } 
   

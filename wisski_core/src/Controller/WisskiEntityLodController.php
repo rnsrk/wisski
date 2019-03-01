@@ -15,7 +15,6 @@ class WisskiEntityLodController extends ControllerBase {
 
   public function get() {
     
-wpm(func_get_args());
     $request = \Drupal::request();
     $params = $request->query;
     $param_preference = ['uri', 'resource', 'instance', 'q'];

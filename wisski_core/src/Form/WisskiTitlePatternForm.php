@@ -409,7 +409,6 @@ class WisskiTitlePatternForm extends EntityForm {
 
     $children = array();
     
-wpm($pattern, "patt");    
     foreach ($pattern as $row_id => &$attributes) {
       if (!isset($attributes['type'])) 
         $errors[] = array($row_id,'not set','type');

@@ -261,7 +261,7 @@ function _wisski_textanly_analyse_commons_span_matcher($text, $spans, $pattern) 
   }
 
   $finished = array();
-  $matches = array(array('pattern' => $pattern, 'vars' => array());
+  $matches = array(array('pattern' => $pattern, 'vars' => array()));
   
   foreach ($spans as $si => $span) {
 

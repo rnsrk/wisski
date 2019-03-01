@@ -348,5 +348,3 @@ class WisskiLinkblock extends BlockBase {
   }
 
 }
-
-?>

@@ -10,7 +10,7 @@ namespace Drupal\wisski_pathbuilder\Controller;
 use Drupal\Core\Config\Entity\DraggableListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\String as utilitystring;
 
 /**
  * Defines a class to build a listing of pathbuilder path entities

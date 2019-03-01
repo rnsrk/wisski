@@ -15,8 +15,17 @@ function wisski_pathbuilder_load($id) {
   return WisskiPathbuilderEntity::load($id);
 }
 
-function wisski_path_load($id) {
+function wisski_pathbuilder_path_load($id) {
   return WisskiPathEntity::load($id);
+}
+
+function wisski_pathbuilder_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+   switch ($route_name) {
+    case 'help.page.wisski_pathbuilder':
+      return '<p>' . t('This is the basic WissKI module for building ' .
+        'pathbuilders, paths and groups. You will need that if you want to do ' .
+        'anything with WissKI.') . '</p>';
+  }
 }
 
 

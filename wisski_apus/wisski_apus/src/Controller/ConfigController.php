@@ -24,6 +24,3 @@ class ConfigController extends ControllerBase {
   }
 
 }
-
-
-?>

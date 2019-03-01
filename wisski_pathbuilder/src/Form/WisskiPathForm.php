@@ -87,7 +87,7 @@ class WisskiPathForm extends EntityForm {
       '#disabled' => !$path->isNew(),
       '#machine_name' => array(
         'source' => array('name'),
-        'exists' => 'wisski_path_load',
+        'exists' => 'wisski_pathbuilder_path_load',
       ),
       '#required' => TRUE,
     );

@@ -12,6 +12,17 @@ use Drupal\wisski_core\WisskiToolbarHandler;
 define('WISSKI_DEVEL', FALSE);
 #define('WISSKI_DEVEL', TRUE);
 
+/**
+ * Implementation of Hook_help
+ */
+function wisski_core_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.wisski_core':
+      return '<p>' . t('This is the most basic WissKI module. You will need it!') . '</p>';
+  }
+}
+
+
 function wisski_core_cache_flush() {
 
   WisskiCacheHelper::flushAllEntityTitles();
@@ -19,7 +30,7 @@ function wisski_core_cache_flush() {
   drupal_set_message(t('Flushed WissKI specific caches'));
 }
 
-function wisski_excel_export($ob) {
+function wisski_core_excel_export($ob) {
 #  drupal_set_message(serialize($ob));
 #  dpm($ob, "ex");
 
@@ -393,103 +404,6 @@ function wisski_core_flush_title_caches($bundle_ids=NULL,$entity_ids=NULL) {
   foreach ($bundles as $bundle) {
     $bundle->flushTitleCache($entity_ids);
   }
-}
-
-function wisski_trace($dpm=TRUE) {
-  if (!WISSKI_DEVEL) return;
-
-  $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS,3);
-  if ($dpm && function_exists('dpm')) {
-    $label = (string) $trace[1]['function'].'() called from';
-    dpm(array($label => $trace[2]),__METHOD__);
-  }
-  return $trace[2];
-}
-
-function wisski_tick($name='') {
-  if (!WISSKI_DEVEL) return;
-  
-  static $wisski_timestamp;
-  $now = microtime(TRUE)*1000;
-  if (empty($name)) {
-    if (!isset($wisski_timestamp)) $wisski_timestamp = $now;
-  } else {
-    $diff = ceil($now-$wisski_timestamp);
-    if (!empty($name)) {
-      dpm($diff.' ms',$name);
-      \Drupal::logger('wisski tick')->debug("$diff ms: $name");
-    } else {
-      \Drupal::logger('wisski tick')->debug("reset");
-    }
-    $wisski_timestamp = $now;
-    return $diff;
-  }
-}
-
-
-function wpm() {
-  if (WISSKI_DEVEL && function_exists('dpm')) {
-    call_user_func_array('dpm', func_get_args());
-  }
-}
-
-
-function rpm() {
-  if (\Drupal::currentUser()->id() == 1 && function_exists('dpm')) {
-    call_user_func_array('dpm', func_get_args());
-  }
-}
-    
-
-
-function wsmlog($msg, $name = NULL, $status = 'status') {
-  if (WISSKI_DEVEL) {
-    dpm($msg, $name, $status);
-    if ($status == 'error') {
-      $level = \Psr\Log\LogLevel::ERROR;
-    } elseif ($status == 'warning') {
-      $level = \Psr\Log\LogLevel::WARNING;
-    } else {
-      $level = \Psr\Log\LogLevel::DEBUG;
-    }
-    
-    if ($name == NULL) {
-      $name = 'WissKI Debug Log';
-    }
-    \Drupal::logger($name)->log($level, $msg, array());
-  }
-}
-
-
-function wisski_local_store_query($query,$select=NULL) {
-  
-  $adapter = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore();
-  $out = array();
-  foreach ($adapter->getEngine()->directQuery($query) as $obj) {
-    if (isset($select)) {
-      $sub = array();
-      foreach ($select as $prop) {
-        if (property_exists($obj,$prop)) {
-          $val = $obj->{$prop};
-          if (method_exists($val,'getUri'))
-            $sub[$prop] = $val->getUri();
-          else
-            $sub[$prop] = $val->dumpValue('text');
-        }
-      }
-      if (!empty($sub)) $out[] = $sub;
-    } else {
-      $sub = array();
-      foreach ((array) $obj as $prop => $val) {
-        if (method_exists($val,'getUri'))
-          $sub[$prop] = $val->getUri();
-        else
-          $sub[$prop] = $val->dumpValue('text');
-      }
-      if (!empty($sub)) $out[] = $sub;
-    }
-  }
-  return $out;
 }
 
 /**

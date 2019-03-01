@@ -1,7 +1,16 @@
 <?php
-// $Id$
 
 /** @author Martin Scholz, unless otherwise noted */
+
+/**
+ * Implementation of Hook_help
+ */
+function wisski_textanly_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.wisski_textanly':
+      return '<p>' . t('This module handles text analysis for the WissKI infrastructure.') . '</p>';
+  }
+}
 
 
 

@@ -33,6 +33,9 @@ class Exporter extends ControllerBase {
   public function exportPb($pb) {
     
     // get the pb if we only have the id
+    
+    // this seems to be discontinued?
+    /*
     if (!is_object($pb)) {
       $pb = WisskiPathbuilderEntity::load($pb);
     }
@@ -41,7 +44,7 @@ class Exporter extends ControllerBase {
     foreach ($pb->getPbArray() $pid => $path_info) {
       $dependencies[] = $
     }
-   
+   */
 
   }
 
