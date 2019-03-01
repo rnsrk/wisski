@@ -19,91 +19,86 @@ use Drupal\views\Plugin\views\filter\NumericFilter  as ViewsNumeric;
  *
  * @ViewsFilter("wisski_field_numeric")
  */
-class FieldNumeric extends ViewsNumeric
-{
+class FieldNumeric extends ViewsNumeric {
 
 
-    /**
-     * We don't support every operator from the parent class ("not between", for example),
-     * hence the need to define only the operators we do support.
-     */
-    function operators() 
-    {
-        $operators = array(
-        '<' => array(
+  /**
+   * We don't support every operator from the parent class ("not between", for example),
+   * hence the need to define only the operators we do support.
+   */
+  function operators() {
+    $operators = array(
+      '<' => array(
         'title' => t('Is less than'),
         'method' => 'opSimple',
         'short' => t('<'),
         'values' => 1,
-        ),
-        '<=' => array(
+      ),
+      '<=' => array(
         'title' => t('Is less than or equal to'),
         'method' => 'opSimple',
         'short' => t('<='),
         'values' => 1,
-        ),
-        '=' => array(
+      ),
+      '=' => array(
         'title' => t('Is equal to'),
         'method' => 'opSimple',
         'short' => t('='),
         'values' => 1,
-        ),
-        '<>' => array(
+      ),
+      '<>' => array(
         'title' => t('Is not equal to'),
         'method' => 'opSimple',
         'short' => t('!='),
         'values' => 1,
-        ),
-        '>=' => array(
+      ),
+      '>=' => array(
         'title' => t('Is greater than or equal to'),
         'method' => 'opSimple',
         'short' => t('>='),
         'values' => 1,
-        ),
-        '>' => array(
+      ),
+      '>' => array(
         'title' => t('Is greater than'),
         'method' => 'opSimple',
         'short' => t('>'),
         'values' => 1,
-        ),
-        'BETWEEN' => array(
+      ),
+      'BETWEEN' => array(
         'title' => t('Is between'),
         'method' => 'opBetween',
         'short' => t('between'),
         'values' => 2,
-        ),
-        );
+      ),
+    );
 
-        return $operators;
-    }
+    return $operators;
+  }
 
-    /**
-     * {@inheritdoc}
-     */
-    function query() 
-    {
-        $info = $this->operators();
-        if (!empty($info[$this->operator]['method'])) {
-            $this->{$info[$this->operator]['method']}($this->realField);
-        }
+  /**
+   * {@inheritdoc}
+   */
+  function query() {
+    $info = $this->operators();
+    if (!empty($info[$this->operator]['method'])) {
+      $this->{$info[$this->operator]['method']}($this->realField);
     }
+  }
 
  
-    /**
-     * {@inheritdoc}
-     */
-    protected function opSimple($column) 
-    {
-        // $this->query->query->condition($this->definition['field_name'], $this->value['value'], $this->operator);
-        $this->query->query->condition("eid", $this->value['value'], $this->operator);
-    }
+  /**
+   * {@inheritdoc}
+   */
+  protected function opSimple($column) {
+    #$this->query->query->condition($this->definition['field_name'], $this->value['value'], $this->operator);
+    $this->query->query->condition("eid", $this->value['value'], $this->operator);
+  }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function opBetween($column) 
-    {
-        $this->query->query->condition($this->field, [$this->value['min'], $this->value['max']], "BETWEEN");
-    }
+  /**
+   * {@inheritdoc}
+   */
+  protected function opBetween($column) {
+    $this->query->query->condition($this->field, [$this->value['min'], $this->value['max']], "BETWEEN");
+  }
 
 }

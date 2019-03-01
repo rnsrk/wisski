@@ -15,8 +15,7 @@ use Drupal\Core\Config\Entity\ConfigEntityInterface;
  * This interface also defines delegator methods for easy access of the basic
  * methods of the underlying engine
  */
-interface TableInterface extends ConfigEntityInterface
-{
+interface TableInterface extends ConfigEntityInterface {
 
 
 }

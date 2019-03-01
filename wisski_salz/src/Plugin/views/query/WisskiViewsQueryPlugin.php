@@ -9,7 +9,6 @@ use \Drupal\views\Plugin\views\query\QueryPluginBase;
  *  help = @Translation("Query will be generated and run using WisskiQuery.")
  * )
  */
-class WisskiViewsQueryPlugin extends QueryPluginBase
-{
+class WisskiViewsQueryPlugin extends QueryPluginBase {
 
 }

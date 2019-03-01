@@ -11,7 +11,6 @@ use Drupal\Core\Config\Entity\ConfigEntityInterface;
 /**
  * Provides an interface defining a pathbuilder entity type.
  */
-interface WisskiPathbuilderInterface extends ConfigEntityInterface
-{
+interface WisskiPathbuilderInterface extends ConfigEntityInterface {
 
 }

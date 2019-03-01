@@ -12,44 +12,41 @@ use Drupal\Core\Session\AccountInterface;
  *
  * @see \Drupal\comment\Entity\Comment.
  */
-class WisskiBundleAccessHandler extends EntityAccessControlHandler
-{
+class WisskiBundleAccessHandler extends EntityAccessControlHandler {
 
-    /**
-     * {@inheritdoc}
-     *
-     * Link the activities to the permissions. checkAccess is called with the
-     * $operation as defined in the routing.yml file.
-     */
-    protected function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) 
-    {
-        /*
-        switch ($operation) {
-        case 'view':
+  /**
+   * {@inheritdoc}
+   *
+   * Link the activities to the permissions. checkAccess is called with the
+   * $operation as defined in the routing.yml file.
+   */
+  protected function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
+  /*
+    switch ($operation) {
+      case 'view':
         return AccessResult::allowedIfHasPermission($account, 'view contact entity');
 
-        case 'edit':
+      case 'edit':
         return AccessResult::allowedIfHasPermission($account, 'edit contact entity');
 
-        case 'delete':
+      case 'delete':
         return AccessResult::allowedIfHasPermission($account, 'delete contact entity');
-        }
-        */
-        //  dpm(func_get_args(),__METHOD__);
-        return AccessResult::allowedIfHasPermission($account, 'administer wisski_core bundles');
-        return AccessResult::allowed();
     }
+  */
+//  dpm(func_get_args(),__METHOD__);
+    return AccessResult::allowedIfHasPermission($account,'administer wisski_core bundles');
+    return AccessResult::allowed();
+  }
 
-    /**
-     * {@inheritdoc}
-     *
-     * Separate from the checkAccess because the entity does not yet exist, it
-     * will be created during the 'add' process.
-     */
-    protected function checkCreateAccess(AccountInterface $account, array $context, $entity_bundle = null) 
-    {
-        //    dpm(func_get_args(),__METHOD__);
-        return AccessResult::allowedIfHasPermission($account, 'administer wisski_core bundles');
-    }
+  /**
+   * {@inheritdoc}
+   *
+   * Separate from the checkAccess because the entity does not yet exist, it
+   * will be created during the 'add' process.
+   */
+  protected function checkCreateAccess(AccountInterface $account, array $context, $entity_bundle = NULL) {
+//    dpm(func_get_args(),__METHOD__);
+    return AccessResult::allowedIfHasPermission($account, 'administer wisski_core bundles');
+  }
 
 }

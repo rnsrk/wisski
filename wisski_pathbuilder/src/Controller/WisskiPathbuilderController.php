@@ -26,279 +26,271 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
     
-class WisskiPathbuilderController extends ControllerBase
-{
+class WisskiPathbuilderController extends ControllerBase {
 
-    /**
-     * The factory for entity queries.
-     *
-     * @var \Drupal\Core\Entity\Query\QueryFactory
-     */
-    protected $entityQueryFactory;
+  /**
+   * The factory for entity queries.
+   *
+   * @var \Drupal\Core\Entity\Query\QueryFactory
+   */
+  protected $entityQueryFactory;
                 
-    /**
-     * The menu link manager.
-     *
-     * @var \Drupal\Core\Menu\MenuLinkManagerInterface
-     */
-    protected $menuLinkManager;
+ /**
+  * The menu link manager.
+  *
+  * @var \Drupal\Core\Menu\MenuLinkManagerInterface
+  */
+  protected $menuLinkManager;
                
-    /**
-     * The pathbuilder tree service.
-     *
-     * @var \Drupal\Core\Menu\MenuLinkTreeInterface
-     */
-    protected $pathbuilderTree;
+  /**
+   * The pathbuilder tree service.
+   *
+   * @var \Drupal\Core\Menu\MenuLinkTreeInterface
+   */
+  protected $pathbuilderTree;
   
-    /**
-     * The link generator.
-     *
-     * @var \Drupal\Core\Utility\LinkGeneratorInterface
-     */
-    protected $linkGenerator;
+  /**
+   * The link generator.
+   *
+   * @var \Drupal\Core\Utility\LinkGeneratorInterface
+   */
+  protected $linkGenerator;
                   
-    /**
-     * The overview tree form.
-     *
-     * @var array
-     */
+  /**
+   * The overview tree form.
+   *
+   * @var array
+   */
    
-    public $overviewTreeForm = array('#tree' => true);
+  public $overviewTreeForm = array('#tree' => TRUE);
                    
-    /**
-     * Constructs a MenuForm object.
-     *
-     * @param \Drupal\Core\Entity\Query\QueryFactory      $entity_query_factory
-     *   The factory for entity queries.
-     * @param \Drupal\Core\Menu\MenuLinkManagerInterface  $menu_link_manager
-     *   The menu link manager.
-     * @param \Drupal\Core\Menu\MenuLinkTreeInterface     $pathbuilder_tree
-     *   The menu tree service.
-     * @param \Drupal\Core\Utility\LinkGeneratorInterface $link_generator
-     *   The link generator.
-     */
-    public function __construct(QueryFactory $entity_query_factory, MenuLinkManagerInterface $menu_link_manager, MenuLinkTreeInterface $pathbuilder_tree, LinkGeneratorInterface $link_generator, WisskiPathbuilder $pb) 
-    {
-        $this->entityQueryFactory = $entity_query_factory;
-        $this->menuLinkManager = $menu_link_manager;
-        $this->menuTree = $pathbuilder_tree;
-        $this->linkGenerator = $link_generator;             
-    }
+  /**
+   * Constructs a MenuForm object.
+   *
+   * @param \Drupal\Core\Entity\Query\QueryFactory $entity_query_factory
+   *   The factory for entity queries.
+   * @param \Drupal\Core\Menu\MenuLinkManagerInterface $menu_link_manager
+   *   The menu link manager.
+   * @param \Drupal\Core\Menu\MenuLinkTreeInterface $pathbuilder_tree
+   *   The menu tree service.
+   * @param \Drupal\Core\Utility\LinkGeneratorInterface $link_generator
+   *   The link generator.
+   */
+  public function __construct(QueryFactory $entity_query_factory, MenuLinkManagerInterface $menu_link_manager, MenuLinkTreeInterface $pathbuilder_tree, LinkGeneratorInterface $link_generator, WisskiPathbuilder $pb) {
+    $this->entityQueryFactory = $entity_query_factory;
+    $this->menuLinkManager = $menu_link_manager;
+    $this->menuTree = $pathbuilder_tree;
+    $this->linkGenerator = $link_generator;             
+  }
 
-    /**
-     * {@inheritdoc}
-     */
-    public static function create(ContainerInterface $container) 
-    {
-        return new static(
-            // $container->get('date.formatter'),
-            $container->get('entity.query'),
-            $container->get('plugin.manager.menu.link'),
-            $container->get('menu.link_tree'),
-            $container->get('link_generator')
-        );
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+    # $container->get('date.formatter'),
+     $container->get('entity.query'),
+     $container->get('plugin.manager.menu.link'),
+     $container->get('menu.link_tree'),
+     $container->get('link_generator')
+   );
                             
-    } 
+  } 
 
-    public function loadTreeData($path_name, MenuTreeParameters $parameters) 
-    {
-        // Build the cache ID; sort 'expanded' and 'conditions' to prevent duplicate
-        // cache items.
-        sort($parameters->expandedParents);
-        asort($parameters->conditions);
-        $tree_cid = "tree-data:$menu_name:" . serialize($parameters);
-        $cache = $this->menuCacheBackend->get($tree_cid);
-        if ($cache && isset($cache->data)) {
-            $data = $cache->data;
-            // Cache the definitions in memory so they don't need to be loaded again.
-            $this->definitions += $data['definitions'];
-            unset($data['definitions']);
-        }
-        else {
-            $links = $this->loadLinks($menu_name, $parameters);
-            $data['tree'] = $this->doBuildTreeData($links, $parameters->activeTrail, $parameters->minDepth);
-            $data['definitions'] = array();
-            $data['route_names'] = $this->collectRoutesAndDefinitions($data['tree'], $data['definitions']);
-            $this->menuCacheBackend->set($tree_cid, $data, Cache::PERMANENT, ['config:system.menu.' . $menu_name]);
-            // The definitions were already added to $this->definitions in
-            // $this->doBuildTreeData()
-            unset($data['definitions']);
-        }
-        return $data;
+  public function loadTreeData($path_name, MenuTreeParameters $parameters) {
+    // Build the cache ID; sort 'expanded' and 'conditions' to prevent duplicate
+    // cache items.
+    sort($parameters->expandedParents);
+    asort($parameters->conditions);
+    $tree_cid = "tree-data:$menu_name:" . serialize($parameters);
+    $cache = $this->menuCacheBackend->get($tree_cid);
+    if ($cache && isset($cache->data)) {
+      $data = $cache->data;
+      // Cache the definitions in memory so they don't need to be loaded again.
+      $this->definitions += $data['definitions'];
+      unset($data['definitions']);
     }
+    else {
+      $links = $this->loadLinks($menu_name, $parameters);
+      $data['tree'] = $this->doBuildTreeData($links, $parameters->activeTrail, $parameters->minDepth);
+      $data['definitions'] = array();
+      $data['route_names'] = $this->collectRoutesAndDefinitions($data['tree'], $data['definitions']);
+      $this->menuCacheBackend->set($tree_cid, $data, Cache::PERMANENT, ['config:system.menu.' . $menu_name]);
+      // The definitions were already added to $this->definitions in
+      // $this->doBuildTreeData()
+      unset($data['definitions']);
+    }
+    return $data;
+  }
 
 
 
 
-    // function viewPB(FormStateInterface $form_state, $wisski_pathbuilder) {   
-    public function form(array $form, FormStateInterface $form_state) 
-    {
-        drupal_set_message("using function form");     
-        // $form = array(
-        // '#type' => 'markup',
-        // '#markup' => 'hello world',
-        // );
+#  function viewPB(FormStateInterface $form_state, $wisski_pathbuilder) {   
+  public function form(array $form, FormStateInterface $form_state) {
+    drupal_set_message("using function form");     
+    #$form = array(
+     # '#type' => 'markup',
+      #'#markup' => 'hello world',
+    #);
     
-        $pathbuilder_entity = entity_load('wisski_pathbuilder', $wisski_pathbuilder);
+    $pathbuilder_entity = entity_load('wisski_pathbuilder', $wisski_pathbuilder);
     
-        $path_entities = entity_load_multiple('wisski_path');
-        // drupal_set_message('wisski pathbuilder id: ' . serialize($wisski_pathbuilder));
-        // drupal_set_message(serialize($pathbuilder_entity));
-        // drupal_set_message(serialize($path_entities));
+    $path_entities = entity_load_multiple('wisski_path');
+    #drupal_set_message('wisski pathbuilder id: ' . serialize($wisski_pathbuilder));
+    #drupal_set_message(serialize($pathbuilder_entity));
+    #drupal_set_message(serialize($path_entities));
     
-        $form['#title'] = $this->t('Edit pathbuilder %label', array('%label' => 'pb'));   
+     $form['#title'] = $this->t('Edit pathbuilder %label', array('%label' => 'pb'));   
             
-        $form['label'] = array(
-         '#type' => 'textfield',
-         '#title' => 'Title',
-         '#default_value' => 'pb',
-        // '#required' => TRUE,
-        );
-        $form['id'] = array(
-         '#type' => 'textfield',
-         '#title' => 'Pathbuilder ID',
-         '#default_value' => 'pb',               
-        // '#type' => 'machine_name',
-        // '#title' => $this->t('Menu name'),
-        // '#default_value' => $menu->id(),
-        // '#maxlength' => MENU_MAX_MENU_NAME_LENGTH_UI,
-        // '#description' => $this->t('A unique name to construct the URL for the menu. It must only contain lowercase letters, numbers and hyphens.'),
-        // '#machine_name' => array(
-        // 'exists' => array($this, 'menuNameExists'),
-        // 'source' => array('label'),
-        // 'replace_pattern' => '[^a-z0-9-]+',
-        // 'replace' => '-',
-        // ),
-        // A menu's machine name cannot be changed.
-        // '#disabled' => !$menu->isNew() || $menu->isLocked(),
-        );
-        $form['description'] = array(
-         '#type' => 'textfield',
-         '#title' => t('Description'),
-         '#maxlength' => 512,
-         '#default_value' => 'Here is the pathbuilder description',
-        );
+     $form['label'] = array(
+       '#type' => 'textfield',
+       '#title' => 'Title',
+       '#default_value' => 'pb',
+     #  '#required' => TRUE,
+     );
+     $form['id'] = array(
+       '#type' => 'textfield',
+       '#title' => 'Pathbuilder ID',
+       '#default_value' => 'pb',               
+      #  '#type' => 'machine_name',
+      #  '#title' => $this->t('Menu name'),
+      #  '#default_value' => $menu->id(),
+      #  '#maxlength' => MENU_MAX_MENU_NAME_LENGTH_UI,
+      #  '#description' => $this->t('A unique name to construct the URL for the menu. It must only contain lowercase letters, numbers and hyphens.'),
+      #  '#machine_name' => array(
+      #    'exists' => array($this, 'menuNameExists'),
+      #    'source' => array('label'),
+      #    'replace_pattern' => '[^a-z0-9-]+',
+      #    'replace' => '-',
+      #     ),
+     // A menu's machine name cannot be changed.
+     #'#disabled' => !$menu->isNew() || $menu->isLocked(),
+     );
+     $form['description'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Description'),
+       '#maxlength' => 512,
+       '#default_value' => 'Here is the pathbuilder description',
+     );
 
 
-        // Add menu links administration form for existing menus.
-        // if (!$menu->isNew() || $menu->isLocked()) {
-        // Form API supports constructing and validating self-contained sections
-        // within forms, but does not allow handling the form section's submission
-        // equally separated yet. Therefore, we use a $form_state key to point to
-        // the parents of the form section.
-        // @see self::submitOverviewForm()
-         $form_state->set('pathbuilder_overview_form_parents', ['path_items']);
-         $form['path_items'] = array();
-         $form['path_items'] = $this->buildOverviewForm($form['path_items'], $form_state);
-        // }
-        return parent::form($form, $form_state);                                                                                                                                                                               
+     // Add menu links administration form for existing menus.
+    # if (!$menu->isNew() || $menu->isLocked()) {
+     // Form API supports constructing and validating self-contained sections
+     // within forms, but does not allow handling the form section's submission
+     // equally separated yet. Therefore, we use a $form_state key to point to
+     // the parents of the form section.
+     // @see self::submitOverviewForm()
+       $form_state->set('pathbuilder_overview_form_parents', ['path_items']);
+       $form['path_items'] = array();
+       $form['path_items'] = $this->buildOverviewForm($form['path_items'], $form_state);
+     #}
+      return parent::form($form, $form_state);                                                                                                                                                                               
     
     }
     
-    /**
-     * {@inheritdoc}
-     */
-    public function save(array $form, FormStateInterface $form_state) 
-    {
-        $menu = $this->entity;
-        if (!$menu->isNew() || $menu->isLocked()) {
-            $this->submitOverviewForm($form, $form_state);
-        }
-
-        $status = $menu->save();
-
-        $edit_link = $this->entity->link($this->t('Edit'));
-        if ($status == SAVED_UPDATED) {
-            drupal_set_message($this->t('Menu %label has been updated.', array('%label' => $menu->label())));
-            $this->logger('menu')->notice('Menu %label has been updated.', array('%label' => $menu->label(), 'link' => $edit_link));
-        }
-        else {
-            drupal_set_message($this->t('Menu %label has been added.', array('%label' => $menu->label())));
-            $this->logger('menu')->notice('Menu %label has been added.', array('%label' => $menu->label(), 'link' => $edit_link));
-        }
-
-        $form_state->setRedirectUrl($this->entity->urlInfo('edit-form'));
+  /**
+   * {@inheritdoc}
+   */
+  public function save(array $form, FormStateInterface $form_state) {
+    $menu = $this->entity;
+    if (!$menu->isNew() || $menu->isLocked()) {
+      $this->submitOverviewForm($form, $form_state);
     }
+
+    $status = $menu->save();
+
+    $edit_link = $this->entity->link($this->t('Edit'));
+    if ($status == SAVED_UPDATED) {
+      drupal_set_message($this->t('Menu %label has been updated.', array('%label' => $menu->label())));
+      $this->logger('menu')->notice('Menu %label has been updated.', array('%label' => $menu->label(), 'link' => $edit_link));
+    }
+    else {
+      drupal_set_message($this->t('Menu %label has been added.', array('%label' => $menu->label())));
+      $this->logger('menu')->notice('Menu %label has been added.', array('%label' => $menu->label(), 'link' => $edit_link));
+    }
+
+    $form_state->setRedirectUrl($this->entity->urlInfo('edit-form'));
+  }
     
   
-    private function pb_render_path($path) 
-    {
-        $pathform = array();
+  private function pb_render_path($path) {
+    $pathform = array();
 
-        $pathform['#item'] = $path;
+    $pathform['#item'] = $path;
     
-        $pathform['#attributes'] = $path->getEnabled() ? array('class' => array('menu-enabled')) : array('class' => array('menu-disabled')); 
+    $pathform['#attributes'] = $path->getEnabled() ? array('class' => array('menu-enabled')) : array('class' => array('menu-disabled')); 
       
-        $pathform['title'] = $path->getName();
+    $pathform['title'] = $path->getName();
       
-        if (!$path->getEnabled()) {
-            $pathform['title']['#suffix'] = ' (' . $this->t('disabled') . ')';
-        }
-      
-        $pathform['enabled'] = array(
-        '#type' => 'checkbox',
-        '#title' => $this->t('Enable @title path', array('@title' => $path->getName())),
-        '#title_display' => 'invisible',
-        '#default_value' => $path->getEnabled(),
-        );
-
-        $pathform['weight'] = array(
-        '#type' => 'weight',
-        '#delta' => 100, // Do something more cute here $delta,
-        // '#default_value' => $path->getWeight(),
-        '#default_value' => 100,       
-        '#title' => $this->t('Weight for @title', array('@title' => $path->getName())),
-        '#title_display' => 'invisible',
-        );
-
-        $pathform['id'] = array(
-        '#type' => 'hidden',
-        '#value' => $path->getID(),
-        );
-
-        // $pathform['parent'] = array(
-        // '#type' => 'hidden',
-        // '#default_value' => $path->parent,
-        // );
-        return $pathform;
+    if (!$path->getEnabled()) {
+      $pathform['title']['#suffix'] = ' (' . $this->t('disabled') . ')';
     }
-    
-    function viewPB($wisski_pathbuilder) 
-    {
-        // Ensure that menu_overview_form_submit() knows the parents of this form
-        // section.
-        // if (!$form_state->has('pathbuilder_overview_form_parents')) {
-        // $form_state->set('pathbuilder_overview_form_parents', []);
-        // }
+      
+    $pathform['enabled'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable @title path', array('@title' => $path->getName())),
+      '#title_display' => 'invisible',
+      '#default_value' => $path->getEnabled(),
+    );
 
-        // load the pathbuilder entity that is used - given by the parameter
-        // in the url.                        
-        $pathbuilder_entity = entity_load('wisski_pathbuilder', $wisski_pathbuilder);
-    
-        // load all paths - here we should load just the ones of this pathbuilder
-        $path_entities = entity_load_multiple('wisski_path');
-        // drupal_set_message('wisski pathbuilder id: ' . serialize($wisski_pathbuilder));    
+    $pathform['weight'] = array(
+      '#type' => 'weight',
+      '#delta' => 100, # Do something more cute here $delta,
+      #'#default_value' => $path->getWeight(),
+      '#default_value' => 100,       
+      '#title' => $this->t('Weight for @title', array('@title' => $path->getName())),
+      '#title_display' => 'invisible',
+    );
 
-        $form = array();
+    $pathform['id'] = array(
+      '#type' => 'hidden',
+      '#value' => $path->getID(),
+    );
+
+   # $pathform['parent'] = array(
+    #  '#type' => 'hidden',
+     # '#default_value' => $path->parent,
+    #);
+    return $pathform;
+  }
     
-        $header = array("title", "Path", array('data' => $this->t("Enabled"), 'class' => array('checkbox')), "Weight", array('data' => $this->t('Operations'), 'colspan' => 3));
+  function viewPB($wisski_pathbuilder) {
+  // Ensure that menu_overview_form_submit() knows the parents of this form
+  // section.
+#  if (!$form_state->has('pathbuilder_overview_form_parents')) {
+#   $form_state->set('pathbuilder_overview_form_parents', []);
+#  }
+
+    // load the pathbuilder entity that is used - given by the parameter
+    // in the url.                        
+    $pathbuilder_entity = entity_load('wisski_pathbuilder', $wisski_pathbuilder);
     
-        $form['pathbuilder_table'] = array(
-        '#type' => 'table',
-        // '#theme' => 'table__menu_overview',
-        '#header' => $header,
-        // '#rows' => $rows,
-        '#attributes' => array(
+    // load all paths - here we should load just the ones of this pathbuilder
+    $path_entities = entity_load_multiple('wisski_path');
+    #drupal_set_message('wisski pathbuilder id: ' . serialize($wisski_pathbuilder));    
+
+    $form = array();
+    
+    $header = array("title", "Path", array('data' => $this->t("Enabled"), 'class' => array('checkbox')), "Weight", array('data' => $this->t('Operations'), 'colspan' => 3));
+    
+    $form['pathbuilder_table'] = array(
+      '#type' => 'table',
+#      '#theme' => 'table__menu_overview',
+      '#header' => $header,
+#      '#rows' => $rows,
+      '#attributes' => array(
         'id' => 'my-module-table',
-        ),
-        '#tabledrag' => array(
+      ),
+      '#tabledrag' => array(
         array(
           'action' => 'match',
           'relationship' => 'parent',
           'group' => 'menu-parent',
           'subgroup' => 'menu-parent',
           'source' => 'menu-id',
-          'hidden' => true,
+          'hidden' => TRUE,
           'limit' => 9,
         ),
         array(
@@ -306,53 +298,53 @@ class WisskiPathbuilderController extends ControllerBase
           'relationship' => 'sibling',
           'group' => 'menu-weight',
         ),
-        ),
-        );
+      ),
+    );
     
-        foreach($path_entities as $path) {
-            // drupal_set_message(serialize($path));
+    foreach($path_entities as $path) {
+      #drupal_set_message(serialize($path));
 
-            $pathform = $this->pb_render_path($path);
-            $path_id = $path->getID();
+      $pathform = $this->pb_render_path($path);
+      $path_id = $path->getID();
       
-            $form['pathbuilder_table'][$path_id]['#item'] = $pathform['#item'];
+      $form['pathbuilder_table'][$path_id]['#item'] = $pathform['#item'];
       
-            // TableDrag: Mark the table row as draggable.
-            $form['pathbuilder_table'][$path_id]['#attributes'] = $pathform['#attributes'];
-            $form['pathbuilder_table'][$path_id]['#attributes']['class'][] = 'draggable';
+      // TableDrag: Mark the table row as draggable.
+      $form['pathbuilder_table'][$path_id]['#attributes'] = $pathform['#attributes'];
+      $form['pathbuilder_table'][$path_id]['#attributes']['class'][] = 'draggable';
 
 
-            // TableDrag: Sort the table row according to its existing/configured weight.
-            $form['pathbuilder_table'][$path_id]['#weight'] = $pathform['#item']->getWeight();
+        // TableDrag: Sort the table row according to its existing/configured weight.
+      $form['pathbuilder_table'][$path_id]['#weight'] = $pathform['#item']->getWeight();
 
-            // Add special classes to be used for tabledrag.js.
-            $pathform['parent']['#attributes']['class'] = array('menu-parent');
-            $pathform['weight']['#attributes']['class'] = array('menu-weight');
-            $pathform['id']['#attributes']['class'] = array('menu-id');
+      // Add special classes to be used for tabledrag.js.
+      $pathform['parent']['#attributes']['class'] = array('menu-parent');
+      $pathform['weight']['#attributes']['class'] = array('menu-weight');
+      $pathform['id']['#attributes']['class'] = array('menu-id');
 
-            $form['pathbuilder_table'][$path_id]['title'] = array(
-            array(
-              '#theme' => 'indentation',
-              '#size' => $pathform['#item']->depth - 1,
-            ),
-            $pathform['title'],
-            );
-            $form['pathbuilder_table'][$path_id]['enabled'] = $pathform['enabled'];
-            $form['pathbuilder_table'][$path_id]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
+      $form['pathbuilder_table'][$path_id]['title'] = array(
+          array(
+            '#theme' => 'indentation',
+            '#size' => $pathform['#item']->depth - 1,
+          ),
+          $pathform['title'],
+        );
+      $form['pathbuilder_table'][$path_id]['enabled'] = $pathform['enabled'];
+      $form['pathbuilder_table'][$path_id]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
 
-            $form['pathbuilder_table'][$path_id]['weight'] = $pathform['weight'];
+      $form['pathbuilder_table'][$path_id]['weight'] = $pathform['weight'];
 
-            // Operations (dropbutton) column.
-            $form['pathbuilder_table'][$path_id]['operations'] = $pathform['operations'];
+        // Operations (dropbutton) column.
+      $form['pathbuilder_table'][$path_id]['operations'] = $pathform['operations'];
 
-            $form['pathbuilder_table'][$path_id]['id'] = $pathform['id'];
-            $form['pathbuilder_table'][$path_id]['parent'] = $pathform['parent'];
+      $form['pathbuilder_table'][$path_id]['id'] = $pathform['id'];
+      $form['pathbuilder_table'][$path_id]['parent'] = $pathform['parent'];
                       
       
       
-        }
+    }
     
-        /*
+/*
         // Build a list of operations.
         $operations = array();
         $operations['edit'] = array(
@@ -393,9 +385,9 @@ class WisskiPathbuilderController extends ControllerBase
           '#type' => 'operations',
           '#links' => $operations,
         );                                
-        */
-        /*      
-        $rows[] = array(
+*/
+/*      
+      $rows[] = array(
         'data' => array(
           'name' => $path->name,
           'path' => $path->path,
@@ -410,12 +402,12 @@ class WisskiPathbuilderController extends ControllerBase
           'operations' => 'juhu',
         ),
         'class' => array('draggable'),
-        );
-        }
-        */
-        /*  
-        $rows[] = array( 
-        'data' => array(
+      );
+    }
+    */
+    /*  
+    $rows[] = array( 
+      'data' => array(
         'name' => "hallo",
          'weight' => array(
                  '#type' => 'weight',
@@ -424,12 +416,12 @@ class WisskiPathbuilderController extends ControllerBase
                                          '#delta' => 10,
                                                  '#title_display' => 'invisible',
                                                        ),
-        ),
-        'class' => array('draggable'),
-        );
+      ),
+      'class' => array('draggable'),
+    );
     
-        $rows[] = array( 
-        'data' => array(
+    $rows[] = array( 
+      'data' => array(
         'name' => "welt",
          'weight' => array(
                  '#attributes' => array(
@@ -441,21 +433,21 @@ class WisskiPathbuilderController extends ControllerBase
                                          '#delta' => 10,
                                                  '#title_display' => 'invisible',
                                                        ),
-        ),
-        'class' => array('draggable'),
-        );
-        */
+      ),
+      'class' => array('draggable'),
+    );
+    */
     
-        /*
-        $form = array(
-        '#type' => 'table',
-        #      '#theme' => 'table__menu_overview',
-        '#header' => $header,
-        '#rows' => $rows,
-        '#attributes' => array(
+    /*
+    $form = array(
+      '#type' => 'table',
+#      '#theme' => 'table__menu_overview',
+      '#header' => $header,
+      '#rows' => $rows,
+      '#attributes' => array(
         'id' => 'my-module-table',
-        ),
-        '#tabledrag' => array(
+      ),
+      '#tabledrag' => array(
         array(
           'action' => 'match',
           'relationship' => 'parent',
@@ -470,24 +462,24 @@ class WisskiPathbuilderController extends ControllerBase
           'relationship' => 'sibling',
           'group' => 'menu-weight',
         ),
-        ),
-        );
-        */
-        // drupal_attach_tabledrag($form, array(
-        // 'action' => 'order',
-        // 'relationship' => 'sibling',
-        // 'group' => 'my-elements-weight',
-        // ));
+      ),
+    );
+*/
+#    drupal_attach_tabledrag($form, array(
+#      'action' => 'order',
+#        'relationship' => 'sibling',
+#          'group' => 'my-elements-weight',
+#          ));
 
-        // drupal_set_message(serialize($form));
+    #drupal_set_message(serialize($form));
 
-        return $form;
+    return $form;
   
     
   
   
-    }
-    /* BY KERSTIN    
+  }
+/* BY KERSTIN    
     foreach ($path_entities as $entity){        
     #$tree = $this->menuTree->load($this->entity->id(), new MenuTreeParameters());
     drupal_set_message('entity: ' . serialize($entity));
@@ -497,14 +489,14 @@ class WisskiPathbuilderController extends ControllerBase
     drupal_set_message('tree1: ');
     drupal_set_message(serialize($tree));
     // We indicate that a menu administrator is running the menu access check.
-    #  $entity->getRequest()->attributes->set('_menu_admin', TRUE);     
+   #  $entity->getRequest()->attributes->set('_menu_admin', TRUE);     
     $manipulators = array(
       array('callable' => 'menu.default_tree_manipulators:checkAccess'),
       array('callable' => 'menu.default_tree_manipulators:generateIndexAndSort'),
     #  array('callable' => 'toolbar_menu_navigation_links'),
     );
     $tree = $menu_tree->transform($tree, $manipulators);
-    #  $entity->getRequest()->attributes->set('_menu_admin', FALSE);   
+   #  $entity->getRequest()->attributes->set('_menu_admin', FALSE);   
     drupal_set_message('tree2: ');
     drupal_set_message(serialize($tree)); 
 
@@ -516,7 +508,7 @@ class WisskiPathbuilderController extends ControllerBase
       return array_reduce($tree, $sum);
     };
     $delta = max($count($tree), 50);
-    }
+  }
     $form['path_items'] = array(
       '#type' => 'table',
       '#theme' => 'table__menu_overview',
@@ -616,8 +608,8 @@ class WisskiPathbuilderController extends ControllerBase
     // render element structure for drupal_render() as you would everywhere else.             
     // Iterate through each path entity
     
-    // drupal_set_message('wisski pathbuilder id: ' . serialize($wisski_pathbuilder));
-    /**             
+    #drupal_set_message('wisski pathbuilder id: ' . serialize($wisski_pathbuilder));
+/**             
     foreach ($path_entities as $id => $path_entity) {
        drupal_set_message($path_entity->id . ':');
        drupal_set_message(serialize($path_entity));
@@ -713,132 +705,129 @@ class WisskiPathbuilderController extends ControllerBase
         $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Save Changes'));             
     
      return $form;
-     */     
-    // return drupal_render($table); 
-    // }
+ */     
+    #return drupal_render($table); 
+ // }
 
 
-    /**
-     * Recursive helper function for buildOverviewForm().
-     *
-     * @param \Drupal\Core\Menu\MenuLinkTreeElement[] $tree
-     *   The tree retrieved by \Drupal\Core\Menu\MenuLinkTreeInterface::load().
-     * @param int                                     $delta
-     *   The default number of menu items used in the menu weight selector is 50.
-     *
-     * @return array
-     *   The overview tree form.
-     */
-    protected function buildOverviewTreeForm($tree, $delta) 
-    {
-        $form = &$this->overviewTreeForm;
-        $tree_access_cacheability = new CacheableMetadata();
-        foreach ($tree as $element) {
-            $tree_access_cacheability = $tree_access_cacheability->merge(CacheableMetadata::createFromObject($element->access));
+  /**
+   * Recursive helper function for buildOverviewForm().
+   *
+   * @param \Drupal\Core\Menu\MenuLinkTreeElement[] $tree
+   *   The tree retrieved by \Drupal\Core\Menu\MenuLinkTreeInterface::load().
+   * @param int $delta
+   *   The default number of menu items used in the menu weight selector is 50.
+   *
+   * @return array
+   *   The overview tree form.
+   */
+  protected function buildOverviewTreeForm($tree, $delta) {
+    $form = &$this->overviewTreeForm;
+    $tree_access_cacheability = new CacheableMetadata();
+    foreach ($tree as $element) {
+      $tree_access_cacheability = $tree_access_cacheability->merge(CacheableMetadata::createFromObject($element->access));
 
-            // Only render accessible links.
-            if (!$element->access->isAllowed()) {
-                continue;
-            }
+      // Only render accessible links.
+      if (!$element->access->isAllowed()) {
+        continue;
+      }
 
-            /**
- * @var \Drupal\Core\Menu\MenuLinkInterface $link 
-*/
-            $link = $element->link;
-            if ($link) {
-                $id = 'menu_plugin_id:' . $link->getPluginId();
-                $form[$id]['#item'] = $element;
-                $form[$id]['#attributes'] = $link->isEnabled() ? array('class' => array('menu-enabled')) : array('class' => array('menu-disabled'));
-                $form[$id]['title'] = Link::fromTextAndUrl($link->getTitle(), $link->getUrlObject())->toRenderable();
-                if (!$link->isEnabled()) {
-                    $form[$id]['title']['#suffix'] = ' (' . $this->t('disabled') . ')';
-                }
-                /*    // @todo Remove this in https://www.drupal.org/node/2568785.
-                elseif ($id === 'menu_plugin_id:user.logout') {
-                $form[$id]['title']['#suffix'] = ' (' . $this->t('<q>Log in</q> for anonymous users') . ')';
-                }
-                // @todo Remove this in https://www.drupal.org/node/2568785.
-                elseif (($url = $link->getUrlObject()) && $url->isRouted() && $url->getRouteName() == 'user.page') {
-                $form[$id]['title']['#suffix'] = ' (' . $this->t('logged in users only') . ')';
-                }
-                */
-                $form[$id]['enabled'] = array(
-                '#type' => 'checkbox',
-                '#title' => $this->t('Enable @title menu link', array('@title' => $link->getTitle())),
-                '#title_display' => 'invisible',
-                '#default_value' => $link->isEnabled(),
-                );
-                $form[$id]['weight'] = array(
-                '#type' => 'weight',
-                '#delta' => $delta,
-                '#default_value' => $link->getWeight(),
-                '#title' => $this->t('Weight for @title', array('@title' => $link->getTitle())),
-                '#title_display' => 'invisible',
-                );
-                $form[$id]['id'] = array(
-                '#type' => 'hidden',
-                '#value' => $link->getPluginId(),
-                );
-                $form[$id]['parent'] = array(
-                '#type' => 'hidden',
-                '#default_value' => $link->getParent(),
-                );
-                // Build a list of operations.
-                $operations = array();
-                $operations['edit'] = array(
-                'title' => $this->t('Edit'),
-                );
-                // Allow for a custom edit link per plugin.
-                $edit_route = $link->getEditRoute();
-                if ($edit_route) {
-                    $operations['edit']['url'] = $edit_route;
-                    // Bring the user back to the menu overview.
-                    $operations['edit']['query'] = $this->getDestinationArray();
-                }
-                else {
-                    // Fall back to the standard edit link.
-                    $operations['edit'] += array(
-                    'url' => Url::fromRoute('menu_ui.link_edit', ['menu_link_plugin' => $link->getPluginId()]),
-                    );
-                }
-                // Links can either be reset or deleted, not both.
-                if ($link->isResettable()) {
-                    $operations['reset'] = array(
-                    'title' => $this->t('Reset'),
-                    'url' => Url::fromRoute('menu_ui.link_reset', ['menu_link_plugin' => $link->getPluginId()]),
-                    );
-                }
-                elseif ($delete_link = $link->getDeleteRoute()) {
-                    $operations['delete']['url'] = $delete_link;
-                    $operations['delete']['query'] = $this->getDestinationArray();
-                    $operations['delete']['title'] = $this->t('Delete');
-                }
-                if ($link->isTranslatable()) {
-                    $operations['translate'] = array(
-                    'title' => $this->t('Translate'),
-                    'url' => $link->getTranslateRoute(),
-   
-                    );
-                }
-                $form[$id]['operations'] = array(
-                '#type' => 'operations',
-                '#links' => $operations,
-                );
-            }
-
-            if ($element->subtree) {
-                $this->buildOverviewTreeForm($element->subtree, $delta);
-            }
+      /** @var \Drupal\Core\Menu\MenuLinkInterface $link */
+      $link = $element->link;
+      if ($link) {
+        $id = 'menu_plugin_id:' . $link->getPluginId();
+        $form[$id]['#item'] = $element;
+        $form[$id]['#attributes'] = $link->isEnabled() ? array('class' => array('menu-enabled')) : array('class' => array('menu-disabled'));
+        $form[$id]['title'] = Link::fromTextAndUrl($link->getTitle(), $link->getUrlObject())->toRenderable();
+        if (!$link->isEnabled()) {
+          $form[$id]['title']['#suffix'] = ' (' . $this->t('disabled') . ')';
         }
+    /*    // @todo Remove this in https://www.drupal.org/node/2568785.
+        elseif ($id === 'menu_plugin_id:user.logout') {
+          $form[$id]['title']['#suffix'] = ' (' . $this->t('<q>Log in</q> for anonymous users') . ')';
+        }
+        // @todo Remove this in https://www.drupal.org/node/2568785.
+        elseif (($url = $link->getUrlObject()) && $url->isRouted() && $url->getRouteName() == 'user.page') {
+          $form[$id]['title']['#suffix'] = ' (' . $this->t('logged in users only') . ')';
+        }
+ */
+        $form[$id]['enabled'] = array(
+          '#type' => 'checkbox',
+          '#title' => $this->t('Enable @title menu link', array('@title' => $link->getTitle())),
+          '#title_display' => 'invisible',
+          '#default_value' => $link->isEnabled(),
+        );
+        $form[$id]['weight'] = array(
+          '#type' => 'weight',
+          '#delta' => $delta,
+          '#default_value' => $link->getWeight(),
+          '#title' => $this->t('Weight for @title', array('@title' => $link->getTitle())),
+          '#title_display' => 'invisible',
+        );
+        $form[$id]['id'] = array(
+          '#type' => 'hidden',
+          '#value' => $link->getPluginId(),
+        );
+        $form[$id]['parent'] = array(
+          '#type' => 'hidden',
+          '#default_value' => $link->getParent(),
+        );
+        // Build a list of operations.
+        $operations = array();
+        $operations['edit'] = array(
+          'title' => $this->t('Edit'),
+        );
+        // Allow for a custom edit link per plugin.
+        $edit_route = $link->getEditRoute();
+        if ($edit_route) {
+          $operations['edit']['url'] = $edit_route;
+          // Bring the user back to the menu overview.
+          $operations['edit']['query'] = $this->getDestinationArray();
+        }
+        else {
+          // Fall back to the standard edit link.
+          $operations['edit'] += array(
+            'url' => Url::fromRoute('menu_ui.link_edit', ['menu_link_plugin' => $link->getPluginId()]),
+          );
+        }
+        // Links can either be reset or deleted, not both.
+        if ($link->isResettable()) {
+          $operations['reset'] = array(
+            'title' => $this->t('Reset'),
+            'url' => Url::fromRoute('menu_ui.link_reset', ['menu_link_plugin' => $link->getPluginId()]),
+          );
+        }
+        elseif ($delete_link = $link->getDeleteRoute()) {
+          $operations['delete']['url'] = $delete_link;
+          $operations['delete']['query'] = $this->getDestinationArray();
+          $operations['delete']['title'] = $this->t('Delete');
+        }
+        if ($link->isTranslatable()) {
+          $operations['translate'] = array(
+            'title' => $this->t('Translate'),
+            'url' => $link->getTranslateRoute(),
+   
+       );
+        }
+        $form[$id]['operations'] = array(
+          '#type' => 'operations',
+          '#links' => $operations,
+        );
+      }
 
-        $tree_access_cacheability
-            ->merge(CacheableMetadata::createFromRenderArray($form))
-            ->applyTo($form);
-
-        return $form;
+      if ($element->subtree) {
+        $this->buildOverviewTreeForm($element->subtree, $delta);
+      }
     }
 
-    /** 
+    $tree_access_cacheability
+      ->merge(CacheableMetadata::createFromRenderArray($form))
+      ->applyTo($form);
+
+    return $form;
+  }
+
+/** 
  * Theme callback 
  *
  * The theme callback will format the $form data structure into a table and
@@ -849,8 +838,10 @@ class WisskiPathbuilderController extends ControllerBase
  *
  * @return array
  *   The rendered tabledrag form
+ *
+ * 
  */
-    /** 
+/** 
 function wisski_pathbuilder_tabledrag_form($variables) {
   $form = $variables['form'];
                

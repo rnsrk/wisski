@@ -25,26 +25,24 @@ use Symfony\Component\HttpFoundation\Response;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
 
-class MiradorController extends ControllerBase
-{
+class MiradorController extends ControllerBase {
 
-    public function start() 
-    {
+  public function start() {
 
-        $form = array();
+    $form = array();
     
-        $form['#markup'] = '<div id="viewer"></div>';
-        $form['#allowed_tags'] = array('div', 'select', 'option','a', 'script');
-        // $form['#attached']['drupalSettings']['wisski_jit'] = $wisski_individual;
-        $form['#attached']['library'][] = "wisski_mirador/mirador";
+    $form['#markup'] = '<div id="viewer"></div>';
+    $form['#allowed_tags'] = array('div', 'select', 'option','a', 'script');
+#    #$form['#attached']['drupalSettings']['wisski_jit'] = $wisski_individual;
+    $form['#attached']['library'][] = "wisski_mirador/mirador";
 
-        return $form;
+    return $form;
 
-        /*
-        $response = new Response();
-        $response->setContent('<!DOCTYPE html>
-        <html lang="en">
-        <head>
+/*
+    $response = new Response();
+    $response->setContent('<!DOCTYPE html>
+    <html lang="en">
+      <head>
           <title>Simple Viewer</title>
               <meta charset="UTF-8">
                   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -72,8 +70,8 @@ class MiradorController extends ControllerBase
                                                                                                                                         </html>');
         
     
-        return $response;
-        */
-    }
+    return $response;
+ */
+  }
   
 }

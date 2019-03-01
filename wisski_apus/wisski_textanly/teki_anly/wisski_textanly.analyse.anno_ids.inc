@@ -8,20 +8,19 @@
 
 
 /**
- * @author Martin Scholz
- */
-function wisski_textanly_admin_analyse_anno_ids($op, $ap) 
-{
+* @author Martin Scholz
+*/
+function wisski_textanly_admin_analyse_anno_ids($op, $ap) {
 
-    switch ($op) {
+  switch ($op) {
 
     case 'edit':
 
-        $fieldset = array();
-        return $fieldset;
+      $fieldset = array();
+      return $fieldset;
 
     case 'key_info':
-        return array(
+      return array(
         'input' => array(
           'annos',
         ),
@@ -32,9 +31,9 @@ function wisski_textanly_admin_analyse_anno_ids($op, $ap)
 
     default:
 
-        return null;
+      return NULL;
 
-    }
+  }
 
 }
 
@@ -46,22 +45,20 @@ function wisski_textanly_admin_analyse_anno_ids($op, $ap)
 
 
 /**
- * @author Martin Scholz
- */
-function wisski_textanly_analyse_anno_ids($analyser, $text_struct, $ticket) 
-{
+* @author Martin Scholz
+*/
+function wisski_textanly_analyse_anno_ids($analyser, $text_struct, $ticket) {
   
-    if (!isset($text_struct['annos']) || empty($text_struct['annos'])) { return $text_struct;
+  if (!isset($text_struct['annos']) || empty($text_struct['annos'])) return $text_struct;
+  $annos = array();
+  foreach ($text_struct['annos'] as $a) {
+    if (!isset($a['id'])) {
+      $a['id'] = _wisski_textanly_generate_id();
     }
-    $annos = array();
-    foreach ($text_struct['annos'] as $a) {
-        if (!isset($a['id'])) {
-            $a['id'] = _wisski_textanly_generate_id();
-        }
-        $annos[$a['id']] = $a;
-    }
+    $annos[$a['id']] = $a;
+  }
 
-    $text_struct['annos'] = $annos;
-    return $text_struct;
+  $text_struct['annos'] = $annos;
+  return $text_struct;
 
 }

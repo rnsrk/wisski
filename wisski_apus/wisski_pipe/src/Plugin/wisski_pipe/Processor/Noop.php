@@ -19,24 +19,21 @@ use Drupal\wisski_pipe\ProcessorBase;
  *   tags = { "noop", "filler" }
  * )
  */
-class Noop extends ProcessorBase
-{
+class Noop extends ProcessorBase {
   
   
-    /**
-     * {@inheritdoc}
-     */
-    public function __construct(array $configuration, $plugin_id, $plugin_definition) 
-    {
-        parent::__construct($configuration, $plugin_id, $plugin_definition);
-    }
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+  }
 
   
-    /**
-     * {@inheritdoc}
-     */
-    public function doRun() 
-    {
-    }
+  /**
+   * {@inheritdoc}
+   */
+  public function doRun() {
+  }
 
 }

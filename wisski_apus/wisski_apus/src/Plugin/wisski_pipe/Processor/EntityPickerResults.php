@@ -20,56 +20,53 @@ use Drupal\wisski_salz\AdapterHelper;
  *   tags = { "post-processing", "text" }
  * )
  */
-class EntityPickerResults extends ProcessorBase
-{
+class EntityPickerResults extends ProcessorBase {
   
   
-    /**
-     * {@inheritdoc}
-     */
-    public function __construct(array $configuration, $plugin_id, $plugin_definition) 
-    {
-        parent::__construct($configuration, $plugin_id, $plugin_definition);
-    }
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+  }
 
   
-    /**
-     * {@inheritdoc}
-     */
-    public function doRun() 
-    {
+  /**
+   * {@inheritdoc}
+   */
+  public function doRun() {
 
-        if (!isset($this->data['annos'])) {
-            $this->data = array();
-        } else {
+    if (!isset($this->data['annos'])) {
+      $this->data = array();
+    } else {
       
-            $entities = array();
+      $entities = array();
 
-            foreach ($this->data['annos'] as $anno) {
+      foreach ($this->data['annos'] as $anno) {
         
-                if ($anno['uri']) {
+        if ($anno['uri']) {
           
-                    if (preg_match('!node/(\d+)$!u', $anno['uri'], $m)) {
-                        $label = entity_load('node', $m[1])->label();
-                    } else {
-                        $entity_id = AdapterHelper::getDrupalIdForUri($anno['uri']);
-                        $entity = entity_load('wisski_individual', $entity_id);
-                        $label =$entity->label();
-                    }
+          if (preg_match('!node/(\d+)$!u', $anno['uri'], $m)) {
+            $label = entity_load('node', $m[1])->label();
+          } else {
+            $entity_id = AdapterHelper::getDrupalIdForUri($anno['uri']);
+            $entity = entity_load('wisski_individual', $entity_id);
+            $label =$entity->label();
+          }
 
-                    $entity = array(
-                    'uri' => $anno['uri'],
-                    'label' => $label,
-                    );
-                    $entities[] = $entity;
-                }
-        
-            }
-      
-            $this->data = $entities;
-
+          $entity = array(
+            'uri' => $anno['uri'],
+            'label' => $label,
+          );
+          $entities[] = $entity;
         }
+        
+      }
+      
+      $this->data = $entities;
 
     }
+
+  }
 
 }

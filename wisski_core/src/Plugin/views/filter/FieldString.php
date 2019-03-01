@@ -16,107 +16,101 @@ use Drupal\views\Plugin\views\filter\StringFilter as ViewsString;
  *
  * @ViewsFilter("wisski_field_string")
  */
-class FieldString extends ViewsString
-{
+class FieldString extends ViewsString {
 
-    function operators() 
-    {
-        $operators = parent::operators();
-        $operators_new = array(
-        /*
-        '=' => array(
+  function operators() {
+    $operators = parent::operators();
+    $operators_new = array(
+    /*
+      '=' => array(
         'title' => t('Is equal to'),
         'short' => t('='),
         'method' => 'opEqual',
         'values' => 1,
-        ),
-        '!=' => array(
+      ),
+      '!=' => array(
         'title' => t('Is not equal to'),
         'short' => t('!='),
         'method' => 'opEqual',
         'values' => 1,
-        ),
-        'CONTAINS' => array(
+      ),
+      'CONTAINS' => array(
         'title' => t('Contains'),
         'short' => t('contains'),
         'method' => 'opContains',
         'values' => 1,
-        ),
-        'STARTS_WITH' => array(
+      ),
+      'STARTS_WITH' => array(
         'title' => t('Starts with'),
         'short' => t('begins'),
         'method' => 'opStartsWith',
         'values' => 1,
-        ),
-        'ENDS_WITH' => array(
+      ),
+      'ENDS_WITH' => array(
         'title' => t('Ends with'),
         'short' => t('ends'),
         'method' => 'opEndsWith',
         'values' => 1,
-        ),
-        */
-        'EMPTY' => array(
+      ),
+    */
+      'EMPTY' => array(
         'title' => t('Is empty'),
         'short' => t('empty'),
         'method' => 'opSimple',
         'values' => 1,
-        ),
-        'NOT_EMPTY' => array(
+      ),
+      'NOT_EMPTY' => array(
         'title' => t('Is not empty'),
         'short' => t('not_empty'),
         'method' => 'opSimple',
         'values' => 1,
-        ),
-        'IN' => array(
+      ),
+      'IN' => array(
         'title' => t('One of'),
         'short' => t('in'),
         'method' => 'opMulti',
         'values' => 1,
-        ),
-        );
+      ),
+    );
 
-        // dpm($operators, "old");
+#    dpm($operators, "old");
     
-        $operators = array_merge($operators, $operators_new);
+    $operators = array_merge($operators, $operators_new);
 
-        // dpm($operators, "op");
+#    dpm($operators, "op");
 
-        return $operators;
+    return $operators;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  function query() {
+    $field = isset($this->configuration['wisski_field']) ? $this->configuration['wisski_field'] : $this->realField;
+    $info = $this->operators();
+    if (!empty($info[$this->operator]['method'])) {
+      $this->{$info[$this->operator]['method']}($field);
     }
-
-    /**
-     * {@inheritdoc}
-     */
-    function query() 
-    {
-        $field = isset($this->configuration['wisski_field']) ? $this->configuration['wisski_field'] : $this->realField;
-        $info = $this->operators();
-        if (!empty($info[$this->operator]['method'])) {
-            $this->{$info[$this->operator]['method']}($field);
-        }
-    }
+  }
 
 
-    /**
-     * {@inheritdoc}
-     */
-    function opSimple($field) 
-    {
-        $this->query->query->condition($field, $this->value, $this->operator);
-    }
+  /**
+   * {@inheritdoc}
+   */
+  function opSimple($field) {
+    $this->query->query->condition($field, $this->value, $this->operator);
+  }
 
-    function opMulti($field) 
-    {
-        $value = explode(',', $this->value);
-        $this->query->query->condition($field, $value, $this->operator);
+  function opMulti($field) {
+    $value = explode(',', $this->value);
+    $this->query->query->condition($field, $value, $this->operator);
     
-    }
+  }
   
-    function placeholder() 
-    {
-        $field = isset($this->configuration['wisski_field']) ? $this->configuration['wisski_field'] : $this->realField;
-        $this->query->query->condition($field, $this->value, $this->operator);
+  function placeholder() {
+    $field = isset($this->configuration['wisski_field']) ? $this->configuration['wisski_field'] : $this->realField;
+    $this->query->query->condition($field, $this->value, $this->operator);
 
-    }
+  }
 
 }

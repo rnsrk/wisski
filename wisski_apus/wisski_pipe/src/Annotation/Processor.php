@@ -21,41 +21,40 @@ use Drupal\Component\Annotation\Plugin;
  *
  * @Annotation
  */
-class Processor extends Plugin
-{
+class Processor extends Plugin {
 
-    /**
-     * The plugin ID.
-     *
-     * @var string
-     */
-    public $id;
+  /**
+   * The plugin ID.
+   *
+   * @var string
+   */
+  public $id;
 
-    /**
-     * The human-readable name of the processor.
-     *
-     * The string should be wrapped in a @Translation().
-     *
-     * @var \Drupal\Core\Annotation\Translation
-     */
-    public $label;
+  /**
+   * The human-readable name of the processor.
+   *
+   * The string should be wrapped in a @Translation().
+   *
+   * @var \Drupal\Core\Annotation\Translation
+   */
+  public $label;
 
 
-    /**
-     * A description of the processor functionality.
-     *
-     * The string should be wrapped in a @Translation().
-     *
-     * @var \Drupal\Core\Annotation\Translation
-     */
-    public $description;
+  /**
+   * A description of the processor functionality.
+   *
+   * The string should be wrapped in a @Translation().
+   *
+   * @var \Drupal\Core\Annotation\Translation
+   */
+  public $description;
   
   
-    /**
-     * An array of tags that help categorize the processor.
-     * 
-     * @var string[]
-     */
-    public $tags;
+  /**
+   * An array of tags that help categorize the processor.
+   * 
+   * @var string[]
+   */
+  public $tags;
 
 }

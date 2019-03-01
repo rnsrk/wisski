@@ -14,52 +14,49 @@ use Drupal\views\Plugin\views\field\Url as Urlfield;
  *
  * @ViewsField("wisski_title")
  */
-class WisskiTitle extends Urlfield
-{
+class WisskiTitle extends Urlfield {
   
-    /**
-     * {@inheritdoc}
-     */ 
-    public function render(ResultRow $values) 
-    {
+  /**
+   * {@inheritdoc}
+   */ 
+  public function render(ResultRow $values) {
     
-        $value = $this->getValue($values);
-        // dpm(serialize($values), "vals");
-        $entity = $values->_entity;
-        if(!empty($entity)) {
-            $eid = $entity->id();
-        } else {
-            if(!empty($values->eid)) {
-                $eid = $values->eid;
-            } else {
-                $eid = null;
-            }
-        }
-        //   dpm(Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $eid]), "url");
-        // dpm(serialize($eid), "eid");
-        //    dpm(serialize($values), "val");
-        if (is_array($value)) {
-            $return = [];
-
-            foreach ($value as $v) {
-        
-                // in case of a disamb-array, go to the value.
-                if(is_array($v) && isset($v["value"])) {
-                    $return[] = $this->sanitizeValue($v["value"]);
-                } else {              
-                    $return[] = $this->sanitizeValue($v);
-                }
-            }
-            return join(', ', $return);
-        }
-        else {
-            if (!empty($this->options['display_as_link']) && !empty($eid)) {
-                return \Drupal::l($this->sanitizeValue($value), Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $eid])); //"<a href='" . Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity]) . "'>" . $this->sanitizeValue($value) . "</a>";
-            } else {
-                return $this->sanitizeValue($value, 'url');
-            }
-        }
+    $value = $this->getValue($values);
+#    dpm(serialize($values), "vals");
+    $entity = $values->_entity;
+    if(!empty($entity))
+      $eid = $entity->id();
+    else {
+      if(!empty($values->eid)) {
+        $eid = $values->eid;
+      } else {
+        $eid = NULL;
+      }
     }
+//   dpm(Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $eid]), "url");
+#    dpm(serialize($eid), "eid");
+//    dpm(serialize($values), "val");
+    if (is_array($value)) {
+      $return = [];
+
+      foreach ($value as $v) {
+        
+        // in case of a disamb-array, go to the value.
+        if(is_array($v) && isset($v["value"]))
+          $return[] = $this->sanitizeValue($v["value"]);
+        else 	         
+          $return[] = $this->sanitizeValue($v);
+      }
+      return join(', ', $return);
+    }
+    else {
+      if (!empty($this->options['display_as_link']) && !empty($eid)) {
+        return \Drupal::l($this->sanitizeValue($value), Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $eid])); //"<a href='" . Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity]) . "'>" . $this->sanitizeValue($value) . "</a>";
+      } else {
+        return $this->sanitizeValue($value, 'url');
+      }
+    }
+  }
 
 }   
 

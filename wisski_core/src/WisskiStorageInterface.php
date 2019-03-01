@@ -7,7 +7,6 @@ use Drupal\Core\Entity\ContentEntityStorageInterface;
 /**
  * Provides an interface defining a media storage controller.
  */
-interface WisskiStorageInterface extends ContentEntityStorageInterface
-{
+interface WisskiStorageInterface extends ContentEntityStorageInterface {
 
 }

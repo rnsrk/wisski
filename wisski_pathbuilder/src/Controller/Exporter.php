@@ -28,27 +28,25 @@ use Drupal\Core\Url;
 
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
     
-class Exporter extends ControllerBase
-{
+class Exporter extends ControllerBase {
 
-    public function exportPb($pb) 
-    {
+  public function exportPb($pb) {
     
-        // get the pb if we only have the id
+    // get the pb if we only have the id
     
-        // this seems to be discontinued?
-        /*
-        if (!is_object($pb)) {
-        $pb = WisskiPathbuilderEntity::load($pb);
-        }
-    
-        $dependencies = [];
-        foreach ($pb->getPbArray() $pid => $path_info) {
-        $dependencies[] = $
-        }
-        */
-
+    // this seems to be discontinued?
+    /*
+    if (!is_object($pb)) {
+      $pb = WisskiPathbuilderEntity::load($pb);
     }
+    
+    $dependencies = [];
+    foreach ($pb->getPbArray() $pid => $path_info) {
+      $dependencies[] = $
+    }
+   */
+
+  }
 
 
 }

@@ -1,12 +1,12 @@
 /**
- *
- * @author Martin Scholz, WissKI project
- */
+*
+* @author Martin Scholz, WissKI project
+*/
 
 
-(function ($, window, Drupal, drupalSettings, undefined) {
+(function($, window, Drupal, drupalSettings, undefined) {
 
-    "use strict";
+  "use strict";
   
 
 })(jQuery, window, Drupal, drupalSettings);
