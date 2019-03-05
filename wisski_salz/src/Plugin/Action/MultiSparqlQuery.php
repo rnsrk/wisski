@@ -248,21 +248,36 @@ class MultiSparqlQuery extends ConfigurableActionBase {
         }
         
         
-        $value_string = "VALUES (";
+        $value_string_start = "VALUES (";
                 
         // add it per source which should be key1.
         foreach($values as $key1 => $rows) {
           
           // first add the keys
           foreach($keys[$key1] as $key) {
-            $value_string .= ("?" . $key . " ");
+            $value_string_start .= ("?" . $key . " ");
           }
           
-          $value_string .= ") { ";
+          $value_string_start .= ") { ";
+
+
+          $value_string = $value_string_start;
+                
+          $count_rows = 0;
                     
           foreach($rows as $row) {
-            
+            $count_rows++;
             $value_string .= $row;
+            
+            // if we have more than 100 we commit, so we don't overdo it for the
+            // small triple stores...
+            if($count_rows > 99) {
+              $count_rows = 0;
+              $value_string .= "} ";
+              $result = $engine->$queryMethod($namespaces . $this->configuration['query_part_' . $i]['sparql_' . $i] . ' WHERE { ' . $value_string . ' } ');
+              $value_string = $value_string_start;
+            }
+            
           }
           
           $value_string .= "} ";
@@ -270,7 +285,9 @@ class MultiSparqlQuery extends ConfigurableActionBase {
           
           
      #     dpm(serialize($value_string), "valuestring");
-          $result = $engine->$queryMethod($namespaces . $this->configuration['query_part_' . $i]['sparql_' . $i] . ' WHERE { ' . $value_string . ' } ');
+          // only do this if we still have something to commit...
+          if($count_rows > 0)
+            $result = $engine->$queryMethod($namespaces . $this->configuration['query_part_' . $i]['sparql_' . $i] . ' WHERE { ' . $value_string . ' } ');
         // what to do with the result?
    
         }
