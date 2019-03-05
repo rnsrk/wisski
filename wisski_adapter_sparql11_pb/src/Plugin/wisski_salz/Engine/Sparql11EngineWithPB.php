@@ -816,7 +816,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }
     }
     
-    wsmlog(__METHOD__ . ": could not find URI for entityid '$entityid'", 'warning');
+#    wsmlog(__METHOD__ . ": could not find URI for entityid '$entityid'", 'warning');
+    drupal_set_message("Could not find URI for entityid '$entityid'", 'error');
     return array();
 
   }
