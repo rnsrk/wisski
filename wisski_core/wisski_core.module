@@ -438,8 +438,21 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
 
     global $base_url;
 
-    if(strpos($referer, $base_url) !== FALSE)
-      $referer = substr($referer, strlen($base_url));
+    $new_base_url=$base_url;
+
+    $base_url_parts=parse_url($base_url);
+    $host=$base_url_parts["host"];
+
+    if(strpos($base_url, $host) !== FALSE)
+      $new_base_url=substr($base_url, strpos($base_url, $host));
+
+    $schemacount=0;
+
+    if(strpos($referer, $host) !== FALSE)
+      $schemacount=strpos($referer, $host);
+
+    if(strpos($referer, $new_base_url) !== FALSE)
+      $referer = substr($referer, $schemacount + strlen($new_base_url));
 
     // what exactly is the route where we come from?
     $router = \Drupal::service('router.no_access_checks');
