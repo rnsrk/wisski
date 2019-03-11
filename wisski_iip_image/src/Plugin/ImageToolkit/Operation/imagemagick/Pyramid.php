@@ -99,10 +99,11 @@ class Pyramid extends ImagemagickImageToolkitOperationBase {
 #    }
 #    drupal_set_message("Hallo welt!" . serialize($this->getToolkit()));
 #    $command = 'convert ' . $this->getToolkit()->escapeShellArg($this->getToolkit()->getSourceLocalPath()) . " -define tiff:tile-geometry=256x256 -compress jpeg 'ptif:-'";
-    $this->getToolkit()->resetArguments();
-    $this->getToolkit()->addArgument('-define tiff:tile-geometry=256x256 -compress jpeg');
-    $this->getToolkit()->addArgument('-quality 100');
-    $this->getToolkit()->setDestinationFormat('ptif');
+#    $this->getToolkit()->resetArguments();
+    $this->getToolkit()->arguments()->reset();
+    $this->getToolkit()->arguments()->add('-define tiff:tile-geometry=256x256 -compress jpeg');
+    $this->getToolkit()->arguments()->add('-quality 100');
+    $this->getToolkit()->arguments()->setDestinationFormat('ptif');
 
 #    dpm($this->getToolkit()->addArgument($command));
 #    dpm($this->getToolkit()->imagemagickExec($command));
