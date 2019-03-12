@@ -2452,6 +2452,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           if($op == '<>') {
             $op = '!=';
           }
+          elseif($op == 'EMPTY' || $op == 'NOT_EMPTY') {
+            $regex = FALSE;
+            $safe = TRUE;
+          }
           elseif($op == 'STARTS_WITH' || $op == 'starts_with') {
             $regex = FALSE;
             $safe = TRUE;
@@ -2518,7 +2522,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             $filter = "strStarts($cast_outvar, $escapedValue)";
           } else if ($op == "ENDS_WITH" || $op == 'ends_with') {
             $filter = "strEnds($cast_outvar, $escapedValue)";
-          } else if (strtoupper($op) == "LONGERTHAN" || strtoupper($op) == "SHORTERTHAN") {
+          } /* This is wrong here...
+          else if($op == "EMPTY") {
+            $filter = "!bound(" . $outvar . ")";
+          } else if($op == "NOT_EMPTY") {
+            $filter = "bound(" . $outvar . ")";
+          } */
+          else if (strtoupper($op) == "LONGERTHAN" || strtoupper($op) == "SHORTERTHAN") {
             $filter = "strlen($outvar) ";
             if(strtoupper($op) == "LONGERTHAN")
               $filter .= ">";
@@ -2544,6 +2554,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             if(is_numeric($primitiveValue))
               $escapedValue = "'" . $escapedValue . "'";
             $query .= " " . $escapedValue . " . ";
+          } elseif( $op == "EMPTY" || $op == "NOT EMPTY") { 
+            $query .= " $outvar . ";
           } else {         
             $query .= " $outvar . FILTER( $filter ) . ";
           }
@@ -2560,6 +2572,12 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
 #    dpm($query, "query"); 
 #\Drupal::logger('Sparql Adapter gtfp')->debug(str_replace("\n", '<br/>', htmlentities($path->id().":\n".\Drupal\Core\Serialization\Yaml::encode($tsa))));
+    
+    // in case of empty it must be optional or we never will get something, because the path may not be there and be not there at the same time.
+    if($op == "EMPTY") {
+      $query = " OPTIONAL { " . $query . " } . FILTER(!bound($outvar)) . ";
+    }
+    
     return $query;
   }
   
