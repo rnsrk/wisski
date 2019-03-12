@@ -57,13 +57,13 @@ class FieldString extends ViewsString {
         'title' => t('Is empty'),
         'short' => t('empty'),
         'method' => 'opSimple',
-        'values' => 1,
+        'values' => 0,
       ),
       'NOT_EMPTY' => array(
         'title' => t('Is not empty'),
         'short' => t('not_empty'),
         'method' => 'opSimple',
-        'values' => 1,
+        'values' => 0,
       ),
       'IN' => array(
         'title' => t('One of'),
