@@ -38,6 +38,10 @@ class Query extends WisskiQueryBase {
    */
   protected $orderby = "";
 
+  public function setOrderBy($orderby) {
+    $this->orderby = $orderby;
+  }
+
   /**
    * A function to add dependent parts 
    * typically a SERVICE-string like:
@@ -65,7 +69,7 @@ class Query extends WisskiQueryBase {
   public function getQueryParts() {
     list($where_clause, $entity_ids) = $this->makeQueryConditions($this->condition);
         
-    return array("where" => $where_clause, "eids" => $entity_ids);
+    return array("where" => $where_clause, "eids" => $entity_ids, "order" => $this->orderby);
   }
   
   /**
@@ -83,6 +87,8 @@ class Query extends WisskiQueryBase {
     // sparql graph patterns and
     // a list of entity ids that the pattern should be restricted to
     list($where_clause, $entity_ids) = $this->makeQueryConditions($this->condition);
+
+#    dpm($this->orderby, "order?");
 
 #    dpm($where_clause, "where clause in adapter query");
 #    dpm($entity_ids, "eids");
@@ -104,7 +110,7 @@ class Query extends WisskiQueryBase {
     elseif (empty($entity_ids) || !empty($this->dependent_parts)) {
       // By Mark: I dont know if we want to have dependent parts here....
       list($limit, $offset) = $this->getPager();
-
+#      dpm($this->orderby, "order");
       $return = $this->buildAndExecSparql($where_clause, NULL, $this->count, $limit, $offset, $this->orderby);
  #     dpm(serialize($return), "got: ");
       if (!$this->count) {
@@ -478,7 +484,7 @@ class Query extends WisskiQueryBase {
     // handle sorting
     $sort_params = "";
     foreach($this->sort as $sortkey => $elem) {
-#      dpm($elem);
+#      dpm($elem, "sort");
 #      if($elem['field'] == "title") {
 #        $select->orderBy('ngram', $elem['direction']);
 #      }
@@ -636,7 +642,7 @@ class Query extends WisskiQueryBase {
     
     $select .= ' }';
     
-#    dpm($sort_params);
+#    dpm($sort_params, "sort?");
     if($sort_params) {
       $select .= " ORDER BY " . $sort_params;
     }

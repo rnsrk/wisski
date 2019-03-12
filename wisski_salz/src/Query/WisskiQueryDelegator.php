@@ -43,9 +43,13 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       
     $max_query_parts = "";
 
+    $total_order_string = "";
+
     $count = count($this->dependent_queries);
 
     foreach ($this->dependent_queries as $adapter_id => $query) {
+
+#      dpm("dependent on $adapter_id");
 
       if($query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
         $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
@@ -66,10 +70,14 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       $parts = $query->getQueryParts();
       $where = $parts['where'];
       $eids = $parts['eids'];
+      $order = $parts['order'];
+
+      if(!empty($order))     
+        $total_order_string .= $order . " ";
 
 #      dpm($where, "where");
 #      dpm($eids, "eids");
-
+#      dpm($order, "got order!");
       $filtered_uris = NULL;
 
       $eids_part = "";
@@ -120,6 +128,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         $total_service_array[] = $service_string;
       }
 #      dpm($total_service_array, "tos");
+      $first_query->setOrderBy($total_order_string);
       $first_query->setDependentParts($total_service_array);
     }
     
