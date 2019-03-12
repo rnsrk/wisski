@@ -1019,6 +1019,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     
     // this might be a hack - we search for the first . and
     // put the optional there.
+/*
     if($operator == "EMPTY") {
       $pos = strpos($query_part, "} .");
       $query_part = substr_replace($query_part, "} . OPTIONAL { ", $pos, 3);
@@ -1030,7 +1031,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
 #      dpm($query_part, "qp1");
 #      dpm($path, "path");
     }
-
+*/
     return $query_part;
     
   }
