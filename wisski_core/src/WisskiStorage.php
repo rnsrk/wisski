@@ -941,8 +941,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     }
     
     // if not - we assume jpg.
-    if(empty($extout))
+    if(empty($extout)&& empty($extension))
       $extout = '.jpg';
+    else if(!empty($extension)) // keep extensions if there are any - for .skp like in the kuro-case.
+      $extout = $extension;
 
     // this is evil in case it is not .tif or .jpeg but something with . in the name...
 #    return file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));    
