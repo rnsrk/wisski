@@ -572,8 +572,16 @@ class Query extends WisskiQueryBase {
         //$entity_ids = $this->buildAndExecSparql($query_parts, $entity_ids);
         //return array('', $entity_ids);
         
-        // Therefore we do the full thing!
-        return array($query_parts, $entity_ids);
+        // do it if we have a single store system.
+        if(empty($this->dependent_parts)) {
+          $entity_ids = $this->buildAndExecSparql($query_parts, $entity_ids);
+          return array('', $entity_ids);
+        } else {
+          #        dpm("it is an AND!");
+          // Therefore we do the full thing!
+          // we have to check that!!!
+          return array($query_parts, $entity_ids);
+        }
       }
       else {
         // OR
