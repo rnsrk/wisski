@@ -296,8 +296,15 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #        dpm(microtime(), "before count");
         //  Fetch number of pager items differently based on data locality.
         // Execute the local count query.
-#        dpm($count_query->count, "count?"
-        $this->pager->total_items = $count_query->execute();
+#        dpm($count_query->count, "count?");
+#        $count_query->countQuery();
+        $erg = $count_query->execute();
+        
+#        dpm($erg, "erg");
+        if(is_array($erg))
+          $erg = count($erg);
+        
+        $this->pager->total_items = $erg;
 #        dpm($this->pager->total_items, "total");
 #        dpm(microtime(), "after count");
         if (!empty($this->pager->options['offset'])) {
