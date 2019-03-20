@@ -370,6 +370,7 @@ class Query extends WisskiQueryBase {
 
         }
         elseif (in_array($field, $skip_field_ids)) {
+#          dpm("does not work!");
           // these fields are not supported on purpose
           //$this->missingImplMsg("Field '$field' intentionally not queryable in entity query", array('condition' => $condition));
         } 
@@ -408,7 +409,12 @@ class Query extends WisskiQueryBase {
           }
 
           $new_query_part = $this->makePathCondition($pb, $path, $operator, $value);
-          
+#          dpm($new_query_part, "yay!");
+#          dpm($value, "val?");
+#          dpm($pb, "pb");
+#          dpm($path, "path");
+#          dpm($operator, "op");
+#          dpm($value, "val");
           if (is_null($new_query_part)) {
             if ($conjunction == 'AND') {
               // the condition would definitely evaluate to an empty set of 
@@ -662,7 +668,7 @@ class Query extends WisskiQueryBase {
 $timethis[] = microtime(TRUE);
 #    dpm(microtime(), "before");
 #    dpm($select, "query");
-
+#    dpm(serialize($this), "this");
     $result = $engine = $this->getEngine()->directQuery($select);
 #    dpm($result, "resquery");
 $timethis[] = microtime(TRUE);
@@ -928,7 +934,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
 
 
   protected function makePathCondition($pb, $path, $operator, $value, $starting_group = NULL) {
-    
+
     if (!$operator) $operator = '=';
     if ($starting_group === NULL) {
       $starting_position = 0;
@@ -976,10 +982,26 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         }
 
         $entity_ids = array();
-        
-        if (!empty($preferred_bundles)) {
-          $entity_ids = $this->queryReferencedEntities($preferred_bundles, $value, $operator);
+
+#        dpm($preferred_bundles, "pref?");
+#        dpm($value, "val?");
+
+        // special case if we get a constraint from a view that asks for a special entity
+        // id. this is used in condition filters e.g.
+        if(is_numeric($value) && ($operator == "HAS_EID" || $operator == "has_eid") ) {
+#          dpm("we take value...");
+          
+          $entity_ids = array($value => $value);
         }
+
+        // only do that if we really ask for something
+        if(empty($entity_ids)) {
+          if (!empty($preferred_bundles)) {
+            $entity_ids = $this->queryReferencedEntities($preferred_bundles, $value, $operator);
+#          dpm($entity_ids, "ents?");
+          }
+        }
+        
         // if there are no preferred bundles or querying them yielded no result
         // we search in all the other bundles
         if (empty($entity_ids) && !empty($bundles)) {
@@ -1021,6 +1043,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     // the entities of the subgroup
     $query_part = $this->getEngine()->generateTriplesForPath($pb, $path, $value, NULL, NULL, 0, $starting_position, FALSE, $operator, 'field', FALSE, $vars);
 #    dpm($query_part, "qp");
+#    return $query_part;
     if (!empty($obj_uris)) {
       $query_part .= ' VALUES ?' . $vars[$obj_pos] . ' { ' . join(' ', $obj_uris) . ' }';
     }

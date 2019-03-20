@@ -50,6 +50,11 @@ class WisskiIndividualQuery extends QueryPluginBase {
   public $orderby;
   
   /**
+   * The variable counter for parameters
+   */
+  private $paramcount = 0;
+  
+  /**
    * {@inheritdoc}
    */
   public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
@@ -148,7 +153,15 @@ class WisskiIndividualQuery extends QueryPluginBase {
    * @param ????
    */
   public function addWhereExpression($group, $snippet, $args = array()) {
-  
+    // we dont have to act here, because there is all information in the substitutions below!
+#    dpm("addWhere called with $group, $snippet, " . serialize($args), "error");
+/*
+    foreach($args as $placeholder => $arg) {
+      if(strpos($placeholder, "wisski.placeholder") !== FALSE) {
+        $this->condition(
+      }
+    }
+    */
   }
 
   /** This function is called by Drupal\views\Plugin\views\HandlerBase
@@ -194,6 +207,8 @@ class WisskiIndividualQuery extends QueryPluginBase {
    * $view->pager['current_page'].
    */
   function execute(ViewExecutable $view) {
+#    dpm("yo");
+#    return;
 #  dpm($this->orderby, "orderby!");
 #    dpm($view->field);
 #dpm(microtime(), "begin execute");
@@ -251,11 +266,38 @@ class WisskiIndividualQuery extends QueryPluginBase {
     // if an aditional argument is set, look if it is the eid!    
     if(isset($view->build_info['substitutions'])) {
       $substitutions = $view->build_info['substitutions'];
-      
+
       foreach($substitutions as $sbs_key => $sbs_value) {
         if(strpos($sbs_key, "eid")) {
           $entity_id = $sbs_value;
-          break;
+          // we dont break anymore... see if we can do something else
+#          break;
+        } else if(strpos($sbs_key, " arguments.wisski_path_") !== FALSE ) {
+
+          // cut away the front part and the " }}" at the end
+          $path_part = substr($sbs_key, strpos($sbs_key, " arguments.wisski_path_") + strlen("arguments.wisski_path_") +1, -3);
+
+
+          if( strpos($path_part, "__") !== FALSE) {
+
+            $pb_and_path = explode("__", $path_part, 2);
+#            dpm($pb_and_path, "pbp?");
+
+            if (count($pb_and_path) != 2) {
+              drupal_set_message("Bad field id for Wisski views: $field", 'error');
+            } else {
+
+#          dpm($path_part, "pathpart");
+#          dpm($sbs_value, "val");
+              
+              $query->condition($pb_and_path[0] . '.' . $pb_and_path[1], $sbs_value, "HAS_EID");
+              $count_query->condition($pb_and_path[0] . '.' . $pb_and_path[1], $sbs_value, "HAS_EID");
+
+#              dpm($query, "query?");
+            }
+            
+          }
+        
         }
       }
     }
@@ -900,4 +942,10 @@ class WisskiIndividualQuery extends QueryPluginBase {
     return array_values($values_per_row);
 
   }
+
+  public function placeholder() {
+#    dpm(serialize($this), "error");
+    return "wisski.placeholder" . $this->paramcount++;
+  }
+
 }
