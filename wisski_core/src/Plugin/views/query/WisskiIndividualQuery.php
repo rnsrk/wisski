@@ -274,6 +274,10 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #          break;
         } else if(strpos($sbs_key, " arguments.wisski_path_") !== FALSE ) {
 
+          // continue if it is not a number...
+          if(!is_numeric($sbs_key))
+            continue;
+
           // cut away the front part and the " }}" at the end
           $path_part = substr($sbs_key, strpos($sbs_key, " arguments.wisski_path_") + strlen("arguments.wisski_path_") +1, -3);
 
