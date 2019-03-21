@@ -2468,9 +2468,17 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             $safe = TRUE;
 //            $primitiveValue = $this->escapeSparqlRegex($primitiveValue, TRUE) . '$';
           }
-          elseif($op == 'CONTAINS' || $op == 'contains') {
+          elseif($op == 'CONTAINS' || $op == 'contains' || $op == 'NOT') {
             $regex = true;
             $safe = TRUE;
+            
+#            dpm($op, "op");
+            
+            if($op == "NOT") {
+              $negate = TRUE;
+              $op = "CONTAINS";  
+            }
+            
 #            dpm($primitiveValue, "prim");
             $primitiveValue = $this->escapeSparqlRegex($primitiveValue, TRUE);
 #            dpm($primitiveValue, "prim");
@@ -2545,8 +2553,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             $filter = "$cast_outvar " . $op . ' ' . $escapedValue;
           }
 
-          if ($negate) {
+          if ($negate && $op != "CONTAINS") {
             $filter = "NOT( $filter )";
+          } else if($negate && $op == "CONTAINS") {
+            $filter = "!" . $filter;
           }
 
           // speed up in case of equivalence
