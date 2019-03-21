@@ -42,11 +42,12 @@ class WisskiMirador extends StylePluginBase {
 
     $view = $this->view;
     
-//    dpm($view);
+#    dpm($view);
     
     $results = $view->result;
     
     $ent_list = array();
+    $direct_load_list = array();
     
     $site_config = \Drupal::config('system.site');
     
@@ -67,15 +68,66 @@ class WisskiMirador extends StylePluginBase {
     if(empty($to_print))
       $to_print .= $base_url;   
     
+    $iter = 0;
+    
     foreach($results as $result) {
       $ent_list[] = array("manifestUri" => $base_url . "/wisski/navigate/" . $result->eid . "/iiif_manifest", "location" => $to_print);
+#      $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $result->eid . "/iiif_manifest", "viewType" => "ImageView" );
+      $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $result->eid . "/iiif_manifest", "availableViews" => array( 'ImageView'), "windowOptions" => array( "zoomLevel" => 1, "osdBounds" => array(
+            "height" => 2000,
+            "width" => 2000,
+            "x" => 1000,
+            "y" => 2000,
+        )), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false);
     } 
     
+    if(isset($view->attachment_before)) {
+      $attachments = $view->attachment_before;
+      
+      foreach($attachments as $attachment) {
+        $subview = $attachment['#view'];
+        
+        $subview->execute();
+ 
+        foreach($subview->result as $res) {
+          $ent_list[] = array("manifestUri" => $base_url . "/wisski/navigate/" . $res->eid . "/iiif_manifest", "location" => $to_print);
+#          $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $res->eid . "/iiif_manifest", "viewType" => "ImageView" );
+          $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $res->eid . "/iiif_manifest", "availableViews" => array( 'ImageView'), "windowOptions" => array( "zoomLevel" => 1, "osdBounds" => array( 
+            "height" => 2000,
+            "width" => 2000,
+            "x" => 1000,
+            "y" => 2000,
+        )), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false );
+        }
+        
+//        dpm($subview->result, "resi!");
+        
+      }
+    }
+    
 #    dpm($ent_list, "ente gut...");
+
+    $layout = count($ent_list);
+
+    $layout_str = "";
+
+    if($layout < 7) {
+      $layout_str = "1x" . $layout;
+    } else {
+      $layout_str = "1x1";
+    }
+    
+#    foreach($ent_list as $ent
+    
     
     $form = array();
     
     $form['#attached']['drupalSettings']['wisski']['mirador']['data'] = $ent_list;
+    $form['#attached']['drupalSettings']['wisski']['mirador']['layout'] = $layout_str;
+
+    if($layout < 7) {
+      $form['#attached']['drupalSettings']['wisski']['mirador']['windowObjects'] = $direct_load_list;
+    }
         
     $form['#markup'] = '<div id="viewer"></div>';
     $form['#allowed_tags'] = array('div', 'select', 'option','a', 'script');

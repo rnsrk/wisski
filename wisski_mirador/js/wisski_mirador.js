@@ -17,7 +17,9 @@
             Mirador({
               id: "viewer",
               buildPath: "libraries/mirador/",
-              data:  drupalSettings.wisski.mirador.data
+              layout: drupalSettings.wisski.mirador.layout,
+              data:  drupalSettings.wisski.mirador.data,
+              "windowObjects" : drupalSettings.wisski.mirador.windowObjects
             });
           });
           jQuery.noConflict(true);
