@@ -48,10 +48,31 @@ class WisskiEntityLodController extends ControllerBase {
       throw new NotFoundHttpException(t("The given URI is unknown to the system."));
     }
     
+    // see if it is sameas to some other uri... if so, we don't need no new eid!
+    $same_uris = AdapterHelper::getPreferredLocalStore(TRUE)->getSameUris($uri);
+    
+    $same_uri = current($same_uris);
+    
+#    dpm($uri, "uri?");
+#    dpm($same_uri, "same!");
+
     // We retrieve the URI's Drupal ID and redirect to the view
     // page. If there is no Drupal ID yet, we create one. (We know that there
     // should be one, but maybe the URI wasn't touched by Drupal, yet.)
-    $eid = AdapterHelper::getDrupalIdForUri($uri, TRUE);
+    if(empty($same_uri))
+      $eid = AdapterHelper::getDrupalIdForUri($uri, TRUE);
+    else {
+      $eid = AdapterHelper::getDrupalIdForUri($same_uri, FALSE);
+      
+      // nothing found? try the main uri
+      if(empty($eid))
+        $eid = AdapterHelper::getDrupalIdForUri($uri, TRUE);
+        
+    }    
+
+#    dpm("found $eid");
+
+    
     $url = Url::fromRoute(
       "entity.wisski_individual.canonical", 
       ['wisski_individual' => $eid],

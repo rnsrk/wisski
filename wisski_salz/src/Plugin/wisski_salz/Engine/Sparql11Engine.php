@@ -469,13 +469,17 @@ abstract class Sparql11Engine extends EngineBase {
       $values .= " }";
     } else throw new \Exception('There is no sameAs property set for this adapter');
 #    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> {<$uri> ?same_as ?uri. ?uri <$orig_prop> ?adapter. }}";
-    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> ?same_as ?uri } UNION { <$uri> ?same_as ?tmp1 . ?tmp1 ?same_as ?uri } . ?uri <$orig_prop> ?adapter .}} ORDER BY DESC(?uri)";
+#    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> ?same_as ?uri } UNION { <$uri> ?same_as ?tmp1 . ?tmp1 ?same_as ?uri } . ?uri <$orig_prop> ?adapter .}} ORDER BY DESC(?uri)";
+    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> ?same_as ?uri } UNION { <$uri> ?same_as ?tmp1 . ?tmp1 ?same_as ?uri } . OPTIONAL { ?uri <$orig_prop> ?adapter .} . OPTIONAL { ?tmp1 <$orig_prop> ?adapter . } } } ORDER BY DESC(?uri)";
 #    dpm($query, "query");
     $results = $this->directQuery($query);
+#    dpm($results, "res");
     
     $out = array();
     if (empty($results)) return array();
     foreach ($results as $obj) {
+      if(empty($obj->adapter) || empty($obj->uri))
+        continue;
 #       dpm($obj->adapter->getValue(), "gv");
 #       $out[$obj->adapter->dumpValue('text')] = $obj->uri->getUri();
       $out[$obj->adapter->getValue()] = $obj->uri->getUri();
