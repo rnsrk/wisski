@@ -16,7 +16,7 @@
 //            alert(jQuery.fn.jquery);
             Mirador({
               id: "viewer",
-              buildPath: "libraries/mirador/",
+              buildPath: "/libraries/mirador/",
               layout: drupalSettings.wisski.mirador.layout,
               data:  drupalSettings.wisski.mirador.data,
               "windowObjects" : drupalSettings.wisski.mirador.windowObjects
