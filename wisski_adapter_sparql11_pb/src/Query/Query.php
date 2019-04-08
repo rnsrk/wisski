@@ -985,6 +985,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
 
 #        dpm($preferred_bundles, "pref?");
 #        dpm($value, "val?");
+#        dpm($operator, "op");
 
         // special case if we get a constraint from a view that asks for a special entity
         // id. this is used in condition filters e.g.
@@ -1024,6 +1025,27 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
           $obj_uris[] = '<' . AdapterHelper::getUrisForDrupalId($eid, $adapter) .'>';
         }
         
+      }
+    } else {
+      // it has a datatype-property?
+      
+      // This is a special case for the eid-thingies...
+      // for example if there is a filter...      
+      if(is_numeric($value) && ($operator == "HAS_EID" || $operator == "has_eid") ) {
+        $entity_ids = array($value => $value);
+      
+        $obj_pos = $path->getDisamb() ? $path->getDisamb() * 2 - 2 : (count($path->getPathArray()) - 1);
+        
+        // reset value as it is not so important anymore... we have the eid!
+        $value = NULL;
+      
+        // get the uris for the entity ids
+        $adapter = entity_load('wisski_salz_adapter', $this->getEngine()->adapterId());
+        foreach ($entity_ids as $eid) {
+          // NOTE: getUrisForDrupalId returns one uri as string as we have
+          // given the adapter
+          $obj_uris[] = '<' . AdapterHelper::getUrisForDrupalId($eid, $adapter) .'>';
+        }
       }
     }
 
