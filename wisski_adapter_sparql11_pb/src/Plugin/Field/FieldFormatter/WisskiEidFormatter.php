@@ -129,20 +129,6 @@ class WisskiEidFormatter extends FormatterBase implements ContainerFactoryPlugin
     foreach($items as $delta => $item) {
 #      dpm($item);
       $values = $item->toArray();
- #     dpm($delta);
-
-#     dpm($item->getEntity());
-      
-      #drupal_set_message("item: " . serialize($values['value']));
-      
-#      $elements[$delta] = array(
-        #'#theme' => 'text',
-#        '#type' => 'textfield',
-#        '#title' => 'dssdf',
-#        '#default_value' => $values['value'],
-#      );
-#      dpm($item->wisskiDisamb);
-#      dpm(serialize($item));
 
       $parentid = 0;
       // the parentid might also be relevant in case of entity name
@@ -173,33 +159,7 @@ class WisskiEidFormatter extends FormatterBase implements ContainerFactoryPlugin
 #        $url = str_replace('/', '\\', $url);
         $entity_id = AdapterHelper::getDrupalIdForUri($url);
         $url = 'wisski/navigate/' . $entity_id . '/view';
-        
-#        drupal_set_message("url: " . serialize($url));
 
-#        drupal_set_message(serialize($item->value));
-
-        $generated_title = "";
-
-        // are there any bundles?
-        $buns = AdapterHelper::getBundleIdsForEntityId($entity_id, TRUE);
-
-        #dpm($buns, "buns");
-        
-        #dpm($settings, "yay!");
-
-        if(!empty($buns)) {
-          // if there is a bundle we have to tell the system that it should cache this!
-          $the_bundle = current($buns);
-          WisskiCacheHelper::putCallingBundle($entity_id,$the_bundle);
-        }
-
-        if($settings['use_title_pattern'] && !empty($buns) && !$settings['use_eid']) {
-          
-        #  dpm("I generate title for $entity_id");
-          $generated_title = wisski_core_generate_title($entity_id);
-        #  dpm($generated_title, "yay!");
-        }
-        
         // if we want the eid, it should be like that!
         if($settings['use_eid']) {
 #          dpm("use the eid!");
