@@ -1186,15 +1186,17 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     $paths = array();
     
     // iterate through the paths array
-    foreach($this->getPbPaths() as $potpath) {
-      $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potpath["id"]);
+    if(!empty($this->getPbPaths())) {
+      foreach($this->getPbPaths() as $potpath) {
+        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($potpath["id"]);
       
-      if(empty($path))
-        continue;
+        if(empty($path))
+          continue;
       
-      // if it is a group - we want it
-      if(!$path->isGroup())
-        $paths[$path->getID()] = $path;
+        // if it is a group - we want it
+        if(!$path->isGroup())
+          $paths[$path->getID()] = $path;
+      }
     }
     
     return $paths; 
