@@ -26,6 +26,8 @@ use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity as Pathbuilder;
  
 class WisskiPathbuilderForm extends EntityForm {
 
+  public $with_solr;
+
    /**
    * {@inheritdoc}
    */
@@ -34,6 +36,12 @@ class WisskiPathbuilderForm extends EntityForm {
     
     // what entity do we work on?
     $pathbuilder = $this->entity;
+    
+    // is solr enabled?
+    $moduleHandler = \Drupal::service('module_handler');
+    if ($moduleHandler->moduleExists('search_api_solr')){
+      $this->with_solr = TRUE;
+    }
 
 #    dpm($pathbuilder->getEntityType());
 
@@ -84,16 +92,29 @@ class WisskiPathbuilderForm extends EntityForm {
     // if we are in edit mode, the options are below so the table
     // is set more directly at the top. Furthermore in the create mode
     // the table is unnecessary.
-    if($this->operation == 'edit') { 	   
-      $header = array(
-        $this->t("Title"),
-        $this->t("Path"),
-        array('data' => $this->t("Enabled"),'class' => array('checkbox')),
-        $this->t('Field&nbsp;Type'),
-        $this->t('Cardinality'),
-        "Weight",
-        array('data' => $this->t('Operations'),'colspan' => 11),
-      );
+    if($this->operation == 'edit') {
+      if($this->with_solr) {
+        $header = array(
+          $this->t("Title"),
+          $this->t("Path"),
+          $this->t("Solr"),
+          array('data' => $this->t("Enabled"),'class' => array('checkbox')),
+          $this->t('Field&nbsp;Type'),
+          $this->t('Cardinality'),
+          "Weight",
+          array('data' => $this->t('Operations'),'colspan' => 11),
+        );
+      } else {
+        $header = array(
+          $this->t("Title"),
+          $this->t("Path"),
+          array('data' => $this->t("Enabled"),'class' => array('checkbox')),
+          $this->t('Field&nbsp;Type'),
+          $this->t('Cardinality'),
+          "Weight",
+          array('data' => $this->t('Operations'),'colspan' => 11),
+        );
+      }
      
       $form['pathbuilder_table'] = array(
         '#type' => 'table',
@@ -172,6 +193,7 @@ class WisskiPathbuilderForm extends EntityForm {
       
         #$form['pathbuilder_table'][$path->id()]['path'] = array('#type' => 'label', '#title' => 'Mu -> ha -> ha');
         $form['pathbuilder_table'][$path->id()]['path'] = $pathform['path'];
+        $form['pathbuilder_table'][$path->id()]['solr'] = $pathform['solr'];
         $form['pathbuilder_table'][$path->id()]['enabled'] = $pathform['enabled'];
         $form['pathbuilder_table'][$path->id()]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
 
@@ -305,6 +327,27 @@ class WisskiPathbuilderForm extends EntityForm {
           'exists' => '\Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load',
         ],
       );
+
+      if($this->with_solr) {      
+        $form['additional']['with_solr'] = array( 
+          '#type' => 'button',
+          '#value' => $this->t('Show Solr Paths'),
+          '#attributes' => [
+            'onclick' => 'return false;'
+          ],
+          '#attached' => array(
+            'library' => array(
+              'wisski_pathbuilder/wisski_pathbuilder_solr',
+            ),
+          ),
+        );
+      }
+#      $form['additional']['with_solr'] = array(
+#        '#type' => 'checkbox',
+#        '#title' => $this->t('Show Solr Paths'),
+#        '#default_value' => $this->with_solr,
+#        '#description' => $this->t("Show the solr paths."),
+#      );
     }
     
     // change the adapter this pb belongs to?    
@@ -620,7 +663,7 @@ class WisskiPathbuilderForm extends EntityForm {
     
   }
   
-  private function recursive_render_tree($grouparray, $parent = 0, $delta = 0, $depth = 0, $namespaces = NULL) {
+  private function recursive_render_tree($grouparray, $parent = 0, $delta = 0, $depth = 0, $namespaces = NULL, $solr = "") {
 #    dpm(microtime(), "1");
     // first we have to get any additional fields because we just got the tree-part
     // and not the real data-fields
@@ -637,8 +680,18 @@ class WisskiPathbuilderForm extends EntityForm {
     $grouparray = array_merge($grouparray, $pbpath);
     
     if (!isset($grouparray['cardinality'])) $grouparray['cardinality'] = -1;
+
+    // what to add to solr in this case?
+    $group_solr = isset($grouparray['field']) ? $grouparray['field'] : $grouparray['bundle'];
     
-    $pathform[$grouparray['id']] = $this->pb_render_path($grouparray['id'], $grouparray['enabled'], $grouparray['weight'], $depth, $parent, $grouparray['bundle'], $grouparray['field'], $grouparray['fieldtype'], $grouparray['displaywidget'], $grouparray['formatterwidget'], $grouparray['cardinality'], $namespaces);
+    if(empty($solr))
+      $group_solr = "entity:wisski_individual/";
+    else if($solr == "entity:wisski_individual/")
+      $group_solr = $group_solr; // special case if it is the first thingie
+    else
+      $group_solr = ":entity:" . $group_solr;
+    
+    $pathform[$grouparray['id']] = $this->pb_render_path($grouparray['id'], $grouparray['enabled'], $grouparray['weight'], $depth, $parent, $grouparray['bundle'], $grouparray['field'], $grouparray['fieldtype'], $grouparray['displaywidget'], $grouparray['formatterwidget'], $grouparray['cardinality'], $namespaces, $solr . $group_solr);
     
     if(is_null($pathform[$grouparray['id']])) {
       unset($pathform[$grouparray['id']]);
@@ -651,7 +704,8 @@ class WisskiPathbuilderForm extends EntityForm {
     $weights = array();
     
     foreach($grouparray['children'] as $key => $child) {
-      $pbp = $this->entity->getPbPath($key);
+#      $pbp = $this->entity->getPbPath($key);
+#      $solrs[$key] = isset($pbp['field']) ? $pbp['field'] : $pbp['group'];
       $weights[$key] = $pbp['weight'];
     }
     
@@ -667,7 +721,7 @@ class WisskiPathbuilderForm extends EntityForm {
 #    $origpf = $pathform;
     
     foreach($children as $childpath) {
-      $subform = $this->recursive_render_tree($childpath, $grouparray['id'], $delta, $depth +1, $namespaces);
+      $subform = $this->recursive_render_tree($childpath, $grouparray['id'], $delta, $depth +1, $namespaces, $solr . $group_solr);
 
       // check if the group is correct
       foreach($subform as $sub) {
@@ -715,7 +769,7 @@ class WisskiPathbuilderForm extends EntityForm {
     return (intval($a['weight']['#default_value']) < intval($b['weight']['#default_value'])) ? -1 : 1;
   }
   
-  private function pb_render_path($pathid, $enabled, $weight, $depth, $parent, $bundle, $field, $fieldtype, $displaywidget, $formatterwidget,$cardinality, $namespaces) {
+  private function pb_render_path($pathid, $enabled, $weight, $depth, $parent, $bundle, $field, $fieldtype, $displaywidget, $formatterwidget,$cardinality, $namespaces, $solr) {
     $path = entity_load('wisski_path', $pathid);
 
     if(is_null($path))
@@ -754,6 +808,16 @@ class WisskiPathbuilderForm extends EntityForm {
        '#markup' => $path->printPath($namespaces),
        '#allowed_tags' => array('span'),
       );
+           
+      if(!$this->with_solr) {
+        $pathform['solr']['#type'] = 'hidden';
+        $pathform['solr']['#value'] = $solr;
+      } else {
+        $pathform['solr'] = array(
+          '#markup' => "<span class = 'wki-pb-solr'>" . $solr . "</span>",
+          '#allowed_tags' => array('span'),
+        );
+      }
      
      // if it is a group, mark it as such.
      if($path->isGroup()) {
@@ -977,6 +1041,8 @@ class WisskiPathbuilderForm extends EntityForm {
 #    dpm(array('old' => $pathbuilder->getPathTree(),'new' => $pathtree, 'form paths' => $paths),'Path trees');
     // save the tree
     $pathbuilder->setPathTree($pathtree);
+    
+    $pathbuilder->setWithSolr($form_state->getValue("with_solr"));
 
     $status = $pathbuilder->save();
     
