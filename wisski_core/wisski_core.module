@@ -425,7 +425,7 @@ function wisski_core_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $fo
  */
 function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb &$breadcrumb, \Drupal\Core\Routing\RouteMatchInterface $route_match, array $context) {
 #	dpm("yay2");
-//  dserialize($context), "con");
+//  dpm(serialize($context), "con");
 
   $routename =  $route_match->getRouteName();
 
@@ -461,15 +461,31 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
     if(!empty($result) && isset($result['view_id'])) {
       // the parent is a view - so we probably want to render this...
       $link = \Drupal\Core\Link::createFromRoute($result['_title'], $result['_route']);
-
+#      dpm("is a view");
       $breadcrumb->addLink($link);
     } else {
     // it is no view
 //    if($routename == 'entity.wisski_individual.canonical' || $routename == 'entity.wisski_individual.edit_form' ) {
       $entity = $route_match->getParameter('wisski_individual');
+#   dpm("it is no view");
+
+      // might be we only use top bundles
+      $topBundles = array();
+      $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
+      $only_use_topbundles = $set->get('wisski_use_only_main_bundles');
+
+      if($only_use_topbundles)
+        $topBundles = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
 
       $bundleid = WisskiCacheHelper::getCallingBundle($entity->id());
+
+      if($only_use_topbundles && !in_array($bundleid, $topBundles)) {
+        $bundleid = AdapterHelper::getBundleIdsForEntityId($entity->id(), TRUE);
+	$bundleid = current($bundleid);
+      }
+
 #    dpm($bundleid, "bundleid");
+#    dpm($entity->id(), "eid");
       if(!empty($bundleid)) {
         $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundleid);
         if(!empty($bundle) && !empty($bundle->label())) {
