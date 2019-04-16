@@ -1042,7 +1042,7 @@ class WisskiPathbuilderForm extends EntityForm {
     // save the tree
     $pathbuilder->setPathTree($pathtree);
     
-    $pathbuilder->setWithSolr($form_state->getValue("with_solr"));
+#    $pathbuilder->setWithSolr($form_state->getValue("with_solr"));
 
     $status = $pathbuilder->save();
     
