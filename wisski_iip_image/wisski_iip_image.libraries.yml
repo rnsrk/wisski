@@ -15,6 +15,7 @@ iipmooviewer:
 
 iip_integration:
   js:
+    js/wisski_noconflict.js: { }
     js/iip_integration.js: {}
   css:
     theme:

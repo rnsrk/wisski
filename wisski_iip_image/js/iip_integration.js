@@ -14,6 +14,9 @@ var iipConfig = $.extend({
 
 $(document).bind('cbox_complete', function() {
 
+  jQuery = jQuery29;
+  $ = jQuery29;
+
   iipConfig.image = [jQuery.colorbox.element().attr("iip")];
 
 
@@ -22,9 +25,10 @@ $(document).bind('cbox_complete', function() {
   var iipmooviewer = new IIPMooViewer( "cboxLoadedContent", iipConfig);
 
   jQuery.colorbox.resize({width: 1000, height: 600});
+
+  jQuery.noConflict(true);
   
 });
-
 
 Drupal.behaviors.iip_integration_Behavior = {
     attach: function (context, settings) {
