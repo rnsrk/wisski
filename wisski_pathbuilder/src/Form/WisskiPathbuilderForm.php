@@ -704,7 +704,7 @@ class WisskiPathbuilderForm extends EntityForm {
     $weights = array();
     
     foreach($grouparray['children'] as $key => $child) {
-#      $pbp = $this->entity->getPbPath($key);
+      $pbp = $this->entity->getPbPath($key);
 #      $solrs[$key] = isset($pbp['field']) ? $pbp['field'] : $pbp['group'];
       $weights[$key] = $pbp['weight'];
     }
