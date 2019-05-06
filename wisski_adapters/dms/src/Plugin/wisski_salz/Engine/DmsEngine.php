@@ -21,6 +21,9 @@ use EasyRdf_Graph;
 use EasyRdf_Namespace;
 use EasyRdf_Literal;
 
+use Symfony\Component\DependencyInjection;
+use Drupal\Component\Serialization\Json;
+
 /**
  * Wiki implementation of an external entity storage client.
  *
@@ -56,21 +59,119 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         'objectmetadataproviso' => NULL,
         'acquisitionproviso' => NULL,
         'LastEdition' => NULL,
-        'appellation' => NULL,
-        'title' => NULL,
-        'creator' => NULL,
-        'date' => NULL,
-        'place' => NULL,
-        'imguri' => NULL,
-        'dep' => NULL,
-        'imguri2' => NULL,
-        'imguri3' => NULL,
-        'mattech' => NULL,
-        'literature' => NULL,
-        'dimensions' => NULL,
-        'inscription' => NULL,
-        'description' => NULL,
+        'Sammlungsreferat' => NULL,
+        'AllgemeineBezeichnung' => NULL,
+        'Title' => NULL,
+        'BeschreibungdesObjekts' => NULL,
+        'InventoryBeziehungenZuAnderenObjekten' => NULL,
+        'InventoryIndividuelleEinordnung' => NULL,
+        'InventoryZustandsbeschreibung' => NULL,
+        'StandigerStandort' => NULL,
+        'VitrinenText' => NULL,
+        'XML_ConstructorsInfo' => array(
+          'results' => array(
+            'lido:eventActor' => array(
+              'lido:actorInRole' => array(
+                'lido:actor' => array(
+                  'lido:nameActorSet' => array(
+                    'lido:appellationValue' => NULL
+                  )
+                ),
+                'lido:roleActor' => array(
+                  'lido:term' => NULL,
+                ),
+              )
+            )
+          )
         ),
+        'XML_ConstructionDates' => array(
+          'results' => array(
+            'lido:eventDate' => array(
+              'lido:displayDate' => NULL,
+              'lido:date' => array(
+                'lido:earliestDate' => NULL,
+                'lido:latestDate' => NULL,
+              ),
+            ),
+          ),
+        ),
+        'XML_ConstructionEventPlaces' => array(
+          'results' => array(
+            'lido:eventPlace' => array(
+              'lido:displayPlace' => NULL,
+            ),
+          ),
+        ),
+        'XML_ConstructionMaterialTechniques' => array(
+          'results' => array(
+            'lido:eventMaterialsTech' => array(
+              'lido:displayMaterialsTech' => NULL,
+            ),
+          ),
+        ),
+        'XML_Classifications' => array(
+          'results' => array(
+            'lido:classification' => array(
+              'lido:term' => NULL,
+            ),
+          ),
+        ),
+        'XML_Measurements' => array(
+          'results' => array(
+            'lido:displayObjectMeasurements' => NULL,
+          ),
+        ),
+        'XML_Inscriptions' => array(
+          'results' => array(
+            'lido:inscriptions' => array(
+              'lido:inscriptionDescription' => array(
+                'lido:descriptiveNoteValue' => NULL,
+              ),
+            ),
+          ),
+        ),
+        'XML_DarstellungSubjectSets' => array(
+          'results' => array(
+            'lido:subjectSet' => array(
+              'lido:displaySubject' => NULL,
+            ),
+          ),
+        ),
+        'XML_MusterSubjectSets' => array(
+          'results' => array(
+            'lido:subjectSet' => array(
+              'lido:subject' => array(
+                'lido:subjectConcept' => array(
+                  'lido:term'=> NULL,
+                ),
+              ),
+            ),
+          ),
+        ),
+        'XML_IconClassSubjectSets' => array(
+          'results' => array(
+            'lido:subjectSet' => array(
+              'lido:subject' => array(
+                'lido:subjectConcept' => array(
+                  'lido:term' => NULL,
+                ),
+              ),
+            ),
+          ),
+        ),
+        'XML_RelatedWork_Literature' => array(
+          'results' => array(
+            'lido:relatedWorkSet' => array(
+              'lido:relatedWork' => array(
+                'lido:displayObject' => NULL,
+              ),
+            ),
+          ),
+        ),
+        'imagepath' => NULL,
+            
+              
+      ),
   );
 
   protected $server;
@@ -209,7 +310,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
 
   public function fetchData($uri, $id = NULL) {
-
+#    dpm("yay?");
 
     if (!$id) {
       if (!$uri) {
@@ -234,9 +335,13 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       return $data->data;
     }
 
+#    dpm(microtime(), "microtime: ");
     $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password) );
-#    
+#    dpm(microtime(), "microtime: ");
+#    dpm(serialize(sqlsrv_errors()), "error");
+    #    
     $query = "SELECT TOP 1 * FROM " . $this->table . " WHERE invnr = '" . $id . "'";
+#    $query = "SELECT TOP 1 * FROM " . $this->table . " WHERE invnr = '" . $id . "' LEFT OUTER JOIN DMS2ObjectKatalog.PrimaryImage ON " . $this->table . ".imgid = DMS2ObjectKatalog.PrimaryImage.imageid";
 #        
     $ret = sqlsrv_query($con, $query);
 #            
@@ -251,6 +356,110 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         $data['Object'][$step] = array($a_ret[$step]);
       }
     }
+    
+    $steps = $this->possibleSteps['Object'];
+    $keys = array_keys($steps);
+    
+
+#    dpm(htmlentities(serialize($data['Object'])), "step?");
+    
+    // expand xml values
+
+    foreach($keys as $step) {
+      if(is_array($steps[$step])) { // if it is an array, we expand it...
+#        dpm(htmlentities(serialize($data['Object'][$step])), "step?");
+#        ($steps[$step]);
+        
+        // what do we get out there?
+#        $outvals = array();
+        
+        // this should be only one!!!!
+        foreach($data['Object'][$step] as $xml) {
+#        $xml = $data['Object'][$step];
+          $outvals = array();
+          $parser = xml_parser_create();
+
+          $vals = array();
+          $index = array();
+
+          xml_parser_set_option($parser, XML_OPTION_CASE_FOLDING, 0);
+          xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE, 1);
+
+          $ret = xml_parse_into_struct($parser, $xml, $vals, $index);
+          xml_parser_free($parser);
+#          dpm(serialize($index), "ret?");
+#          dpm(serialize($vals), "step?");
+          
+          $walk_array = $steps[$step];
+          $walk_values = $vals;
+          
+          $level=0;
+          $tmp_out = &$outvals;
+          
+          while(!empty($walk_array)) {
+            $key = key($walk_array);
+            $value = current($walk_array);
+            $level++;
+#            dpm($outvals, "out?");            
+#            dpm($key, "looking for");
+#            dpm($walk_values, "in?");
+            $found_something = FALSE;
+
+            foreach($walk_values as $val_key => $one_value) {
+              // we can unset it in any way to reduce the amount to search in later runs...
+              // either we find what we search for anyway
+              // or what we find is not relevant.
+
+              if($one_value['tag'] == $key && $one_value['type'] != "close" && $one_value['level'] == $level) {
+                
+                if(count($index[$key]) > 2) {
+                  unset($walk_values[$val_key]);
+                  $index[$val_key] = array_slice($index[$val_key], 1, -1);  
+                }
+
+                $tmp_out = &$tmp_out[$key];
+                $found_something = TRUE;
+
+#                dpm($tmp_out, "tmp?");                
+#                dpm($key, "found the value!");
+#                dpm($value, "value?");
+              #  dpm(
+                if(is_array($value)) {
+                  // search below!
+                  break;
+                } else {
+                  // we've found what we've searched for!
+                  if(isset($one_value['value'])) {
+#                    dpm($tmp_out, "before");
+#                    dpm($outvals, "current state");
+                    $tmp_out[] = $one_value['value'];
+#                    dpm($tmp_out, "after adding " . $one_value['value']);
+#                    dpm(serialize($outvals), "current state");
+                    $tmp_out = &$outvals;
+                    unset($walk_values[$val_key]);
+                    
+                    // try searching in the remaining parts again...
+                    $value = $steps[$step];
+                    $level = 0;
+                    break;
+                    #break;
+                  }
+                }
+              }
+            }
+            
+            if($found_something) {
+              $walk_array = $value;
+#              $level = 0;
+            } else
+              break;
+          }
+#          dpm($outvals, "got outvals: ");
+          $data['Object'][$step] = $outvals;
+          
+        }
+      }
+    }
 
 
     $cache->set($id, $data);
@@ -258,7 +467,6 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     return $data;
 
   }
-
 
   /**
    * {@inheritdoc}
@@ -410,16 +618,28 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
           continue;
         }
       } else {
-        
+#        dpm($paths, "paths?");
         if (empty($paths)) {
 #          $out[$eid][$field_id] = NULL;              
         } else {
           
           foreach ($paths as $key => $path) {
-            $values = $this->pathToReturnValue($path, $pbs[$key], $eid, 0, $main_property);
-            if (!empty($values)) {
-              foreach ($values as $v) {
-                $out[$eid][$field_id][] = $v;
+          
+            if($path->isGroup()) {
+              #dpm("it is a group!");
+#              $ref = array();
+#              foreach($entity_ids as $eid) {
+#                $ref[] = array('target_id' => $eid, 'value' => $eid);
+#              }
+##              
+#              $out[$eid][$field_id] = $ref;
+              
+            } else {
+              $values = $this->pathToReturnValue($path, $pbs[$key], $eid, 0, $main_property);
+              if (!empty($values)) {
+                foreach ($values as $v) {
+                  $out[$eid][$field_id][] = $v;
+                }
               }
             }
           }
@@ -448,8 +668,15 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     $data_walk = $data;
 #    dpm($data_walk, "data");
 #    dpm($path_array, "pa");
+
+#    dpm(serialize($path));
+  
     do {
       $step = array_shift($path_array);
+
+      if(empty($step))
+        break;
+
       if (isset($data_walk[$step])) {
         $data_walk = $data_walk[$step];
       } else {
@@ -467,6 +694,9 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         continue; // go to the next path
       }
     } while (!empty($path_array));
+    
+    
+    
     // now data_walk contains only the values
     $out = array();
 #    dpm($data_walk, "walk");
@@ -553,6 +783,9 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
   public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE) {
 #    dpm(microtime(), "mic");
     $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password) );
+
+#    dpm(serialize(sqlsrv_errors()), "error?");
+
 #    dpm(microtime(), "mic2");
 
 #    dpm($offset, "offset");
@@ -608,6 +841,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #      $query = "select sum (spart.rows) from sys.partitions spart where spart.object_id = object_id(" . $this->table . ") and spart.index_id < 2";
 #      dpm($query, "query");
       $ret = sqlsrv_query($con, $query);
+#      dpm(serialize($ret), "ret?");
       
       $cnt = 0;
       
