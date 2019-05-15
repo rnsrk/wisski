@@ -424,9 +424,21 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #      drupal_set_message($id . " " . serialize($bundle_ids) . " and " . serialize($cached_bundle));      
         // only use that if it is a top bundle when the checkbox was set. Always use it otherwise.
         if ($cached_bundle) {
-          if($only_use_topbundles && empty($mainentityid) && !in_array($cached_bundle, $topBundles))
-            $cached_bundle = NULL;
-          else
+          if($only_use_topbundles && empty($mainentityid) && !in_array($cached_bundle, $topBundles)) {
+          
+            // check if there is any valid top bundle.
+            $valid_topbundle = AdapterHelper::getBundleIdsForEntityId($id, TRUE);
+            
+            // if we found any, we trust the system that this is probably the best!
+            if($valid_topbundle)
+              $cached_bundle = current($valid_topbundle); // whichever system might have more than one of this? I dont know...
+
+            // if we did not find any top bundle we guess that the cached one
+            // will probably be the best. We dont start searching
+            // for anything again....
+            
+            //$cached_bundle = NULL;
+          } else
             $info[$id]['bundle'] = $cached_bundle;
         #dpm($cached_bundle, "cb");
         }
