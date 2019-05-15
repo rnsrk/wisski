@@ -351,8 +351,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * @return array keyed by entity id containing entity field info
    */
   protected function getEntityInfo(array $ids,$cached = FALSE) {
-#    drupal_set_message(serialize($ids) . " : " . serialize($this));
-#    dpm(microtime(), "in1 asking for " . serialize($ids));
+#    drupal_set_message(serialize($ids) .  " : " .  serialize($this));
+#    dpm(microtime(), "in1 asking for " .  serialize($ids));
 #    dpm($this->latestRevisionIds, "yay123!");
     // get the main entity id
     // if this is NULL then we have a main-form
@@ -941,10 +941,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     }
     
     // if not - we assume jpg.
-    if(empty($extout)&& empty($extension))
+    if((empty($extout) && empty($extension)) || strpos($extension, "php") !== FALSE )
       $extout = '.jpg';
     else if(!empty($extension)) // keep extensions if there are any - for .skp like in the kuro-case.
       $extout = $extension;
+    
+#    dpm($extension, "found ext");
 
     // this is evil in case it is not .tif or .jpeg but something with . in the name...
 #    return file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));    
@@ -1165,6 +1167,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       drupal_set_message('No local adapter could create the entity','error');
       return;
     }
+    
+    // now we should have an entity id and a bundle - so cache it!
+    $this->writeToCache($entity_id, $bundle_id);
     
     foreach($pathbuilders as $pb_id => $pb) {
       
