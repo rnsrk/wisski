@@ -60,6 +60,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * Internal cache - needed since drupal 8.6
    */
   private $stored_entities = NULL;
+  
+  private $entity_cache = array();
 
   //cache the style in this object in case it will be used for multiple entites
   private $image_style;
@@ -216,20 +218,42 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   protected function doLoadMultiple(array $ids = NULL) {
 #    dpm("yay, I do loadmultiple!");
-#   dpm(microtime(), "first!");
+#   dpm(microtime(), "first! I load " . serialize($ids));
   //dpm($ids,__METHOD__);
     $entities = array();
 
-    // this loads everything from the triplestore
-    $values = $this->getEntityInfo($ids);
-#    dpm($values, "values");
-#    dpm(microtime(), "after load");
-    $pb_cache = array();
+    $entity_cache = $this->entity_cache;
     
-    $moduleHandler = \Drupal::service('module_handler');
-    if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
-      return NULL;
+    foreach($ids as $key => $id) {
+      // see if we have already something in the entity cache...
+      if(isset($entity_cache[$id])) {
+        
+        // if so, take that from the cache!
+        $entities[$id] = $entity_cache[$id];
+        
+        // and unset it for the rest...
+        unset($ids[$key]);
+
+ #       dpm($id, "I take that from cache!");
+
+      }   
     }
+    
+    // only load something if there still is something to load!
+    if(!empty($ids)) {
+    // this loads everything from the triplestore
+      $values = $this->getEntityInfo($ids);
+
+    #$entity_cache = $this->entity_cache;
+    
+#    dpm($values, "values");
+#      dpm(microtime(), "after load");
+      $pb_cache = array();
+    
+      $moduleHandler = \Drupal::service('module_handler');
+      if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
+        return NULL;
+      }
                       
 /*
     // add the values from the cache
@@ -338,9 +362,27 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
     }
 */
-    $entities = $this->addCacheValues($ids, $values);    
+      $entities = $this->addCacheValues($ids, $values);    
 #    dpm(microtime(), "last!");
 #    dpm(array('in'=>$ids,'out'=>$entities),__METHOD__);
+    
+    
+      // somehow the validation for example seems to call everything more than once
+      // therefore we cache every full call...
+      // if we have loaded it already, we just take it from the cache!
+      $entity_cache = $this->entity_cache;
+#      dpm($entity_cache, "already have: ");
+    
+      foreach($entities as $id => $value) {
+        $entity_cache[$id] = $value;
+      }
+    
+      $this->entity_cache = $entity_cache;
+    }
+
+
+#    dpm(microtime(), "exit");
+    
     return $entities;
   }
 
