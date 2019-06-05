@@ -975,7 +975,17 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     file_prepare_directory($original_path, FILE_CREATE_DIRECTORY);
 
     // do a htmlentities in case of any & or fragments...
-    $extension = htmlentities(substr($file_uri,strrpos($file_uri,'.')));
+    
+    // This is a problem with URIs which contain .de and so on...
+    //$extension = htmlentities(substr($file_uri,strrpos($file_uri,'.')));
+    
+    $position_of_ext = strrpos($file_uri,'.');
+    
+    // This should be somewhere at the end... typically extensions are up to 4 letters?
+    if($position_of_ext > (strlen($file_uri) - 5))
+      $extension = htmlentities(substr($file_uri,$position_of_ext));
+    else
+      $extension = ".jpg";
     
     // load the valid image extensions
     $image_factory = \Drupal::service('image.factory'); 
