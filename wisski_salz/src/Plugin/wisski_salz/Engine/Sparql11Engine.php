@@ -431,7 +431,7 @@ abstract class Sparql11Engine extends EngineBase {
     if(strpos($uri, "/wisski/navigate/") !== FALSE)
       return AdapterHelper::extractIdFromWisskiUri($uri);
     
-    dpm(AdapterHelper::getDrupalAdapterNameAlias(), "calling getSameUris");
+#    dpm(AdapterHelper::getDrupalAdapterNameAlias(), "calling getSameUris");
     
     // if not, we have to search it.
     $entity_uris = $this->getSameUris($uri,AdapterHelper::getDrupalAdapterNameAlias());
@@ -473,9 +473,9 @@ abstract class Sparql11Engine extends EngineBase {
 #    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> {<$uri> ?same_as ?uri. ?uri <$orig_prop> ?adapter. }}";
 #    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> ?same_as ?uri } UNION { <$uri> ?same_as ?tmp1 . ?tmp1 ?same_as ?uri } . ?uri <$orig_prop> ?adapter .}} ORDER BY DESC(?uri)";
     $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> ?same_as ?uri } UNION { <$uri> ?same_as ?tmp1 . ?tmp1 ?same_as ?uri } . OPTIONAL { ?uri <$orig_prop> ?adapter .}  } } ORDER BY DESC(?uri)";
-    dpm($query, "query");
+#    dpm($query, "query");
     $results = $this->directQuery($query);
-    dpm(serialize($results), "res");
+#    dpm(serialize($results), "res");
     
     $out = array();
     if (empty($results)) return array();
