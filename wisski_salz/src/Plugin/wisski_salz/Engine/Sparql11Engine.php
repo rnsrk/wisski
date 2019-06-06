@@ -431,6 +431,8 @@ abstract class Sparql11Engine extends EngineBase {
     if(strpos($uri, "/wisski/navigate/") !== FALSE)
       return AdapterHelper::extractIdFromWisskiUri($uri);
     
+    dpm(AdapterHelper::getDrupalAdapterNameAlias(), "calling getSameUris");
+    
     // if not, we have to search it.
     $entity_uris = $this->getSameUris($uri,AdapterHelper::getDrupalAdapterNameAlias());
     
@@ -443,7 +445,7 @@ abstract class Sparql11Engine extends EngineBase {
         return AdapterHelper::extractIdFromWisskiUri($entity_uri);
     }
     
-    drupal_set_message("No entity id could be extracted for uri $uri - sorry. ", "error");
+    drupal_set_message("No entity id could be extracted for uri $uri - sorry. Got: " . serialize($entity_uris), "error");
     return NULL;
   }
   
@@ -470,10 +472,10 @@ abstract class Sparql11Engine extends EngineBase {
     } else throw new \Exception('There is no sameAs property set for this adapter');
 #    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> {<$uri> ?same_as ?uri. ?uri <$orig_prop> ?adapter. }}";
 #    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> ?same_as ?uri } UNION { <$uri> ?same_as ?tmp1 . ?tmp1 ?same_as ?uri } . ?uri <$orig_prop> ?adapter .}} ORDER BY DESC(?uri)";
-    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> ?same_as ?uri } UNION { <$uri> ?same_as ?tmp1 . ?tmp1 ?same_as ?uri } . OPTIONAL { ?uri <$orig_prop> ?adapter .} . OPTIONAL { ?tmp1 <$orig_prop> ?adapter . } } } ORDER BY DESC(?uri)";
-#    dpm($query, "query");
+    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> ?same_as ?uri } UNION { <$uri> ?same_as ?tmp1 . ?tmp1 ?same_as ?uri } . OPTIONAL { ?uri <$orig_prop> ?adapter .}  } } ORDER BY DESC(?uri)";
+    dpm($query, "query");
     $results = $this->directQuery($query);
-#    dpm($results, "res");
+    dpm(serialize($results), "res");
     
     $out = array();
     if (empty($results)) return array();
