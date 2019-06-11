@@ -100,7 +100,7 @@ class AdapterHelper {
       }
     } elseif (!empty($set_ids) && !in_array($entity_id,$set_ids)) {
       drupal_set_message('There are already entities connected with these uris. Entity id: ' . $entity_id . ', URIS: ' . join('; ', $uris),'error');
-      //dpm($set_ids+array('new'=>$entity_id),'IDs');
+      #dpm($set_ids+array('new'=>$entity_id),'IDs');
       return FALSE;
     }
     
@@ -160,10 +160,10 @@ class AdapterHelper {
             ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
             ->execute();
           
- #         dpm($aid, "case one");
+#          dpm($aid, "case one");
         }
       } else {
- #       dpm($aid, "case two");
+#        dpm($aid, "case two");
         if($aid == NULL)
           dpm("danger zone!!!", "error");
         db_insert('wisski_salz_id2uri')
@@ -196,8 +196,12 @@ class AdapterHelper {
       ->condition('eid',$eid,'IN')
       ->execute();
     $out = $query->fetchAllKeyed();
+    
+#    dpm($out, "got from database");
+    
     if (!empty($out)) return $out;
     $same_uris = self::getPreferredLocalStore(TRUE)->getSameUris($uri);
+#    dpm($same_uris, "got from pref?");
     self::setSameUris($same_uris);
     return $same_uris;
   }
@@ -254,6 +258,17 @@ class AdapterHelper {
    * @return the entity's Drupal ID
    */
   public static function doGetDrupalIdForUri($uri,$create_on_fail=TRUE,$input_adapter_id=NULL) {
+
+    // it is an uri that already contains the entity id - return that and do nothing...
+    if(strpos($uri, "/wisski/navigate/") !== FALSE) {
+      $first_part = substr($uri, strpos($uri, "/wisski/navigate/") + strlen("/wisski/navigate/"));
+      $eid = substr($first_part, 0, ( -1 * strlen("/view")));
+      
+#      dpm("Danger Zone: The uri $uri was asked which is an interal uri. This should not happen!");
+      
+      return $eid;
+      
+    }
    
     #drupal_set_message($uri);
 #    dpm(func_get_args(),__FUNCTION__);
@@ -262,6 +277,8 @@ class AdapterHelper {
       ->condition('uri',$uri);
     if (isset($input_adapter_id)) $query->condition('adapter_id',$input_adapter_id);
     $ids = $query->execute()->fetchAllAssoc('eid');
+    
+#    dpm($ids, "got from db for uri? $uri");
     
     //if we have exactly one result for the eid return it
     if (count($ids) === 1) {
@@ -384,7 +401,7 @@ class AdapterHelper {
   }
   
   public static function getUrisForDrupalId($eid, $adapter_id=NULL, $create = TRUE) {
-    #dpm("caller!");        
+#    dpm($eid, "caller!");        
     if (!is_numeric($eid)) {
       //we probably got a URI as input, check that and return the input if it's valid
       //otherwise we cant do anything
@@ -432,7 +449,7 @@ class AdapterHelper {
     $adapter = is_object($adapter_id) ? $adapter_id : NULL;
     $adapter_id = is_null($adapter) ? $adapter_id : $adapter->id();
 
-    //dpm($eid,__FUNCTION__.' '.$adapter_id);
+    #dpm($eid,__FUNCTION__.' '.$adapter_id);
     //first try the DB
     $query = db_select('wisski_salz_id2uri','m')
       ->fields('m',array('adapter_id','uri'))
@@ -451,14 +468,14 @@ class AdapterHelper {
       $return = $out->fetchCol(1);
       $return = array_unique($return); 
       
- #     dpm($return, "ret");
+      #dpm($return, "ret");
       
       // special case for our own uris... clear these here!
       foreach($return as $key => $value) {
         if(strpos($value, "/wisski/navigate") !== FALSE) {
           unset($return[$key]);
           // this would be better here...
-/*
+          /*
           $query_del = db_delete('wisski_salz_id2uri');
           $query_del->condition('eid', $eid);
           if(isset($adapter_id))
@@ -468,6 +485,24 @@ class AdapterHelper {
           $query_del->execute();
           dpm($value, "Deleted one row!"); 
           */
+          // see if we can find the correct one...
+          $local_store = self::getPreferredLocalStore(TRUE);
+          if(!empty($local_store))
+            $same_uri = $local_store->findUriForDrupalId($eid,$adapter_id);
+          
+          // by mark
+          // if we got the correct one, we need to update this..
+          // these navigate-uris should never be in the table! 
+          if(!empty($same_uri)) {
+            db_update('wisski_salz_id2uri')
+              ->fields(array('uri'=>$same_uri))
+              ->condition('uri',$value)
+              ->condition('eid',$eid)
+              ->execute();
+            dpm("updated $value to $same_uri for eid $eid - hope this is correct?");
+          }
+            
+                        
         }
       }
 #      dpm($return, "return");
@@ -512,7 +547,7 @@ class AdapterHelper {
       $local_store = self::getPreferredLocalStore(TRUE);
       if(!empty($local_store))
         $same_uri = $local_store->findUriForDrupalId($eid,$adapter_id);
-      //dpm($same_uri,'From Store with adapter '.$adapter_id);
+      #dpm($same_uri,'From Store with adapter '.$adapter_id);
       
       if (empty($same_uri)) {
         //if there was none, we try to find out whether the adapter knows any of the other URIs assocaited with
