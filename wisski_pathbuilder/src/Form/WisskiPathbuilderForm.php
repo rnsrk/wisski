@@ -634,6 +634,7 @@ class WisskiPathbuilderForm extends EntityForm {
       
       $pbpaths[$path_in_wisski->id()]['enabled'] = html_entity_decode((string)$path->enabled);
       $pbpaths[$path_in_wisski->id()]['weight'] = html_entity_decode((string)$path->weight);
+      $pbpaths[$path_in_wisski->id()]['cardinality'] = html_entity_decode((string)$path->cardinality);
       if(html_entity_decode((string)$importmode) != "keep") {
         if(((int)$path->is_group) === 1) 
           $pbpaths[$path_in_wisski->id()]['bundle'] = html_entity_decode((string)$importmode);

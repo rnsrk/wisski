@@ -47,7 +47,7 @@ class WisskiIIIFController {
     $logo = theme_get_setting('logo.url');
     
     if(empty($logo)) 
-      $logo = drupal_get_path('module', 'wisski_core') . "/images/img_nopic.png";
+      $logo = '/' . drupal_get_path('module', 'wisski_core') . "/images/img_nopic.png";
 
     // Basic example manifest information - this should be replaced with
     // specific details or a database call for dynamic details.

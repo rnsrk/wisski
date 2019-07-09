@@ -101,7 +101,9 @@ class Pyramid extends ImagemagickImageToolkitOperationBase {
 #    $command = 'convert ' . $this->getToolkit()->escapeShellArg($this->getToolkit()->getSourceLocalPath()) . " -define tiff:tile-geometry=256x256 -compress jpeg 'ptif:-'";
 #    $this->getToolkit()->resetArguments();
     $this->getToolkit()->arguments()->reset();
-    $this->getToolkit()->arguments()->add('-define tiff:tile-geometry=256x256 -compress jpeg');
+    // jpeg compression may cause problems in grayscale images!
+#    $this->getToolkit()->arguments()->add('-define tiff:tile-geometry=256x256 -compress jpeg');
+    $this->getToolkit()->arguments()->add('-define tiff:tile-geometry=256x256');
     $this->getToolkit()->arguments()->add('-quality 100');
     $this->getToolkit()->arguments()->setDestinationFormat('ptif');
 

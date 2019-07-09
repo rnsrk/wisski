@@ -60,6 +60,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * Internal cache - needed since drupal 8.6
    */
   private $stored_entities = NULL;
+  
+  private $entity_cache = array();
 
   //cache the style in this object in case it will be used for multiple entites
   private $image_style;
@@ -216,20 +218,42 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   protected function doLoadMultiple(array $ids = NULL) {
 #    dpm("yay, I do loadmultiple!");
-#   dpm(microtime(), "first!");
+#   dpm(microtime(), "first! I load " . serialize($ids));
   //dpm($ids,__METHOD__);
     $entities = array();
 
-    // this loads everything from the triplestore
-    $values = $this->getEntityInfo($ids);
-#    dpm($values, "values");
-#    dpm(microtime(), "after load");
-    $pb_cache = array();
+    $entity_cache = $this->entity_cache;
     
-    $moduleHandler = \Drupal::service('module_handler');
-    if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
-      return NULL;
+    foreach($ids as $key => $id) {
+      // see if we have already something in the entity cache...
+      if(isset($entity_cache[$id])) {
+        
+        // if so, take that from the cache!
+        $entities[$id] = $entity_cache[$id];
+        
+        // and unset it for the rest...
+        unset($ids[$key]);
+
+ #       dpm($id, "I take that from cache!");
+
+      }   
     }
+    
+    // only load something if there still is something to load!
+    if(!empty($ids)) {
+    // this loads everything from the triplestore
+      $values = $this->getEntityInfo($ids);
+
+    #$entity_cache = $this->entity_cache;
+    
+#    dpm($values, "values");
+#      dpm(microtime(), "after load");
+      $pb_cache = array();
+    
+      $moduleHandler = \Drupal::service('module_handler');
+      if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
+        return NULL;
+      }
                       
 /*
     // add the values from the cache
@@ -338,9 +362,27 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
     }
 */
-    $entities = $this->addCacheValues($ids, $values);    
+      $entities = $this->addCacheValues($ids, $values);    
 #    dpm(microtime(), "last!");
 #    dpm(array('in'=>$ids,'out'=>$entities),__METHOD__);
+    
+    
+      // somehow the validation for example seems to call everything more than once
+      // therefore we cache every full call...
+      // if we have loaded it already, we just take it from the cache!
+      $entity_cache = $this->entity_cache;
+#      dpm($entity_cache, "already have: ");
+    
+      foreach($entities as $id => $value) {
+        $entity_cache[$id] = $value;
+      }
+    
+      $this->entity_cache = $entity_cache;
+    }
+
+
+#    dpm(microtime(), "exit");
+    
     return $entities;
   }
 
@@ -351,8 +393,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * @return array keyed by entity id containing entity field info
    */
   protected function getEntityInfo(array $ids,$cached = FALSE) {
-#    drupal_set_message(serialize($ids) . " : " . serialize($this));
-#    dpm(microtime(), "in1 asking for " . serialize($ids));
+#    drupal_set_message(serialize($ids) .  " : " .  serialize($this));
+#    dpm(microtime(), "in1 asking for " .  serialize($ids));
 #    dpm($this->latestRevisionIds, "yay123!");
     // get the main entity id
     // if this is NULL then we have a main-form
@@ -424,9 +466,21 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #      drupal_set_message($id . " " . serialize($bundle_ids) . " and " . serialize($cached_bundle));      
         // only use that if it is a top bundle when the checkbox was set. Always use it otherwise.
         if ($cached_bundle) {
-          if($only_use_topbundles && empty($mainentityid) && !in_array($cached_bundle, $topBundles))
-            $cached_bundle = NULL;
-          else
+          if($only_use_topbundles && empty($mainentityid) && !in_array($cached_bundle, $topBundles)) {
+          
+            // check if there is any valid top bundle.
+            $valid_topbundle = AdapterHelper::getBundleIdsForEntityId($id, TRUE);
+            
+            // if we found any, we trust the system that this is probably the best!
+            if($valid_topbundle)
+              $cached_bundle = current($valid_topbundle); // whichever system might have more than one of this? I dont know...
+
+            // if we did not find any top bundle we guess that the cached one
+            // will probably be the best. We dont start searching
+            // for anything again....
+            
+            //$cached_bundle = NULL;
+          } else
             $info[$id]['bundle'] = $cached_bundle;
         #dpm($cached_bundle, "cb");
         }
@@ -921,7 +975,17 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     file_prepare_directory($original_path, FILE_CREATE_DIRECTORY);
 
     // do a htmlentities in case of any & or fragments...
-    $extension = htmlentities(substr($file_uri,strrpos($file_uri,'.')));
+    
+    // This is a problem with URIs which contain .de and so on...
+    //$extension = htmlentities(substr($file_uri,strrpos($file_uri,'.')));
+    
+    $position_of_ext = strrpos($file_uri,'.');
+    
+    // This should be somewhere at the end... typically extensions are up to 4 letters?
+    if($position_of_ext > (strlen($file_uri) - 5))
+      $extension = htmlentities(substr($file_uri,$position_of_ext));
+    else
+      $extension = ".jpg";
     
     // load the valid image extensions
     $image_factory = \Drupal::service('image.factory'); 
@@ -941,10 +1005,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     }
     
     // if not - we assume jpg.
-    if(empty($extout)&& empty($extension))
+    if((empty($extout) && empty($extension)) || strpos($extension, "php") !== FALSE )
       $extout = '.jpg';
     else if(!empty($extension)) // keep extensions if there are any - for .skp like in the kuro-case.
       $extout = $extension;
+    
+#    dpm($extension, "found ext");
 
     // this is evil in case it is not .tif or .jpeg but something with . in the name...
 #    return file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));    
@@ -1165,6 +1231,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       drupal_set_message('No local adapter could create the entity','error');
       return;
     }
+    
+    // now we should have an entity id and a bundle - so cache it!
+    $this->writeToCache($entity_id, $bundle_id);
     
     foreach($pathbuilders as $pb_id => $pb) {
       
