@@ -164,7 +164,7 @@ class WisskiEidFormatter extends FormatterBase implements ContainerFactoryPlugin
         if($settings['use_eid']) {
 #          dpm("use the eid!");
           $elements[$delta] = array(
-            '#type' => 'item',
+            '#type' => 'value',
             '#markup' => $entity_id,
           );
           
@@ -174,7 +174,7 @@ class WisskiEidFormatter extends FormatterBase implements ContainerFactoryPlugin
       
     }
 
-#    dpm($elements, "elements");
+    dpm($elements, "elements");
   
     return $elements;
   
