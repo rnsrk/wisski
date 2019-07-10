@@ -174,7 +174,7 @@ class WisskiEidFormatter extends FormatterBase implements ContainerFactoryPlugin
       
     }
 
-    dpm($elements, "elements");
+#    dpm($elements, "elements");
   
     return $elements;
   
