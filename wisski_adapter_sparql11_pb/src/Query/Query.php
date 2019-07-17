@@ -741,9 +741,22 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
           ->condition('uri', '%/wisski/navigate/%', 'NOT LIKE');
         $entity_ids = $query->execute()->fetchAllKeyed();
       }
+      elseif ($operator == '>' || $operator == '<') {
+        $values = (array) $value;
+        $query = \Drupal::database()->select('wisski_salz_id2uri', 't')
+          ->distinct()
+          ->fields('t', array('eid', 'uri'))
+          ->condition('adapter_id', $this->getEngine()->adapterId())
+          ->condition('eid', $values, $operator)
+          ->condition('uri', '%/wisski/navigate/%', 'NOT LIKE');
+        $entity_ids = $query->execute()->fetchAllKeyed();
+      }
       else {
         $this->missingImplMsg("Operator '$operator' in eid field query", array('condition' => $this->condition));
       }
+      
+      
+      
     }
 #    dpm($value, "val");
 #    dpm($operator, "op");
@@ -1127,6 +1140,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
    * 
    */
   protected function missingImplMsg($msg, $data) {
+#    dpm("bump", "bump");
     drupal_set_message("Missing entity query implementation: $msg. See log for details.", 'error');
     \Drupal::logger("wisski entity query")->warning("Missing entity query implementation: $msg. Data: {data}", array('data' => serialize($data)));
   }
