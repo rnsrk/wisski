@@ -108,6 +108,19 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
    */    
   protected $pbpaths;
 
+  /**
+   * Should it be with or without solr display in the form
+   */
+  protected $with_solr;
+
+  public function setWithSolr($with_solr) {
+    $this->with_solr = $with_solr;
+  }
+  
+  public function getWithSolr() {
+    return $this->with_solr;
+  }
+
 /*    
   public function getID() {
     return $this->id;
@@ -967,8 +980,10 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
         $tree[$key]['children'] = $this->addDataToParentInTree($parentid, $data, $tree[$key]['children']);
       
       // we have the correct location, add the data!
-      if($parentid == $key) {
+      if((string)$parentid == (string)$key) {
         $tree[$key]['children'][$data['id']] = $data;
+        // and then continue!
+        continue;
       }        
     }
     
