@@ -549,6 +549,15 @@ class Query extends WisskiQueryBase {
         if($field == "rand") {
           $this->orderby = $this->orderby . ' RAND() ';
         }
+        
+        if($field == "eid") {
+          $eid_sort = " . OPTIONAL { GRAPH ?g_xz { ?x0 owl:sameAs ?sort }} ";
+          $sort_params = "strlen(str(?sort)) ?sort ";
+#          dpm($eid_sort, "yay!");
+          $query_parts = $query_parts . $eid_sort;
+          $this->orderby = $this->orderby . $sort_params;
+                    
+        }
       }
     } 
     
@@ -709,6 +718,9 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
 
   protected function executeEntityIdCondition($operator, $value) {
     $entity_ids = NULL;
+    
+#    dpm($value, "value?");
+    
     if (empty($value)) {
       // if no value is given, then condition is always true.
       // this may be the case when a field's mere existence is checked;
@@ -750,11 +762,15 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
           ->condition('eid', $values, $operator)
           ->condition('uri', '%/wisski/navigate/%', 'NOT LIKE');
         $entity_ids = $query->execute()->fetchAllKeyed();
+#        dpm($this->condition, "condition");
+#        dpm($entity_ids, "out");
       }
       else {
         $this->missingImplMsg("Operator '$operator' in eid field query", array('condition' => $this->condition));
       }
-      
+#       dpm($this->condition, "condition");
+#               dpm($entity_ids, "out");
+            
       
       
     }
