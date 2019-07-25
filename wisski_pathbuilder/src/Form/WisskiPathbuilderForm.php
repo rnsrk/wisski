@@ -811,8 +811,8 @@ class WisskiPathbuilderForm extends EntityForm {
       );
            
       if(!$this->with_solr) {
-        $pathform['solr']['#type'] = 'hidden';
-        $pathform['solr']['#value'] = $solr;
+#        $pathform['solr']['#type'] = 'hidden';
+#        $pathform['solr']['#value'] = $solr;
       } else {
         $pathform['solr'] = array(
           '#markup' => "<span class = 'wki-pb-solr'>" . $solr . "</span>",
