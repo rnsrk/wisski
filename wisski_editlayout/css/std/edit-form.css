@@ -144,7 +144,7 @@ form .field--widget-inline-entity-form-complex input[data-drupal-selector$="acti
 
 form .form-item .clearfix {
     position: relative;
-#    top: 23px;
+/*    top: 23px;*/
     display: table-cell;
 }
 
