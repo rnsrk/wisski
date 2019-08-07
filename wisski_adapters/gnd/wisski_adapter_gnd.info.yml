@@ -5,4 +5,4 @@ package: WissKI Adapters
 version: 0.1-dev
 type: module
 dependencies:
-  - wisski_salz
+  - wisski:wisski_salz

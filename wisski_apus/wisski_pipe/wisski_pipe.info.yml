@@ -5,4 +5,4 @@ package: WissKI APUS
 version: 1.x-dev
 type: module
 dependencies:
-  - wisski_apus
+  - wisski:wisski_apus

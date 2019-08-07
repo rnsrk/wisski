@@ -6,4 +6,4 @@ version: 0.1-dev
 type: module
 configure: wisski_adapters.wisski_adapter_skos
 dependencies:
- - wisski_pathbuilder
+ - wisski:wisski_pathbuilder

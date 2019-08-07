@@ -7,4 +7,4 @@ type: module
 libraries:
  - wisski_jit/Jit
 dependencies:
- - wisski_adapter_sparql11_pb
+ - wisski:wisski_adapter_sparql11_pb

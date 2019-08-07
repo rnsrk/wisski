@@ -7,6 +7,6 @@ type: module
 libraries:
  - wisski_mirador/mirador
 dependencies:
- - wisski_adapter_sparql11_pb
- - wisski_iip_image
+ - wisski:wisski_adapter_sparql11_pb
+ - wisski:wisski_iip_image
  - drupal:views

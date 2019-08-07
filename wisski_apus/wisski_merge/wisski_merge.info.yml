@@ -5,5 +5,4 @@ package: WissKI
 version: 0.1-dev
 type: module
 dependencies:
-  - wisski_core
-
+  - wisski:wisski_core
