@@ -12,6 +12,8 @@ use \Drupal\wisski_core\WisskiCacheHelper;
 use \Drupal\wisski_core\WisskiHelper;
 use \Drupal\wisski_salz\Entity\Adapter;
 
+use Drupal\Core\Cache\CacheBackendInterface;
+
 class AdapterHelper {
 
   /**
@@ -785,6 +787,18 @@ class AdapterHelper {
 
 
   public static function getBundleIdsForEntityId($entity_id, $only_top_bundles) {
+    
+    $cache_bin = 'wisski_salz_eid_to_bundle_and_adapter_cache';
+    
+    $cid = 'bundle_cache_' . $entity_id . '__'; // if nothing comes here it is ask for any bundle..
+    // if there is something behind we also ask for the adapter
+    if ($cache = \Drupal::cache($cache_bin)->get($cid)) {
+#      dpm("got it from cache?");
+      return $cache->data;
+    }
+    
+#    dpm("got nothing from cache!");
+
     $adapters = entity_load_multiple('wisski_salz_adapter');
     $bundle_ids = array();
     // ask all adapters
@@ -803,6 +817,9 @@ class AdapterHelper {
     if ($only_top_bundles) {
       $bundle_ids = array_intersect($bundle_ids, WisskiHelper::getTopBundleIds()); 
     }
+    
+#    dpm("wrote it to cache!");
+    \Drupal::cache($cache_bin)->set($cid, $bundle_ids);
         
     if(empty($bundle_ids))
       return array();

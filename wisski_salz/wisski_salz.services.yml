@@ -2,6 +2,12 @@ services:
   plugin.manager.wisski_salz_engine:
     class: Drupal\wisski_salz\EngineManager
     parent: default_plugin_manager
+  cache.wisski_salz_eid_to_bundle_and_adapter_cache:
+    class: Drupal\Core\Cache\CacheBackendInterface
+    tags:
+      - { name: cache.bin }
+    factory: cache_factory:get
+    arguments: [eid_to_bundle_and_adapter_cache]
 
 # stuff from external entities
 #  entity.query.external:
