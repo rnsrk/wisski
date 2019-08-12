@@ -24,6 +24,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     $preferred_queries = array();
     $other_queries = array();
     foreach ($adapters as $adapter) {
+#      dpm($condition, "cond?");
       $query = $adapter->getQueryObject($this->entityType,$this->condition,$this->namespaces);
       if ($adapter->getEngine()->isPreferredLocalStore()) $preferred_queries[$adapter->id()] = $query;
       else $other_queries[$adapter->id()] = $query;
@@ -228,21 +229,23 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         
         if(!$is_sparql) {
           // this is complicated
-          
+#          dpm("complicated...");
           if ($pager || !empty($this->range)) {
             // use the old behaviour if we have a pager
             return $this->pagerQuery($this->range['length'],$this->range['start']);
           } else {
+#            dpm("no pager...");
             // if we dont have a pager, iterate it and sum it up 
             // @todo: This here is definitely evil. We should give some warning!
             foreach ($this->dependent_queries as $query) {
               $query = $query->normalQuery();
               $sub_result = $query->execute();
               $result = array_unique(array_merge($result,$sub_result));
-              
-              if (!empty(self::$empties)) $result = array_diff($result,self::$empties);
-              return $result;
+#              dpm($sub_result, "result?");
+#              dpm(self::$empties, "what is this?!");              
             }
+            if (!empty(self::$empties)) $result = array_diff($result,self::$empties);
+            return $result;
           }
         } else {
 #          dpm("it is sparql");
