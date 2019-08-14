@@ -209,12 +209,16 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // this might need to be adjusted for other standards than rdf/owl
     $query = 
       "SELECT DISTINCT ?property "
-      ."WHERE { { GRAPH ?g1 {"
-        ."?property a owl:DatatypeProperty . } . } . "
-        ."{ GRAPH ?g3 { ?property rdfs:subPropertyOf* ?d_subprop } } . { GRAPH ?g4 { ?d_subprop rdfs:domain ?d_superclass . } . } . "
-        ."{ GRAPH ?g5 { <$step> rdfs:subClassOf* ?d_superclass. } . } . }"
+      ."WHERE { { "
+        ."?property a owl:DatatypeProperty . "
+        ."?property rdfs:domain ?d_superclass. "
+#        ."<$step> rdfs:subClassOf* ?d_superclass. } }"
+         
+#        ."{ GRAPH ?g3 { ?property rdfs:subPropertyOf* ?d_subprop } } . ";
+#        ."{ GRAPH ?g3 { ?property rdfs:subPropertyOf* ?d_subprop } } . { GRAPH ?g4 { ?d_subprop rdfs:domain ?d_superclass . } . } . "
+#        ."{ GRAPH ?g5 { <$step> rdfs:subClassOf* ?d_superclass. } . } . }"
       ;
-/*      
+      
       // By Mark: TODO: Please check this. I have absolutely
       // no idea what this does, I just copied it from below
       // and I really really hope that Dorian did know what it
@@ -251,7 +255,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             ."}"
           ."}"
         ."}}}";
-*/
+
     $result = $this->directQuery($query);
 #    dpm($query, 'res');
 
@@ -1174,6 +1178,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL, $relative = TRUE) {
 #    drupal_set_message("I got: $eid " . serialize($path));
 #$tmpt1 = microtime(TRUE);            
+#  drupal_set_message("ptrv: " . microtime());
     if(empty($path)) {
       drupal_set_message("No path supplied to ptr. This is evil.", "error");
       return array();
@@ -1225,6 +1230,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           
     $sparql .= "WHERE { ";
 
+#    drupal_set_message("ptrv2: " . microtime());
     if(!empty($eid)) {
       // rename to uri
 #$tmpt5 = microtime(TRUE);            
@@ -1246,7 +1252,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       drupal_set_message("No EID for data. Error. ", 'error');
     }
 
-
+#    drupal_set_message("ptrv3 " . microtime());
     // if disamb should be in the query we can bind it.
     if ($starting_position === $disamb) {
       // TODO/WARNING by Martin: I think this does not work! It should be VALUES {} instead!
@@ -1510,7 +1516,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       ->get('wisski_pathbuilder')
       ->condition('adapter', $this->adapterId())->execute();
 
-    
+#    drupal_set_message("a2: " . microtime());    
     // this approach will be not fast enough in the future...
     // the pbs have to have a better mapping of where and how to find fields
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple($relevant_pb_ids);
@@ -1572,7 +1578,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           // get the clear path array            
           $clearPathArray = $pb->getRelativePath($path, FALSE);
 #$tmpt=microtime(true);
+#          drupal_set_message("a1v1: " . microtime());
           $tmp = $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property);            
+#          drupal_set_message("a1v2: " . microtime());
 #\Drupal::logger('WissKI Import lpvff')->debug((microtime(TRUE)-$tmpt). ": $field_id ".$path->id());
 
           if ($main_property == 'target_id') {
@@ -1622,7 +1630,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           unset($out[$eid]);
       }
     }
-
+#    drupal_set_message("a3: " . microtime());
     return $out;
   }
   
@@ -2157,6 +2165,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
    *              But can be modified by this.
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array(), $numbering = 0) {
+#    drupal_set_message("gt1: " . microtime());
 #     \Drupal::logger('WissKIsaveProcess')->debug('generate: ' . serialize(func_get_args()));
 #    if($mode == 'entity_reference')
 #      dpm(func_get_args(), "fun");
@@ -2278,7 +2287,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           else
             $query .= "GRAPH $graphvar { $localvar a <$value> } . ";
         }
-        
+ #       drupal_set_message("gttt?: " . microtime());
         // magic function
         // this if writes the triples from one x to another (x_1 y_1 x_n+1)
         // for x0 $prop is not set and thus it does not match!
@@ -2308,6 +2317,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
             $query .= "GRAPH ${graphvar}_1 { ";
             $inverse = $this->getInverseProperty($prop);
+#            drupal_set_message("inverse?: " . microtime());
             // if there is not an inverse, don't do any unions
             if(empty($inverse)) {
               if(!empty($olduri))
@@ -2371,7 +2381,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         $prop = $value;
       }
     }
-
+#    drupal_set_message("gt2: " . microtime());
 #\Drupal::logger('testung')->debug($path->getID() . ":".htmlentities($query));
     // get the primitive for this path if any    
     $primitive = $path->getDatatypeProperty();
@@ -2587,12 +2597,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     if($op == "EMPTY") {
       $query = " OPTIONAL { " . $query . " } . FILTER(!bound($outvar)) . ";
     }
+#    drupal_set_message("gt3: " . microtime());
     
     return $query;
   }
   
   public function addNewFieldValue($entity_id, $fieldid, $value, $pb, $mainprop = FALSE) {
-#    drupal_set_message("I get: " . $entity_id.  " with fid " . $fieldid . " and value " . $value . ' for pb ' . $pb->id() . ' er ' . serialize($value_is_entity_ref));
+#    drupal_set_message(" addNewFieldValue I get: " . $entity_id.  " with fid " . $fieldid . " and value " . $value . ' for pb ' . $pb->id() . ' er ' . serialize($value_is_entity_ref));
 #    drupal_set_message(serialize($this->getUri("smthg")));
     $datagraphuri = $this->getDefaultDataGraphUri();
 
@@ -2685,6 +2696,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
   
   public function writeFieldValues($entity_id, array $field_values, $pathbuilder, $bundle_id=NULL,$old_values=array(),$force_new=FALSE, $initial_write = FALSE) {
 #    dpm($old_values, "ov");
+#    dpm($entity_id, "I am saving entity_id");
 #    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
 #    dpm(func_get_args(), __METHOD__);    
 #    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()));
@@ -2738,12 +2750,69 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       // there might have been somebody saving in between...
       // @TODO !!!
       $ofv = \Drupal::entityManager()->getFieldDefinitions('wisski_individual', $bundle_id);
-#      dpm(array_keys($ofv), "ak");
-      $old_values = $this->loadFieldValues(array($entity_id), array_keys($ofv), $bundle_id);
       
+      // load the view ids that are available for this
+      $view_ids = \Drupal::entityQuery('entity_view_display')->condition('id', 'wisski_individual.' . $bundle_id . '.', 'STARTS_WITH')->execute();
+      
+      // as there might be several, load all
+      $settings = \Drupal::entityTypeManager()->getStorage('entity_form_display')->loadMultiple($view_ids);
+      
+      // we dont really know which one to take -.- 
+      // By Mark: We need to do more research on this!
+      if(!empty($settings))
+        $settings = current($settings);
+      else
+        $settings = NULL;
+      
+      // if there is a setting
+      if($settings) {
+        // load the components
+        $components = $settings->getComponents();
+      
+        // and throw away these that are not in there. 
+        // these fields are disabled and such should not be saved etc.
+        // otherwise we might overwrite something we do not want to overwrite.
+        foreach($ofv as $key => $field_defi) {
+          if(!isset($components[$key]))
+            unset($ofv[$key]);
+#          dpm(serialize($settings->getComponents()), "set?");
+        }    
+      }
+      #dpm(serialize(), "old field values");
+#      dpm(\Drupal::entityManager()->
+#      $view_ids = \Drupal::entityQuery('entity_view_display')
+#                    ->condition('id', 'wisski_individual.' . $bundle_id . '.', 'STARTS_WITH')
+#                    ->execute();
+#      
+#                  // is there a view display for it?
+#                  $entity_view_displays = \Drupal::entityManager()->getStorage('entity_view_display')->loadMultiple($view_ids);
+#      
+#                  // did we get something?
+#                  if(!empty($entity_view_displays))
+#                    $entity_view_display = current($entity_view_displays);
+#                  else
+#                    $entity_view_display = NULL;
+##                  dpm($entity_view_displays->getComponent('field_name'), "miau");
+#      
+#      foreach($ofv as $key => $field_defi) {
+#        dpm(serialize($entity_view_display->getComponent($key)), "settings or $key");
+#      }
+#      dpm(array_keys($ofv), "ak");
+#      dpm(serialize($ofv), "ofv!");
+      $old_values = $this->loadFieldValues(array($entity_id), array_keys($ofv), $bundle_id);
+#      dpm($old_values, "got ov?");
       if(!empty($old_values))
         $old_values = $old_values[$entity_id];
-    }
+    
+      // we have one big problem: if there are fields that are for display purpose only
+      // like coordinates for a place that get filled automatically
+      // so we just delete what we see and nothing more!
+      
+
+    }    
+    
+    
+    
 #\Drupal::logger('WissKI Import tmpc')->debug("lf:".(microtime(TRUE)-$tmpt));
 
     //drupal_set_message("the old values were: " . serialize($old_values));
@@ -2767,7 +2836,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // as we do this we also keep track of values that haven't changed so that we
     // do not have to write them again.
     foreach($old_values as $old_key => $old_value) {
-#      drupal_set_message("deleting key $old_key with value " . serialize($old_value) . " from values " . serialize($field_values));
+ #     drupal_set_message("deleting key $old_key with value " . serialize($old_value) . " from values " . serialize($field_values));
       if(!isset($field_values[$old_key])) {
         
         // in case there is no main prop it is typically value
@@ -2787,7 +2856,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             continue;
           
           // if not its a value...
-#          drupal_set_message("I delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
+  #        drupal_set_message("I delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
           $this->deleteOldFieldValue($entity_id, $old_key, $val[$mainprop], $pathbuilder, $key, $mainprop);
         }
       }
@@ -2848,7 +2917,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         } else {
           // $old_value is an array of arrays resembling field list items and
           // containing field property => value pairs
-          
+#          dpm($old_value, "old value is:");
+#          dpm($write_values, "new are?");
           foreach ($old_value as $old_key => $old_item) {
             
             if (!is_array($old_item) || empty($old_item)) {
@@ -3581,6 +3651,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     
     //DB version
     $inverse = $this->retrieve('inverses','inverse','property',$property_uri);
+#    dpm($inverse, "got from cache?");
     if (!empty($inverse)) return current($inverse);
 
     // up to now this was the current code. However this is evil in case there are several answers.
