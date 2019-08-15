@@ -88,16 +88,26 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
    */
   public function hasEntity($entity_id) {
     // use the new function
-    $uris = AdapterHelper::doGetUrisForDrupalIdAsArray($entity_id);
+    // By Mark: This fetches all uris to later throw them away. 
+    // why should we do this? I change that... hopefully
+    // it will work later on.
+    //$uris = AdapterHelper::doGetUrisForDrupalIdAsArray($entity_id);
+    // we now ask for the right one right away.
+    $uris = AdapterHelper::getUrisForDrupalId($eid, $this->adapterId(), FALSE);
+
     if (empty($uris)) return FALSE;
-    foreach ($uris as $uri) {
+    else
+      return TRUE;
+//    foreach ($uris as $uri) {
       // fetchData also checks if the URI matches the GND URI pattern
       // and if so tries to get the data.
-      if ($this->fetchData($uri)) {
-        return TRUE;
-      }
-    }
-    return FALSE;
+    // By Mark: I think this is useless by now. If we know the uri, we know the uri
+    // if not, we don't ask for it... this would be pointless!
+    //if ($this->fetchData($uri)) {
+    //  return TRUE;
+    //}
+    //}
+    //return FALSE;
   }
 
 

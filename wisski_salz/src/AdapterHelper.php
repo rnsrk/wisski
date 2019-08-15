@@ -151,8 +151,9 @@ class AdapterHelper {
             ->condition('rid',$row->rid)
             ->execute();
         } else {
-          if($aid == NULL) 
-            dpm("danger zone!!!", "error");
+          if($aid == NULL) {
+            dpm("Danger Zone - Adapter ID is empty!!1", "error");
+          }
           //this is a completely new matching for this adapter
           // By Mark: This is untrue... it just means that the entity id is the same
           // but the uri is not. This means that there are multiple uris and by
@@ -166,11 +167,13 @@ class AdapterHelper {
         }
       } else {
 #        dpm($aid, "case two");
-        if($aid == NULL)
-          dpm("danger zone!!!", "error");
-        db_insert('wisski_salz_id2uri')
-          ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
-          ->execute();
+        if($aid == NULL) {
+          dpm("Danger Zone - Adapter ID is empty!!!", "error");
+        } else {
+          db_insert('wisski_salz_id2uri')
+            ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
+            ->execute();
+        }
       }
     }
     
@@ -577,7 +580,19 @@ class AdapterHelper {
     
       if($pref) {
         $same_uris = self::getPreferredLocalStore(TRUE)->getUrisForDrupalId($eid);
-        #dpm($same_uris,'From Store, no adapter');
+        
+        /** here we get empty adapter ids from time to time. I don't know who does this
+            but we should avoid this.
+            The same holds for key = value... this is invalid, too */
+        
+        foreach($same_uris as $key => $uri) {
+          if(empty($key))
+            unset($same_uris[$key]);
+          if($key == $uri)
+            unset($same_uris[$key]);
+        }
+        
+//        dpm($same_uris,'From Store, no adapter');
         self::setSameUris($same_uris,$eid);
         return $same_uris;
       } else {
