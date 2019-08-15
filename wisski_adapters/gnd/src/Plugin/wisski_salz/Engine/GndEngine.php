@@ -93,7 +93,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     // it will work later on.
     //$uris = AdapterHelper::doGetUrisForDrupalIdAsArray($entity_id);
     // we now ask for the right one right away.
-    $uris = AdapterHelper::getUrisForDrupalId($eid, $this->adapterId(), FALSE);
+    $uris = AdapterHelper::getUrisForDrupalId($entity_id, $this->adapterId(), FALSE);
 
     if (empty($uris)) return FALSE;
     else
