@@ -24,8 +24,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     $preferred_queries = array();
     $other_queries = array();
     foreach ($adapters as $adapter) {
-#      dpm($condition, "cond?");
-      $query = $adapter->getQueryObject($this->entityType,$this->condition,$this->namespaces);
+#      dpm($this->condition, "cond?");
+#      dpm($condition, "cond2");
+#      $query = $adapter->getQueryObject($this->entityType,$this->condition,$this->namespaces);
+      $query = $adapter->getQueryObject($this->entityType,$condition,$this->namespaces);
       if ($adapter->getEngine()->isPreferredLocalStore()) $preferred_queries[$adapter->id()] = $query;
       else $other_queries[$adapter->id()] = $query;
     }
@@ -47,10 +49,14 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     $total_order_string = "";
 
     $count = count($this->dependent_queries);
+    
+    $real_deps = array();
 
     foreach ($this->dependent_queries as $adapter_id => $query) {
 
 #      dpm("dependent on $adapter_id");
+
+#      dpm($query, "this is the query!");
 
       if($query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
         $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
@@ -60,48 +66,64 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         $count--;
         
         continue;
+      } else {
+        $real_deps[$adapter_id] = $query;
       }
-            
-      if($is_count)
-        $query->countQuery();
-      else
-        $query->normalQuery();
-        
-      // get the query parts
-      $parts = $query->getQueryParts();
-      $where = $parts['where'];
-      $eids = $parts['eids'];
-      $order = $parts['order'];
+    }
 
-      if(!empty($order))     
-        $total_order_string .= $order . " ";
+
+    if($count > 1) {
+      foreach ($real_deps as $adapter_id => $query) {
+            
+        if($is_count)
+          $query->countQuery();
+        else
+          $query->normalQuery();
+        
+        // get the query parts
+        $parts = $query->getQueryParts();
+        $where = $parts['where'];
+        $eids = $parts['eids'];
+        $order = $parts['order'];
+
+        if(!empty($order))     
+          $total_order_string .= $order . " ";
 
 #      dpm($where, "where");
 #      dpm($eids, "eids");
 #      dpm($order, "got order!");
-      $filtered_uris = NULL;
+        $filtered_uris = NULL;
 
-      $eids_part = "";
+        $eids_part = "";
       
-      // we got eids?
-      if(!empty($eids))
-        $filtered_uris = array_filter($eids);
-      if (!empty($filtered_uris)) {
-        $eids_part .= 'VALUES ?x0 { <' . join('> <', $filtered_uris) . '> } ';
-      }      
+        // we got eids?
+        if(!empty($eids))
+          $filtered_uris = array_filter($eids);
+        if (!empty($filtered_uris)) {
+          $eids_part .= 'VALUES ?x0 { <' . join('> <', $filtered_uris) . '> } ';
+        }      
 
-      // build up a whole string from that      
-      $string_part = $where . "" . $eids_part;
+        // build up a whole string from that      
+        $string_part = $where . "" . $eids_part;
 
-      // only take the maximum, because up to now we mainly do path mode, which is bad anyway
-      // @todo: a clean implementation here would be better!
-      if(strlen($string_part) > strlen($max_query_parts))
-        $max_query_parts = $string_part;
+        // only take the maximum, because up to now we mainly do path mode, which is bad anyway
+        // @todo: a clean implementation here would be better!
+        if(strlen($string_part) > strlen($max_query_parts))
+          $max_query_parts = $string_part;
           
-        // preserve the first query object for later use
-      if(empty($first_query)) {
+          // preserve the first query object for later use
+        if(empty($first_query)) {
+          $first_query = $query;
+          continue;
+        }
+      }
+    } else {
+      // this here is a special case - there is only one
+      // query left, so just pass it through!
+      
+      // there is only one in there anyway...
+      foreach($real_deps as $adapter_id => $query) {
         $first_query = $query;
-        continue;
       }
     }
     

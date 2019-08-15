@@ -86,6 +86,7 @@ class Query extends WisskiQueryBase {
     // compile the condition clauses into
     // sparql graph patterns and
     // a list of entity ids that the pattern should be restricted to
+#    dpm($this->condition, "condition?");
     list($where_clause, $entity_ids) = $this->makeQueryConditions($this->condition);
 
 #    dpm($this->orderby, "order?");
@@ -246,6 +247,8 @@ class Query extends WisskiQueryBase {
     $entity_ids = NULL;
     // ... and query parts
     $query_parts = array();
+    
+    $sort_query_parts = "";
     
     // fetch the bundle in advance e.g. for title generation
     $needs_a_bundle = NULL;    
@@ -489,6 +492,7 @@ class Query extends WisskiQueryBase {
     
     // handle sorting
     $sort_params = "";
+    
     foreach($this->sort as $sortkey => $elem) {
 #      dpm($elem, "sort");
 #      if($elem['field'] == "title") {
@@ -533,6 +537,7 @@ class Query extends WisskiQueryBase {
 
             #foreach($query_parts as $iter => $query_part) {
             $query_parts = $query_parts . $sort;
+            $sort_query_parts = $sort_query_parts . $sort;
             #}
             if(!empty($path->id()) && !empty($pb->getPbPath($path->id())) && $pb->getPbPath($path->id())["fieldtype"] == "decimal" || $pb->getPbPath($path->id())["fieldtype"] == "number")
               $sort_params = $elem['direction'] . "(xsd:integer(?c${i}_out)) ";
@@ -551,7 +556,9 @@ class Query extends WisskiQueryBase {
         }
         
         if($field == "eid") {
-          $eid_sort = " . OPTIONAL { GRAPH ?g_xz { ?x0 owl:sameAs ?sort }} ";
+          global $base_url;
+          $my_url = $base_url . "/wisski/navigate/";
+          $eid_sort = " . OPTIONAL { GRAPH ?g_xz { ?x0 owl:sameAs ?sort . FILTER(STRSTARTS(STR(?sort), '" . $my_url . "')) }} ";
           $sort_params = "strlen(str(?sort)) ?sort ";
 #          dpm($eid_sort, "yay!");
           $query_parts = $query_parts . $eid_sort;
@@ -589,8 +596,17 @@ class Query extends WisskiQueryBase {
         
         // do it if we have a single store system.
         if(empty($this->dependent_parts)) {
-          $entity_ids = $this->buildAndExecSparql($query_parts, $entity_ids);
-          return array('', $entity_ids);
+          // By Mark: We need the sorting parameter here, as it will delivery wrong results otherwise.
+          // $entity_ids = $this->buildAndExecSparql($query_parts, $entity_ids);
+          $entity_ids = $this->buildAndExecSparql($query_parts, $entity_ids, FALSE, 0, 0, $this->orderby);
+
+          // if we return nothing for the query here it is rather dangerous because if somebody
+          // uses order by, the query should use this, too.
+          // so we should at least give back the order by part of the query!
+          //return array('', $entity_ids);
+          
+#          dpm($sort_query_parts, "sort query parts!");
+          return array($sort_query_parts, $entity_ids);
         } else {
           #        dpm("it is an AND!");
           // Therefore we do the full thing!
@@ -676,9 +692,9 @@ class Query extends WisskiQueryBase {
 
 $timethis[] = microtime(TRUE);
 #    dpm(microtime(), "before");
-#    dpm($select, "query");
+#    dpm($select, "query on engine " . $this->getEngine()->adapterId());
 #    dpm(serialize($this), "this");
-    $result = $engine = $this->getEngine()->directQuery($select);
+    $result = $this->getEngine()->directQuery($select);
 #    dpm($result, "resquery");
 $timethis[] = microtime(TRUE);
     $adapter_id = $this->getEngine()->adapterId();
