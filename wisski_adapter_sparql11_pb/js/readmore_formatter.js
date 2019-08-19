@@ -16,7 +16,7 @@
     attach: function(context, settings) {
       for (var id in settings.readmoreSettings) {
         if (settings.readmoreSettings.hasOwnProperty(id)) {
-          var $element = $('.' + id + ' > div.field--items, .' + id + ' > div.field__items', context);
+          var $element = $('.' + id + ' > div.field--items, .' + id + ' > div.field__items, .' + id + ' > div.field--item', context);
           
           $element.css('overflow','hidden');
           $element.readmore($.extend(settings.readmoreSettings[id], {
