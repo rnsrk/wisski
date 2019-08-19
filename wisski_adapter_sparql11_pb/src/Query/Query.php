@@ -606,7 +606,11 @@ class Query extends WisskiQueryBase {
           //return array('', $entity_ids);
           
 #          dpm($sort_query_parts, "sort query parts!");
-          return array($sort_query_parts, $entity_ids);
+          // this is a guess! If there is no query that may follow up, we can safely skip the order by part.
+          if(count($this->dependent_parts) == 0)
+            return array('', $entity_ids);
+          else
+            return array($sort_query_parts, $entity_ids);
         } else {
           #        dpm("it is an AND!");
           // Therefore we do the full thing!
