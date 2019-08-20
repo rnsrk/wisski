@@ -167,7 +167,7 @@ function wisski_core_excel_export($ob) {
 
   flush();
 
-  unlink($filename);
+#  unlink($filename);
 
   exit();
   
@@ -456,7 +456,13 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
 
     // what exactly is the route where we come from?
     $router = \Drupal::service('router.no_access_checks');
-    $result = $router->match($referer);
+#    dpm($referer, "yay?");
+
+    try {
+      $result = $router->match($referer);
+    } catch (Exception $e) {
+      // was not found!
+    }
 
     if(!empty($result) && isset($result['view_id'])) {
       // the parent is a view - so we probably want to render this...
