@@ -400,8 +400,4 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
     return !empty($this->enforceIsNew);
   }
   
-  public function getValue($value_name) {
-    return $this->values[$value_name];
-  }
-  
 }
