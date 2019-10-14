@@ -56,33 +56,46 @@ class Sparql11GraphTabController extends ControllerBase {
 
     $target_uri = $request->query->get('target_uri');
   
+//    dpm($target_uri, "yay?");
+
+    $local_store = AdapterHelper::getPreferredLocalStore();
 
     // if it is an int, we can load the entity
     if(empty($target_uri)) {
-      $entity = $storage->load($wisski_individual);
-      $target_uri = AdapterHelper::getUrisForDrupalId($entity->id());
-      $target_uri = current($target_uri);
+//      $entity = $storage->load($wisski_individual);
+      $local_store = AdapterHelper::getPreferredLocalStore();
+      if($local_store)
+        $target_uri = AdapterHelper::getUrisForDrupalId($wisski_individual, $local_store, FALSE);
+      
+      $drupal_eid = $wisski_individual;
+#      dpm($target_uri, "target?");
+#      $target_uri = current($target_uri);
     } else {
       // else it is an uri
+      $drupal_eid = AdapterHelper::getDrupalIdForUri($target_uri);
     }
     
     //get Drupal EID
-    $drupal_eid = AdapterHelper::getDrupalIdForUri($target_uri);
+#    $drupal_eid = $wisski_individual;
+    
+#    $drupal_eid = AdapterHelper::getDrupalIdForUri($target_uri);
+  
+    // by mark: easyfy this for now... 
   
     // go through all adapters    
     $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
     
     // get title
-    $title = NULL;
-    if(!empty(WisskiCacheHelper::getCallingBundle($drupal_eid)))
-      $title = wisski_core_generate_title($drupal_eid);
+    //$title = NULL;
+    //if(!empty(WisskiCacheHelper::getCallingBundle($drupal_eid)))
+    $title = wisski_core_generate_title($drupal_eid);
     
       
     $base = array("id" => $target_uri, 
                   "name" => '<span class="wki-groupname">' . $title . '</span>', 
                   "children" => array(), 
                   "data" => array(
-                    "relation" => "<h2>Connections (" . $target_uri . ")</h2><ul></ul>",
+                    "relation" => "<h2>Connections for " . $title . " (" . $target_uri . ")</h2><ul></ul>",
                     "nodetitle"=> $title,
                   ),
             );            
@@ -92,6 +105,18 @@ class Sparql11GraphTabController extends ControllerBase {
       $label = $a->label();
       $e = $a->getEngine();
       if ($e instanceof Sparql11Engine) {
+      
+        $pb = $e->getPbForThis();
+        
+#        $ns = $e->getNamespaces();
+#        
+#        $prefixes = array_keys($ns);
+#        $long_prefixes = array_values($ns);
+        
+        
+        if(empty($pb))
+          continue;
+      
         // full view mode        
         if($mode == 3) {
           $values = 'VALUES ?x { <' . $target_uri . '> } ';
@@ -158,16 +183,34 @@ class Sparql11GraphTabController extends ControllerBase {
         elseif ($mode == 2) {
           // standard mode
 
-          if ($e->checkUriExists($target_uri) && $e instanceof \Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWithPB) {
+//          $entity = $local_store->loadMultiple(array($drupal_eid));
           
+//          dpm($entity, "entity?");
+
+          
+
+          if ($e->checkUriExists($target_uri) && $e instanceof \Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWithPB) {
+
+#            dpm("yay?");
+
+#            dpm($this->buildInformation($mode, $pb, $path, $target_uri, $e), "pb?");
+            $curr = $this->buildInformation($mode, $target_uri, $e);
+#            dpm($curr, "curr?");
+            $base['children'] = $curr['children'];
+#            dpm($base, "base?");
+/*          
             $target_eid = AdapterHelper::getDrupalIdForUri($target_uri);
+*/
+//            $bundles = $e->getBundleIdsForUri($target_uri);
 
-            $bundles = $e->getBundleIdsForUri($target_uri);
-            $bundles_to_pbs = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle();
-
-            foreach ($bundles as $bid) {
-              foreach ($bundles_to_pbs[$bid] as $pbid => $pb_info) {
+/*            $bundles_to_pbs = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle();
+*/
+//            foreach ($bundles as $bid) {
+/*              foreach ($bundles_to_pbs[$bid] as $pbid => $pb_info) {
                 $pb = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->load($pbid);
+                */
+                
+/*                
                 foreach ($pb->getAllPathsAndGroupsForBundleId($bid) as $path) {
                   if (!$pb->getPbPath($path->id())['enabled']) {
                     continue;
@@ -175,6 +218,11 @@ class Sparql11GraphTabController extends ControllerBase {
                   $q = $e->generateTriplesForPath($pb, $path, "", $target_uri);
                   $result = $e->directQuery("SELECT * { $q }");
                   //dpm($q);
+#                  dpm($result, "res");
+#                  dpm($path->getPathArray(), "path?");
+
+                  $pa = $path->getPathArray();
+                  
                   foreach ($result as $row) {
                     $curr = &$base;
                     for ($x = 2; ; $x+=2) {
@@ -202,15 +250,15 @@ class Sparql11GraphTabController extends ControllerBase {
 //                      drupal_set_message($xp . ' 1is ' . $title);
                         $nodetitle = $row->$xp->localName();
                         if(!empty($title))
-                        $nodetitle = $title;
+                          $nodetitle = $title;
                         $curr['children'][$index] = array(
                           'id' => $uri,
-                          'name' => '<span class="wki-groupname" data-wisski-url="' . $drupal_url . '">' . $nodetitle . '</span>',
+                          'name' => '<span class="wki-groupname" data-wisski-url="' . $drupal_url . '">' . str_replace($long_prefixes, $prefixes, $pa[$x]) . " (" . $nodetitle . ')</span>',
                           'data' => array(
                             'nodetitle' => $nodetitle,
                             //@Todo: this is a default value. change to get the appropriate value
-                            'labeltext' => $nodetitle,
-                            'labelid' => 'labelid=' . $nodetitle,
+//                            'labeltext' => $pa[$x-1],
+                            'labelid' => $nodetitle,
                           ),
                           'children' => array(),
                         );
@@ -218,9 +266,27 @@ class Sparql11GraphTabController extends ControllerBase {
                       $curr = &$curr['children'][$index];
                     }
                   }
-                }
+                  
+                  $index = count($curr['children']);
+//                      drupal_set_message($xp . ' 1is ' . $title);
+                  $nodetitle = $row->out;
+
+                  $curr['children'][$index] = array(
+                    'id' => $nodetitle,
+                    'name' => '<span class="wki-groupname" data-wisski-url="' . $drupal_url . '">' . $nodetitle . '</span>',
+                    'data' => array(
+                      'nodetitle' => $nodetitle,
+                      //@Todo: this is a default value. change to get the appropriate value
+//                      'labeltext' => $pa[$x-1],
+                      'labelid' => $nodetitle,
+                    ),
+                    'children' => array(),
+                   );
+                  dpm($base, "base?");
+                //}
               }
             }
+          */
           }
         } else if ($mode == 1) {
             if ($e->checkUriExists($target_uri) && $e instanceof \Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWithPB) {
@@ -273,6 +339,205 @@ class Sparql11GraphTabController extends ControllerBase {
  
         return new JsonResponse( $base );
         
+  }
+
+  public function buildInformation($mode, $target_uri, $e, $target_bundle = NULL, $starting_point = 0) {
+#    dpm("yay?");
+    $base = array('children' => array());
+
+    $ns = $e->getNamespaces();
+
+    $prefixes = array_keys($ns);
+    $long_prefixes = array_values($ns);
+
+    
+    // if we have no target bundle, do any!
+    if(empty($target_bundle))
+      $bundles = $e->getBundleIdsForUri($target_uri);
+    else // if we have one, use just this.
+      $bundles = array($target_bundle);
+
+    $bundles_to_pbs = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle();
+
+#    dpm($bundles_to_pbs, "btp?");
+#    dpm($bundles, "bundles?");
+
+    foreach ($bundles as $bid) {
+      foreach ($bundles_to_pbs[$bid] as $pbid => $pb_info) {
+        $pb = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->load($pbid);
+        
+#        dpm($pbid, "found for " . $bid);
+                
+        foreach ($pb->getAllPathsAndGroupsForBundleId($bid) as $path) {
+
+#          dpm($path, "path in " . $pb->id() . "?");
+          $pbp = $pb->getPbPath($path->id());
+
+          if (!$pbp['enabled']) {
+            continue;
+          }
+        
+          $q = $e->generateTriplesForPath($pb, $path, "", $target_uri, NULL, 0, $starting_point);
+          $result = $e->directQuery("SELECT * { $q }");
+#          dpm($result, $path->id());
+#        if($starting_point > 0) {
+#                  drupal_set_message($q, 'error');
+#                  dpm($pb->id(), "idpb?");
+#                  dpm($target_uri, "target?");
+#                  dpm($path, "asking for path");
+#                  dpm($result, "res?");
+#        }
+#                  dpm($result, "res");
+#                  dpm($path->getPathArray(), "path?");
+
+          $pa = $path->getPathArray();
+    
+          $last_x = NULL;
+          $nodetitle = NULL;
+          $last_x_uris = NULL;
+    
+          foreach ($result as $row) {
+            $curr = &$base;
+      
+            // starting point is concepts counted from the beginning, but it 
+            // is x2, x4, ...
+            for ($x = (($starting_point*2) + 2); ; $x+=2) {
+              $xp = "x$x";
+        
+#        if($starting_point > 0) {
+#          drupal_set_message("looking for: " . $x);
+#        }       
+              if (!isset($row->$xp)) {
+                $last_x = "x" . ($x-2);
+                break;
+              }
+              
+              $uri = $row->$xp->getUri();
+              $eid = AdapterHelper::getDrupalIdForUri($uri);
+  
+              $title = NULL;
+              if(!empty(WisskiCacheHelper::getCallingBundle($eid)))
+                $title = wisski_core_generate_title($eid);
+        
+#       drupal_set_message($xp . ' is ' . $title);
+              $drupal_url = AdapterHelper::generateWisskiUriFromId($eid);
+              $already_there = FALSE;
+          
+              // we reuse $index below!
+              foreach ($curr['children'] as $index => $child) {
+                if ($child['id'] == $uri) {
+                  $already_there = TRUE;
+                  break;
+                }
+              }
+        
+              if (!$already_there) {
+                $index = count($curr['children']);
+//      drupal_set_message($xp . ' 1is ' . $title);
+                $nodetitle = $row->$xp->localName();
+                if(!empty($title))
+                  $nodetitle = $title;
+        
+                $curr['children'][$index] = array(
+                  'id' => $uri,
+                  'name' => '<span class="wki-groupname" data-wisski-url="' . $drupal_url . '">' . str_replace($long_prefixes, $prefixes, $pa[$x]) . " (" . $nodetitle . ')</span>',
+                  'data' => array(
+                    'nodetitle' => $nodetitle,
+          //@Todo: this is a default value. change to get the appropriate value
+//          'labeltext' => $pa[$x-1],
+                    'labelid' => $nodetitle,
+                  ),
+                  'children' => array(),
+                );
+              }
+              $curr = &$curr['children'][$index];
+            }
+      
+            if(isset($row->out))
+              $nodetitle = $row->out->getValue();
+
+            $last_x_uri = $row->$last_x; 
+#      dpm($row, "row?");
+#      dpm($last_x, "last x?");
+#      dpm($last_x_uri, "last x uri?");
+          #}
+    
+          $index = count($curr['children']);
+//                      drupal_set_message($xp . ' 1is ' . $title);
+//    $nodetitle = $row->out;
+
+#    dpm($path, "yay?");
+
+#    dpm($path->isGroup(), "grp?");
+#    dpm($path, "path?");
+#    dpm($pbp, "pbp?");
+
+          // special case for groups
+          if($path->isGroup()) {
+      
+      
+      
+      #dpm($row, "yay?");
+#      dpm($path, "path?");
+#      dpm($pbp, "pbp?");
+#      dpm($last_x_uris, "xp?");
+#            foreach($last_x_uris as $last_x_uri) {
+              if(!empty($last_x_uri) && !empty($last_x_uri->getUri())) {
+                if(isset($pbp['bundle']))
+                  $my_curr = $this->buildInformation($mode, $last_x_uri->getUri(), $e, $pbp['bundle'], (count($path->getPathArray())-1)/2);
+                else
+                  $my_curr = $this->buildInformation($mode, $last_x_uri->getUri(), $e);
+                
+#                $curr['children'] = array_merge($curr['children'], $my_curr['children']);
+#              }
+              $curr['children'] = $my_curr['children'];
+#        dpm(serialize($my_curr), "my?");
+      #  $index = count($curr['children']);
+      #  $curr = &$curr['children'][$index];
+            }
+          } else if($pbp['fieldtype'] == "entity_reference") {
+#            dpm($last_x_uris, "xp?");
+#            foreach($last_x_uris as $last_x_uri) {
+              // special case for ER - it is like a group, but a little bit different.
+              if(!empty($last_x_uri) && !empty($last_x_uri->getUri())) {
+#                dpm("before I go into " . $last_x_uri->getUri());
+#                dpm($base, "base is?");
+#                dpm($curr, "curr is?");
+                $my_curr = $this->buildInformation($mode, $last_x_uri->getUri(), $e);
+#                dpm($my_curr, "curr for " . $last_x_uri->getUri() . "?");
+#                $curr['children'] = array_merge($curr['children'], $my_curr['children']);
+              $curr['children'] = $my_curr['children'];
+              
+#              $index = count($curr['children']);
+#              $curr = &$curr['children'][$index];
+              }
+#              dpm($curr, "what is curr after " . $last_x_uri->getUri() . "?");
+#            }
+#            dpm($curr, "what is curr in " . ?");
+            
+          } else {
+
+            if(!empty($nodetitle)) {
+              $curr['children'][$index] = array(
+                'id' => $nodetitle,
+                'name' => '<span class="wki-groupname" data-wisski-url="' . $drupal_url . '">' . $nodetitle . '</span>',
+                'data' => array(
+                  'nodetitle' => $nodetitle,
+        //@Todo: this is a default value. change to get the appropriate value
+//                      'labeltext' => $pa[$x-1],
+                  'labelid' => $nodetitle,
+                ),
+                'children' => array(),
+              );
+              }
+            }
+          }
+#    dpm($base, "base?");
+        }
+      }
+    }
+    
+    return $base;
   }
 
   public function forward($wisski_individual) {

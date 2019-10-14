@@ -25,7 +25,7 @@ Jit_modal:
     js/wisski_jit_modal.js: {}
   css:
     theme:
-      css/wisski_jit_modal.css: {}
+      css/wisski_jit.css: {}
   dependencies:
     - core/jquery
     - core/drupal
