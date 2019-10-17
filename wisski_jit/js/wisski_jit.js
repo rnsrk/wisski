@@ -11,29 +11,30 @@ var labelType, useGradients, nativeTextSupport, animate;
 //    console.log(drupalSettings.wisski_jit, context, settings);
 //    }
 //  };
-//  Drupal.behaviors.mybehavior = {
-//    attach: function (context, settings) {
+  Drupal.behaviors.mybehavior = {
+    attach: function (context, settings) {
     $(function(){
-        
+      /* 
       $(document).on('click', '.ui-dialog-titlebar-close', function(){
           console.log("modal close");
           $("#wki-infoswitch").on('change', function(){
-            init($, Drupal, drupalSettings, drupalSettings.wisski_jit);
+          //  init($, Drupal, drupalSettings, drupalSettings.wisski_jit);
           }); 
         
-          init($, Drupal, drupalSettings, drupalSettings.wisski_jit);
+          //init($, Drupal, drupalSettings, drupalSettings.wisski_jit);
         
       });
       
       $("#wki-infoswitch").on('change',function(){
-        //alert($("#wki-infoswitch option:selected").val());
+        alert($("#wki-infoswitch option:selected").val());
         init($, Drupal, drupalSettings, drupalSettings.wisski_jit);
         });
+      */
       init($, Drupal, drupalSettings, drupalSettings.wisski_jit);
    
    }); 
-//    }
-//  };
+    }
+  };
 })(jQuery, Drupal, drupalSettings);
 
 (function() {
@@ -202,7 +203,7 @@ function init($, Drupal, drupalSettings, nodeid){
   //console.log('init', url);
   $.getJSON(url, function(json) {
     //json = JSON.parse(json);
-    //console.log(JSON.stringify(json));  
+    console.log(JSON.stringify(json));  
     console.log(url);
     //init RGraph
     var rgraph = new $jit.RGraph({
@@ -352,6 +353,7 @@ function init($, Drupal, drupalSettings, nodeid){
   });
 		
   $("#wki-infoswitch").change(function() {
+    
     //alert("waaaah!");
     var uri = rgraph.graph.getNode(rgraph.root).id;
     //var elem = uri.split("/");
