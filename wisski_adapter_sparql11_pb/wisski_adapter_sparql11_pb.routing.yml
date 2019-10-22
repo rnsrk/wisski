@@ -12,3 +12,10 @@ wisski_adapter_sparql11_pb.wisski_individual.triples:
     _title: 'View triples'
   requirements:
     _permission: 'access triples'
+
+wisski_adapter_sparql11_pb.wisski_endpoint:
+  path: '/wisski/endpoint/{endpoint_id}'
+  defaults:
+    _form: '\Drupal\wisski_adapter_sparql11_pb\Controller\Sparql11EndpointController'
+  requirements:
+    _permission: 'access content'
