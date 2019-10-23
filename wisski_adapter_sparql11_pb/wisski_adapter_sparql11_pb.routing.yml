@@ -18,4 +18,4 @@ wisski_adapter_sparql11_pb.wisski_endpoint:
   defaults:
     _form: '\Drupal\wisski_adapter_sparql11_pb\Controller\Sparql11EndpointController'
   requirements:
-    _permission: 'access content'
+    _permission: 'access sparql endpoints'

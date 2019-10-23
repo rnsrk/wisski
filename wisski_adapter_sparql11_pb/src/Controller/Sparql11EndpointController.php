@@ -25,10 +25,26 @@ class Sparql11EndpointController extends FormBase {
     // early opt out.
     if(empty($endpoint_id))
       return array();
-#    dpm($endpoint_id, "eid?");
-#    dpm($form_state, "fs?");
 
-#    dpm($_GET, "get?");
+    $request = \Drupal::request();
+
+    $headers = $request->headers;
+
+    $accept = $headers->get("accept");
+
+    // default is text
+    $dumpformat = "text";
+    
+    // if the user wants html - give that to him
+    if(strpos($accept, "text/html") !== FALSE) {
+      $dumpformat = "html";
+    }
+     
+    // this is here for later, but it does not help me up to now.   
+    //$format_string = \EasyRdf_Utils::parseMimeType($accept);
+
+    // if we have something from GET - prepopulate that!
+    // @TODO: Handle POST
     if(isset($_GET['query']))
       $query = $_GET['query'];
     else
@@ -48,17 +64,32 @@ class Sparql11EndpointController extends FormBase {
       '#value' => $endpoint_id
     );
     
+    $result = NULL;
 
-    $adapter = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->load($endpoint_id);
+    if(!empty($query)) {
+      $adapter = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->load($endpoint_id);
 
-    $engine = $adapter->getEngine();
+      $engine = $adapter->getEngine();
     
-    $result = $engine->directQuery($query);
-    
+      $result = $engine->directQuery($query);
+    }
+
+    // the output for the user
     $dump = "";
     
-    if($result)
-      $dump = $result->dump();
+    // should it be dumped as html?
+    $htmldump = TRUE;
+    
+    if($result) {
+      // Select and Ask result in such a Result, we can return this only as text or html
+      if($result instanceOf \EasyRdf_Sparql_Result)
+        $dump = $result->dump($dumpformat);
+      else { // it must be a graph
+        // @Todo: Support anything else here.
+        $dump = $result->serialise("rdfxml");
+        $htmldump = FALSE;
+      }
+    }
     
     $form['result'] = array(
       '#type' => 'html_tag',
@@ -77,154 +108,33 @@ class Sparql11EndpointController extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Execute Query')
     );
+    
+    // if we dont want a html dump, dump it differently.
+    if(!$htmldump) {
+      $response = new \Symfony\Component\HttpFoundation\Response();
+      $response->setContent($dump);
+      $response->headers->set('Content-Type', 'text/xml');
+      // if so, simply dump that
+      return $response;
+      #print $dump;
+      #exit();
+    }
 
     return $form;
   }
   
+  /**
+   * @Inheritdoc
+   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $query = $form_state->getValue('query');
-#    $endpoint_id = $form_state->getValue('endpoint_id');
-    
-    
-#    $adapter = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->load($endpoint_id);
-    
+
+    // if there is a get parameter it is already in the form, so we can unset that here.    
     if(isset($_GET['query']))
       unset($_GET['query']);
 
-/*
-    $engine = $adapter->getEngine();
-    
-    $result = $engine->directQuery($query);
-    
-    $dump = "";
-    
-    if($result)
-      $dump = $result->dump();
-    
-    $form_state->setValue("result", $dump);
-*/    
+    // we want to get back where we came from
     $form_state->setRebuild();
   }
 
-  public function forward($wisski_individual) {
 
-
-    $storage = \Drupal::entityManager()->getStorage('wisski_individual');
-
-    //let's see if the user provided us with a bundle, if not, the storage will try to guess the right one
-    $match = \Drupal::request();
-    $bundle_id = $match->query->get('wisski_bundle');
-    if ($bundle_id) $storage->writeToCache($wisski_individual,$bundle_id);
-
-    // get the target uri from the parameters
-    $target_uri = $match->query->get('target_uri');
-
-    $entity = $storage->load($wisski_individual);
-    
-    // if it is empty, the entity is the starting point
-    if(empty($target_uri)) {
-
-#      $target_uri = AdapterHelper::getUrisForDrupalId($entity->id());
-      $target_uri = AdapterHelper::getOnlyOneUriPerAdapterForDrupalId($entity->id());      
-      $target_uri = current($target_uri);
-      
-    } else // if not we want to view something else
-      $target_uri = urldecode($target_uri);
-      
-    // go through all adapters    
-    $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
-
-    #$my_url = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', $entity->id()));
-
-    $form['in_triples'] = array(
-      '#type' => 'table',
-      '#caption' => $this->t('In-coming triples'),
-      '#header' => array('Subject', 'Predicate', 'Object', 'Graph', 'Adapter'),
-    );
-    
-    $form['out_triples'] = array(
-      '#type' => 'table',
-      '#caption' => $this->t('Out-going triples'),
-      '#header' => array('Subject', 'Predicate', 'Object', 'Graph', 'Adapter'),
-    );
-
-    foreach ($adapters as $a) {
-      $label = $a->label();
-      $e = $a->getEngine();
-      if ($e instanceof Sparql11Engine) {
-        $values = 'VALUES ?x { <' . $target_uri . '> } ';
-        $q = "SELECT ?g ?s ?sp ?po ?o WHERE { $values { { GRAPH ?g { ?s ?sp ?x } } UNION { GRAPH ?g { ?x ?po ?o } } } }";
-#        dpm($q);
-        $results = $e->directQuery($q);
-        foreach ($results as $result) {
-#var_dump($result);
-          if (isset($result->sp)) {
-            
-            $existing_bundles = $e->getBundleIdsForUri($result->s->getUri());
-
-            if(empty($existing_bundles))
-              $subjecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->s->getUri() ) );
-            else {
-              $remote_entity_id = $e->getDrupalId($result->s->getUri());
-              $subjecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $remote_entity_id, 'target_uri' => $result->s->getUri() ) );
-            }
-
-            $predicateuri = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->sp->getUri() ) );
-
-            $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $target_uri ) );
-
-#            dpm(\Drupal::l($this->t('sub'), $subjecturi));
-            $form['in_triples'][] = array(
-#              "<" . $result->s->getUri() . ">",
-              Link::fromTextAndUrl($this->t($result->s->getUri()), $subjecturi)->toRenderable(),
-              Link::fromTextAndUrl($this->t($result->sp->getUri()), $predicateuri)->toRenderable(),
-              Link::fromTextAndUrl($this->t($target_uri), $objecturi)->toRenderable(),
-              array('#type' => 'item', '#title' => $result->g->getUri()),
-              array('#type' => 'item', '#title' => $label),
-            );
-          } else {
-            
-            $subjecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $target_uri ) );
-
-            $predicateuri = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->po->getUri() ) );
-            
-            if($result->o instanceof \EasyRdf_Resource) {
-              try {
-              
-                $existing_bundles = $e->getBundleIdsForUri($result->o->getUri());
-                
-                if(empty($existing_bundles))
-                  $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->o->getUri() ) );
-                else {
-                  $remote_entity_id = $e->getDrupalId($result->o->getUri());              
-                  $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $remote_entity_id, 'target_uri' => $result->o->getUri() ) );
-                }
-                $got_target_url = TRUE;
-              } catch (\Symfony\Component\Routing\Exception\InvalidParameterException $ex) {
-                $got_target_url = FALSE;
-              }
-              $object_text = $result->o->getUri();
-            } else {
-              $got_target_url = FALSE;
-              $object_text = $result->o->getValue();
-            }
-            $graph_uri = isset($result->g) ? $result->g->getUri() : 'DEFAULT';
-            $form['out_triples'][] = array(
-              Link::fromTextAndUrl($target_uri, $subjecturi)->toRenderable(),
-              Link::fromTextAndUrl($result->po->getUri(), $predicateuri)->toRenderable(),
-              $got_target_url ? Link::fromTextAndUrl($object_text, $objecturi)->toRenderable() : array('#type' => 'item', '#title' => $object_text),
-              array('#type' => 'item', '#title' => $graph_uri),
-              array('#type' => 'item', '#title' => $label),
-            );
-          }
-        }
-      }
-    }
-    
-
-    $form['#title'] = $this->t('View Triples for ') . $target_uri;
-
-    return $form;
-
-  }
 }
