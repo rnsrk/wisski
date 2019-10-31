@@ -31,7 +31,7 @@ use EasyRdf_Literal;
  */
 class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterface {
   
-  protected $uriPattern  = "!^http://d-nb.info/gnd/(.+)$!u";
+  protected $uriPattern  = "!^http[s]*://d-nb.info/gnd/(.+)$!u";
   protected $fetchTemplate = "http://d-nb.info/gnd/{id}/about/lds";
   
   /**
@@ -39,7 +39,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
    * it will only work on prefixed properties
    */
   protected $rdfNamespaces = array(
-    'gnd' => 'http://d-nb.info/standards/elementset/gnd#',
+    'gndo' => 'https://d-nb.info/standards/elementset/gnd#',
     'geo' => 'http://www.opengis.net/ont/geosparql#',
     'sf' => 'http://www.opengis.net/ont/sf#',    
   );
@@ -48,37 +48,37 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
   protected $possibleSteps = array(
       'ConferenceOrEvent' => array(
-        'gnd:preferredNameForTheConferenceOrEvent' => NULL,
-        'gnd:variantNameForTheConferenceOrEvent' => NULL,
+        'gndo:preferredNameForTheConferenceOrEvent' => NULL,
+        'gndo:variantNameForTheConferenceOrEvent' => NULL,
         ),
       'CorporateBody' => array(
-        'gnd:preferredNameForTheCorporateBody' => NULL,
-        'gnd:variantNameForTheCorporateBody' => NULL,
+        'gndo:preferredNameForTheCorporateBody' => NULL,
+        'gndo:variantNameForTheCorporateBody' => NULL,
         ),
       'Family' => array(
-        'gnd:preferredNameForTheFamily' => NULL,
-        'gnd:variantNameForTheFamily' => NULL,
+        'gndo:preferredNameForTheFamily' => NULL,
+        'gndo:variantNameForTheFamily' => NULL,
         ),
       'Person' => array(
-        'gnd:preferredNameForThePerson' => NULL,
-        'gnd:variantNameForThePerson' => NULL,
+        'gndo:preferredNameForThePerson' => NULL,
+        'gndo:variantNameForThePerson' => NULL,
         ),
       'PlaceOrGeographicName' => array(
-        'gnd:preferredNameForThePlaceOrGeographicName' => NULL,
-        'gnd:variantNameForThePlaceOrGeographicName' => NULL,
+        'gndo:preferredNameForThePlaceOrGeographicName' => NULL,
+        'gndo:variantNameForThePlaceOrGeographicName' => NULL,
         ),
       'TerritorialCorporateBodyOrAdministrativeUnit' => array(
-        'gnd:preferredNameForThePlaceOrGeographicName' => NULL,
-        'gnd:variantNameForThePlaceOrGeographicName' => NULL,
+        'gndo:preferredNameForThePlaceOrGeographicName' => NULL,
+        'gndo:variantNameForThePlaceOrGeographicName' => NULL,
         'geo:hasGeometry geo:asWKT' => NULL, 
         ),
       'SubjectHeading' => array(
-        'gnd:preferredNameForTheSubjectHeading' => NULL,
-        'gnd:variantNameForTheSubjectHeading' => NULL,
+        'gndo:preferredNameForTheSubjectHeading' => NULL,
+        'gndo:variantNameForTheSubjectHeading' => NULL,
         ),
       'Work' => array(
-        'gnd:preferredNameForTheWork' => NULL,
-        'gnd:variantNameForTheWork' => NULL,
+        'gndo:preferredNameForTheWork' => NULL,
+        'gndo:variantNameForTheWork' => NULL,
         ),
   );
 
@@ -112,6 +112,8 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
 
   public function fetchData($uri = NULL, $id = NULL) {
+
+#    dpm("yay?");
     
     if (!$id) {
       if (!$uri) {
@@ -127,6 +129,8 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     // 
     $cache = \Drupal::cache('wisski_adapter_gnd');
     $data = $cache->get($id);
+
+#    dpm($data, "from cache?");
     if ($data) {
       return $data->data;
     }
@@ -137,6 +141,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     $fetchUrl = strtr($this->fetchTemplate, $replaces);
 
     $data = file_get_contents($fetchUrl);
+#    dpm($data, "data?");
     if ($data === FALSE || empty($data)) {
       return FALSE;
     }
@@ -146,7 +151,9 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #      return FALSE;
 #    }
 
+#    dpm($fetchUrl, "fu?");
     $graph = new EasyRdf_Graph($fetchUrl, $data, 'turtle');
+#    dpm($graph, "graph?");    
     if ($graph->countTriples() == 0) {
       return FALSE;
     }
@@ -160,6 +167,8 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
 // Property Chains don't work with unnamed bnodes :/
     foreach ($this->possibleSteps as $concept => $rdfPropertyChains) {
+#      dpm($concept, "con?");
+#      dpm($rdfPropertyChains, "rdf?");
       foreach ($rdfPropertyChains as $propChain => $tmp) {
         $pChain = explode(' ', $propChain);
         $dtProp = NULL;
@@ -167,8 +176,29 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
           // last property is a datatype property
           $dtProp = array_pop($pChain);
         }
+        
+        
 #        dpm($dtProp, "yay!");
-        $resources = array($uri => $uri);
+//        $resources = array($uri => $uri);
+//	By Mark: GND seems to change itself to use https
+//      if you still have http in the scheme it answers with
+//      https breaking the line above!
+//      instead, we try it otherwise.
+
+        $res = $graph->resources();
+
+#        dpm(serialize(array_keys($res)), "res?");
+
+        if(!in_array(array_keys($res), $uri)) {
+          $newuri = str_replace("http://", "https://", $uri);
+        
+          $resources = array($newuri => $newuri);
+        } else {
+          $resources = array($uri => $uri);
+        }
+        
+        
+
         foreach ($pChain as $prop) {
           $newResources = array();
           foreach ($resources as $resource) {
@@ -185,9 +215,13 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
           $resources = $newResources;
         }
         if ($dtProp) {
+#          dpm($resources, "my res?");
           foreach ($resources as $resource) {
+#            dpm($graph, "dtprop!");
+            
             foreach ($graph->all($resource, $dtProp) as $thing) {
 #              dpm($thing->getDatatype(), "thing");
+#              dpm($dtProp, "dtprop!");
               
               if($thing->getDatatype() == "geo:wktLiteral") {
                 // unluckily GND is not very WKT-conforming...
