@@ -231,6 +231,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   //dpm($ids,__METHOD__);
     $entities = array();
 
+#    dpm($entity_cache, "yay?");
+
     $entity_cache = $this->entity_cache;
     
     foreach($ids as $key => $id) {
@@ -243,7 +245,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         // and unset it for the rest...
         unset($ids[$key]);
 
- #       dpm($id, "I take that from cache!");
+#        dpm($id, "I take that from cache!");
 
       }   
     }
@@ -554,8 +556,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             }
             
             // do this here because if we only use main bundles we need to store this for the title
-            if($cached_bundle != $bundleid);
+            if($cached_bundle != $bundleid)
               $this->writeToCache($id, $bundleid);
+
 #            dpm($bundleid, "bid1");
             $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
             #dpm($field_definitions, "yay");
