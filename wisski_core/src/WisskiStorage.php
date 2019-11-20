@@ -586,11 +586,15 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #                if($field_name 
               
 #                dpm(microtime(), "loading $field_name");
-              
-                $main_property = $field_def->getFieldStorageDefinition()->getMainPropertyName();
+ 
+// By Mark: We don't need that here I think - moved it to below, delete in future!             
+//                $main_property = $field_def->getFieldStorageDefinition()->getMainPropertyName();
 #dpm(array($adapter->id(), $field_name,$id, $bundleid),'ge1','error');
                 
                 if ($field_def instanceof BaseFieldDefinition) {
+
+#                  dpm($field_name, "fn?");
+#                  dpm("it is a base field!");
                   //the bundle key will be set via the loop variable $bundleid
                   if ($field_name === 'bundle') continue;
 #                  drupal_set_message("Hello i am a base field ".$field_name);
@@ -599,10 +603,21 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   // special case for entity name - call the title generator!
                   if ($field_name === 'name') $new_field_values[$id][$field_name] = array(wisski_core_generate_title($id));
 
+                  // we already know the eid
+                  if ($field_name === 'eid') $new_field_values[$id][$field_name] = array($id);
+                  
+                  // and for now we don't handle uuid, vid, langcode, uid, status
+                  // do this for performance reasons here.
+                  // this means we have to change this later!
+                  if ($field_name === 'uuid' || $field_name === 'vid' || $field_name === 'langcode' || $field_name === 'uid' || $field_name === 'status') 
+                    continue;
+
                   //this is a base field and cannot have multiple values
                   //@TODO make sure, we load the RIGHT value
                   if(empty($new_field_values)) 
                     $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
+
+#                  dpm($new_field_values, $field_name);
 
                   if (empty($new_field_values)) continue;
 #                  drupal_set_message("Hello i am still alive ". serialize($new_field_values));
@@ -724,6 +739,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 #                    dpm($field_name, "fn?");
 #                    dpm($new_field_values, "nfvori?");
 #                    dpm($new_field_values[$id][$field_name], "nfv");
+
+                    // get the main property
+                    $main_property = $field_def->getFieldStorageDefinition()->getMainPropertyName();
+
                     // there is no delta as a key in this array :( 
                     foreach ($new_field_values[$id][$field_name] as $nfv) {
                       // this would be smarter, however currently the storage can't
@@ -1458,11 +1477,14 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   }  
   
   public function writeToCache($entity_id,$bundle_id) {
+#    dpm($bundle_id, "bundle id for ente $entity_id: ");
+#    dpm(microtime(), "mic in");
     try {
       WisskiCacheHelper::putCallingBundle($entity_id,$bundle_id);
     } catch (\Exception $e) {
 #dpm(func_get_args(), 'writeToCache');
     }
+#    dpm(microtime(), "mic out");
   }
   
   // WissKI image preview stuff.
