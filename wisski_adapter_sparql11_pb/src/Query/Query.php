@@ -76,6 +76,7 @@ class Query extends WisskiQueryBase {
    * {@inheritdoc}
    */
   public function execute() {
+#    $micro = microtime(TRUE);
 #    dpm("yay!");
 #    dpm($this);    
     // NOTE: this is not thread-safe... shouldn't bother!
@@ -83,6 +84,70 @@ class Query extends WisskiQueryBase {
 
 #dpm($this->condition->conditions(),$this->getEngine()->adapterId().': '.__METHOD__);
 #wisski_tick();
+
+    // speed hack:
+    // if there is a bundle-condition
+    // and there are other field-conditions concerning wisski-fields
+    // then these are probably more specific, so we can skip the bundle condition
+#    dpm($this->isPathQuery(), "yep?");
+#    dpm($this->condition, "condition?");
+
+    $bundlekey = -1;
+
+    $pathkey = -1;
+
+    if($this->condition->getConjunction() == "AND") {
+      // iterate through all conditions
+      foreach($this->condition->conditions() as $key => $cond) {
+
+        $field = $cond['field'];
+
+        if($field == "bundle") {
+          // store the bundle key if there is a bundle condition
+          $bundlekey = $key;
+        }
+      
+        // get all pbs and their ids
+        $pbs = $this->getPbs();
+      
+        $pbids = array_keys($pbs);
+      
+        // if it is a pb field, it has a dot in it
+        if(strpos($field, '.') !== FALSE) {
+          $pb_and_path = explode(".", $field);
+        
+          // is it really a pb field?
+          if (count($pb_and_path) != 2) {
+            // bad encoding! can't handle
+            //drupal_set_message(new \Drupal\Core\StringTranslation\TranslatableMarkup('Bad pathbuilder and path id "%id" in entity query condition', ['%id' => $field]));
+            continue; // with next condition
+          }
+          $pbid = $pb_and_path[0];
+
+          // if the id is a pathbuilder id, it is a pathquery - so handle it accordingly!        
+          if(in_array($pbid, $pbids) !== FALSE) {
+            $pathkey = $key;
+          }
+        }   
+      }
+      
+      
+      #dpm($cond, "cond?");
+      #if(strpos($field, '.')    
+    }
+
+    #dpm($bundlekey, "bk? " . $pathkey);
+    
+    // if we now have a bundlekey and a pathkey, we can omit the bundle-part probably
+    if($bundlekey > -1 && $pathkey > -1) {
+      $conditions = &$this->condition->conditions();
+      
+      #dpm("I unset" . $bundlekey);
+      
+      unset($conditions[$bundlekey]);
+    }
+    
+    
     // compile the condition clauses into
     // sparql graph patterns and
     // a list of entity ids that the pattern should be restricted to
@@ -145,6 +210,7 @@ class Query extends WisskiQueryBase {
     #\Drupal::logger('query adapter ' . $this->getEngine()->adapterId())->debug('query result is {result}', array('result' => serialize($return)));
 #wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($return)));
 #    dpm($return, "what");    
+#    dpm(microtime(TRUE) - $micro, "took: ");
     return $return;
 
   }
@@ -270,6 +336,9 @@ class Query extends WisskiQueryBase {
       if ($field == "bundle") {
         $needs_a_bundle = current((array) $value);
       }
+      
+#      dpm($this->isPathQuery(), "ispathquery?");
+#      dpm($condition, "cond?");
       
       if ($this->isPathQuery() && strpos($field, '.') !== FALSE) {
         $is_a_pathquery = TRUE;
@@ -928,7 +997,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     else {
       $this->missingImplMsg("Operator '$operator' in bundle fieldquery", array(func_get_args()));
     }
-
+    
     if (empty($query_parts)) {
       // the bundle is not handled by this adapter
       // we signal that this query should be skipped
