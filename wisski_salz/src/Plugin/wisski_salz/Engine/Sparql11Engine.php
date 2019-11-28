@@ -270,6 +270,7 @@ abstract class Sparql11Engine extends EngineBase {
   * @return @see EasyRdf_Sparql_Client->query
   */
   public function directQuery($query) {
+#    dpm($query, "I do query!");
     if ($this->graph_rewrite) $query = $this->graphInsertionRewrite($query);
     return $this->doQuery($query);
   }
@@ -277,7 +278,13 @@ abstract class Sparql11Engine extends EngineBase {
   private function doQuery($query) {
     if (WISSKI_DEVEL) \Drupal::logger('QUERY '.$this->adapterId())->debug('{q}',array('q'=>$query));
     try {
+      #dpm($query, " time: " . microtime());
+#      $time = microtime(TRUE);
       $result = $this->getEndpoint()->query($query);
+#      if((microtime(TRUE)-$time) > 0.1)
+#        dpm($query, "Slow Query Warning, took " . (microtime(TRUE)-$time));
+      //dpm(microtime(TRUE)-$time, "time?");
+      #dpm("end", microtime());
       if (WISSKI_DEVEL) \Drupal::logger('QUERY '.$this->adapterId())->debug('result {r}',array('r'=>serialize($result)));
       return $result;
     } catch (\Exception $e) {
@@ -463,16 +470,23 @@ abstract class Sparql11Engine extends EngineBase {
     $orig_prop = $this->getOriginatesProperty();
     
     $same_props = $this->getSameAsProperties();
+    $prop = NULL;
+    
     if ($prop = current($same_props)) {
+      $prop = $this->ensurePointyBrackets($prop);
+      
+      // by Mark: removed due to performance reasons
+      /*
       $values = "VALUES ?same_as { ".$this->ensurePointyBrackets($prop);
       while ($prop = next($same_props)) {
         $values .= " ".$this->ensurePointyBrackets($prop);
       }
       $values .= " }";
+      */
     } else throw new \Exception('There is no sameAs property set for this adapter');
 #    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> {<$uri> ?same_as ?uri. ?uri <$orig_prop> ?adapter. }}";
 #    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> ?same_as ?uri } UNION { <$uri> ?same_as ?tmp1 . ?tmp1 ?same_as ?uri } . ?uri <$orig_prop> ?adapter .}} ORDER BY DESC(?uri)";
-    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> ?same_as ?uri } UNION { <$uri> ?same_as ?tmp1 . ?tmp1 ?same_as ?uri } . OPTIONAL { ?uri <$orig_prop> ?adapter .}  } } ORDER BY DESC(?uri)";
+    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> $prop ?uri } UNION { <$uri> $prop ?tmp1 . ?tmp1 $prop ?uri } . OPTIONAL { ?uri <$orig_prop> ?adapter .}  } } ORDER BY DESC(?uri)";
 #    dpm($query, "query");
     $results = $this->directQuery($query);
 #    dpm(serialize($results), "res");
@@ -522,6 +536,8 @@ abstract class Sparql11Engine extends EngineBase {
    * {@inheritdoc}
    */
   public function setSameUris($uris, $entity_id) {
+    
+#    dpm(microtime(), "yay?");
     
     $uris[AdapterHelper::getDrupalAdapterNameAlias()] = AdapterHelper::generateWisskiUriFromId($entity_id);
     //we use the originates property as name fot the graph for sameAs info
