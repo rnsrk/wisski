@@ -6,6 +6,9 @@ use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\wisski_salz\AdapterHelper;
 use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\Url;
+
+use Symfony\Component\HttpFoundation\Request;
 
 use Drupal\wisski_core\WisskiToolbarHandler;
 
@@ -456,24 +459,37 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
 
     // what exactly is the route where we come from?
     $router = \Drupal::service('router.no_access_checks');
-#    dpm($referer, "yay?");
 
-    try {
-      $result = $router->match($referer);
-    } catch (Exception $e) {
-      // was not found!
-    }
 
-    if(!empty($result) && isset($result['view_id'])) {
-      // the parent is a view - so we probably want to render this...
-      $link = \Drupal\Core\Link::createFromRoute($result['_title'], $result['_route']);
-#      dpm("is a view");
-      $breadcrumb->addLink($link);
+    // get the route provider
+    $rpv = \Drupal::service('router.route_provider');
+
+    $routes = $rpv->getRoutesByPattern($referer)->all();
+
+    $routes = array_keys($routes);
+
+    $previous_route_name = current($routes);
+
+    // if this holds, it is a view.
+    if(strpos($previous_route_name, 'view.') === 0) {
+
+      try {
+        $result = $router->match($referer);
+      } catch (Exception $e) {
+        // was not found!
+      }
+
+      if(!empty($result) && isset($result['view_id'])) {
+        // the parent is a view - so we probably want to render this...
+        $link = \Drupal\Core\Link::createFromRoute($result['_title'], $result['_route']);
+
+        $breadcrumb->addLink($link);
+      }
     } else {
     // it is no view
 //    if($routename == 'entity.wisski_individual.canonical' || $routename == 'entity.wisski_individual.edit_form' ) {
       $entity = $route_match->getParameter('wisski_individual');
-#   dpm("it is no view");
+
 
       // might be we only use top bundles
       $topBundles = array();
