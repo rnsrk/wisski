@@ -486,7 +486,7 @@ abstract class Sparql11Engine extends EngineBase {
     } else throw new \Exception('There is no sameAs property set for this adapter');
 #    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> {<$uri> ?same_as ?uri. ?uri <$orig_prop> ?adapter. }}";
 #    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> ?same_as ?uri } UNION { <$uri> ?same_as ?tmp1 . ?tmp1 ?same_as ?uri } . ?uri <$orig_prop> ?adapter .}} ORDER BY DESC(?uri)";
-    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> $prop ?uri } UNION { <$uri> $prop ?tmp1 . ?tmp1 $prop ?uri } . OPTIONAL { ?uri <$orig_prop> ?adapter .}  } } ORDER BY DESC(?uri)";
+    $query = "SELECT DISTINCT ?uri ?adapter WHERE { GRAPH <$orig_prop> { { <$uri> $prop ?uri } UNION { <$uri> $prop ?tmp1 . ?tmp1 $prop ?uri } . OPTIONAL { ?uri <$orig_prop> ?adapter .}  } } ORDER BY DESC(?uri)";
 #    dpm($query, "query");
     $results = $this->directQuery($query);
 #    dpm(serialize($results), "res");
