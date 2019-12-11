@@ -5,9 +5,11 @@ namespace Drupal\wisski_core;
 use Drupal\views\EntityViewsData;
 
 // from Drupal\views\EntityViewsData
+use Drupal\Core\DependencyInjection\DeprecatedServicePropertyTrait;
 use Drupal\Core\Entity\ContentEntityType;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityHandlerInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\Sql\SqlEntityStorageInterface;
 use Drupal\Core\Entity\Sql\TableMappingInterface;
@@ -19,17 +21,33 @@ use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 
+
 class WisskiEntityViewsData extends EntityViewsData {
   
 
-  public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
-    return new static($entity_type);
-  }
+#  public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
+#    return new static($entity_type);
+#  }
 
-  
-  public function __construct($entity_type) {
+  public function __construct(EntityTypeInterface $entity_type, WisskiStorage $storage, EntityTypeManagerInterface $entity_type_manager, ModuleHandlerInterface $module_handler, TranslationInterface $translation_manager, EntityFieldManagerInterface $entity_field_manager = NULL) {
+
     $this->entityType = $entity_type;
+    $this->entityTypeManager = $entity_type_manager; 
+    $this->storage = $storage; 
+    $this->moduleHandler = $module_handler;
+    $this->setStringTranslation($translation_manager);
+    
+    if (!$entity_field_manager) {
+      @trigger_error('Calling EntityViewsData::__construct() with the $entity_field_manager argument is supported in drupal:8.8.0 and will be required before drupal:9.0.0. See https://www.drupal.org/node/2549139.', E_USER_DEPRECATED);
+      $entity_field_manager = \Drupal::service('entity_field.manager');
+    }
+    
+    $this->entityFieldManager = $entity_field_manager;
   }
+  
+#  public function __construct($entity_type) {
+#    $this->entityType = $entity_type;
+#  }
 
 
 
@@ -221,6 +239,9 @@ class WisskiEntityViewsData extends EntityViewsData {
 #              $fdef = \Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundleid)[$fieldid];
 #                $this->entityManager = \Drupal::entityManager();
 #              dpm($field_storage_def[$fieldid], "yay");
+#                    dpm($data, "data?");
+#                    dpm($fieldid, "fid?");
+#                    dpm(
                     $standard_values = $this->mapSingleFieldViewsData($data, $fieldid, $field->getType(), $fieldid, $field->getType(), TRUE, $fdef);
 #                  dpm($standard_values, "val");
                   }
