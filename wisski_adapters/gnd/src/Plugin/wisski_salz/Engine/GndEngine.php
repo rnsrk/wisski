@@ -189,7 +189,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
 #        dpm(serialize(array_keys($res)), "res?");
 
-        if(!in_array(array_keys($res), $uri)) {
+        if(!in_array($uri, array_keys($res))) {
           $newuri = str_replace("http://", "https://", $uri);
         
           $resources = array($newuri => $newuri);
