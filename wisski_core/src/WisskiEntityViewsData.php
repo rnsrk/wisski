@@ -29,7 +29,7 @@ class WisskiEntityViewsData extends EntityViewsData {
 #    return new static($entity_type);
 #  }
 
-  public function __construct(EntityTypeInterface $entity_type, WisskiStorage $storage, EntityTypeManagerInterface $entity_type_manager, ModuleHandlerInterface $module_handler, TranslationInterface $translation_manager, EntityFieldManagerInterface $entity_field_manager = NULL) {
+  public function __construct(EntityTypeInterface $entity_type, WisskiStorage $storage, EntityTypeManagerInterface $entity_type_manager, ModuleHandlerInterface $module_handler, TranslationInterface $translation_manager, $entity_field_manager = NULL) {
 
     $this->entityType = $entity_type;
     $this->entityTypeManager = $entity_type_manager; 
