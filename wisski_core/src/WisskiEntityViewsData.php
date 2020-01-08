@@ -37,7 +37,7 @@ class WisskiEntityViewsData extends EntityViewsData {
     $this->moduleHandler = $module_handler;
     $this->setStringTranslation($translation_manager);
     
-    if (!$entity_field_manager) {
+    if (!$entity_field_manager || $entity_field_manager instanceof Drupal\Core\TypedData\TypedDataManager ) {
       @trigger_error('Calling EntityViewsData::__construct() with the $entity_field_manager argument is supported in drupal:8.8.0 and will be required before drupal:9.0.0. See https://www.drupal.org/node/2549139.', E_USER_DEPRECATED);
       $entity_field_manager = \Drupal::service('entity_field.manager');
     }
