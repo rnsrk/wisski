@@ -19,9 +19,11 @@ function wisski_authfile_help($route_name, \Drupal\Core\Routing\RouteMatchInterf
  * Implementation of hook_ENTITY_TYPE_presave
  * for WissKI's entity type
  */
-function wisski_authfile_wisski_individual_presave(Drupal\Core\Entity\EntityInterface $entity) {
-  wisski_authfile_complete_authority_entry($entity);
-}
+# By Mark: This results in double triplification - why should we want to do
+# that?!
+#function wisski_authfile_wisski_individual_presave(Drupal\Core\Entity\EntityInterface $entity) {
+#  wisski_authfile_complete_authority_entry($entity);
+#}
 
 
 /**
@@ -58,6 +60,8 @@ function wisski_authfile_entity_prepare_view($entity_type_id, array $entities, a
 
 function wisski_authfile_wisski_individual_load($entities) {
   foreach($entities as $entity) {
+#    dpm("yay?");
+#    dpm($entity, "ente?");
     wisski_authfile_complete_authority_entry($entity);
     wisski_authfile_update_authority_uri($entity);
   }
