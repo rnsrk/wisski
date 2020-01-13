@@ -439,6 +439,8 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
     $request = \Drupal::request();
     $referer = $request->headers->get('referer');
 
+    $query_array = array();
+
     global $base_url;
 
     $new_base_url=$base_url;
@@ -457,6 +459,18 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
     if(strpos($referer, $new_base_url) !== FALSE)
       $referer = substr($referer, $schemacount + strlen($new_base_url));
 
+    // cut away everything after ? since it are parameters...
+    if(strpos($referer, "?") !== FALSE) {
+      // get the query part.
+      $query = substr($referer, strpos($referer, "?")+1);
+
+      // parse the query
+      parse_str($query, $query_array);
+
+      // cut it away from referer
+      $referer = substr($referer, 0, strpos($referer, "?"));
+    }
+
     // what exactly is the route where we come from?
     $router = \Drupal::service('router.no_access_checks');
 
@@ -470,6 +484,8 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
 
     $previous_route_name = current($routes);
 
+    #dpm($referer, "pr?");
+
     // if this holds, it is a view.
     if(strpos($previous_route_name, 'view.') === 0) {
 
@@ -481,7 +497,7 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
 
       if(!empty($result) && isset($result['view_id'])) {
         // the parent is a view - so we probably want to render this...
-        $link = \Drupal\Core\Link::createFromRoute($result['_title'], $result['_route']);
+        $link = \Drupal\Core\Link::createFromRoute($result['_title'], $result['_route'], array(), array('query' => $query_array));
 
         $breadcrumb->addLink($link);
       }
