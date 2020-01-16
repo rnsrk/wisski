@@ -1437,6 +1437,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #   
 #    drupal_set_message("muha: " . serialize($field_id));
     $field_storage_config = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);#->getItemDefinition()->mainPropertyName();
+#    drupal_set_message("a11: " . microtime());
     // What does it mean if the field storage config is empty?
     //=>  it means it is a basic field
 
@@ -1510,16 +1511,18 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       drupal_set_message("$field_id was queried but no bundle given.", "error");
       return;
     }
-    
+#    drupal_set_message("a2: " . microtime());
     // make an entity query for all relevant pbs with this adapter.
     $relevant_pb_ids = \Drupal::service('entity.query')
       ->get('wisski_pathbuilder')
       ->condition('adapter', $this->adapterId())->execute();
 
-#    drupal_set_message("a2: " . microtime());    
+#    drupal_set_message("a3: " . microtime());    
     // this approach will be not fast enough in the future...
     // the pbs have to have a better mapping of where and how to find fields
     $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple($relevant_pb_ids);
+    
+#    drupal_set_message("a4: " . microtime());
     
     // what we loaded once we don't want to load twice.
     $adapter_cache = array();
@@ -2035,10 +2038,23 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #              "WHERE { { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o . FILTER ( <$uri> = ?s ) } } " .
 #              "UNION { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o . FILTER ( <$uri> = ?o ) } } }";
     // we can't use the default graph here as the uri may also occur in other graphs
-    $sparql = "DELETE { GRAPH ?g { ?s ?p ?o } } " . 
-              "WHERE { { GRAPH ?g { ?s ?p ?o . FILTER ( <$uri> = ?s ) } } " .
-              "UNION { GRAPH ?g { ?s ?p ?o . FILTER ( <$uri> = ?o ) } } }";
+    // by mark: This is inefficient. We do an or in the filter!
+#    $sparql = "DELETE { GRAPH ?g { ?s ?p ?o } } " . 
+#              "WHERE { { GRAPH ?g { ?s ?p ?o . FILTER ( <$uri> = ?s ) } } " .
+#              "UNION { GRAPH ?g { ?s ?p ?o . FILTER ( <$uri> = ?o ) } } }";
+    // this does not work either:
+#    $sparql = "DELETE { GRAPH ?g { ?s ?p ?o } } " .
+#              "WHERE { { GRAPH ?g { ?s ?p ?o . FILTER ( <$uri> = ?s || <$uri> = ?o) } } }";
+    
     #\Drupal::logger('WissKIsaveProcess')->debug('sparql deleting: ' . htmlentities($sparql));
+
+    $sparql = "DELETE { GRAPH ?g { <$uri> ?p ?o } } " .
+              "WHERE { { GRAPH ?g { <$uri> ?p ?o } } }";
+           
+    $result = $this->directUpdate($sparql);
+                  
+    $sparql = "DELETE { GRAPH ?g { ?s ?p <$uri> } } " .
+              "WHERE { { GRAPH ?g { ?s ?p <$uri> } } }";
     
     $result = $this->directUpdate($sparql);
 
@@ -2597,7 +2613,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     if($op == "EMPTY") {
       $query = " OPTIONAL { " . $query . " } . FILTER(!bound($outvar)) . ";
     }
-#    drupal_set_message("gt3: " . microtime());
+#    dpm($query, "gt3: " . microtime());
     
     return $query;
   }
