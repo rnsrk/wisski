@@ -364,18 +364,15 @@ class WisskiEntitySearch extends SearchPluginBase {
         );
       }
     }
+    
     $form['actions']['#type'] = 'actions';
-    $form['actions']['submit'] = array(
-      '#type' => 'submit',
-      '#name' => 'standard-submit',
-      '#value' => $this->t('Search Wisski Entities'),
-    );
     
     // make a nice export button
     $form['actions']['export'] = array(
       '#name' => 'excel_export',
       '#type' => 'image_button',
       '#title' => 'Export to Excel',
+#      '#value' => $this->t('Export to Excel'),
       '#src' => drupal_get_path('module', 'wisski_core') . "/images/export_excel.png",
       '#attributes' => [ 'alt' => t('Export to Excel'), ],
       '#op' => 'wisski_core_excel_export',
@@ -386,7 +383,32 @@ class WisskiEntitySearch extends SearchPluginBase {
 #      '#prefix' => '<p>',
 #      '#suffix' => '</p>',
     );
-                              
+    
+    
+    $form['actions']['submit'] = array(
+      '#type' => 'submit',
+      '#name' => 'standard-submit',
+      '#value' => $this->t('Search Wisski Entities'),
+    );
+
+/*    
+    // make a nice export button
+    $form['actions']['export'] = array(
+      '#name' => 'excel_export',
+      '#type' => 'image_button',
+      '#title' => 'Export to Excel',
+#      '#value' => $this->t('Export to Excel'),
+      '#src' => drupal_get_path('module', 'wisski_core') . "/images/export_excel.png",
+      '#attributes' => [ 'alt' => t('Export to Excel'), ],
+      '#op' => 'wisski_core_excel_export',
+#      '#ajax' => [
+#        '#callback' => [ 'wisski_excel_export' ],
+#      ],
+      '#submit' => array('wisski_core_excel_export', "data" => $this->execute()),
+#      '#prefix' => '<p>',
+#      '#suffix' => '</p>',
+    );
+ */                             
     //dpm($form);
   }
 
