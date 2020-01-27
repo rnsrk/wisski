@@ -2760,6 +2760,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     
     if(empty($entity) && !empty($init_entity))
       $entity = $init_entity;
+
+    $components = array();
     
     if (!isset($old_values) && !empty($init_entity)) {
       // it would be better to gather this information from the form and not from the ts
@@ -2789,9 +2791,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         // these fields are disabled and such should not be saved etc.
         // otherwise we might overwrite something we do not want to overwrite.
         foreach($ofv as $key => $field_defi) {
-          if(!isset($components[$key]))
+          if(!isset($components[$key])) {
             unset($ofv[$key]);
-#          dpm(serialize($settings->getComponents()), "set?");
+#            dpm(serialize($components), "set?");
+          }
         }    
       }
       #dpm(serialize(), "old field values");
@@ -2883,6 +2886,19 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
     // combined go through the new fields    
     foreach($field_values as $field_id => $field_items) {
+
+      // By Mark:
+      // If this field is not enabled in the edit form
+      // then we probably dont want to write any data to it
+      // --!! THIS IS A GUESS !!--
+      // example is posse: viewfield for coordinates in 
+      // places sub form without grouping -> it is for display
+      // purpose only. If we enable this here regularly data
+      // gets stored that should not be stored.
+      if(!empty($components) && !isset($components[$field_id])) {
+        continue;
+      }
+
 #      drupal_set_message("I try to add data to field $field_id with items: " . serialize($field_items));
       $path = $pathbuilder->getPbEntriesForFid($field_id);
 #      drupal_set_message("found path: " . serialize($path). " " . microtime());
