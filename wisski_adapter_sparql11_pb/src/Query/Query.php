@@ -667,6 +667,7 @@ class Query extends WisskiQueryBase {
         if(empty($this->dependent_parts)) {
           // By Mark: We need the sorting parameter here, as it will delivery wrong results otherwise.
           // $entity_ids = $this->buildAndExecSparql($query_parts, $entity_ids);
+#          dpm($entity_ids, "enten!");
           $entity_ids = $this->buildAndExecSparql($query_parts, $entity_ids, FALSE, 0, 0, $this->orderby);
 
           // if we return nothing for the query here it is rather dangerous because if somebody
@@ -849,10 +850,12 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
           ->fields('t', array('eid', 'uri'))
           ->condition('adapter_id', $this->getEngine()->adapterId())
           ->condition('eid', $values, $operator)
-          ->condition('uri', '%/wisski/navigate/%', 'NOT LIKE');
+          ->condition('uri', '%/wisski/navigate/%', 'NOT LIKE')
+          ->condition('uri', 'http%', 'LIKE');
         $entity_ids = $query->execute()->fetchAllKeyed();
 #        dpm($this->condition, "condition");
 #        dpm($entity_ids, "out");
+#        return array();
       }
       else {
         $this->missingImplMsg("Operator '$operator' in eid field query", array('condition' => $this->condition));
