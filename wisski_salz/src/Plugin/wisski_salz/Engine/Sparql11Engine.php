@@ -261,7 +261,34 @@ abstract class Sparql11Engine extends EngineBase {
 
   // 
   // Functions for direct access, firstly designed for test purposes  
-  // 
+  //
+  
+  private function rewriteValues($query) {
+    if(strpos($query, "VALUES") !== NULL) {
+      preg_match_all ( "/VALUES \?(\S+) { <(.[^>]+)> }/", $query, $matches);
+      
+      if(empty($matches))
+        return $query;
+      
+      foreach($matches[1] as $key => $match) {
+        if(!empty($matches[2][$key])) {
+          
+          // cut away the values-thingie
+          $query = str_replace($matches[0][$key], "", $query);
+          
+          // replace $match with ? in front with some uri we matched before.
+          $query = str_replace("?" . $match, "<" . $matches[2][$key] . ">", $query); 
+          
+          
+          #dpm("replacing $match with " . $matches[2][$key]);
+          #dpm($query, "result");
+        }
+      } 
+      
+    }
+    
+    return $query;
+  } 
     
   /** Can be used to directly access the easyrdf sparql interface
   *
@@ -270,9 +297,28 @@ abstract class Sparql11Engine extends EngineBase {
   * @return @see EasyRdf_Sparql_Client->query
   */
   public function directQuery($query) {
-#    dpm($query, "I do query!");
+    #dpm($query, "I do query!");
+    $mic = microtime(true);
     if ($this->graph_rewrite) $query = $this->graphInsertionRewrite($query);
-    return $this->doQuery($query);
+    
+    
+    // do some speeding?
+    // here we replace values ?xsomething { <one_uri> }
+    // with the direct replacement - this is much faster.
+    $query = $this->rewriteValues($query);
+#    $done1 = microtime(true);
+    
+#    dpm($done1 - $mic, "rewriting took: ");
+    
+    $out = $this->doQuery($query);
+#    $done = microtime(true);
+    
+#    if($done - $mic > 0.01) {
+#      dpm($done - $mic, "I took long!");
+#      dpm($query, "I do query!");
+#    }
+    
+    return $out;
   }
   
   private function doQuery($query) {
