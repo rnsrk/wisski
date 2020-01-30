@@ -71,6 +71,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       }
     }
 
+#    dpm("I am here!!!");
+
 
     if($count > 1) {
       foreach ($real_deps as $adapter_id => $query) {
@@ -102,6 +104,13 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         if (!empty($filtered_uris)) {
           $eids_part .= 'VALUES ?x0 { <' . join('> <', $filtered_uris) . '> } ';
         }      
+
+        // it might be that this is empty and this makes
+        // a very ugly (while still working, but really ugly!!)
+        // query. So do SOMETHING useful!
+        if(empty($where)) {
+          $where = "?x0 a ?smthg . ";
+        }
 
         // build up a whole string from that      
         $string_part = $where . "" . $eids_part;
