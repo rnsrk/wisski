@@ -272,16 +272,34 @@ abstract class Sparql11Engine extends EngineBase {
       
       foreach($matches[1] as $key => $match) {
         if(!empty($matches[2][$key])) {
+
+#          dpm(microtime(), "I do some");
+          
+#          dpm($query, "before");
+
+          $select = "";
+          $where = "";
+
+          if(strpos($query, "WHERE") !== NULL) {
+            $where = substr($query, strpos($query, "WHERE"));
+            $select = substr($query, 0, strpos($query, "WHERE"));
+          }
+          
+          // do not do any replacement if the variable is in the select statement!
+          if(strpos($select, "?" . $match) !== FALSE) 
+            continue; 
           
           // cut away the values-thingie
-          $query = str_replace($matches[0][$key], "", $query);
+          $where = str_replace($matches[0][$key], "", $where);
           
           // replace $match with ? in front with some uri we matched before.
-          $query = str_replace("?" . $match, "<" . $matches[2][$key] . ">", $query); 
+          $where = str_replace("?" . $match, "<" . $matches[2][$key] . ">", $where); 
           
+
+          $query = $select . $where;
           
           #dpm("replacing $match with " . $matches[2][$key]);
-          #dpm($query, "result");
+#          dpm($query, "result");
         }
       } 
       
@@ -297,7 +315,8 @@ abstract class Sparql11Engine extends EngineBase {
   * @return @see EasyRdf_Sparql_Client->query
   */
   public function directQuery($query) {
-    #dpm($query, "I do query!");
+ #   dpm($query, "I do query!");
+
     $mic = microtime(true);
     if ($this->graph_rewrite) $query = $this->graphInsertionRewrite($query);
     
@@ -306,11 +325,20 @@ abstract class Sparql11Engine extends EngineBase {
     // here we replace values ?xsomething { <one_uri> }
     // with the direct replacement - this is much faster.
     $query = $this->rewriteValues($query);
+#    dpm($query, "was");
+#    dpm($queryn, "tuned");
+
 #    $done1 = microtime(true);
     
 #    dpm($done1 - $mic, "rewriting took: ");
-    
+#  return;    
     $out = $this->doQuery($query);
+    
+#    if(strlen($query) != strlen($queryn)) {
+#      dpm($out, "out?");
+#      dpm($query, "old");
+#      dpm($queryn, "new");
+#    }
 #    $done = microtime(true);
     
 #    if($done - $mic > 0.01) {

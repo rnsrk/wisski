@@ -109,7 +109,22 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         // a very ugly (while still working, but really ugly!!)
         // query. So do SOMETHING useful!
         if(empty($where)) {
-          $where = "?x0 a ?smthg . ";
+#          $where = "?x0 a ?smthg . ";
+          
+
+          // special case: (by mark)
+          // if there is no where 
+          // and there is just one eid
+          // we have a rather trivial answer
+          // so we really dont want to ask the triple store in this
+          // case!!!
+          
+#          if(count($eids) == 1) {
+#                  
+#          }
+          
+          #dpm($eids, "eids?");
+          
         }
 
         // build up a whole string from that      
@@ -168,7 +183,46 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   }
   
   public function execute() {
-#    dpm(microtime(), "yay!");  
+
+    // if we have no conditions and nothing else we probably dont have to do anything?
+    $something_to_do = FALSE; 
+    $easy_ret = -1;
+
+    // iterate through all dependent queries 
+    foreach($this->dependent_queries as $dep) {
+      $cond_wrap = $dep->condition;
+      
+      if(empty($cond_wrap))
+        continue;
+
+      $conditions = $cond_wrap->conditions();
+      
+      // if there is only one
+      if(count($conditions) == 1) {
+        $one_cond = current($conditions);
+        
+        if($one_cond['field'] == "eid" && $one_cond['operator'] == "" && is_integer($one_cond['value'])) {
+          // there is only one condition and this is an integer-condition, 
+          // so we don't have to do anything but to return
+
+          $easy_ret = $one_cond['value'];          
+          
+        }
+        
+      } else {
+        // it is more difficult!
+      
+        $something_to_do = TRUE;
+      
+      }
+    }   
+
+    // if we have dependent queries and there is nothing to do and we have an eid, return it.    
+    if(count($this->dependent_queries) > 1 && !$something_to_do && $easy_ret != -1) {
+      return $easy_ret;
+    }
+    
+
     if (!isset($this->empties)) {
       $bundle_id = NULL;
       foreach($this->condition->conditions() as $cond) {
