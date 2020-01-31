@@ -219,7 +219,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
     // if we have dependent queries and there is nothing to do and we have an eid, return it.    
     if(count($this->dependent_queries) > 1 && !$something_to_do && $easy_ret != -1) {
-      return $easy_ret;
+      return array($easy_ret);
     }
     
 
