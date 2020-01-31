@@ -286,8 +286,10 @@ abstract class Sparql11Engine extends EngineBase {
           }
           
           // do not do any replacement if the variable is in the select statement!
-          if(strpos($select, "?" . $match) !== FALSE) 
+          if(strpos($select, "?" . $match) !== FALSE) {
+#            dpm($query, "query was");
             continue; 
+          }
           
           // cut away the values-thingie
           $where = str_replace($matches[0][$key], "", $where);

@@ -197,6 +197,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
       $conditions = $cond_wrap->conditions();
       
+#      dpm($conditions, "cond?");
+      
       // if there is only one
       if(count($conditions) == 1) {
         $one_cond = current($conditions);
@@ -211,11 +213,17 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         
       } else {
         // it is more difficult!
+
+#        dpm($conditions, "more diff!");
       
         $something_to_do = TRUE;
       
       }
     }   
+
+#    dpm(count($this->dependent_queries), "dep?");
+#    dpm(serialize($something_to_do), "std");
+#    dpm($easy_ret, "easy");
 
     // if we have dependent queries and there is nothing to do and we have an eid, return it.    
     if(count($this->dependent_queries) > 1 && !$something_to_do && $easy_ret != -1) {
