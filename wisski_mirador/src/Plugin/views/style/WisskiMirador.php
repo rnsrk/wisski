@@ -71,14 +71,21 @@ class WisskiMirador extends StylePluginBase {
     $iter = 0;
     
     foreach($results as $result) {
-      $ent_list[] = array("manifestUri" => $base_url . "/wisski/navigate/" . $result->eid . "/iiif_manifest", "location" => $to_print);
+      dpm($result->__get('entity:wisski_individual/eid'), "res?");
+      
+      // tuning for solr which does not have eids but stores it in entity:wisski_individual/eid
+      $entity_id = empty($result->eid) ? current($result->__get('entity:wisski_individual/eid')) : $result->eid; 
+
+#      dpm($result, "res?");
+      $ent_list[] = array("manifestUri" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "location" => $to_print);
 #      $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $result->eid . "/iiif_manifest", "viewType" => "ImageView" );
-      $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $result->eid . "/iiif_manifest", "availableViews" => array( 'ImageView'), "windowOptions" => array( "zoomLevel" => 1, "osdBounds" => array(
-            "height" => 2000,
-            "width" => 2000,
-            "x" => 1000,
-            "y" => 2000,
-        )), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false);
+      $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "availableViews" => array( 'ImageView'), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false);
+#      $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $result->eid . "/iiif_manifest", "availableViews" => array( 'ImageView'), "windowOptions" => array( "zoomLevel" => 1, "osdBounds" => array(
+#            "height" => 1500,
+#            "width" => 1500,
+#            "x" => 1000,
+#            "y" => 2000,
+#        )), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false);
     } 
     
     if(isset($view->attachment_before)) {
@@ -90,14 +97,18 @@ class WisskiMirador extends StylePluginBase {
         $subview->execute();
  
         foreach($subview->result as $res) {
-          $ent_list[] = array("manifestUri" => $base_url . "/wisski/navigate/" . $res->eid . "/iiif_manifest", "location" => $to_print);
+
+          $entity_id = empty($res->eid) ? current($res->__get('entity:wisski_individual/eid')) : $res->eid;
+
+          $ent_list[] = array("manifestUri" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "location" => $to_print);
+          $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "availableViews" => array( 'ImageView'), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false );
 #          $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $res->eid . "/iiif_manifest", "viewType" => "ImageView" );
-          $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $res->eid . "/iiif_manifest", "availableViews" => array( 'ImageView'), "windowOptions" => array( "zoomLevel" => 1, "osdBounds" => array( 
-            "height" => 2000,
-            "width" => 2000,
-            "x" => 1000,
-            "y" => 2000,
-        )), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false );
+#          $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $res->eid . "/iiif_manifest", "availableViews" => array( 'ImageView'), "windowOptions" => array( "zoomLevel" => 1, "osdBounds" => array( 
+#            "height" => 2000,
+#            "width" => 2000,
+#            "x" => 1000,
+#            "y" => 2000,
+#        )), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false );
         }
         
 //        dpm($subview->result, "resi!");
@@ -111,7 +122,7 @@ class WisskiMirador extends StylePluginBase {
 
     $layout_str = "";
 
-    if($layout < 7) {
+    if($layout < 9) {
       $layout_str = "1x" . $layout;
     } else {
       $layout_str = "1x1";
@@ -125,7 +136,7 @@ class WisskiMirador extends StylePluginBase {
     $form['#attached']['drupalSettings']['wisski']['mirador']['data'] = $ent_list;
     $form['#attached']['drupalSettings']['wisski']['mirador']['layout'] = $layout_str;
 
-    if($layout < 7) {
+    if($layout < 9) {
       $form['#attached']['drupalSettings']['wisski']['mirador']['windowObjects'] = $direct_load_list;
     }
         
