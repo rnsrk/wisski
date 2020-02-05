@@ -71,7 +71,7 @@ class WisskiMirador extends StylePluginBase {
     $iter = 0;
     
     foreach($results as $result) {
-      dpm($result->__get('entity:wisski_individual/eid'), "res?");
+#      dpm($result->__get('entity:wisski_individual/eid'), "res?");
       
       // tuning for solr which does not have eids but stores it in entity:wisski_individual/eid
       $entity_id = empty($result->eid) ? current($result->__get('entity:wisski_individual/eid')) : $result->eid; 
