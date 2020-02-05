@@ -41,6 +41,8 @@
      */
     public function viewElements(FieldItemListInterface $items, $langcode) {
 
+#      dpm(serialize($items), "items");
+
       $elements = parent::viewElements($items, $langcode);    
       
       $elements['#attached']['library'][] = 'wisski_iip_image/iipmooviewer';
@@ -48,6 +50,8 @@
       $elements['#attached']['drupalSettings']['wisski']['iip']['config'] = \Drupal::config('wisski_iip_image.config')->get();
 
       $files = $this->getEntitiesToView($items, $langcode);
+
+#      dpm($files, "files");
 
       // Early opt-out if the field is empty.
       if (empty($files)) {
@@ -87,6 +91,17 @@
 
       foreach ($files as $delta => $file) {
         
+        if(strtolower(substr($file->getFilename(), -4)) == ".pdf") {
+
+#          dpm(serialize($file), "file");
+
+          $elements[$delta] = array(
+            '#type' => 'link',
+            '#title' => $file->getFilename(),
+            '#url' => Url::fromUri(file_create_url($file->getFileUri())),
+          );
+        }
+        
         // in case of prerendered files - use these paths.        
         $prerendered_paths = \Drupal::config('wisski_iip_image.settings')->get('wisski_iip_image_prerendered_path');
         
@@ -118,6 +133,8 @@
 
       }
 #      dpm($elements);
+
+#      dpm(serialize($elements), "ele");
 
       return $elements;
 
