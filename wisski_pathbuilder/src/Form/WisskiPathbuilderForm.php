@@ -193,7 +193,8 @@ class WisskiPathbuilderForm extends EntityForm {
       
         #$form['pathbuilder_table'][$path->id()]['path'] = array('#type' => 'label', '#title' => 'Mu -> ha -> ha');
         $form['pathbuilder_table'][$path->id()]['path'] = $pathform['path'];
-        $form['pathbuilder_table'][$path->id()]['solr'] = $pathform['solr'];
+        if($this->with_solr)
+          $form['pathbuilder_table'][$path->id()]['solr'] = $pathform['solr'];
         $form['pathbuilder_table'][$path->id()]['enabled'] = $pathform['enabled'];
         $form['pathbuilder_table'][$path->id()]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
 
