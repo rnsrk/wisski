@@ -604,6 +604,8 @@ class Query extends WisskiQueryBase {
 
             $sort = " OPTIONAL { " . $sort_part . " } ";
 
+#            dpm($sort_part, "sorti?");
+
             #foreach($query_parts as $iter => $query_part) {
             $query_parts = $query_parts . $sort;
             $sort_query_parts = $sort_query_parts . $sort;
@@ -1187,7 +1189,10 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     $query_part = $this->getEngine()->generateTriplesForPath($pb, $path, $value, NULL, NULL, 0, $starting_position, FALSE, $operator, 'field', FALSE, $vars);
 #    dpm($query_part, "qp");
 #    return $query_part;
-    if (!empty($obj_uris)) {
+
+#    dpm($operator, "op?");
+
+    if (!empty($obj_uris) && $operator != "EMPTY") {
       $query_part .= ' VALUES ?' . $vars[$obj_pos] . ' { ' . join(' ', $obj_uris) . ' }';
     }
     

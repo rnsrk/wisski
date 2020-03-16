@@ -2611,6 +2611,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     
     // in case of empty it must be optional or we never will get something, because the path may not be there and be not there at the same time.
     if($op == "EMPTY") {
+      if(empty($outvar)) // this is the case if it is an entity reference for example
+        $outvar = "?" . (isset($variable_prefixes[$localkey]) ? $variable_prefixes[$localkey] : "x" . $startingposition);
+#      dpm($outvar, "changed it to:");
       $query = " OPTIONAL { " . $query . " } . FILTER(!bound($outvar)) . ";
     }
 #    dpm($query, "gt3: " . microtime());
