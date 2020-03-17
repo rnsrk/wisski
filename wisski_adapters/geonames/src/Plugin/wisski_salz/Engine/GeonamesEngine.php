@@ -31,7 +31,7 @@ use EasyRdf_Literal;
  */
 class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineInterface {
   
-  protected $uriPattern  = "!^http://sws.geonames.org/(\w+)/$!u";
+  protected $uriPattern  = "!^https://sws.geonames.org/(\w+)/$!u";
   protected $fetchTemplate = "http://sws.geonames.org/{id}/about.rdf";
   
   /**
