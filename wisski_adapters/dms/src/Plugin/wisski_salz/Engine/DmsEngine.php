@@ -868,6 +868,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       else
         $query = "SELECT * FROM " . $this->table . " $where ";
 #      dpm($query, "query");
+#      return array();
 #        
       $ret = sqlsrv_query($con, $query);
 #            

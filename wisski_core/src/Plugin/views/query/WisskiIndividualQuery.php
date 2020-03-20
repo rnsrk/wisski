@@ -342,8 +342,11 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #        dpm(microtime(), "before count");
         //  Fetch number of pager items differently based on data locality.
         // Execute the local count query.
-#        dpm($count_query->count, "count?");
+#        dpm(serialize($count_query->count), "count?");
+#        return;
 #        $count_query->countQuery();
+#        dpm(serialize($count_query->count), "count mother?");
+        $count_query = $count_query->count();
         $erg = $count_query->execute();
         
 #        dpm($erg, "erg");

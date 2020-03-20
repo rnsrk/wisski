@@ -270,12 +270,21 @@ class WisskiQueryDelegator extends WisskiQueryBase {
           foreach ($this->dependent_queries as $adapter_id => $query) {
 
 //        $query = $query->count();
-            $sub_result = $query->execute() ? : 0;
 
-          // this is rather complicated. I don't know why php does this like that...
-            if(!is_array($sub_result))
-              $sub_result = array();
-            $result = array_unique(array_merge($result, $sub_result), SORT_REGULAR); 
+            if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
+              $query = $query->count();
+            
+              $result = $query->execute() ? : 0;
+            
+            } else {
+
+              $sub_result = $query->execute() ? : 0;
+
+            // this is rather complicated. I don't know why php does this like that...
+              if(!is_array($sub_result))
+                $sub_result = array();
+              $result = array_unique(array_merge($result, $sub_result), SORT_REGULAR); 
+            }
           }
         } else {
           $first_query = $this->getFederatedQuery(TRUE);
@@ -324,7 +333,17 @@ class WisskiQueryDelegator extends WisskiQueryBase {
           // this is complicated
 #          dpm("complicated...");
           if ($pager || !empty($this->range)) {
+          
+            if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
+              $query = $query->normalQuery();
+              $query->range($this->range['start'],$this->range['length']);
+              $ret = $query->execute();
+#              dpm(serialize($ret), "ret?");
+              return $ret;
+            } else 
+          
             // use the old behaviour if we have a pager
+            
             return $this->pagerQuery($this->range['length'],$this->range['start']);
           } else {
 #            dpm("no pager...");
@@ -400,6 +419,9 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       if ($res_count === 0) {
         //$query->count();
         unset($query->range);
+        
+#        if($query 
+        
         $res_count = $query->execute();
         #dpm($res_count, "res!");
         if(!is_array($res_count))

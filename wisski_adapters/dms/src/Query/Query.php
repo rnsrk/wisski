@@ -16,7 +16,11 @@ class Query extends WisskiQueryBase {
   public function execute() {
 #    dpm("exe!");
 
+#    dpm(serialize($this->count), "count?1");
+
     $result = array();
+    $limit = 0;
+    $offset = 0;
 
    // get the adapter
     $engine = $this->getEngine();
@@ -41,13 +45,18 @@ class Query extends WisskiQueryBase {
         $pbs[$pb->id()] = $pb;
       }
     }
-      
-    // init pager-things
-    if (!empty($this->pager) || !empty($this->range)) {
+    
+#    dpm($this->pager, "pager?");
+    
+    if(!empty($this->pager)) {
+      list($limit, $offset) = $this->getPager();
+    } else if ( !empty($this->range)) {
       #dpm(array($this->pager, $this->range),'limits '.__CLASS__);
       $limit = $this->range['length'];
       $offset = $this->range['start'];
     } //else dpm($this,'no limits');
+
+#    dpm($limit, "limit?");
 
 //wisski_tick('prepared '.$pb->id());
 #    return;
@@ -120,6 +129,7 @@ class Query extends WisskiQueryBase {
         // just return something if it is a bundle-condition
         if($field == 'bundle') {
 #  	        drupal_set_message("I go and look for : " . serialize($value) . " and " . serialize($limit) . " and " . serialize($offset) . " and " . $this->count);
+#          dpm(serialize($this->count), "count?");
           if($this->count) {
 #   	         drupal_set_message("I give back to you: " . serialize($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE)));
             //wisski_tick('Field query out 2');
@@ -130,6 +140,10 @@ class Query extends WisskiQueryBase {
 #            dpm(array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions())), "muhaha!");
 #            return;           
           //wisski_tick('Field query out 3');
+#          dpm($value, "value");
+#          dpm($pb, "pb");
+#          dpm($limit, "limit");
+#          dpm($engine, "engine");
           return array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()));
         }
         
