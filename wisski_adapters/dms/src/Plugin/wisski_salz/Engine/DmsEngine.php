@@ -801,6 +801,32 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       if($cond['field'] == "bundle")
         continue;
         
+      if($cond['field'] == "label") {
+#        // for now guess this is the inventory number
+#        $cond['field'] = "yay.invnr";
+#        dpm($bundleid, "bundle?");
+        //is an array?
+        $bundleid = current($bundleid);
+        $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundleid);
+        $tp = $bundle->getTitlePattern();
+        
+        $first = "";
+        $first_weight = 100000000000000;
+        
+        foreach($tp as $key => $thing) {
+#          dpm($thing, "iterating");
+          if(isset($thing['weight']) && $thing['weight'] < $first_weight) {
+            $first = $thing['name'];
+            $first_weight = $thing['weight'];
+          }
+        }
+        
+        $cond['field'] = $first;
+        
+      }
+      
+#      dpm($cond['field'], "cond is?");
+        
       $pb_and_path = explode(".", $cond['field']);
       
       $pathid = $pb_and_path[1];
@@ -820,11 +846,11 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
 #      dpm($cond);
       if($cond['operator'] == "starts" || $cond['operator'] == "STARTS_WITH")
-        $where .= " convert(varchar(1000)," . $path->getDatatypeProperty() . ") LIKE '" . $cond['value'] . "%' ";      
+        $where .= " LOWER(convert(varchar(1000)," . $path->getDatatypeProperty() . ")) LIKE LOWER('" . $cond['value'] . "%') ";      
       else if($cond['operator'] == "ends" || $cond['operator'] == "ENDS_WITH")
-        $where .= " convert(varchar(1000)," . $path->getDatatypeProperty() . ") LIKE '%" . $cond['value'] . "' ";
+        $where .= " LOWER(convert(varchar(1000)," . $path->getDatatypeProperty() . ")) LIKE LOWER('%" . $cond['value'] . "') ";
       else if($cond['operator'] == "in" || $cond['operator'] == "CONTAINS")
-        $where .= " convert(varchar(1000)," . $path->getDatatypeProperty() . ") LIKE '%" . $cond['value'] . "%' ";
+        $where .= " LOWER(convert(varchar(1000)," . $path->getDatatypeProperty() . ")) LIKE LOWER('%" . $cond['value'] . "%') ";
       else if($cond['operator'] == "=")
         $where .= " convert(varchar(1000)," . $path->getDatatypeProperty() . ") = '" . $cond['value'] . "' ";
       else
@@ -864,13 +890,17 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #      dpm($tonumber, "to");
       
       if($tonumber > 0)
-        $query = "SELECT * FROM ( SELECT *, ROW_NUMBER() over (ORDER BY docid) as ct FROM " . $this->table . " $where) sub where ct > " . $fromnumber . " and ct <= " . $tonumber . "";
+        $query = "SELECT * FROM " . $this->table . " $where ORDER BY docid OFFSET " . $offset . " ROWS FETCH NEXT " . $limit . " ROWS ONLY"; 
+#        $query = "SELECT * FROM ( SELECT *, ROW_NUMBER() over (ORDER BY docid) as ct FROM " . $this->table . " $where) sub where ct > " . $fromnumber . " and ct <= " . $tonumber . "";
       else
         $query = "SELECT * FROM " . $this->table . " $where ";
 #      dpm($query, "query");
+#      $query .= " COLLATE SQL_Latin1_General_CP1_CI_AS";
 #      return array();
 #        
       $ret = sqlsrv_query($con, $query);
+
+#      dpm($ret, "ret?");
 #            
 #  $result = array();
 #     dpm(microtime(), "micin");          
@@ -882,6 +912,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         $uriname = AdapterHelper::getDrupalIdForUri($uri,TRUE,$this->adapterId());
         $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
       }
+#      dpm($outarr, "out?");
 #      dpm(microtime(), "micend");
       return $outarr;
     }

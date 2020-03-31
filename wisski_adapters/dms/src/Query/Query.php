@@ -18,6 +18,8 @@ class Query extends WisskiQueryBase {
 
 #    dpm(serialize($this->count), "count?1");
 
+#    dpm($this->condition, "cond?");
+
     $result = array();
     $limit = 0;
     $offset = 0;
@@ -63,6 +65,7 @@ class Query extends WisskiQueryBase {
     // care about everything...
     if (TRUE ) { //$this->isFieldQuery()) {
 #      dpm("fq!");
+
       // bad hack, but this is how it was...
       // TODO: handle correctly multiple pbs
       $pb = current($pbs);
@@ -89,30 +92,34 @@ class Query extends WisskiQueryBase {
       // eids are a special case
       if ($eidquery !== NULL) {
         
-        if(is_array($eidquery))
-          $eidquery = current($eidquery);
+#        if(is_array($eidquery))
+#          $eidquery = current($eidquery);
         
         if(is_array($bundlequery)) 
           $bundlequery = current($bundlequery);
         
         // load the id, this hopefully helps.
-        $thing['eid'] = $eidquery;
+#        $thing['eid'] = $eidquery;
       
 #          dpm($eidquery, "thing");
       
-        if($bundlequery === NULL)
-          $giveback = array($thing['eid']);
+        if($bundlequery === NULL) {
+          $giveback = array_values($eidquery); // array($thing['eid']);
           
-        else {
-      
-          // load the bundles for this id
-          $bundleids = $engine->getBundleIdsForEntityId($thing['eid']);        
+        } else {
+ 
+          foreach($eidquery as $key => $eid) {     
+            // load the bundles for this id
+            $bundleids = $engine->getBundleIdsForEntityId($eid);        
 
-          if(in_array($bundlequery, $bundleids))
-            $giveback =  array($thing['eid']);
-#            drupal_set_message(serialize($giveback) . "I give back for ask $eidquery");
-          //wisski_tick('Field query out 1');
+            if(in_array($bundlequery, $bundleids))
+              $giveback[$eid] = $eid;//array($thing['eid']);
+#              drupal_set_message(serialize($giveback) . "I give back for ask " . serialize($eidquery));
+            //wisski_tick('Field query out 1');
+          }
+#          drupal_set_message(serialize($giveback) . "I give back for ask " . serialize($eidquery));
           return $giveback;
+          
         }
       }
 #      dpm("half");    
@@ -149,12 +156,12 @@ class Query extends WisskiQueryBase {
         
 #        dpm($field, "fi");
         if($field instanceof Condition) {
-#          dpm($field, "field");
-#          dpm($field->conditions(), "cond");
+          #dpm($field, "field");
+          #dpm($field->conditions(), "cond");
           
           foreach($field->conditions() as $subcondition) {
-#            dpm($subcondition, "sub");
-#            dpm($subcondition['field'], "val");
+            #dpm($subcondition, "sub");
+            #dpm($subcondition['field'], "val");
             
             $pb_and_path = explode(".", $subcondition['field']);
             
