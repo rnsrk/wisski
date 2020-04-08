@@ -274,17 +274,22 @@ class WisskiQueryDelegator extends WisskiQueryBase {
             if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
               $query = $query->count();
             
-              $result = $query->execute() ? : 0;
+              $sub_res = $query->execute() ? : 0;
             
-            } else {
+              if(!empty($sub_res)) {
+                $result = $sub_res;
+                continue;
+              }
+            
+            }
 
-              $sub_result = $query->execute() ? : 0;
+            $sub_result = $query->execute() ? : 0;
 
             // this is rather complicated. I don't know why php does this like that...
-              if(!is_array($sub_result))
-                $sub_result = array();
-              $result = array_unique(array_merge($result, $sub_result), SORT_REGULAR); 
-            }
+            if(!is_array($sub_result))
+              $sub_result = array();
+            $result = array_unique(array_merge($result, $sub_result), SORT_REGULAR); 
+            
           }
         } else {
           $first_query = $this->getFederatedQuery(TRUE);
@@ -335,12 +340,13 @@ class WisskiQueryDelegator extends WisskiQueryBase {
           if ($pager || !empty($this->range)) {
           
             if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
-              $query = $query->normalQuery();
-              $query->range($this->range['start'],$this->range['length']);
-              $ret = $query->execute();
+              $querytmp = $query->normalQuery();
+              $querytmp->range($this->range['start'],$this->range['length']);
+              $ret = $querytmp->execute();
 #              dpm(serialize($ret), "ret?");
-              return $ret;
-            } else 
+              if(!empty($ret))
+                return $ret;
+            } 
           
             // use the old behaviour if we have a pager
             

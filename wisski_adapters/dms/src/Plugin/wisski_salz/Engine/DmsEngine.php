@@ -343,15 +343,20 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     $query = "SELECT TOP 1 * FROM " . $this->table . " WHERE invnr = '" . $id . "'";
 #    $query = "SELECT TOP 1 * FROM " . $this->table . " WHERE invnr = '" . $id . "' LEFT OUTER JOIN DMS2ObjectKatalog.PrimaryImage ON " . $this->table . ".imgid = DMS2ObjectKatalog.PrimaryImage.imageid";
 #        
-    $ret = sqlsrv_query($con, $query);
-#            
+#    $ret = sqlsrv_query($con, $query);
+#
+
+    $stmt = sqlsrv_prepare( $con, $query, array(), array("Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED, "ClientBufferMaxKBSize" => 51200));
+    sqlsrv_execute( $stmt);
+      
+            
 #  $result = array();
 #               
     $outarr = array();
     
     $keys = array_keys($this->possibleSteps['Object']);
 #    dpm($keys, "key");    
-    while($a_ret = sqlsrv_fetch_array($ret))  {
+    while($a_ret = sqlsrv_fetch_array($stmt))  {
       foreach($keys as $step) {
         $data['Object'][$step] = array($a_ret[$step]);
       }
@@ -781,6 +786,23 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
    *
    */ 
   public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE) {
+
+    // check if it knows the bundle.
+    $group = $pathbuilder->getGroupsForBundle(current($bundleid));
+    
+#    dpm($bundleid, "bundle?");
+    
+#    dpm($group, "group?");
+    
+    // if not - return nothing!
+    if(empty($group))
+      return array();
+
+#    dpm(serialize($pathbuilder), "pb");
+
+#    dpm(serialize($bundleid), "bundle?");
+
+
 #    dpm(microtime(), "mic");
     $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password) );
 
@@ -849,32 +871,41 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         $where .= " LOWER(convert(varchar(1000)," . $path->getDatatypeProperty() . ")) LIKE LOWER('" . $cond['value'] . "%') ";      
       else if($cond['operator'] == "ends" || $cond['operator'] == "ENDS_WITH")
         $where .= " LOWER(convert(varchar(1000)," . $path->getDatatypeProperty() . ")) LIKE LOWER('%" . $cond['value'] . "') ";
-      else if($cond['operator'] == "in" || $cond['operator'] == "CONTAINS")
+      else if($cond['operator'] == "in" || $cond['operator'] == "CONTAINS" || $cond['operator'] == "contains")
         $where .= " LOWER(convert(varchar(1000)," . $path->getDatatypeProperty() . ")) LIKE LOWER('%" . $cond['value'] . "%') ";
       else if($cond['operator'] == "=")
         $where .= " convert(varchar(1000)," . $path->getDatatypeProperty() . ") = '" . $cond['value'] . "' ";
+      else if($cond['operator'] == "NOT_EMPTY")
+        $where .= " " . $path->getDatatypeProperty() . " <> ''";
+      else if($cond['operator'] == "EMPTY")
+              $where .= " " . $path->getDatatypeProperty() . " IS NULL OR datalength(" . $path->getDatatypeProperty() .")=0 ";
       else
         drupal_set_message("Operator " . $cond['operator'] . " not supported - sorry.", "error");
       
     }
+
+#    dpm(microtime(), "after cond?");
     
 
     if($count) {
-      $query = "SELECT COUNT(DISTINCT docid) FROM " . $this->table . " $where";
+      $query = "SELECT DISTINCT docid FROM " . $this->table . " $where";
 #      $query = "SELECT COUNT(dbo.XmlFiles.DocumentId) AS DocCount FROM dbo.XmlFiles";  #" . $this->table;
 #      $query = "select max(ROWS) from sysindexes where id = object_id('dbo.XmlFiles')";
       
 #      $query = "select sum (spart.rows) from sys.partitions spart where spart.object_id = object_id(" . $this->table . ") and spart.index_id < 2";
 #      dpm($query, "query");
-      $ret = sqlsrv_query($con, $query);
+#    dpm(microtime(), "micin?");
+      $stmt = sqlsrv_prepare( $con, $query, array(), array("Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED, "ClientBufferMaxKBSize" => 51200));
+      sqlsrv_execute( $stmt);
+#      $ret = sqlsrv_query($con, $query);
 #      dpm(serialize($ret), "ret?");
       
-      $cnt = 0;
+      $cnt = sqlsrv_num_rows( $stmt );
       
-      while($a_ret = sqlsrv_fetch_array($ret))  {
+#      while($a_ret = sqlsrv_fetch_array($ret))  {
 #        dpm($a_ret, "ret");
-        $cnt = $a_ret[0];
-      }
+#        $cnt = $a_ret[0];
+#      }
 #      dpm(microtime(), "micent");
       return $cnt;
     } else {
@@ -888,7 +919,8 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       
 #      dpm($fromnumber, "from");
 #      dpm($tonumber, "to");
-      
+#  dpm(microtime(), "micbef");      
+
       if($tonumber > 0)
         $query = "SELECT * FROM " . $this->table . " $where ORDER BY docid OFFSET " . $offset . " ROWS FETCH NEXT " . $limit . " ROWS ONLY"; 
 #        $query = "SELECT * FROM ( SELECT *, ROW_NUMBER() over (ORDER BY docid) as ct FROM " . $this->table . " $where) sub where ct > " . $fromnumber . " and ct <= " . $tonumber . "";
@@ -898,19 +930,26 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #      $query .= " COLLATE SQL_Latin1_General_CP1_CI_AS";
 #      return array();
 #        
-      $ret = sqlsrv_query($con, $query);
+      $stmt = sqlsrv_prepare( $con, $query, array(), array("Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED, "ClientBufferMaxKBSize" => 51200));
+      
+      #$ret = sqlsrv_query($con, $query);
+
+#      dpm(microtime(), "bef ex");
+
+      sqlsrv_execute( $stmt); 
 
 #      dpm($ret, "ret?");
 #            
 #  $result = array();
 #     dpm(microtime(), "micin");          
       $outarr = array();
-      while($a_ret = sqlsrv_fetch_array($ret))  {
-
+      while($a_ret = sqlsrv_fetch_array($stmt, SQLSRV_SCROLL_FIRST))  {
+#        dpm(microtime(), "start");
         $uri = "http://objektkatalog.gnm.de/object/" . $a_ret['invnr'];
 
         $uriname = AdapterHelper::getDrupalIdForUri($uri,TRUE,$this->adapterId());
         $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
+#        dpm(microtime(), "end");
       }
 #      dpm($outarr, "out?");
 #      dpm(microtime(), "micend");
