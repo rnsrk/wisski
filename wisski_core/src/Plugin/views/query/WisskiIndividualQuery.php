@@ -207,7 +207,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
    * $view->pager['current_page'].
    */
   function execute(ViewExecutable $view) {
-    dpm("yo");
+#    dpm("yo");
 #    return;
 #  dpm($this->orderby, "orderby!");
 #    dpm($view->field);

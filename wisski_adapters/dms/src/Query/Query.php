@@ -14,7 +14,7 @@ class Query extends WisskiQueryBase {
 
 
   public function execute() {
-    dpm("exe!");
+#    dpm("exe!");
 
 #    dpm(serialize($this->count), "count?1");
 
@@ -74,7 +74,7 @@ class Query extends WisskiQueryBase {
       $eidquery = NULL;
       $bundlequery = NULL;
  
-      dpm(serialize($this->condition->conditions()), "condi?");
+#      dpm(serialize($this->condition->conditions()), "condi?");
             
       foreach ($this->condition->conditions() as $condition) {
         $field = $condition['field'];
