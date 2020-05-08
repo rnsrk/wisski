@@ -207,7 +207,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
    * $view->pager['current_page'].
    */
   function execute(ViewExecutable $view) {
-#    dpm("yo");
+    dpm("yo");
 #    return;
 #  dpm($this->orderby, "orderby!");
 #    dpm($view->field);
@@ -306,8 +306,14 @@ class WisskiIndividualQuery extends QueryPluginBase {
       }
     }
 
+#    dpm($entity_id, "eid?");
+
+    // This here kills the processing of multiple entities in one view provided
+    // by a contextual filter e.g. 123+456+789 or 123,456,789
+    // this should work!
+
     // check if the entity has the correct bundle
-    if(!empty($entity_id)) {
+    if(!empty($entity_id) && is_int($entity_id)) {
       $bids = AdapterHelper::getBundleIdsForEntityId($entity_id, TRUE);
       
       $found = FALSE;

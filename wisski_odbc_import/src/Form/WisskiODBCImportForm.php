@@ -142,14 +142,18 @@ class WisskiODBCImportForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+#    dpm(microtime(), "start");
+    
     // parse the import script file into SimpleXMLElement.
     // we already fetched and parsed the xml during validation so we can be
     // sure it's ok
     $xml_content = $form_state->getStorage()['import_script_content'];
     $import_script_xml = simplexml_load_string($xml_content);
-
+#dpm(microtime(), "simplexml after");
     // parse the db parameters 
     $db_params = $this->getConnectionParams($import_script_xml);
+#    dpm(microtime(), "params?");
+#    return;
     // we have two operation modes: batch and non-batch
     // if limit is 0 we are in non-batch mode, else batch
     $limit = $form_state->getValues()['batch_limit'];
@@ -339,7 +343,10 @@ class WisskiODBCImportForm extends FormBase {
    * non-batch import function
    */
   public function importInOneGo($import_script_xml, $db_params) {
+#    dpm(microtime(), "con?");
     $connection = self::getConnection($db_params);
+#    dpm(microtime(), "con!");
+
     $alreadySeen = array();
     foreach ($import_script_xml->table as $table) {
       self::storeTable($table, $alreadySeen, $connection, $db_params['is_drupal_db']);
@@ -397,6 +404,7 @@ class WisskiODBCImportForm extends FormBase {
    * TODO: is $alreadySeen still used??? it is never assigned a value!
    */
   public static function storeTable($table, &$alreadySeen, $connection, $is_drupal_db, $offset = 0, $limit = 0) {
+#    dpm(microtime(), "storeTable");
     $rowiter = 0;
     $delimiter = isset($table->delimiter) ? (string) $table->delimiter : '';
     $trim = isset($table->trim) ? (string) $table->trim : FALSE;  
@@ -468,6 +476,7 @@ class WisskiODBCImportForm extends FormBase {
 
   
   public static function storeRow($row, $XMLrow, $alreadySeen, $delimiter, $trim) {
+#    dpm(microtime(), "storeRow");
     $i = 0;
     $entity_ids = [];
     foreach($XMLrow->bundle as $value) { 
@@ -638,7 +647,7 @@ class WisskiODBCImportForm extends FormBase {
 
 
   public static function storeBundle($row, $bundle_xml, $bundleid, $delimiter, $trim) {
-
+#    dpm(microtime(), "storeBundle");
     list($update_mode, $update_eid, $further_eids) = self::evaluateUpdatePolicies($bundle_xml, $bundleid, $row);
     // $further_eids is not used currently
     // What to do with it?
@@ -683,6 +692,8 @@ class WisskiODBCImportForm extends FormBase {
     $entity_fields = array();
     $field_modes = array();
     $found_something = false;
+
+#    dpm(microtime(), "storeBundle2");
         
     foreach ($bundle_xml->bundle as $sub_bundle_xml) {
       // this could also be a field id of an entity reference
@@ -697,7 +708,7 @@ class WisskiODBCImportForm extends FormBase {
       if (isset($sub_bundle_xml['bundleId'])) {
         $targetbundleid = (string) $sub_bundle_xml['bundleId'];
       }
-      else {
+      else { // validateReferenceableEntities(array $ids)
         // load the fieldconfig
         $fc = FieldConfig::load('wisski_individual.' . $bundleid. '.' . $fieldid);
         // get the target bundle id of the field config
@@ -718,6 +729,8 @@ class WisskiODBCImportForm extends FormBase {
         $found_something = true;
       }
     }
+    
+#    dpm(microtime(), "storeBundle3");
     
     foreach ($bundle_xml->field as $field_xml) {
       $fieldid = (string) $field_xml['id'];
@@ -744,12 +757,45 @@ class WisskiODBCImportForm extends FormBase {
         }
       // else - do the normal way, just trim and add.
       } else {
-        $entity_fields[$fieldid][] = ($trim) ? trim($row[$field_row_id]) : $row[$field_row_id];
+        // just do it if there is something!
+        if(!empty($row[$field_row_id]))
+          $entity_fields[$fieldid][] = ($trim) ? trim($row[$field_row_id]) : $row[$field_row_id];
       }
       // if we found something, we have to go on, otherwise we can skip later.
       if(!empty($row[$field_row_id]))
         $found_something = true;
+
+      // if it is an entity reference - we have to change the text
+      // to the id
+      if(isset($field_xml['ent_ref_id'])) {
+        $options = [
+          'target_type' => 'wisski_individual',
+          'handler' => 'default',
+        ];
+#        dpm(microtime(), "doing entref");
+        /** @var /Drupal\Core\Entity\EntityReferenceSelection\SelectionInterface $handler */
+        $handler = \Drupal::service('plugin.manager.entity_reference_selection')->getInstance($options);
+#        dpm($handler, "handler?");
+        #$fc = FieldConfig::load('wisski_individual.' . $bundleid. '.' . $fieldid);
+        #dpm($fc);
+#        $handler = new \Drupal\Core\Entity\Plugin\EntityReferenceSelection\DefaultSelection;
+        foreach($entity_fields[$fieldid] as $field_key => $fieldvalue) {
+          if(!empty($fieldvalue)) {
+#          dpm($fieldvalue, "I am having...");
+            $out = $handler->getReferenceableEntities($fieldvalue);
+#          dpm($out, "out");
+            $curr_bundle = current($out);
+            $curr_eid = key($curr_bundle);
+#          dpm($curr_eid, "setting..:");
+            $entity_fields[$fieldid][$field_key] = $curr_eid;
+#          dpm($out);
+          }
+        }
+      }
+
     }
+    
+#    dpm(microtime(), "EOF");
 
     // if absolutely nothing was stored - don't create an entity, as it will only
     // take time and produce nothing
@@ -765,10 +811,14 @@ class WisskiODBCImportForm extends FormBase {
       // and return its ID.
       // we have to set the bundle manually
       $entity_fields["bundle"] = $bundleid;
+#      dpm(microtime(), "entity create?");
       $entity = entity_create('wisski_individual', $entity_fields);
+#      dpm(microtime(), "entity create!");
+#      dpm($entity_fields, "fields!");
       if ($entity) {
         $entity->save();
       }
+#      dpm(microtime(), "save?");
 #dpm([$update_mode, $entity->id(), $entity_fields], 'tocreate:'.$bundleid);
       return $entity->id();
     }

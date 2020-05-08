@@ -14,7 +14,7 @@ class Query extends WisskiQueryBase {
 
 
   public function execute() {
-#    dpm("exe!");
+    dpm("exe!");
 
 #    dpm(serialize($this->count), "count?1");
 
@@ -73,10 +73,15 @@ class Query extends WisskiQueryBase {
       
       $eidquery = NULL;
       $bundlequery = NULL;
+ 
+      dpm(serialize($this->condition->conditions()), "condi?");
             
       foreach ($this->condition->conditions() as $condition) {
         $field = $condition['field'];
         $value = $condition['value'];
+        
+#        dpm($field, "asked for field");
+#        dpm($value, "asked for value");
         
         if($field == "bundle")
           $bundlequery = $value;
@@ -108,9 +113,18 @@ class Query extends WisskiQueryBase {
           
         } else {
  
-          foreach($eidquery as $key => $eid) {     
+          foreach($eidquery as $key => $eid) {
+          
+            // I dont know why this may be the case, but it sometimes is...
+            if(is_array($eid)) {
+              $eid = current($eid);
+            } else {
+            
+            }    
             // load the bundles for this id
             $bundleids = $engine->getBundleIdsForEntityId($eid);        
+
+#            dpm($bundleids, "bundle ids for $eid");
 
             if(in_array($bundlequery, $bundleids))
               $giveback[$eid] = $eid;//array($thing['eid']);
@@ -132,9 +146,11 @@ class Query extends WisskiQueryBase {
 #        return;
 
 #        drupal_set_message("my cond is: " . serialize($condition));
+#        dpm($field, "field");
+#        dpm($value, "I am asking for");
         
         // just return something if it is a bundle-condition
-        if($field == 'bundle') {
+        if($field == 'bundle' ) {
 #  	        drupal_set_message("I go and look for : " . serialize($value) . " and " . serialize($limit) . " and " . serialize($offset) . " and " . $this->count);
 #          dpm(serialize($this->count), "count?");
           if($this->count) {
@@ -154,6 +170,17 @@ class Query extends WisskiQueryBase {
           return array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()));
         }
         
+        if($field == 'label' ) {
+          // This here has to be replaced  by the current bundle id for the object...
+          // this should be dynamic!
+          if($this->count) {
+            return $engine->loadIndividualsForBundle(array('b34869d99be8c4f788285d14caa31c05'), $pb, NULL, NULL, TRUE, $this->condition->conditions());
+          }
+          
+          return array_keys($engine->loadIndividualsForBundle(array('b34869d99be8c4f788285d14caa31c05'), $pb, $limit, $offset, FALSE, $this->condition->conditions()));
+        }
+        
+        
 #        dpm($field, "fi");
         if($field instanceof Condition) {
           #dpm($field, "field");
@@ -162,7 +189,7 @@ class Query extends WisskiQueryBase {
           foreach($field->conditions() as $subcondition) {
             #dpm($subcondition, "sub");
             #dpm($subcondition['field'], "val");
-            
+#            dpm("yay?");
             $pb_and_path = explode(".", $subcondition['field']);
             
             $pathid = $pb_and_path[1];
