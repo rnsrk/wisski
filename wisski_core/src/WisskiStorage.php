@@ -1306,6 +1306,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         // perhaps we have to check for the field definitions - we ignore this for now.
         //   $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundle_idid);
         try {
+#          dpm($values, "write");
           //we force the writable adapter to write values for newly created entities even if unknown to the adapter by now
           //@TODO return correct success code
           $adapter_info = $adapter->writeFieldValues($entity_id, $values, $pb, $bundle_id, $original_values,$create_new, $init);

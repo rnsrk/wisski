@@ -2614,8 +2614,15 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       if(empty($outvar)) // this is the case if it is an entity reference for example
         $outvar = "?" . (isset($variable_prefixes[$localkey]) ? $variable_prefixes[$localkey] : "x" . $startingposition);
 #      dpm($outvar, "changed it to:");
-      $query = " OPTIONAL { " . $query . " } . FILTER(!bound($outvar)) . ";
+#      $query = " OPTIONAL { " . $query . " } . FILTER(!bound($outvar)) . ";
+      // do some kind of rewriting
+      // the problem is if we do everything optional
+      // we also dont get back ?x0 - which is probably bad
+      // we have to give the triplestore SOME anchorpoint
+      // so lets ask for x0!
+      $query = substr($query, 0, strpos($query, "} . ") + 3) . " OPTIONAL { " . substr($query, strpos($query, "} . ") + 3) . " } . FILTER(!bound($outvar)) . "; 
     }
+#    dpm($query, "query");
 #    dpm($query, "gt3: " . microtime());
     
     return $query;
