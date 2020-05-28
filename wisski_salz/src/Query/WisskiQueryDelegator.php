@@ -375,6 +375,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
           } else {
             $first_query = $first_query->normalQuery();
           }
+#          dpm(serialize($first_query), "first?");
           $ret = $first_query->execute();
 #          dpm($ret, "ret");
           return $ret;

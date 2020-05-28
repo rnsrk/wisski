@@ -90,9 +90,16 @@ class WisskiEntitySearch extends SearchPluginBase {
           foreach ($parameters[$bundle_id]['paths'] as list($path_id,$search_string,$operator)) {
             //dpm($operator.' '.$search_string,'Setting condition');
             $group = $group->condition($path_id,$search_string,$operator);
+            
           }
+
+// By Mark: This is probably wrong. I guess somebody wants to iterate through all conditions and set them accodingly.
+//          dpm($group, "group?");
           $query->condition($group);
-          #dpm($query);
+//          dpm($query);
+
+          
+
           $results[$bundle_id] = $query->execute();
         }
       }

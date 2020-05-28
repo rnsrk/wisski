@@ -102,6 +102,27 @@ class Query extends WisskiQueryBase {
 
         $field = $cond['field'];
 
+        if(is_object($field)) {
+          // By Mark: This is a problem
+          // if this takes place it is some kind of grouping
+          // so it should be iterated.
+          // for now we just skip it but we should go in there and fetch the things from it!
+          
+#          dpm($field, "this is an object, but it should be a string");
+          foreach($field->conditions() as $keynew => $condnew) {
+          
+            $key = $keynew; 
+            $cond = $condnew;
+
+            $field = $cond['field'];
+
+          
+          }
+        }
+
+        if(empty($field))
+          continue;
+
         if($field == "bundle") {
           // store the bundle key if there is a bundle condition
           $bundlekey = $key;
