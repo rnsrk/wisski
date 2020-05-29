@@ -23,7 +23,7 @@ class WisskiIIIFController {
     $settings = \Drupal::configFactory()->getEditable('wisski_iip_image.wisski_iiif_settings');
         
     if(empty($settings->get('iiif_server'))) {
-      drupal_set_message("IIIF is not configured properly. Please do that <a href='admin/config/wisski/iiif_settings'>here</a>.", "error");
+      Drupal\Core\Messenger\MessengerInterface::addMessage("IIIF is not configured properly. Please do that <a href='admin/config/wisski/iiif_settings'>here</a>.", "error");
       return array();
     }
     
@@ -96,7 +96,7 @@ class WisskiIIIFController {
       $toolkit = $service->getDefaultToolkit();
       
       if(empty($toolkit) || $toolkit->getPluginId() !== "imagemagick") {
-        drupal_set_message('Your default toolkit is not imagemagick. Please use imagemagick for this module.', "error");
+        Drupal\Core\Messenger\MessengerInterface::addMessage('Your default toolkit is not imagemagick. Please use imagemagick for this module.', "error");
         return;
       }
       
@@ -105,7 +105,7 @@ class WisskiIIIFController {
       $formats = $config->get('image_formats');
       
       if(!isset($formats["PTIF"])) {
-        drupal_set_message("PTIF was not a valid image format. We enabled it for you. Make sure it is supported by your imagemagick configuration.");
+        Drupal\Core\Messenger\MessengerInterface::addMessage("PTIF was not a valid image format. We enabled it for you. Make sure it is supported by your imagemagick configuration.");
         $formats["PTIF"] = array('mime_type' => "image/tiff", "enabled" => TRUE);
         $config->set('image_formats', $formats);
         $config->save();
