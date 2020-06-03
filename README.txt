@@ -50,6 +50,11 @@ and from 2014 to 2017.
  * To submit bug reports and feature suggestions, or to track changes:
    https://www.drupal.org/project/issues/wisski
 
+DRUPAL
+------
+
+The 8.x-2.x branch is the new Drupal 9 development branch.
+
 REQUIREMENTS
 ------------
 
