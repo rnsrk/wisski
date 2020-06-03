@@ -15,9 +15,9 @@ class WisskiEntityListController extends EntityListController {
 
     if (is_null($wisski_bundle)) {
       if(strpos($this->getDestinationArray()['destination'], 'create') !== FALSE)
-        return $this->entityManager()->getListBuilder('wisski_bundle')->render(WisskiBundleListBuilder::CREATE);
-      return $this->entityManager()->getListBuilder('wisski_bundle')->render(WisskiBundleListBuilder::NAVIGATE);
+        return static::entityTypeManager()->getListBuilder('wisski_bundle')->render(WisskiBundleListBuilder::CREATE);
+      return static::entityTypeManager()->getListBuilder('wisski_bundle')->render(WisskiBundleListBuilder::NAVIGATE);
     }
-    return $this->entityManager()->getListBuilder('wisski_individual')->render($wisski_bundle,$wisski_individual);
+    return static::entityTypeManager()->getListBuilder('wisski_individual')->render($wisski_bundle,$wisski_individual);
   }
 }

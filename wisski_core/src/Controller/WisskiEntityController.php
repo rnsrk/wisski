@@ -8,7 +8,7 @@ use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\Core\Routing\LocalRedirectResponse;
 
-class WIsskiEntityController extends ControllerBase {
+class WisskiEntityController extends ControllerBase {
 
   /**
   * {@inheritdoc}
@@ -28,7 +28,7 @@ class WIsskiEntityController extends ControllerBase {
   
   public function add(WisskiBundleInterface $wisski_bundle) {
     #dpm(microtime(), "before");
-    $entity = $this->entityManager()->getStorage('wisski_individual')->create(array(
+    $entity = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->create(array(
       'bundle' => $wisski_bundle->id(),
     ));
     #dpm(microtime(), "in");

@@ -69,10 +69,12 @@ abstract class FormBase extends EntityForm {
     $wisski_pipe->set('label', trim($wisski_pipe->label()));
 
     $status = $wisski_pipe->save();
-    $edit_link = $this->entity->link($this->t('Edit'));
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // Please confirm that `$entity` is an instance of `\Drupal\Core\Entity\EntityInterface`. Only the method name and not the class name was checked for this replacement, so this may be a false positive.
+    $edit_link = $this->entity->toLink($this->t('Edit'))->toString();
     switch ($status) {
       case SAVED_NEW:
-        drupal_set_message($this->t('Created new pipe %label.', ['%label' => $wisski_pipe->label()]));
+        $this->messenger()->addStatus($this->t('Created new pipe %label.', ['%label' => $wisski_pipe->label()]));
         $this->logger('wisski_pipe')->notice('Created new pipe %label.', ['%label' => $wisski_pipe->label(), 'link' => $edit_link]);
         $form_state->setRedirect('wisski_pipe.processors', [
           'wisski_pipe' => $wisski_pipe->id(),
@@ -80,9 +82,11 @@ abstract class FormBase extends EntityForm {
         break;
 
       case SAVED_UPDATED:
-        drupal_set_message($this->t('Updated pipe %label.', ['%label' => $wisski_pipe->label()]));
+        $this->messenger()->addStatus($this->t('Updated pipe %label.', ['%label' => $wisski_pipe->label()]));
         $this->logger('wisski_pipe')->notice('Updated pipe %label.', ['%label' => $wisski_pipe->label(), 'link' => $edit_link]);
-        $form_state->setRedirectUrl($wisski_pipe->urlInfo('edit-form'));
+        // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+        // Please confirm that `$wisski_pipe` is an instance of `Drupal\Core\Entity\EntityInterface`. Only the method name and not the class name was checked for this replacement, so this may be a false positive.
+        $form_state->setRedirectUrl($wisski_pipe->toUrl('edit-form'));
         break;
     }
   }

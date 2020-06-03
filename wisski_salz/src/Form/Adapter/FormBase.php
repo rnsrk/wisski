@@ -108,12 +108,14 @@ class FormBase extends EntityForm {
     
     // the entity must be saved. the engine config bubbles up to the config entity
     $status = $adapter->save();
-    //ddebug_backtrace();    
+    //ddebug_backtrace();
     // give log msgs and redirect to collection page
-    $edit_link = $adapter->link($this->t('Edit'));
-    drupal_set_message($this->t('Created new adapter %label.', ['%label' => $adapter->label()]));
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // Please confirm that `$adapter` is an instance of `\Drupal\Core\Entity\EntityInterface`. Only the method name and not the class name was checked for this replacement, so this may be a false positive.
+    $edit_link = $adapter->toLink($this->t('Edit'))->toString();
+    $this->messenger()->addStatus($this->t('Created new adapter %label.', ['%label' => $adapter->label()]));
     $this->logger('adapter')->notice('Created new adapter %label.', ['%label' => $adapter->label(), 'link' => $edit_link]);
-    $form_state->setRedirect('entity.wisski_salz_adapter.collection');
+    $form_state->setRedirect('entity.wisski_salz_adapter.canonical');
   
   }
 

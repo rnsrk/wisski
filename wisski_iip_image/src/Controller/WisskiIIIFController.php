@@ -2,6 +2,7 @@
 
 namespace Drupal\wisski_iip_image\Controller;
 
+use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\Core\Entity\ContentEntityStorageInterface;
 use Drupal\Core\Cache\CacheableJsonResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -13,7 +14,7 @@ use Drupal\wisski_salz\Entity\Adapter;
 
 class WisskiIIIFController {
 
-  public function manifest(\Drupal\wisski_core\Entity\WisskiEntity $wisski_individual = NULL) {
+  public function manifest(WisskiEntity $wisski_individual = NULL) {
 
     // This is based on the 
     // Iperion-ch Simple IIIF Manifest builder: Version 1.0
@@ -67,7 +68,8 @@ class WisskiIIIFController {
     );
 
     // load all adapters
-    $adapters = entity_load_multiple('wisski_salz_adapter');
+    //$adapters = entity_load_multiple('wisski_salz_adapter');
+    $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
 
     // get the bundle for this
     $bundle_id = $wisski_individual->bundle();
@@ -114,9 +116,9 @@ class WisskiIIIFController {
 
       $image_style_name = 'wisski_pyramid';
 
-      if(! $image_style = \Drupal\image\Entity\ImageStyle::load($image_style_name)) {
+      if(! $image_style = ImageStyle::load($image_style_name)) {
         $values = array('name'=>$image_style_name,'label'=>'Wisski Pyramid Style');
-        $image_style = \Drupal\image\Entity\ImageStyle::create($values);
+        $image_style = ImageStyle::create($values);
         $image_style->addImageEffect(array('id' => 'WisskiPyramidalTiffImageEffect'));
         $image_style->save();
       }
@@ -125,7 +127,7 @@ class WisskiIIIFController {
 
 
     // get the wisski storage backend    
-    $storage = \Drupal::entityManager()->getStorage('wisski_individual');
+    $storage = \Drupal::service('entity_type.manager')->getStorage('wisski_individual');
  
     // many variables to store data
     // full file path - absolute.

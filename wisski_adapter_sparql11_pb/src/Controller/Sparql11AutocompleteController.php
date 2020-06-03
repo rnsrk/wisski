@@ -6,6 +6,9 @@
    
   namespace Drupal\wisski_adapter_sparql11_pb\Controller;
    
+  use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
+  use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+  use Drupal\wisski_salz\Entity\Adapter;
   use Symfony\Component\HttpFoundation\JsonResponse;
   use Symfony\Component\HttpFoundation\Request;
   use Drupal\Component\Utility\Unicode;
@@ -35,9 +38,9 @@
       if ($string) {
 #        drupal_set_message("str: " . serialize($string));
 #        drupal_set_message("pathid: " . serialize($pathid));
-        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
-        $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($pbid);
-        $adapter = \Drupal\wisski_salz\Entity\Adapter::load($engineid);
+        $path = WisskiPathEntity::load($pathid);
+        $pb = WisskiPathbuilderEntity::load($pbid);
+        $adapter = Adapter::load($engineid);
         
 #        drupal_set_message("path: " . serialize($path));
 #        drupal_set_message("pb: " . serialize($pb));

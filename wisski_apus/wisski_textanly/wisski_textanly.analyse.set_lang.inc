@@ -54,12 +54,8 @@ function wisski_textanly_admin_analyse_set_lang($op, $ap) {
 /* ***************** *
 *  ANALYSER
 ** ***************** */
-
-
-
 /** 
 * @author Martin Scholz
-*
 */
 function wisski_textanly_analyse_set_lang($analyser, $text_struct, $ticket) {
   

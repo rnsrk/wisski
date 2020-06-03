@@ -2,6 +2,8 @@
 
 namespace Drupal\wisski_core;
 
+use Drupal\Core\File\FileSystemInterface;
+use Drupal\wisski_core\Entity\WisskiBundle;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Entity\ContentEntityStorageBase;
@@ -73,7 +75,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   public function getCacheValues($ids, $field_id = array(), $bundle_id = array()) {
   
     foreach($ids as $id) {
-      $cached_field_values = db_select('wisski_entity_field_properties','f')
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+      $cached_field_values = \Drupal::database()->select('wisski_entity_field_properties', 'f')
         ->fields('f',array('fid', 'ident','delta','properties'))
         ->condition('eid',$id);
 #        ->condition('bid',$values[$id]['bundle'])
@@ -114,7 +118,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         if (!isset($values[$id]['bundle'])) continue;
 
         // load the cache
-        $cached_field_values = db_select('wisski_entity_field_properties','f')
+        // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+        // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+        $cached_field_values = \Drupal::database()->select('wisski_entity_field_properties', 'f')
           ->fields('f',array('fid', 'ident','delta','properties'))
           ->condition('eid',$id)
           ->condition('bid',$values[$id]['bundle'])
@@ -153,7 +159,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               // triple store... @todo - I dont know if this is relevant... I will try to handle this in the loading
               // from the ts...           
  #             getFileId
-              
+
 #              dpm($values[$id][$field_id][$delta], "I am merging: " . serialize($cached_value));
               $values[$id][$field_id][$delta] = array_merge($cached_value, $values[$id][$field_id][$delta]); #, $cached_value);
             }
@@ -215,7 +221,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           $entities[$id] = $entity;
 #          dpm($entities);
         } catch (\Exception $e) {
-          drupal_set_message("An error occured: " . $e->getMessage(), "error");
+          \Drupal::messenger()->addError("An error occured: " . $e->getMessage());
         }
       }
     }
@@ -238,10 +244,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     foreach($ids as $key => $id) {
       // see if we have already something in the entity cache...
       if(isset($entity_cache[$id])) {
-        
+
         // if so, take that from the cache!
         $entities[$id] = $entity_cache[$id];
-        
+
         // and unset it for the rest...
         unset($ids[$key]);
 
@@ -443,11 +449,13 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     $only_use_topbundles = $set->get('wisski_use_only_main_bundles');
 #dpm(microtime(), "in2");
     if($only_use_topbundles) 
-      $topBundles = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
+      $topBundles = WisskiHelper::getTopBundleIds();
 
     $bundle_from_uri = \Drupal::request()->query->get('wisski_bundle');
-
-    $adapters = entity_load_multiple('wisski_salz_adapter');
+    
+    //$adapters = entity_load_multiple('wisski_salz_adapter');
+    $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
+    
     $info = array();
     // for every id
     foreach($ids as $id) {
@@ -478,10 +486,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         // only use that if it is a top bundle when the checkbox was set. Always use it otherwise.
         if ($cached_bundle) {
           if($only_use_topbundles && empty($mainentityid) && !in_array($cached_bundle, $topBundles)) {
-          
+
             // check if there is any valid top bundle.
             $valid_topbundle = AdapterHelper::getBundleIdsForEntityId($id, TRUE);
-            
+
             // if we found any, we trust the system that this is probably the best!
             if($valid_topbundle)
               $cached_bundle = current($valid_topbundle); // whichever system might have more than one of this? I dont know...
@@ -489,7 +497,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             // if we did not find any top bundle we guess that the cached one
             // will probably be the best. We dont start searching
             // for anything again....
-            
+
             //$cached_bundle = NULL;
           } else
             $info[$id]['bundle'] = $cached_bundle;
@@ -510,10 +518,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           if (isset($cached_bundle)) {
             $bundle_ids = array($cached_bundle);
           } else {
-          
+
             // take all bundles
             $bundle_ids = $adapter->getBundleIdsForEntityId($id);
-  
+
             if (empty($bundle_ids)) {
               // if the adapter cannot determine at least one bundle, it will
               // also not be able to contribute to the field data
@@ -530,7 +538,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             in subforms, too.
             with the code above it is no longer possible to brute force a 
             certain bundle, however.
-            
+
             By Mark: Works - also with the transdisciplinary approach
             // if the bundle is given via the uri, we use that and only that
             if(!empty($bundle_from_uri))
@@ -550,8 +558,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           foreach($bundle_ids as $bundleid) {
             // be more robust.
             if(empty($bundleid)) {
-              drupal_set_message("Beware, there is somewhere an empty bundle id specified in your pathbuilder!", "warning");
-              drupal_set_message("I have been looking for a bundle for $id and I got from cache: " . serialize($cached_bundle) . " and I have left: " . serialize($bundle_ids));
+              \Drupal::messenger()->addWarning("Beware, there is somewhere an empty bundle id specified in your pathbuilder!");
+              \Drupal::messenger()->addStatus("I have been looking for a bundle for $id and I got from cache: " . serialize($cached_bundle) . " and I have left: " . serialize($bundle_ids));
               continue;
             }
             
@@ -668,9 +676,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   if (count($target_bundles) === 1) {
                     $target_bundle_id = current($target_bundles);
                   } else if( count($target_bundles) === 1) {
-                    drupal_set_message($this->t('There is no target bundle id for field %field - I could not continue.',array('%field' => $field_name)));
+                    \Drupal::messenger()->addStatus($this->t('There is no target bundle id for field %field - I could not continue.',array('%field' => $field_name)));
                   } else {
-                    drupal_set_message($this->t('Multiple target bundles for field %field, %field_label',array('%field' => $field_def->getLabel(), '%field_label' => $field_name)));
+                    \Drupal::messenger()->addStatus($this->t('Multiple target bundles for field %field, %field_label',array('%field' => $field_def->getLabel(), '%field_label' => $field_name)));
 #                    dpm($target_bundles);
                     //@TODO create a MASTER BUNDLE and choose that one here
                     $target_bundle_id = current($target_bundles);
@@ -701,7 +709,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 $hack_type = $field_def->getType();
 #                dpm(\Drupal::entityManager()->getStorage('filter_format')->loadByProperties(array('status' => TRUE)), "ht");
                 if ($hack_type == 'text_with_summary' || $hack_type == 'text_long') {
-                  $formats = \Drupal::entityManager()->getStorage('filter_format')->loadByProperties(array('status' => TRUE));
+                  $formats = \Drupal::service('entity_type.manager')->getStorage('filter_format')->loadByProperties(array('status' => TRUE));
                   $format = current($formats);
 #                  dpm($format->get("format"), "format");
                   foreach($new_field_values as &$xid) {
@@ -719,7 +727,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 // do the sorting first...
                 //try finding the weights and sort the values accordingly
                 if (isset($new_field_values[$id][$field_name])) {
-                  $cached_field_values = db_select('wisski_entity_field_properties','f')
+                  // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+                  // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+                  $cached_field_values = \Drupal::database()->select('wisski_entity_field_properties', 'f')
                     ->fields('f',array('ident','delta','properties'))
                     ->condition('eid',$id)
                     ->condition('bid',$bundleid)
@@ -748,15 +758,15 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                       // this would be smarter, however currently the storage can't
                       // store the disamb so this is pointless...
                       //$ident = isset($nfv['wisskiDisamb']) ? $nfv['wisskiDisamb'] : $nfv[$main_property];
-                      
+
                       // this was a good approach, however it is not correct when you have
                       // the same value several times
                       //$ident = $nfv[$main_property];
                       //if (isset($cached_field_values[$ident])) {
-                      
+
                       // store the found item
                       $found_cached_field_value = NULL;
-                      
+
                       // iterate through the cached values and delete
                       // anything we find from the cache to correct the weight
                       foreach($cached_field_values as $key => $cached_field_value) {
@@ -767,13 +777,13 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                           break;
                         }
                       }
-                      
+
                       // if we found something go for it...
                       if (isset($found_cached_field_value)) {
                         $head[$found_cached_field_value->delta] = $nfv + unserialize($found_cached_field_value->properties);
                       } else $tail[] = $nfv;
                     }
-                    
+
                     // do a ksort, because array_merge will resort anyway!
                     ksort($head);
                     ksort($tail);                    
@@ -813,7 +823,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                     $file_uri = $properties_array['original_target_id'];
 #                    dpm($file_uri, "got");                    
                     $local_uri = '';
-                    
+
                     $properties_array['target_id'] = $this->getFileId($file_uri,$local_uri, $id);
 /*
                     $properties_array = array(
@@ -834,7 +844,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                 }
               }
             } catch (\Exception $e) {
-              drupal_set_message('Could not load entities in adapter '.$adapter->id() . ' because ' . $e->getMessage());
+              \Drupal::messenger()->addStatus('Could not load entities in adapter '.$adapter->id() . ' because ' . $e->getMessage());
               //throw $e;
             }              
           }     
@@ -855,7 +865,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         // this may especially be the case if we have an instance with no fields filled out.
         // if some adapters found some bundle info, we make a best guess
         if (!empty($overall_bundle_ids)) {
-          $top_bundle_ids = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
+          $top_bundle_ids = WisskiHelper::getTopBundleIds();
           $best_guess = array_intersect($overall_bundle_ids, $top_bundle_ids);
           if (empty($best_guess)) {
             $best_guess = $overall_bundle_ids;
@@ -915,7 +925,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       if(file_exists($local_file_uri) && filesize($local_file_uri) > 0) {
         $value = current($file_ids);
       } else {
-        file_delete(current($file_ids));
+        $file_storage = \Drupal::entityTypeManager()->getStorage('file');
+        $file_entities = $file_storage->loadMultiple($file_ids);
+        $file_storage->delete($file_entities);
+        //file_delete(current($file_ids));
         $file_ids = NULL;
       }
     }         
@@ -927,7 +940,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       // in the if test we test whether there exists on the server a file 
       // called $local_file_uri: file_destination() with 2nd param returns
       // FALSE if there is such a file!
-      if (file_destination($local_file_uri,FILE_EXISTS_ERROR) === FALSE) {
+      //if (file_destination($local_file_uri,FILE_EXISTS_ERROR) === FALSE) {
+      if (\Drupal::service('file_system')->getDestinationFilename($local_file_uri,Drupal\Core\File\FileSystemInterface::EXISTS_ERROR) === FALSE) {
 #            dpm($local_file_uri, "7");
         $file = File::create([
           'uri' => $local_file_uri,
@@ -935,7 +949,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           'status' => FILE_STATUS_PERMANENT,
         ]);
 
-        $file->setFileName(drupal_basename($local_file_uri));
+        //$file->setFileName(drupal_basename($local_file_uri));
+        $file->setFileName(\Drupal::service('file_system')->basename($local_file_uri));
         $mime_type = \Drupal::service('file.mime_type.guesser')->guess($local_file_uri);
 
         $file->setMimeType($mime_type);
@@ -966,7 +981,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           $data = @file_get_contents($file_uri, false, $context);
           
           if (empty($data)) { 
-            drupal_set_message($this->t('Could not fetch file with uri %uri.',array('%uri'=>$file_uri,)),'error');
+            \Drupal::messenger()->addError($this->t('Could not fetch file with uri %uri.',array('%uri'=>$file_uri,)));
           }
 
 #              dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
@@ -976,12 +991,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             $value = $file->id();
             //dpm('replaced '.$file_uri.' with new file '.$value);
           } else {
-            drupal_set_message('Error saving file','error');
+            \Drupal::messenger()->addError('Error saving file');
             //dpm($data,$file_uri);
           }
         }
         catch (EntityStorageException $e) {
-          drupal_set_message($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())),'error');
+          \Drupal::messenger()->addError($this->t('Could not create file with uri %uri. Exception Message: %message',array('%uri'=>$file_uri,'%message'=>$e->getMessage())));
         }
       }
 
@@ -1020,30 +1035,30 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       return $this->getSchemedUriFromPublicUri($file_uri);
     }
 
-    $original_path = file_default_scheme() . '://wisski_original/';
+    $original_path = \Drupal::config('system.file')->get('default_scheme') . '://wisski_original/';
 
-    file_prepare_directory($original_path, FILE_CREATE_DIRECTORY);
+    \Drupal::service('file_system')->prepareDirectory($original_path, FileSystemInterface::CREATE_DIRECTORY);
 
     // do a htmlentities in case of any & or fragments...
-    
+
     // This is a problem with URIs which contain .de and so on...
     //$extension = htmlentities(substr($file_uri,strrpos($file_uri,'.')));
-    
+
     $position_of_ext = strrpos($file_uri,'.');
-    
+
     // This should be somewhere at the end... typically extensions are up to 4 letters?
     if($position_of_ext > (strlen($file_uri) - 5))
       $extension = htmlentities(substr($file_uri,$position_of_ext));
     else
       $extension = ".jpg";
-    
+
     // load the valid image extensions
     $image_factory = \Drupal::service('image.factory'); 
     $supported_extensions = $image_factory->getSupportedExtensions();
 
     $extout = "";
 #    dpm($supported_extensions);
-    
+
     // go through them and see if there is any in this extension
     // fragment. If so - make it "clean" and get rid of any 
     // appended fragment parts.
@@ -1053,20 +1068,20 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         break;
       }
     }
-    
+
     // if not - we assume jpg.
     if((empty($extout) && empty($extension)) || strpos($extension, "php") !== FALSE )
       $extout = '.jpg';
     else if(!empty($extension)) // keep extensions if there are any - for .skp like in the kuro-case.
       $extout = $extension;
-    
+
 #    dpm($extension, "found ext");
 
     // this is evil in case it is not .tif or .jpeg but something with . in the name...
 #    return file_default_scheme().'://'.md5($file_uri).substr($file_uri,strrpos($file_uri,'.'));    
     // this is also evil, because many modules can't handle public:// :/
     // to make it work we added a directory.
-    return file_default_scheme().'://wisski_original/'.md5($file_uri).$extout;
+    return \Drupal::config('system.file')->get('default_scheme').'://wisski_original/'.md5($file_uri).$extout;
     // external uri doesn't work either
     // this is just a documentation of what I've tried...
 #    return \Drupal::service('stream_wrapper.public')->baseUrl() . '/' . md5($file_uri);
@@ -1102,7 +1117,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    */
   public function getTableMapping(array $storage_definitions = NULL) {
 
-    $definitions = $storage_definitions ? : \Drupal::getContainer()->get('entity.manager')->getFieldStorageDefinitions($this->entityTypeId);
+    $definitions = $storage_definitions ? : \Drupal::getContainer()->get('entity_field.manager')->getFieldStorageDefinitions($this->entityTypeId);
 /*
     if (!empty($definitions)) {
       if (\Drupal::moduleHandler()->moduleExists('devel')) {
@@ -1250,12 +1265,12 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       elseif ($info['preferred_local']) {
         // we warn here as the peferred local store should be writable if an 
         // entity is to be saved. Eg. the sameAs mechanism relies on that.
-        drupal_set_message(t('The preferred local store %a is not writable.', array('%a' => $adapter->label())),'warning');
+        \Drupal::messenger()->addWarning(t('The preferred local store %a is not writable.', array('%a' => $adapter->label())));
       } 
     }
     // if there are no adapters by now we die...
     if(empty($adapter_ids)) {
-      drupal_set_message("There is no writable storage backend defined.", "error");
+      \Drupal::messenger()->addError("There is no writable storage backend defined.");
       return;
     }
     
@@ -1278,7 +1293,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
     }
     if (empty($entity_id)) {
-      drupal_set_message('No local adapter could create the entity','error');
+      \Drupal::messenger()->addError('No local adapter could create the entity');
       return;
     }
     
@@ -1321,7 +1336,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
           $success = TRUE;
         } catch (\Exception $e) {
-          drupal_set_message('Could not write entity into adapter '.$adapter->id() . ' because ' . serialize($e->getMessage()));
+          \Drupal::messenger()->addStatus('Could not write entity into adapter '.$adapter->id() . ' because ' . serialize($e->getMessage()));
           throw $e;
         }
       } else {
@@ -1329,7 +1344,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
       
       if ($success) {
-        
+
         // TODO: why are the next two necessary? what do they do?
         $entity->set('eid',$entity_id);
         $entity->enforceIsNew(FALSE);
@@ -1344,7 +1359,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       }
     }
 
-    $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id);
+    $bundle = WisskiBundle::load($bundle_id);
     if ($bundle) $bundle->flushTitleCache($entity_id);
 
   }
@@ -1364,7 +1379,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     $local_adapters = array();
     $writable_adapters = array();
     $delete_adapters = array(); // adapters that we use for deleting the entities
-    $all_adapters = entity_load_multiple('wisski_salz_adapter');
+#    $all_adapters = entity_load_multiple('wisski_salz_adapter');
+    $all_adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
 
     foreach($all_adapters as $aid => $adapter) {
       // we locate all writable stores
@@ -1379,15 +1395,15 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     }
     // if there are no adapters by now we die...
     if(empty($writable_adapters)) {
-      drupal_set_message("There is no writable storage backend defined.", "error");
-      drupal_set_message("No writable storage backend defined.", "error");
+      \Drupal::messenger()->addError("There is no writable storage backend defined.");
+      \Drupal::messenger()->addError("No writable storage backend defined.");
       return;
     }
     
     if($diff = array_diff_key($local_adapters,$writable_adapters)) {
       if (count($diff) === 1)
-        drupal_set_message('The preferred local store '.key($diff).' is not writable','warning');
-      else drupal_set_message('The preferred local stores '.implode(', ',array_keys($diff)).' are not writable','warning');
+        \Drupal::messenger()->addWarning('The preferred local store '.key($diff).' is not writable');
+      else \Drupal::messenger()->addWarning('The preferred local stores '.implode(', ',array_keys($diff)).' are not writable');
     }
     
     //we load all pathbuilders, check if they know the fields and have writable adapters
@@ -1410,7 +1426,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     }
 
     if (empty($return)) {
-      drupal_set_message('No local adapter could delete the entity','error');
+      \Drupal::messenger()->addError('No local adapter could delete the entity');
       return;
     }
   }
@@ -1450,7 +1466,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   protected function has($id, EntityInterface $entity) {
     
     if ($entity->isNew()) return FALSE;
-    $adapters = entity_load_multiple('wisski_salz_adapter');
+#    $adapters = entity_load_multiple('wisski_salz_adapter');
+    $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
     // ask all adapters
     foreach($adapters as $aid => $adapter) {
       if($adapter->getEngine()->hasEntity($id)) {
@@ -1496,7 +1513,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * @return returns true on sucess, false else.
    */
   public function preparePreviewImages() {
-    $pref_local = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore();
+    $pref_local = AdapterHelper::getPreferredLocalStore();
     if (!$pref_local) {
       $conf_adapter = \Drupal::config('wisski_core.settings')->get('preview_image_adapters');
       
@@ -1505,7 +1522,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         return TRUE;
       }
       
-      drupal_set_message("No store for preview images was found. Please select one in the configuration.", "warning");
+      \Drupal::messenger()->addWarning("No store for preview images was found. Please select one in the configuration.");
       
       return FALSE;
     } else {
@@ -1553,7 +1570,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       if ($adapter === NULL || !is_object($adapter)) {
         // we lazy-load adapters
 #        dpm("4.2.99: " . microtime());
-        $adapter = entity_load('wisski_salz_adapter', $adapter_id);
+        $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($adapter_id);
 #        dpm("4.2.999: " . microtime());
         if (empty($adapter)) {
           unset($this->preview_image_adapters[$adapter_id]);
@@ -1563,7 +1580,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         }
       }
 #      dpm(microtime(), "is_get_uris_evil?");
-      if (empty(\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($entity_id, $adapter->id(), FALSE))) {
+      if (empty(AdapterHelper::getUrisForDrupalId($entity_id, $adapter->id(), FALSE))) {
         // this is wrong here - any other backend might know the image!
         /*
         if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug($adapter->id().' does not know the entity '.$entity_id);
@@ -1611,7 +1628,9 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
             $old_to_look_for = $to_look_for;
 
             // get the weight
-            $cached_field_values = db_select('wisski_entity_field_properties','f')
+            // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+            // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+            $cached_field_values = \Drupal::database()->select('wisski_entity_field_properties', 'f')
               ->fields('f',array('eid', 'fid', 'bid', 'ident','delta','properties'));
 #           ->condition('eid',$id)
 #           ->condition('bid',$values[$id]['bundle'])
@@ -1732,7 +1751,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
         //we got the image resized and can output the derivates URI
         return $preview_uri;
       } else {
-        drupal_set_message("Could not create a preview image for $input_uri. Probably its MIME-Type is wrong or the type is not allowed by your Imge Toolkit","error");
+        \Drupal::messenger()->addError("Could not create a preview image for $input_uri. Probably its MIME-Type is wrong or the type is not allowed by your Imge Toolkit");
         WisskiCacheHelper::putPreviewImageUri($entity_id,NULL);
       }
 

@@ -7,6 +7,7 @@
 
 namespace Drupal\wisski_authfile\Plugin\Action;
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Action\ConfigurableActionBase;
 use Drupal\Core\Annotation\Action;
 use Drupal\Core\Annotation\Translation;
@@ -78,7 +79,7 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
    * {@inheritdoc}
    */
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
-    return \Drupal\Core\Access\AccessResult::allowed();
+    return AccessResult::allowed();
   }
   
   
@@ -244,7 +245,8 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
       return $values; 
     } else {     
       $new_values = [];
-      foreach (entity_load_multiple('wisski_individual', $values) as $new_entity) {
+#      foreach (entity_load_multiple('wisski_individual', $values) as $new_entity) {
+      foreach (\Drupal::entityTypeManager()->getStorage('wisski_individual')->loadMultiple($values) as $new_entity) {
         $new_values = array_merge($new_values, $this->getFieldValues($new_entity, $rest_path));
       }
 #      dpm($new_values, "yay!!");

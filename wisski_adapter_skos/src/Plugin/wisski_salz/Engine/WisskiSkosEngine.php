@@ -7,6 +7,10 @@
 
 namespace Drupal\wisski_adapter_skos\Plugin\wisski_salz\Engine;
 
+use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use Drupal\wisski_salz\Entity\Adapter;
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11Engine;
 use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
@@ -105,7 +109,7 @@ class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterf
           if ($search_properties === NULL) {
             if ($this->isAProperty($next) === FALSE) $search_properties = TRUE;
           } elseif ($this->isAProperty($next) === $search_properties) {
-            drupal_set_message('History and Future are inconsistent','error');
+            $this->messenger()->addError('History and Future are inconsistent');
           }
         } else {
           \Drupal::logger('WissKI path alternatives')->debug('invalid URI '.$candidate);
@@ -461,7 +465,7 @@ class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterf
             
       foreach($paths as $pathid) {
       
-        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
+        $path = WisskiPathEntity::load($pathid);
         
 #        drupal_set_message(serialize($path));
         
@@ -488,7 +492,7 @@ class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterf
     return $id;
   }
   
-  public function getUriForDrupalId($id) {
+  public function getUriForDrupalId($id, $create = true) {
     // danger zone: if id already is an uri e.g. due to entity reference
     // we load that. @TODO: I don't like that.
 #    drupal_set_message("in: " . serialize($id));
@@ -505,11 +509,6 @@ class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterf
     return $uri;
   }
 
-  /**
-   *
-   *
-   *
-   */
   public function getBundleIdsForEntityId($entityid) {
     
     $pb = $this->getPbForThis();
@@ -610,7 +609,7 @@ class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterf
 
     // do some error handling    
     if(!$group->isGroup()) {
-      drupal_set_message("getClearGroupArray called with something that is not a group: " . serialize($group), "error");
+      $this->messenger()->addError("getClearGroupArray called with something that is not a group: " . serialize($group));
       return;
     }
         
@@ -623,7 +622,7 @@ class WisskiSkosEngine extends Sparql11Engine implements PathbuilderEngineInterf
       // then we have to get our parents array
       $pbparentarray = $allpbpaths[$pbarray['parent']];
       
-      $parentpath = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["parent"]);
+      $parentpath = WisskiPathEntity::load($pbarray["parent"]);
       
       // if there is nothing, do nothing!
       // I am unsure if that ever could occur
@@ -681,7 +680,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       $pbparentarray = $allpbpaths[$pbarray['parent']];
       
       // how many path-parts are in the pb-parent?
-      $parentpath = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["parent"]);
+      $parentpath = WisskiPathEntity::load($pbarray["parent"]);
             
       // if there is nothing, do nothing!
       // I am unsure if that ever could occur
@@ -705,16 +704,16 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
         // this is no subgroup, it is a path
 #        if(!empty($pbparentarray['parent'])) {
           // only do something if it is a path in a subgroup, not in a main group  
-          
+
 #          $parentparentpath = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbparentarray["parent"]);
-          
+
           // in that case we have to remove the subgroup-part, however minus one, as it is the       
 #          $pathcnt = count($parentpath->getPathArray()) - count($this->getClearPathArray($parentpath, $pb));
           $pathcnt = count($parentpath->getPathArray()) - 1; #count($parentparentpath->getPathArray());        
 
 #          dpm($pathcnt, "pathcnt");
 #          dpm($parentpath->getPathArray(), "pa!");
-        
+
           for($i=0; $i< $pathcnt; $i++) {
             unset($patharraytoget[$i]);
           }
@@ -748,7 +747,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
         if(empty($pbentries))
           continue;
         
-        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbentries['id']);
+        $path = WisskiPathEntity::load($pbentries['id']);
         
         if(empty($path))
           continue;
@@ -1022,23 +1021,23 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     if(!empty($eid)) {
       // rename to uri
       $eid = $this->getUriForDrupalId($eid);
-    
+
 #      $eid = str_replace("\\", "/", $eid);
 #      $url = parse_url($eid);
       if($path->isGroup()) {
         $pbarray = $pb->getPbPaths();
         $parentpathid = $pbarray[$path->id()]["parent"];
-        
+
         // if there is a parent path
         if(!empty($parentpathid)) {
-          
+
           // load the parent path
-          $parentpath = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($parentpathid);
-          
+          $parentpath = WisskiPathEntity::load($parentpathid);
+
           $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, floor(count($parentpath->getPathArray())/2), FALSE, NULL, 'entity_reference'); 
-          
+
 #          dpm($sparql, $path->getName());
-          
+
 #          if(count($parentpath->getPathArray()) > 2)
 #           return;
         } else {
@@ -1053,7 +1052,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
         $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, 0, FALSE, NULL, 'field');
 #      dpm($sparql, $path->getName());
     } else {
-      drupal_set_message("No EID for data. Error. ", 'error');
+      $this->messenger()->addError("No EID for data. Error. ");
     }
 /*      
       if(!empty($url["scheme"]))
@@ -1143,7 +1142,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
    * @return a pb object
    */
   public function getPbForThis() {
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    $pbs = WisskiPathbuilderEntity::loadMultiple();
     
     foreach($pbs as $pb) {
       // if there is no adapter set for this pb  
@@ -1175,7 +1174,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
 
     // this approach will be not fast enough in the future...
     // the pbs have to have a better mapping of where and how to find fields
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    $pbs = WisskiPathbuilderEntity::loadMultiple();
     
     $out = array();
         
@@ -1189,7 +1188,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       if(empty($pb->getAdapterId()))
         continue;
         
-      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
+      $adapter = Adapter::load($pb->getAdapterId());
 
       // if we have not adapter, we may go home, too
       if(empty($adapter))
@@ -1208,17 +1207,17 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
         $got = $this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in, $language);
 
 #        drupal_set_message("I've got: " . serialize($got));
-        
+
         if(empty($out))
           $out = $got;
-        
+
         foreach($got as $eid => $value) {
           if(empty($out[$eid]))
             $out[$eid] = $got[$eid];
           else
             $out[$eid] = array_merge($out[$eid], $got[$eid]);
         }
-        
+
 #        drupal_set_message("out after got: " . serialize($out));
       }
       
@@ -1248,7 +1247,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
 #    drupal_set_message("2");
 #   
 #    drupal_set_message("muha: " . serialize($field_id));
-    $main_property = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);#->getItemDefinition()->mainPropertyName();
+    $main_property = FieldStorageConfig::loadByName('wisski_individual', $field_id);#->getItemDefinition()->mainPropertyName();
     if(!empty($main_property))
       $main_property = $main_property->getMainPropertyName();
 #     drupal_set_message("mp: " . serialize($main_property) . "for field " . serialize($field_id));
@@ -1258,13 +1257,13 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
 #    return array();
 
     if(!empty($field_id) && empty($bundleid_in)) {
-      drupal_set_message("Dorian ist doof, weil $field_id angefragt wurde und bundle aber leer ist.", "error");
+      $this->messenger()->addError("Dorian ist doof, weil $field_id angefragt wurde und bundle aber leer ist.");
       return;
     }
     
     // this approach will be not fast enough in the future...
     // the pbs have to have a better mapping of where and how to find fields
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    $pbs = WisskiPathbuilderEntity::loadMultiple();
     
     $out = array();
         
@@ -1278,7 +1277,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       if(empty($pb->getAdapterId()))
         continue;
         
-      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
+      $adapter = Adapter::load($pb->getAdapterId());
 
       // if we have not adapter, we may go home, too
       if(empty($adapter))
@@ -1368,7 +1367,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
         if(empty($pbarray["id"]))
           continue;
 
-        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["id"]);
+        $path = WisskiPathEntity::load($pbarray["id"]);
 
         // if there is no path we can skip that
         if(empty($path))
@@ -1385,19 +1384,19 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
             // now we have to change all this.
             #$out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid, 0, $main_property, $path->getDisamb()));
             // nowadays we do it otherwise
-            
+
             #$tmp = $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid, 0, $main_property, $path->getDisamb());
             // @TODO: ueberarbeiten
-            drupal_set_message("danger zone!");
+            $this->messenger()->addStatus("danger zone!");
             $tmp = $this->pathToReturnValue($path, $pb, $eid, 0, $main_property);            
 
             foreach($tmp as $key => $item) {
               $tmp[$key]["target_id"] = $this->getDrupalId($item["target_id"]);
             }
-            
+
             $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);
-            
-            
+
+
 #            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $this->getDrupalId($this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid, 0, $main_property, $path->getDisamb())));
 #              drupal_set_message("I've got: " . serialize($out[$eid][$field_id]));
           } else {
@@ -1407,13 +1406,13 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
 
             // get the parentid
             $parid = $pbarray["parent"];
-            
+
             // get the parent (the group the path belongs to) to get the common group path
-            $par = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($parid);
+            $par = WisskiPathEntity::load($parid);
 
             // if there is no parent it is a ungrouped path... who asks for this?
             if(empty($par)) {
-              drupal_set_message("Path " . $path->getName() . " with id " . $path->id() . " has no parent.", "error");
+              $this->messenger()->addError("Path " . $path->getName() . " with id " . $path->id() . " has no parent.");
               continue;
             }
 #              drupal_set_message("pa: " . serialize($path->getPathArray()) . " cpa: " . serialize($clearPathArray) . " cga: " . serialize($this->getClearGroupArray($par, $pb)));
@@ -1448,12 +1447,12 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     // get the pb-entry for the field
     // this is a hack and will break if there are several for one field
     $pbarray = $pb->getPbEntriesForFid($fieldid);
-    
-    $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['id']);
+
+    $path = WisskiPathEntity::load($pbarray['id']);
 
     if(empty($path))
       return;
-      
+
 #   if(!drupal_validate_utf8($value)) {
 #     $value = utf8_encode($value);
 #   }
@@ -1461,11 +1460,11 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     $clearPathArray = $this->getClearPathArray($path, $pb);
 #    dpm($clearPathArray);
 #    $group = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['parent']);
-    
+
 #    $path_array = $path->getPathArray();
-    
+
     $diff = count($path->getPathArray()) - count($clearPathArray);
-    
+
 #    $sparql = "SELECT DISTINCT * WHERE { GRAPH ?g {";
     $sparql = "SELECT DISTINCT * WHERE {";
     foreach($clearPathArray as $key => $step) {
@@ -1475,9 +1474,9 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       else
         $sparql .= '?x' . ($key+$diff-1) . " <$step> ?x" . ($key+$diff+1) . " . ";    
     }
-    
+
     $primitive = $path->getDatatypeProperty();
-    
+
     // dorian special case -> "empty" @TODO - this is evil!
     if(!empty($primitive) && $primitive != "empty") {
       if(empty($value)) {
@@ -1486,19 +1485,19 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
         $sparql .= "?x" . ($key+$diff) . " <$primitive> '" . $this->escapeSparqlLiteral($value) ."' . ";
       }
     }
-    
+
     if(!empty($entity_id)) {
       // rename to uri
       $eid = $this->getUriForDrupalId($entity_id);    
 #      $eid = str_replace("\\", "/", $entity_id);
       $url = parse_url($eid);
-      
+
       if(!empty($url["scheme"]))
         $sparql .= " FILTER (?x$diff = <$eid> ) . ";
       else
         $sparql .= " FILTER (?x$diff = \"$eid\" ) . ";
     }
-    
+
 #    $sparql .= " } }";
     $sparql .= " }";
     $result = $this->directQuery($sparql);
@@ -1511,9 +1510,9 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
 
     foreach($result as $key => $thing) {
       $outarray[$key] = array();
-      
+
 #      drupal_set_message("thing is: " . serialize($thing));
-      
+
 #      for($i=(count($clearPathArray)-1);$i>= 0; $i--) {
 
       for($i=$diff; $i<count($clearPathArray)+$diff; $i++) {
@@ -1540,7 +1539,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       }
  */     
 #      drupal_set_message("my outarr1 is: " . serialize($outarray));
-      
+
       ksort($outarray[$key]);
    #     drupal_set_message("we got something!");
   #    $name = 'x' . (count($clearPathArray)-1);
@@ -1557,42 +1556,51 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
 #    }
 
 #      drupal_set_message("my outarr is: " . serialize($outarray));
-    
+
 #    drupal_set_message("spq: " . serialize($sparql));
 #    drupal_set_message(serialize($this));
-    
-        
+
+
     // add graph handling
       $sparqldelete = "DELETE DATA { " ;
- 
+
       $arr = $outarray[$key];
 #      dpm($path->getDisamb()); 
       $i=0;
-      
+
       // is there a disamb?
       if($path->getDisamb() > 0 && isset($arr[($path->getDisamb()-2)*2])) {
         $i = ($path->getDisamb()-2)*2;
-        
+
         $sparqldelete .= "<" . $arr[$i++] . "> ";
         $sparqldelete .= "<" . $arr[$i++] . "> ";
         $sparqldelete .= "<" . $arr[$i++] . "> ";
       } else { // no disamb - cut in the end!
         // -3 because out and primitive
         $maxi = count($arr)-3;
-        
+
         $sparqldelete .= "<" . $arr[$maxi] . "> ";
         $sparqldelete .= "<" . $arr['primitive'] . "> ";
         $sparqldelete .= "'" . $this->escapeSparqlLiteral($arr['out']) . "' ";
       }
-      
+
       $sparqldelete .= " } ";
-      
+
       $result = $this->directUpdate($sparqldelete);    
-    
+
 #    drupal_set_message("delete query: " . htmlentities($sparqldelete));
-    
+
     }
 #    drupal_set_message("I delete field $field from entity $entity_id that currently has the value $value");
+  }
+  
+    /**
+   * Delete a entity - this is not implemented yet.
+   * @param $entity an entity object
+   * @return TRUE on success
+   */
+  public function deleteEntity($entity) {
+
   }
 
   /**
@@ -1602,56 +1610,56 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
    */
   public function createEntity($entity) {
     #$uri = $this->getUri($this->getDefaultDataGraphUri());
-    
+
     $bundleid = $entity->bundle();
 
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
-    
+    $pbs = WisskiPathbuilderEntity::loadMultiple();
+
     $out = array();
-        
+
     // get the adapterid that was loaded
     // haha, this is the engine-id...
     //$adapterid = $this->getConfiguration()['id'];
-        
+
     foreach($pbs as $pb) {
 #      drupal_set_message("a2: " . microtime());
       // if we have no adapter for this pb it may go home.
       if(empty($pb->getAdapterId()))
         continue;
-        
-      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
+
+      $adapter = Adapter::load($pb->getAdapterId());
 
       // if we have not adapter, we may go home, too
       if(empty($adapter))
         continue;
-      
+
       // if he didn't ask for us...    
       if($this->getConfiguration()['id'] != $adapter->getEngine()->getConfiguration()['id'])
         continue;
-     
+
       $groups = $pb->getGroupsForBundle($bundleid);
 
       // for now simply take the first one.    
       $groups = current($groups);
 
       $triples = $this->generateTriplesForPath($pb, $groups, '', NULL, NULL, 0, 0, TRUE);
-      
+
       $sparql = "INSERT DATA { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " . $triples . " } } ";
       #dpm($sparql, "spargel");      
       $result = $this->directUpdate($sparql);
-    
+
       $uri = explode(" ", $triples, 2);
-      
+
       $uri = substr($uri[0], 1, -1);
-      
+
       $uri = $this->getDrupalId($uri);
-      
+
     }
 #    dpm($groups, "bundle");
-        
+
 #    $entity->set('id',$uri);
     $entity->set('eid',$uri);
-    
+
 #    "INSERT INTO { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " 
     
   }
@@ -1897,16 +1905,16 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     $datagraphuri = $this->getDefaultDataGraphUri();
 
     $pbarray = $pb->getPbEntriesForFid($fieldid);
-    
-    $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['id']);
+
+    $path = WisskiPathEntity::load($pbarray['id']);
     #dpm($entity_id, "I add!");
 #    drupal_set_message("smthg: " . serialize($this->generateTriplesForPath($pb, $path, NULL, "http://test.me/12", "http://argh.el/235", 2, TRUE)));
 
     if(empty($path))
       return;
-      
+
 #    $entity_id = $this->getUriForDrupalId($entity_id);
-      
+
 #    if(!drupal_validate_utf8($value)) {
 #      $value = utf8_encode($value);
 #    }
@@ -1920,19 +1928,19 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
 #      $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, 0, FALSE);
       $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE);
       $sparql .= " } }";
-      
+
 #     drupal_set_message("query: " . serialize($sparql) . " disamb on: " . $path->getDisamb());
-      
+
       $disambresult = $this->directQuery($sparql);
-  
+
       if(!empty($disambresult))
         $disambresult = current($disambresult);      
 #      drupal_set_message("rais: " . serialize($result));
     }
-    
+
     // rename to uri
     $subject_uri = $this->getUriForDrupalId($entity_id);
-        
+
 #    $subject_uri = str_replace("\\", "/", $entity_id);
 
     $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
@@ -1956,11 +1964,11 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       }
     }
     $sparql .= " } } ";
-  
-       
+
+
  #   dpm($sparql, "I would do: ");
- 
-   
+
+
 #    drupal_set_message("I would do: " . ($sparql));
 /*
 
@@ -1977,7 +1985,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
         $olduri = $eid;
         continue;
       }
-        
+
       $uri = $this->getUri($datagraphuri);
       if($key % 2 == 0) {
         $sparql .= "<$uri> a <$step> . ";
@@ -1988,23 +1996,23 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
         $prop = $step;
       }
     }
-    
+
     $primitive = $path->getDatatypeProperty();
     if(!empty($primitive)) {
       $sparql .= "<$olduri> <$primitive> '$value' . ";
     }
-        
+
     $sparql .= " } }";
 
     drupal_set_message("I do: " . htmlentities($sparql));
 */
     $result = $this->directUpdate($sparql);
-    
-    
+
+
 #    drupal_set_message("I add field $field from entity $entity_id that currently has the value $value");
   }
   
-  public function writeFieldValues($entity_id, array $field_values, $bundle=NULL) {
+  public function writeFieldValues($entity_id, array $field_values, $pathbuilder, $bundle = NULL, $original_values = array(), $force_creation = false, $initial_write = false) {
 #    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
     
     // tricky thing here is that the entity_ids that are coming in typically
@@ -2022,7 +2030,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
 
     // this approach will be not fast enough in the future...
     // the pbs have to have a better mapping of where and how to find fields
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    $pbs = WisskiPathbuilderEntity::loadMultiple();
     
     $out = array();
     
@@ -2033,33 +2041,33 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     //$adapterid = $this->getConfiguration()['id'];
         
     foreach($pbs as $pb) {
-      
+
       // if we have no adapter for this pb it may go home.
       if(empty($pb->getAdapterId()))
         continue;
-        
-      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
+
+      $adapter = Adapter::load($pb->getAdapterId());
 
       // if we have not adapter, we may go home, too
       if(empty($adapter))
         continue;
-      
+
       // if he didn't ask for us...    
       if($this->getConfiguration()['id'] != $adapter->getEngine()->getConfiguration()['id'])
         continue;
-              
+
 #      foreach($entity_ids as $eid) {
-        
+
         // here we should check if we really know the entity by asking the TS for it.
         // this would speed everything up largely, I think.
         $entity = $this->loadEntity($entity_id);
 
         #dpm($entity, "entity!");
-        
+
         // if there is nothing, continue.
         if(empty($entity))
           continue;
-        
+
         // it would be better to gather this information from the form and not from the ts
         // there might have been somebody saving in between...
         // @TODO !!!
@@ -2079,13 +2087,13 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
 
           if(empty($path)) 
             continue;
-            
+
           #drupal_set_message("I am still here: $key");
 
           $mainprop = $fieldvalue['main_property'];
-          
+
           unset($fieldvalue['main_property']);
-          
+
           foreach($fieldvalue as $key2 => $val) {
 
  #           drupal_set_message(serialize($val[$mainprop]) . " new");
@@ -2093,41 +2101,41 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
 
             // check if there are any old values. If not, delete nothing.
             if(!empty($old_values)) {
-         
+
 #dpm(array('old_values' => $old_values, 'val' => $val));
               // if they are the same - skip
               // I don't know why this should be working, but I leave it here...
               if($val[$mainprop] == $old_values[$key]) 
                 continue;
-              
+
               // the real value comparison is this here:
               if($val[$mainprop] == $old_values[$key][$key2][$mainprop])
                 continue;
-              
+
               // if oldvalues are an array and the value is in there - skip
               if(is_array($old_values[$key]) && in_array($val[$mainprop], $old_values[$key][$key2]))
                 continue;
-              
+
             // now write to the database
-            
+
 #            drupal_set_message($entity_id . "I really write!" . serialize($val[$mainprop])  . " and " . serialize($old_values[$key]) );
 #            return;
-            
+
               // first delete the old values
               if(is_array($old_values[$key]))
                 $this->deleteOldFieldValue($entity_id, $key, $old_values[$key][$key2][$mainprop], $pb);
               else
                 $this->deleteOldFieldValue($entity_id, $key, $old_values[$key], $pb);
             }
-                  
+
             // add the new ones
             $this->addNewFieldValue($entity_id, $key, $val[$mainprop], $pb); 
-            
+
 #            drupal_set_message("I would write " . $val[$mainprop] . " to the db and delete " . serialize($old_values[$key]) . " for it.");
-            
+
           }
 
-          
+
 /*          
           // Bundle is a special case.
           // If we are asked for a bundle, we first look in the pb cache for the bundle
@@ -2143,7 +2151,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
           if($fieldid == "bundle") {
             // get all the bundles for the eid from us
             $bundles = $this->getBundleIdsForEntityId($eid);
-                        
+
             if(!empty($bundles)) {
               // for now we simply take the first one
               // that might be not so smart
@@ -2164,7 +2172,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
           // set the bundle
           // @TODO: This is a hack and might break for multi-federalistic stores
           $pbarray = $pb->getPbEntriesForFid($fieldid);
-            
+
           // if there is no data about this path - how did we get here in the first place?
           // fields not in sync with pb?
           if(empty($pbarray["id"]))
@@ -2181,10 +2189,10 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
 
           // if there is no bundle we have to ask the system for the typical bundle
           if(empty($bundle)) {
-            
+
             // we try to get it from cache
             $bundle = $pb->getBundleIdForEntityId($eid);
-            
+
             // nothing was set up to now - so we use the field and ask the field for the typical bundle
             if(empty($bundle)) {
               $bundle = $pb->getBundle($pbarray["id"]);
@@ -2198,7 +2206,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
 
           // we ask for the bundle
           $bundle = $pb->getBundle($pbarray["id"]);
-          
+
           // and compare it to the bundle of the entity - if this is not the same, 
           // we don't have to ask for data.
           // @TODO: this is a hack - when the engine asks for the correct 
@@ -2206,15 +2214,15 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
           if($bundle != $out[$eid]['bundle']) {
             continue;
           }
-          
+
           $clearPathArray = $this->getClearPathArray($path, $pb);
-          
+
           if(!empty($path)) {
             // if this is question for a subgroup - handle it otherwise
             if($pbarray['parent'] > 0 && $path->isGroup()) {
 #              drupal_set_message("I am asking for: " . serialize($this->getClearGroupArray($path, $pb)));
               $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($this->getClearGroupArray($path, $pb), NULL, $eid));
-               
+
             } else // it is a field?
               $out[$eid][$fieldid] = array_merge($out[$eid][$fieldid], $this->pathToReturnValue($clearPathArray, $path->getDatatypeProperty(), $eid));
           }
@@ -2276,7 +2284,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       }
     } else { // or it worked
  */     
-      drupal_set_message("Successfully loaded $iri into the Triplestore.");
+      $this->messenger()->addStatus("Successfully loaded $iri into the Triplestore.");
    # }
   
     // look for imported ontologies
@@ -2306,7 +2314,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     $file = file_get_contents($iri);
     $format = \EasyRdf_Format::guessFormat($file, $iri); 
     if(empty($format)) {
-      drupal_set_message("Could not initialize namespaces.", 'error');
+      $this->messenger()->addError("Could not initialize namespaces.");
     } else {
       if(stripos($format->getName(), 'xml') !== FALSE) {
         preg_match('/RDF[^>]*>/i', $file, $nse);
@@ -2405,13 +2413,17 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
   }
   
   private function putNamespace($short_name,$long_name) {
-    $result = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $result = \Drupal::database()->select('wisski_salz_sparql11_ontology_namespaces', 'ns')
               ->fields('ns')
               ->condition('short_name',$short_name,'=')
               ->execute()
               ->fetchAssoc();
     if (empty($result)) {
-      db_insert('wisski_salz_sparql11_ontology_namespaces')
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+      \Drupal::database()->insert('wisski_salz_sparql11_ontology_namespaces')
               ->fields(array('short_name' => $short_name,'long_name' => $long_name))
               ->execute();
     } else {
@@ -2421,7 +2433,9 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
                                                                                                            
   public function getNamespaces() {
     $ns = array();
-    $db_spaces = db_select('wisski_salz_sparql11_ontology_namespaces','ns')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $db_spaces = \Drupal::database()->select('wisski_salz_sparql11_ontology_namespaces', 'ns')
                   ->fields('ns')
                   ->execute()
                   ->fetchAllAssoc('short_name');
@@ -2574,15 +2588,15 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
   }
   
   public function doTheReasoning() {
-  
+
     $properties = array();
     $super_properties = array();
     $sub_properties = array();
-    
+
     //prepare database connection and reasoner tables
     //if there's something wrong stop working
     if ($this->prepareTables() === FALSE) return;
-    
+
     //find properties
     $result = $this->directQuery("SELECT ?property WHERE {?property a owl:ObjectProperty.}");
     $insert = $this->prepareInsert('properties');
@@ -2594,7 +2608,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     $insert->execute();
     //$cid = 'wisski_reasoner_properties';
     //\Drupal::cache()->set($cid,$properties);
-    
+
     //find one step property hierarchy, i.e. properties that are direct children or direct parents to each other
     // no sub-generations are gathered
     $result = $this->directQuery(
@@ -2629,7 +2643,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     $insert->execute();
     //$cid = 'wisski_reasoner_inverse_properties';
     //\Drupal::cache()->set($cid,$inverses);
-    
+
     //now the same things for classes
     //find all classes
     $insert = $this->prepareInsert('classes');
@@ -2643,7 +2657,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     $insert->execute();
     //uksort($classes,'strnatcasecmp');
     //\Drupal::cache()->set('wisski_reasoner_classes',$classes);
-    
+
     //find full class hierarchy
     $super_classes = array();
     $sub_classes = array();
@@ -2659,13 +2673,13 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       $super_classes[$sub][$super] = $super;
       $sub_classes[$super][$sub] = $sub;
     }
-    
+
     //\Drupal::cache()->set('wisski_reasoner_sub_classes',$sub_classes);
     //\Drupal::cache()->set('wisski_reasoner_super_classes',$super_classes);
-    
+
     //explicit top level domains
     $domains = array();
-    
+
     $results = $this->directQuery(
       "SELECT ?property ?domain WHERE {"
         ." ?property rdfs:domain ?domain."
@@ -2675,13 +2689,13 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     foreach ($results as $row) {
       $domains[$row->property->getUri()][$row->domain->getUri()] = $row->domain->getUri();
     }
-    
+
     //clear up, avoid DatatypeProperties
     $domains = array_intersect_key($domains,$properties);
-    
+
     //explicit top level ranges
     $ranges = array();
-    
+
     $results = $this->directQuery(
       "SELECT ?property ?range WHERE {"
         ." ?property rdfs:range ?range."
@@ -2691,10 +2705,10 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     foreach ($results as $row) {
       $ranges[$row->property->getUri()][$row->range->getUri()] = $row->range->getUri();
     }
-    
+
     //clear up, avoid DatatypeProperties
     $ranges = array_intersect_key($ranges,$properties);    
-    
+
     //take all properties with no super property
     $top_properties = array_diff_key($properties,$super_properties);
 
@@ -2702,23 +2716,23 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
     //check if they all have domains and ranges set
     $dom_check = array_diff_key($top_properties,$domains);
     if (!empty($dom_check)) {
-      drupal_set_message('No domains for top-level properties: '.implode(', ',$dom_check),'error');
+      $this->messenger()->addError('No domains for top-level properties: '.implode(', ',$dom_check));
       $valid_definitions = FALSE;
     }
     $rng_check = array_diff_key($top_properties,$ranges);
     if (!empty($rng_check)) {
-      drupal_set_message('No ranges for top-level properties: '.implode(', ',$rng_check),'error');
+      $this->messenger()->addError('No ranges for top-level properties: '.implode(', ',$rng_check));
       $valid_definitions = FALSE;
     }
-    
+
     //set of properties where the domains and ranges are not fully set
     $not_set = array_diff_key($properties,$top_properties);
-    
+
     //while there are unchecked properties cycle throgh them, gather domain/range defs from all super properties and inverses
     //and include them into own definition
     $runs = 0;
     while ($valid_definitions && !empty($not_set)) {
-      
+
       $runs++;
       //take one of the properties
       $prop = array_shift($not_set);
@@ -2735,7 +2749,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
         }
         $new_domains = array_unique($new_domains);
         $new_ranges = array_unique($new_ranges);
-        
+
         $remove_domains = array();
         foreach ($new_domains as $domain_1) {
           foreach ($new_domains as $domain_2) {
@@ -2747,9 +2761,9 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
           }
         }
         $new_domains = array_diff($new_domains,$remove_domains);
-        
+
         $domains[$prop] = array_combine($new_domains,$new_domains);
-        
+
         $remove_ranges = array();
         foreach ($new_ranges as $range_1) {
           foreach ($new_ranges as $range_2) {
@@ -2761,15 +2775,15 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
           }
         }
         $new_ranges = array_diff($new_ranges,$remove_ranges);
-        
+
         $ranges[$prop] = array_combine($new_ranges,$new_ranges);
-        
+
       } else {
         //append this property to the end of the list to be checked again later-on
         array_push($not_set,$prop);
       }
     }
-    drupal_set_message('Definition checkup runs: '.$runs);
+    $this->messenger()->addStatus('Definition checkup runs: '.$runs);
     //remember sub classes of domains are domains, too.
     //if a property has exactly one domain set, we can add all subClasses of that domain
     //if there are multiple domains we can only add those being subClasses of ALL of the domains
@@ -2793,7 +2807,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
         $ranges[$property] = array_merge($ranges[$property],$add_up);
       }
     }
-    
+
     $insert = $this->prepareInsert('domains');
     foreach ($domains as $prop => $classes) {
       foreach ($classes as $class) $insert->values(array('property'=>$prop,'class'=>$class));
@@ -2804,7 +2818,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       foreach ($classes as $class) $insert->values(array('property'=>$prop,'class'=>$class));
     }
     $insert->execute();
-    
+
 //    //for the pathbuilders to work correctly, we also need inverted search
 //    $reverse_domains = array();
 //    foreach ($domains as $prop => $classes) {

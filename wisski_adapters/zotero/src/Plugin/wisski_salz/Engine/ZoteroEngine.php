@@ -7,6 +7,7 @@
 
 namespace Drupal\wisski_adapter_zotero\Plugin\wisski_salz\Engine;
 
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Language\LanguageInterface;
@@ -66,34 +67,34 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
   public function loadSteps() {
     $url = $this->server . '/' . $this->all_items . '?v=' . $this->version . '&key=' . $this->api_key;
     ini_set("allow_url_fopen", 1);
-    
+
     $json = file_get_contents($url);
-    
+
 #    dpm(serialize($http_response_header), "header");
-    
+
     $objs = json_decode($json);
-    
+
     $steps = array();
-    
+
 #    dpm($objs, "obj");
-    
+
     foreach($objs as $obj) {
       if(isset($obj->field)) {
         $steps['Literature'][$obj->field] = NULL;
-        
+
 #        if($obj->field == "creators") {
 #          $steps['Literature'][$obj->field . ' creatorType'] = NULL;
 #          $steps['Literature'][$obj->field . ' firstName'] = NULL;
 #          $steps['Literature'][$obj->field . ' lastName'] = NULL;
 #        }
-        
+
       }
     }
-    
+
     $steps['Literature']['creators'] = NULL;
     $steps['Literature']['directLink'] = NULL;
     $steps['Literature']['itemType'] = NULL;
-    
+
     $this->possibleSteps = $steps;
 #    dpm($this->possible_steps);
   }
@@ -373,7 +374,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
    * {@inheritdoc} 
    */
   public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
-    dpm("load field values!");    
+#    dpm("load field values!");    
     if (!$entity_ids) {
       // TODO: get all entities
       $entity_ids = array(
@@ -416,7 +417,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
 #dpm(func_get_args(), 'lpvff');
 
-    $main_property = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);
+    $main_property = FieldStorageConfig::loadByName('wisski_individual', $field_id);
     if(!empty($main_property)) {
       $main_property = $main_property->getMainPropertyName();
     }
@@ -428,8 +429,8 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 #    return array();
 
     if(!empty($field_id) && empty($bundleid_in)) {
-      drupal_set_message("Es wurde $field_id angefragt und bundle ist aber leer.", "error");
-      dpm(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
+      $this->messenger()->addError("Es wurde $field_id angefragt und bundle ist aber leer.");
+#      dpm(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
       return;
     }
     
@@ -625,25 +626,25 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 
     if(!empty($sorts)) {
       foreach($sorts as $subsort) {
-    
+
         $pos = strpos($subsort['field'], $pathbuilder->id() . "__");
-    
+
 #      dpm($pos, "pos");
 #      dpm($sort['field'], "sort");
 #      dpm($pathbuilder->id(), "id");
-    
+
         if($pos === FALSE)
           continue;
-    
+
         $pathid = substr($subsort['field'], $pos + strlen($pathbuilder->id() . "__"));
-      
-        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
-      
+
+        $path = WisskiPathEntity::load($pathid);
+
         $dt = $path->getDatatypeProperty();
 
         if($dt == "creators");
           $dt = "creator";
-      
+
         $sort .= "&sort=" . $dt . "&direction=" . strtolower($subsort['direction']);
 #      dpm($sort, "sort");
       // this can only handle one!

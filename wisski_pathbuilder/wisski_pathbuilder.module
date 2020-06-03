@@ -1,5 +1,6 @@
 <?php
 
+use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Entity\EntityInterface;
 use \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
 use \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
@@ -19,7 +20,7 @@ function wisski_pathbuilder_path_load($id) {
   return WisskiPathEntity::load($id);
 }
 
-function wisski_pathbuilder_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+function wisski_pathbuilder_help($route_name, RouteMatchInterface $route_match) {
    switch ($route_name) {
     case 'help.page.wisski_pathbuilder':
       return '<p>' . t('This is the basic WissKI module for building ' .

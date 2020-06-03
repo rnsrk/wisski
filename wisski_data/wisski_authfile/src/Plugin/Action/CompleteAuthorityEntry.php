@@ -7,6 +7,7 @@
 
 namespace Drupal\wisski_authfile\Plugin\Action;
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Action\ConfigurableActionBase;
 use Drupal\Core\Annotation\Action;
 use Drupal\Core\Annotation\Translation;
@@ -96,7 +97,7 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
    * {@inheritdoc}
    */
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
-    return \Drupal\Core\Access\AccessResult::allowed();
+    return AccessResult::allowed();
   }
   
   
@@ -213,8 +214,8 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
         $engine->writeFieldValues($entity_id, $fv, $pb, $bundle);
       else {
         // provide some debug if something went wrongly....
-        drupal_set_message("I could not find PB (" . serialize($pb) . ") or fv (" . serialize($fv) . ") or bundle (" . serialize($bundle) . ") in Engine (" . serialize($engine) . ")", "error");
-        drupal_set_message("I was looking for field (" . serialize($this->configuration['entry_uri_field']) . " to store the uri into it.", "error");
+        $this->messenger()->addError("I could not find PB (" . serialize($pb) . ") or fv (" . serialize($fv) . ") or bundle (" . serialize($bundle) . ") in Engine (" . serialize($engine) . ")");
+        $this->messenger()->addError("I was looking for field (" . serialize($this->configuration['entry_uri_field']) . " to store the uri into it.");
       }      
 
     }

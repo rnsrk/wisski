@@ -170,7 +170,7 @@ class AddForm extends EntityForm {
       $c++;
     }
     if ($insert !== NULL) $insert->execute();
-    drupal_set_message($this->t('Successfully imported @c rows', ['@c' => $c]));
+    $this->messenger()->addStatus($this->t('Successfully imported @c rows', ['@c' => $c]));
     return $c;
   }
 

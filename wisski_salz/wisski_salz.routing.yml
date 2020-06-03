@@ -1,4 +1,4 @@
-entity.wisski_salz_adapter.collection:
+entity.wisski_salz_adapter.canonical:
   path: '/admin/config/wisski/salz/adapter'
   defaults:
     _entity_list: 'wisski_salz_adapter'

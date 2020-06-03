@@ -30,7 +30,7 @@ class MiradorController extends ControllerBase {
   public function start() {
 
     $form = array();
-    
+
     $form['#markup'] = '<div id="viewer"></div>';
     $form['#allowed_tags'] = array('div', 'select', 'option','a', 'script');
 #    #$form['#attached']['drupalSettings']['wisski_jit'] = $wisski_individual;
@@ -68,8 +68,8 @@ class MiradorController extends ControllerBase {
                                                                                                                                       </script>
                                                                                                                                         </body>
                                                                                                                                         </html>');
-        
-    
+
+
     return $response;
  */
   }

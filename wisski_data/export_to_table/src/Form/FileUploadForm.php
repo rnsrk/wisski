@@ -2,10 +2,10 @@
 
 /**
  * @file
- * Contains \Drupal\wisski_bulkedit\Form\FileUploadForm.
+ * Contains \Drupal\wisski_export_to_table\Form\FileUploadForm.
  */
    
-namespace Drupal\wisski_bulkedit\Form;
+namespace Drupal\wisski_export_to_table\Form;
 
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Form\FormBase;
@@ -17,7 +17,7 @@ class FileUploadForm extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'wisski_bulkedit_update_form';
+    return 'wisski_export_to_table_update_form';
   }
 
   /**
@@ -73,7 +73,7 @@ class FileUploadForm extends FormBase {
 
     $fields = ['' => $this->t('- None -')];
     if ($bundle_id) {
-      $field_defs = \Drupal::entityManager()->getFieldDefinitions('wisski_individual', $bundle_id);
+      $field_defs = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual', $bundle_id);
       foreach ($field_defs as $field_id => $def) {
         /** Drupal\Core\Field\FieldDefinitionInterface $def **/
         $fields[$field_id] = $def->getLabel();  // ->label() is not defined!

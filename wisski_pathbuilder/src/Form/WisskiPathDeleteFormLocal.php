@@ -6,6 +6,7 @@
  
 namespace Drupal\wisski_pathbuilder\Form;
 
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Url;
@@ -38,9 +39,9 @@ class WisskiPathDeleteFormLocal extends EntityConfirmFormBase {
     #$pb_entities = entity_load_multiple('wisski_pathbuilder');
     # $pb = 'pb';
     if (isset($this->pb_id)) {
-      $url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->pb_id));
+      $url = Url::fromRoute('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->pb_id));
     } else {
-      $url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.collection');
+      $url = Url::fromRoute('entity.wisski_pathbuilder.collection');
     }
     return $url;                       
   }
@@ -62,7 +63,7 @@ class WisskiPathDeleteFormLocal extends EntityConfirmFormBase {
     // Delete and set message
 #    drupal_set_message(serialize($this->pb_id));
 #    $path->delete();
-    if (isset($this->pb_id) && $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($this->pb_id)) {
+    if (isset($this->pb_id) && $pb = WisskiPathbuilderEntity::load($this->pb_id)) {
       if ($pb->hasPbPath($path_id)) {
         $pbpath = $pb->getPbPath($path_id);
         
@@ -70,7 +71,7 @@ class WisskiPathDeleteFormLocal extends EntityConfirmFormBase {
         $pb->save();
       }
     }
-    drupal_set_message($this->t('The path @id has been deleted.',array('@id' => $path_id)));
+    $this->messenger()->addStatus($this->t('The path @id has been deleted.',array('@id' => $path_id)));
 #    $form_state->setRedirectUrl($this->getCancelUrl());
 
 #    drupal_set_message("pbp: " . serialize($pbpath));

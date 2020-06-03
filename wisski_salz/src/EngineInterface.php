@@ -9,14 +9,15 @@ namespace Drupal\wisski_salz;
 
 use Drupal\Component\Plugin\PluginInspectionInterface;
 use Drupal\wisski_salz\ExternalEntityInterface;
-use Drupal\Component\Plugin\ConfigurablePluginInterface;
+use Drupal\Component\Plugin\ConfigurableInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Language\LanguageInterface;
 
 /**
  * Defines an interface for external entity storage client plugins.
  */
-interface EngineInterface extends PluginInspectionInterface, ConfigurablePluginInterface, PluginFormInterface  {
+interface EngineInterface extends PluginInspectionInterface, ConfigurableInterface, PluginFormInterface  {
   
   const SUCCESSFUL_WRITE = 1;
   const ERROR_ON_WRITE = 0;

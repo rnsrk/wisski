@@ -7,6 +7,8 @@
  
 namespace Drupal\wisski_pathbuilder\Form;
 
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use Drupal\wisski_salz\Entity\Adapter;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\Form\FormStateInterface; 
 
@@ -49,11 +51,11 @@ class WisskiPathForm extends EntityForm {
     // so we have to override this one to get hold of the pb id
     // load the pb entity this path currently is attached to 
     // we found this out by the url we're coming from!
-    $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($wisski_pathbuilder);
+    $pb = WisskiPathbuilderEntity::load($wisski_pathbuilder);
 #dpm($pb,'before edit');
     // load the adapter of the pb
 
-    $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
+    $adapter = Adapter::load($pb->getAdapterId());
     
     // load and register the engine
     $this->engine = $adapter->getEngine();    
@@ -240,7 +242,7 @@ class WisskiPathForm extends EntityForm {
             
       // if the engine has no ontology, it currently returns false which is evil as options      
       if($element_options === FALSE) {
-        drupal_set_message($this->t("No path options for this path could be evaluated. Probably the ontology is missing in your store!"), "error");
+        $this->messenger()->addError($this->t("No path options for this path could be evaluated. Probably the ontology is missing in your store!"));
         $element_options = array();
       }
       
@@ -345,9 +347,9 @@ class WisskiPathForm extends EntityForm {
    * overridden to ensure the correct mapping of form values to entity properties
    */
   protected function copyFormValuesToEntity(EntityInterface $entity, array $form, FormStateInterface $form_state) {
-    
+
     $values = $form_state->getValues();
-    
+
     //From parent, not sure what this is necessary for
     if ($this->entity instanceof EntityWithPluginCollectionInterface) {
       // Do not manually update values represented by plugin collections.
@@ -355,7 +357,7 @@ class WisskiPathForm extends EntityForm {
     }
 
     $path_array = array();
-    
+
     foreach($values['path_array'] as $step) {
       $value = $step['select_box'];
       if ($value !== 'empty') $path_array[] = $value;
@@ -391,13 +393,13 @@ class WisskiPathForm extends EntityForm {
 #dpm($path,'Saved path');    
     if($status) {
       // Setting the success message.
-      drupal_set_message($this->t('Saved the path: @id.', array(
+      $this->messenger()->addStatus($this->t('Saved the path: @id.', array(
         '@id' => $path->getID(),
       )));
     } else {
-      drupal_set_message($this->t('The path @id could not be saved.', array(
+      $this->messenger()->addError($this->t('The path @id could not be saved.', array(
         '@id' => $path->getID(),
-      )), 'error');
+      )));
     }
         
     if(empty($this->pb))
@@ -406,7 +408,7 @@ class WisskiPathForm extends EntityForm {
       $pbid = $this->pb;
           
     // load the pb
-    $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($pbid);
+    $pb = WisskiPathbuilderEntity::load($pbid);
      
        
     // add the path to its tree if it was not there already

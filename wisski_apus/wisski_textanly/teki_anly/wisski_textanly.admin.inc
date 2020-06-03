@@ -162,7 +162,9 @@ function wisski_textanly_admin_list_submit($form, &$form_state) {
     if (substr($key, 0, 6) == 'weight') {
       //cunningly we have the DB id of the row in the element name
       $id = str_replace('weight-', '', $key);
-      db_query("UPDATE {wisski_textanly_analyser} SET weight=%d WHERE aid=%d", $data, $id);
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // If your `options` argument contains a `target` key, you will need to use `\Drupal\core\Database\Database::getConnection('my_database'). Drupal Rector could not yet evaluate the `options` argument since it was a variable.
+      \Drupal::database()->query("UPDATE {wisski_textanly_analyser} SET weight=%d WHERE aid=%d", $data, $id);
     }
   }
 }
@@ -190,7 +192,7 @@ function theme_wisski_textanly_profile_table($form) {
         $this_row = $row['data']['#value'];
 
         //Add the weight field to the row
-        $this_row[] = drupal_render($row['weight-'.$id]);
+        $this_row[] = \Drupal::service('renderer')->render($row['weight-'.$id]);
 
         //Add the row to the array of rows
         $table_rows[] = array('data' => $this_row, 'class' => 'draggable');
@@ -205,7 +207,7 @@ function theme_wisski_textanly_profile_table($form) {
   );
 
   $output = theme('table', $header, $table_rows, array('id' => 'textanly-table-' . $table_id), $caption);
-  $output .= drupal_render($form);
+  $output .= \Drupal::service('renderer')->render($form);
 
   // Call add_tabledrag to add and setup the JS for us
   // The key thing here is the first param - the table ID
@@ -231,7 +233,7 @@ function wisski_textanly_admin_edit(&$form_state, $aid = NULL, $type = '', $clon
     // we get type from url arg, so check if it is valid
     $types = wisski_textanly_get_types();
     if (!is_string($type) || !isset($types[$type])) {
-      drupal_set_message(t('Invalid type for analyser.'), 'error');
+      \Drupal::messenger()->addError(t('Invalid type for analyser.'));
       return;
     }
     
@@ -328,7 +330,9 @@ function wisski_textanly_admin_edit_validate($form, &$form_state) {
   $ap = (object) $form_state['values'];
 
   // name should be unique => check if name already exists
-  $res = db_query("SELECT aid FROM {wisski_textanly_analyser} WHERE `name` = '%s'", $ap->name);
+  // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+  // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+  $res = \Drupal::database()->query("SELECT aid FROM {wisski_textanly_analyser} WHERE `name` = '%s'", $ap->name);
   $other_ap = db_fetch_object($res);
   if ($other_ap && $other_ap->aid != $ap->aid) {
     form_set_error('name', 'There already exists an analyser with that name. Please choose a different one.');

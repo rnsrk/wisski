@@ -311,12 +311,12 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
         );
       } else {
         #drupal_set_message("got: " . serialize($item->wisskiDisamb));
-        
+
         $url = $item->wisskiDisamb;
 #        $url = str_replace('/', '\\', $url);
         $entity_id = AdapterHelper::getDrupalIdForUri($url);
         $url = 'wisski/navigate/' . $entity_id . '/view';
-        
+
 #        drupal_set_message("url: " . serialize($url));
 
 #        drupal_set_message(serialize($item->value));
@@ -327,7 +327,7 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
         $buns = AdapterHelper::getBundleIdsForEntityId($entity_id, TRUE);
 
         #dpm($buns, "buns");
-        
+
         #dpm($settings, "yay!");
 
         if(!empty($buns)) {
@@ -337,12 +337,12 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
         }
 
         if($settings['use_title_pattern'] && !empty($buns) ) {
-          
+
         #  dpm("I generate title for $entity_id");
           $generated_title = wisski_core_generate_title($entity_id);
         #  dpm($generated_title, "yay!");
         }
-        
+
         if($generated_title != "") {
           $elements[$delta] = array(
             '#type' => 'link',
@@ -365,7 +365,7 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
         }
 
 #        dpm($url, "url");
-        
+
 #        drupal_set_message(serialize($elements));
       }
       

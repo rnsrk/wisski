@@ -249,13 +249,10 @@ function wisski_textanly_build_has_pos_reverse($text) {
 /* ***************** *
 *  ANALYSER
 ** ***************** */
-
-
 /** Find occurences of vocabulary terms in text
-* This is the analyse operation for analysis component type vocab
+ * This is the analyse operation for analysis component type vocab
 *
 * @author Martin Scholz, Florian Wittmann
-*
 */
 function wisski_textanly_analyse_vocab($analyser, $text_struct, $ticket) {
   
@@ -330,7 +327,9 @@ function _wisski_textanly_analyse_vocab_token($tokens, $token_pos, $tokens_len, 
 
   // this is the exact query; 
   $q  = "SELECT * FROM {wisski_vocab_ctrl_index} WHERE value = '%s'" . (empty($lemma) ? '' : " OR value = '%s'");
-  $res = db_query($q, $token[0], $lemma);
+  // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+  // If your `options` argument contains a `target` key, you will need to use `\Drupal\core\Database\Database::getConnection('my_database'). Drupal Rector could not yet evaluate the `options` argument since it was a variable.
+  $res = \Drupal::database()->query($q, $token[0], $lemma);
   while ($row = db_fetch_object($res)) {
 
     $label = $row->value;
@@ -366,10 +365,10 @@ function _wisski_textanly_analyse_vocab_token($tokens, $token_pos, $tokens_len, 
   $q  = "SELECT * FROM {wisski_vocab_ctrl_index} WHERE ";
   $q .= "value LIKE '%s %%' OR value LIKE '%s-%%'";
   if (!empty($lemma)) $q .= "OR value LIKE '%s %%' OR value LIKE '%s-%%'";
-  $res = db_query($q, $token[0], $token[0], $lemma, $lemma);
+  $res = \Drupal::database()->query($q, $token[0], $token[0], $lemma, $lemma);
 
   while ($row = db_fetch_object($res)) {
-    
+
     $label = $row->value;
     $pos = stripos($label, $token[0]);
     if ($pos === FALSE) {
@@ -393,12 +392,12 @@ function _wisski_textanly_analyse_vocab_token($tokens, $token_pos, $tokens_len, 
 
     $prefix_lev = levenshtein($prefix, $text_prefix);
     $suffix_lev = levenshtein($suffix, $text_suffix);
-  
+
     $match = 1 - (1.0 * $prefix_lev + $suffix_lev) / ($prefix_len + $suffix_len);
     $match *= $match; // 
 
 
-    
+
 /*
     $does_match = TRUE;
     $token_count = 1;
@@ -424,7 +423,7 @@ function _wisski_textanly_analyse_vocab_token($tokens, $token_pos, $tokens_len, 
             $range[0] = $tokens[$tp][1];
           }
         }
-        
+
       }
     }
 
@@ -462,7 +461,7 @@ function _wisski_textanly_analyse_vocab_token($tokens, $token_pos, $tokens_len, 
       'range' => $range,
       'rank' => $voc->priority / 10.0 + $constraint_offset,
     );
-    
+
     $anno['rank'] += $rank_factor_length_contains * ($prefix_len + $suffix_len) + $rank_offset_contains;
     $anno['rank'] *= $match;
     /*

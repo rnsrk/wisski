@@ -259,14 +259,18 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
 
     if ($save_field_properties) {
       //clear the field values for this field in entity in bundle
-      db_delete('wisski_entity_field_properties')
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+      \Drupal::database()->delete('wisski_entity_field_properties')
         ->condition('eid',$this->id())
         ->condition('bid',$this->bundle())
     #    ->condition('fid',$field_name)
         ->execute();
       
       // prepare the insert query.
-      $query = db_insert('wisski_entity_field_properties')
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+      $query = \Drupal::database()->insert('wisski_entity_field_properties')
         ->fields(array('eid', 'bid', 'fid', 'delta', 'ident', 'properties'));
         
     }
@@ -275,14 +279,14 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
     foreach ($this as $field_name => $field_item_list) {
 
       $out[$field_name] = array();
-      
+
       // the main property is for all items of the field the same
       // so we buffer it here.
       $main_property = NULL;
 
 #      dpm($field_item_list, "save!!");      
       foreach($field_item_list as $weight => $field_item) {
-        
+
         $field_values = $field_item->getValue();
         $field_def = $field_item->getFieldDefinition()->getFieldStorageDefinition();
 
@@ -327,7 +331,7 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
         if ($save_field_properties && !empty($this->id())) {
 
           if(!isset($field_values[$main_property])) {
-            drupal_set_message("I could not store value " . serialize($field_values) . " for this field because the main property (" . $main_property . ") is not in there.", "warning");
+            \Drupal::messenger()->addWarning("I could not store value " . serialize($field_values) . " for this field because the main property (" . $main_property . ") is not in there.");
 #            dpm($field_values);
 #            dpm($main_property, "mp");
             continue;
@@ -344,9 +348,9 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
             #isset($field_values['wisskiDisamb']) ? $field_values['wisskiDisamb'] : $field_values[$main_property],
             'properties' => serialize($field_values),
           );
-          
+
 #          dpm($fields_to_save, "fts");
-          
+
           // add the values to the insert query
           $query->values($fields_to_save);
         }
@@ -360,9 +364,9 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
       #  dpm($query);
       #  $query->execute();
       #}
- 
+
 #      dpm($out[$field_name], "out");
-        
+
       if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) || empty($out[$field_name][0][$main_property])) unset($out[$field_name]);
 #      if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) ) unset($out[$field_name]);
     }

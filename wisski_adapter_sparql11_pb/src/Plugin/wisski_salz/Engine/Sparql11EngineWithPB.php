@@ -7,6 +7,10 @@
 
 namespace Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine;
 
+use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\wisski_salz\Entity\Adapter;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11Engine;
 use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
@@ -142,7 +146,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           if ($search_properties === NULL) {
             if ($this->isAProperty($candidate) === FALSE) $search_properties = TRUE;
           } elseif ($this->isAProperty($candidate) === $search_properties) {
-            drupal_set_message('History and Future are inconsistent','error');
+            $this->messenger()->addError('History and Future are inconsistent');
           }
         } else {
           if (WISSKI_DEVEL) \Drupal::logger('WissKI path alternatives')->debug('invalid URI '.$candidate);
@@ -485,7 +489,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $from_graphs = "\nFROM <" . join(">\nFROM <", $ontology_graphs) . ">\n";
       }
       $query = "SELECT DISTINCT ?property${from_graphs}WHERE {\n";
-    
+
       if (isset($class)) {
         $query .= 
            "  <$class> rdfs:subClassOf* ?d_def_class.\n"
@@ -776,7 +780,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             
         foreach($paths as $pathid) {
     
-          $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
+          $path = WisskiPathEntity::load($pathid);
         
 #        drupal_set_message(serialize($path));
         
@@ -821,7 +825,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
     
 #    wsmlog(__METHOD__ . ": could not find URI for entityid '$entityid'", 'warning');
-    drupal_set_message("Could not find URI for entityid '$entityid'", 'error');
+    $this->messenger()->addError("Could not find URI for entityid '$entityid'");
     return array();
 
   }
@@ -900,7 +904,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     // do some error handling    
     if(!$group->isGroup()) {
-      drupal_set_message("getClearGroupArray called with something that is not a group: " . serialize($group), "error");
+      $this->messenger()->addError("getClearGroupArray called with something that is not a group: " . serialize($group));
       return;
     }
         
@@ -913,7 +917,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // then we have to get our parents array
       $pbparentarray = $allpbpaths[$pbarray['parent']];
       
-      $parentpath = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["parent"]);
+      $parentpath = WisskiPathEntity::load($pbarray["parent"]);
       
       // if there is nothing, do nothing!
       // I am unsure if that ever could occur
@@ -962,7 +966,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // Usually if we have a subgroup path x0 y0 x1 we have to skip x0 y0 in
     // the paths of the group.
     if (!is_object($path) || !is_object($pb)) {
-      drupal_set_message('getClearPathArray found no path or no pathbuilder. Error!', 'error');
+      $this->messenger()->addError('getClearPathArray found no path or no pathbuilder. Error!');
       return array();
     }
     
@@ -977,7 +981,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $pbparentarray = $allpbpaths[$pbarray['parent']];
       
       // how many path-parts are in the pb-parent?
-      $parentpath = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["parent"]);
+      $parentpath = WisskiPathEntity::load($pbarray["parent"]);
             
       // if there is nothing, do nothing!
       // I am unsure if that ever could occur
@@ -1001,16 +1005,16 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // this is no subgroup, it is a path
 #        if(!empty($pbparentarray['parent'])) {
           // only do something if it is a path in a subgroup, not in a main group  
-          
+
 #          $parentparentpath = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbparentarray["parent"]);
-          
+
           // in that case we have to remove the subgroup-part, however minus one, as it is the       
 #          $pathcnt = count($parentpath->getPathArray()) - count($this->getClearPathArray($parentpath, $pb));
           $pathcnt = count($parentpath->getPathArray()) - 1; #count($parentparentpath->getPathArray());        
 
 #          dpm($pathcnt, "pathcnt");
 #          dpm($parentpath->getPathArray(), "pa!");
-        
+
           for($i=0; $i< $pathcnt; $i++) {
             unset($patharraytoget[$i]);
           }
@@ -1044,7 +1048,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         if(empty($pbentries))
           continue;
         
-        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbentries['id']);
+        $path = WisskiPathEntity::load($pbentries['id']);
         
         if(empty($path))
           continue;
@@ -1152,7 +1156,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * This is deprecated and unfunctional
    */
   public function loadMultipleEntities($ids = NULL) {
-    drupal_set_message("I may not be called: loadMultipleEntities. ", "error");
+    $this->messenger()->addError("I may not be called: loadMultipleEntities. ");
     return;
   }
     
@@ -1180,7 +1184,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #$tmpt1 = microtime(TRUE);            
 #  drupal_set_message("ptrv: " . microtime());
     if(empty($path)) {
-      drupal_set_message("No path supplied to ptr. This is evil.", "error");
+      $this->messenger()->addError("No path supplied to ptr. This is evil.");
       return array();
     }
 
@@ -1239,7 +1243,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
       // if the path is a group it has to be a subgroup and thus entity reference.
       if($path->isGroup()) {
-      
+
         // it is the same as field - so entity_reference is basic shit here
         $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0,  ($starting_position/2), FALSE, NULL, 'entity_reference', $relative);
       }
@@ -1249,7 +1253,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #$tmpt7 = microtime(TRUE);            
 
     } else {
-      drupal_set_message("No EID for data. Error. ", 'error');
+      $this->messenger()->addError("No EID for data. Error. ");
     }
 
 #    drupal_set_message("ptrv3 " . microtime());
@@ -1280,7 +1284,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // TODO: by Martin: is this really working and if so in which case?
       // Also, what does true/false statement mean? we know that it's not an ASK query
       if($thing == new \StdClass()) {
-        drupal_set_message("This is ultra-evil!", "error");
+        $this->messenger()->addError("This is ultra-evil!");
         continue;
       }
       
@@ -1372,7 +1376,7 @@ $tsa = ['start'=>microtime(true)];
         $pb_ids[$pb_id] = $pb_id;
       }
     }
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple($pb_ids);
+    $pbs = WisskiPathbuilderEntity::loadMultiple($pb_ids);
 $tsa['pbs'] = join(' ', $pb_ids);
 
     $out = array();
@@ -1393,7 +1397,7 @@ $tmpc=microtime(true);
 $tsa[$pb->id()][$fieldid] = (microtime(TRUE)-$tmpc);
 
 #        drupal_set_message("I've got: " . serialize($got));
-        
+
         if (empty($out)) {
           $out = $got;
         } else {
@@ -1405,7 +1409,7 @@ $tsa[$pb->id()][$fieldid] = (microtime(TRUE)-$tmpc);
             }
           }
         }
-        
+
 #        drupal_set_message("out after got: " . serialize($out));
       }
       
@@ -1436,7 +1440,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #    drupal_set_message("2");
 #   
 #    drupal_set_message("muha: " . serialize($field_id));
-    $field_storage_config = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);#->getItemDefinition()->mainPropertyName();
+    $field_storage_config = FieldStorageConfig::loadByName('wisski_individual', $field_id);#->getItemDefinition()->mainPropertyName();
 #    drupal_set_message("a11: " . microtime());
     // What does it mean if the field storage config is empty?
     //=>  it means it is a basic field
@@ -1508,7 +1512,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     }
 
     if(!empty($field_id) && empty($bundleid_in)) {
-      drupal_set_message("$field_id was queried but no bundle given.", "error");
+      $this->messenger()->addError("$field_id was queried but no bundle given.");
       return;
     }
 #    drupal_set_message("a2: " . microtime());
@@ -1520,7 +1524,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #    drupal_set_message("a3: " . microtime());    
     // this approach will be not fast enough in the future...
     // the pbs have to have a better mapping of where and how to find fields
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple($relevant_pb_ids);
+    $pbs = WisskiPathbuilderEntity::loadMultiple($relevant_pb_ids);
     
 #    drupal_set_message("a4: " . microtime());
     
@@ -1538,7 +1542,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       if(empty($pbarray["id"]))
         continue;
 
-      $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray["id"]);
+      $path = WisskiPathEntity::load($pbarray["id"]);
 
       // if there is no path we can skip that
       if(empty($path))
@@ -1570,11 +1574,11 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           $parid = $pbarray["parent"];
             
           // get the parent (the group the path belongs to) to get the common group path
-          $par = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($parid);
+          $par = WisskiPathEntity::load($parid);
 
           // if there is no parent it is a ungrouped path... who asks for this?
           if(empty($par)) {
-            drupal_set_message("Path " . $path->getName() . " with id " . $path->id() . " has no parent.", "error");
+            $this->messenger()->addError("Path " . $path->getName() . " with id " . $path->id() . " has no parent.");
             continue;
           }
 
@@ -1649,7 +1653,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // this is a hack and will break if there are several for one field
     $pbarray = $pb->getPbEntriesForFid($fieldid);
 
-    $field_storage_config = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $fieldid);
+    $field_storage_config = FieldStorageConfig::loadByName('wisski_individual', $fieldid);
     
     // store the target type to see if it references to a file for special handling
     $target_type = NULL;
@@ -1664,7 +1668,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     }
 
     if(!isset($pbarray['id'])) {
-      drupal_set_message("Danger zone: in PB " . $pb->getName() . " field $fieldid was queried with value $value in deleteOldFieldValue, but the path with array " . serialize($pbarray) . " has no id.", "warning.");
+      $this->messenger()->addWarning.("Danger zone: in PB " . $pb->getName() . " field $fieldid was queried with value $value in deleteOldFieldValue, but the path with array " . serialize($pbarray) . " has no id.");
       return;
     }
     
@@ -1676,7 +1680,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // get path/field-related config
     // and do some checks to ensure that we are acting on a
     // well configured field
-    $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['id']);
+    $path = WisskiPathEntity::load($pbarray['id']);
     if(empty($path)) {
       return;
     }
@@ -1732,7 +1736,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       if (count($path_array) < 3) {
         // This should never occur as it would mean that someone is deleting a
         // reference on a path with no triples!
-        drupal_set_message("Bad path: trying to delete a ref with a too short path.", 'error');
+        $this->messenger()->addError("Bad path: trying to delete a ref with a too short path.");
         return;
       }
       elseif (count($path_array) == 3) {
@@ -1748,7 +1752,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         // right triples.
 
         $pathcnt = 0;
-        $parent = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['parent']);
+        $parent = WisskiPathEntity::load($pbarray['parent']);
         if (empty($parent)) {
           // lonesome path!?
         }
@@ -1870,9 +1874,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #          dpm("hacking...");
 
           $loc = NULL;
-          $fid = \Drupal::entityManager()->getStorage('wisski_individual')->getFileId($thing->out, $loc);
+          $fid = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->getFileId($thing->out, $loc);
 #          dpm($fid, "fid");
-          $public = \Drupal::entityManager()->getStorage('wisski_individual')->getPublicUrlFromFileId($fid);
+          $public = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->getPublicUrlFromFileId($fid);
           
           $image_value = $public;
           
@@ -1898,16 +1902,14 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       }
             
       if(is_null($position)) {
-        drupal_set_message($this->t(
+        $this->messenger()->addError($this->t(
             "For path %name (%id): Could not find old value '@v' and thus could not delete it.", 
             array(
               '%name' => $path->getName(),
               '%id' => $path->id(),
               '@v' => $value
             )
-          ),
-          "error"
-        );
+          ));
         return;
       }
       
@@ -1992,15 +1994,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             $where_clause  .= "    <$subject_uri> <$primitive> ?out .\n    FILTER (STR(?out) = '$escaped_value')\n";
           }
           else {
-            drupal_set_message($this->t(
+            $this->messenger()->addError($this->t(
                 "Path %name (%id) has primitive but no value given.",
                 array(
                   '%name' => $path->getName(),
                   '%id' => $path->id()
                 )
-              ),
-              "error"
-            );
+              ));
             return; 
           }
         }
@@ -2024,11 +2024,11 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $eid = $entity->id();
     
     if(empty($eid)) {
-      drupal_set_message("This entity could not be deleted as it has no eid.", "error");
+      $this->messenger()->addError("This entity could not be deleted as it has no eid.");
       return;
     }
     
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    $pbs = WisskiPathbuilderEntity::loadMultiple();
     
     //if there is an eid we try to get the entity URI form cache
     //if there is none $uri will be FALSE
@@ -2076,7 +2076,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         
     $bundleid = $entity->bundle();
 
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    $pbs = WisskiPathbuilderEntity::loadMultiple();
     
     $out = array();
     
@@ -2100,7 +2100,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       if(empty($pb->getAdapterId()))
         continue;
         
-      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId());
+      $adapter = Adapter::load($pb->getAdapterId());
 
       // if we have not adapter, we may go home, too
       if(empty($adapter))
@@ -2229,7 +2229,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #          dpm($key, "key");
 #          dpm($startingposition, "starting");
 #          dpm($clearPathArray, "cpa");
-          drupal_set_message("Starting Position is set to a wrong value: '$startingposition'. See reports for details", "error");
+          $this->messenger()->addError("Starting Position is set to a wrong value: '$startingposition'. See reports for details");
           if (WISSKI_DEVEL) \Drupal::logger('WissKIsaveProcess')->debug('ERROR: ' . serialize($clearPathArray) . ' generate ' . serialize(func_get_args()));
           if (WISSKI_DEVEL) \Drupal::logger('WissKIsaveProcess')->debug('ERROR: ' . serialize(debug_backtrace()[1]['function']) . ' and ' . serialize(debug_backtrace()[2]['function']));
         }
@@ -2238,7 +2238,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
         if($disambposition > 0 && !empty($object_in)) {
           if($key > (($disambposition-1) *2) || (($disambposition-1) *2) > ($key+count($clearPathArray))) {
-            drupal_set_message("Disambposition is set to a wrong value: '$disambposition'. See reports for details.", "error");
+            $this->messenger()->addError("Disambposition is set to a wrong value: '$disambposition'. See reports for details.");
             if (WISSKI_DEVEL) \Drupal::logger('WissKIsaveProcess')->debug('ERROR: ' . serialize($clearPathArray) . ' generate ' . serialize(func_get_args()));
             if (WISSKI_DEVEL) \Drupal::logger('WissKIsaveProcess')->debug('ERROR: ' . serialize(debug_backtrace()[1]['function']) . ' and ' . serialize(debug_backtrace()[2]['function']));
           }
@@ -2416,7 +2416,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       && $pb_path_info['field'] != $pb::CONNECT_NO_FIELD;
 
     if(!$has_primitive && $should_have_primitive) {
-      drupal_set_message("There is no primitive Datatype for Path " . $path->getName(), "error");
+      $this->messenger()->addError("There is no primitive Datatype for Path " . $path->getName());
     }
     // if write context and there is an object, we don't attach the primitive
     // also if we create a group
@@ -2497,14 +2497,14 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           elseif($op == 'CONTAINS' || $op == 'contains' || $op == 'NOT') {
             $regex = true;
             $safe = TRUE;
-            
+
 #            dpm($op, "op");
-            
+
             if($op == "NOT") {
               $negate = TRUE;
               $op = "CONTAINS";  
             }
-            
+
 #            dpm($primitiveValue, "prim");
             $primitiveValue = $this->escapeSparqlRegex($primitiveValue, TRUE);
 #            dpm($primitiveValue, "prim");
@@ -2637,18 +2637,18 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
 #    drupal_set_message("I fetched path: " . serialize($pbarray));    
 
-    $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbarray['id']);
+    $path = WisskiPathEntity::load($pbarray['id']);
 
     if(empty($path))
       return;
 
-    $field_storage_config = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $fieldid);
-    
+    $field_storage_config = FieldStorageConfig::loadByName('wisski_individual', $fieldid);
+
     $target_type = NULL;
-    
+
     if(!empty($field_storage_config)) 
       $target_type = $field_storage_config->getSetting("target_type");
-    
+
     // we distinguish two modes of how to interpret the value: 
     // entity ref: the value is an entity id that shall be linked to 
     // normal: the value is a literal and may be disambiguated
@@ -2665,7 +2665,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #        }
 #      }
     }
-    
+
     // in case of no entity-reference we do not search because we
     // already get what we want!
     if($path->getDisamb() && !$is_entity_ref) {
@@ -2673,7 +2673,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
       // starting position one before disamb because disamb counts the number of concepts, startin position however starts from zero
       $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE);
-       
+
       $sparql .= " }";
 #      drupal_set_message("spq: " . ($sparql));
 #      dpm($path, "path");
@@ -2682,17 +2682,17 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       if(!empty($disambresult))
         $disambresult = current($disambresult);      
     } 
-    
+
     // rename to uri
     $subject_uri = $this->getUriForDrupalId($entity_id, TRUE);
-    
+
 
     $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
 
     // 1.) A -> B -> C -> D -> E (l: 9) and 2.) C -> D -> E (l: 5) is the relative, then
     // 1 - 2 is 4 / 2 is 2 - which already is the starting point.
     $start = ((count($path->getPathArray()) - (count($pb->getRelativePath($path))))/2);
-    
+
     if($is_entity_ref) {
       // if it is a group - we take the whole group path as disamb pos
       if($path->isGroup())
@@ -2715,8 +2715,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #     \Drupal::logger('WissKIsaveProcess')->debug('sparql writing in add: ' . htmlentities($sparql));
 #dpm($sparql, __METHOD__ . " sparql");
     $result = $this->directUpdate($sparql);
-    
-    
+
+
 #    drupal_set_message("I add field $field from entity $entity_id that currently has the value $value");
   }
   
@@ -2777,26 +2777,26 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       // it would be better to gather this information from the form and not from the ts
       // there might have been somebody saving in between...
       // @TODO !!!
-      $ofv = \Drupal::entityManager()->getFieldDefinitions('wisski_individual', $bundle_id);
-      
+      $ofv = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual', $bundle_id);
+
       // load the view ids that are available for this
       $view_ids = \Drupal::entityQuery('entity_view_display')->condition('id', 'wisski_individual.' . $bundle_id . '.', 'STARTS_WITH')->execute();
-      
+
       // as there might be several, load all
       $settings = \Drupal::entityTypeManager()->getStorage('entity_form_display')->loadMultiple($view_ids);
-      
+
       // we dont really know which one to take -.- 
       // By Mark: We need to do more research on this!
       if(!empty($settings))
         $settings = current($settings);
       else
         $settings = NULL;
-      
+
       // if there is a setting
       if($settings) {
         // load the components
         $components = $settings->getComponents();
-      
+
         // and throw away these that are not in there. 
         // these fields are disabled and such should not be saved etc.
         // otherwise we might overwrite something we do not want to overwrite.
@@ -2832,7 +2832,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #      dpm($old_values, "got ov?");
       if(!empty($old_values))
         $old_values = $old_values[$entity_id];
-    
+
       // we have one big problem: if there are fields that are for display purpose only
       // like coordinates for a place that get filled automatically
       // so we just delete what we see and nothing more!
@@ -3049,7 +3049,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #    dpm($query, "query");
     $result = $this->directUpdate($query);
 
-    drupal_set_message("Successfully loaded $iri into the Triplestore.");
+    $this->messenger()->addStatus("Successfully loaded $iri into the Triplestore.");
     \Drupal::logger('WissKI Ontology')->info(
       'Adapter {a}: Successfully loaded ontology <{iri}>.',
       array(
@@ -3189,13 +3189,17 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
   }
   
   private function putNamespace($short_name,$long_name) {
-    $result = db_select('wisski_core_ontology_namespaces','ns')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $result = \Drupal::database()->select('wisski_core_ontology_namespaces', 'ns')
               ->fields('ns')
               ->condition('short_name',$short_name,'=')
               ->execute()
               ->fetchAssoc();
     if (empty($result)) {
-      db_insert('wisski_core_ontology_namespaces')
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+      \Drupal::database()->insert('wisski_core_ontology_namespaces')
               ->fields(array('short_name' => $short_name,'long_name' => $long_name))
               ->execute();
     } else {
@@ -3208,7 +3212,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
   */
   public function getNamespaces() {
     $ns = array();
-    $db_spaces = db_select('wisski_core_ontology_namespaces','ns')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $db_spaces = \Drupal::database()->select('wisski_core_ontology_namespaces', 'ns')
                   ->fields('ns')
                   ->execute()
                   ->fetchAllAssoc('short_name');
@@ -3323,7 +3329,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       );
       $classes_n_properties = ((array) $this->getClasses()) + ((array) $this->getProperties());
       if ($this->getClasses() === FALSE || $this->getProperties() === FALSE) {
-        drupal_set_message($this->t('Bad class and property cache.'));
+        $this->messenger()->addStatus($this->t('Bad class and property cache.'));
       }
       $form['reasoner']['tester'] = array(
         '#type' => 'details',
@@ -3403,15 +3409,15 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
   }
   
   public function doTheReasoning() {
-  
+
     $properties = array();
     $super_properties = array();
     $sub_properties = array();
-    
+
     //prepare database connection and reasoner tables
     //if there's something wrong stop working
     if ($this->prepareTables() === FALSE) return;
-    
+
     //find properties
     $result = $this->directQuery("SELECT ?property WHERE { GRAPH ?g {{?property a owl:ObjectProperty.} UNION {?property a rdf:Property}} }");
     $insert = $this->prepareInsert('properties');
@@ -3423,7 +3429,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $insert->execute();
     //$cid = 'wisski_reasoner_properties';
     //\Drupal::cache()->set($cid,$properties);
-    
+
     //find one step property hierarchy, i.e. properties that are direct children or direct parents to each other
     // no sub-generations are gathered
     $result = $this->directQuery(
@@ -3458,7 +3464,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $insert->execute();
     //$cid = 'wisski_reasoner_inverse_properties';
     //\Drupal::cache()->set($cid,$inverses);
-    
+
     //now the same things for classes
     //find all classes
     $insert = $this->prepareInsert('classes');
@@ -3472,7 +3478,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $insert->execute();
     //uksort($classes,'strnatcasecmp');
     //\Drupal::cache()->set('wisski_reasoner_classes',$classes);
-    
+
     //find full class hierarchy
     $super_classes = array();
     $sub_classes = array();
@@ -3488,13 +3494,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       $super_classes[$sub][$super] = $super;
       $sub_classes[$super][$sub] = $sub;
     }
-    
+
     //\Drupal::cache()->set('wisski_reasoner_sub_classes',$sub_classes);
     //\Drupal::cache()->set('wisski_reasoner_super_classes',$super_classes);
-    
+
     //explicit top level domains
     $domains = array();
-    
+
     $results = $this->directQuery(
       "SELECT ?property ?domain WHERE { GRAPH ?g {"
         ." ?property rdfs:domain ?domain."
@@ -3504,13 +3510,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     foreach ($results as $row) {
       $domains[$row->property->getUri()][$row->domain->getUri()] = $row->domain->getUri();
     }
-    
+
     //clear up, avoid DatatypeProperties
     $domains = array_intersect_key($domains,$properties);
-    
+
     //explicit top level ranges
     $ranges = array();
-    
+
     $results = $this->directQuery(
       "SELECT ?property ?range WHERE { GRAPH ?g {"
         ." ?property rdfs:range ?range."
@@ -3520,7 +3526,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     foreach ($results as $row) {
       $ranges[$row->property->getUri()][$row->range->getUri()] = $row->range->getUri();
     }
-    
+
     //clear up, avoid DatatypeProperties
     $ranges = array_intersect_key($ranges,$properties);    
 
@@ -3531,7 +3537,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     //check if they all have domains and ranges set
     $dom_check = array_diff_key($top_properties,$domains);
     if (!empty($dom_check)) {
-      drupal_set_message('No domains for top-level properties: '.implode(', ',$dom_check),'error');;
+      $this->messenger()->addError('No domains for top-level properties: '.implode(', ',$dom_check));;
       $invalid_definitions = array_merge($invalid_definitions, $dom_check);
     #  $valid_definitions = FALSE;
       //foreach($dom_check as $dom) {
@@ -3540,25 +3546,25 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     }
     $rng_check = array_diff_key($top_properties,$ranges);
     if (!empty($rng_check)) {
-      drupal_set_message('No ranges for top-level properties: '.implode(', ',$rng_check),'error');
+      $this->messenger()->addError('No ranges for top-level properties: '.implode(', ',$rng_check));
       $invalid_definitions = array_merge($invalid_definitions, $rng_check);
     #  $valid_definitions = FALSE;
       //foreach ($rng_check as $rng) {
       //  $ranges[$rng] = ['TOPCLASS'=>'TOPCLASS'];
       //}
     }
-    
+
     //set of properties where the domains and ranges are not fully set
     $not_set = array_diff_key($properties,$top_properties);
     $not_set = array_diff_key($not_set, $invalid_definitions);
 #    dpm($invalid_definitions, "invalid!");
 #   dpm($not_set, "not set");
-    
+
     //while there are unchecked properties cycle throgh them, gather domain/range defs from all super properties and inverses
     //and include them into own definition
     $runs = 0;
     while (!empty($not_set)) {
-      
+
       $runs++;
       //take one of the properties
       $prop = array_shift($not_set);
@@ -3570,13 +3576,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #      dpm($supers, "for prop $prop, still to check: " . serialize($not_set));
 
       if (empty($invalid_supers)) {
-      
+
         $to_check = array_intersect($supers, $not_set);
         if(!empty($to_check)) {
           array_push($not_set,$prop);
           continue;
         }
-      
+
         //take all the definitions of super properties and add them here
         $new_domains = isset($domains[$prop]) ? $domains[$prop] : array();
         $new_ranges = isset($ranges[$prop]) ? $ranges[$prop] : array();
@@ -3589,7 +3595,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         }
         $new_domains = array_unique($new_domains);
         $new_ranges = array_unique($new_ranges);
-        
+
         $remove_domains = array();
         foreach ($new_domains as $domain_1) {
           foreach ($new_domains as $domain_2) {
@@ -3601,9 +3607,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           }
         }
         $new_domains = array_diff($new_domains,$remove_domains);
-        
+
         $domains[$prop] = array_combine($new_domains,$new_domains);
-        
+
         $remove_ranges = array();
         foreach ($new_ranges as $range_1) {
           foreach ($new_ranges as $range_2) {
@@ -3615,17 +3621,17 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           }
         }
         $new_ranges = array_diff($new_ranges,$remove_ranges);
-        
+
         $ranges[$prop] = array_combine($new_ranges,$new_ranges);
-        
+
       } else {
         //append this property to the end of the list to be checked again later-on
 #        array_push($not_set,$prop);
-        drupal_set_message("I could not check $prop, because it has the invalid superproperties: " . implode(', ',$invalid_supers), "error");
+        $this->messenger()->addError("I could not check $prop, because it has the invalid superproperties: " . implode(', ',$invalid_supers));
         continue;
       }
     }
-    drupal_set_message('Definition checkup runs: '.$runs);
+    $this->messenger()->addStatus('Definition checkup runs: '.$runs);
     //remember sub classes of domains are domains, too.
     //if a property has exactly one domain set, we can add all subClasses of that domain
     //if there are multiple domains we can only add those being subClasses of ALL of the domains
@@ -3649,7 +3655,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         $ranges[$property] = array_merge($ranges[$property],$add_up);
       }
     }
-    
+
     $insert = $this->prepareInsert('domains');
     foreach ($domains as $prop => $classes) {
       foreach ($classes as $class) $insert->values(array('property'=>$prop,'class'=>$class));
@@ -3660,7 +3666,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       foreach ($classes as $class) $insert->values(array('property'=>$prop,'class'=>$class));
     }
     $insert->execute();
-    
+
 //    //for the pathbuilders to work correctly, we also need inverted search
 //    $reverse_domains = array();
 //    foreach ($domains as $prop => $classes) {

@@ -1,8 +1,8 @@
-entity.wisski_salz_adapter.collection:
+entity.wisski_salz_adapter.canonical:
   title: 'WissKI Salz Adapters'
   description: 'WissKI Salz Module Settings'
   parent: wisski_salz.admin.overview1
-  route_name: entity.wisski_salz_adapter.collection
+  route_name: entity.wisski_salz_adapter.canonical
   weight: 50
 
 wisski_salz.admin.overview1:

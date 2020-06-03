@@ -110,9 +110,10 @@ class ExporterForm extends FormBase {
     
     // we must not use yml extension as it is blocked by htaccess
     $file = file_save_data($yaml, "public://pb_bundle_export.yaml");
-    $uri = $file->url();
+    $uri = $file->toUrl();
+#    $uri = $file->url();
 #    $link = \Drupal\Core\Link::fromTextAndUrl($uri, \Drupal\Core\Url::fromUri($uri));
-    drupal_set_message(t("You can download it here: <a href='$uri'>$uri</a>"));
+    $this->messenger()->addStatus(t("You can download it here: <a href='$uri'>$uri</a>"));
 
   }
   

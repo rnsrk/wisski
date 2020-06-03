@@ -67,15 +67,11 @@ function wisski_textanly_admin_analyse_datetime($op, $ap) {
 /* ***************** *
 *  ANALYSER
 ** ***************** */
-
-
-
 /** Find annotations that have a certain date syntax
-* This is the analyse operation for analysis component type vocab
-* 
+ * This is the analyse operation for analysis component type vocab
+*
 *
 * @author Martin Scholz
-*
 */
 function wisski_textanly_analyse_datetime($analyser, $text_struct, $ticket) {
   
@@ -236,9 +232,9 @@ function wisski_textanly_analyse_datetime($analyser, $text_struct, $ticket) {
 
 
 function _wisski_textanly_analyse_commons_span_matcher($text, $spans, $pattern) {
-  
+
   $l = count($pattern);
-  
+
   if ($l == 0) return array();
 
   if ($l == 1) {
@@ -262,29 +258,27 @@ function _wisski_textanly_analyse_commons_span_matcher($text, $spans, $pattern) 
 
   $finished = array();
   $matches = array(array('pattern' => $pattern, 'vars' => array()));
-  
+
   foreach ($spans as $si => $span) {
 
     foreach ($matches as $mi => $match) {
-      
+
       $regex_patt = $pattern[0];
       $span_patt = $pattern[1];
 
       if (count(array_diff((array) $span['groups'], (array) $span_patt['groups'])) != 0) {
-        
+
         $start = isset($match['range']) ? $match['range'][1] : 0;
         $start_cond = $start == 0 ? '/' : '/^';
         $end = $span['range'][0];
 
         if (preg_match($start_cond . $regex_patt . '$/us', mb_substr($text, $start, $end), $regex_matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE)) {
-          
+
         }
 
       }
 
-    foreach  
-
-
+    }
 
   }
 
@@ -356,7 +350,7 @@ function _wisski_textanly_analyse_datetime_match_format($text, $format, $spans, 
 
       }
     } 
-dpm($spans);    
+#dpm($spans);    
   }
   
   return $spans;
@@ -561,7 +555,7 @@ function _wisski_textanly_analyse_datetime_callback_modify_stretch($from, $to, $
     $amount *= 360 * 24 * 30 * 12;  // 360 is correct, as we must divide by 10
   }
   
-dpm(array($ts_from, $ts_to ,$amount , $args),'b');
+#dpm(array($ts_from, $ts_to ,$amount , $args),'b');
   $new_ts_from = $ts_from + ($amount * $args[0]); 
   $new_ts_to = $ts_to + ($amount * $args[1]); 
   

@@ -37,17 +37,12 @@ function wisski_textanly_admin_analyse_tokenizer($op, $ap) {
 /* ***************** *
 *  ANALYSER
 ** ***************** */
-
-
-
-
 /** A tokenizer
-* returns a sequence of tokens each being an array of the form
-* array(<surface>, <start>, <end>).
+ * returns a sequence of tokens each being an array of the form
+ * array(<surface>, <start>, <end>).
 * <surface> will be equal to mb_substring($text, $token[1], $token[2])
 *
 * @author Martin Scholz
-*
 */
 function wisski_textanly_analyse_tokenizer($analyser, $text_struct, $ticket) {
   

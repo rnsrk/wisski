@@ -2,6 +2,8 @@
 
 namespace Drupal\wisski_core\Controller;
 
+use Drupal\Core\Menu\MenuTreeParameters;
+use Drupal\wisski_core\WisskiHelper;
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityHandlerInterface;
 use Drupal\Core\Entity\EntityInterface;
@@ -48,12 +50,12 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
         $menus = $entity->getWissKIMenus();
 
         if($this->type == self::NAVIGATE) {
-          $p = new \Drupal\Core\Menu\MenuTreeParameters();
+          $p = new MenuTreeParameters();
           $p->addCondition('title', $entity->label(), '=');
 
           $menu_tree_data = \Drupal::service('menu.link_tree')->load('navigate', $p);
           $menu_items = array();
-          
+
           foreach($menu_tree_data as $data) {
             $menu_items[] = $data->link;
           }
@@ -94,7 +96,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
 
     // only get topids
     
-    $topIds = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
+    $topIds = WisskiHelper::getTopBundleIds();
     
     $query = $this->getStorage()->getQuery()->sort($this->entityType->getKey('id'));
 
@@ -118,7 +120,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
   /**
    * {@inheritdoc}
    */
-  public function buildRow(\Drupal\Core\Entity\EntityInterface $entity) {
+  public function buildRow(EntityInterface $entity) {
     
     // old: in case of navigate and create - exclude all non-top-groups
     // we don't need to do this here anymore, because we do this in
@@ -144,13 +146,13 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
       case self::CREATE: return $this->buildCreateRow($entity, $menus['create']);
       case self::CONFIG: return $this->buildConfigRow($entity);
     }
-    drupal_set_message($this->t('Invalid list type'),'error');
+    $this->messenger()->addError($this->t('Invalid list type'));
     return array();
   }
   
   private function buildMenuNavigateRow($entity, $menu_param = "entity.wisski_bundle.entity_list") {
 
-    $p = new \Drupal\Core\Menu\MenuTreeParameters();
+    $p = new MenuTreeParameters();
     $p->addCondition('title', $entity->label(), '=');
 #    $p->addCondition('id', "%" . $entity->id() . "%", 'LIKE');
 
@@ -243,7 +245,8 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     //$ents = WisskiEntity::load(array('bundle'=>$id));
     $parents = $entity->getParentBundleIds();
     $row['label'] = array(
-      'data' => $this->getLabel($entity),
+//      'data' => $this->getLabel($entity),
+      'data' => $entity->label(),
       'class' => array('menu-label'),
     );
 
@@ -267,10 +270,12 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
       'url' => new Url('entity.wisski_individual.add',array('wisski_bundle' => $id)),
       'weight' => 5,
     );
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // Please confirm that `$entity` is an instance of `Drupal\Core\Entity\EntityInterface`. Only the method name and not the class name was checked for this replacement, so this may be a false positive.
     $row['operations']['data']['#links']['list'] = array(
       'title' => $this->t('List Entities'),
       'weight' => 10,
-      'url' => $entity->urlInfo('entity-list'),
+      'url' => $entity->toUrl('entity-list'),
     );
     $row['operations']['data']['#links']['regenerate_titles'] = array(
       'title' => $this->t('Update Entity Titles'),

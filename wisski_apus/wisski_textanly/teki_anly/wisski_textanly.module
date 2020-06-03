@@ -137,7 +137,9 @@ function wisski_textanly_get($aid = NULL, $col = NULL, $refresh = FALSE) {
   }
 
   if (!$all && (!$aid || !isset($aps[$aid]))) {
-    $rows = db_query('SELECT * FROM {wisski_textanly_analyser}' . ((!$aid) ? ' ORDER BY weight ASC' : ' WHERE aid = %d'), $aid);
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $rows = \Drupal::database()->query('SELECT * FROM {wisski_textanly_analyser}' . ((!$aid) ? ' ORDER BY weight ASC' : ' WHERE aid = %d'), $aid);
     while (TRUE) {
       $ap = db_fetch_object($rows);
       if (!$ap) break;
@@ -184,7 +186,9 @@ function wisski_textanly_save(&$ap) {
 * @author Martin Scholz
 */
 function wisski_textanly_delete($aid) {
-  db_query('DELETE FROM {wisski_textanly_analyser} WHERE aid = %d', $aid);
+  // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+  // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+  \Drupal::database()->query('DELETE FROM {wisski_textanly_analyser} WHERE aid = %d', $aid);
   return TRUE;
 }
 
@@ -355,7 +359,9 @@ function wisski_textanly_analyse($profile, $text_struct, $ticket = NULL) {
 
   if ($ticket === NULL) $ticket = wisski_get_uuid(4);
 
-  $rows = db_query("SELECT * FROM {wisski_textanly_analyser} WHERE profile = '%s' ORDER BY weight ASC", $profile);
+  // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+  // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+  $rows = \Drupal::database()->query("SELECT * FROM {wisski_textanly_analyser} WHERE profile = '%s' ORDER BY weight ASC", $profile);
   
   wisski_textanly_log($ticket, $text_struct, 'dbg');
   while ($analyser = db_fetch_object($rows)) {
@@ -374,7 +380,7 @@ function wisski_textanly_analyse($profile, $text_struct, $ticket = NULL) {
 function wisski_textanly_log($ticket, $msg = NULL, $level = 'info') {
   $args = func_get_args();
   if ($level != 'info' && $level != 'dbg' && $level != 'err' && $level != 'warn') {
-    drupal_set_message(t("Bad log level: '%l'", array('%l' => $level)), 'error');
+    \Drupal::messenger()->addError(t("Bad log level: '%l'", array('%l' => $level)));
     return;
   }
 

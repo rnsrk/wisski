@@ -7,6 +7,7 @@
 
 namespace Drupal\wisski_adapter_geonames\Plugin\wisski_salz\Engine;
 
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\wisski_adapter_geonames\Query\Query;
@@ -251,7 +252,7 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
    */
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
 
-    $main_property = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);
+    $main_property = FieldStorageConfig::loadByName('wisski_individual', $field_id);
     if(!empty($main_property)) {
       $main_property = $main_property->getMainPropertyName();
     }
@@ -263,8 +264,8 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
 #    return array();
 
     if(!empty($field_id) && empty($bundleid_in)) {
-      drupal_set_message("Es wurde $field_id angefragt und bundle ist aber leer.", "error");
-      dpm(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
+      $this->messenger()->addError("Es wurde $field_id angefragt und bundle ist aber leer.");
+#      dpm(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
       return;
     }
     

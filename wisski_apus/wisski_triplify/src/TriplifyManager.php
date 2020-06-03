@@ -17,11 +17,11 @@ class TriplifyManager {
   
   public function triplify($entity) {
 $ts = microtime(TRUE);
-      
+
     // we reload the entity to be sure to get the disamb info as property/value.
     // the entity object passed for save does not contain it by now
     // TODO: always add wisskiDisamb to properties/values
-    $entity = entity_load('wisski_individual', $entity->id());
+    $entity = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->load($entity->id());
 
     $fields_by_type = \Drupal::config('wisski_triplify.triplify_fields')->get('by_type');
     $fields_by_id = \Drupal::config('wisski_triplify.triplify_fields')->get('by_id');
@@ -30,7 +30,7 @@ $ts = microtime(TRUE);
 #    $uris = AdapterHelper::getUrisForDrupalId($entity->id());
 #    dpm($uris, "uris!");
     if (empty($uris)) return array();
-    
+
     $triples = array(); // here go the triples from all fields, we do one big write
 
     $definitions = $entity->getFieldDefinitions();
@@ -47,10 +47,10 @@ $ts = microtime(TRUE);
         $field_item_list = $fields[$name];
 
         $lang = $field_item_list->getLangcode();
-        
+
         foreach ($field_item_list as $weight => $item) {
           $properties = $item->getProperties();
-          
+
           if (isset($config['constraints'])) {
             // the constraints value is an array of constraints that get OR'ed.
             // Each array element is either a single constraint or and array of
@@ -102,12 +102,12 @@ $ts = microtime(TRUE);
 #              $disamb_uris = AdapterHelper::getUrisForDrupalId($disamb_eid);
 #            }
           }
-          
+
 #          dpm($adapters, "found adap");
-          
+
           foreach ($adapters as $aid) {
 #            dpm($uris[$aid], "uris!" . $aid);            
-            
+
             if (isset($uris[$aid])) {
               $pref_disamb_uri = isset($disamb_uris[$aid]) ? $disamb_uris[$aid] : $disamb_uri;
               $data = array(
@@ -160,14 +160,15 @@ $ts = microtime(TRUE);
 
   protected function getAdapter($aid) {
     if (!isset($this->adapters[$aid])) {
-      $this->adapters[$aid] = entity_load('wisski_salz_adapter', $aid);
+      $this->adapters[$aid] = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($aid);
     }
     return $this->adapters[$aid];
   }
 
   protected function getPbs() {
     if ($this->pbs === NULL) {
-      $this->pbs = entity_load_multiple('wisski_pathbuilder');
+      \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->loadMultiple();
+#      $this->pbs = entity_load_multiple('wisski_pathbuilder');
     }
     return $this->pbs;
   }

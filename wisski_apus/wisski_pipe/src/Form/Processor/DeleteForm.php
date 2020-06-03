@@ -76,7 +76,7 @@ class DeleteForm extends ConfirmFormBase {
     $this->pipe->removeProcessor($this->processor->getUuid());
     $this->pipe->save();
 
-    drupal_set_message($this->t('The processor %label has been deleted.', ['%label' => $this->processor->getLabel()]));
+    $this->messenger()->addStatus($this->t('The processor %label has been deleted.', ['%label' => $this->processor->getLabel()]));
     $this->logger('wisski_pipe')->notice('The processor %label has been deleted in the @pipe pipe.', [
       '%label' => $this->processor->getLabel(),
       '@pipe' => $this->pipe->label(),

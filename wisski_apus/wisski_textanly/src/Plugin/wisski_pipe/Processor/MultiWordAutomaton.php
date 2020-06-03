@@ -5,7 +5,7 @@
  * Contains \Drupal\wisski_pipe\Plugin\wisski_pipe\Processor\MultiwordAutomaton.
  */
 
-namespace Drupal\wisski_textanly\Plugin\wisski_pipe\Processor;
+namespace Drupal\wisski_pipe\Plugin\wisski_pipe\Processor;
 
 use Drupal\wisski_pipe\ProcessorInterface;
 use Drupal\wisski_pipe\ProcessorBase;
@@ -136,15 +136,14 @@ class MultiwordAutomaton extends ProcessorBase {
    * {@inheritdoc}
    */
   /** Annotate text ranges that follow a certain token pattern
-  * This is the analyse operation for analysis component type vocab
-  * 
-  * First marks all tokens according to a list of words, then
-  * executes a regex on that annotations. Tokens that are in a match will be
-  * annotated
-  *
-  * @author Martin Scholz
-  *
-  */
+   * This is the analyse operation for analysis component type vocab
+   *
+   * First marks all tokens according to a list of words, then
+   * executes a regex on that annotations. Tokens that are in a match will be
+   * annotated
+   *
+   * @author Martin Scholz
+   */
   public function doRun() {
 
     $text_struct = (array) $this->data;
@@ -170,7 +169,9 @@ class MultiwordAutomaton extends ProcessorBase {
       // for each token get the possible name parts
       // first, get all parts where the language matches
       $finding = array();
-      $query = db_select('wisski_textanly_mw_automaton', 'm')->fields('m')->andConditionGroup()->condition('lang', $lang);
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+      $query = \Drupal::database()->select('wisski_textanly_mw_automaton', 'm')->fields('m')->andConditionGroup()->condition('lang', $lang);
       if (!empty($lemma)) {
         $query->orConditionGroup()->condition('name', $lemma);
       }
@@ -181,7 +182,9 @@ class MultiwordAutomaton extends ProcessorBase {
       }
 
       // second, get all parts where language does not match
-      $query = db_select('wisski_textanly_mw_automaton', 'm')->fields('m')->andConditionGroup()->condition('lang', $lang, '!=');
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+      $query = \Drupal::database()->select('wisski_textanly_mw_automaton', 'm')->fields('m')->andConditionGroup()->condition('lang', $lang, '!=');
       if (!empty($lemma)) {
         $query->orConditionGroup()->condition('name', $lemma);
       }
@@ -193,7 +196,9 @@ class MultiwordAutomaton extends ProcessorBase {
       
       // third, get suffixes and test them (we assume suffixes are always lang dependent)
       $tokenlen = min(mb_strlen($token[0]), empty($lemma) ? 300 : mb_strlen($lemma));
-      $query = db_select('wisski_textanly_mw_automaton', 'm')->fields('m')->condition('lang', $lang)->condition('name', '-%', 'LIKE');
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+      $query = \Drupal::database()->select('wisski_textanly_mw_automaton', 'm')->fields('m')->condition('lang', $lang)->condition('name', '-%', 'LIKE');
       $rows = $query->orderBy('rank')->execute();
       while ($row = $rows->fetchAssoc()) {
         $suffix = mb_substr($row['name'], 1);

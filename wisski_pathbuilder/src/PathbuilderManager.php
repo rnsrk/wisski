@@ -2,8 +2,8 @@
 
 namespace Drupal\wisski_pathbuilder;
 
-
-
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
 class PathbuilderManager {
    
   private static $pbsForAdapter = NULL;
@@ -48,10 +48,13 @@ class PathbuilderManager {
     }
     if (self::$pbsForAdapter === NULL) {  // was reset
       self::$pbsForAdapter = array();
-      $pbs = entity_load_multiple('wisski_pathbuilder');
+#      $pbs = entity_load_multiple('wisski_pathbuilder');
+      $pbs = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->loadMultiple();
+
+
       foreach ($pbs as $pbid => $pb) {
         $aid = $pb->getAdapterId();
-        $adapter = entity_load('wisski_salz_adapter', $aid);
+        $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($aid);
         if ($adapter) {
           if (!isset(self::$pbsForAdapter[$aid])) {
             self::$pbsForAdapter[$aid] = array();
@@ -59,10 +62,10 @@ class PathbuilderManager {
           self::$pbsForAdapter[$aid][$pbid] = $pbid;
         }
         else {
-          drupal_set_message(t('Pathbuilder %pb refers to non-existing adapter with ID %aid.', array(
+          \Drupal::messenger()->addError(t('Pathbuilder %pb refers to non-existing adapter with ID %aid.', array(
             '%pb' => $pb->getName(),
             '%aid' => $pb->getAdapterId(),
-          )), 'error');
+          )));
         }
       }
       \Drupal::cache()->set('wisski_pathbuilder_manager_pbs_for_adapter', self::$pbsForAdapter);
@@ -100,7 +103,7 @@ class PathbuilderManager {
     foreach($pbs_and_paths as $pb_id => $paths) {
       
       if(empty(self::$pbs)) {
-        $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+        $pbs = WisskiPathbuilderEntity::loadMultiple();
         self::$pbs = $pbs; 
       } else
         $pbs = self::$pbs;
@@ -138,7 +141,7 @@ class PathbuilderManager {
       }
                         
       if(empty(self::$paths)) {
-        $paths = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::loadMultiple();
+        $paths = WisskiPathEntity::loadMultiple();
         self::$paths = $paths;
       } else
         $paths = self::$paths;
@@ -178,7 +181,7 @@ class PathbuilderManager {
 #    $pbs = entity_load_multiple('wisski_pathbuilder');
 
     if(empty(self::$pbs)) {
-      $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+      $pbs = WisskiPathbuilderEntity::loadMultiple();
       self::$pbs = $pbs;
     } else
       $pbs = self::$pbs;
@@ -226,7 +229,7 @@ class PathbuilderManager {
     self::$bundlesWithStartingConcept = array();
     
     if(empty(self::$pbs)) {
-      $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+      $pbs = WisskiPathbuilderEntity::loadMultiple();
       self::$pbs = $pbs;
     } else
       $pbs = self::$pbs;
@@ -239,7 +242,7 @@ class PathbuilderManager {
           if (!isset(self::$pbsUsingBundle[$bid])) {
             self::$pbsUsingBundle[$bid] = array();
           }
-          $adapter = entity_load('wisski_salz_adapter', $pb->getAdapterId());
+          $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($pb->getAdapterId());
           if ($adapter) {
             // struct for pbsUsingBundle
             if (!isset(self::$pbsUsingBundle[$bid][$pbid])) {
@@ -284,10 +287,10 @@ class PathbuilderManager {
 
           }
           else {
-            drupal_set_message(t('Pathbuilder %pb refers to non-existing adapter with ID %aid.', array(
+            \Drupal::messenger()->addError(t('Pathbuilder %pb refers to non-existing adapter with ID %aid.', array(
               '%pb' => $pb->getName(),
               '%aid' => $pb->getAdapterId(),
-            )), 'error');
+            )));
           }
         }
       }
@@ -299,8 +302,12 @@ class PathbuilderManager {
   
   public function getOrphanedPaths() {
 
-    $pba = entity_load_multiple('wisski_pathbuilder');
-    $pa = entity_load_multiple('wisski_path');
+#    $pba = entity_load_multiple('wisski_pathbuilder');
+#    $pa = entity_load_multiple('wisski_path');
+
+    $pba = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->loadMultiple();
+    $pa = \Drupal::entityTypeManager()->getStorage('wisski_path')->loadMultiple();
+
     $tree_path_ids = array(); // filled in big loop
     
     $home = array(); // here go regular paths, ie. that are in a pb's path tree

@@ -84,11 +84,8 @@ function wisski_textanly_admin_analyse_xhtml($op, $ap) {
 /* ***************** *
 *  ANALYSER
 ** ***************** */
-
-
-
 /** Analyses a (X)HTML fragment. Preprocesses the HTML and then runs the
-* analysers of the specified profile.
+ * analysers of the specified profile.
 *
 * @parameter $text the html fragment
 * @parameter $lang the default document language
@@ -98,7 +95,6 @@ function wisski_textanly_admin_analyse_xhtml($op, $ap) {
 * @return a list of proposed annotations
 *
 * @author Martin Scholz
-*
 */
 function wisski_textanly_analyse_xhtml($analyser, $text_struct, $ticket) {
 
@@ -122,7 +118,7 @@ function wisski_textanly_analyse_xhtml($analyser, $text_struct, $ticket) {
     $keys_ignore[] = 'lang';
 
     wisski_textanly_log($ticket, t('Running language dependent profile @p', array('@p' => $profile)));
-    
+
     // sort lang spans according to text order
     $langs = array();
     foreach ($text_struct['lang_ranges'] as $lang => $ranges) {
@@ -133,16 +129,16 @@ function wisski_textanly_analyse_xhtml($analyser, $text_struct, $ticket) {
     ksort($langs);
 
     foreach ($langs as $range) {
-      
+
       list($lang, $start, $end) = $range;
       $text_struct2 = array(
         'char_offset' => $start,
         'lang' => $lang,
         'text' => mb_substr($text_struct['text'], $start, $end - $start),
       );
-      
+
       $text_struct2 = wisski_textanly_analyse($profile, $text_struct2, $ticket);
-      
+
       // we do not provide any adjustment of character offsets here
       // analysers that rely on or store offsets must be sensitive to char_offset.
       // for the analysers tokenizer and regexp this is the case.

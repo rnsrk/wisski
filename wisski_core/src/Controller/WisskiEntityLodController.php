@@ -29,7 +29,7 @@ class WisskiEntityLodController extends ControllerBase {
     
     // if no URI was given, we abort with an error
     if ($uri === NULL) {
-      drupal_set_message($this->t("No URI given. You must specify a URI using one of the following query parameters: %p", ['%p' => join(", ", $param_preference)]), 'error');
+      $this->messenger()->addError($this->t("No URI given. You must specify a URI using one of the following query parameters: %p", ['%p' => join(", ", $param_preference)]));
       throw new NotFoundHttpException(t("No URI given."));
     }
 
@@ -44,7 +44,7 @@ class WisskiEntityLodController extends ControllerBase {
     // check whether some adapter knows the URI
     // if not we display a page not found
     if (!AdapterHelper::checkUriExists($uri)) {
-      drupal_set_message($this->t("The URI %uri is unknown to the system", ['%uri' => $uri]), 'error');
+      $this->messenger()->addError($this->t("The URI %uri is unknown to the system", ['%uri' => $uri]));
       throw new NotFoundHttpException(t("The given URI is unknown to the system."));
     }
     

@@ -109,18 +109,14 @@ function wisski_textanly_admin_analyse_mw_automaton($op, $ap) {
 /* ***************** *
 *  ANALYSER
 ** ***************** */
-
-
-
 /** Annotate text ranges that follow a certain token pattern
-* This is the analyse operation for analysis component type vocab
-* 
+ * This is the analyse operation for analysis component type vocab
+*
 * First marks all tokens according to a list of words, then
-* executes a regex on that annotations. Tokens that are in a match will be
-* annotated
+ * executes a regex on that annotations. Tokens that are in a match will be
+ * annotated
 *
 * @author Martin Scholz
-*
 */
 function wisski_textanly_analyse_mw_automaton($analyser, $text_struct, $ticket) {
  
@@ -146,9 +142,9 @@ function wisski_textanly_analyse_mw_automaton($analyser, $text_struct, $ticket) 
     // first, get all parts where the language matches
     $finding = array();
     if (empty($lemma)) {
-      $rows = db_query("SELECT * FROM %s WHERE name = '%s' AND lang = '%s' ORDER BY rank", $settings['db_name'], $token[0], $lang);
+      $rows = \Drupal::database()->query("SELECT * FROM %s WHERE name = '%s' AND lang = '%s' ORDER BY rank", $settings['db_name'], $token[0], $lang);
     } else {
-      $rows = db_query("SELECT * FROM %s WHERE (name = '%s' OR name = '%s') AND lang = '%s' ORDER BY rank", $settings['db_name'], $token[0], $lemma, $lang);
+      $rows = \Drupal::database()->query("SELECT * FROM %s WHERE (name = '%s' OR name = '%s') AND lang = '%s' ORDER BY rank", $settings['db_name'], $token[0], $lemma, $lang);
     }
     while ($row = db_fetch_array($rows)) {
       if ($token[0] != $row['name'] && (empty($lemma) || $lemma != $row['name'])) continue;  // for case sensitivity and diacritics, the db ignores them
@@ -157,9 +153,9 @@ function wisski_textanly_analyse_mw_automaton($analyser, $text_struct, $ticket) 
 
     // second, get all parts where language does not match
     if (empty($lemma)) {
-      $rows = db_query("SELECT * FROM %s WHERE name = '%s' AND lang != '%s' ORDER BY rank", $settings['db_name'], $token[0], $lang);
+      $rows = \Drupal::database()->query("SELECT * FROM %s WHERE name = '%s' AND lang != '%s' ORDER BY rank", $settings['db_name'], $token[0], $lang);
     } else {
-      $rows = db_query("SELECT * FROM %s WHERE (name = '%s' OR name = '%s') AND lang != '%s' ORDER BY rank", $settings['db_name'], $token[0], $lemma, $lang);
+      $rows = \Drupal::database()->query("SELECT * FROM %s WHERE (name = '%s' OR name = '%s') AND lang != '%s' ORDER BY rank", $settings['db_name'], $token[0], $lemma, $lang);
     }
     while ($row = db_fetch_array($rows)) {
       if ($token[0] != $row['name']) continue;  // for case sensitivity
@@ -167,7 +163,7 @@ function wisski_textanly_analyse_mw_automaton($analyser, $text_struct, $ticket) 
     }
     
     // third, get suffixes and test them (we assume suffixes are always lang dependent)
-    $rows = db_query("SELECT * FROM %s WHERE name LIKE '-%%' AND CHAR_LENGTH(name) <= %d AND lang = '%s' ORDER BY rank", $settings['db_name'], min(mb_strlen($token[0]), empty($lemma) ? 300 : mb_strlen($lemma)), $lang);
+    $rows = \Drupal::database()->query("SELECT * FROM %s WHERE name LIKE '-%%' AND CHAR_LENGTH(name) <= %d AND lang = '%s' ORDER BY rank", $settings['db_name'], min(mb_strlen($token[0]), empty($lemma) ? 300 : mb_strlen($lemma)), $lang);
     while ($row = db_fetch_array($rows)) {
       $suffix = mb_substr($row['name'], 1);
       $token_suffix = mb_substr($token[0], - mb_strlen($suffix));
@@ -196,7 +192,7 @@ function wisski_textanly_analyse_mw_automaton($analyser, $text_struct, $ticket) 
         }
       }
     }
-if ($token[0] == 'Juden') dpm($finding);
+#if ($token[0] == 'Juden') dpm($finding);
     
     // store each possible finding in the grand findings table
     foreach ($finding as $f) {

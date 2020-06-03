@@ -2,6 +2,9 @@
 
 namespace Drupal\wisski_linkblock\Plugin\Block;
 
+use Drupal\wisski_salz\Entity\Adapter;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
+use Drupal\wisski_core\WisskiHelper;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -114,7 +117,7 @@ class WisskiLinkblock extends BlockBase {
     // what individual is queried?
     $individualid = \Drupal::routeMatch()->getParameter('wisski_individual');
     // if we get an entity, just use the id for the inner functions
-    if ($individualid instanceof \Drupal\wisski_core\Entity\WisskiEntity) $individualid = $individualid->id();
+    if ($individualid instanceof WisskiEntity) $individualid = $individualid->id();
 
     // if we have no - we're done here.
     if(empty($individualid)) {
@@ -127,14 +130,14 @@ class WisskiLinkblock extends BlockBase {
       $linkblockpbid = NULL;
       
     if(empty($linkblockpbid)) {
-      drupal_set_message("No Pathbuilder is specified for Linkblock.", "error");
+      $this->messenger()->addError("No Pathbuilder is specified for Linkblock.");
       return $out;
     }
     
     $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($linkblockpbid);
     
     if(empty($pb)) {
-      drupal_set_message("Something went wrong while loading data for Linkblock. No Pb was found!", "error");
+      $this->messenger()->addError("Something went wrong while loading data for Linkblock. No Pb was found!");
       return $out;
     }
     
@@ -150,9 +153,9 @@ class WisskiLinkblock extends BlockBase {
     // load all adapters here so we load them only once...    
     // in case of multimode, select all adapters
     if($multimode) 
-      $adapters = \Drupal\wisski_salz\Entity\Adapter::loadMultiple(); //entity_load_multiple('wisski_salz_adapter');            
+      $adapters = Adapter::loadMultiple(); //entity_load_multiple('wisski_salz_adapter');            
     else // else use just the given one.
-      $adapters = array(\Drupal\wisski_salz\Entity\Adapter::load($pb->getAdapterId()));
+      $adapters = array(Adapter::load($pb->getAdapterId()));
         
     foreach($pbs as $datapb) {
         
@@ -169,7 +172,7 @@ class WisskiLinkblock extends BlockBase {
 
       // iterate all groups    
       foreach($groups as $group) {
-        $linkgroup = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($group->id());
+        $linkgroup = WisskiPathEntity::load($group->id());
 
 
         // if there is any
@@ -182,7 +185,7 @@ class WisskiLinkblock extends BlockBase {
 //            return;
 // do not return! this leads to other pbs being unable to answer!
             continue;
-                      
+
           $pbarray = $allpbpaths[$linkgroup->id()];
 
           // for every path in there, load something
@@ -192,13 +195,13 @@ class WisskiLinkblock extends BlockBase {
             // better catch these.            
             if(empty($childid) || ( isset($allpbpaths[$childid]) && $allpbpaths[$childid]['enabled'] == 0 ) )
               continue;
-            
-            $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($childid);
+
+            $path = WisskiPathEntity::load($childid);
 #drupal_set_message("child: " . serialize($childid));            
 #            $adapters = \Drupal\wisski_salz\Entity\WisskiSalzAdapter
-           
+
 #              dpm($adapters);
-            
+
             foreach($adapters as $adapter) {
               $engine = $adapter->getEngine();
 
@@ -209,18 +212,18 @@ class WisskiLinkblock extends BlockBase {
 #              dpm($tmpdata, "tmp");
               if(!empty($tmpdata)) {
                 $dataout[$path->id()]['path'] = $path;
-                
+
                 $dataout[$path->id()]['adapter'] = $adapter;
-              
+
                 if(!isset($dataout[$path->id()]['data']))
                   $dataout[$path->id()]['data'] = array();
 
                 $dataout[$path->id()]['data'] = array_merge($dataout[$path->id()]['data'], $tmpdata);
               }
             }
-            
+
           }
-          
+
         }
         #dpm($linkgroup);
       }
@@ -238,7 +241,7 @@ class WisskiLinkblock extends BlockBase {
     $only_use_topbundles = $set->get('wisski_use_only_main_bundles');
 
     if($only_use_topbundles) 
-      $topBundles = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
+      $topBundles = WisskiHelper::getTopBundleIds();
 
     foreach($dataout as $pathid => $dataarray) {
       $path = $dataarray['path'];
@@ -278,7 +281,7 @@ class WisskiLinkblock extends BlockBase {
           
           // hack if really no bundle was supplied... should never be called!
           if(empty($bundle)) {
-            $entity =  \Drupal\wisski_core\Entity\WisskiEntity::load($entity_id);
+            $entity =  WisskiEntity::load($entity_id);
             $bundle = $entity->bundle;
           }
 #          dpm($entity);

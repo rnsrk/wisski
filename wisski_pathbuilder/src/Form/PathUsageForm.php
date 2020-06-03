@@ -35,9 +35,10 @@ class PathUsageForm extends FormBase {
 
     if (!empty($usage['orphaned']) || !empty($usage['semiorphaned'])) {
       
-    
-      $paths = entity_load_multiple('wisski_path');
-      $pbs = entity_load_multiple('wisski_pathbuilder');
+      $paths = \Drupal::entityTypeManager()->getStorage('wisski_path')->loadMultiple();    
+      $pbs = \Drupal::entityTypeManager()->getStorage('wisski_patbuilder')->loadMultiple();
+#      $paths = entity_load_multiple('wisski_path');
+#      $pbs = entity_load_multiple('wisski_pathbuilder');
         
       foreach ($usage['orphaned'] as $pid) {
         $path = $paths[$pid];
@@ -99,7 +100,8 @@ class PathUsageForm extends FormBase {
 
     $values = array_filter($form_state->getValue('table'));
     
-    $pbs = entity_load_multiple('wisski_pathbuilder');
+    $pbs = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->loadMultiple();    
+#    $pbs = entity_load_multiple('wisski_pathbuilder');
     $pbpaths = array();
     
     $cnt_semi = 0;
@@ -115,7 +117,7 @@ class PathUsageForm extends FormBase {
         $cnt_semi++;
       }
       elseif ($usage == 'orphaned') {
-        $path = entity_load('wisski_path', $pid);
+        $path = \Drupal::service('entity_type.manager')->getStorage('wisski_path')->load($pid);
         if (!empty($path)) {
           $path->delete();
         }
@@ -131,9 +133,9 @@ class PathUsageForm extends FormBase {
       $pb->save();
     }
     
-    drupal_set_message($this->t('@c paths have been deleted.', array('@c' => $cnt_orph)));
-    drupal_set_message($this->t('@c paths have been removed from their pathbuilders.', array('@c' => $cnt_semi)));
-    if ($cnt_semi) drupal_set_message($this->t('There may be paths that have become orphaned as they have been removed from their pathbuilders.'));
+    $this->messenger()->addStatus($this->t('@c paths have been deleted.', array('@c' => $cnt_orph)));
+    $this->messenger()->addStatus($this->t('@c paths have been removed from their pathbuilders.', array('@c' => $cnt_semi)));
+    if ($cnt_semi) $this->messenger()->addStatus($this->t('There may be paths that have become orphaned as they have been removed from their pathbuilders.'));
 
   }
   

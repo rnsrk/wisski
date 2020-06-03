@@ -133,7 +133,7 @@ class AddForm extends FormBase {
       ]);
     }
     else {
-      drupal_set_message($this->t('Added %label processor.', ['%label' => $plugin->getLabel()]));
+      $this->messenger()->addStatus($this->t('Added %label processor.', ['%label' => $plugin->getLabel()]));
 
       $form_state->setRedirect('wisski_pipe.processors', [
         'wisski_pipe' => $this->pipe->id(),

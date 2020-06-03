@@ -86,7 +86,9 @@ abstract class NonWritableEngineBase extends EngineBase {
   */
   public function getNamespaces() {
     $ns = array();
-    $db_spaces = db_select('wisski_core_ontology_namespaces','ns')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $db_spaces = \Drupal::database()->select('wisski_core_ontology_namespaces', 'ns')
                   ->fields('ns')
                   ->execute()
                   ->fetchAllAssoc('short_name');

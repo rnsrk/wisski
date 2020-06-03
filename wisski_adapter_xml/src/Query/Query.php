@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\wisski_adapter_yaml\Query;
+namespace Drupal\wisski_adapter_xml\Query;
 
 use Drupal\wisski_salz\Query\WisskiQueryBase;
 use Drupal\wisski_salz\Query\ConditionAggregate;

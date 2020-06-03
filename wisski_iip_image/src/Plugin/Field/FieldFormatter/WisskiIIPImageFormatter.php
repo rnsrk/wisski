@@ -22,19 +22,19 @@
   use Drupal\Core\Template\Attribute;
     
   /**
-   * Plugin implementation of the 'wisski_iip_image' formatter.
-   *
-   * @FieldFormatter(
-   *   id = "wisski_iip_image",
-   *   module = "wisski_iip_image",
-   *   label = @Translation("WissKI IIP Image Viewer"),
-   *   field_types = {
-   *     "image"
-   *   }
-   * )
-   */
+ * Plugin implementation of the 'wisski_iip_image' formatter.
+ *
+ * @FieldFormatter(
+ *   id = "wisski_iip_image",
+ *   module = "wisski_iip_image",
+ *   label = @Translation("WissKI IIP Image Viewer"),
+ *   field_types = {
+ *     "image"
+ *   }
+ * )
+ */
 #  class WisskiIIPImageFormatter extends ImageFormatterBase {
-  class WisskiIIPImageFormatter extends ColorboxFormatter {
+class WisskiIIPImageFormatter extends ColorboxFormatter {
 
     /**
      * {@inheritdoc}
@@ -64,7 +64,7 @@
 #      $config = $this->configFactory->getEditable('imagemagick.settings');
       
       if(empty($toolkit) || $toolkit->getPluginId() !== "imagemagick") {
-        drupal_set_message('Your default toolkit is not imagemagick. Please use imagemagick for this module.', "error");
+        $this->messenger()->addError('Your default toolkit is not imagemagick. Please use imagemagick for this module.');
         return $elements;
       }
       
@@ -73,7 +73,7 @@
       $formats = $config->get('image_formats');
       
       if(!isset($formats["PTIF"])) {
-        drupal_set_message("PTIF was not a valid image format. We enabled it for you. Make sure it is supported by your imagemagick configuration.");
+        $this->messenger()->addStatus("PTIF was not a valid image format. We enabled it for you. Make sure it is supported by your imagemagick configuration.");
         $formats["PTIF"] = array('mime_type' => "image/tiff", "enabled" => TRUE);
         $config->set('image_formats', $formats);
         $config->save();
@@ -82,15 +82,15 @@
 
       $image_style_name = 'wisski_pyramid';
 
-      if(! $image_style = \Drupal\image\Entity\ImageStyle::load($image_style_name)) {
+      if(! $image_style = ImageStyle::load($image_style_name)) {
         $values = array('name'=>$image_style_name,'label'=>'Wisski Pyramid Style');
-        $image_style = \Drupal\image\Entity\ImageStyle::create($values);
+        $image_style = ImageStyle::create($values);
         $image_style->addImageEffect(array('id' => 'WisskiPyramidalTiffImageEffect'));
         $image_style->save();
       }
 
       foreach ($files as $delta => $file) {
-        
+
         if(strtolower(substr($file->getFilename(), -4)) == ".pdf") {
 
 #          dpm(serialize($file), "file");
@@ -101,18 +101,18 @@
             '#url' => Url::fromUri(file_create_url($file->getFileUri())),
           );
         }
-        
+
         // in case of prerendered files - use these paths.        
         $prerendered_paths = \Drupal::config('wisski_iip_image.settings')->get('wisski_iip_image_prerendered_path');
-        
+
         // if there are paths
         if(!empty($prerendered_paths)) {
           $mainbreak = FALSE;
-          
+
           // try if any of them has files
           foreach($prerendered_paths as $prerendered_path) {
             $image_uri = $prerendered_path . $file->getFilename();
-            
+
             // if we find anything break here
             if(file_exists($image_uri)) {
               $mainbreak = TRUE;
@@ -123,9 +123,9 @@
             continue;
           // if we did not find anything we generate a derivative
         }
-                
+
         $image_uri = ImageStyle::load('wisski_pyramid')->buildUri($file->getFileUri());
-        
+
         if(!file_exists($image_uri))
           $image_style->createDerivative($file->getFileUri(),$image_uri);
 

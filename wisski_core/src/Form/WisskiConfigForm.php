@@ -6,6 +6,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 
 use Drupal\Core\Url;
+use Drupal\Core\Database\Database;
 
 class WisskiConfigForm extends FormBase {
 
@@ -19,8 +20,10 @@ class WisskiConfigForm extends FormBase {
     $request_query = \Drupal::request()->query;
     //dpm($request_query,'HTTP GET');
     if ($request_query->get('q') === 'flush') {
-      db_truncate('wisski_salz_id2uri');
-      drupal_set_message('Flushed the ID cache');
+      //db_truncate('wisski_salz_id2uri');
+      $options['target'] = 'default';
+      Database::getConnection($options['target'])->truncate('wisski_salz_id2uri', $options)->execute();
+      $this->messenger()->addStatus('Flushed the ID cache');
     }
   
     $settings = $this->configFactory()->getEditable('wisski_core.settings');
@@ -117,7 +120,7 @@ class WisskiConfigForm extends FormBase {
     $subform['preview_image']['adapters'] = array(
       '#type' => 'select',
       '#title' => $this->t('Adapters'),
-      '#options' => array_map(function($a) { return $a->label(); }, entity_load_multiple('wisski_salz_adapter')),
+      '#options' => array_map(function($a) { return $a->label(); }, \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple()), //entity_load_multiple('wisski_salz_adapter')),
       '#default_value' => $settings->get('preview_image_adapters'),
       '#multiple' => TRUE,
       '#description' => $this->t('The adapters that a preview image is search in.'), 
@@ -158,7 +161,7 @@ class WisskiConfigForm extends FormBase {
     $settings->set('preview_image_adapters',$new_vals['preview_image']['adapters']);
     $settings->set('enable_published_status_everwhere',$new_vals['enable_published_status_everwhere']);
     $settings->save();
-    drupal_set_message($this->t('Changed global WissKI display settings'));
+    $this->messenger()->addStatus($this->t('Changed global WissKI display settings'));
     $form_state->setRedirect('system.admin_config');
   }
 }

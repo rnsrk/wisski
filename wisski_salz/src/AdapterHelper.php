@@ -7,6 +7,8 @@
 
 namespace Drupal\wisski_salz;
 
+use Drupal\Core\Link;
+use Drupal\Core\Url;
 use \Drupal\Component\Utility\UrlHelper;
 use \Drupal\wisski_core\WisskiCacheHelper;
 use \Drupal\wisski_core\WisskiHelper;
@@ -34,13 +36,15 @@ class AdapterHelper {
     // with TRUE it returns the engine instead of adapter
     $local_engine = self::getPreferredLocalStore(TRUE);
     $local_engine->deleteSameUris($uris);
-    
+
     // delete from database table
-    $query = db_delete('wisski_salz_id2uri')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $query = \Drupal::database()->delete('wisski_salz_id2uri')
       ->condition('eid', $entity_id)
       ->condition('uri', $uris)
       ->execute();
-    
+
     return $query;  // # deleted rows
     
   }
@@ -60,7 +64,7 @@ class AdapterHelper {
 
     // if it is an object, make it an id. 
     if(is_object($entity_id)) {
-      drupal_set_message("setSameUris got an Object instead of an id - this is strange!", "warning");
+      \Drupal::messenger()->addWarning("setSameUris got an Object instead of an id - this is strange!");
       $entity_id = $entity_id->id();
     }
 
@@ -80,8 +84,9 @@ class AdapterHelper {
     }
 
 #    dpm($uris, "asking for uris!");
-
-    $set_ids = db_select('wisski_salz_id2uri','m')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $set_ids = \Drupal::database()->select('wisski_salz_id2uri', 'm')
       ->fields('m',array('rid','uri','eid','adapter_id'))
       ->condition('uri',$uris,'IN')
       ->execute()
@@ -95,13 +100,13 @@ class AdapterHelper {
         $entity_id = key($set_ids);
       } else {
         if (count($set_ids) > 1) {
-          drupal_set_message('There are multiple entities connected with those uris','error');
+          \Drupal::messenger()->addError('There are multiple entities connected with those uris');
           //dpm($set_ids,'multiple IDs');
         }
         return FALSE;
       }
     } elseif (!empty($set_ids) && !in_array($entity_id,$set_ids)) {
-      drupal_set_message('There are already entities connected with these uris. Entity id: ' . $entity_id . ', URIS: ' . join('; ', $uris),'error');
+      \Drupal::messenger()->addError('There are already entities connected with these uris. Entity id: ' . $entity_id . ', URIS: ' . join('; ', $uris));
       #dpm($set_ids+array('new'=>$entity_id),'IDs');
       return FALSE;
     }
@@ -111,15 +116,19 @@ class AdapterHelper {
     if(empty($entity_id)) {
       \Drupal::logger("AH:ssu")->debug("No entity id could be detected for uris: {uris}: {bt}", ["uris" => join(" ",$uris),"bt"=>join('//', array_map(function ($a) { return $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5)))]);
       
-      $rows = db_select('wisski_salz_id2uri','m')
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+      $rows = \Drupal::database()->select('wisski_salz_id2uri', 'm')
         ->fields('m',array('rid','uri','eid','adapter_id')) 
 #        ->condition('eid', $entity_id)
         ->condition('uri',$uris,'IN')
         ->execute()
         ->fetchAllAssoc('adapter_id');
     } else {
-      // normal case    
-      $rows = db_select('wisski_salz_id2uri','m')
+      // normal case
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+      $rows = \Drupal::database()->select('wisski_salz_id2uri', 'm')
         ->fields('m',array('rid','uri','eid','adapter_id')) 
         ->condition('eid', $entity_id)
 #      ->condition('uri',$uris,'IN')
@@ -139,38 +148,47 @@ class AdapterHelper {
         if ($row->uri === $uri) {
           if ((string)$row->eid !== (string)$entity_id) {
             //we consider this an EID update for this matching
-            db_update('wisski_salz_id2uri')
+            // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+            // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+            \Drupal::database()->update('wisski_salz_id2uri')
               ->fields(array('eid'=>$entity_id))
               ->condition('rid',$row->rid)
               ->execute();
           }
         } elseif ((string)$row->eid === (string)$entity_id) {
           //this is a URI update for this matching
-          db_update('wisski_salz_id2uri')
+          // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+          // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+          \Drupal::database()->update('wisski_salz_id2uri')
             ->fields(array('uri'=>$uri))
             ->condition('rid',$row->rid)
             ->execute();
         } else {
           if($aid == NULL) {
-            dpm("Danger Zone - Adapter ID is empty!!1", "error");
+            \Drupal::messenger()->addWarning("Danger Zone - Adapter ID is empty!!1");
+            #dpm("Danger Zone - Adapter ID is empty!!1", "error");
           }
           //this is a completely new matching for this adapter
           // By Mark: This is untrue... it just means that the entity id is the same
           // but the uri is not. This means that there are multiple uris and by
           // simply inserting it it will make everything worse!
-          
-          db_insert('wisski_salz_id2uri')
+          // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+          // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+          \Drupal::database()->insert('wisski_salz_id2uri')
             ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
             ->execute();
-          
+
 #          dpm($aid, "case one");
         }
       } else {
 #        dpm($aid, "case two");
         if($aid == NULL) {
-          dpm("Danger Zone - Adapter ID is empty!!!", "error");
+          \Drupal::messenger()->addWarning("Danger Zone - Adapter ID is empty!!!");
+          #dpm("Danger Zone - Adapter ID is empty!!!", "error");
         } else {
-          db_insert('wisski_salz_id2uri')
+          // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+          // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+          \Drupal::database()->insert('wisski_salz_id2uri')
             ->fields(array('uri'=>$uri,'eid'=>$entity_id,'adapter_id'=>$aid))
             ->execute();
         }
@@ -192,11 +210,15 @@ class AdapterHelper {
    */
   public static function getSameUris($uri,$input_adapter_id=NULL) {
 
-    $eid = db_select('wisski_salz_id2uri','m')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $eid = \Drupal::database()->select('wisski_salz_id2uri', 'm')
       ->fields('m',array('eid'))
       ->condition('uri',$uri);
     if (isset($input_adapter_id)) $eid->condition('adapter_id',$input_adapter_id);
-    $query = db_select('wisski_salz_id2uri','m')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $query = \Drupal::database()->select('wisski_salz_id2uri', 'm')
       ->fields('m',array('adapter_id','uri'))
       ->condition('eid',$eid,'IN')
       ->execute();
@@ -220,11 +242,15 @@ class AdapterHelper {
    */
   public static function getSameUri($uri,$output_adapter_id,$input_adapter_id=NULL) {
   
-    $eid = db_select('wisski_salz_id2uri','m')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $eid = \Drupal::database()->select('wisski_salz_id2uri', 'm')
       ->fields('m',array('eid'))
       ->condition('uri',$uri);
     if (isset($input_adapter_id)) $eid->condition('adapter_id',$input_adapter_id);
-    $query = db_select('wisski_salz_id2uri','m')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $query = \Drupal::database()->select('wisski_salz_id2uri', 'm')
       ->fields('m',array('uri'))
       ->condition('eid',$eid,'IN')
       ->condition('adapter_id',$output_adapter_id)
@@ -239,7 +265,7 @@ class AdapterHelper {
   public static function getDrupalIdForUri($uri,$create_on_fail=TRUE,$input_adapter_id=NULL) {
     // this should not happen! 
     if(is_null($uri)) {
-      drupal_set_message("URI may not be empty in getDrupalIdForUri.", "error");
+      \Drupal::messenger()->addError("URI may not be empty in getDrupalIdForUri.");
 #      ddebug_backtrace();
       return;
     }
@@ -247,7 +273,7 @@ class AdapterHelper {
     //dpm(array_combine(array('$uri','$create_on_fail','$input_adapter_id'),func_get_args())+array('result'=>$id),__FUNCTION__);
 
     if(is_object($id)) {
-      drupal_set_message("AdapterHelper::getDrupalIdForUri got an object but should get an id!", "warning");
+      \Drupal::messenger()->addWarning("AdapterHelper::getDrupalIdForUri got an object but should get an id!");
       $id = $id->id();
     }
 
@@ -276,8 +302,10 @@ class AdapterHelper {
     }
    
     #drupal_set_message($uri);
-#    dpm(func_get_args(),__FUNCTION__);
-    $query = db_select('wisski_salz_id2uri','m')
+    #    dpm(func_get_args(),__FUNCTION__);
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $query = \Drupal::database()->select('wisski_salz_id2uri', 'm')
       ->fields('m')
       ->condition('uri',$uri);
     if (isset($input_adapter_id)) $query->condition('adapter_id',$input_adapter_id);
@@ -297,7 +325,7 @@ class AdapterHelper {
     $ids = array_unique(array_keys($ids));
     if (count($ids) > 1) {
       //dpm($ids,'from DB, multiple');
-      drupal_set_message("There are multiple entity IDs for a URI. See log reports for details.");
+      \Drupal::messenger()->addStatus("There are multiple entity IDs for a URI. See log reports for details.");
       \Drupal::logger('WissKI Salz')->warning(
         'There are multiple entity IDs for URI {uri}: {ids}. Please resolve. The first one is taken.',
         ['uri' => $uri, 'ids' => join(', ', $ids)]
@@ -343,12 +371,15 @@ class AdapterHelper {
     }
     
 #    dpm($adapter_id, "case three");
-    
     //eid creation works by inserting data and retrieving the newly set line number as eid
-    $id = db_insert('wisski_salz_id2uri')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $id = \Drupal::database()->insert('wisski_salz_id2uri')
       ->fields(array('uri'=>$uri,'adapter_id'=>$adapter_id))
       ->execute();
-    db_update('wisski_salz_id2uri')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    \Drupal::database()->update('wisski_salz_id2uri')
       ->fields(array('eid'=>$id))
       ->condition('rid',$id)
       ->execute();
@@ -377,7 +408,7 @@ class AdapterHelper {
       //otherwise we cant do anything
       //use this block in other functions, too, if there is the probability of getting wrong inputs
       if (WISSKI_DEVEL) {
-        drupal_set_message(__METHOD__ . ": Expected entity id, got URI: $eid", 'warning');
+        \Drupal::messenger()->addWarning(__METHOD__ . ": Expected entity id, got URI: $eid");
         \Drupal::logger('wisski salz')->warning(__METHOD__ . ": Expected entity id, got URI: $eid: {bt}", ["bt"=>join('//', array_map(function ($a) { return (isset($a['class']) ? $a['class'] . '::' : '') . $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 8)))]);
       }
       if (isset($adapter_id)) {
@@ -412,7 +443,7 @@ class AdapterHelper {
       //otherwise we cant do anything
       //use this block in other functions, too, if there is the probability of getting wrong inputs
       if (WISSKI_DEVEL) {
-        drupal_set_message(__METHOD__ . ": Expected entity id, got URI: $eid", 'warning');
+        \Drupal::messenger()->addWarning(__METHOD__ . ": Expected entity id, got URI: $eid");
         \Drupal::logger('wisski salz')->warning(__METHOD__ . ": Expected entity id, got URI: $eid: {bt}", ["bt"=>join('//', array_map(function ($a) { return (isset($a['class']) ? $a['class'] . '::' : '') . $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 8)))]);
       }
       if (isset($adapter_id)) {
@@ -426,8 +457,8 @@ class AdapterHelper {
     if(!empty($result) && is_array($result)) {
       foreach($result as $key => $value) {
         if(isset($value->uri)) {
-          drupal_set_message("Warning - this is the old behaviour. You should not use this!", "warning");
-          dpm("track");
+          \Drupal::messenger()->addWarning("Warning - this is the old behaviour. You should not use this!");
+          #dpm("track");
           unset($result[$key]);
           $result[$value->adapter_id] = $value->uri;
         }
@@ -456,7 +487,9 @@ class AdapterHelper {
 
     #dpm($eid,__FUNCTION__.' '.$adapter_id);
     //first try the DB
-    $query = db_select('wisski_salz_id2uri','m')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $query = \Drupal::database()->select('wisski_salz_id2uri', 'm')
       ->fields('m',array('adapter_id','uri'))
       ->condition('eid',$eid);
     if (isset($adapter_id)) $query->condition('adapter_id',$adapter_id);
@@ -499,12 +532,14 @@ class AdapterHelper {
           // if we got the correct one, we need to update this..
           // these navigate-uris should never be in the table! 
           if(!empty($same_uri)) {
-            db_update('wisski_salz_id2uri')
+            // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+            // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+            \Drupal::database()->update('wisski_salz_id2uri')
               ->fields(array('uri'=>$same_uri))
               ->condition('uri',$value)
               ->condition('eid',$eid)
               ->execute();
-            dpm("updated $value to $same_uri for eid $eid - hope this is correct?");
+#            dpm("updated $value to $same_uri for eid $eid - hope this is correct?");
           }
             
                         
@@ -512,7 +547,7 @@ class AdapterHelper {
       }
 #      dpm($return, "return");
       if (count($return) > 1) {
-        drupal_set_message("There seems to be associated multiple instances with one entity id. See logs.", 'warning');
+        \Drupal::messenger()->addWarning("There seems to be associated multiple instances with one entity id. See logs.");
         \Drupal::logger('wisski salz')->warning("There seems to be associated entity id {id} with multiple instances: {uris}", array('id' => $eid, 'uris' => join(', ', $return)));
       }
       if (!empty($return)) return $return[0];
@@ -596,7 +631,7 @@ class AdapterHelper {
         self::setSameUris($same_uris,$eid);
         return $same_uris;
       } else {
-        drupal_set_message("There is no preferred local store set.", "warning");
+        \Drupal::messenger()->addWarning("There is no preferred local store set.");
       }
     }
   }
@@ -637,10 +672,14 @@ class AdapterHelper {
     $local_engine->deleteSameUris($same_uris);
 
     // delete from table
-    $query = db_delete('wisski_salz_id2uri')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $query = \Drupal::database()->delete('wisski_salz_id2uri')
       ->condition('eid',$entity_id)
       ->execute();
-    $query = db_delete('wisski_title_n_grams')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $query = \Drupal::database()->delete('wisski_title_n_grams')
       ->condition('ent_num',$entity_id)
       ->execute();
     
@@ -659,7 +698,11 @@ class AdapterHelper {
    * @return TRUE if at least one adapter knows the URI, otherwise FALSE
    */
   public static function checkUriExists($uri) {
-    $adapters = entity_load_multiple('wisski_salz_adapter');
+
+#    $adapters = entity_load_multiple('wisski_salz_adapter');
+
+    $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
+
     foreach($adapters as $adapter) {
       if ($adapter->checkUriExists($uri)) {
         return TRUE;
@@ -674,7 +717,9 @@ class AdapterHelper {
    */
   public static function getFreshDrupalId() {
     
-    $res = db_select('wisski_salz_id2uri','u')
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $res = \Drupal::database()->select('wisski_salz_id2uri', 'u')
       ->fields('u',array('eid'))
       ->orderBy('eid','DESC')
       ->execute()->fetch();
@@ -709,8 +754,8 @@ class AdapterHelper {
     //if we reach here, there is no preferred local store
     if (!$ignore_errors) {
       //throw new \Exception('There is no preferred local store set');
-      $link = \Drupal\Core\Link::createFromRoute(t('here',array(),array('context'=> 'There is no preferred local store set. Please specify one ')),'entity.wisski_salz_adapter.collection');
-      drupal_set_message(t('There is no preferred local store set. Please specify one %here',array('%here' => $link->toString())),'error');
+      $link = Link::createFromRoute(t('here',array(),array('context'=> 'There is no preferred local store set. Please specify one ')),'entity.wisski_salz_adapter.collection');
+      \Drupal::messenger()->addError(t('There is no preferred local store set. Please specify one %here',array('%here' => $link->toString())));
     }
   }
   
@@ -729,7 +774,7 @@ class AdapterHelper {
    */
   public static function generateWisskiUriFromId($eid) {
     
-    $url = \Drupal\Core\Url::fromRoute('entity.wisski_individual.canonical',array('wisski_individual'=>$eid));
+    $url = Url::fromRoute('entity.wisski_individual.canonical',array('wisski_individual'=>$eid));
     global $base_url;
     return $base_url.'/'.$url->getInternalPath();
   }
@@ -814,7 +859,8 @@ class AdapterHelper {
     
 #    dpm("got nothing from cache!");
 
-    $adapters = entity_load_multiple('wisski_salz_adapter');
+#    $adapters = entity_load_multiple('wisski_salz_adapter');
+    $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
     $bundle_ids = array();
     // ask all adapters
     foreach($adapters as $adapter) {

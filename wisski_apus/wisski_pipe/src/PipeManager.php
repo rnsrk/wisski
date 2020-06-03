@@ -30,11 +30,13 @@ class PipeManager {
   /**
    * Gets the entity manager.
    *
-   * @return \Drupal\Core\Entity\EntityManagerInterface
+   * @return \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected function getEntityManager() {
     if (!isset($this->entity_manager)) {
-      $this->entity_manager = \Drupal::entityManager();
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // We are assuming that we want to use the `entity_type.manager` service since no method was called here directly. Please confirm this is the case. See https://www.drupal.org/node/2549139 for more information.
+      $this->entity_manager = \Drupal::service('entity_type.manager');
     }
     return $this->entity_manager;
   }

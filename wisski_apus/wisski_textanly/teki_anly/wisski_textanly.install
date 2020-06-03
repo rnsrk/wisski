@@ -36,7 +36,9 @@ function wisski_textanly_install() {
       "rank_offset_has_pos" => array(),
     )),
   );
-  db_query("INSERT INTO {%s} (name, profile, lang, weight, type, module, settings) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s')", $default_vocab);
+  // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+  // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+  \Drupal::database()->query("INSERT INTO {%s} (name, profile, lang, weight, type, module, settings) VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s')", $default_vocab);
   
 }
 
@@ -65,7 +67,9 @@ function _wisski_textanly_bulk_load($table, $file) {
     }
     if (empty($lines)) break;
     $lines = join(',', $lines);
-    db_query("INSERT INTO %s VALUES $lines", $values);
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    \Drupal::database()->query("INSERT INTO %s VALUES $lines", $values);
   }
 
   return TRUE;

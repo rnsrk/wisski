@@ -69,7 +69,7 @@ class WisskiEntityReferenceLabelFormatter extends EntityReferenceLabelFormatter 
 #      dpm(wisski_core_generate_title($item->target_id), "title?");
 
       $label = wisski_core_generate_title($item->target_id);
-      
+
       // If the link is to be displayed and the entity has a uri, display a
       // link.
       if ($output_as_link ) {

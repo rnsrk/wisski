@@ -109,7 +109,7 @@ class TriplifyLinks extends ProcessorBase {
    * {@inheritdoc}
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
-    
+
     $this->reference_properties = array();
 
     $ref_props = $form_state->getValue('reference_properties');

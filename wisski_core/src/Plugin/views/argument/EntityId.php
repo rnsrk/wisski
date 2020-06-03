@@ -27,7 +27,7 @@ class EntityId extends ViewsNumeric {
    * hence the need to define only the operators we do support.
    */
   function operators() {
-dpm(__METHOD__, __METHOD__);    
+#dpm(__METHOD__, __METHOD__);    
     $operators = array(
       'IN' => array(
         'title' => t('Is equal to'),

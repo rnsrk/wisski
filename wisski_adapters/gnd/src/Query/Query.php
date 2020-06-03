@@ -14,14 +14,14 @@ class Query extends WisskiQueryBase {
   public function execute() {
 
     $result = array();
-    
+
     if ($this->isFieldQuery()) {
-      
+
 
     } elseif ($this->isPathQuery()) {
 
     }
-    
+
 
     if ($this->count) {
       $result = count($result);

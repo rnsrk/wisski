@@ -47,10 +47,10 @@ class EntityPickerResults extends ProcessorBase {
         if ($anno['uri']) {
           
           if (preg_match('!node/(\d+)$!u', $anno['uri'], $m)) {
-            $label = entity_load('node', $m[1])->label();
+            $label = \Drupal::service('entity_type.manager')->getStorage('node')->load($m[1])->label();
           } else {
             $entity_id = AdapterHelper::getDrupalIdForUri($anno['uri']);
-            $entity = entity_load('wisski_individual', $entity_id);
+            $entity = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->load($entity_id);
             $label =$entity->label();
           }
 

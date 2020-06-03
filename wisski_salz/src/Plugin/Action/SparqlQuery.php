@@ -7,6 +7,7 @@
 
 namespace Drupal\wisski_salz\Plugin\Action;
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Action\ConfigurableActionBase;
 use Drupal\Core\Annotation\Action;
 use Drupal\Core\Annotation\Translation;
@@ -42,7 +43,8 @@ class SparqlQuery extends ConfigurableActionBase {
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    $adapters = entity_load_multiple('wisski_salz_adapter');
+#    $adapters = entity_load_multiple('wisski_salz_adapter');
+    $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
     $bundle_ids = array();
     // ask all adapters
     foreach($adapters as $aid => $adapter) {
@@ -96,7 +98,7 @@ class SparqlQuery extends ConfigurableActionBase {
    * {@inheritdoc}
    */
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
-    return \Drupal\Core\Access\AccessResult::allowed();
+    return AccessResult::allowed();
   }
 
   
@@ -104,7 +106,7 @@ class SparqlQuery extends ConfigurableActionBase {
    * {@inheritdoc}
    */
   public function execute($object = NULL) {
-    $adapter = entity_load('wisski_salz_adapter', $this->configuration['adapter_id']);
+    $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->configuration['adapter_id']);
     if (!$adapter) {
       \Drupal::logger('Wisski Salz')->error('Action %action: adapter with ID %aid does not exist', [
           '%action' => $this->pluginDefinition['label'],

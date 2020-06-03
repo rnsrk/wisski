@@ -79,7 +79,7 @@ class WisskiIIIFSettings extends FormBase {
 
     $settings->save();
    
-    drupal_set_message($this->t('Changed IIIF settings'));
+    $this->messenger()->addStatus($this->t('Changed IIIF settings'));
    
     $form_state->setRedirect('system.admin_config');
    

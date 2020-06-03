@@ -7,6 +7,7 @@
 
 namespace Drupal\wisski_adapter_xml\Plugin\wisski_salz\Engine;
 
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\wisski_adapter_xml\XmlAdapterBase;
 
 use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
@@ -99,7 +100,7 @@ class XmlAdapterEngine extends XmlAdapterBase implements PathbuilderEngineInterf
    */
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundle=NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
         
-    $main_property = \Drupal\field\Entity\FieldStorageConfig::loadByName($entity_type, $field_name)->getItemDefinition()->mainPropertyName();
+    $main_property = FieldStorageConfig::loadByName($entity_type, $field_name)->getItemDefinition()->mainPropertyName();
     if (in_array($main_property,$property_ids)) {
       return $this->loadFieldValues($entity_ids,array($field_id),$language);
     }
@@ -166,7 +167,7 @@ class XmlAdapterEngine extends XmlAdapterBase implements PathbuilderEngineInterf
    *  description : a description of the step, translatable, multiline
    */
   public function getStepInfo($step, $history = [], $future = []) {
-    dpm(func_get_args(),__METHOD__);
+    #dpm(func_get_args(),__METHOD__);
     return array();
   }
 

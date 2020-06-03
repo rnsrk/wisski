@@ -7,6 +7,7 @@
 
 namespace Drupal\wisski_apus\Plugin\wisski_pipe\Processor;
 
+use Drupal\linkit\ResultManager;
 use Drupal\wisski_pipe\ProcessorInterface;
 use Drupal\wisski_pipe\ProcessorBase;
 use Drupal\Core\Url;
@@ -40,8 +41,8 @@ class QueryLinkit extends ProcessorBase {
 
     if (!is_string($term)) $term = $term->toString();
     
-    $profile = entity_load('linkit_profile', 'wurm');
-    $mngr = new \Drupal\linkit\ResultManager();
+    $profile = \Drupal::service('entity_type.manager')->getStorage('linkit_profile')->load('wurm');
+    $mngr = new ResultManager();
     $results = $mngr->getResults($profile, $term);
     
     $annos = array();
@@ -51,7 +52,7 @@ class QueryLinkit extends ProcessorBase {
       global $base_root;
       foreach ($results as $r) {
         $annos[] = array(
-          'uri' => strpos($r['path'], '://') ? $r['path'] : URL::fromURI('internal:' . $r['path'], array('absolute' => TRUE))->toString(),
+          'uri' => strpos($r['path'], '://') ? $r['path'] : Url::fromURI('internal:' . $r['path'], array('absolute' => TRUE))->toString(),
         );
       }
     }

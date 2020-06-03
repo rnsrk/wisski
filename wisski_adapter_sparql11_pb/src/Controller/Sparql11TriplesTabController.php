@@ -2,6 +2,7 @@
 
 namespace Drupal\wisski_adapter_sparql11_pb\Controller;
 
+use Symfony\Component\Routing\Exception\InvalidParameterException;
 use Drupal\Core\Entity\ContentEntityStorageInterface;
 use \Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\ContentEntityForm;
@@ -17,7 +18,7 @@ class Sparql11TriplesTabController extends ControllerBase {
   public function forward($wisski_individual) {
 
 
-    $storage = \Drupal::entityManager()->getStorage('wisski_individual');
+    $storage = \Drupal::service('entity_type.manager')->getStorage('wisski_individual');
 
     //let's see if the user provided us with a bundle, if not, the storage will try to guess the right one
     $match = \Drupal::request();
@@ -71,15 +72,15 @@ class Sparql11TriplesTabController extends ControllerBase {
             $existing_bundles = $e->getBundleIdsForUri($result->s->getUri());
 
             if(empty($existing_bundles))
-              $subjecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->s->getUri() ) );
+              $subjecturi = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->s->getUri() ) );
             else {
               $remote_entity_id = $e->getDrupalId($result->s->getUri());
-              $subjecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $remote_entity_id, 'target_uri' => $result->s->getUri() ) );
+              $subjecturi = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $remote_entity_id, 'target_uri' => $result->s->getUri() ) );
             }
 
-            $predicateuri = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->sp->getUri() ) );
+            $predicateuri = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->sp->getUri() ) );
 
-            $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $target_uri ) );
+            $objecturi = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $target_uri ) );
 
 #            dpm(\Drupal::l($this->t('sub'), $subjecturi));
             $form['in_triples'][] = array(
@@ -92,9 +93,9 @@ class Sparql11TriplesTabController extends ControllerBase {
             );
           } else {
             
-            $subjecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $target_uri ) );
+            $subjecturi = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $target_uri ) );
 
-            $predicateuri = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->po->getUri() ) );
+            $predicateuri = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->po->getUri() ) );
             
             if($result->o instanceof \EasyRdf_Resource) {
               try {
@@ -102,13 +103,13 @@ class Sparql11TriplesTabController extends ControllerBase {
                 $existing_bundles = $e->getBundleIdsForUri($result->o->getUri());
                 
                 if(empty($existing_bundles))
-                  $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->o->getUri() ) );
+                  $objecturi = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->o->getUri() ) );
                 else {
                   $remote_entity_id = $e->getDrupalId($result->o->getUri());              
-                  $objecturi = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $remote_entity_id, 'target_uri' => $result->o->getUri() ) );
+                  $objecturi = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $remote_entity_id, 'target_uri' => $result->o->getUri() ) );
                 }
                 $got_target_url = TRUE;
-              } catch (\Symfony\Component\Routing\Exception\InvalidParameterException $ex) {
+              } catch (InvalidParameterException $ex) {
                 $got_target_url = FALSE;
               }
               $object_text = $result->o->getUri();

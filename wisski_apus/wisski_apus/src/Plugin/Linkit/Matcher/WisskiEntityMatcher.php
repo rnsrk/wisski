@@ -14,6 +14,8 @@ use Drupal\linkit\Suggestion\SuggestionCollection;
 use Drupal\wisski_core\WissKICacheHelper;
 use Drupal\wisski_salz\AdapterHelper;
 
+use Drupal\Core\Database\Database;
+
 /**
  * @Matcher(
  *   id = "entity:wisski_individual",
@@ -106,9 +108,11 @@ class WisskiEntityMatcher extends EntityMatcher {
     $suggestions = new SuggestionCollection();
     if ($string) {
       $bundles = array();
-      $query = db_select('wisski_title_n_grams', 'm')
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+      $query = \Drupal::database()->select('wisski_title_n_grams', 'm')
         ->fields('m', array('ent_num', 'bundle', 'ngram'))
-        ->condition('ngram', '%' . db_like($string) . '%', 'LIKE')
+        ->condition('ngram', '%' .  Database::getConnection()->escapeLike($string) . '%', 'LIKE')
         ->range(0, 2 * $this->limit);
       // Bundle check.
       if (!empty($this->configuration['bundles'])) {
@@ -137,7 +141,7 @@ class WisskiEntityMatcher extends EntityMatcher {
           if (stripos($title,$string) !== FALSE) {
             
             if (!isset($bundles[$bundle_id])) {
-              $bundles[$bundle_id] = entity_load('wisski_bundle', $bundle_id);
+              $bundles[$bundle_id] = \Drupal::service('entity_type.manager')->getStorage('wisski_bundle')->load($bundle_id);
             }
             $bundle = $bundles[$bundle_id];
             
@@ -190,7 +194,9 @@ class WisskiEntityMatcher extends EntityMatcher {
     $matches = array();
     if ($string) {
       
-      $results = db_select('wisski_title_n_grams', 'm')->fields('m', array('ent_num', 'bundle', 'ngram'))->condition('ngram', '%' . db_like($string) . '%', 'LIKE')->execute();
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+      $results = \Drupal::database()->select('wisski_title_n_grams', 'm')->fields('m', array('ent_num', 'bundle', 'ngram'))->condition('ngram', '%' . Database::getConnection()->escapeLike($string) . '%', 'LIKE')->execute();
       $entities = array();
       while ($result = $results->fetchObject()) {
         $entities[$result->ent_num][$result->bundle] = $result->ngram;
@@ -211,7 +217,7 @@ class WisskiEntityMatcher extends EntityMatcher {
 
           if (stripos($title,$string) !== FALSE) {
           
-            $entity = entity_load('wisski_bundle', $bundle_id);
+            $entity = \Drupal::service('entity_type.manager')->getStorage('wisski_bundle')->load($bundle_id);
             
             if(empty($entity))
               continue;

@@ -47,7 +47,7 @@ class AnnotationHelper {
 
     //extractEntityInfoFromRoute normally takes two parameters, but the second, $route_name, defaults to 
     // 'entity.wisski_individual.canonical' which is exactly what we want here
-    return \Drupal\wisski_salz\AdapterHelper::extractEntityInfoFromRouteUrl($url);
+    return AdapterHelper::extractEntityInfoFromRouteUrl($url);
   }
 
 

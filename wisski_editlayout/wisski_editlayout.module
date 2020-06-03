@@ -1,9 +1,10 @@
 <?php
 
+use Drupal\Core\Routing\RouteMatchInterface;
 /**
  * Implements hook_help().
  */
-function wisski_editlayout_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+function wisski_editlayout_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'help.page.wisski_editlayout':
       return '<p>' . t('This is the WissKI module for a better layout ' .

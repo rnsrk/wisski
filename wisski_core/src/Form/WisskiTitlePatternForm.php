@@ -2,6 +2,7 @@
 
 namespace Drupal\wisski_core\Form;
 
+use Drupal\Core\Link;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -91,7 +92,7 @@ class WisskiTitlePatternForm extends EntityForm {
           );
         } else {
           //this may not happen
-          drupal_set_message($this->t('Please choose a path to add'),'error');
+          $this->messenger()->addError($this->t('Please choose a path to add'));
         }
       } elseif ($trigger === 'on_empty_selection') {
         $on_empty_selection = $form_state->getUserInput()['on_empty_selection'];
@@ -172,7 +173,7 @@ class WisskiTitlePatternForm extends EntityForm {
     );
 
     $on_empty_options = array(
-      WisskiBundle::DEFAULT_PATTERN => $this->t('Use the global default pattern see %link',array('%link'=>\Drupal\Core\Link::createFromRoute('here','wisski.config_menu')->toString())),
+      WisskiBundle::DEFAULT_PATTERN => $this->t('Use the global default pattern see %link',array('%link'=>Link::createFromRoute('here','wisski.config_menu')->toString())),
       WisskiBundle::DONT_SHOW => $this->t('Do not show the entity in the navigate list'),
       WisskiBundle::FALLBACK_TITLE => $this->t('Show a generic title'),
     );
@@ -258,9 +259,6 @@ class WisskiTitlePatternForm extends EntityForm {
     return $form;
   }
   
-  /**
-   *
-   */
   private function renderRow($key,array $attributes) {
     //dpm($attributes,__METHOD__.' '.$key);  
     $rendered = array();
@@ -505,13 +503,17 @@ class WisskiTitlePatternForm extends EntityForm {
     
     $bundle->save();
     
-    drupal_set_message(t('The title pattern for bundle %name has been updated.', array('%name' => $bundle->label())));
+    $this->messenger()->addStatus(t('The title pattern for bundle %name has been updated.', array('%name' => $bundle->label())));
 
-    $form_state->setRedirectUrl($bundle->urlInfo('edit-form'));
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // Please confirm that `$bundle` is an instance of `Drupal\Core\Entity\EntityInterface`. Only the method name and not the class name was checked for this replacement, so this may be a false positive.
+    $form_state->setRedirectUrl($bundle->toUrl('edit-form'));
   }
   
   public function deletePattern(array $form, FormStateInterface $form_state) {
-    $form_state->setRedirectUrl($this->entity->urlInfo('delete-title-form'));
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // Please confirm that `$entity` is an instance of `Drupal\Core\Entity\EntityInterface`. Only the method name and not the class name was checked for this replacement, so this may be a false positive.
+    $form_state->setRedirectUrl($this->entity->toUrl('delete-title-form'));
   }  
   
   public function containsCycle($array,&$cycle) {

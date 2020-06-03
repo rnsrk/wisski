@@ -16,7 +16,7 @@ class TitleGenerationController extends ControllerBase {
   public function generateByBundle($bundle) {
     
     if (!is_object($bundle)) {
-      $bundle = entity_load('wisski_bundle', $bundle);
+      $bundle = \Drupal::service('entity_type.manager')->getStorage('wisski_bundle')->load($bundle);
     }
     if (empty($bundle)) {
       throw new \InvalidArgumentException("You must specify a valid bundle");
@@ -91,10 +91,10 @@ class TitleGenerationController extends ControllerBase {
    */
   public static function finishBatch($success, $results, $operations) {
     if ($success) {
-      drupal_set_message(t('Updated titles of @total entities', ['@total' => $results['total']]));
+      $this->messenger()->addStatus(t('Updated titles of @total entities', ['@total' => $results['total']]));
     }
     else {
-      drupal_set_message(t('An error occurred while updating the titles.'), 'error');
+      $this->messenger()->addError(t('An error occurred while updating the titles.'));
     }
   }
 

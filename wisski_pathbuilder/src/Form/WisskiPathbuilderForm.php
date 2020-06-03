@@ -6,6 +6,9 @@
  
 namespace Drupal\wisski_pathbuilder\Form;
 
+use Drupal\wisski_salz\Entity\Adapter;
+use Drupal\Core\File\FileSystemInterface;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
 use SimpleXMLElement;
 
 use Drupal\Core\Form\FormStateInterface; 
@@ -73,7 +76,7 @@ class WisskiPathbuilderForm extends EntityForm {
     }
 
     // load all adapters    
-    $adapters = \Drupal\wisski_salz\Entity\Adapter::loadMultiple();
+    $adapters = Adapter::loadMultiple();
     
     $adapterlist = array();
 
@@ -84,7 +87,7 @@ class WisskiPathbuilderForm extends EntityForm {
     
     $ns = NULL;
     if(!empty($pathbuilder->getAdapterId())) {
-      $adapter = \Drupal\wisski_salz\Entity\Adapter::load($pathbuilder->getAdapterId());
+      $adapter = Adapter::load($pathbuilder->getAdapterId());
       $engine = $adapter->getEngine();
       $ns = $engine->getNamespaces();
     }
@@ -157,20 +160,20 @@ class WisskiPathbuilderForm extends EntityForm {
 
       // iterate through all the pathforms and bring the forms in a tree together
       foreach($pathforms as $pathform) {    
-    
+
         $path = $pathform['#item'];
-        
+
         if(empty($path)) {
-          drupal_set_message("There is an empty Path in " . serialize($pathform), "error");
+          $this->messenger()->addError("There is an empty Path in " . serialize($pathform));
           continue;
         }
 
         if(! (empty($path->getDatatypeProperty()) || $path->getDatatypeProperty() == "empty") && ($pbpaths[$path->id()]['fieldtype'] == "entity_reference" || $path->isGroup())) {
-          drupal_set_message("Danger Zone: Path '" . $path->label() . "' has field type 'entity reference' but uses " . $path->getDatatypeProperty() . " as datatype property. Please remove the datatype property.", "error");
+          $this->messenger()->addError("Danger Zone: Path '" . $path->label() . "' has field type 'entity reference' but uses " . $path->getDatatypeProperty() . " as datatype property. Please remove the datatype property.");
         }
-        
+
         $form['pathbuilder_table'][$path->id()]['#item'] = $pathform['#item'];
-      
+
         // TableDrag: Mark the table row as draggable.
         $form['pathbuilder_table'][$path->id()]['#attributes'] = $pathform['#attributes'];
         $form['pathbuilder_table'][$path->id()]['#attributes']['class'][] = 'draggable';
@@ -190,7 +193,7 @@ class WisskiPathbuilderForm extends EntityForm {
           ),
           $pathform['title'],
         );
-      
+
         #$form['pathbuilder_table'][$path->id()]['path'] = array('#type' => 'label', '#title' => 'Mu -> ha -> ha');
         $form['pathbuilder_table'][$path->id()]['path'] = $pathform['path'];
         if($this->with_solr)
@@ -200,30 +203,30 @@ class WisskiPathbuilderForm extends EntityForm {
 
         $form['pathbuilder_table'][$path->id()]['field_type_informative'] = $pathform['field_type_informative'];
         $form['pathbuilder_table'][$path->id()]['cardinality'] = $pathform['cardinality'];
-        
+
         $form['pathbuilder_table'][$path->id()]['weight'] = $pathform['weight'];
-        
+
         // an array of links that can be selected in the dropdown operations list
         $links = array();
         $links['edit'] = array(
           'title' => $this->t('Edit'),
        # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->getID())),
-          'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.edit_form')
+          'url' => Url::fromRoute('entity.wisski_path.edit_form')
                      ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
-      
+
         $links['fieldconfig'] = array(
           'title' => $this->t('Configure Field'),
          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
-          'url' => \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.configure_field_form')
+          'url' => Url::fromRoute('entity.wisski_pathbuilder.configure_field_form')
                      ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
-        
+
         if(!empty($pbpaths[$path->id()]) && !empty($pbpaths[$path->id()]['bundle'])) { 
           $links['bundleedit'] = array(
             'title' => $this->t('Edit Bundle'),
          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
-            'url' => \Drupal\Core\Url::fromRoute('entity.wisski_bundle.edit_form')
+            'url' => Url::fromRoute('entity.wisski_bundle.edit_form')
                      ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
           );
 /*        
@@ -237,36 +240,36 @@ class WisskiPathbuilderForm extends EntityForm {
           $links['formedit'] = array(
             'title' => $this->t('Manage Form Display for Bundle'),
          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
-            'url' => \Drupal\Core\Url::fromRoute('entity.entity_form_display.wisski_individual.default')
+            'url' => Url::fromRoute('entity.entity_form_display.wisski_individual.default')
                      ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
           );
-        
+
           $links['displayedit'] = array(
             'title' => $this->t('Manage Display for Bundle'),
          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
-            'url' => \Drupal\Core\Url::fromRoute('entity.entity_view_display.wisski_individual.default')
+            'url' => Url::fromRoute('entity.entity_view_display.wisski_individual.default')
                      ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
           );
         }
-        
+
         $links['delete_local'] = array(
           'title' => $this->t('Delete path only from this pathbuilder'),
-          'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.delete_local_form')
+          'url' => Url::fromRoute('entity.wisski_path.delete_local_form')
                    ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
 
         $links['delete'] = array(
           'title' => $this->t('Delete path completely'),
-          'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.delete_form')
+          'url' => Url::fromRoute('entity.wisski_path.delete_form')
                    ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
-        
+
         $links['duplicate'] = array(
           'title' => $this->t('Duplicate'),
-          'url' => \Drupal\Core\Url::fromRoute('entity.wisski_path.duplicate_form')
+          'url' => Url::fromRoute('entity.wisski_path.duplicate_form')
                    ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
-                                                             
+
         // Operations (dropbutton) column.
       #  $operations = parent::getDefaultOperations($pathbuilder);
         $operations = array(
@@ -279,12 +282,12 @@ class WisskiPathbuilderForm extends EntityForm {
         $form['pathbuilder_table'][$path->id()]['id'] = $pathform['id'];
 
         $form['pathbuilder_table'][$path->id()]['parent'] = $pathform['parent'];
-        
+
         // if the parent is not part of this pathbuilder, the path should be attached to top. 
         if(empty($form['pathbuilder_table'][$pathform['parent']['#value']])) {
           $form['pathbuilder_table'][$path->id()]['parent']['#value'] = 0;
         }
-                  
+
         if(!empty($pathform['bundle']))
           $form['pathbuilder_table'][$path->id()]['bundle'] = $pathform['bundle'];
         if(!empty($pathform['field']))
@@ -317,7 +320,7 @@ class WisskiPathbuilderForm extends EntityForm {
         '#description' => $this->t("Name of the Pathbuilder-Tree."),
         '#required' => true,
       );
-    
+
       // we need an id
       $form['additional']['id'] = array(
         '#type' => 'machine_name',
@@ -414,9 +417,9 @@ class WisskiPathbuilderForm extends EntityForm {
     
     $export_path = 'public://wisski_pathbuilder/export/';
     
-    file_prepare_directory($export_path, FILE_CREATE_DIRECTORY);
+    \Drupal::service('file_system')->prepareDirectory($export_path, FileSystemInterface::CREATE_DIRECTORY);
     
-    $files = file_scan_directory($export_path, '/.*/');
+    $files = \Drupal::service('file_system')->scanDirectory($export_path, '/.*/');
     
     ksort($files);
 
@@ -498,7 +501,7 @@ class WisskiPathbuilderForm extends EntityForm {
       
       $this_path = $xmldoc->addChild("path");
       
-      $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
+      $pathob = WisskiPathEntity::load($path['id']);
       
 #      dpm($pbp);
 #      dpm($path);
@@ -553,13 +556,13 @@ class WisskiPathbuilderForm extends EntityForm {
     
     $export_path = 'public://wisski_pathbuilder/export/' . $pathbuilder->id() . date('_Ymd\THis');
             
-    $file = file_save_data($dom->saveXML(), $export_path, FILE_EXISTS_RENAME);
+    $file = file_save_data($dom->saveXML(), $export_path, FileSystemInterface::EXISTS_RENAME);
   }
   
   
   
   public function import(array &$form, FormStateInterface $form_state) {
-    
+
     $importfile = $form_state->getValue('import');
 
     $importmode = $form_state->getValue('import_mode');
@@ -567,40 +570,40 @@ class WisskiPathbuilderForm extends EntityForm {
 #    dpm($importfile, "importfile!!");
 
     $xmldoc = new SimpleXMLElement($importfile, 0, TRUE);
-    
+
 #    dpm($xmldoc, "doc!");
-    
+
     $pb = $this->entity;
-    
+
     foreach($xmldoc->path as $path) {
       $parentid = html_entity_decode((string)$path->group_id);
-      
+
 #      if($parentid != 0)
 #        $parentid = wisski_pathbuilder_check_parent($parentid, $xmldoc);
-      
+
       $uuid = html_entity_decode((string)$path->uuid);
-      
+
       #if(empty($uuid))
-      
+
       // check if path already exists
-      $path_in_wisski = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load((string)$path->id);
-      
+      $path_in_wisski = WisskiPathEntity::load((string)$path->id);
+
       // it exists, skip this...
       if(!empty($path_in_wisski)) {
-        drupal_set_message("Path with id " . $uuid . " was already existing - skipping.");
-        
+        $this->messenger()->addStatus("Path with id " . $uuid . " was already existing - skipping.");
+
         $pb->addPathToPathTree($path_in_wisski->id(), $parentid, $path_in_wisski->isGroup());        
 
 //        continue;
       } else { // normal case - import the path!
-      
+
         $path_array = array();
         $count = 0;
         foreach ($path->path_array->children() as $n) {
           $path_array[$count] = html_entity_decode((string) $n);
           $count++;
         }
-      
+
         // it does not exist, create one!
         $pathdata = array(
           'id' => html_entity_decode((string)$path->id),
@@ -614,25 +617,25 @@ class WisskiPathbuilderForm extends EntityForm {
           'type' => (((int)$path->is_group) === 1) ? 'Group' : 'Path', 
 #        'field' => Pathbuilder::GENERATE_NEW_FIELD,
         );
-      
+
         // in D8 we do no longer allow a path/group without a name.
         // we have to set it to a dummy value.
         if ($pathdata['name'] == '') {
           $pathdata['name'] = "_empty_";
-          drupal_set_message(t('Path with id @id (@uuid) has no name. Name has been set to "_empty_".', array('@id' => $pathdata['id'], '@uuid' => $uuid)), 'warning');
+          $this->messenger()->addWarning(t('Path with id @id (@uuid) has no name. Name has been set to "_empty_".', array('@id' => $pathdata['id'], '@uuid' => $uuid)));
         }
-      
-        $path_in_wisski = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::create($pathdata);
-      
+
+        $path_in_wisski = WisskiPathEntity::create($pathdata);
+
         $path_in_wisski->save();
-      
+
         $pb->addPathToPathTree($path_in_wisski->id(), $parentid, $path_in_wisski->isGroup());
       }
-      
-          
+
+
       // check enabled or disabled
       $pbpaths = $pb->getPbPaths();
-      
+
       $pbpaths[$path_in_wisski->id()]['enabled'] = html_entity_decode((string)$path->enabled);
       $pbpaths[$path_in_wisski->id()]['weight'] = html_entity_decode((string)$path->weight);
       $pbpaths[$path_in_wisski->id()]['cardinality'] = html_entity_decode((string)$path->cardinality);
@@ -644,21 +647,21 @@ class WisskiPathbuilderForm extends EntityForm {
       } else {
         $pbpaths[$path_in_wisski->id()]['bundle'] = html_entity_decode((string)$path->bundle);
         $pbpaths[$path_in_wisski->id()]['field'] = html_entity_decode((string)$path->field);
-      
-      
+
+
         if($path->fieldtype)
           $pbpaths[$path_in_wisski->id()]['fieldtype'] = html_entity_decode((string)$path->fieldtype);
 
         if($path->displaywidget)
           $pbpaths[$path_in_wisski->id()]['displaywidget'] = html_entity_decode((string)$path->displaywidget);
-      
+
         if($path->formatterwidget)
           $pbpaths[$path_in_wisski->id()]['formatterwidget'] = html_entity_decode((string)$path->formatterwidget);      
       }
       $pb->setPbPaths($pbpaths);
-      
+
     }
-    
+
     $pb->save();
 
 #      drupal_set_message(serialize($pb->getPbPaths()));
@@ -732,23 +735,23 @@ class WisskiPathbuilderForm extends EntityForm {
           continue;
 
         $subpath = $sub['#item']->getPathArray();
-        
+
         // calculate the diff between the subpath and the group
         $diff = array_diff($subpath, $mypath);
-        
+
         // and do it the primitive way.
         $difflength = count($subpath) - count($mypath);
-        
+
         // if these differ there is something fishy!
         if(count($diff) > $difflength) {
           $subname = $sub['#item']->getName();
           $pathname = $pathform[$grouparray['id']]['#item']->getName();
 
-          drupal_set_message("Path " . $subname . " conflicts with definition of group " . $pathname . ". Please check.", "error");
+          $this->messenger()->addError("Path " . $subname . " conflicts with definition of group " . $pathname . ". Please check.");
           $pathform[$grouparray['id']]['#attributes'] = array('style' => array('background-color: red'));
         }
-        
-        
+
+
       }
 #      dpm($pathform, "before");
 #      dpm($subform, "before2");
@@ -772,7 +775,7 @@ class WisskiPathbuilderForm extends EntityForm {
   }
   
   private function pb_render_path($pathid, $enabled, $weight, $depth, $parent, $bundle, $field, $fieldtype, $displaywidget, $formatterwidget,$cardinality, $namespaces, $solr) {
-    $path = entity_load('wisski_path', $pathid);
+    $path = \Drupal::service('entity_type.manager')->getStorage('wisski_path')->load($pathid);
 
     if(is_null($path))
       return NULL;
@@ -843,7 +846,7 @@ class WisskiPathbuilderForm extends EntityForm {
 
     $pathform['cardinality'] = array(
       '#type' => 'item',
-      '#markup' => \Drupal\wisski_pathbuilder\Form\WisskiPathbuilderConfigureFieldForm::cardinalityOptions()[$cardinality],
+      '#markup' => WisskiPathbuilderConfigureFieldForm::cardinalityOptions()[$cardinality],
       '#value' => $cardinality,
       '#title' => $this->t('Field Cardinality'),
       '#title_display' => 'attribute',
@@ -927,7 +930,7 @@ class WisskiPathbuilderForm extends EntityForm {
         
         if($path['enabled'] == 0) {
           
-          $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
+          $pathob = WisskiPathEntity::load($path['id']);
 
           $pbpath = $pathbuilder->getPbPath($pathob->id());
 
@@ -940,12 +943,12 @@ class WisskiPathbuilderForm extends EntityForm {
           }
                     
           // delete old fields
-          $field_storages = \Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(array('field_name' => $field));
+          $field_storages = \Drupal::service('entity_type.manager')->getStorage('field_storage_config')->loadByProperties(array('field_name' => $field));
           if(!empty($field_storages))
             foreach($field_storages as $field_storage)
               $field_storage->delete();
           
-          $field_objects = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(array('field_name'=> $field));
+          $field_objects = \Drupal::service('entity_type.manager')->getStorage('field_config')->loadByProperties(array('field_name'=> $field));
           if(!empty($field_objects)) 
             foreach($field_objects as $field_object)
               $field_object->delete();
@@ -964,7 +967,7 @@ class WisskiPathbuilderForm extends EntityForm {
 #        drupal_set_message($path['id']);
         
         // generate fields!
-        $pathob = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path['id']);
+        $pathob = WisskiPathEntity::load($path['id']);
         
         if($pathob->isGroup()) {
           // save the original bundle id because
@@ -1000,20 +1003,20 @@ class WisskiPathbuilderForm extends EntityForm {
 
     // get the pathbuilder    
     $pathbuilder = $this->entity;
- 
+
     // fetch the paths
     $paths = $form_state->getValue('pathbuilder_table');
-    
+
     $pathtree = array();
     $map = array();
-    
+
     // regardless of what it is - we have to save it properly to the pbpaths
     $pbpaths = $pathbuilder->getPbPaths();
-    
+
     if (!empty($paths)) {
       foreach($paths as $key => $path) {
 #      $pathtree = array_merge($pathtree, $this->recursive_build_tree(array($key => $path)));
-        
+
         if(!empty($path['parent'])) { // it has parents... we have to add it somewhere
           $map[$path['parent']]['children'][$path['id']] = array('id' => $path['id'], 'children' => array());
           $map[$path['id']] = &$map[$path['parent']]['children'][$path['id']];
@@ -1021,11 +1024,11 @@ class WisskiPathbuilderForm extends EntityForm {
           $pathtree[$path['id']] = array('id' => $path['id'], 'children' => array());
           $map[$path['id']] = &$pathtree[$path['id']];
         }
-        
+
         // mark: I don't know what dorian wanted to do here. If somebody can explain to me
         // it might be useful - as long as nobody can, revert.      
         #$pbpaths[$path['id']] = \Drupal\wisski_core\WisskiHelper::array_merge_nonempty($pbpaths[$path['id']],$path); #array('id' => $path['id'], 'weight' => $path['weight'], 'enabled' => $path['enabled'], 'children' => array(), 'bundle' => $path['bundle'], 'field' => $path['field']);
-        
+
         // this works, but for performance reason we try to have nothing in the pathbuilder
         // overview what not absolutely has to be there.
         #$pbpaths[$path['id']] = $path;
@@ -1036,27 +1039,27 @@ class WisskiPathbuilderForm extends EntityForm {
       }
     }
 
-    
+
     // save the path
     $pathbuilder->setPbPaths($pbpaths);
-    
+
 #    dpm(array('old' => $pathbuilder->getPathTree(),'new' => $pathtree, 'form paths' => $paths),'Path trees');
     // save the tree
     $pathbuilder->setPathTree($pathtree);
-    
+
 #    $pathbuilder->setWithSolr($form_state->getValue("with_solr"));
 
     $status = $pathbuilder->save();
-    
+
     if($status) {
       // Setting the success message.
-      drupal_set_message($this->t('Saved the pathbuilder: @id.', array(
+      $this->messenger()->addStatus($this->t('Saved the pathbuilder: @id.', array(
         '@id' => $pathbuilder->id(),
       )));
     } else {
-      drupal_set_message($this->t('The Pathbuilder @id could not be saved.', array(
+      $this->messenger()->addError($this->t('The Pathbuilder @id could not be saved.', array(
         '@id' => $pathbuilder->id(),
-      )), 'error');
+      )));
     }
 #    dpm($pathbuilder, "Pb");
 #    if(!is_null($pathbuilder->id())) 

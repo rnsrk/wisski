@@ -1,5 +1,7 @@
 <?php
 
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Entity\EntityInterface;
 /** Module wisski_authfile
  *
  * @author: Martin Scholz
@@ -7,7 +9,7 @@
 /**
  * Implements hook_help().
  */
-function wisski_authfile_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+function wisski_authfile_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'help.page.wisski_authfile':
       return '<p>' . t('This is the WissKI module for authority file integration') . '</p>';
@@ -30,7 +32,7 @@ function wisski_authfile_help($route_name, \Drupal\Core\Routing\RouteMatchInterf
  * Implementation of hook_ENTITY_TYPE_insert
  * for WissKI's entity type
  */
-function wisski_authfile_wisski_individual_insert(Drupal\Core\Entity\EntityInterface $entity) {
+function wisski_authfile_wisski_individual_insert(EntityInterface $entity) {
     wisski_authfile_update_authority_uri($entity);
 }
 
@@ -39,7 +41,7 @@ function wisski_authfile_wisski_individual_insert(Drupal\Core\Entity\EntityInter
  * Implementation of hook_ENTITY_TYPE_update
  * for WissKI's entity type
  */
-function wisski_authfile_wisski_individual_update(Drupal\Core\Entity\EntityInterface $entity) {
+function wisski_authfile_wisski_individual_update(EntityInterface $entity) {
     wisski_authfile_update_authority_uri($entity);
 }
 
@@ -68,7 +70,8 @@ function wisski_authfile_wisski_individual_load($entities) {
 }
 
 function wisski_authfile_complete_authority_entry($entity) {
-  $actions = entity_load_multiple_by_properties('action', array('plugin' => 'wisski_authfile_complete_info'));
+#  $actions = entity_load_multiple_by_properties('action', array('plugin' => 'wisski_authfile_complete_info'));
+  $actions = \Drupal::entityTypeManager()->getStorage('action')->loadByProperties(array('plugin' => 'wisski_authfile_complete_info'));
 #dpm(count($actions), 'actions ci');  
   foreach ($actions as $action) {
     $action->execute([$entity]);
@@ -77,8 +80,10 @@ function wisski_authfile_complete_authority_entry($entity) {
 
 
 function wisski_authfile_update_authority_uri($entity) {
-  $actions = entity_load_multiple_by_properties('action', array('plugin' => 'wisski_authfile_update_uri'));
+#  $actions = entity_load_multiple_by_properties('action', array('plugin' => 'wisski_authfile_update_uri'));
+  $actions = \Drupal::entityTypeManager()->getStorage('action')->loadByProperties(array('plugin' => 'wisski_authfile_update_uri'));
 #dpm(count($actions), 'actions ui');  
+
   foreach ($actions as $action) {
     $action->execute([$entity]);
   }

@@ -184,8 +184,8 @@ class WisskiODBCImportForm extends FormBase {
     else { // non-batch mode
       self::log()->info('Start import in one go.'); 
       $cnt = $this->importInOneGo($import_script_xml, $db_params);
-      drupal_set_message(t('Finished import.'));
-      drupal_set_message(t('@num entities have been created or updated.', ['@num' => $cnt]));
+      $this->messenger()->addStatus(t('Finished import.'));
+      $this->messenger()->addStatus(t('@num entities have been created or updated.', ['@num' => $cnt]));
       self::log()->info('Completed import. {num} entities have been created or updated.', ['@num' => $cnt]);
     }
   }
@@ -232,10 +232,10 @@ class WisskiODBCImportForm extends FormBase {
         $params['dbport']
       );
       if(!$connection) {
-        drupal_set_message("Connection could not be established!",'error');
+        $this->messenger()->addError("Connection could not be established!");
         return;
       } else {
-        drupal_set_message("Connection established!");
+        $this->messenger()->addStatus("Connection established!");
       }
       mysqli_set_charset($connection,"utf8");
     }
@@ -321,14 +321,14 @@ class WisskiODBCImportForm extends FormBase {
    */
   public static function finishBatch($success, $results, $operations) {
     if ($success) {
-      drupal_set_message(t('Finished import.'));
-      drupal_set_message(t('@num entities have been created or updated.', ['@num' => count($results['already_seen'])]));
+      $this->messenger()->addStatus(t('Finished import.'));
+      $this->messenger()->addStatus(t('@num entities have been created or updated.', ['@num' => count($results['already_seen'])]));
       self::log()->info(
           'Successfully completed import. {num} entities have been created or updated. Entity IDs:{ids}',
           ['num' => count($results['already_seen']), 'ids' => join(", ", $results['already_seen'])]);
     }
     else {
-      drupal_set_message(t('Errors importing tables. @c tables could not be imported.', ['@c' => count($operations)]), 'error');
+      $this->messenger()->addError(t('Errors importing tables. @c tables could not be imported.', ['@c' => count($operations)]));
       self::log()->error(
         'Errors while processing import: {operations} operations left',
         [
@@ -381,15 +381,15 @@ class WisskiODBCImportForm extends FormBase {
         return $connection->query($sql)->fetchField();
       }
       catch (\Exception $e) {
-        drupal_set_message($e->getMessage(), 'error');
+        $this->messenger()->addError($e->getMessage());
         return NULL;
       }
     }
     else {
       $qry = mysqli_query($connection, $sql);
       if(!$qry) {
-        drupal_set_message("Anfrage '$sql' gescheitert!",'error');
-        drupal_set_message(mysqli_error($connection), 'error');
+        $this->messenger()->addError("Anfrage '$sql' gescheitert!");
+        $this->messenger()->addError(mysqli_error($connection));
         return NULL;
       }
       $row = mysqli_fetch_array($qry);
@@ -432,15 +432,15 @@ class WisskiODBCImportForm extends FormBase {
         $qry = $connection->query($sql);
       }
       catch (\Exception $e) {
-        drupal_set_message($e->getMessage(), 'error');
+        $this->messenger()->addError($e->getMessage());
         return;
       }
     }
     else {
       $qry = mysqli_query($connection, $sql);
       if(!$qry) {
-        drupal_set_message("Anfrage '$sql' gescheitert!",'error');
-        drupal_set_message(mysqli_error($connection), 'error');
+        $this->messenger()->addError("Anfrage '$sql' gescheitert!");
+        $this->messenger()->addError(mysqli_error($connection));
         return;
       }
     }
@@ -461,7 +461,7 @@ class WisskiODBCImportForm extends FormBase {
             $connection->query($sql);
           }
           catch (\Exception $e) {
-            drupal_set_message($e->getMessage(), 'error');
+            $this->messenger()->addError($e->getMessage());
             return;
           }
         }
@@ -750,7 +750,7 @@ class WisskiODBCImportForm extends FormBase {
       if(!empty($factual_delimiter) && strpos($row[$field_row_id], $factual_delimiter)) {
         // separate the parts
         $field_row_array = explode($factual_delimiter, $row[$field_row_id]);
-      
+
         // go through it, trim and add it.
         foreach($field_row_array as $one_part) {
           $entity_fields[$fieldid][] = ($trim) ? trim($one_part) : $one_part;
@@ -812,7 +812,7 @@ class WisskiODBCImportForm extends FormBase {
       // we have to set the bundle manually
       $entity_fields["bundle"] = $bundleid;
 #      dpm(microtime(), "entity create?");
-      $entity = entity_create('wisski_individual', $entity_fields);
+      $entity = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->create($entity_fields);
 #      dpm(microtime(), "entity create!");
 #      dpm($entity_fields, "fields!");
       if ($entity) {
@@ -825,7 +825,7 @@ class WisskiODBCImportForm extends FormBase {
 #dpm([$update_mode, $update_eid, $entity_fields, $field_modes], 'toupdate:'.$bundleid);
     
     // the entity update case:
-    $entity = entity_load('wisski_individual', $update_eid);
+    $entity = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->load($update_eid);
     if ($entity) {
       self::log()->debug('Update entity {eid} with fields {fields}', ['eid' => $update_eid, 'fields' => serialize($entity_fields)]);
       self::updateEntityFields($entity, $entity_fields, $field_modes);

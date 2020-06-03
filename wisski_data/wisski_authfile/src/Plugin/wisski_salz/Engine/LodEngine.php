@@ -7,6 +7,7 @@
 
 namespace Drupal\wisski_authfile\Plugin\wisski_salz\Engine;
 
+use Drupal\field\Entity\FieldStorageConfig;
 use DOMDocument;
 
 use Drupal\core\Cache\Cache;
@@ -257,7 +258,7 @@ class LodEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
    * Helper function that fetches the data for a URI and parses the result
    */
   public function fetchData($uri = NULL, $id = NULL) {
-dpm([$uri,    $id], 'fd');
+#dpm([$uri,    $id], 'fd');
     if (!$id) {
       if (!$uri) {
         return FALSE;
@@ -269,12 +270,12 @@ dpm([$uri,    $id], 'fd');
       }
     }
     
-dpm([$uri,    $id], 'fdd');
+#dpm([$uri,    $id], 'fdd');
     // 
     $cache = $this->cacheBin();
     $data = $cache->get("uri-$uri");
     if ($data) {
-dpm($data, 'fdc');
+#dpm($data, 'fdc');
       return $data->data;
     }
 
@@ -285,7 +286,7 @@ dpm($data, 'fdc');
     
     $data = $cache->get("doc-$fetchUrl");
     if ($data) {
-dpm($data, 'fdf');
+#dpm($data, 'fdf');
       $data = $data->data;
     }
     else {
@@ -350,7 +351,7 @@ dpm($data, 'fdf');
     }
 
     $cache->set("uri-$uri", $data, $this->configuration['cache_expire']);
-dpm($data, 'fdr');
+#dpm($data, 'fdr');
 
     return $data;
 
@@ -541,7 +542,7 @@ dpm($data, 'fdr');
    */
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
 
-    $main_property = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);
+    $main_property = FieldStorageConfig::loadByName('wisski_individual', $field_id);
     if(!empty($main_property)) {
       $main_property = $main_property->getMainPropertyName();
     }
@@ -553,7 +554,7 @@ dpm($data, 'fdr');
 #    return array();
 
     if(!empty($field_id) && empty($bundleid_in)) {
-      drupal_set_message("Es wurde $field_id angefragt und bundle ist aber leer.", "error");
+      $this->messenger()->addError("Es wurde $field_id angefragt und bundle ist aber leer.");
       dpm(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
       return;
     }

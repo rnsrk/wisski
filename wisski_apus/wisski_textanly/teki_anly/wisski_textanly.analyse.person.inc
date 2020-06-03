@@ -162,18 +162,14 @@ function wisski_textanly_admin_analyse_person($op, $ap) {
 /* ***************** *
 *  ANALYSER
 ** ***************** */
-
-
-
 /** Annotate text ranges that follow a certain token pattern
-* This is the analyse operation for analysis component type vocab
-* 
+ * This is the analyse operation for analysis component type vocab
+*
 * First marks all tokens according to a list of words, then
-* executes a regex on that annotations. Tokens that are in a match will be
-* annotated
+ * executes a regex on that annotations. Tokens that are in a match will be
+ * annotated
 *
 * @author Martin Scholz
-*
 */
 function wisski_textanly_analyse_person($analyser, $text_struct, $ticket) {
   

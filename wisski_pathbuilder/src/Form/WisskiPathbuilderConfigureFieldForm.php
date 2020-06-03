@@ -6,6 +6,8 @@
  
 namespace Drupal\wisski_pathbuilder\Form;
 
+use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
+use Drupal\wisski_core\Entity\WisskiBundle;
 use Drupal\Core\Form\FormStateInterface; 
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityInterface;
@@ -78,24 +80,24 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 
 #    $element = $this->recursive_find_element($tree, $this->path);
     $pbpath = $this->pathbuilder->getPbPath($this->path);
-    $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($this->path);
+    $path = WisskiPathEntity::load($this->path);
 #    dpm($pbpath,'Path');
 #    return $form;
     if($path->getType() != "Path") {
       $bundle_options = array();
-      
+
       // typically for wisski bundle and fieldid have to be the same. Everything else is strange!
       // we warn the user then.
       if($pbpath['bundle'] !== Pathbuilder::CONNECT_NO_FIELD && $pbpath['bundle'] !== Pathbuilder::GENERATE_NEW_FIELD && !empty($pbpath['bundle']) && $pbpath['bundle'] != $pbpath['field']) {
-        drupal_set_message('For path ' . $pbpath['id'] . " bundle is '" . $pbpath['bundle'] . "' but field is '" . $pbpath['field'] . "' and it typically should be the same. We change that for you.", "warning");
-        
+        $this->messenger()->addWarning('For path ' . $pbpath['id'] . " bundle is '" . $pbpath['bundle'] . "' but field is '" . $pbpath['field'] . "' and it typically should be the same. We change that for you.");
+
 #        $pbpath['field'] = $pbpath['bundle'];
-        
+
         $pbpaths_for_write = $this->pathbuilder->getPbPaths();
         $pbpaths_for_write[$this->path]['field'] = $pbpath['bundle'];
         $this->pathbuilder->setPbPaths($pbpaths_for_write);
         $this->pathbuilder->save();
-        
+
       }
 
       // this was a buggy approach
@@ -103,16 +105,16 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 #        $bundle_options[$bundle_id] = $bundle_info['label'].' ('.$bundle_info['path_id'].' in '.$bundle_info['pathbuilder'].')';
 #      }
 
-      $all_bundles = \Drupal\wisski_core\Entity\WisskiBundle::loadMultiple();
+      $all_bundles = WisskiBundle::loadMultiple();
       foreach($all_bundles as $bundle_id => $bundle_info) {
         $bundle_options[$bundle_id] = $bundle_info->label;
       }
-      
+
       $bundle_options += array(
         Pathbuilder::CONNECT_NO_FIELD => $this->t('Do not connect a bundle'),
         Pathbuilder::GENERATE_NEW_FIELD => $this->t('Create a new bundle for this group'),
       );
-      
+
 #      dpm($pbpath);
       $default_value = empty($pbpath['bundle']) ? '' : $pbpath['bundle'];
       //dpm($bundle_options,'Bundle Options');
@@ -151,7 +153,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         '#prefix' => '<div id="wisski-bundle-field">',
         '#suffix' => '</div>',
       );
-      
+
       $unlimited = FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
       //dpm($pbpath);  
       $form['cardinality'] = array(
@@ -179,15 +181,15 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
       $field_options = array();
       
       if(!empty($bundle_id)) {
-        if ($bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)) {
+        if ($bundle = WisskiBundle::load($bundle_id)) {
           $bundle_label = $bundle->label();
         } else {
           if($bundle_id !== Pathbuilder::CONNECT_NO_FIELD && $bundle_id !== Pathbuilder::GENERATE_NEW_FIELD) 
-            drupal_set_message($this->t('There is no group/bundle specified for this path'),'warning');
+            $this->messenger()->addWarning($this->t('There is no group/bundle specified for this path'));
           $bundle_label = '';
         }
         //@TODO fill the field options array with existing fields in the given bundle
-        $bundle_fields = \Drupal::entityManager()->getStorage('field_config')->loadByProperties(array('bundle' => $bundle_id));
+        $bundle_fields = \Drupal::service('entity_type.manager')->getStorage('field_config')->loadByProperties(array('bundle' => $bundle_id));
         foreach ($bundle_fields as $bundle_field) {
           $field_name = $bundle_field->getName();
           $field_options[$field_name] = $bundle_field->getLabel().' ('.$field_name.')';
@@ -259,12 +261,12 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
           $selected_field = $bundle_fields[$selected_field_name];
           $selected_field_values = array(
             'field_type' => $selected_field->getType(),
-            'formatter' => \Drupal::entityManager()
+            'formatter' => \Drupal::service('entity_type.manager')
               ->getStorage('entity_view_display')
               ->load('wisski_individual' . '.'.$bundle_id.'.default')
               ->getComponent($selected_field_name)
               ['type'],
-            'widget' => \Drupal::entityManager()
+            'widget' => \Drupal::service('entity_type.manager')
               ->getStorage('entity_form_display')
               ->load('wisski_individual' . '.'.$bundle_id.'.default')
               ->getComponent($selected_field_name)
@@ -405,9 +407,6 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     return $form['field_form']['display']['field_display'];
   }
   
-  /**
-   *
-   */
   public function bundleCallback(array $form, FormStateInterface $form_state) {
     
     return $form['choose_bundle']['bundle'];
@@ -433,7 +432,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     #$bundle = $this->pathbuilder->getBundle($pathid); #$form_state->getValue('bundle');
 
     // load the path
-    $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
+    $path = WisskiPathEntity::load($pathid);
     #dpm(array($path,$form_state->getValues()),'before edit');
     // get the pbpaths
     $pbpaths = $this->pathbuilder->getPbPaths();

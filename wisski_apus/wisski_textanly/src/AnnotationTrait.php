@@ -102,10 +102,6 @@ trait AnnotationTrait {
 
 
 
-  /** 
-   *
-   *
-   */
   function getTokensForAnno($text_struct, $anno) {
     
     if (!isset($text_struct->tokens) || empty($text_struct->tokens)) return NULL;

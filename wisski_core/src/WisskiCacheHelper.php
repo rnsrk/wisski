@@ -5,6 +5,8 @@ namespace Drupal\wisski_core;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Cache\Cache;
 
+use Drupal\Core\Database\Database;
+
 class WisskiCacheHelper {
 
   static function putCacheData($cid,$data,$tags=NULL) {
@@ -27,7 +29,7 @@ class WisskiCacheHelper {
   static function putEntityTitle($entity_id,$entity_title,$bundle_id=NULL) {
     
     if(empty($entity_id)) {
-      drupal_set_message("Entity ID was empty - this is evil!", "error");
+      \Drupal::messenger()->addError("Entity ID was empty - this is evil!");
       return;
     }
     
@@ -49,8 +51,12 @@ class WisskiCacheHelper {
     if (mb_strlen($entity_title) > 128) {
       $entity_title = mb_substr($entity_title, 0, 128);
     }
-    db_delete('wisski_title_n_grams')->condition('ent_num', $entity_id)->condition('bundle', empty($bundle_id) ? "default" : $bundle_id)->execute();
-    db_insert('wisski_title_n_grams')->fields(array(
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    \Drupal::database()->delete('wisski_title_n_grams')->condition('ent_num', $entity_id)->condition('bundle', empty($bundle_id) ? "default" : $bundle_id)->execute();
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    \Drupal::database()->insert('wisski_title_n_grams')->fields(array(
         'ent_num' => $entity_id,
         'bundle' => empty($bundle_id) ? "default" : $bundle_id,
         'ngram' => $entity_title,
@@ -72,7 +78,9 @@ class WisskiCacheHelper {
     $cid = 'wisski_title.'.$entity_id.'.'.$bundle_id;
     self::flushCacheData($cid);
 
-    db_delete('wisski_title_n_grams')->condition('ent_num', $entity_id)->condition('bundle', empty($bundle_id) ? "default" : $bundle_id)->execute();
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    \Drupal::database()->delete('wisski_title_n_grams')->condition('ent_num', $entity_id)->condition('bundle', empty($bundle_id) ? "default" : $bundle_id)->execute();
   
   }
   
@@ -82,14 +90,18 @@ class WisskiCacheHelper {
     else $tags[] = 'wisski_bundled_titles.'.$bundle_id;
     Cache::invalidateTags($tags);
 
-    db_delete('wisski_title_n_grams')->condition('bundle', empty($bundle_id) ? "default" : $bundle_id)->execute();
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    \Drupal::database()->delete('wisski_title_n_grams')->condition('bundle', empty($bundle_id) ? "default" : $bundle_id)->execute();
 
   }
   
   static function getEntitiesWithEmptyTitle($bundle_id = NULL) {
     
     $empties = array('','NULL','FALSE');
-    $query = db_select('wisski_title_n_grams','n')->fields('n',array('ent_num'))->condition('ngram',$empties,'IN');
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $query = \Drupal::database()->select('wisski_title_n_grams', 'n')->fields('n',array('ent_num'))->condition('ngram',$empties,'IN');
     if (!is_null($bundle_id)) {
       if (is_array($bundle_id)) {
         $query->condition('bundle',$bundle_id, 'IN');
@@ -142,8 +154,10 @@ class WisskiCacheHelper {
     // TODO: cache is no longer used!?
     $cid = 'wisski_individual.'.$entity_id.'.bundle';
     self::flushCacheData($cid);
-    
-    $return = db_delete('wisski_calling_bundles')->condition('eid', $entity_id)->execute();
+
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $return = \Drupal::database()->delete('wisski_calling_bundles')->condition('eid', $entity_id)->execute();
 #dpm($return, "flush $entity_id");
 
   }
@@ -151,10 +165,12 @@ class WisskiCacheHelper {
   static $gathered_preview_images;
   
   static function preparePreviewImages(array $entity_ids) {
-    
+
     if (empty($entity_ids)) self::$gathered_preview_images = array();
     else {
-      $query = db_select('wisski_preview_images','p')
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+      $query = \Drupal::database()->select('wisski_preview_images', 'p')
               ->fields('p',array('eid','image_uri'))
               ->condition('eid',$entity_ids,'IN')
               ->execute();
@@ -166,13 +182,15 @@ class WisskiCacheHelper {
   static function putPreviewImageUri($entity_id,$preview_image_uri) {
 
     if(empty($entity_id) || empty($preview_image_uri)) {
-      drupal_set_message("Could not cache image " . $preview_image_uri . " of entity id " . $entity_id, "warning");
+      \Drupal::messenger()->addWarning("Could not cache image " . $preview_image_uri . " of entity id " . $entity_id);
       return;
     }
 
     //dpm($preview_image_uri,__FUNCTION__.' '.$entity_id);
     self::flushPreviewImageUri($entity_id);
-    db_insert('wisski_preview_images')->fields(array('eid'=>$entity_id,'image_uri'=>$preview_image_uri))->execute();
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    \Drupal::database()->insert('wisski_preview_images')->fields(array('eid'=>$entity_id,'image_uri'=>$preview_image_uri))->execute();
   }
   
   static function getPreviewImageUri($entity_id) {
@@ -185,7 +203,9 @@ class WisskiCacheHelper {
         return $return;
       }
     } else {
-      $query = db_select('wisski_preview_images','p')->fields('p',array('image_uri'))->condition('eid',$entity_id)->execute();
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+      $query = \Drupal::database()->select('wisski_preview_images', 'p')->fields('p',array('image_uri'))->condition('eid',$entity_id)->execute();
       $result = $query->fetchCol();
       if (!empty($result)) return current($result);
     }
@@ -194,12 +214,16 @@ class WisskiCacheHelper {
   
   static function flushPreviewImageUri($entity_id) {
     
-    db_delete('wisski_preview_images')->condition('eid',$entity_id)->execute();
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    \Drupal::database()->delete('wisski_preview_images')->condition('eid',$entity_id)->execute();
   }
   
   static function flushAllPreviewImageUris() {
     
-    db_truncate('wisski_preview_images')->execute();
+    //db_truncate('wisski_preview_images')->execute();
+    $options['target'] = 'default';
+    Database::getConnection($options)->truncate('wisski_preview_images', $options)->execute();
   }
 
 }

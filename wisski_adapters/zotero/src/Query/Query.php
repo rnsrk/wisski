@@ -58,12 +58,12 @@ class Query extends WisskiQueryBase {
       // TODO: handle correctly multiple pbs
       $pb = current($pbs);
       //wisski_tick("field query");
-      
+
       $eidquery = NULL;
       $bundlequery = NULL;
 
       $special_skip = FALSE;
-            
+
       foreach ($this->condition->conditions() as $condition) {
         $field = $condition['field'];
         $value = $condition['value'];
@@ -72,12 +72,12 @@ class Query extends WisskiQueryBase {
           $bundlequery = $value;
         if($field == "eid")
           $eidquery = $value;
-        
+
         // the condition is a nested condition e.g. when it comes to search.
         if($field instanceof Condition) {
           $special_skip = TRUE;
         }
-        
+
       }
 
 #      dpm(serialize($this->condition->conditions()), "bun");
@@ -85,36 +85,36 @@ class Query extends WisskiQueryBase {
         if(empty($bundlequery)) {
           return array();
         }
-            
+
         if(empty($pb->getGroupsForBundle(current($bundlequery)))) {
           return array();
         }
       }
-      
+
 #        dpm($eidquery,"eidquery");
 #        dpm($bundlequery, "bundlequery");
-              
+
       $giveback = array();
-              
+
       // eids are a special case
       if ($eidquery !== NULL) {
-        
+
         if(is_array($eidquery))
           $eidquery = current($eidquery);
-        
+
         if(is_array($bundlequery)) 
           $bundlequery = current($bundlequery);
-        
+
         // load the id, this hopefully helps.
         $thing['eid'] = $eidquery;
-      
+
 #          dpm($eidquery, "thing");
-      
+
         if($bundlequery === NULL)
           $giveback = array($thing['eid']);
-          
+
         else {
-      
+
           // load the bundles for this id
           $bundleids = $engine->getBundleIdsForEntityId($thing['eid']);        
 
@@ -129,7 +129,7 @@ class Query extends WisskiQueryBase {
       //wisski_tick("field query half");
 
 #      dpm($this->sort, "sort");      
-      
+
       foreach($this->condition->conditions() as $condition) {
         $field = $condition['field'];
         $value = $condition['value'];
@@ -137,13 +137,13 @@ class Query extends WisskiQueryBase {
 #        return;
 
 #        drupal_set_message("my cond is: " . serialize($condition));
-        
+
         // just return something if it is a bundle-condition
         if($field == 'bundle') {
-          
+
           if(is_array($value))
             $value = current($value);
-          
+
 #  	        drupal_set_message("I go and look for : " . serialize($value) . " and " . serialize($limit) . " and " . serialize($offset) . " and " . $this->count);
 #          dpm(serialize($this->count), "sis");
           if($this->count) {
@@ -151,34 +151,34 @@ class Query extends WisskiQueryBase {
             //wisski_tick('Field query out 2');
             return $engine->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE, $this->condition->conditions());
           }
-          
+
 #            dpm($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()), 'out!');
 #            dpm(array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions())), "muhaha!");
 #            return;           
           //wisski_tick('Field query out 3');
-          
+
           $ret = array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions(), $this->sort));
-          
+
           return $ret;
         }
-        
+
 #        dpm($field, "fi");
         if($field instanceof Condition) {
 #          dpm($field, "field");
 #          dpm($field->conditions(), "cond");
-          
+
           foreach($field->conditions() as $subcondition) {
 #            dpm($subcondition, "sub");
 #            dpm($subcondition['field'], "val");
-            
+
             $pb_and_path = explode(".", $subcondition['field']);
-            
+
             $pathid = $pb_and_path[1];
-            
+
             $pbp = $pb->getPbPath($pathid);
-            
+
             $value = $subcondition['value'];
-            
+
             $bundle = $pbp['bundle'];
             if($this->count) {
               $ret = $engine->loadIndividualsForBundle($bundle, $pb, NULL, NULL, TRUE, $field->conditions());
@@ -189,7 +189,7 @@ class Query extends WisskiQueryBase {
 #              dpm($field->conditions(), "cond");
               return array_keys($ret);
             }
-            
+
           }
         }
       }

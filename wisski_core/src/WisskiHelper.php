@@ -2,6 +2,7 @@
 
 namespace Drupal\wisski_core;
 
+use Drupal\wisski_core\Entity\WisskiBundle;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity as Pathbuilder;
 
@@ -91,7 +92,7 @@ class WisskiHelper {
     }
                       
     
-    $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
+    $pbs = \Drupal::service('entity_type.manager')->getStorage('wisski_pathbuilder')->loadMultiple();
     if (empty($pbs)) return array();
     $parents = array();
     foreach ($pbs as $pb_id => $pb) {
@@ -99,25 +100,25 @@ class WisskiHelper {
 #      dpm($pathtree);
       if (empty($pathtree)) continue;
       $pbarr = $pb->getPbPaths();
-      
+
       foreach($pathtree as $key => $value) {
 #        dpm($pbarr[$key], "pbarr");
-        
+
         // in this case it is a field on top level - this should not occur, but we ignore it here!
         if(!empty($pbarr[$key]['field']) && $pbarr[$key]['field'] != $pbarr[$key]['bundle'])
           continue; 
-        
+
         if(!empty($pbarr[$key]['bundle']) && $pbarr[$key]['bundle'] != Pathbuilder::CONNECT_NO_FIELD && $pbarr[$key]['bundle'] != Pathbuilder::GENERATE_NEW_FIELD) {
           $bundle_id = $pbarr[$key]['bundle'];
 #          dpm($bundle_id, $pb->id() . ' and key ' . $key);
-          
+
           // skip if empty bundle id
           if(empty($bundle_id))
             continue;
-              
+
           if ($get_full_info) {
-            $bundle_ob = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id);
-            
+            $bundle_ob = WisskiBundle::load($bundle_id);
+
             // skip if empty object
             if(empty($bundle_ob))
               continue;
@@ -164,14 +165,14 @@ class WisskiHelper {
           if(empty($field_format))
             $out[$key] = $key;
 
-          
+
 // @TODO This might be useful later - up to now $field format is ignored 
 #          $def = \Drupal::service('plugin.manager.field.field_type')->getDefinitions();
-          
+
 #          drupal_set_message("def is: " . serialize($def[$field_definition->getType()]));
 #          $ding = $def[$field_definition->getType()];
 #          $blubb = $ding['class'];
-          
+
 #          drupal_set_message("miazt: " . serialize($blubb::propertyDefinitions($field_definition->getFieldStorageDefinition())));
           #else if(Drupal::service('plugin.manager.' . $key . '.' .$field_definition->getType())->getDefinitions())
 #            $out[$key] = $key;

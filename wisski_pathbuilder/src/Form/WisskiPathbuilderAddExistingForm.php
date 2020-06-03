@@ -30,7 +30,8 @@ class WisskiPathbuilderAddExistingForm extends EntityForm {
     $form = parent::form($form, $form_state);
     
     // load all paths that are available
-    $paths = entity_load_multiple('wisski_path');
+    #$paths = entity_load_multiple('wisski_path');
+    $paths = \Drupal::entityTypeManager()->getStorage('wisski_path')->loadMultiple();
  
     // make an options array for the dropdown
     $options = array();
@@ -61,13 +62,13 @@ class WisskiPathbuilderAddExistingForm extends EntityForm {
     // get the pb it should be added to    
     $pb = $this->entity;
     
-    $path = entity_load('wisski_path', $value);
+    $path = \Drupal::service('entity_type.manager')->getStorage('wisski_path')->load($value);
 
     // do it if it is not already there    
     if(is_null($pb->getPbPath($value)))
       $pb->addPathToPathTree($value, 0, $path->isGroup());   
     else {
-      drupal_set_message("Path $value was already there... resetting his properties");
+      $this->messenger()->addStatus("Path $value was already there... resetting his properties");
       $pb->addPathToPathTree($value, 0, $path->isGroup());
     }
     
@@ -76,7 +77,7 @@ class WisskiPathbuilderAddExistingForm extends EntityForm {
     
     
    # $form_state->setRedirect('entity.wisski_pathbuilder.edit_form');
-    $redirect_url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.edit_form')
+    $redirect_url = Url::fromRoute('entity.wisski_pathbuilder.edit_form')
                              ->setRouteParameters(array('wisski_pathbuilder'=>$pb->id()));
                              
     $form_state->setRedirectUrl($redirect_url);

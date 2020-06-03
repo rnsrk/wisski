@@ -2,6 +2,7 @@
 
 namespace Drupal\wisski_core\Controller;
 
+use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\Core\Entity\ContentEntityStorageInterface;
 
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -9,10 +10,10 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class WisskiEntityViewForwarder {
 
-  public function forward(\Drupal\wisski_core\Entity\WisskiEntity $wisski_individual = NULL) {
+  public function forward(WisskiEntity $wisski_individual = NULL) {
 
 #    dpm($wisski_individual,__METHOD__);
-    $storage = \Drupal::entityManager()->getStorage('wisski_individual');
+    $storage = \Drupal::service('entity_type.manager')->getStorage('wisski_individual');
     //let's see if the user provided us with a bundle, if not, the storage will try to guess the right one
     $match = \Drupal::request();
     $bundle_id = $match->query->get('wisski_bundle');

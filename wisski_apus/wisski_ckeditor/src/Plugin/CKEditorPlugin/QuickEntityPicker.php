@@ -50,7 +50,7 @@ class QuickEntityPicker extends CKEditorPluginBase implements CKEditorPluginConf
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('entity.manager')->getStorage('linkit_profile')
+      $container->get('entity.type_manager')->getStorage('linkit_profile')
     );
   }
 

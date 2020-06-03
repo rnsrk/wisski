@@ -31,8 +31,8 @@ Jit_modal:
     - core/drupal
     - core/drupalSettings
     - core/jquery.ui
-    - core/jquery.ui.effects.slide
-    - core/jquery.ui.effects.drop
+    - jquery_ui_effects/slide
+    - jquery_ui_effects/drop
     - core/jquery.once
     - core/drupal.ajax
     - core/drupal.dialog

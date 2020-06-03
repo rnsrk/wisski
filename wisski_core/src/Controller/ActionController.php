@@ -16,14 +16,15 @@ class ActionController extends ControllerBase {
   public function execute($action, $objects) {
     
     if (!is_object($action)) {
-      $action = entity_load('action', $action);
+      $action = \Drupal::service('entity_type.manager')->getStorage('action')->load($action);
     }
     if (empty($action)) {
       throw new \InvalidArgumentException("You must specify a valid action");
     }
     $entity_type = $action->getType();
     $entity_ids = explode(',', $objects);
-    $entities = entity_load_multiple($entity_type, $entity_ids);
+//    $entities = entity_load_multiple($entity_type, $entity_ids);
+    $entities = \Drupal::entityTypeManager()->getStorage($entity_type)->loadMultiple($entity_ids);
 #rpm([$action,$entity_ids,count($entities)],'davor');    
     $action->execute($entities);
 #rpm('danach');    
@@ -83,10 +84,10 @@ class ActionController extends ControllerBase {
    */
   public function finishBatch($success, $results, $operations) {
     if ($success) {
-      drupal_set_message(t('Updated titles of @total entities', ['@total' => $results['total']]));
+      $this->messenger()->addStatus(t('Updated titles of @total entities', ['@total' => $results['total']]));
     }
     else {
-      drupal_set_message(t('An error occurred while updating the titles.'), 'error');
+      $this->messenger()->addError(t('An error occurred while updating the titles.'));
     }
   }
 

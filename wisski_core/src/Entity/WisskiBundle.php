@@ -2,6 +2,11 @@
 
 namespace Drupal\wisski_core\Entity;
 
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use Drupal\wisski_salz\Entity\Adapter;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
+use Drupal\wisski_salz\AdapterHelper;
+use Drupal\Core\Link;
 use Drupal\Core\Config\Entity\ConfigEntityBundleBase;
 use Drupal\wisski_core\WisskiBundleInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -186,7 +191,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       if (isset($title)) {
         #drupal_set_message('Title from cache');
         if ($include_bundle) {
-          drupal_set_message('Enhance Title '.$title);
+          \Drupal::messenger()->addStatus('Enhance Title '.$title);
           $title = $this->label().': '.$title;
         }    
         return $title;
@@ -204,7 +209,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       $this->setCachedTitle($entity_id,$title);
     
     if ($include_bundle && $title !== FALSE) {
-      drupal_set_message('Enhance Title '.$title);
+      \Drupal::messenger()->addStatus('Enhance Title '.$title);
       $title = $this->label().': '.$title;
     }   
     
@@ -290,7 +295,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         if (empty($values)) {
           if ($attributes['optional'] === FALSE) {
             //we detected an invalid title;
-            drupal_set_message('Detected invalid title','error');
+            \Drupal::messenger()->addError('Detected invalid title');
             return $this->createFallbackTitle($entity_id);
           } else $parts[$key] = '';
           continue;
@@ -372,7 +377,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             $pb = $this->pb_cache[$pb_id];
           else {
 #            dpm(microtime(), "pb cache is not set!");
-            $this->pb_cache = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+            $this->pb_cache = WisskiPathbuilderEntity::loadMultiple();
             $pb = $this->pb_cache[$pb_id];
           }
            
@@ -410,7 +415,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             return $out_values;
           }
         } else {
-          drupal_set_message("This should not happen! WissKI Bundle Title Generation error", "error");
+          \Drupal::messenger()->addError("This should not happen! WissKI Bundle Title Generation error");
         }
       } else {
         $eid = $eid->id();
@@ -419,14 +424,14 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
     if(empty($this->pb_cache)) {
 #      dpm(microtime(), "pb cache was not set!");
-      $this->pb_cache = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+      $this->pb_cache = WisskiPathbuilderEntity::loadMultiple();
 #      dpm(microtime(), "pb cache was not set2!");
     }
     
     $pbs = $this->pb_cache;
 
     if(empty($this->adapter_cache)) {      
-      $this->adapter_cache = \Drupal\wisski_salz\Entity\Adapter::loadMultiple();
+      $this->adapter_cache = Adapter::loadMultiple();
     }
     
     $adapters = $this->adapter_cache;
@@ -434,7 +439,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     foreach ($pbs as $pb_id => $pb) {
       if ($pb->hasPbPath($path_id)) {
         // if the PB knows the path we try to load it
-        $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path_id);
+        $path = WisskiPathEntity::load($path_id);
         if (empty($path)) {
           //dpm('can\'t load path '.$path_id,$pb_id);
           continue;
@@ -446,21 +451,21 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           #dpm('can\'t load adapter '.$pb->getAdapterId(),$pb_id);
           continue;
         }
-        
+
         // only do this if there is data!
-        if (\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($eid, $adapter->id(), FALSE)) {
+        if (AdapterHelper::getUrisForDrupalId($eid, $adapter->id(), FALSE)) {
           //finally, having a valid path and adapter, we can ask the adapter for the path's value
           $pbpath = $pb->getPbPath($path_id);
 
 #          dpm($pbpath, "pbp");
-          
+
           // this is the case when the thing is a group
           // in this case we want it to generate the title of the
           // subentity and use that.
           if($pbpath['bundle'] == $pbpath['field'] || $pbpath['fieldtype'] == "entity_reference") {
 
             // get the data from the pathbuilder
-            
+
             // in case of entity_reference which is not a group, be absolute!
             if($pbpath['fieldtype'] == "entity_reference" && $pbpath['bundle'] != $pbpath['field']) {
               // in case of entity reference this may not be absolute... I don't know why it was
@@ -480,31 +485,31 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
             // iterate through the data we've got
             foreach($tmp as $key => $item) {
-              
+
               // construct the drupal id
               $item_eid = $adapter->getEngine()->getDrupalId($item["target_id"]);
-              
+
               // get the bundle of the data
               $bundleid = $pb->getBundleIdForEntityId($item_eid);
               if(empty($bundleid))
                 continue;
-              
+
               $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundleid);
-              
+
               if(empty($bundle))
                 continue;
-              
+
               // generate the title of that
               $grptitles[] = $bundle->generateEntityTitle($item_eid);
-              
+
             }
-            
+
             $new_values[] = implode(", ", $grptitles);
 
           } else { // normal field handling
       #      dpm("normal handling1");                  
             $bundle_of_path = $pbpath['bundle'];
- 
+
             // if this is empty, then we get the parent and take this.
             if(empty($bundle_of_path) || $path->getType() == "Path") {
               $group = $pb->getPbPath($pbpath['parent']);
@@ -513,10 +518,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
             // get the group-object for the current bundle we're on
             $groups = $pb->getGroupsForBundle($this->id());
-                    
+
             // if there are several groups, for now take only the first one
             $group = current($groups);
-          
+
             if(empty($group)) {
               // There should not be any error message here, this is a normal case
               //drupal_set_message(t("Bundle %b is associated with no groups", array('%b' => $this->id)));
@@ -533,7 +538,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, count($group->getPathArray())-1, NULL, FALSE); 
             } else // if not they are relative.
               $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, TRUE);
-            
+
 #            dpm(microtime(), "new values");
             if (WISSKI_DEVEL) \Drupal::logger($pb_id.' '.$path_id.' '.__FUNCTION__)->debug('Entity '.$eid."{out}",array('out'=>serialize($new_values)));
           }
@@ -572,23 +577,23 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
                         
       
       //find all paths from all active pathbuilders
-      $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
+      $pbs = \Drupal::service('entity_type.manager')->getStorage('wisski_pathbuilder')->loadMultiple();
 #      $paths = array();
       foreach ($pbs as $pb_id => $pb) {
         #$paths = $pb->getAllPathsForBundleId($this->id(), TRUE);
         $paths = $pb->getAllPathsAndGroupsForBundleId($this->id(), TRUE);
-        
+
 #        dpm($paths);
-        
+
         while($path = array_shift($paths)) {
-          
+
           // see what is in the pathbuilder exactly
           $pbp = $pb->getPbPath($path->id());
-          
+
           // if it is empty or it is disabled, continue
           if(empty($pbp) || !$pbp['enabled'])
             continue;
-          
+
 #          dpm($paths);
           if($path->isGroup()) {
             $options[$pb_id][$pb_id.'.'.$path->id()] = $path->getName() . ' (group label)';
@@ -598,7 +603,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             $paths = array_merge($pb->getAllPathsAndGroupsForBundleId($pbp['bundle'], TRUE), $paths);
 #            dpm($pb->getPbPath($path->id()), "yay!");
             #dpm($pb->getAllPathsAndGroupsForBundleId($path->id(), TRUE));
-            
+
           }
           else
             $options[$pb_id][$pb_id.'.'.$path->id()] = $path->getName();
@@ -619,7 +624,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
   public function getUriString($entity_id,$type) {
     
-    $uris = \Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($entity_id);
+    $uris = AdapterHelper::getUrisForDrupalId($entity_id);
     if (empty($uris)) return '';
     $uri = current($uris);
     if ($type === 'uri.long') return $uri;
@@ -628,7 +633,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       if (preg_match('/^.*[\#\/](.+)$/',$uri,$matches)) {
         return $matches[1];
       } else {
-        drupal_set_message("no match for URI $uri", 'error');
+        \Drupal::messenger()->addError("no match for URI $uri");
       }
     }
     return '';
@@ -693,7 +698,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $type = intval($type);
     if ($type == self::DEFAULT_PATTERN || $type == self::FALLBACK_TITLE || $type == self::DONT_SHOW) {
       $this->on_empty = $type;
-    } else drupal_set_message('Invalid fallback type for title pattern');
+    } else \Drupal::messenger()->addStatus('Invalid fallback type for title pattern');
   }
   
   public function getFallbackTitle() {
@@ -723,7 +728,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     }
                       
     
-    $pbs = \Drupal::entityManager()->getStorage('wisski_pathbuilder')->loadMultiple();
+    $pbs = \Drupal::service('entity_type.manager')->getStorage('wisski_pathbuilder')->loadMultiple();
     $parents = array();
     foreach ($pbs as $pb_id => $pb) {
       $parent_id = $pb->getParentBundleId($this->id());
@@ -744,7 +749,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     if(empty($parameters))
       $parameters = array("wisski_bundle" => $this->id());
   
-    $link = \Drupal\Core\Link::createFromRoute($this->label(), $destination_route, $parameters);
+    $link = Link::createFromRoute($this->label(), $destination_route, $parameters);
     
     // generate the parameter-string for the menu_link_content table
     $params = "";
@@ -1150,7 +1155,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   }
   
   public function addMenuItem($menu_name, $weight, $enabled, $destination_route, $parameters) {
-    $link = \Drupal\Core\Link::createFromRoute($this->label(), $destination_route, $parameters);
+    $link = Link::createFromRoute($this->label(), $destination_route, $parameters);
     
     $entity = MenuLinkContent::create(array(
       'link' => ['uri' => $link->getUrl()->toUriString()],
@@ -1182,10 +1187,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $enabled = TRUE;
     $found_menu_item = FALSE;
     $found_view = FALSE;
-    
+
     $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
     $use_views = $set->get('wisski_use_views_for_navigate');
-    
+
     // we can only use views for navigate
     if($use_views && $menu_name != 'navigate') {
       $use_views = FALSE;
@@ -1200,7 +1205,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     // first: get the old weight
     if(empty($parameters))
       $parameters = array("wisski_bundle" => $this->id());
-    
+
     // generate the parameter-string for the menu_link_content table
     $params = "";
     foreach($parameters as $key => $parameter) {
@@ -1212,7 +1217,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
     // get the matching entities     
     $entities = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => $menu_name, 'title' => $this->label(), 'link__uri' => 'route:' . $destination_route . ';' . $params ]);
-    
+
     if(!empty($entities)) {
       // typically there should be only one.
       $entity = current($entities);
@@ -1226,14 +1231,14 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           $enabled = $entity->enabled->value;      
       }
     }
-    
+
     $view = NULL;
-    
+
     // now we should have the values for the menu-part... lets see if there is a view?
     // only do this for navigate
     if($menu_name == "navigate") {
       $view = \Drupal::service('entity.manager')->getStorage('view')->load($this->id());
-    
+
       if(!empty($view)) {
         $display = $view->getDisplay($this->id());
         if(isset($display['display_options']['menu']['weight']))
@@ -1243,29 +1248,29 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         $found_view = TRUE;
       }
     }
-     
+
     // if we didn't find a view or a menu we can assume pb-input as truth
     if(!$found_view && !$found_menu_item) {
-   
+
 #      $weight = 0;
-      
+
       $moduleHandler = \Drupal::service('module_handler');
       if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
         return NULL;
       }
-                        
-      
+
+
       // only act if there is no entity. Otherwise we can just check if everything is ok.
-      $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
-    
+      $pbs = WisskiPathbuilderEntity::loadMultiple();
+
       $groups = array();
       //we ask all pathbuilders if they know the bundle
       foreach ($pbs as $pb_id => $pb) {
         $groups = array_merge($groups, $pb->getGroupsForBundle($this->id()));
-    
+
         if(!empty($groups)) // we take the first one for now
           $group = current($groups);
-        
+
         if(!empty($group)) {
           $pbp = $pb->getPbPath($group->id());
           $weight = $pbp['weight'];
@@ -1273,31 +1278,31 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         }    
       }
     }
- 
+
 #    drupal_set_message("I should add " . $this->id() . " to $menu_name and v:$found_view and m:$found_menu_item and uv:$use_views with weight:$weight and enabled " . serialize($enabled));
-    
+
     // if there is a view and we are in menu create mode, we delete the view and create the menu.
     if($found_view && !$use_views && !empty($view)) {
       $view->delete();
       #$this->addViewForBundle($menu_name, $weight, $enabled);
     }
-    
+
     // if there is a menu but we want to use views
     if($found_menu_item && $use_views) {
       $this->deleteBundleFromMenu($menu_name,  $destination_route, $parameters);
     }
-    
+
     // if we want to use views and we didn't find any - create it
     if(!$found_view && $use_views) {
       $this->addViewForBundle($menu_name, $weight, $enabled);
     }
-    
+
     // we didn't find a menu item and we don't want to use views
     if(!$found_menu_item && !$use_views) {
       $this->addMenuItem($menu_name, $weight, $enabled, $destination_route, $parameters);
     }
-    
-        
+
+
       // for further usage: language coding... currently no support at this point
 /*
     if ($entity->isTranslatable()) {

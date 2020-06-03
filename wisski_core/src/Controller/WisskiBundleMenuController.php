@@ -15,7 +15,7 @@ class WisskiBundleMenuController extends ControllerBase {
   public function recreateMenuItems ($menu_name = NULL) {
     $this->emptyMenus($menu_name);
     $this->updateMenus($menu_name);
-    drupal_set_message($this->t("The WissKI menus' items have been recreated"));
+    $this->messenger()->addStatus($this->t("The WissKI menus' items have been recreated"));
     return $this->redirect('<front>');
   }
   

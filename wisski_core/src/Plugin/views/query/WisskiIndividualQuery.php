@@ -239,7 +239,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #          dpm($one_filter->value, "value");
 #          $filter_regex[$key][] = array('op' => $one_filter->operator, 'val' => $one_filter->value);
 #          dpm($one_filter->configuration['wisski_field'], "key");
-          
+
           // see if it is a wisski field or not...
           if(isset($one_filter->configuration['wisski_field'])) {
             $query->condition($one_filter->configuration['wisski_field'], $one_filter->value, $one_filter->operator);
@@ -288,20 +288,20 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #            dpm($pb_and_path, "pbp?");
 
             if (count($pb_and_path) != 2) {
-              drupal_set_message("Bad field id for Wisski views: $field", 'error');
+              $this->messenger()->addError("Bad field id for Wisski views: $field");
             } else {
 
 #          dpm($path_part, "pathpart");
 #          dpm($sbs_value, "val");
-              
+
               $query->condition($pb_and_path[0] . '.' . $pb_and_path[1], $sbs_value, "HAS_EID");
               $count_query->condition($pb_and_path[0] . '.' . $pb_and_path[1], $sbs_value, "HAS_EID");
 
 #              dpm($query, "query?");
             }
-            
+
           }
-        
+
         }
       }
     }
@@ -315,27 +315,27 @@ class WisskiIndividualQuery extends QueryPluginBase {
     // check if the entity has the correct bundle
     if(!empty($entity_id) && is_int($entity_id)) {
       $bids = AdapterHelper::getBundleIdsForEntityId($entity_id, TRUE);
-      
+
       $found = FALSE;
       foreach($bundle_ids as $bundleid) {
-      
+
         // if we find it somewhere, set it to true.
         if(in_array($bundleid, $bids) != FALSE) {
           $found = TRUE;
         }
-      
+
       }
-      
+
       // did we find something?
       if(!$found) {
         // if not, early exit!
         return;
       }
-      
+
  #     dpm($bids);
-      
+
     }
-    
+
 //    dpm(serialize($substitutions), "yay!");
 #    dpm($entity_id, "eid");
 #    dpm($bundle_ids, "bundleids");
@@ -354,11 +354,11 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #        dpm(serialize($count_query->count), "count mother?");
         $count_query = $count_query->count();
         $erg = $count_query->execute();
-        
+
 #        dpm($erg, "erg");
         if(is_array($erg))
           $erg = count($erg);
-        
+
         $this->pager->total_items = $erg;
 #        dpm($this->pager->total_items, "total");
 #        dpm(microtime(), "after count");
@@ -374,10 +374,10 @@ class WisskiIndividualQuery extends QueryPluginBase {
         }
         // Show the full exception message in Views admin.
         if (!empty($view->live_preview)) {
-          drupal_set_message($e->getMessage(), 'error');
+          $this->messenger()->addError($e->getMessage());
         }
         else {
-          drupal_set_message("Exception: " . $e->getMessage());
+          $this->messenger()->addStatus("Exception: " . $e->getMessage());
           // vpr does not exist?
           #vpr('Exception in @human_name[@view_name]: @message', array('@human_name' => $view->human_name, '@view_name' => $view->name, '@message' => $e->getMessage()));
         }
@@ -391,7 +391,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
     if ($this->pager) {
       $this->pager->preExecute($query);
     }
-    
+
     // early opt out in case of no results
     if($this->pager->usePager() && $this->pager->total_items == 0) {
       $view->result = [];
@@ -424,7 +424,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
       $entity_ids = $query->execute();
 #      dpm(microtime(), "after ex");
 #      dpm($entity_ids, "eids!");
-            
+
       if (empty($entity_ids)) {
         $view->result = [];
       }
@@ -442,7 +442,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
           $view->result[] = $row;
         }
       }
-      
+
       if ($this->pager) {
         $this->pager->postExecute($view->result);
         if ($this->pager->usePager()) {
@@ -453,7 +453,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
     catch (\Exception $e) {
       // Show the full exception message in Views admin.
 #      if (!empty($view->preview)) {
-        drupal_set_message($e->getMessage(), 'error');
+        $this->messenger()->addError($e->getMessage());
 #      }
 #      else {
 #        vpr('Exception in @human_name[@view_name]: @message', array('@human_name' => $view->human_name, '@view_name' => $view->name, '@message' => $e->getMessage()));
@@ -556,7 +556,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
           $bid = reset($bundle_ids);
         else
           $bid = NULL;
-        
+
         foreach ($values_per_row as $eid => &$row) {
 
           if(empty($row['bundle'])) {
@@ -567,7 +567,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
           $row['title'] = wisski_core_generate_title($eid, NULL, FALSE, $bid);
           $pseudo_entity_fields[$eid]['title'] = $row['title'];
         }
-        
+
 #        dpm(microtime(), "after generate title");
       }
       elseif ($field =='preferred_uri') {
@@ -587,7 +587,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #        return;
         // prepare the listbuilder for external access.
         \Drupal::entityTypeManager()->getStorage('wisski_individual')->preparePreviewImages();
-        
+
         foreach($values_per_row as $eid => &$row) {
 #          dpm(microtime(), "ar " . serialize($bundle_ids));
           #$preview_image = WisskiCacheHelper::getPreviewImageUri($eid);
@@ -603,7 +603,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
             $row['bundle'] = $bid;
             $pseudo_entity_fields[$eid]['bundle'] = $row['bundle'];  
           }
-          
+
 #          dpm(microtime(), "br");          
           $preview_image_uri = \Drupal::entityTypeManager()->getStorage('wisski_individual')->getPreviewImageUri($eid,$bid);
 #          dpm(microtime(), "brout");          
@@ -628,7 +628,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
           $row['bundles'] = $bids;
           $bid = reset($bids);  // TODO: make a more sophisticated choice rather than the first one
           $row['bundle'] = $bid;
-          $bundle = entity_load('wisski_bundle', $bid);
+          $bundle = \Drupal::service('entity_type.manager')->getStorage('wisski_bundle')->load($bid);
           $row['bundle_label'] = $bundle->label();
           $pseudo_entity_fields[$eid]['bundle'] = $row['bundle'];
           $pseudo_entity_fields[$eid]['bundles'] = $row['bundles'];
@@ -637,52 +637,52 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #        dpm(microtime(), "after bundles");
       }
       elseif (strpos($field, "wisski_path_") === 0 && strpos($field, "__") !== FALSE) {
-        
+
         // the if is rather a hack but currently I have no idea how to access
         // the field information wisski_field from WisskiEntityViewsData.
-        
+
         $pb_and_path = explode("__", substr($field, 12), 2);
         if (count($pb_and_path) != 2) {
-          drupal_set_message("Bad field id for Wisski views: $field", 'error');
+          $this->messenger()->addError("Bad field id for Wisski views: $field");
         }
         else {
-        
+
           $moduleHandler = \Drupal::service('module_handler');
           if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
             return NULL;
           }
-                            
+
           if(isset($pb_cache[$pb_and_path[0]]))
             $pb = $pb_cache[$pb_and_path[0]];
           else
-            $pb = entity_load('wisski_pathbuilder', $pb_and_path[0]);
-          
+            $pb = \Drupal::service('entity_type.manager')->getStorage('wisski_pathbuilder')->load($pb_and_path[0]);
+
           $pb_cache[$pb_and_path[0]] = $pb;
-            
+
           if(isset($path_cache[$pb_and_path[1]]))
             $path = $path_cache[$pb_and_path[1]];
           else
-            $path = entity_load('wisski_path', $pb_and_path[1]);
- 
+            $path = \Drupal::service('entity_type.manager')->getStorage('wisski_path')->load($pb_and_path[1]);
+
           $path_cache[$pb_and_path[1]] = $path;
-            
+
           if (!$pb) {
-            drupal_set_message("Bad pathbuilder id for Wisski views: $pb_and_path[0]", 'error');
+            $this->messenger()->addError("Bad pathbuilder id for Wisski views: $pb_and_path[0]");
           }
           elseif (!$path) {
-            drupal_set_message("Bad path id for Wisski views: $pb_and_path[1]", 'error');
+            $this->messenger()->addError("Bad path id for Wisski views: $pb_and_path[1]");
           }
           else {
-          
+
             $pbp = $pb->getPbPath($path->getID());
             $field_to_check = $pbp['field'];
-            
+
             if($field_to_check != $field)
               $no_entity_field[] = $field;
-            
+
             $first_row = current($values_per_row);
-            
-          
+
+
 #            dpm($values_per_row[$eid]['bundle']);
             $field_def = \Drupal::service('entity_field.manager')->getFieldMap();#->getFieldDefinitions('wisski_individual',$values_per_row[$eid]['bundle']);
             $fieldmap = \Drupal::service('entity_field.manager')->getFieldMap();
@@ -693,13 +693,13 @@ class WisskiIndividualQuery extends QueryPluginBase {
             if(!empty($fieldmap) && isset($fieldmap['wisski_individual']) && isset($fieldmap['wisski_individual'][$field_to_check]) && isset($fieldmap['wisski_individual'][$field_to_check]['bundles'])) {
               $fbundles = $fieldmap['wisski_individual'][$field_to_check]['bundles'];
 #                    dpm(current($fbundles), "fb");
-            
+
               $field_def = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual',current($fbundles));
 
 #              dpm(serialize($field_def[$field_to_check]->getFieldStorageDefinition()->getDependencies()), "def");
-              
+
               $is_file = in_array('file',$field_def[$field_to_check]->getFieldStorageDefinition()->getDependencies()['module']);
-              
+
               $main_prop = $field_def[$field_to_check]->getFieldStorageDefinition()->getMainPropertyName();
 #              dpm($main_prop, "found it! for field " . $field_to_check);
             } else {
@@ -713,7 +713,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #                    $field_def = \Drupal::service('plugin.manager.field.field_type')->getDefinitions();
 #                    dpm(serialize($field_def[$realfield]), "fdef");
 #                    dpm($field_def[$realfield]->getFieldStorageDefinition()->getMainPropertyName(), "mp!");
-            
+
 
             // skip the fields that we already loaded...            
 #            if($first_row['_entity']->$field_to_check) {
@@ -721,17 +721,18 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #              continue;
 //              dpm(serialize($first_row['_entity']->$field_to_check), "field to check!!!");
 #            }
-            
+
 #            dpm($field_to_check, "I am checking");
 
             // this is the old mode... basically we want to ask any adapter :/          
 //            $adapter = entity_load('wisski_salz_adapter', $pb->getAdapterId());
-            $adapters = entity_load_multiple('wisski_salz_adapter');
+//            $adapters = entity_load_multiple('wisski_salz_adapter');
+            $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
             
             foreach($adapters as $adapter) {
             $aid = $adapter->id();
             if (!$adapter) {
-              drupal_set_message("Bad adapter id for pathbuilder $pb_and_path[0]: " . $pb->getAdapterId(), 'error');
+              $this->messenger()->addError("Bad adapter id for pathbuilder $pb_and_path[0]: " . $pb->getAdapterId());
             }
             else {
               $engine = $adapter->getEngine();
@@ -764,16 +765,16 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #                dpm($pbp);
 #                $starting_position = $pb->getRelativeStartingPosition($pbp['parent'], FALSE);
 #                dpm($starting_position, "start");
-                
+
                 $select = "SELECT DISTINCT ?x0 ";
                 if(!empty($disamb))
                   $select .= '?' . $disamb . ' ';
-                
+
                 if(!empty($out_prop))
                   $select .= '?' . $out_prop . ' ';
-                
+
                 $select .= " WHERE { VALUES ?x0 { ";
-                  
+
                 $uris_to_eids = []; // keep for reverse mapping of results
                 foreach ($entity_ids as $eid) {
                   if (isset($eid_to_uri_per_aid[$aid]) && isset($eid_to_uri_per_aid[$aid][$eid])) {
@@ -828,10 +829,10 @@ class WisskiIndividualQuery extends QueryPluginBase {
                     dpm($values_per_row[$eid]['bundle']);
 #                    $field_def = \Drupal::service('entity_field.manager')->getFieldMap();#->getFieldDefinitions('wisski_individual',$values_per_row[$eid]['bundle']);
                     $fieldmap = \Drupal::service('entity_field.manager')->getFieldMap();
-                    
+
                     $fbundles = $fieldmap['wisski_individual'][$realfield]['bundles'];
 #                    dpm(current($fbundles), "fb");
-                    
+
                     $field_def = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual',current($fbundles));
                     dpm($realfield, "realfield");
                     dpm(\Drupal::service('entity_field.manager')->getFieldMap(), "fieldmap");
@@ -863,7 +864,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
                     else {
                       if(!empty($disamb)) {
                         if(!empty($is_file)) {
-                          drupal_set_message("On your image path there is a disamb set. How do you think the system now should behave? Make the image clickable or what?!", "warning");
+                          $this->messenger()->addWarning("On your image path there is a disamb set. How do you think the system now should behave? Make the image clickable or what?!");
                         }
 #                          $storage = \Drupal::entityTypeManager()->getStorage('wisski_individual');
 #                          $val = $storage->getFileId($sparql_row->$out_prop->getValue());
@@ -889,7 +890,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
                     }
                     $pseudo_entity_fields[$eid][$field_to_check] = $values_per_row[$eid][$field_to_check];
 #                    $entity_dump[$eid] = \Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($values_per_row[$eid]), $values_per_row);
-                    
+
 #                    dpm($values_per_row[$eid]);
                   }
                 }
@@ -915,14 +916,14 @@ class WisskiIndividualQuery extends QueryPluginBase {
         if(empty($row['bundle'])) {
 #          dpm("empty!");
           $bids = AdapterHelper::getBundleIdsForEntityId($lkey, TRUE);
-          
+
           $row['bundles'] = $bids;
           $bid = reset($bids);  // TODO: make a more sophisticated choice rather than the first one
           $row['bundle'] = $bid;
           $pseudo_entity_fields[$lkey]['bundles'] = $values_per_row[$lkey]['bundles'];
           $pseudo_entity_fields[$lkey]['bundle'] = $values_per_row[$lkey]['bundle'];
         }
-        
+
         // compatibility for old systems like herbar...
         if(!isset($pseudo_entity_fields[$lkey]['eid']))
           $pseudo_entity_fields[$lkey]['eid'] = array('value' => $lkey);
@@ -931,7 +932,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #        $bid = reset($bundle_ids);
 #        $tmp = entity_create('wisski_individual', $row);
 #        dpm($pseudo_entity_fields, "psd");
-        $entities = \Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($lkey => $lkey), $pseudo_entity_fields);
+        $entities = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->addCacheValues(array($lkey => $lkey), $pseudo_entity_fields);
 #        foreach($row as $field_name => $data) {
 #          $entities[$lkey]->$field_name = $data;
 #        }

@@ -2,7 +2,8 @@
 
 namespace Drupal\wisski_core;
 
-use Drupal\Core\Routing\UrlGeneratorTrait;
+#use Drupal\Core\Routing\UrlGeneratorTrait;
+use Drupal\Core\Url;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\wisski_core\Entity\WisskiBundle;
 
@@ -12,7 +13,7 @@ use Drupal\wisski_core\Entity\WisskiBundle;
 class WisskiPermissions {
 
   use StringTranslationTrait;
-  use UrlGeneratorTrait;
+#  use UrlGeneratorTrait;
   
   public function WisskiBundlePermissions() {
     $perms = [];

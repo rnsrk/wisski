@@ -7,6 +7,8 @@
 
 namespace Drupal\wisski_salz;
 
+use Drupal\wisski_salz\Query\Query;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
 use Drupal\Core\Plugin\PluginBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
@@ -70,7 +72,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
 #    parent::setConfiguration($configuration);
     if (is_null($configuration)) {
       $configuration = array();
-      drupal_set_message(__METHOD__.' $configuration === NULL','error');
+      $this->messenger()->addError(__METHOD__.' $configuration === NULL');
     }
     $this->configuration = $configuration + $this->defaultConfiguration();
     
@@ -122,15 +124,17 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
       '#description' => $this->t('Is this Adapter the preferred local store?'),
     ];
     
-    $real_preferred = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore(FALSE,TRUE);
-    if ($real_preferred instanceof \Drupal\wisski_salz\AdapterInterface)  {
+    $real_preferred = AdapterHelper::getPreferredLocalStore(FALSE,TRUE);
+    if ($real_preferred instanceof AdapterInterface)  {
       if ($this->adapterId() !== $real_preferred->id()) {
+        // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+        // Please confirm that `$real_preferred` is an instance of `\Drupal\Core\Entity\EntityInterface`. Only the method name and not the class name was checked for this replacement, so this may be a false positive.
         $form['isPreferredLocalStore_disclaimer'] = array(
           '#type' => 'fieldset',
           '#attributes' => array('class' => array('messages','messages--warning')),
           'item' => array(
             '#type' => 'item',
-            '#markup' => $this->t('The adapter "%adapter" is the preferred local store at the moment. This will be changed if you set this here as the preferred local',array('%adapter'=>$real_preferred->link())),
+            '#markup' => $this->t('The adapter "%adapter" is the preferred local store at the moment. This will be changed if you set this here as the preferred local',array('%adapter'=>$real_preferred->toLink()->toString())),
           ),
         );
         $this->old_preferred_store = $real_preferred;
@@ -162,7 +166,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
    * {@inheritdoc}
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
-    
+
     $is_preferred = $form_state->getValue('isPreferredLocalStore');
     if($is_preferred) {
       $this->setPreferredLocalStore();
@@ -174,20 +178,20 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     }
     else
       $this->unsetPreferredLocalStore();
-    
+
     $is_writable = $form_state->getValue('isWritable');
     if($is_writable)
       $this->setWritable();
     else
       $this->setReadOnly();
-      
+
     $same_as_properties = $form_state->getValue('sameAsProperties');
     $this->same_as_properties = preg_split('/[\s,]+/',$same_as_properties);
-    
+
     //dpm($this,__FUNCTION__);
-    
-    \Drupal\wisski_salz\AdapterHelper::resetPreferredLocalStore();
-    
+
+    AdapterHelper::resetPreferredLocalStore();
+
     #return FALSE;
   }
   
@@ -207,7 +211,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   }
   
   public function getQueryObject(EntityTypeInterface $entity_type,$condition, array $namespaces) {
-    return new Query\Query($entity_type,$condition,$namespaces);
+    return new Query($entity_type,$condition,$namespaces);
   }
   
   //@TODO overwrite
@@ -241,7 +245,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   }
   
   public function unsetPreferredLocalStore() {
-    
+
     $this->is_preferred_local_store = FALSE;
     //dpm($this,$this->adapterId().' '.__FUNCTION__);
   }
@@ -282,7 +286,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
    * @return a pb object
    */
   public function getPbForThis() {
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    $pbs = WisskiPathbuilderEntity::loadMultiple();
     
     foreach($pbs as $pb) {
       // if there is no adapter set for this pb  
@@ -294,7 +298,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   }
   
   public function getPbsForThis() {
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    $pbs = WisskiPathbuilderEntity::loadMultiple();
     $pb_array = array();
     
     foreach($pbs as $pb) {
@@ -315,7 +319,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
       
   public function getUriForDrupalId($id, $create = TRUE) {
     
-    return \Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($id, $this->adapterId(), $create);
+    return AdapterHelper::getUrisForDrupalId($id, $this->adapterId(), $create);
   }
   
   /**

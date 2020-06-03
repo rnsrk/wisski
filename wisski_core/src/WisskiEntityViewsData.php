@@ -181,13 +181,16 @@ class WisskiEntityViewsData extends EntityViewsData {
     if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
       return NULL;
     }
-    $field_storage_def = \Drupal::entityManager()->getFieldStorageDefinitions('wisski_individual');                      
+    $field_storage_def = \Drupal::service('entity_field.manager')->getFieldStorageDefinitions('wisski_individual');                      
     $fdef_for_bundle = array();
     
     // this has to be defined to use parent-functions.
-    $this->entityManager = \Drupal::entityManager();
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // We are assuming that we want to use the `entity_type.manager` service since no method was called here directly. Please confirm this is the case. See https://www.drupal.org/node/2549139 for more information.
+    $this->entityManager = \Drupal::service('entity_type.manager');
         
-    $pbs = entity_load_multiple('wisski_pathbuilder');
+//    $pbs = entity_load_multiple('wisski_pathbuilder');
+    $pbs = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->loadMultiple();
     foreach ($pbs as $pbid => $pb) {
       // we load all paths. then we go though the top groups
       // paths that haven't been handled in a group will be added below
@@ -200,7 +203,7 @@ class WisskiEntityViewsData extends EntityViewsData {
           // we are gonna handle this path, so it's not orphaned
           unset($orphaned_paths[$pid]);
           if (!$path->isGroup()) {
-          
+
             $fieldid = NULL;
             $pbpath = $pb->getPbPath($path->id());
             if(!empty($pbpath))
@@ -209,31 +212,31 @@ class WisskiEntityViewsData extends EntityViewsData {
             // if there is no fieldid or it is create no field - do nothing!
             if(empty($fieldid) || $fieldid == "1ae353e47a8aa3fc995220848780758a") {
               continue; // the warning is left here only for debug purpose.
-              drupal_set_message("Path " . $path->getName() . " has no field definition.", "warning");
+              \Drupal::messenger()->addWarning("Path " . $path->getName() . " has no field definition.");
             }
-  
+
             $field = NULL;
-            
+
             if(isset($field_storage_def[$fieldid]))
               $field = $field_storage_def[$fieldid];
 
             $standard_values = array();            
-                        
+
             if(!empty($field)) {
 #              dpm($field->getType(), "fn");
-              
+
               $bundleid = $pbpath['bundle'];
-              
+
 #              dpm($bundleid, "bun");              
 #              dpm(\Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundleid)[$fieldid], "fdef");
 #
               if(!isset($fdef_for_bundle[$bundleid]))
-                $fdef_for_bundle[$bundleid] = \Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundleid);
-              
+                $fdef_for_bundle[$bundleid] = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual',$bundleid);
+
               if(isset($fdef_for_bundle[$bundleid])) {
                 if(isset($fdef_for_bundle[$bundleid][$fieldid])) {
                   $fdef = $fdef_for_bundle[$bundleid][$fieldid];
-                
+
                   if(isset($fdef)) {
 
 #              $fdef = \Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundleid)[$fieldid];
@@ -248,10 +251,10 @@ class WisskiEntityViewsData extends EntityViewsData {
                 }
               }
             }
-            
+
             // begin with the standard values... it does not hurt if there are no...
             $data[$base_table]["wisski_path_${pbid}__$pid"] = $standard_values;
-            
+
             // override this
             // It would have been brilliant if we could combine both pb ID
             // and path ID by a dot for forming the field's ID as wisski 
@@ -266,7 +269,7 @@ class WisskiEntityViewsData extends EntityViewsData {
                   "@id" => $pid,
                   "@pb" => $pb->getName(),
               ]);
-              
+
             // override the field-properties, as we do know better, what to do with them...
             $data[$base_table]["wisski_path_${pbid}__$pid"]['field'] = [
                 'id' => 'wisski_entityfield', #'wisski_standard',
@@ -285,7 +288,7 @@ class WisskiEntityViewsData extends EntityViewsData {
             $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['pb'] = $pbid;
             $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['path'] = $pid;
             $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['wisski_field'] = "$pbid.$pid";
-            
+
             // override this only if the standard did not set something
             if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['sort']['id']))
               $data[$base_table]["wisski_path_${pbid}__$pid"]['sort']['id'] = 'standard'; 

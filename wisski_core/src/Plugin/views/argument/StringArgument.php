@@ -47,9 +47,6 @@ class StringArgument extends ViewsString {
   }
 
 
-  /** 
-   * 
-   */
   protected function prepareValue() {
     // this is taken from Drupal\views\Plugin\views\argument\StringArgument::query()
     // It's strange that there is no function wrapper for that, as it is

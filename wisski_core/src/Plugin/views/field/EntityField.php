@@ -14,7 +14,7 @@ use Drupal\wisski_core\Entity\Render\WisskiEntityFieldRenderer;
  * @ViewsField("wisski_entityfield")
  */
 class EntityField extends ViewsEntityField {
-  
+
   /**
    * {@inheritdoc}
    */ 

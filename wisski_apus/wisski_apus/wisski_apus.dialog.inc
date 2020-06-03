@@ -13,7 +13,7 @@ function wisski_apus_dialog_select_entity() {
 
   
 
-  return drupal_render($form);
+  return \Drupal::service('renderer')->render($form);
 
 }
 

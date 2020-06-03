@@ -57,14 +57,14 @@ function wisski_triplify_install() {
   $pipe->save();
 
   if (empty($property)) {
-    $url = URL::fromRoute(
+    $url = Url::fromRoute(
       'wisski_pipe.processor.edit',
       array(
         'wisski_pipe' => 'triplify_html_links', 
         'plugin_instance_id' => $proc_uuid,
       )
     )->toString();
-    drupal_set_message('Could not determine default property for reference. Please manually set <a href="' . $url . '">here</a>.', 'warning');
+    \Drupal::messenger()->addWarning('Could not determine default property for reference. Please manually set <a href="' . $url . '">here</a>.');
   }
   
 

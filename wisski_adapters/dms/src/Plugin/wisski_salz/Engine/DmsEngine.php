@@ -7,6 +7,8 @@
 
 namespace Drupal\wisski_adapter_dms\Plugin\wisski_salz\Engine;
 
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\wisski_core\Entity\WisskiBundle;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Language\LanguageInterface;
@@ -442,7 +444,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #                    dpm(serialize($outvals), "current state");
                     $tmp_out = &$outvals;
                     unset($walk_values[$val_key]);
-                    
+
                     // try searching in the remaining parts again...
                     $value = $steps[$step];
                     $level = 0;
@@ -561,7 +563,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
 #dpm(func_get_args(), 'lpvff');
 
-    $main_property = \Drupal\field\Entity\FieldStorageConfig::loadByName('wisski_individual', $field_id);
+    $main_property = FieldStorageConfig::loadByName('wisski_individual', $field_id);
     if(!empty($main_property)) {
       $main_property = $main_property->getMainPropertyName();
     }
@@ -573,8 +575,8 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #    return array();
 
     if(!empty($field_id) && empty($bundleid_in)) {
-      drupal_set_message("Es wurde $field_id angefragt und bundle ist aber leer.", "error");
-      dpm(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
+      $this->messenger()->addError("Es wurde $field_id angefragt und bundle ist aber leer.");
+      #dpm(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
       return;
     }
     
@@ -829,7 +831,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #        dpm($bundleid, "bundle?");
         //is an array?
         $bundleid = current($bundleid);
-        $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundleid);
+        $bundle = WisskiBundle::load($bundleid);
         $tp = $bundle->getTitlePattern();
         
         $first = "";
@@ -856,7 +858,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       if(empty($pathid))
         continue;
             
-      $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
+      $path = WisskiPathEntity::load($pathid);
       
       if(empty($path))
         continue;         
@@ -880,7 +882,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       else if($cond['operator'] == "EMPTY")
               $where .= " " . $path->getDatatypeProperty() . " IS NULL OR datalength(" . $path->getDatatypeProperty() .")=0 ";
       else
-        drupal_set_message("Operator " . $cond['operator'] . " not supported - sorry.", "error");
+        $this->messenger()->addError("Operator " . $cond['operator'] . " not supported - sorry.");
       
     }
 

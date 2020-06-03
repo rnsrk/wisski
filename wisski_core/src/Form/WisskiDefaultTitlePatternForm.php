@@ -88,7 +88,7 @@ class WisskiDefaultTitlePatternForm extends FormBase {
           );
         } else {
           //this may not happen
-          drupal_set_message($this->t('Please choose a path to add'),'error');
+          $this->messenger()->addError($this->t('Please choose a path to add'));
         }
       } elseif ($trigger === 'on_empty_selection') {
         $on_empty_selection = $form_state->getUserInput()['on_empty_selection'];
@@ -213,9 +213,6 @@ class WisskiDefaultTitlePatternForm extends FormBase {
     return $form ;
   }
   
-  /**
-   *
-   */
   private function renderRow($key,array $attributes) {
     //dpm($attributes,__METHOD__.' '.$key);  
     $rendered = array();
@@ -429,7 +426,7 @@ class WisskiDefaultTitlePatternForm extends FormBase {
     $config->set('wisski_default_title_pattern',$pattern);
     $config->save();
     
-    drupal_set_message(t('The default title pattern has been updated.'));
+    $this->messenger()->addStatus(t('The default title pattern has been updated.'));
 
     $form_state->setRedirect('wisski.config_menu');
   }

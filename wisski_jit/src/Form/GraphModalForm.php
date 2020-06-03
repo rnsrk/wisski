@@ -29,17 +29,17 @@ class GraphModalForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual = NULL) {
-    
+
     // $form_state->setRedirectUrl(Url::fromRoute("wisski_jit.wisski_individual.graph"));
-     
+
     // return $form;
-   
+
     //$wisski_individual = "3"; //\Drupal::routeMatch()->getRouteName();
     //$wisski_individual = \Drupal::request()->attributes->get('wisski_individual');
     //dpm($wisski_individual);
-   
-    
-    
+
+
+
     ///*
     $form['#markup'] = '<div id="wki-graph-modal">
             <div id="wki-infocontrol-modal">

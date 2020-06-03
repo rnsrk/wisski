@@ -79,15 +79,11 @@ function wisski_textanly_admin_analyse_regexp($op, $ap) {
 /* ***************** *
 *  ANALYSER
 ** ***************** */
-
-
-
 /** Find annotations that match a regex
-* This is the analyse operation for analysis component type wisski_textanly_regexp
-* 
+ * This is the analyse operation for analysis component type wisski_textanly_regexp
+*
 *
 * @author Martin Scholz
-*
 */
 function _wisski_textanly_analyse_regexp($analyser, $text_struct, $ticket) {
   

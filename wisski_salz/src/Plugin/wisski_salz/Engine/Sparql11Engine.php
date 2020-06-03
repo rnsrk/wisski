@@ -274,7 +274,7 @@ abstract class Sparql11Engine extends EngineBase {
         if(!empty($matches[2][$key])) {
 
 #          dpm(microtime(), "I do some");
-          
+
 #          dpm($query, "before");
 
           $select = "";
@@ -284,22 +284,22 @@ abstract class Sparql11Engine extends EngineBase {
             $where = substr($query, strpos($query, "WHERE"));
             $select = substr($query, 0, strpos($query, "WHERE"));
           }
-          
+
           // do not do any replacement if the variable is in the select statement!
           if(strpos($select, "?" . $match) !== FALSE) {
 #            dpm($query, "query was");
             continue; 
           }
-          
+
           // cut away the values-thingie
           $where = str_replace($matches[0][$key], "", $where);
-          
+
           // replace $match with ? in front with some uri we matched before.
           $where = str_replace("?" . $match, "<" . $matches[2][$key] . ">", $where); 
-          
+
 
           $query = $select . $where;
-          
+
           #dpm("replacing $match with " . $matches[2][$key]);
 #          dpm($query, "result");
         }
@@ -364,7 +364,7 @@ abstract class Sparql11Engine extends EngineBase {
       if (WISSKI_DEVEL) \Drupal::logger('QUERY '.$this->adapterId())->debug('result {r}',array('r'=>serialize($result)));
       return $result;
     } catch (\Exception $e) {
-      drupal_set_message('Something went wrong in \''.__FUNCTION__.'\' for adapter "'.$this->adapterId().'"','error');
+      $this->messenger()->addError('Something went wrong in \''.__FUNCTION__.'\' for adapter "'.$this->adapterId().'"');
       \Drupal::logger('QUERY '.$this->adapterId())->error('query "{query}" caused error: {exception}',array('query' => $query, 'exception'=> (string) $e));
     }
   }
@@ -451,7 +451,7 @@ abstract class Sparql11Engine extends EngineBase {
       return $out;
     }
     catch (\Exception $e) {
-      drupal_set_message('Something went wrong in \''.__FUNCTION__.'\' for adapter "'.$this->adapterId().'"','error');
+      $this->messenger()->addError('Something went wrong in \''.__FUNCTION__.'\' for adapter "'.$this->adapterId().'"');
       \Drupal::logger('UPDATE '.$this->adapterId())->error('query "{query}" caused error: {exception}',array('query' => $query, 'exception'=> (string) $e));
       return NULL;
     }
@@ -528,7 +528,7 @@ abstract class Sparql11Engine extends EngineBase {
         return AdapterHelper::extractIdFromWisskiUri($entity_uri);
     }
     
-    drupal_set_message("No entity id could be extracted for uri $uri - sorry. Got: " . serialize($entity_uris), "error");
+    $this->messenger()->addError("No entity id could be extracted for uri $uri - sorry. Got: " . serialize($entity_uris));
     return NULL;
   }
   
@@ -550,7 +550,7 @@ abstract class Sparql11Engine extends EngineBase {
     
     if ($prop = current($same_props)) {
       $prop = $this->ensurePointyBrackets($prop);
-      
+
       // by Mark: removed due to performance reasons
       /*
       $values = "VALUES ?same_as { ".$this->ensurePointyBrackets($prop);
@@ -620,7 +620,7 @@ abstract class Sparql11Engine extends EngineBase {
     $orig_prop = $this->getOriginatesProperty();
 
     if(empty($orig_prop)) {
-      drupal_set_message("No Default Graph Uri was set in the store configuration. Please fix it!", "error");
+      $this->messenger()->addError("No Default Graph Uri was set in the store configuration. Please fix it!");
       return FALSE;
     }
     
@@ -676,7 +676,7 @@ abstract class Sparql11Engine extends EngineBase {
       return TRUE;
     } catch (\Exception $e) {
       \Drupal::logger(__METHOD__)->error($e->getMessage());
-      drupal_set_message('Database error occurred. See logs.');
+      $this->messenger()->addStatus('Database error occurred. See logs.');
     }
 
   }

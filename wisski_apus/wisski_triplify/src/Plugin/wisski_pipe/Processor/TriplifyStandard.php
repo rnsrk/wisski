@@ -211,7 +211,7 @@ class TriplifyStandard extends ProcessorBase {
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     $this->approved_only = $form_state->getValue('approved_only');
-    
+
     $this->reference_properties = array();
 
     $ref_props = $form_state->getValue('reference_properties');
@@ -295,16 +295,16 @@ class TriplifyStandard extends ProcessorBase {
     $this->data['triples'][$graph_uri] = $triples;
     
     if ($this->write_adapter !== NULL) {
-      $adapter = entity_load('wisski_salz_adapter', $this->write_adapter);
+      $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->write_adapter);
       if ($graph_uri && $adapter) {
         $this->logInfo("Dropping text graph <{g}>", array('g' => $graph_uri));
         $delete_query = "DROP GRAPH <$graph_uri>";
-dpm($delete_query);
+#dpm($delete_query);
 #        $adapter->getEngine()->directUpdate($delete_query);
         $triple_str = join("\n  ", $triples);
         $this->logInfo("Inserting {c} triples into text graph <{g}>: {t}", array('g' => $graph_uri, 'c' => count($triples), 't' => $triple_str));
         $insert_query = "INSERT DATA { GRAPH <$graph_uri> {\n  $triple_str\n} }";
-dpm($insert_query);        
+#dpm($insert_query);        
 #        $adapter->getEngine()->directUpdate($insert_query);
       }
     }
@@ -338,7 +338,7 @@ dpm($insert_query);
         if (isset($entity_infos[$ref_uri])) {
           $entity_id = $entity_infos[$ref_uri][0];
           $ref_uri = AdapterHelper::getUrisForDrupalId($entity_id, $this->write_adapter)[0];
-if (!$ref_uri) dpm(array($entity_id, AdapterHelper::getUrisForDrupalId($entity_id, $this->write_adapter), AdapterHelper::getUrisForDrupalId($entity_id)),'lölö');
+#if (!$ref_uri) dpm(array($entity_id, AdapterHelper::getUrisForDrupalId($entity_id, $this->write_adapter), AdapterHelper::getUrisForDrupalId($entity_id)),'lölö');
           // TODO: we could also get the bundle/class from [1] and use it as $clazz
         }
 
@@ -372,7 +372,7 @@ if (!$ref_uri) dpm(array($entity_id, AdapterHelper::getUrisForDrupalId($entity_i
 
 
   protected function getTextContent($e) {
-    
+
     $ws_replacements = array('br', 'p', 'div');
     $text = '';
 
@@ -411,9 +411,9 @@ if (!$ref_uri) dpm(array($entity_id, AdapterHelper::getUrisForDrupalId($entity_i
       
       // check if this element contains annotation info
       if ($e->hasAttribute('data-wisski-anno-id')) {
-        
+
 /* this should be of no hurt now        if (strpos($e->getAttribute('data-wisski-anno'), 'tabu') !== FALSE) continue; */
-        
+
         $uri = NULL;
         $gid = -1;
         $voc = NULL;
@@ -442,20 +442,20 @@ if (!$ref_uri) dpm(array($entity_id, AdapterHelper::getUrisForDrupalId($entity_i
 
    //     if ($e->hasAttribute('about')) $uri = $e->getAttribute('about');
    //     if ($e->hasAttribute('typeof')) $class = $e->getAttribute('typeof');
-       
+
         if (!$approved && $settings['approved_only']) continue;
 
         if (!$uri && $gid == -1) continue; // we can't make anything useful with that
 
         if (!$uri) $uri = wisski_texttrip_create_instance_uri($gid);
-        
+
         if ($voc) { // can only be nonnull if vocab_ctrl module is enabled
           $voc = wisski_vocab_ctrl_get($voc);
         }
         if ($voc && $voc->group_id != !$gid) {
           $gid = $voc->group_id;
         }
-        
+
         // check whether instance needs to be imported from voc
         // whether it needs to be created
         if ($voc) {
@@ -469,9 +469,9 @@ if (!$ref_uri) dpm(array($entity_id, AdapterHelper::getUrisForDrupalId($entity_i
           $store = wisski_store_getObj()->wisski_ARCAdapter_getStore();
           $is_imported = $store->query($q, 'raw');
           if ($store->getErrors()) {
-            foreach ($store->getErrors() as $e) drupal_set_message("extracting triples: error asking TS: $e");
+            foreach ($store->getErrors() as $e) $this->messenger()->addStatus("extracting triples: error asking TS: $e");
           }
-          
+
           if (!$is_imported) {
             // as there is no voc, we search for a voc substitute
             // so that we can store the label
@@ -486,9 +486,9 @@ if (!$ref_uri) dpm(array($entity_id, AdapterHelper::getUrisForDrupalId($entity_i
               }
             }
           }
-          
+
           if (!$is_imported && $gid == -1) continue;
-          
+
           if ($gid != -1) {
             // we add the class nevertheless so we can be sure that a node will generated
             $path = _wisski_pathbuilder_calculate_group_samepart($gid);
@@ -503,7 +503,7 @@ if (!$ref_uri) dpm(array($entity_id, AdapterHelper::getUrisForDrupalId($entity_i
           }
 
         }
-        
+
         // add rels to uri; we need to store this and aterwards create relations
         if (!isset($uris_to_gids_and_rels[$uri]))
           $uris_to_gids_and_rels[$uri] = array('gid' => -1, 'rels' => array());
@@ -517,7 +517,7 @@ if (!$ref_uri) dpm(array($entity_id, AdapterHelper::getUrisForDrupalId($entity_i
         // we need to store which group an inst belongs to for creating relations
         if ($gid != -1 && $uris_to_gids_and_rels[$uri]['gid'] == -1)
           $uris_to_gids_and_rels[$uri]['gid'] = $gid;
-        
+
         if ($subject) {
           $tr = _wisski_texttrip_triplify_standard_reference($settings['subject'], $uri, $gid, $text_inst, $text_inst_gid);
           if ($tr) $triples = array_merge($triples, $tr);
@@ -526,7 +526,7 @@ if (!$ref_uri) dpm(array($entity_id, AdapterHelper::getUrisForDrupalId($entity_i
           $tr = _wisski_texttrip_triplify_standard_reference($settings['reference'], $uri, $gid, $text_inst, $text_inst_gid);
           if ($tr) $triples = array_merge($triples, $tr);
         }
-        
+
         // we cannot triplify relations now as we need to collect info
         // about the rel targets which potentially comes later
 
@@ -583,7 +583,7 @@ if (!$ref_uri) dpm(array($entity_id, AdapterHelper::getUrisForDrupalId($entity_i
 
 
   function _wisski_texttrip_triplify_standard_get_content($e) {
-    
+
     $ws_replacements = array('br', 'p', '/p', 'div', '/div');
     $text = '';
 

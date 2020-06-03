@@ -150,17 +150,17 @@ class WisskiEntityFieldRenderer extends EntityFieldRenderer {
         // directly attached to the requested entities
         // that are used as key visuals  
         foreach($aux_entities as $field_id => $tmp_entities) {         
-          
+
           $field = $this->view->field[$field_id];
           $field_name = $field->definition['field_name'];
 #          dpm($field_name, "fn");
           $bundles = $field_storage_definitions[$field_name]->getBundles();
-          
+
           $bundle_id = current($bundles);                     
-          
+
 #          dpm($bundle_id, "bun");
 #          dpm($entity_type_id, "eit");
-          
+
           // Create the display, and configure the field display options.
           $display = EntityViewDisplay::create([
             'targetEntityType' => $entity_type_id,
@@ -184,7 +184,7 @@ class WisskiEntityFieldRenderer extends EntityFieldRenderer {
           foreach($auxdata as $key => $val) {
             $build[$key][$field_id] = $val[$field_name];
           }
-          
+
 #          dpm($build, "build");
         }
         

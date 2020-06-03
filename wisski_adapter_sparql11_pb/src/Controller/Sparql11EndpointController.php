@@ -2,6 +2,7 @@
 
 namespace Drupal\wisski_adapter_sparql11_pb\Controller;
 
+use Symfony\Component\HttpFoundation\Response;
 use Drupal\Core\Entity\ContentEntityStorageInterface;
 use \Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\ContentEntityForm;
@@ -111,7 +112,7 @@ class Sparql11EndpointController extends FormBase {
     
     // if we dont want a html dump, dump it differently.
     if(!$htmldump) {
-      $response = new \Symfony\Component\HttpFoundation\Response();
+      $response = new Response();
       $response->setContent($dump);
       $response->headers->set('Content-Type', 'text/xml');
       // if so, simply dump that

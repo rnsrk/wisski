@@ -63,8 +63,8 @@ class EntityLinkDialog extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity.manager')->getStorage('editor'),
-      $container->get('entity.manager')->getStorage('linkit_profile')
+      $container->get('entity.type_manager')->getStorage('editor'),
+      $container->get('entity.type_manager')->getStorage('linkit_profile')
     );
   }
 
@@ -87,7 +87,7 @@ class EntityLinkDialog extends FormBase {
     
     // TODO: can we get rid of request()? It is discouraged...
     $request = \Drupal::request();
-    $string = Unicode::strtolower($request->query->get('q'));
+    $string = mb_strtolower($request->query->get('q'));
     
 
     // The default values are set directly from \Drupal::request()->request,

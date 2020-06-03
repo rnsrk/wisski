@@ -58,7 +58,7 @@ class WisskiBundleForm extends EntityForm {
     
     $menus = WisskiBundle::getWissKIMenus();
     foreach ($menus as $mid => $foo) {
-      if ($menu = entity_load('menu', $mid)) {
+      if ($menu = \Drupal::service('entity_type.manager')->getStorage('menu')->load($mid)) {
         $menus[$mid] = $menu->label();
       } else {
         unset($menus[$mid]);
@@ -123,13 +123,15 @@ class WisskiBundleForm extends EntityForm {
 
     $t_args = array('%name' => $bundle->label());
     if ($status == SAVED_UPDATED) {
-      drupal_set_message(t('The bundle %name has been updated.', $t_args));
+      $this->messenger()->addStatus(t('The bundle %name has been updated.', $t_args));
     }
     elseif ($status == SAVED_NEW) {
-      drupal_set_message(t('The bundle %name has been added.', $t_args));
+      $this->messenger()->addStatus(t('The bundle %name has been added.', $t_args));
     }
 
-    $form_state->setRedirectUrl($bundle->urlInfo('list'));
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // Please confirm that `$bundle` is an instance of `Drupal\Core\Entity\EntityInterface`. Only the method name and not the class name was checked for this replacement, so this may be a false positive.
+    $form_state->setRedirectUrl($bundle->toUrl('list'));
   }
   
 }

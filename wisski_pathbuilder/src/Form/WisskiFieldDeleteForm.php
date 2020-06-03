@@ -44,9 +44,9 @@ class WisskiFieldDeleteForm extends EntityConfirmFormBase {
     #$pb_entities = entity_load_multiple('wisski_pathbuilder');
     # $pb = 'pb';
     if (isset($this->pb_id)) {
-      $url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->pb_id));
+      $url = Url::fromRoute('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder'=>$this->pb_id));
     } else {
-      $url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.collection');
+      $url = Url::fromRoute('entity.wisski_pathbuilder.collection');
     }
     return $url;                       
   }
@@ -65,7 +65,7 @@ class WisskiFieldDeleteForm extends EntityConfirmFormBase {
 
     if($this->field_type == "field" || $this->field_type == "both") {
  #     drupal_set_message("it is a field!");
-      $field_storages = \Drupal::entityManager()->getStorage('field_storage_config')->loadByProperties(
+      $field_storages = \Drupal::service('entity_type.manager')->getStorage('field_storage_config')->loadByProperties(
         array(
           'field_name' => $this->field_id,
           //'entity_type' => $mode,
@@ -77,12 +77,12 @@ class WisskiFieldDeleteForm extends EntityConfirmFormBase {
           $field_storage->delete();
         }
       }
-      drupal_set_message($this->t('The field with id @id has been deleted.',array('@id' => $this->field_id)));
+      $this->messenger()->addStatus($this->t('The field with id @id has been deleted.',array('@id' => $this->field_id)));
     }
     
     if($this->field_type == "bundle" || $this->field_type == "both") {
       // bundle mode.
-      $bundle_storages = \Drupal::entityManager()->getStorage('wisski_bundle')->loadByProperties(array('id' => $this->field_id));
+      $bundle_storages = \Drupal::service('entity_type.manager')->getStorage('wisski_bundle')->loadByProperties(array('id' => $this->field_id));
 #      drupal_set_message("bs: " . serialize($bundle_storages));
 
       if (!empty($bundle_storages)) {
@@ -90,7 +90,7 @@ class WisskiFieldDeleteForm extends EntityConfirmFormBase {
           $bundle_storage->delete();
         }
       }
-      drupal_set_message($this->t('The Bundle with id @id has been deleted.',array('@id' => $this->field_id)));
+      $this->messenger()->addStatus($this->t('The Bundle with id @id has been deleted.',array('@id' => $this->field_id)));
     }    
     $form_state->setRedirectUrl($this->getCancelUrl());
   }

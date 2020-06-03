@@ -14,14 +14,18 @@ class WisskiTitlePatternDeleteForm extends EntityConfirmFormBase {
   
   public function getCancelUrl() {
     $bundle = $this->entity;
-    return $bundle->urlInfo('title-form');
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // Please confirm that `$bundle` is an instance of `Drupal\Core\Entity\EntityInterface`. Only the method name and not the class name was checked for this replacement, so this may be a false positive.
+    return $bundle->toUrl('title-form');
   }
   
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $bundle = $this->entity;
     $bundle->removeTitlePattern();
     $bundle->save();
-    drupal_set_message(t('Removed title pattern for bundle %name.', array('%name' => $bundle->label())));
-    $form_state->setRedirectUrl($bundle->urlInfo('edit-form'));
+    $this->messenger()->addStatus(t('Removed title pattern for bundle %name.', array('%name' => $bundle->label())));
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // Please confirm that `$bundle` is an instance of `Drupal\Core\Entity\EntityInterface`. Only the method name and not the class name was checked for this replacement, so this may be a false positive.
+    $form_state->setRedirectUrl($bundle->toUrl('edit-form'));
   }
 }

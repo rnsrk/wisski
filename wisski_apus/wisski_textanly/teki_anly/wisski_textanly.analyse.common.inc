@@ -3,12 +3,9 @@
 /**
 * This file contains common functions for analysers
 */
-
-
 /** Get a UUID 4
 *
 * @author Martin Scholz
-*
 */
 function _wisski_textanly_generate_id() {
   return wisski_get_uuid(4);

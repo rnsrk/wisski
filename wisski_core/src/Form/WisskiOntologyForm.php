@@ -6,6 +6,7 @@
 
 namespace Drupal\wisski_core\Form;
 
+use Drupal\wisski_salz\Entity\Adapter;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
@@ -35,7 +36,7 @@ class WisskiOntologyForm extends FormBase {
     // we assume that every store could load an ontology
     // we load all store entities and
     // have to choose for which store we want to load an ontology
-    $adapters = \Drupal\wisski_salz\Entity\Adapter::loadMultiple();
+    $adapters = Adapter::loadMultiple();
 
     $adapterlist = array();
 
@@ -85,7 +86,7 @@ class WisskiOntologyForm extends FormBase {
       $selected_id = $form_state->getValue('select_store');
       $selected_name= $adapterlist[$selected_id];
       // load the store adapter entity object by means of the id of the selected store
-      $selected_adapter = \Drupal\wisski_salz\Entity\Adapter::load($selected_id);
+      $selected_adapter = Adapter::load($selected_id);
       # drupal_set_message('Current selected adapter: ' . serialize($selected_adapter));
       // load the engine of the adapter
       $engine = $selected_adapter->getEngine();
@@ -181,7 +182,7 @@ class WisskiOntologyForm extends FormBase {
     // if there is a selected store - check if there is an ontology in the store
     $selected_id = $form_state->getValue('select_store');
     // load the store adapter entity object by means of the id of the selected store
-    $selected_adapter = \Drupal\wisski_salz\Entity\Adapter::load($selected_id);
+    $selected_adapter = Adapter::load($selected_id);
     // load the engine of the adapter
     $engine = $selected_adapter->getEngine();
     #drupal_set_message('hello submit engine ' . $engine->getPluginId());
@@ -204,7 +205,7 @@ class WisskiOntologyForm extends FormBase {
   public function deleteOntology(array &$form, FormStateInterface $form_state) {
     $selected_id = $form_state->getValue('select_store');
     // load the store adapter entity object by means of the id of the selected store
-    $selected_adapter = \Drupal\wisski_salz\Entity\Adapter::load($selected_id);
+    $selected_adapter = Adapter::load($selected_id);
     // load the engine of the adapter
     $engine = $selected_adapter->getEngine();
     #drupal_set_message('hello engine ' . $engine->getPluginId());
@@ -218,10 +219,10 @@ class WisskiOntologyForm extends FormBase {
          foreach($infos as $ont) {
            if(strval($ont->graph) != "default"){
              $engine->deleteOntology(strval($ont->graph));
-             drupal_set_message('Successfully deleted ontology ' . $ont->graph);
+             $this->messenger()->addStatus('Successfully deleted ontology ' . $ont->graph);
            } else {
              $engine->deleteOntology(strval($ont->ont), 'no-graph');
-             drupal_set_message('Successfully deleted ontology ' . $ont->ont);
+             $this->messenger()->addStatus('Successfully deleted ontology ' . $ont->ont);
            }
            // redirect to the wisski config ontology page
 #           $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');

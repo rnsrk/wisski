@@ -66,15 +66,11 @@ function wisski_textanly_admin_analyse_datetime($op, $ap) {
 /* ***************** *
 *  ANALYSER
 ** ***************** */
-
-
-
 /** Find annotations that have a certain date syntax
-* This is the analyse operation for analysis component type vocab
-* 
+ * This is the analyse operation for analysis component type vocab
+*
 *
 * @author Martin Scholz
-*
 */
 function wisski_textanly_analyse_datetime($analyser, $text_struct, $ticket) {
 

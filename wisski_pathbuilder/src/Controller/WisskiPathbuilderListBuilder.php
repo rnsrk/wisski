@@ -18,19 +18,19 @@ class WisskiPathbuilderListBuilder extends ConfigEntityListBuilder {
   public function buildHeader() {
     $header['name'] = $this->t('name');
     #$header['label'] = $this->t('name');
-    
+
     return $header + parent::buildHeader();
   }
- 
+
   /**
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
- 
+
     // id
     $row['name'] = $entity->getName(); 
     #$this->getLabel($entity);
-   
+
     return $row + parent::buildRow($entity);
   }
 
@@ -46,26 +46,26 @@ class WisskiPathbuilderListBuilder extends ConfigEntityListBuilder {
    */
   public function getDefaultOperations(EntityInterface $entity) {
     $operations = parent::getDefaultOperations($entity);
-    
+
 #    $url = \Drupal\Core\Url::fromRoute('entity.wisski_pathbuilder.overview', ['wisski_pathbuilder' => $entity->id()]);
-                           
+
 #    $operations['view_paths'] = array(
 #      'title' => $this->t('View Paths'),
 #      'weight' => 10,
 #      'url' => $url, 
 #    );
-                        
+
     return $operations;
   } 
-  
+
   /**
    * {@inheritdoc}
    */
   /*
   public function render() {
-    
+
     $build = parent::render();
-    
+
     $build['#empty'] = $this->t('There are no Pathbuilders defined.');
     return $build;
   }

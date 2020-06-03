@@ -2,6 +2,8 @@
 
 namespace Drupal\wisski_salz\Query;
 
+use Drupal\wisski_adapter_gnd\Query\Query;
+use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\Core\Entity\EntityTypeInterface;
 
 class WisskiQueryDelegator extends WisskiQueryBase {
@@ -20,7 +22,9 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
   public function __construct(EntityTypeInterface $entity_type,$condition,array $namespaces) {
     parent::__construct($entity_type,$condition,$namespaces);
-    $adapters = entity_load_multiple('wisski_salz_adapter');
+#    $adapters = entity_load_multiple('wisski_salz_adapter');
+    $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
+
     $preferred_queries = array();
     $other_queries = array();
     foreach ($adapters as $adapter) {
@@ -58,7 +62,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
 #      dpm($query, "this is the query!");
 
-      if($query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
+      if($query instanceOf Query ||
         $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
         // this is null anyway... so skip it
         
@@ -110,7 +114,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         // query. So do SOMETHING useful!
         if(empty($where)) {
 #          $where = "?x0 a ?smthg . ";
-          
+
 
           // special case: (by mark)
           // if there is no where 
@@ -118,11 +122,11 @@ class WisskiQueryDelegator extends WisskiQueryBase {
           // we have a rather trivial answer
           // so we really dont want to ask the triple store in this
           // case!!!
-          
+
 #          if(count($eids) == 1) {
 #                  
 #          }
-          
+
           #dpm($eids, "eids?");
           
         }
@@ -155,7 +159,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       $total_service_array = array();
 
       foreach ($this->dependent_queries as $adapter_id => $query) {
-        if($query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
+        if($query instanceOf Query ||
            $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
           // this is null anyway... so skip it
           continue;
@@ -240,7 +244,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         }
       }
       //it is allowed to have an empty $bundle_id here
-      self::$empties = \Drupal\wisski_core\WisskiCacheHelper::getEntitiesWithEmptyTitle($bundle_id);
+      self::$empties = WisskiCacheHelper::getEntitiesWithEmptyTitle($bundle_id);
       //dpm(self::$empties,'Empty titled Entities');
     }  
     
@@ -255,16 +259,16 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         // check if all queries are sparql queries...
         foreach($this->dependent_queries as $adapter_id => $query) {
           if($query instanceOf \Drupal\wisski_adapter_sparql11_pb\Query\Query || 
-             $query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
+             $query instanceOf Query ||
              $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query ) {
             // if it is a sparql11-query we are save!
           } else {
             $is_sparql = FALSE;        
           }
         }
-        
+
 #        dpm(serialize($is_sparql), "is it?");
-        
+
         if(!$is_sparql) {
           // this is complicated!     
           foreach ($this->dependent_queries as $adapter_id => $query) {
@@ -273,14 +277,14 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
             if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
               $query = $query->count();
-            
+
               $sub_res = $query->execute() ? : 0;
-            
+
               if(!empty($sub_res)) {
                 $result = $sub_res;
                 continue;
               }
-            
+
             }
 
             $sub_result = $query->execute() ? : 0;
@@ -289,7 +293,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
             if(!is_array($sub_result))
               $sub_result = array();
             $result = array_unique(array_merge($result, $sub_result), SORT_REGULAR); 
-            
+
           }
         } else {
           $first_query = $this->getFederatedQuery(TRUE);
@@ -326,7 +330,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         // check if all queries are sparql queries...
         foreach($this->dependent_queries as $adapter_id => $query) {
           if($query instanceOf \Drupal\wisski_adapter_sparql11_pb\Query\Query || 
-             $query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
+             $query instanceOf Query ||
              $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query ) {
             // if it is a sparql11-query we are save!
           } else {

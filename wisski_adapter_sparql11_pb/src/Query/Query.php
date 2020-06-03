@@ -2,6 +2,8 @@
 
 namespace Drupal\wisski_adapter_sparql11_pb\Query;
 
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\Query\ConditionInterface;
 use Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWithPB;
@@ -107,16 +109,16 @@ class Query extends WisskiQueryBase {
           // if this takes place it is some kind of grouping
           // so it should be iterated.
           // for now we just skip it but we should go in there and fetch the things from it!
-          
+
 #          dpm($field, "this is an object, but it should be a string");
           foreach($field->conditions() as $keynew => $condnew) {
-          
+
             $key = $keynew; 
             $cond = $condnew;
 
             $field = $cond['field'];
 
-          
+
           }
         }
 
@@ -127,16 +129,16 @@ class Query extends WisskiQueryBase {
           // store the bundle key if there is a bundle condition
           $bundlekey = $key;
         }
-      
+
         // get all pbs and their ids
         $pbs = $this->getPbs();
-      
+
         $pbids = array_keys($pbs);
-      
+
         // if it is a pb field, it has a dot in it
         if(strpos($field, '.') !== FALSE) {
           $pb_and_path = explode(".", $field);
-        
+
           // is it really a pb field?
           if (count($pb_and_path) != 2) {
             // bad encoding! can't handle
@@ -151,8 +153,8 @@ class Query extends WisskiQueryBase {
           }
         }   
       }
-      
-      
+
+
       #dpm($cond, "cond?");
       #if(strpos($field, '.')    
     }
@@ -257,7 +259,8 @@ class Query extends WisskiQueryBase {
     if ($this->pathbuilders === NULL) {
       $aid = $this->getEngine()->adapterId();
       $pbids = \Drupal::service('wisski_pathbuilder.manager')->getPbsForAdapter($aid);
-      $this->pathbuilders = entity_load_multiple('wisski_pathbuilder', $pbids);
+      //$this->pathbuilders = entity_load_multiple('wisski_pathbuilder', $pbids);
+      $this->pathbuilders = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->loadMultiple($pbids);
     }
     return $this->pathbuilders;
 
@@ -366,7 +369,7 @@ class Query extends WisskiQueryBase {
         $pb_and_path = explode(".", $field);
         if (count($pb_and_path) != 2) {
           // bad encoding! can't handle
-          drupal_set_message(new \Drupal\Core\StringTranslation\TranslatableMarkup('Bad pathbuilder and path id "%id" in entity query condition', ['%id' => $field]));
+          \Drupal::messenger()->addStatus(new TranslatableMarkup('Bad pathbuilder and path id "%id" in entity query condition', ['%id' => $field]));
           continue; // with next condition
         }
         $pbid = $pb_and_path[0];
@@ -482,7 +485,7 @@ class Query extends WisskiQueryBase {
           $pb_and_path = explode(".", $field);
           if (count($pb_and_path) != 2) {
             // bad encoding! can't handle
-            drupal_set_message($this->t('Bad pathbuilder and path id "%id" in entity query condition', ['%id' => $field]));
+            \Drupal::messenger()->addStatus($this->t('Bad pathbuilder and path id "%id" in entity query condition', ['%id' => $field]));
             continue; // with next condition
           }
           $pbid = $pb_and_path[0];
@@ -495,9 +498,9 @@ class Query extends WisskiQueryBase {
           $pb = $pbs[$pbid];
           // get the path
           $path_id = $pb_and_path[1];
-          $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path_id);
+          $path = WisskiPathEntity::load($path_id);
           if(empty($path)) {
-            drupal_set_message($this->t('Bad path id "%id" in entity query', ['%id' => $path_id]));
+            \Drupal::messenger()->addStatus($this->t('Bad path id "%id" in entity query', ['%id' => $path_id]));
             continue; // with next condition
           }
 
@@ -595,20 +598,20 @@ class Query extends WisskiQueryBase {
         
         $pb_and_path = explode("__", substr($field, 12), 2);
         if (count($pb_and_path) != 2) {
-          drupal_set_message("Bad field id for Wisski views: $field", 'error');
+          \Drupal::messenger()->addError("Bad field id for Wisski views: $field");
         }
         else {
-          $pb = entity_load('wisski_pathbuilder', $pb_and_path[0]);
+          $pb = \Drupal::service('entity_type.manager')->getStorage('wisski_pathbuilder')->load($pb_and_path[0]);
           if (!in_array($pb, $this->getPbs())) {
             continue;
           }
-          $path = entity_load('wisski_path', $pb_and_path[1]);
+          $path = \Drupal::service('entity_type.manager')->getStorage('wisski_path')->load($pb_and_path[1]);
           $engine = $this->getEngine();
           if (!$pb) {
-            drupal_set_message("Bad pathbuilder id for Wisski views: $pb_and_path[0]", 'error');
+            \Drupal::messenger()->addError("Bad pathbuilder id for Wisski views: $pb_and_path[0]");
           }
           elseif (!$path) {
-            drupal_set_message("Bad path id for Wisski views: $pb_and_path[1]", 'error');
+            \Drupal::messenger()->addError("Bad path id for Wisski views: $pb_and_path[1]");
           }
           else {
             #$starting_position = $pb->getRelativeStartingPosition($path, TRUE);
@@ -635,9 +638,9 @@ class Query extends WisskiQueryBase {
               $sort_params = $elem['direction'] . "(xsd:integer(?c${i}_out)) ";
             else
               $sort_params = $elem['direction'] . "(STR(?c${i}_out)) ";
-            
+
             $this->orderby = $this->orderby . $sort_params;
-            
+
 #            dpm($query_parts);
 #            $query_parts 
           }
@@ -1084,7 +1087,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       $starting_position = 0;
     }
     else {
-      $cur_group = entity_load('wisski_path', $starting_group);
+      $cur_group = \Drupal::service('entity_type.manager')->getStorage('wisski_path')->load($starting_group);
       if (!$cur_group) {
         // no valid group given:
         // treat it as relative path
@@ -1162,7 +1165,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         }
 
         // get the uris for the entity ids
-        $adapter = entity_load('wisski_salz_adapter', $this->getEngine()->adapterId());
+        $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->getEngine()->adapterId());
         foreach ($entity_ids as $eid) {
           // NOTE: getUrisForDrupalId returns one uri as string as we have 
           // given the adapter
@@ -1184,7 +1187,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         $value = NULL;
       
         // get the uris for the entity ids
-        $adapter = entity_load('wisski_salz_adapter', $this->getEngine()->adapterId());
+        $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->getEngine()->adapterId());
         foreach ($entity_ids as $eid) {
           // NOTE: getUrisForDrupalId returns one uri as string as we have
           // given the adapter
@@ -1275,7 +1278,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
    */
   protected function missingImplMsg($msg, $data) {
 #    dpm("bump", "bump");
-    drupal_set_message("Missing entity query implementation: $msg. See log for details.", 'error');
+    \Drupal::messenger()->addError("Missing entity query implementation: $msg. See log for details.");
     \Drupal::logger("wisski entity query")->warning("Missing entity query implementation: $msg. Data: {data}", array('data' => serialize($data)));
   }
 

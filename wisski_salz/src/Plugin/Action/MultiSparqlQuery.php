@@ -7,6 +7,7 @@
 
 namespace Drupal\wisski_salz\Plugin\Action;
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Action\ConfigurableActionBase;
 #use Drupal\Core\Annotation\Action;
 #use Drupal\Core\Annotation\Translation;
@@ -56,7 +57,8 @@ class MultiSparqlQuery extends ConfigurableActionBase {
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
 
-    $adapters = entity_load_multiple('wisski_salz_adapter');
+#    $adapters = entity_load_multiple('wisski_salz_adapter');
+    $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
     $bundle_ids = array();
     // ask all adapters
     foreach($adapters as $aid => $adapter) {	
@@ -122,11 +124,11 @@ class MultiSparqlQuery extends ConfigurableActionBase {
    * {@inheritdoc}
    */
   public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
-    return \Drupal\Core\Access\AccessResult::allowed();
+    return AccessResult::allowed();
   }
   
   public function yay() {
-    drupal_set_message("yay!");
+    $this->messenger()->addStatus("yay!");
   }
 
   
@@ -141,17 +143,17 @@ class MultiSparqlQuery extends ConfigurableActionBase {
     for($i=0; $i<$num; $i++) {
 #      dpm($this->configuration['query_part_' . $i]['query_method_' . $i], "conf");
       if($this->configuration['query_part_' . $i]['query_method_' . $i] == 'Query') {
-        $adapter = entity_load('wisski_salz_adapter', $this->configuration['query_part_' . $i]['adapter_id_' . $i]);
+        $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->configuration['query_part_' . $i]['adapter_id_' . $i]);
         if (!$adapter) {
           \Drupal::logger('Wisski Salz')->error('Action %action: adapter with ID %aid does not exist', [
               '%action' => $this->pluginDefinition['label'],
               '%aid' => $this->configuration['query_part_' . $i]['adapter_id_' . $i],
           ]);
         }
-        
+
 #        dpm("yay1");
-        
-        
+
+
         $engine = $adapter->getEngine();
 #        dpm("yay!");
         $queryMethod = 'direct' . $this->configuration['query_part_' . $i]['query_method_' . $i];
@@ -200,7 +202,7 @@ class MultiSparqlQuery extends ConfigurableActionBase {
     // now update with what we have found if we found something
     for($i=0; $i<$num; $i++) {
       if($this->configuration['query_part_' . $i]['query_method_' . $i] == 'Update') {
-        $adapter = entity_load('wisski_salz_adapter', $this->configuration['query_part_' . $i]['adapter_id_' . $i]);
+        $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->configuration['query_part_' . $i]['adapter_id_' . $i]);
         if (!$adapter) {
           \Drupal::logger('Wisski Salz')->error('Action %action: adapter with ID %aid does not exist', [
             '%action' => $this->pluginDefinition['label'],
@@ -224,12 +226,12 @@ class MultiSparqlQuery extends ConfigurableActionBase {
         $values[$key1] = array();
       
         foreach($results['results'] as $key2 => $result) {
-        
+
           $values[$key1][$key2] = "(";
           // key3 is x or y or whatever was selected
           foreach($result as $key3 => $value) {
             $keys[$key1][$key3] = $key3;
-          
+
             if($value->getUri()) {
               $newuri = $engine->getSameUri($value->getUri(), $this->configuration['query_part_' . $i]['adapter_id_' . $i]); //, $results['source']);
 #              dpm(serialize($newuri), "newuri");
@@ -241,7 +243,7 @@ class MultiSparqlQuery extends ConfigurableActionBase {
               $values[$key1][$key2] .= '"' . $value->getValue() . '" ';
 #          dpm(serialize($value), "res");  
             }
-        
+
             $values[$key1][$key2] .= ") ";
 #        dpm($value, "val");
           }
@@ -252,23 +254,23 @@ class MultiSparqlQuery extends ConfigurableActionBase {
                 
         // add it per source which should be key1.
         foreach($values as $key1 => $rows) {
-          
+
           // first add the keys
           foreach($keys[$key1] as $key) {
             $value_string_start .= ("?" . $key . " ");
           }
-          
+
           $value_string_start .= ") { ";
 
 
           $value_string = $value_string_start;
-                
+
           $count_rows = 0;
-                    
+
           foreach($rows as $row) {
             $count_rows++;
             $value_string .= $row;
-            
+
             // if we have more than 100 we commit, so we don't overdo it for the
             // small triple stores...
             if($count_rows > 99) {
@@ -277,13 +279,13 @@ class MultiSparqlQuery extends ConfigurableActionBase {
               $result = $engine->$queryMethod($namespaces . $this->configuration['query_part_' . $i]['sparql_' . $i] . ' WHERE { ' . $value_string . ' } ');
               $value_string = $value_string_start;
             }
-            
+
           }
-          
+
           $value_string .= "} ";
-   
-          
-          
+
+
+
      #     dpm(serialize($value_string), "valuestring");
           // only do this if we still have something to commit...
           if($count_rows > 0)

@@ -2,6 +2,7 @@
 
 namespace Drupal\wisski_core\Plugin\Search;
 
+use Drupal\wisski_core\Entity\WisskiBundle;
 //use Drupal\search\Plugin\SearchInterface;
 use Drupal\search\Plugin\SearchPluginBase;
 use Drupal\Component\Utility\SafeMarkup;
@@ -30,14 +31,14 @@ class WisskiEntitySearch extends SearchPluginBase {
   private $path_limit = 10;
 
 /*
-  public function buildResults() {
-    $built = parent::buildResults();
-    dpm($this, "sis");
-    dpm($built, "yay!");
-
-    return $built;
-  }
-*/
+    public function buildResults() {
+      $built = parent::buildResults();
+      dpm($this, "sis");
+      dpm($built, "yay!");
+  
+      return $built;
+    }
+  */
   /**
    * Execute the search.
    *
@@ -106,7 +107,7 @@ class WisskiEntitySearch extends SearchPluginBase {
     }
     $return = array();
     foreach ($results as $bundle_id => $entity_ids) {
-      $bundle = entity_load('wisski_bundle', $bundle_id);
+      $bundle = \Drupal::service('entity_type.manager')->getStorage('wisski_bundle')->load($bundle_id);
       foreach ($entity_ids as $entity_id) {
         // we also give the bundle id as we know it here and the bundle id is
         // mandatory for title creation and there my be cases
@@ -137,7 +138,7 @@ class WisskiEntitySearch extends SearchPluginBase {
   }
 
   public function searchFormAlter(array &$form, FormStateInterface $form_state) {
-  
+
     //dpm($form,__FUNCTION__);
     //dpm($this,__METHOD__);
     unset($form['basic']);
@@ -173,7 +174,7 @@ class WisskiEntitySearch extends SearchPluginBase {
         if (preg_match('/^(.+)\s\((\w+)\)$/',$new_bundle,$matches)) {
           list(,$label,$id) = $matches;
           if (!isset($options[$id])) $options[$id] = $label;
-          $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($id);
+          $bundle = WisskiBundle::load($id);
           $paths[$id] = $bundle->getPathOptions();
         }
       }
@@ -182,19 +183,19 @@ class WisskiEntitySearch extends SearchPluginBase {
       #$bundle_ids = \Drupal::entityQuery('wisski_bundle')->range(0,$this->bundle_limit)->execute();
       // load all
       $bundle_ids = \Drupal::entityQuery('wisski_bundle')->execute();
-      
+
       // now filter them again
       // get all top groups from pbs
-      $parents = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
-        
+      $parents = WisskiHelper::getTopBundleIds();
+
       // only show top groups
       foreach($bundle_ids as $bundle_id => $label) {
         if(!in_array($bundle_id, $parents))
           unset($bundle_ids[$bundle_id]);
       }
-                            
+
       if (isset($defaults['bundles'])) $bundle_ids = array_unique(array_merge($bundle_ids,array_values($defaults['bundles'])));
-      $bundles = \Drupal\wisski_core\Entity\WisskiBundle::loadMultiple($bundle_ids);
+      $bundles = WisskiBundle::loadMultiple($bundle_ids);
       $options = array();
       $selection = array();
       foreach($bundles as $bundle_id => $bundle) {
@@ -205,9 +206,9 @@ class WisskiEntitySearch extends SearchPluginBase {
       }
     }
     $bundle_count = \Drupal::entityQuery('wisski_bundle')->count()->execute();
-    
+
 #    dpm($selection, "sel!");
-    
+
     $form['entity_title'] = array(
       '#type' => 'textfield',
       '#autocomplete_route_name' => 'wisski.titles.autocomplete',
@@ -217,7 +218,7 @@ class WisskiEntitySearch extends SearchPluginBase {
       '#description' => $this->t('Finds titles from the cache table'),
       '#attributes' => array('placeholder' => $this->t('Entity Title')),
     );
-    
+
     #dpm($selection,'selection');
     $storage['paths'] = $paths;
     //dpm($paths,'Paths');
@@ -256,7 +257,7 @@ class WisskiEntitySearch extends SearchPluginBase {
       $form['advanced']['bundles']['auto_bundle'] = array(
         '#type' => 'container',
         '#attributes' => array('class' => 'container-inline','title' => $this->t('Find more Bundles')),
-        
+
       );
       $form['advanced']['bundles']['auto_bundle']['input_field'] = array(
         '#type' => 'entity_autocomplete',
@@ -319,7 +320,7 @@ class WisskiEntitySearch extends SearchPluginBase {
             $list = NULL;
           next($bundle_path_defaults);
 #          dpm($list, "new");
-          
+
           $def_input = '';
           $def_operator = $this->getDefaultOperator();
 //          dpm($list, "list");
@@ -329,7 +330,7 @@ class WisskiEntitySearch extends SearchPluginBase {
 //            $list = each($bundle_path_options);
             $list = [key($bundle_path_options), current($bundle_path_options)];
             next($bundle_path_options);
-            
+
             if ($list) list($path_id) = $list;
           }
           if ($list !== FALSE) {
@@ -371,9 +372,9 @@ class WisskiEntitySearch extends SearchPluginBase {
         );
       }
     }
-    
+
     $form['actions']['#type'] = 'actions';
-    
+
     // make a nice export button
     $form['actions']['export'] = array(
       '#name' => 'excel_export',
@@ -390,8 +391,8 @@ class WisskiEntitySearch extends SearchPluginBase {
 #      '#prefix' => '<p>',
 #      '#suffix' => '</p>',
     );
-    
-    
+
+
     $form['actions']['submit'] = array(
       '#type' => 'submit',
       '#name' => 'standard-submit',

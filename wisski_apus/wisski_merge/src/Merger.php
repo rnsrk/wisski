@@ -173,11 +173,12 @@ class Merger {
     }
 
     if(!$foundsomething)
-      drupal_set_message("Merge could not find data... aborting", "warning");
+      \Drupal::messenger()->addWarning("Merge could not find data... aborting");
     
     // do the delete
     if ($delete && $foundsomething) {
-      $entities = entity_load_multiple('wisski_individual', $from_eids);
+#      $entities = entity_load_multiple('wisski_individual', $from_eids);
+      $entities = \Drupal::entityTypeManager()->getStorage('wisski_individual')->loadMultiple($from_eids);
 #dpm("do delete count " . count($entities));
       foreach ($entities as $entity) {
 #dpm("do delete " . $entity->id());
@@ -185,7 +186,7 @@ class Merger {
       }
     }
 
-    $entity = entity_load('wisski_individual', $to_eid);
+    $entity = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->load($to_eid);
     $entity->save();
 
     return TRUE;

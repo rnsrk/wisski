@@ -2,6 +2,7 @@
 
 namespace Drupal\wisski_core\Plugin\views\field;
 
+use Drupal\Core\Link;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow; 
 use Drupal\Core\Url;
@@ -51,7 +52,7 @@ class WisskiTitle extends Urlfield {
     }
     else {
       if (!empty($this->options['display_as_link']) && !empty($eid)) {
-        return \Drupal::l($this->sanitizeValue($value), Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $eid])); //"<a href='" . Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity]) . "'>" . $this->sanitizeValue($value) . "</a>";
+        return Link::fromTextAndUrl($this->sanitizeValue($value), Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $eid])); //"<a href='" . Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity]) . "'>" . $this->sanitizeValue($value) . "</a>";
       } else {
         return $this->sanitizeValue($value, 'url');
       }

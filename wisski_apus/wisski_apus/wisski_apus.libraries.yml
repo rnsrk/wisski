@@ -21,7 +21,7 @@ annotation.dialog:
     - core/drupalSettings
     - core/drupal
     - core/jquery
-    - core/jquery.ui.accordion
+    - jquery_ui_accordion/accordion
     - core/drupal.debounce
     - core/drupal.dialog
 

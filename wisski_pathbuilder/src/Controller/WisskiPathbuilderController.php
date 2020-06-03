@@ -34,36 +34,36 @@ class WisskiPathbuilderController extends ControllerBase {
    * @var \Drupal\Core\Entity\Query\QueryFactory
    */
   protected $entityQueryFactory;
-                
+
  /**
   * The menu link manager.
   *
   * @var \Drupal\Core\Menu\MenuLinkManagerInterface
   */
   protected $menuLinkManager;
-               
+
   /**
    * The pathbuilder tree service.
    *
    * @var \Drupal\Core\Menu\MenuLinkTreeInterface
    */
   protected $pathbuilderTree;
-  
+
   /**
    * The link generator.
    *
    * @var \Drupal\Core\Utility\LinkGeneratorInterface
    */
   protected $linkGenerator;
-                  
+
   /**
    * The overview tree form.
    *
    * @var array
    */
-   
+
   public $overviewTreeForm = array('#tree' => TRUE);
-                   
+
   /**
    * Constructs a MenuForm object.
    *
@@ -76,11 +76,12 @@ class WisskiPathbuilderController extends ControllerBase {
    * @param \Drupal\Core\Utility\LinkGeneratorInterface $link_generator
    *   The link generator.
    */
-  public function __construct(QueryFactory $entity_query_factory, MenuLinkManagerInterface $menu_link_manager, MenuLinkTreeInterface $pathbuilder_tree, LinkGeneratorInterface $link_generator, WisskiPathbuilder $pb) {
-    $this->entityQueryFactory = $entity_query_factory;
+//  public function __construct(ory, MenuLinkManagerInterface $menu_link_manager, MenuLinkTreeInterface $pathbuilder_tree, LinkGeneratorInterface $link_generator, WisskiPathbuilder $pb) {
+   public function __construct(MenuLinkManagerInterface $menu_link_manager, MenuLinkTreeInterface $pathbuilder_tree, LinkGeneratorInterface $link_generator, MenuLinkContentStorageInterface $menu_link_content_storage, WisskiPathbuilder $pb) {
     $this->menuLinkManager = $menu_link_manager;
     $this->menuTree = $pathbuilder_tree;
     $this->linkGenerator = $link_generator;             
+    $this->menuLinkContentStorage = $menu_link_content_storage;
   }
 
   /**
@@ -89,12 +90,12 @@ class WisskiPathbuilderController extends ControllerBase {
   public static function create(ContainerInterface $container) {
     return new static(
     # $container->get('date.formatter'),
-     $container->get('entity.query'),
      $container->get('plugin.manager.menu.link'),
      $container->get('menu.link_tree'),
-     $container->get('link_generator')
+     $container->get('link_generator'),
+     $container->get('entity_type.manager')->getStorage('menu_link_content')
    );
-                            
+
   } 
 
   public function loadTreeData($path_name, MenuTreeParameters $parameters) {
@@ -128,21 +129,22 @@ class WisskiPathbuilderController extends ControllerBase {
 
 #  function viewPB(FormStateInterface $form_state, $wisski_pathbuilder) {   
   public function form(array $form, FormStateInterface $form_state) {
-    drupal_set_message("using function form");     
+    $this->messenger()->addStatus("using function form");     
     #$form = array(
      # '#type' => 'markup',
       #'#markup' => 'hello world',
     #);
-    
-    $pathbuilder_entity = entity_load('wisski_pathbuilder', $wisski_pathbuilder);
-    
-    $path_entities = entity_load_multiple('wisski_path');
+
+    $pathbuilder_entity = \Drupal::service('entity_type.manager')->getStorage('wisski_pathbuilder')->load($wisski_pathbuilder);
+
+#    $path_entities = entity_load_multiple('wisski_path');
+    $path_entities = \Drupal::entityTypeManager()->getStorage('wisski_path')->loadMultiple();
     #drupal_set_message('wisski pathbuilder id: ' . serialize($wisski_pathbuilder));
     #drupal_set_message(serialize($pathbuilder_entity));
     #drupal_set_message(serialize($path_entities));
-    
+
      $form['#title'] = $this->t('Edit pathbuilder %label', array('%label' => 'pb'));   
-            
+
      $form['label'] = array(
        '#type' => 'textfield',
        '#title' => 'Title',
@@ -187,9 +189,9 @@ class WisskiPathbuilderController extends ControllerBase {
        $form['path_items'] = $this->buildOverviewForm($form['path_items'], $form_state);
      #}
       return parent::form($form, $form_state);                                                                                                                                                                               
-    
+
     }
-    
+
   /**
    * {@inheritdoc}
    */
@@ -201,33 +203,37 @@ class WisskiPathbuilderController extends ControllerBase {
 
     $status = $menu->save();
 
-    $edit_link = $this->entity->link($this->t('Edit'));
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // Please confirm that `$entity` is an instance of `\Drupal\Core\Entity\EntityInterface`. Only the method name and not the class name was checked for this replacement, so this may be a false positive.
+    $edit_link = $this->entity->toLink($this->t('Edit'))->toString();
     if ($status == SAVED_UPDATED) {
-      drupal_set_message($this->t('Menu %label has been updated.', array('%label' => $menu->label())));
+      $this->messenger()->addStatus($this->t('Menu %label has been updated.', array('%label' => $menu->label())));
       $this->logger('menu')->notice('Menu %label has been updated.', array('%label' => $menu->label(), 'link' => $edit_link));
     }
     else {
-      drupal_set_message($this->t('Menu %label has been added.', array('%label' => $menu->label())));
+      $this->messenger()->addStatus($this->t('Menu %label has been added.', array('%label' => $menu->label())));
       $this->logger('menu')->notice('Menu %label has been added.', array('%label' => $menu->label(), 'link' => $edit_link));
     }
 
-    $form_state->setRedirectUrl($this->entity->urlInfo('edit-form'));
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // Please confirm that `$entity` is an instance of `Drupal\Core\Entity\EntityInterface`. Only the method name and not the class name was checked for this replacement, so this may be a false positive.
+    $form_state->setRedirectUrl($this->entity->toUrl('edit-form'));
   }
-    
-  
+
+
   private function pb_render_path($path) {
     $pathform = array();
 
     $pathform['#item'] = $path;
-    
+
     $pathform['#attributes'] = $path->getEnabled() ? array('class' => array('menu-enabled')) : array('class' => array('menu-disabled')); 
-      
+
     $pathform['title'] = $path->getName();
-      
+
     if (!$path->getEnabled()) {
       $pathform['title']['#suffix'] = ' (' . $this->t('disabled') . ')';
     }
-      
+
     $pathform['enabled'] = array(
       '#type' => 'checkbox',
       '#title' => $this->t('Enable @title path', array('@title' => $path->getName())),
@@ -255,7 +261,7 @@ class WisskiPathbuilderController extends ControllerBase {
     #);
     return $pathform;
   }
-    
+
   function viewPB($wisski_pathbuilder) {
   // Ensure that menu_overview_form_submit() knows the parents of this form
   // section.
@@ -265,16 +271,17 @@ class WisskiPathbuilderController extends ControllerBase {
 
     // load the pathbuilder entity that is used - given by the parameter
     // in the url.                        
-    $pathbuilder_entity = entity_load('wisski_pathbuilder', $wisski_pathbuilder);
-    
+    $pathbuilder_entity = \Drupal::service('entity_type.manager')->getStorage('wisski_pathbuilder')->load($wisski_pathbuilder);
+
     // load all paths - here we should load just the ones of this pathbuilder
-    $path_entities = entity_load_multiple('wisski_path');
+    $path_entities = \Drupal::entityTypeManager()->getStorage('wisski_path')->loadMultiple();
+    #$path_entities = entity_load_multiple('wisski_path');
     #drupal_set_message('wisski pathbuilder id: ' . serialize($wisski_pathbuilder));    
 
     $form = array();
-    
+
     $header = array("title", "Path", array('data' => $this->t("Enabled"), 'class' => array('checkbox')), "Weight", array('data' => $this->t('Operations'), 'colspan' => 3));
-    
+
     $form['pathbuilder_table'] = array(
       '#type' => 'table',
 #      '#theme' => 'table__menu_overview',
@@ -300,15 +307,15 @@ class WisskiPathbuilderController extends ControllerBase {
         ),
       ),
     );
-    
+
     foreach($path_entities as $path) {
       #drupal_set_message(serialize($path));
 
       $pathform = $this->pb_render_path($path);
       $path_id = $path->getID();
-      
+
       $form['pathbuilder_table'][$path_id]['#item'] = $pathform['#item'];
-      
+
       // TableDrag: Mark the table row as draggable.
       $form['pathbuilder_table'][$path_id]['#attributes'] = $pathform['#attributes'];
       $form['pathbuilder_table'][$path_id]['#attributes']['class'][] = 'draggable';
@@ -339,11 +346,11 @@ class WisskiPathbuilderController extends ControllerBase {
 
       $form['pathbuilder_table'][$path_id]['id'] = $pathform['id'];
       $form['pathbuilder_table'][$path_id]['parent'] = $pathform['parent'];
-                      
-      
-      
+
+
+
     }
-    
+
 /*
         // Build a list of operations.
         $operations = array();
@@ -419,7 +426,7 @@ class WisskiPathbuilderController extends ControllerBase {
       ),
       'class' => array('draggable'),
     );
-    
+
     $rows[] = array( 
       'data' => array(
         'name' => "welt",
@@ -437,7 +444,7 @@ class WisskiPathbuilderController extends ControllerBase {
       'class' => array('draggable'),
     );
     */
-    
+
     /*
     $form = array(
       '#type' => 'table',
@@ -474,10 +481,10 @@ class WisskiPathbuilderController extends ControllerBase {
     #drupal_set_message(serialize($form));
 
     return $form;
-  
-    
-  
-  
+
+
+
+
   }
 /* BY KERSTIN    
     foreach ($path_entities as $entity){        
@@ -556,21 +563,21 @@ class WisskiPathbuilderController extends ControllerBase {
     foreach (Element::children($path_items) as $id) {
       if (isset($path_items[$id]['#item'])) {
         $element = $path_items[$id];
-             
+
         $form['path_items'][$id]['#item'] = $element['#item'];
-                     
+
         // TableDrag: Mark the table row as draggable.
         $form['path_items'][$id]['#attributes'] = $element['#attributes'];
         $form['path_items'][$id]['#attributes']['class'][] = 'draggable';
-                                             
+
         // TableDrag: Sort the table row according to its existing/configured weight.
         $form['path_items'][$id]['#weight'] = $element['#item']->link->getWeight();
-        
+
         // Add special classes to be used for tabledrag.js.
         $element['parent']['#attributes']['class'] = array('menu-parent');
         $element['weight']['#attributes']['class'] = array('wisski-order-weight');
         $element['id']['#attributes']['class'] = array('menu-id');
-                                 
+
         $form['path_items'][$id]['title'] = array(
           array(
             '#theme' => 'indentation',
@@ -580,24 +587,24 @@ class WisskiPathbuilderController extends ControllerBase {
         );
         $form['path_items'][$id]['enabled'] = $element['enabled'];
         $form['path_items'][$id]['enabled']['#wrapper_attributes']['class'] = array('checkbox', 'menu-enabled');
-                 
+
         $form['path_items'][$id]['weight'] = $element['weight'];
-                        
+
         // Operations (dropbutton) column.
         $form['path_items'][$id]['operations'] = $element['operations'];
-                                         
+
         $form['links'][$id]['id'] = $element['id'];
         $form['links'][$id]['parent'] = $element['parent'];
       }
     } 
-                                                                  
+
     return $form;
     }
-                                                                        
+
             */                                                                                           
-                                                             
-          
-    
+
+
+
     // Build the table rows and columns.
     // The first nested level in the render array forms the table row, on which you
     // likely want to set #attributes and #weight.
@@ -607,7 +614,7 @@ class WisskiPathbuilderController extends ControllerBase {
     // should contain multiple elements, simply use nested sub-keys to build the
     // render element structure for drupal_render() as you would everywhere else.             
     // Iterate through each path entity
-    
+
     #drupal_set_message('wisski pathbuilder id: ' . serialize($wisski_pathbuilder));
 /**             
     foreach ($path_entities as $id => $path_entity) {
@@ -617,15 +624,15 @@ class WisskiPathbuilderController extends ControllerBase {
        $weightbool = is_null($path_entity->get('weight')); 
        #drupal_set_message(serialize($weightbool));     
        #if ($weightbool) drupal_set_message('weight is null!');
-       
+
        drupal_set_message('weight: ' . $path_entity->get('weight'));
        #drupal_set_message('weight2: ' . $path_entity->weight);
-                
+
       // TableDrag: Mark the table row as draggable.
       $form['path_items'][$id]['#attributes']['class'][] = 'draggable';
       // TableDrag: Sort the table row according to its existing/configured weight.
       $form['path_items'][$id]['#weight'] = $path_entity->get('weight'); 
-      
+
       // Some table columns containing raw markup.
       $form['path_items'][$id]['label'] = array(
         '#plain_text' => $path_entity->label(),
@@ -633,7 +640,7 @@ class WisskiPathbuilderController extends ControllerBase {
       $form['path_items'][$id]['id'] = array(
         '#plain_text' => $path_entity->id(),
       );
-      
+
       // TableDrag: Weight column element.
       $form['path_items'][$id]['weight'] = array(
         '#type' => 'weight',
@@ -645,7 +652,7 @@ class WisskiPathbuilderController extends ControllerBase {
         // Classify the weight element for #tabledrag.
         '#attributes' => array('class' => array('wisski-order-weight')),
         );
-        
+
         // Operations (dropbutton) column.
         $form['path_items'][$id]['operations'] = array(
           '#type' => 'operations',
@@ -666,10 +673,10 @@ class WisskiPathbuilderController extends ControllerBase {
         '#type' => 'submit',
         '#value' => t('Save changes'),
       );
-      
-                             
+
+
       return $form;
-                          
+
    /**  
      foreach($path_entities as $path_entity) {
         drupal_set_message(serialize($path_entity));
@@ -677,13 +684,13 @@ class WisskiPathbuilderController extends ControllerBase {
        // Each entry will be an array using the unique id for that path_entity as
        // the array key, and an array of table row data as the value.
        $form['path_items'][$path_entity->id] = array(
-       
+
        // We'll use a form element of type '#markup' to display the item name.
            'name' => array(
              '#markup' => $path_entity->name,
              #  ),
            ),
-           
+
         // The 'weight' field will be manipulated as we move the items around in
         // the table using the tabledrag activity.  We use the 'weight' element
         // defined in Drupal's Form API.
@@ -695,7 +702,7 @@ class WisskiPathbuilderController extends ControllerBase {
            '#title_display' => 'invisible',
            ),                                                                             
        );
-       
+
      }
         // Now we add our submit button, for submitting the form results.
         //
@@ -703,7 +710,7 @@ class WisskiPathbuilderController extends ControllerBase {
         // but is included as a Form API recommended practice.
         $form['actions'] = array('#type' => 'actions');
         $form['actions']['submit'] = array('#type' => 'submit', '#value' => t('Save Changes'));             
-    
+
      return $form;
  */     
     #return drupal_render($table); 
@@ -806,7 +813,7 @@ class WisskiPathbuilderController extends ControllerBase {
           $operations['translate'] = array(
             'title' => $this->t('Translate'),
             'url' => $link->getTranslateRoute(),
-   
+
        );
         }
         $form[$id]['operations'] = array(
@@ -843,86 +850,88 @@ class WisskiPathbuilderController extends ControllerBase {
  */
 /** 
 function wisski_pathbuilder_tabledrag_form($variables) {
-  $form = $variables['form'];
-               
-  // Initialize the variable which will store our table rows.
-  $rows = array();
-  // Iterate over each element in our $form['example_items'] array.
-  foreach (element_children($form['path_items']) as $id) {
-  
-    // Before we add our 'weight' column to the row, we need to give the
-    // element a custom class so that it can be identified in the
-    // drupal_add_tabledrag call.
-    //
-    // This could also have been done during the form declaration by adding
-    // '#attributes' => array('class' => 'example-item-weight'),
-    // directy to the 'weight' element in tabledrag_example_simple_form().
-    $form['path_items'][$id]['weight']['#attributes']['class'] = array('path-item-weight');
-                               
-    // We are now ready to add each element of our $form data to the $rows
-    // array, so that they end up as individual table cells when rendered
-    // in the final table.  We run each element through the drupal_render()
-    // function to generate the final html markup for that element.
-    $rows[] = array(
-      'data' => array(
-        // Add our 'name' column.
-        drupal_render($form['path_items'][$id]['name']),
-        // Add our 'description' column.
-      #  drupal_render($form['example_items'][$id]['description']),
-        
-        // Add our 'weight' column.
-        drupal_render($form['path_items'][$id]['weight']),
-      ),
-      // To support the tabledrag behaviour, we need to assign each row of the
-      // table a class attribute of 'draggable'. This will add the 'draggable'
-      // class to the <tr> element for that row when the final table is
-      // rendered.
-      'class' => array('draggable'),
-    );
-  }
-      
-  // We now define the table header values.  Ensure that the 'header' count
-  // matches the final column count for your table.
-  $header = array(t('Name'), t('Weight'));
-    
-  // We also need to pass the drupal_add_tabledrag() function an id which will
-  // be used to identify the <table> element containing our tabledrag form.
-  // Because an element's 'id' should be unique on a page, make sure the value
-  // you select is NOT the same as the form ID used in your form declaration.
-  $table_id = 'path-items-table';
-                 
-  // We can render our tabledrag table for output.
-  $output = theme('table', array(
-    'header' => $header,
-    'rows' => $rows,
-    '#attributes' => array('id' => $table_id),
-    '#tabledrag' => array(
-      array(
-        'action' => 'order',
-        'relationship' => 'sibling',
-        'group' => 'example-item-weight',
-      ),
-    ),
-  ));
-                       
-  // And then render any remaining form elements (such as our submit button).
-  $output .= drupal_render_children($form);
-  
-  // We now call the drupal_add_tabledrag() function in order to add the
-  // tabledrag.js goodness onto our page.
-  //
-  // For a basic sortable table, we need to pass it:
-  // - the $table_id of our <table> element,
-  // - the $action to be performed on our form items ('order'),
-  // - a string describing where $action should be applied ('siblings'),
-  // - and the class of the element containing our 'weight' element.
-  drupal_attach_tabledrag($table_id, array(
-  'action' => 'order',
-  'relationship' => 'sibling', 
-  'group' => 'path-item-weight',
-  ));
-  return $output;
-  }
- */                                                                                                                                                              
+ $form = $variables['form'];
+
+ // Initialize the variable which will store our table rows.
+ $rows = array();
+ // Iterate over each element in our $form['example_items'] array.
+ * foreach (element_children($form['path_items']) as $id) {
+
+   // Before we add our 'weight' column to the row, we need to give the
+   // element a custom class so that it can be identified in the
+   // drupal_add_tabledrag call.
+   //
+   // This could also have been done during the form declaration by adding
+   // '#attributes' => array('class' => 'example-item-weight'),
+   // directy to the 'weight' element in tabledrag_example_simple_form().
+   $form['path_items'][$id]['weight']['#attributes']['class'] = array('path-item-weight');
+
+   // We are now ready to add each element of our $form data to the $rows
+   // array, so that they end up as individual table cells when rendered
+   // in the final table.  We run each element through the drupal_render()
+   // function to generate the final html markup for that element.
+   $rows[] = array(
+     'data' => array(
+       // Add our 'name' column.
+ * drupal_render($form['path_items'][$id]['name']),
+       // Add our 'description' column.
+     #  drupal_render($form['example_items'][$id]['description']),
+
+       // Add our 'weight' column.
+ * drupal_render($form['path_items'][$id]['weight']),
+     ),
+     // To support the tabledrag behaviour, we need to assign each row of the
+     // table a class attribute of 'draggable'. This will add the 'draggable'
+     // class to the <tr> element for that row when the final table is
+     // rendered.
+     'class' => array('draggable'),
+   );
+ }
+
+ // We now define the table header values.  Ensure that the 'header' count
+ // matches the final column count for your table.
+ $header = array(t('Name'), t('Weight'));
+
+ // We also need to pass the drupal_add_tabledrag() function an id which will
+ // be used to identify the <table> element containing our tabledrag form.
+ // Because an element's 'id' should be unique on a page, make sure the value
+ // you select is NOT the same as the form ID used in your form declaration.
+ $table_id = 'path-items-table';
+
+ // We can render our tabledrag table for output.
+ $output = theme('table', array(
+   'header' => $header,
+   'rows' => $rows,
+   '#attributes' => array('id' => $table_id),
+   '#tabledrag' => array(
+ * array(
+       'action' => 'order',
+       'relationship' => 'sibling',
+       'group' => 'example-item-weight',
+     ),
+   ),
+ ));
+
+ // And then render any remaining form elements (such as our submit button).
+ $output .= drupal_render_children($form);
+
+ // We now call the drupal_add_tabledrag() function in order to add the
+ // tabledrag.js goodness onto our page.
+ //
+ // For a basic sortable table, we need to pass it:
+ // - the $table_id of our <table> element,
+ // - the $action to be performed on our form items ('order'),
+ // - a string describing where $action should be applied ('siblings'),
+ // - and the class of the element containing our 'weight' element.
+ * drupal_attach_tabledrag($table_id, array(
+ 'action' => 'order',
+ 'relationship' => 'sibling', 
+ 'group' => 'path-item-weight',
+ ));
+ * return $output;
+ }
+*/
+
+                                                                                                                                                              
 
 }

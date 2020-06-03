@@ -1,5 +1,7 @@
 <?php
 
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Url;
 use Drupal\image\Entity\ImageStyle;
@@ -7,7 +9,7 @@ use Drupal\image\Entity\ImageStyle;
 /**
  * Implements hook_help().
  */
-function wisski_iip_image_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+function wisski_iip_image_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'help.page.wisski_iip_image':
       return '<p>' . t('This is the WissKI module for the integration ' .
@@ -42,7 +44,7 @@ function wisski_iip_image_preprocess_colorbox_formatter(&$variables) {
 #      $config = $this->configFactory->getEditable('imagemagick.settings');
       
       if(empty($toolkit) || $toolkit->getPluginId() !== "imagemagick") {
-        drupal_set_message('Your default toolkit is not imagemagick. Please use imagemagick for this module.', "error");
+        \Drupal::messenger()->addError('Your default toolkit is not imagemagick. Please use imagemagick for this module.');
         return;
       }
       
@@ -51,7 +53,7 @@ function wisski_iip_image_preprocess_colorbox_formatter(&$variables) {
       $formats = $config->get('image_formats');
       
       if(!isset($formats["PTIF"])) {
-        drupal_set_message("PTIF was not a valid image format. We enabled it for you. Make sure it is supported by your imagemagick configuration.");
+        \Drupal::messenger()->addStatus("PTIF was not a valid image format. We enabled it for you. Make sure it is supported by your imagemagick configuration.");
         $formats["PTIF"] = array('mime_type' => "image/tiff", "enabled" => TRUE);
         $config->set('image_formats', $formats);
         $config->save();
@@ -60,9 +62,9 @@ function wisski_iip_image_preprocess_colorbox_formatter(&$variables) {
 
       $image_style_name = 'wisski_pyramid';
 
-      if(! $image_style = \Drupal\image\Entity\ImageStyle::load($image_style_name)) {
+      if(! $image_style = ImageStyle::load($image_style_name)) {
         $values = array('name'=>$image_style_name,'label'=>'Wisski Pyramid Style');
-        $image_style = \Drupal\image\Entity\ImageStyle::create($values);
+        $image_style = ImageStyle::create($values);
         $image_style->addImageEffect(array('id' => 'WisskiPyramidalTiffImageEffect'));
         $image_style->save();
       }
@@ -84,7 +86,7 @@ function wisski_iip_image_preprocess_colorbox_formatter(&$variables) {
   
 }
 
-function wisski_iip_image_field_widget_form_alter(&$element, \Drupal\Core\Form\FormStateInterface $form_state, $context) {
+function wisski_iip_image_field_widget_form_alter(&$element, FormStateInterface $form_state, $context) {
 #  dpm($element);  
   if(isset($element['#value_callback']) && in_array('Drupal\image\Plugin\Field\FieldWidget\ImageWidget', $element['#value_callback'])) {
 #    dpm($element);

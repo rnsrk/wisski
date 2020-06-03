@@ -2,7 +2,7 @@
 
 namespace Drupal\wisski_core\Plugin\views\field;
 
-use Drupal\views\Plugin\views\field\Field as ViewsField;
+use Drupal\views\Plugin\views\field\EntityField as ViewsField;
 use Drupal\views\ResultRow; 
 use Drupal\wisski_core\Entity\Render\WisskiEntityFieldRenderer;
 

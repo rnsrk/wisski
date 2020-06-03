@@ -7,7 +7,7 @@
 
 namespace Drupal\wisski_pipe;
 
-use Drupal\Component\Plugin\ConfigurablePluginInterface;
+use Drupal\Component\Plugin\ConfigurableInterface;
 use Drupal\Component\Plugin\PluginInspectionInterface;
 use Psr\Log\LoggerInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
@@ -18,7 +18,7 @@ use Drupal\Core\Plugin\PluginFormInterface;
  * @see \Drupal\wisski_pipe\ProcessorManager
  * @see plugin_api
  */
-interface ProcessorInterface extends PluginInspectionInterface, ConfigurablePluginInterface, PluginFormInterface {
+interface ProcessorInterface extends PluginInspectionInterface, ConfigurableInterface, PluginFormInterface {
   
   const FIELD_MANDATORY = 1;
   const FIELD_FACULTATIVE = 2;

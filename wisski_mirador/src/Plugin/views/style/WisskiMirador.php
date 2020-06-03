@@ -72,7 +72,7 @@ class WisskiMirador extends StylePluginBase {
     
     foreach($results as $result) {
 #      dpm($result->__get('entity:wisski_individual/eid'), "res?");
-      
+
       // tuning for solr which does not have eids but stores it in entity:wisski_individual/eid
       $entity_id = empty($result->eid) ? current($result->__get('entity:wisski_individual/eid')) : $result->eid; 
 
@@ -93,9 +93,9 @@ class WisskiMirador extends StylePluginBase {
       
       foreach($attachments as $attachment) {
         $subview = $attachment['#view'];
-        
+
         $subview->execute();
- 
+
         foreach($subview->result as $res) {
 
           $entity_id = empty($res->eid) ? current($res->__get('entity:wisski_individual/eid')) : $res->eid;
@@ -110,7 +110,7 @@ class WisskiMirador extends StylePluginBase {
 #            "y" => 2000,
 #        )), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false );
         }
-        
+
 //        dpm($subview->result, "resi!");
         
       }

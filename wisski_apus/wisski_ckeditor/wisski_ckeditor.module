@@ -1,9 +1,10 @@
 <?php
 
+use Drupal\Core\Routing\RouteMatchInterface;
 /**
  * Implementation of Hook_help
  */
-function wisski_ckeditor_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+function wisski_ckeditor_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'help.page.wisski_ckeditor':
       return '<p>' . t('This extends the ckeditor with wisski text analysis abilities.') . '</p>';

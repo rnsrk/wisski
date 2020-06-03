@@ -39,7 +39,8 @@ class WisskiPathListBuilder extends DraggableListBuilder {
   public function buildRow(EntityInterface $entity) {         
     // id
    # $row['id'] = $entity->id();
-    $row['label'] = $this->getLabel($entity);
+    $row['label'] = $entity->label();
+    #$row['label'] = $this->getLabel($entity);
     #$this->getLabel($entity);
     #$row['label'] = array(
     #       'data' => $this->getLabel($entity),
@@ -54,7 +55,7 @@ class WisskiPathListBuilder extends DraggableListBuilder {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     parent::submitForm($form, $form_state);
-    drupal_set_message(t('The WissKI Path settings have been updated.'));
+    $this->messenger()->addStatus(t('The WissKI Path settings have been updated.'));
   }
         
 }                                                      

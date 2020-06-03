@@ -1,5 +1,15 @@
 <?php
 
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use Drupal\wisski_salz\Entity\Adapter;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\wisski_core\Entity\WisskiBundle;
+use Drupal\Core\Breadcrumb\Breadcrumb;
+use Drupal\Core\Link;
+use Drupal\wisski_core\WisskiHelper;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\wisski_core\WisskiEntityInterface;
 use Drupal\wisski_core\Entity\WisskiEntity;
 
@@ -18,7 +28,7 @@ define('WISSKI_DEVEL', FALSE);
 /**
  * Implementation of Hook_help
  */
-function wisski_core_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+function wisski_core_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'help.page.wisski_core':
       return '<p>' . t('This is the most basic WissKI module. You will need it!') . '</p>';
@@ -30,7 +40,7 @@ function wisski_core_cache_flush() {
 
   WisskiCacheHelper::flushAllEntityTitles();
   WisskiCacheHelper::flushAllPreviewImageUris();
-  drupal_set_message(t('Flushed WissKI specific caches'));
+  \Drupal::messenger()->addStatus(t('Flushed WissKI specific caches'));
 }
 
 function wisski_core_excel_export($ob) {
@@ -40,7 +50,7 @@ function wisski_core_excel_export($ob) {
   $data_rows = $ob['actions']['export']['#submit']['data'];  
 
   if(empty($data_rows)) {
-    drupal_set_message("Please do a search and export the results in excel afterwards.", "error");
+    \Drupal::messenger()->addError("Please do a search and export the results in excel afterwards.");
     return;
   }
 
@@ -51,7 +61,7 @@ function wisski_core_excel_export($ob) {
 #  $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual',$bundleid);
 
 #dpm($pbs_info, "info");
-  $filename = file_directory_temp() . "/" . $id . ".xls";
+  $filename = \Drupal::service('file_system')->getTempDirectory() . "/" . $id . ".xls";
 
   $fh = fopen($filename, "w+");
 
@@ -60,11 +70,11 @@ function wisski_core_excel_export($ob) {
   $pbs = array();
 
   foreach($pbs_info as $pbdata) {
-    $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::load($pbdata['pb_id']);
+    $pb = WisskiPathbuilderEntity::load($pbdata['pb_id']);
     $allpaths = $pb->getAllPathsForBundleId($bundleid, TRUE);
     $pb_paths[$pb->id()] = $allpaths;
     $pbs[$pb->id()] = $pb;
-    $adapters[$pb->id()] = \Drupal\wisski_salz\Entity\Adapter::load($pbdata['adapter_id']);
+    $adapters[$pb->id()] = Adapter::load($pbdata['adapter_id']);
   }
 
   foreach($pb_paths as $key => $paths) {
@@ -118,7 +128,7 @@ function wisski_core_excel_export($ob) {
 	      if($field_def->getType() == "entity_reference") {
 	        #dpm($values, "val");
 #	        $new_values = array();
-		
+
 		foreach($values as $vk => $value) {
 		  $d_eid = AdapterHelper::getDrupalIdForUri($value);
 	          $title = wisski_core_generate_title($d_eid);
@@ -183,12 +193,12 @@ function wisski_core_excel_export($ob) {
  * entity reference
  * This can not be handled by the storage!
  */
-function wisski_core_entity_prepare_form(\Drupal\Core\Entity\EntityInterface $entity, $operation, \Drupal\Core\Form\FormStateInterface $form_state) {
+function wisski_core_entity_prepare_form(EntityInterface $entity, $operation, FormStateInterface $form_state) {
 
 #  dpm($entity->id(), "entity");
 
   // only act on WissKI-Entities
-  if(! $entity instanceOf \Drupal\wisski_core\Entity\WisskiEntity)
+  if(! $entity instanceOf WisskiEntity)
     return;
 
   // get the storage
@@ -241,7 +251,7 @@ function wisski_core_entity_prepare_form(\Drupal\Core\Entity\EntityInterface $en
 
 function wisski_core_entity_prepare_view($entity_type_id, array $entities, array $displays, $view_mode) {
   foreach($entities as $entity) {
-    if(! $entity instanceOf \Drupal\wisski_core\Entity\WisskiEntity)
+    if(! $entity instanceOf WisskiEntity)
       continue;
     foreach($displays as $display) {
       foreach($display->getComponents() as $key => $comp) {
@@ -311,7 +321,7 @@ function wisski_core_entity_view(array &$build, \Drupal\Core\Entity\EntityInterf
 function wisski_core_generate_title($wisski_individual, $base_field = NULL, $force_new=FALSE, $override_bundle_id = NULL) {
 
   if(!is_bool($force_new)) {
-    drupal_set_message("Danger Zone: force_new was not boolean!", "error");
+    \Drupal::messenger()->addError("Danger Zone: force_new was not boolean!");
   }
 
 #  dpm($force_new, "force new in core.module?");
@@ -335,7 +345,7 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
        // this happens on create dialog - try to get the best of it!
 
       if(!empty($bundle_id)) {
-        if ($bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)) {
+        if ($bundle = WisskiBundle::load($bundle_id)) {
 	  $title = $bundle->generateEntityTitle($wisski_individual,FALSE,$force_new);
 
 	  if(empty($title))
@@ -362,7 +372,7 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
   if(empty($bundle_id)) {
 #    dpm(microtime(), "difficult");
     // this is very complicated... do it anyway...
-    $pbs = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity::loadMultiple();
+    $pbs = WisskiPathbuilderEntity::loadMultiple();
 #    dpm(microtime(), "difficult2");
 #    drupal_set_message(serialize($pbs));
 
@@ -375,7 +385,7 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
   $title = '';
   // only do this if we have a bundle now
   if (!empty($bundle_id)) {
-    if ($bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundle_id)) {
+    if ($bundle = WisskiBundle::load($bundle_id)) {
 #      dpm(microtime(), "yay!");
 #      drupal_set_message(serialize($entity_id));
 #      drupal_set_message(serialize($bundle->generateEntityTitle($entity_id,FALSE,$force_new)));
@@ -388,9 +398,9 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
   if (empty($title)) {
     $title = \Drupal::service('entity_type.manager')->getDefinition('wisski_individual')->getLabel().' '.$entity_id;
     if(empty($bundle))
-      drupal_set_message(t('No title could be generated for entity ' . $entity_id . ' with bundle ' . $bundle_id),'warning');
+      \Drupal::messenger()->addWarning(t('No title could be generated for entity ' . $entity_id . ' with bundle ' . $bundle_id));
     else
-      drupal_set_message(t('No title could be generated for entity ' . $entity_id . ' with bundle ' . $bundle->label()),'warning');
+      \Drupal::messenger()->addWarning(t('No title could be generated for entity ' . $entity_id . ' with bundle ' . $bundle->label()));
   }
 #  dpm($title, "ret2");
   return $title;
@@ -400,10 +410,10 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
 function wisski_core_flush_title_caches($bundle_ids=NULL,$entity_ids=NULL) {
 
   if (is_null($bundle_ids)) {
-    \Drupal\wisski_core\WisskiCacheHelper::flushAllEntityTitles();
+    WisskiCacheHelper::flushAllEntityTitles();
     return;
   }
-  $bundles = \Drupal\wisski_core\Entity\WisskiBundle::loadMultiple($bundle_ids);
+  $bundles = WisskiBundle::loadMultiple($bundle_ids);
   foreach ($bundles as $bundle) {
     $bundle->flushTitleCache($entity_ids);
   }
@@ -413,7 +423,7 @@ function wisski_core_flush_title_caches($bundle_ids=NULL,$entity_ids=NULL) {
  * Hook in to alter the behaviour of autocomplete.
  * Because it currently breaks the WissKI functionality.
  */
-function wisski_core_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+function wisski_core_form_alter(&$form, FormStateInterface $form_state, $form_id) {
 
   // only act on wisski individuals
   if(strpos($form_id, "wisski_individual") !== FALSE) {
@@ -426,7 +436,7 @@ function wisski_core_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $fo
 /**
  * Add the place where the entity is found in navigate
  */
-function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb &$breadcrumb, \Drupal\Core\Routing\RouteMatchInterface $route_match, array $context) {
+function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatchInterface $route_match, array $context) {
 #	dpm("yay2");
 //  dpm(serialize($context), "con");
 
@@ -497,7 +507,7 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
 
       if(!empty($result) && isset($result['view_id'])) {
         // the parent is a view - so we probably want to render this...
-        $link = \Drupal\Core\Link::createFromRoute($result['_title'], $result['_route'], array(), array('query' => $query_array));
+        $link = Link::createFromRoute($result['_title'], $result['_route'], array(), array('query' => $query_array));
 
         $breadcrumb->addLink($link);
       }
@@ -513,7 +523,7 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
       $only_use_topbundles = $set->get('wisski_use_only_main_bundles');
 
       if($only_use_topbundles)
-        $topBundles = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
+        $topBundles = WisskiHelper::getTopBundleIds();
 
       $bundleid = WisskiCacheHelper::getCallingBundle($entity->id());
 
@@ -525,14 +535,14 @@ function wisski_core_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb 
 #    dpm($bundleid, "bundleid");
 #    dpm($entity->id(), "eid");
       if(!empty($bundleid)) {
-        $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($bundleid);
+        $bundle = WisskiBundle::load($bundleid);
         if(!empty($bundle) && !empty($bundle->label())) {
           $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
           $use_views = $set->get('wisski_use_views_for_navigate');
           if(!$use_views)
-            $link = \Drupal\Core\Link::createFromRoute($bundle->label(), "entity.wisski_bundle.entity_list", array("wisski_bundle" => $bundleid));
+            $link = Link::createFromRoute($bundle->label(), "entity.wisski_bundle.entity_list", array("wisski_bundle" => $bundleid));
           else
-            $link = \Drupal\Core\Link::fromTextAndUrl($bundle->label(), \Drupal\Core\Url::fromUserInput('/wisski_views/' . $bundleid));
+            $link = Link::fromTextAndUrl($bundle->label(), Url::fromUserInput('/wisski_views/' . $bundleid));
           $breadcrumb->addLink($link);
         }
       }
@@ -593,7 +603,7 @@ function wisski_core_menu_links_discovered_alter(&$links) {
     $links['wisski.search_entities'] = array(
       'title' => 'Find',
       'route_name' => 'search.view_wisski_search',
-      'description' => new \Drupal\Core\StringTranslation\TranslatableMarkup('Search WissKI entities'),
+      'description' => new TranslatableMarkup('Search WissKI entities'),
       'menu_name' => 'main',
        'weight' => 10,
 //      'parent' => 'system.admin_reports',
@@ -602,7 +612,7 @@ function wisski_core_menu_links_discovered_alter(&$links) {
     $links['wisski.search_entities_menu'] = array(
       'title' => 'Find',
       'route_name' => 'search.view_wisski_search',
-      'description' => new \Drupal\Core\StringTranslation\TranslatableMarkup('Search WissKI entities'),
+      'description' => new TranslatableMarkup('Search WissKI entities'),
       'menu_name' => 'wisski',
        'weight' => 30,
 //      'parent' => 'system.admin_reports',

@@ -43,7 +43,8 @@ class FileUploadForm extends FormBase {
     ];
 
     $bundles = ['' => $this->t('- Select -')];
-    foreach (entity_load_multiple('wisski_bundle') as $bid => $bundle) {
+#    foreach (entity_load_multiple('wisski_bundle') as $bid => $bundle) {
+    foreach(\Drupal::entityTypeManager()->getStorage('wisski_bundle')->loadMultiple() as $bid => $bundle) {
       $bundles[$bid] = $bundle->label();
     }
     
@@ -72,7 +73,7 @@ class FileUploadForm extends FormBase {
    
     $fields = ['' => $this->t('- None -')];
     if ($bundle_id) {
-      $field_defs = \Drupal::entityManager()->getFieldDefinitions('wisski_individual', $bundle_id);
+      $field_defs = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual', $bundle_id);
       foreach ($field_defs as $field_id => $def) {
         /** Drupal\Core\Field\FieldDefinitionInterface $def **/
         $fields[$field_id] = $def->getLabel();  // ->label() is not defined!

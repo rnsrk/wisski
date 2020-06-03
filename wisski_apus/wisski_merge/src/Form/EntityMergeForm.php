@@ -91,7 +91,7 @@ class EntityMergeForm extends ContentEntityForm {
       if (mb_substr($url, 0, 1) == '<' && mb_substr($url, -1, 1) == '>') {
         $url = mb_substr($url, 1, mb_strlen($url) -2);
       } elseif (mb_substr($url, 0, 7) !== 'http://' && mb_substr($url, 0, 8) !== 'https://') {
-        drupal_set_message(t("Skipping malformed URI: %l. If you know it is right, enclose it in %b", array("%l" => $url, "%b" => "<>")), 'error');
+        $this->messenger()->addError(t("Skipping malformed URI: %l. If you know it is right, enclose it in %b", array("%l" => $url, "%b" => "<>")));
         continue;
       }
 #      \Drupal::logger('MERGE ')->debug('yay2223: @yay', ['@yay' => serialize($url)]);
@@ -103,10 +103,10 @@ class EntityMergeForm extends ContentEntityForm {
     $merger = new Merger();
     $status = $merger->mergeEntities($from_eids, $this->entity->id());
     if ($status === TRUE) {
-      drupal_set_message($this->t('Successfully merged entities'));
+      $this->messenger()->addStatus($this->t('Successfully merged entities'));
     }
     else {
-      drupal_set_message($this->t('Could not merge entities: @e', array('@e' => $status)), 'error');
+      $this->messenger()->addError($this->t('Could not merge entities: @e', array('@e' => $status)));
     }
   }
 }

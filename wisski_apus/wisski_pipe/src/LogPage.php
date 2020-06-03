@@ -1,16 +1,16 @@
 <?php
 /**
  * @file
- * Contains \Drupal\wisski_textanly\Controller\TestPage.
+ * Contains \Drupal\wisski_pipe\Controller\LogPage.
  */
 
-namespace Drupal\wisski_textanly\Controller;
+namespace Drupal\wisski_pipe\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\wisski_pipe\StackingLogger;
 
-class TestPage extends ControllerBase {
+class LogPage extends ControllerBase {
 
   
   public function testPage() {

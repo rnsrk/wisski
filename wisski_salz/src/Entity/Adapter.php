@@ -37,7 +37,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *     "description" = "description"
  *   },
  *   links = {
- *     "canonical" = "/admin/config/wisski_salz/adapter/{wisski_salz_adapter}",
+ *     "canonical" = "/admin/config/wisski_salz/adapter",
  *     "add-form" = "/admin/config/wisski_salz/adapter/add",
  *     "edit-form" = "/admin/config/wisski_salz/adapter/{wisski_salz_adapter}/edit",
  *     "delete-form" = "/admin/config/wisski_salz/adapter/{wisski_salz_adapter}/delete",

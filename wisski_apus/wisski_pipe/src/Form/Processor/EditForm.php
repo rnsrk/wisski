@@ -80,7 +80,7 @@ class EditForm extends FormBase {
     $this->processor->submitConfigurationForm($form, $plugin_data);
     $this->pipe->save();
 
-    drupal_set_message($this->t('Saved %label configuration.', array('%label' => $this->processor->getLabel())));
+    $this->messenger()->addStatus($this->t('Saved %label configuration.', array('%label' => $this->processor->getLabel())));
     $this->logger('wisski_pipe')->notice('The processor %label has been updated in the @pipe pipe.', [
       '%label' => $this->processor->getLabel(),
       '@pipe' => $this->pipe->label(),

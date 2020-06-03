@@ -52,10 +52,10 @@ class HighlightAnnotations extends FilterBase {
     
     // upgrade legacy annotations and make them processable
     if (preg_match_all('/<[^>\s]+(?:\s+[^=>]+=(?:"[^"]*"|\'[^\']*\'))*\s+class=("[^"]+"|\'[^\']+\')/u', $text, $matches)) {
-dpm(array($matches, $matches[0], array_unique($matches[0])),'äää');      
+#dpm(array($matches, $matches[0], array_unique($matches[0])),'äää');      
       foreach (array_unique($matches[0]) as $match) {
         $tmp = array_values(explode('wisski_anno_uri_', $match, 2));
-dpm($tmp);        
+#dpm($tmp);        
         if (!isset($tmp[1])) continue;        
         list($url, $rest) = preg_split('/\s/u', $tmp[1], 2);
         if (empty($rest)) {
@@ -64,7 +64,7 @@ dpm($tmp);
           $url = substr($url, 0, -1);
         }
         $url = rawurldecode($url);
-dpm($url);
+#dpm($url);
 
         // do a best guess to find out whether this URL points to a
         // WissKI entity and if the URL encodes bundle information
@@ -77,14 +77,14 @@ dpm($url);
         $insert .= 'data-wisski-target-ref="' . $url . '" ';
         if (!empty($bundle_id)) $insert .= 'data-wisski-anno-bundle="' . $bundle_id . '" ';
 
-dpm(array($insert, $match));
+#dpm(array($insert, $match));
 
         // ... and place the attrs in the element after the match
         $text = join("$match $insert", explode($match, $text));
       
       }
     } else {
-      dpm('no m');
+#      dpm('no m');
     }
     
     // prepare the filter result
@@ -126,7 +126,7 @@ dpm(array($insert, $match));
     }
     
     // we must load the entity to get the referenced url
-    $entity = entity_load('wisski_individual', $entity_id);
+    $entity = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->load($entity_id);
     if (!$entity) {
       return array(NULL, NULL);
     }
