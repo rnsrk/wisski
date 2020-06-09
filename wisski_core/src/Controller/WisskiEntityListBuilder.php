@@ -431,92 +431,92 @@ $timeall += $timethis;
     * preview image
     */
    /*  public function getPreviewImageUri($entity_id,$bundle_id) {
-                                    #    dpm("4.2.1: " . microtime());
+                                       #    dpm("4.2.1: " . microtime());
 
-                                        //first try the cache
-                                        $preview = WisskiCacheHelper::getPreviewImageUri($entity_id);
-                                    #    dpm("4.2.2: " . microtime());
-                                    #    dpm($preview,__FUNCTION__.' '.$entity_id);
+                                           //first try the cache
+                                           $preview = WisskiCacheHelper::getPreviewImageUri($entity_id);
+                                       #    dpm("4.2.2: " . microtime());
+                                       #    dpm($preview,__FUNCTION__.' '.$entity_id);
 
-                                        if ($preview) {
-                                          //do not log anything here, it is a performance sink
-                                          //\Drupal::logger('wisski_preview_image')->debug('From Cache '.$preview);
-                                          if ($preview === 'none') return NULL;
-                                          return $preview;
-                                        }
-                                    #    dpm("4.2.3: " . microtime());
-                                        //if the cache had nothing try the adapters
-                                        //for this purpose we need the entity URIs, which are stored in the local
-                                        //store, so if there is none, stop here
-                                        if (empty($this->preview_image_adapters)) return NULL;
+                                           if ($preview) {
+                                             //do not log anything here, it is a performance sink
+                                             //\Drupal::logger('wisski_preview_image')->debug('From Cache '.$preview);
+                                             if ($preview === 'none') return NULL;
+                                             return $preview;
+                                           }
+                                       #    dpm("4.2.3: " . microtime());
+                                           //if the cache had nothing try the adapters
+                                           //for this purpose we need the entity URIs, which are stored in the local
+                                           //store, so if there is none, stop here
+                                           if (empty($this->preview_image_adapters)) return NULL;
 
-                                        // we iterate through all the selected adapters but we stop at the first
-                                        // image that was successfully converted to preview image style as we only
-                                        // need one!
-                                        foreach ($this->preview_image_adapters as $adapter_id => $adapter) {
+                                           // we iterate through all the selected adapters but we stop at the first
+                                           // image that was successfully converted to preview image style as we only
+                                           // need one!
+                                           foreach ($this->preview_image_adapters as $adapter_id => $adapter) {
 
-                                          if ($adapter === NULL || !is_object($adapter)) {
-                                            // we lazy-load adapters
-                                            $adapter = entity_load('wisski_salz_adapter', $adapter_id);
-                                            if (empty($adapter)) {
-                                              unset($this->preview_image_adapters[$adapter_id]);
-                                              continue;
-                                            } else {
-                                              $this->preview_image_adapters[$adapter_id] = $adapter;
-                                            }
-                                          }
+                                             if ($adapter === NULL || !is_object($adapter)) {
+                                               // we lazy-load adapters
+                                               $adapter = entity_load('wisski_salz_adapter', $adapter_id);
+                                               if (empty($adapter)) {
+                                                 unset($this->preview_image_adapters[$adapter_id]);
+                                                 continue;
+                                               } else {
+                                                 $this->preview_image_adapters[$adapter_id] = $adapter;
+                                               }
+                                             }
 
-                                          if (empty(\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($entity_id,$adapter->id()))) {
-                                            if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug($adapter->id().' does not know the entity '.$entity_id);
-                                            WisskiCacheHelper::putPreviewImageUri($entity_id,'none');
-                                            return NULL;
-                                          }
+                                             if (empty(\Drupal\wisski_salz\AdapterHelper::getUrisForDrupalId($entity_id,$adapter->id()))) {
+                                               if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug($adapter->id().' does not know the entity '.$entity_id);
+                                               WisskiCacheHelper::putPreviewImageUri($entity_id,'none');
+                                               return NULL;
+                                             }
 
-                                          //ask the local adapter for any image for this entity
-                                          $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
-                                    #    dpm("4.2.4: " . microtime());
+                                             //ask the local adapter for any image for this entity
+                                             $images = $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id);
+                                       #    dpm("4.2.4: " . microtime());
 
-                                          if (empty($images)) {
-                                            if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug('No preview images available from adapter '.$adapter->id());
-                                            continue;
-                                          }
+                                             if (empty($images)) {
+                                               if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug('No preview images available from adapter '.$adapter->id());
+                                               continue;
+                                             }
 
-                                          if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug("Images from adapter $adapter_id: ".serialize($images));
-                                          //if there is at least one, take the first of them
-                                          //@TODO, possibly we can try something mor sophisticated to find THE preview image
-                                          $input_uri = current($images);
-                                    #    dpm("4.2.4.1: " . microtime());
-                                          //now we have to ensure there is the correct image file on our server
-                                          //and we get a derivate in preview size and we have this derivates URI
-                                          //as the desired output
-                                          $output_uri = '';
+                                             if (WISSKI_DEVEL) \Drupal::logger('wisski_preview_image')->debug("Images from adapter $adapter_id: ".serialize($images));
+                                             //if there is at least one, take the first of them
+                                             //@TODO, possibly we can try something mor sophisticated to find THE preview image
+                                             $input_uri = current($images);
+                                       #    dpm("4.2.4.1: " . microtime());
+                                             //now we have to ensure there is the correct image file on our server
+                                             //and we get a derivate in preview size and we have this derivates URI
+                                             //as the desired output
+                                             $output_uri = '';
 
-                                          //get a correct image uri in $output_uri, by saving a file there
-                                          #$this->storage->getFileId($input_uri,$output_uri);
-                                          // generalized this line for external use
-                                          \Drupal::entityTypeManager()->getStorage('wisski_individual')->getFileId($input_uri, $output_uri);
-                                    #    dpm("4.2.4.2: " . microtime());
-                                          //try to get the WissKI preview image style
-                                          $image_style = $this->getPreviewStyle();
-                                    #    dpm("4.2.5: " . microtime());    
-                                          //process the image with the style
-                                          $preview_uri = $image_style->buildUri($output_uri);
-                                          //dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
-                                          if ($out = $image_style->createDerivative($output_uri,$preview_uri)) {
-                                            //drupal_set_message('Style did it - uri is ' . $preview_uri);
-                                            WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
-                                            //we got the image resized and can output the derivates URI
-                                            return $preview_uri;
-                                          } else {
-                                            drupal_set_message("Could not create a preview image for $input_uri. Probably its MIME-Type is wrong or the type is not allowed by your Imge Toolkit","error");
-                                            WisskiCacheHelper::putPreviewImageUri($entity_id,NULL);
-                                          }
+                                             //get a correct image uri in $output_uri, by saving a file there
+                                             #$this->storage->getFileId($input_uri,$output_uri);
+                                             // generalized this line for external use
+                                             \Drupal::entityTypeManager()->getStorage('wisski_individual')->getFileId($input_uri, $output_uri);
+                                       #    dpm("4.2.4.2: " . microtime());
+                                             //try to get the WissKI preview image style
+                                             $image_style = $this->getPreviewStyle();
+                                       #    dpm("4.2.5: " . microtime());    
+                                             //process the image with the style
+                                             $preview_uri = $image_style->buildUri($output_uri);
+                                             //dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
+                                             if ($out = $image_style->createDerivative($output_uri,$preview_uri)) {
+                                               //drupal_set_message('Style did it - uri is ' . $preview_uri);
+                                               WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
+                                               //we got the image resized and can output the derivates URI
+                                               return $preview_uri;
+                                             } else {
+                                               drupal_set_message("Could not create a preview image for $input_uri. Probably its MIME-Type is wrong or the type is not allowed by your Imge Toolkit","error");
+                                               WisskiCacheHelper::putPreviewImageUri($entity_id,NULL);
+                                             }
 
-                                        }
+                                           }
 
-                                        return NULL;
+                                           return NULL;
 
-                                      }*/
+                                         }*/
    //cache the style in this object in case it will be used for multiple entites
    #private $image_style;
    /**
@@ -576,6 +576,7 @@ $timeall += $timethis;
      return $image_style;
    }
    */
+
 
 
 
