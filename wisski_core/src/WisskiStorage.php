@@ -1831,5 +1831,10 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     $this->image_style = $image_style;
     return $image_style;
   }
+
+  protected function doLoadMultipleRevisionsFieldItems($revision_ids) {
+    // does not work yet.
+    return;
+  }
   
 }
