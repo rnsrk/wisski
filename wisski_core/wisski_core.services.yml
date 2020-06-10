@@ -9,6 +9,6 @@ services:
       - { name: event_subscriber }
   wisski.routes:
     class: Drupal\wisski_core\Routing\WisskiRoutes
-    arguments: ['@entity.manager']
+    arguments: ['@entity_type.manager']
   wisski.forwarder:
     class: Drupal\wisski_core\Controller\WisskiEntityViewForwarder
