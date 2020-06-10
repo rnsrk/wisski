@@ -32,6 +32,15 @@ use Drupal\views\Entity\View;
  *     }
  *   },
  *   config_prefix = "wisski_pathbuilder",
+ *   config_export = {
+ *     "id",
+ *     "name",
+ *     "adapter",
+ *     "type",
+ *     "pathtree",
+ *     "pbpaths",
+ *     "with_solr"
+ *   },
  *   admin_permission = "administer wisski paths",
  *   entity_keys = {
  *     "id" = "id",

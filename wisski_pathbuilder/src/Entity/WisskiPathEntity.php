@@ -31,6 +31,17 @@ use Drupal\wisski_pathbuilder\WisskiPathInterface;
   *     }             
   *    },
   *   config_prefix = "wisski_path",
+  *   config_export = {
+  *     "id",
+  *     "name",
+  *     "path_array",
+  *     "datatype_property",
+  *     "short_name",
+  *     "disamb",
+  *     "length",
+  *     "description",
+  *     "type",
+  *   },
   *   admin_permission = "administer wisski paths",
   *   entity_keys = {
   *     "id" = "id",
