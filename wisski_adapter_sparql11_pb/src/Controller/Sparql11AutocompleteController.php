@@ -18,7 +18,9 @@
    * Returns autocomplete responses for countries.
    */
   class Sparql11AutocompleteController {
-     
+
+    private $autocomplete_suggestions_limit = 10;
+
   /**
    * Returns response for the country name autocompletion.
    *
@@ -45,6 +47,15 @@
 #        drupal_set_message("path: " . serialize($path));
 #        drupal_set_message("pb: " . serialize($pb));
 #        drupal_set_message("adapter: " . serialize($adapter));
+
+        // check if field widget contains 'autocompletelimit' setting
+ 	$bundleid = $pb->getBundle($pathid);
+ 	if (isset(\Drupal::service('entity_type.manager')->getStorage('entity_form_display')->load('wisski_individual.' . $bundleid . '.default')->getComponent($fieldid)['settings']['autocompletelimit'])){
+ 	  $this->autocomplete_suggestions_limit = \Drupal::service('entity_type.manager')->getStorage('entity_form_display')->load('wisski_individual.' . $bundleid . '.default')->getComponent($fieldid)['settings']['autocompletelimit'];
+# 	  drupal_set_message("yay! Wert ist " . $this->autocomplete_suggestions_limit);
+ 	} else {
+# 	  drupal_set_message("ohne limit");
+ 	}
 
         $engine = $adapter->getEngine();
 
@@ -76,7 +87,7 @@
       if(empty($sparql))
         return NULL;
       
-      $sparql .= "LIMIT 10";
+      $sparql .= "LIMIT " . $this->autocomplete_suggestions_limit;
       
 #      drupal_set_message("engine: " . serialize($sparql));
 #      dpm(microtime());        
@@ -89,7 +100,7 @@
 #        $matches[] = array('value' => $key, 'label' => $thing->out->getValue());
         $i++;
         
-        if($i > 9) {
+	if($i > ($this->autocomplete_suggestions_limit - 1)) {
           $matches[] = array('label' => "More hits were found, continue typing...");
           break;
         }
