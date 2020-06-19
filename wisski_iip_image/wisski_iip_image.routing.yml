@@ -5,7 +5,7 @@ entity.wisski_individual.manifest:
   requirements:
     _permission: 'access wisski manifests'
 
-entity.wisski_individual.manifest:
+entity.wisski_individual.manifest2:
   path: '/wisski/navigate/{wisski_individual}/iiif_info'
   defaults:
     _controller: '\Drupal\wisski_iip_image\Controller\WisskiIIIFController::info'
