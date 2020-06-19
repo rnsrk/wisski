@@ -2,6 +2,8 @@
 
 namespace Drupal\wisski_salz\Plugin\wisski_salz\Engine;
 
+require __DIR__ . '/../../../../..//vendor/autoload.php';
+
 use EasyRdf_Sparql_Client;
 use EasyRdf_Namespace;
 use EasyRdf_Http;
