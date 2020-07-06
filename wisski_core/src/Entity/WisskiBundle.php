@@ -1237,7 +1237,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     // now we should have the values for the menu-part... lets see if there is a view?
     // only do this for navigate
     if($menu_name == "navigate") {
-      $view = \Drupal::service('entity.manager')->getStorage('view')->load($this->id());
+      $view = \Drupal::service('entity_type.manager')->getStorage('view')->load($this->id());
 
       if(!empty($view)) {
         $display = $view->getDisplay($this->id());
