@@ -29,7 +29,7 @@ class WisskiEntityForm extends ContentEntityForm {
     */
 
 #    dpm($form,__METHOD__);    
-    $this->entity->saveOriginalValues($this->entityManager->getStorage('wisski_individual'));
+    $this->entity->saveOriginalValues($this->entityTypeManager->getStorage('wisski_individual'));
 
     //@TODO extend form
     //dpm($this->getEntity());
