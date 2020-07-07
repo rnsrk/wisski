@@ -187,7 +187,7 @@ class WisskiEntityViewsData extends EntityViewsData {
     // this has to be defined to use parent-functions.
     // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
     // We are assuming that we want to use the `entity_type.manager` service since no method was called here directly. Please confirm this is the case. See https://www.drupal.org/node/2549139 for more information.
-    $this->entityManager = \Drupal::service('entity_type.manager');
+    $this->entityTypeManager = \Drupal::service('entity_type.manager');
         
 //    $pbs = entity_load_multiple('wisski_pathbuilder');
     $pbs = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->loadMultiple();
