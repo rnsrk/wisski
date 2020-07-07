@@ -568,7 +568,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
               $this->writeToCache($id, $bundleid);
 
 #            dpm($bundleid, "bid1");
-            $field_definitions = $this->entityManager->getFieldDefinitions('wisski_individual',$bundleid);
+            $field_definitions = $this->entityFieldManager->getFieldDefinitions('wisski_individual',$bundleid);
             #dpm($field_definitions, "yay");
 #            wpm($field_definitions, 'gei-fd');
             
