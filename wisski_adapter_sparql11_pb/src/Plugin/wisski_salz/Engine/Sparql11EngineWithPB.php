@@ -1517,8 +1517,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     }
 #    drupal_set_message("a2: " . microtime());
     // make an entity query for all relevant pbs with this adapter.
-    $relevant_pb_ids = \Drupal::service('entity.query')
-      ->get('wisski_pathbuilder')
+    $relevant_pb_ids = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->getQuery()
       ->condition('adapter', $this->adapterId())->execute();
 
 #    drupal_set_message("a3: " . microtime());    
