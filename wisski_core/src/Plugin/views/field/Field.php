@@ -44,9 +44,9 @@ class Field extends ViewsField {
         }
       }
       if (!isset($this->entityFieldRenderer)) {
-        $entity_type = $this->entityManager->getDefinition($this->getEntityType());
+        $entity_type = $this->entityTypeManager->getDefinition($this->getEntityType());
         // this is the main code - take the wisski-variant!
-        $this->entityFieldRenderer = new WisskiEntityFieldRenderer($this->view, $this->relationship, $this->languageManager, $entity_type, $this->entityManager);
+        $this->entityFieldRenderer = new WisskiEntityFieldRenderer($this->view, $this->relationship, $this->languageManager, $entity_type, $this->entityTypeManager);
       }
     }
     return $this->entityFieldRenderer;
