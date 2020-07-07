@@ -69,7 +69,7 @@ class WisskiEntityFieldRenderer extends EntityFieldRenderer {
           
           foreach ($field_ids as $field_id) {
             $mfield = $this->view->field[$field_id];
-            $field_storage_definitions = $this->entityManager->getFieldStorageDefinitions($entity_type_id);
+            $field_storage_definitions = $this->entityFieldManager->getFieldStorageDefinitions($entity_type_id);
 
             $bundles = $field_storage_definitions[$mfield->definition['field_name']]->getBundles();
             
