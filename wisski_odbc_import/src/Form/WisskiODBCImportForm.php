@@ -231,11 +231,14 @@ class WisskiODBCImportForm extends FormBase {
         $params['db'], 
         $params['dbport']
       );
+      
+      $mess = \Drupal::messenger();
+      
       if(!$connection) {
-        $this->messenger()->addError("Connection could not be established!");
+        $mess->addError("Connection could not be established!");
         return;
       } else {
-        $this->messenger()->addStatus("Connection established!");
+        $mess->addStatus("Connection established!");
       }
       mysqli_set_charset($connection,"utf8");
     }
@@ -320,15 +323,16 @@ class WisskiODBCImportForm extends FormBase {
    * @see callback_batch_finished()
    */
   public static function finishBatch($success, $results, $operations) {
+    $mess = \Drupal::messenger();
     if ($success) {
-      $this->messenger()->addStatus(t('Finished import.'));
-      $this->messenger()->addStatus(t('@num entities have been created or updated.', ['@num' => count($results['already_seen'])]));
+      $mess->addStatus(t('Finished import.'));
+      $mess->addStatus(t('@num entities have been created or updated.', ['@num' => count($results['already_seen'])]));
       self::log()->info(
           'Successfully completed import. {num} entities have been created or updated. Entity IDs:{ids}',
           ['num' => count($results['already_seen']), 'ids' => join(", ", $results['already_seen'])]);
     }
     else {
-      $this->messenger()->addError(t('Errors importing tables. @c tables could not be imported.', ['@c' => count($operations)]));
+      $mess->addError(t('Errors importing tables. @c tables could not be imported.', ['@c' => count($operations)]));
       self::log()->error(
         'Errors while processing import: {operations} operations left',
         [
@@ -381,15 +385,17 @@ class WisskiODBCImportForm extends FormBase {
         return $connection->query($sql)->fetchField();
       }
       catch (\Exception $e) {
-        $this->messenger()->addError($e->getMessage());
+        $mess = \Drupal::messenger();
+        $mess->addError($e->getMessage());
         return NULL;
       }
     }
     else {
       $qry = mysqli_query($connection, $sql);
       if(!$qry) {
-        $this->messenger()->addError("Anfrage '$sql' gescheitert!");
-        $this->messenger()->addError(mysqli_error($connection));
+        $mess = \Drupal::messenger();
+        $mess->addError("Anfrage '$sql' gescheitert!");
+        $mess->addError(mysqli_error($connection));
         return NULL;
       }
       $row = mysqli_fetch_array($qry);
@@ -432,15 +438,17 @@ class WisskiODBCImportForm extends FormBase {
         $qry = $connection->query($sql);
       }
       catch (\Exception $e) {
-        $this->messenger()->addError($e->getMessage());
+        $mess = \Drupal::messenger();
+        $mess->addError($e->getMessage());
         return;
       }
     }
     else {
       $qry = mysqli_query($connection, $sql);
       if(!$qry) {
-        $this->messenger()->addError("Anfrage '$sql' gescheitert!");
-        $this->messenger()->addError(mysqli_error($connection));
+        $mess = \Drupal::messenger();
+        $mess->addError("Anfrage '$sql' gescheitert!");
+        $mess->addError(mysqli_error($connection));
         return;
       }
     }
@@ -461,7 +469,8 @@ class WisskiODBCImportForm extends FormBase {
             $connection->query($sql);
           }
           catch (\Exception $e) {
-            $this->messenger()->addError($e->getMessage());
+            $mess = \Drupal::messenger();
+            $mess->addError($e->getMessage());
             return;
           }
         }
