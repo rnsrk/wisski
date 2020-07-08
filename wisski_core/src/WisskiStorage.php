@@ -941,7 +941,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
       // called $local_file_uri: file_destination() with 2nd param returns
       // FALSE if there is such a file!
       //if (file_destination($local_file_uri,FILE_EXISTS_ERROR) === FALSE) {
-      if (\Drupal::service('file_system')->getDestinationFilename($local_file_uri,Drupal\Core\File\FileSystemInterface::EXISTS_ERROR) === FALSE) {
+      if (\Drupal::service('file_system')->getDestinationFilename($local_file_uri,FileSystemInterface::EXISTS_ERROR) === FALSE) {
 #            dpm($local_file_uri, "7");
         $file = File::create([
           'uri' => $local_file_uri,
