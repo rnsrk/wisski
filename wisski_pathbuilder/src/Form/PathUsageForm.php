@@ -36,7 +36,7 @@ class PathUsageForm extends FormBase {
     if (!empty($usage['orphaned']) || !empty($usage['semiorphaned'])) {
       
       $paths = \Drupal::entityTypeManager()->getStorage('wisski_path')->loadMultiple();    
-      $pbs = \Drupal::entityTypeManager()->getStorage('wisski_patbuilder')->loadMultiple();
+      $pbs = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->loadMultiple();
 #      $paths = entity_load_multiple('wisski_path');
 #      $pbs = entity_load_multiple('wisski_pathbuilder');
         
