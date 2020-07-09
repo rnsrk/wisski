@@ -11,11 +11,12 @@ use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Security\TrustedCallbackInterface;
 
 /**
  * WissKI Toolbar integration handler.
  */
-class WisskiToolbarHandler implements ContainerInjectionInterface {
+class WisskiToolbarHandler implements ContainerInjectionInterface, TrustedCallbackInterface {
 
   use StringTranslationTrait;
 
@@ -152,6 +153,15 @@ class WisskiToolbarHandler implements ContainerInjectionInterface {
       ->applyTo($build);
 
     return $build;
+  }
+  
+  /**
+  * {@inheritdoc}
+  */
+  public static function trustedCallbacks() {
+    return [
+      'lazyBuilder',
+    ];
   }
 
 }
