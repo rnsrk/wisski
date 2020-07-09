@@ -2679,7 +2679,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       $disambresult = $this->directQuery($sparql);
 #dpm(array($sparql, $disambresult), __METHOD__ . " disamb query");
       if(!empty($disambresult))
-        $disambresult = current($disambresult);      
+        $disambresult = $disambresult[0];
+        // this fails due to some bug?
+        //$disambresult = current($disambresult);      
     } 
 
     // rename to uri
