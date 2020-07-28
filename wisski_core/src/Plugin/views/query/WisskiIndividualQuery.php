@@ -222,7 +222,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
 
     $bundle_ids = array();
     $entity_id = NULL;
-#    dpm($view->filter, "filt");
+#    dpm(serialize($view->filter), "filt");
     if(!empty($view->filter)) {
       foreach($view->filter as $key => $one_filter) {
         if($key == "bundle") {
@@ -550,6 +550,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
 
     while (($field = array_shift($fields)) !== NULL) {
 #      dpm(microtime(), "beginning one thing");
+#      dpm($field, "field is?");
       if ($field == 'title') {
 #        dpm(microtime(), "before generate");
         if(!empty($bundle_ids))

@@ -55,6 +55,10 @@ class WisskiEntityViewsData extends EntityViewsData {
 
     $data = [];
     $base_table = 'wisski_individual';
+
+    $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
+
+    $use_status = $set->get('enable_published_status_everwhere');
     
 #    dpm($this->entityType->id(), "id!");
     
@@ -156,6 +160,20 @@ class WisskiEntityViewsData extends EntityViewsData {
       ],
       'entity type' => $this->entityType->id(),
     ];
+    
+    if($use_status)
+      $data[$base_table]['status'] = [ 
+        'id' => 'Status',
+        'title' => 'Published yes/no',
+        'field' => [
+          'id' => 'standard', // is standard the right thing here?
+        ],
+        'filter' => [
+          'id' => 'wisski_field_string',
+        ],
+        'entity type' => $this->entityType->id(),
+      ];    
+    
     $data[$base_table]['preview_image'] = [
       'id' => 'preview_image',
       'title' => 'Preview Image',

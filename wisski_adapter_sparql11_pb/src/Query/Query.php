@@ -448,6 +448,18 @@ class Query extends WisskiQueryBase {
           $query_parts[] = $this->makeBundleCondition($operator, $value);
       
         }
+        elseif ($field == "status") {
+#          dpm("yay, status!");
+          // in $needs_a_bundle there is the bundle if there is something like that
+
+          $eids = $this->executeStatusCondition($operator, $value, $needs_a_bundle);
+          
+          $entity_ids = $this->join($conjunction, $entity_ids, $eids);
+          if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
+            return array('', array());
+          }
+
+        }
         elseif ($field == "title" || $field == 'label') {
           // we treat label and title the same (there really should be no difference)
           // directly ask the title
@@ -828,6 +840,35 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     }
 #    drupal_set_message("I return for $adapter_id and query " . $select . " data: " . serialize($return));
     return $return;
+
+  }
+  
+  protected function executeStatusCondition($operator, $value, $bundleid = '%') {
+    $entity_ids = NULL;
+ 
+
+    // it would be good to supply the bundle here, too...
+    
+    $query = \Drupal::database()->select('wisski_entity_field_properties', 't')
+      ->distinct()
+      ->fields('t', array('eid', 'ident'))
+#      ->condition('adapter_id', $this->getEngine()->adapterId())
+      ->condition('fid', 'status', '=')
+      ->condition('bid', $bundleid, '=')
+      ->condition('ident', $value, '=');
+    $entity_ids = $query->execute()->fetchAllKeyed();
+    
+    $out = array();
+    
+    $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->getEngine()->adapterId());
+    
+    foreach ($entity_ids as $eid) {
+      // NOTE: getUrisForDrupalId returns one uri as string as we have
+      // given the adapter
+      $out[$eid] = '' . AdapterHelper::getUrisForDrupalId($eid, $adapter) .'';
+    }
+    
+    return $out;
 
   }
   
