@@ -110,7 +110,7 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
       ->setDescription(t('Language code.'))
       ->setRevisionable(TRUE);
 
-    $fields['name'] = BaseFieldDefinition::create('string')
+    $fields['label'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Entity name'))
       ->setDescription(t('The human readable name of this entity.'))
       ->setRequired(TRUE)
