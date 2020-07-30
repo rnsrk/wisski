@@ -862,7 +862,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     
     $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->getEngine()->adapterId());
     
-    foreach ($entity_ids as $eid) {
+    foreach ($entity_ids as $eid => $bla) {
       // NOTE: getUrisForDrupalId returns one uri as string as we have
       // given the adapter
       $out[$eid] = '' . AdapterHelper::getUrisForDrupalId($eid, $adapter) .'';
