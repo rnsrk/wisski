@@ -17,6 +17,8 @@ use Drupal\wisski_salz\RdfSparqlUtil;
 
 abstract class Sparql11Engine extends EngineBase {
 
+  protected $header;
+
   protected $read_url;
   protected $write_url;
   
@@ -42,6 +44,7 @@ abstract class Sparql11Engine extends EngineBase {
   
   public function defaultConfiguration() {
     return parent::defaultConfiguration() + [
+      'header' => '',
       'read_url' => '',
       'write_url' => '',
       'graph_rewrite' => FALSE,
@@ -57,6 +60,7 @@ abstract class Sparql11Engine extends EngineBase {
 
     // this does not exist
     parent::setConfiguration($configuration);
+    $this->header = $this->configuration['header'];
     $this->read_url = $this->configuration['read_url'];
     $this->write_url = $this->configuration['write_url'];
     $this->graph_rewrite = $this->configuration['graph_rewrite'];
@@ -71,6 +75,7 @@ abstract class Sparql11Engine extends EngineBase {
    */
   public function getConfiguration() {
     return array(
+      'header' => $this->header,
       'read_url' => $this->read_url,
       'write_url' => $this->write_url,
       'graph_rewrite' => $this->graph_rewrite,
@@ -86,19 +91,29 @@ abstract class Sparql11Engine extends EngineBase {
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
 
     $form = parent::buildConfigurationForm($form, $form_state);
+
+    $form['header'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Header for Authentication'),
+      '#default_value' => '',
+      '#description' => $this->t('Provide a header for Authentication. Leave empty if there is no. We won\'t change the header then.'),
+    ];
     
     $form['read_url'] = [
       '#type' => 'textfield',
-      '#title' => 'Read URL',
+      '#title' => $this->t('Endpoint URI for reading'),
       '#default_value' => $this->read_url,
-      '#description' => 'bla.',
+      '#description' => $this->t('Here you should state the endpoint URI for select/construct/... (reading) sparql queries. Typically you can find it in the triple store interface.'),
     ];
     $form['write_url'] = [
       '#type' => 'textfield',
-      '#title' => 'Write URL',
+      '#title' => $this->t('Endpoint URI for writing'),
       '#default_value' => $this->write_url,
-      '#description' => 'bla.',
+      '#description' => $this->t('Here you should state the endpoint URI for insert/update... (writing) sparql queries. Typically you can find it in the triple store interface and it is the same as the above one just with /statements behind it.'),
     ];
+
+/*
+    // this does not work anymore...
     $form['graph_rewrite'] = array(
       '#type' => 'checkbox',
       '#title' => 'Use graph independent rewriting',
@@ -106,18 +121,20 @@ abstract class Sparql11Engine extends EngineBase {
       '#return_value' => TRUE,
       '#description' => 'rewrite queries, so that remote SPARQL storages with non-standard dataset handling do always answer right',
     );
+    
+    */
     $form['default_graph'] = [
       '#type' => 'textfield',
-      '#title' => 'Default Graph URI',
+      '#title' => $this->t('Default Graph URI'),
       '#required' => TRUE,
       '#default_value' => $this->default_graph,
-      '#description' => 'Graph URI that is used to store triples in by default. May also be used as a base for new entity URIs.',
+      '#description' => $this->t('Graph URI that is used to store triples in by default. May also be used as a base for new entity URIs.'),
     ];
     $form['ontology_graphs'] = [
       '#type' => 'textarea',
-      '#title' => 'Ontology graphs',
+      '#title' => $this->t('Ontology graphs'),
       '#default_value' => join("\n", $this->ontology_graphs),
-      '#description' => t('Graphs that are considered to be containing ontology information. These are used to compute class and property information like hierarchies, domain/range, etc. Leave empty let system automatically detect the graphs.'),
+      '#description' => $this->t('Graphs that are considered to be containing ontology information. These are used to compute class and property information like hierarchies, domain/range, etc. Leave empty let system automatically detect the graphs.'),
     ];
 
     
@@ -126,7 +143,7 @@ abstract class Sparql11Engine extends EngineBase {
     unset($form['sameAsProperties']);
     $form['same_as_properties']['available_same_as_properties'] = array(
       '#type' => 'select',
-      '#title' => 'Add standard sameAs property',
+      '#title' => $this->t(''Add standard sameAs property'),
       '#options' => $this->standardSameAsProperties(),
       '#empty_option' => ' - '.$this->t('select').' - ',
       '#ajax' => array(
@@ -156,6 +173,7 @@ abstract class Sparql11Engine extends EngineBase {
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     parent::submitConfigurationForm($form, $form_state);
+    $this->header = $form_state->getValue('header');
     $this->read_url = $form_state->getValue('read_url');
     $this->write_url = $form_state->getValue('write_url');
     $this->graph_rewrite = $form_state->getValue('graph_rewrite');
