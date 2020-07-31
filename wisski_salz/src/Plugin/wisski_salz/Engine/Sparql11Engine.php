@@ -143,7 +143,7 @@ abstract class Sparql11Engine extends EngineBase {
     unset($form['sameAsProperties']);
     $form['same_as_properties']['available_same_as_properties'] = array(
       '#type' => 'select',
-      '#title' => $this->t(''Add standard sameAs property'),
+      '#title' => $this->t('Add standard sameAs property'),
       '#options' => $this->standardSameAsProperties(),
       '#empty_option' => ' - '.$this->t('select').' - ',
       '#ajax' => array(
