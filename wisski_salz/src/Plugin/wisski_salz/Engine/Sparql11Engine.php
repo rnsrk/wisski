@@ -95,7 +95,7 @@ abstract class Sparql11Engine extends EngineBase {
     $form['header'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Header for Authentication'),
-      '#default_value' => '',
+      '#default_value' => $this->header,
       '#description' => $this->t('Provide a header for Authentication. Leave empty if there is no. We won\'t change the header then.'),
     ];
     
