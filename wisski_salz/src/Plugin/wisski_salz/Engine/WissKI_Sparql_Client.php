@@ -73,7 +73,7 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
     ));
 
     // set extra headers (as configured in the constructor)
-    if (!is_null($this->extraHeaders) {
+    if (!is_null($this->extraHeaders)) {
       $client->setHeaders($this->extraHeaders);
     }
     
