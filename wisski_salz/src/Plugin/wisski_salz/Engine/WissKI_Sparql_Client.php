@@ -21,16 +21,28 @@ use EasyRdf_Sparql_Result;
 */
 class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 
-  protected $headersForAuth;
-
-  /** 
-   * Transport the headers from the form to the easy rdf client
-   *
+  /**
+   * Create a new instance of the Sparql WissKI client
+   * 
+   * The $queryURI and $updateURI parameters behave like the corresponding parameters
+   * of EasyRdf_Sparql_Client. 
+   * 
+   * The $extraHeaders parameter is optional, and should be either null or an associative array. 
+   * When it is set, headers defined inside this parameter will be added to each request
+   * made by this WissKI_Sparql_Client. It is the callers responsibility to ensure that it does
+   * not conflict with internal headers. This parameter is typically used for authenticastion. 
+   * 
    * By Tom and Mark
    */
-  public function setHeadersForAuth($headers) {
-    $this->headersForAuth = $headers;
-  } 
+  function __construct($queryUri, $updateURI = null, $extraHeaders = null) {
+    parent::__construct($queryUri, $updateURI);
+
+    // store the extra headers (if set)
+    $this->extraHeaders = is_array($extraHeaders) ? $extraHeaders : null;
+  }
+
+
+  protected $extraHeaders;
 
   /**
   * Internal function to make an HTTP request to SPARQL endpoint
@@ -60,6 +72,12 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
         'timeout'         => 600,
     ));
 
+    // set extra headers (as configured in the constructor)
+    if (!is_null($this->extraHeaders) {
+      $client->setHeaders($this->extraHeaders);
+    }
+    
+
     // Tell the server which response formats we can parse
     $accept = EasyRdf_Format::getHttpAcceptHeader(
     array(
@@ -68,7 +86,7 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
     )
     );
 
-		$client->setHeaders('Accept', $accept);
+    $client->setHeaders('Accept', $accept);
 
 		if ($type == 'update') {
 
