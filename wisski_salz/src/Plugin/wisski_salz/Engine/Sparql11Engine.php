@@ -268,7 +268,7 @@ abstract class Sparql11Engine extends EngineBase {
     
     if ($this->endpoint === NULL) {
       include_once(__DIR__ . '/WissKI_Sparql_Client.php');
-      $this->endpoint = new WissKI_Sparql_Client($this->read_url, $this->write_url, $this->header ? array('Authorization', $this->header) : null);
+      $this->endpoint = new WissKI_Sparql_Client($this->read_url, $this->write_url, $this->header ? array('Authorization', "Basic " . $this->header) : null);
     }
     return $this->endpoint;
 
