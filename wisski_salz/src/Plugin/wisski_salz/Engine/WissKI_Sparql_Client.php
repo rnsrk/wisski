@@ -21,6 +21,17 @@ use EasyRdf_Sparql_Result;
 */
 class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 
+  protected $headersForAuth;
+
+  /** 
+   * Transport the headers from the form to the easy rdf client
+   *
+   * By Tom and Mark
+   */
+  public function setHeadersForAuth($headers) {
+    $this->headersForAuth = $headers;
+  } 
+
   /**
   * Internal function to make an HTTP request to SPARQL endpoint
   * copy from original EasyRdf_Client with Sesame-specific overrides
