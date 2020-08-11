@@ -610,7 +610,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
                   $new_field_values = array();
                   // special case for entity name - call the title generator!
                   if ($field_name === 'name') $new_field_values[$id][$field_name] = array(wisski_core_generate_title($id));
-
+                  if ($field_name === 'label') $new_field_values[$id][$field_name] = array(wisski_core_generate_title($id));
+                  
                   // we already know the eid
                   if ($field_name === 'eid') $new_field_values[$id][$field_name] = array($id);
                   
