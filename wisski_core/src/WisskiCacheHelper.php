@@ -223,7 +223,10 @@ class WisskiCacheHelper {
     
     //db_truncate('wisski_preview_images')->execute();
     $options['target'] = 'default';
-    Database::getConnection($options)->truncate('wisski_preview_images', $options)->execute();
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    //Database::getConnection($options)->truncate('wisski_preview_images', $options)->execute();
+    \Drupal::database()->truncate('wisski_preview_images', $options)->execute();
   }
 
 }
