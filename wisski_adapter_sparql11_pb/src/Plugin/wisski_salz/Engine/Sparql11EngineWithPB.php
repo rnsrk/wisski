@@ -2377,7 +2377,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               else
                 $query .= "$localvar "; 
           
-              $query .= "$inv_sign<$inverse> ";
+              $query .= "$inv_sign<$inverse>$transitive_modificator ";
 
               if(!empty($olduri))
                 $query .= "<$olduri> . ";
