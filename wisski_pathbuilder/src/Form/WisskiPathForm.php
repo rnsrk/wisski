@@ -331,6 +331,19 @@ class WisskiPathForm extends EntityForm {
         '#empty_option' => ' - '.$this->t('select').' - ',
         '#default_value' => $path->getDisamb() ?:'empty',
       );
+      
+      $form['path_content']['transitive'] = array(
+        '#type' => 'checkbox',
+        '#title' => $this->t('Transitive'),
+        '#default_value' => $path->getTransitive() ?: 0,
+      );
+      
+      $form['path_content']['irreflexive'] = array(
+        '#type' => 'checkbox',
+        '#title' => $this->t('Irreflexive'),
+        '#default_value' => $path->getIrreflexive() ?: 0,
+      );
+      
     }
   #  dpm(microtime(), "out");
     //dpm($form,'Form Array');
@@ -372,6 +385,9 @@ class WisskiPathForm extends EntityForm {
     $entity->setName($values['name']);
     $entity->setType($values['type']);
     $entity->setDisamb($values['disamb']);
+
+    $entity->setTransitive($values['transitive']);
+    $entity->setIrreflexive($values['irreflexive']);
     //dpm($entity,__FUNCTION__.'::path');
   }
 

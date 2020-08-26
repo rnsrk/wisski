@@ -41,6 +41,8 @@ use Drupal\wisski_pathbuilder\WisskiPathInterface;
   *     "length",
   *     "description",
   *     "type",
+  *     "transitive",
+  *     "irreflexive",
   *   },
   *   admin_permission = "administer wisski paths",
   *   entity_keys = {
@@ -122,12 +124,30 @@ class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
   
    /**
     * "Group" if this path is a group
-    " "SmartGroup" if this path is a SmartGroup
+    * "SmartGroup" if this path is a SmartGroup
     * "Path" if this path is a regular path
     *
     * @var string
     */
   protected $type;
+  
+   /**
+    * 
+    * Set if a path is transitive (transitive = 1, else 0)
+    *
+    * @var int
+    */
+  protected $transitive;
+  
+   /**
+    * 
+    * Set if a path is irreflexive (irreflexive = 1, else 0)
+    *
+    * @var int
+    */
+  protected $irreflexive;
+
+
   
   /**
     * True if this path is a enabled, false otherwise.
@@ -228,6 +248,22 @@ class WisskiPathEntity extends ConfigEntityBase implements WisskiPathInterface {
   
   public function setType($type){
     $this->type = $type;
+  }
+  
+  public function getTransitive(){
+    return $this->transitive;
+  }
+  
+  public function setTransitive($transitive){
+    $this->transitive = $transitive;
+  }
+  
+  public function getIrreflexive(){
+    return $this->irreflexive;
+  }
+  
+  public function setIrreflexive($irreflexive){
+    $this->irreflexive = $irreflexive;
   }
          
 #  public function isEnabled(){
