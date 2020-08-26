@@ -1268,7 +1268,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
 
     $sparql .= " } ";
-    
+
+#dpm($sparql);    
 #    drupal_set_message(serialize($sparql) . " on " . serialize($this));
 #    dpm(microtime(), "mic1");
 #$tmpt2 = microtime(TRUE);            
@@ -2189,6 +2190,12 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // if we disamb on ourself, return.
     if($disambposition == 0 && !empty($object_in)) return "";
 
+    $transitive_modificator = "";
+    // is the path transitive?
+    if(!empty($path->getTransitive())) {
+      $transitive_modificator = "+";
+    }
+
     // we get the sub-section for this path
     $clearPathArray = array();
     if($relative) {
@@ -2340,7 +2347,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               else
                 $query .= "$oldvar ";
           
-              $query .= "$inv_sign<$prop> ";
+              $query .= "$inv_sign<$prop>$transitive_modificator ";
                     
               if(!empty($uri))
                 $query .= "<$uri> . ";
@@ -2354,7 +2361,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               else
                 $query .= "$oldvar ";
           
-              $query .= "$inv_sign<$prop> ";
+              $query .= "$inv_sign<$prop>$transitive_modificator ";
                     
               if(!empty($uri))
                 $query .= "<$uri> . ";
