@@ -204,6 +204,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @{inheritdoc}
    */
   public function getPrimitiveMapping($step) {
+  
+    $out = $this->retrieve('primitives','property', 'class', $step);
+#    dpm($step);
+#    dpm($out);
+    if (!empty($out)) return $out;
     
     // in case of properties we can skip this
     if ($step[0] == '^') return array();
@@ -3511,7 +3516,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
     $results = $this->directQuery(
       "SELECT ?property ?domain WHERE { GRAPH ?g {"
-        ." ?property rdfs:domain ?domain."
+        ." ?property rdfs:domain ?domain ."
         // we only need top level domains, so no proper subClass of the domain shall be taken into account
         ." FILTER NOT EXISTS { ?domain rdfs:subClassOf+ ?super_domain. ?property rdfs:domain ?super_domain.}"
       ." } }");
@@ -3527,7 +3532,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
     $results = $this->directQuery(
       "SELECT ?property ?range WHERE { GRAPH ?g {"
-        ." ?property rdfs:range ?range."
+        ." ?property rdfs:range ?range ."
         // we only need top level ranges, so no proper subClass of the range shall be taken into account
         ." FILTER NOT EXISTS { ?range rdfs:subClassOf+ ?super_range. ?property rdfs:range ?super_range.}"
       ." } }");
@@ -3536,7 +3541,23 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     }
 
     //clear up, avoid DatatypeProperties
-    $ranges = array_intersect_key($ranges,$properties);    
+    $ranges = array_intersect_key($ranges,$properties); 
+    
+    //explicit top level datatypes
+    $primitives = array();
+
+    $results = $this->directQuery(
+      "SELECT ?property ?domain WHERE { GRAPH ?g {"
+        ." ?property rdfs:domain ?domain . {{ ?property a owl:DatatypeProperty.} UNION {?property a rdf:Property }} ."
+        // we only need top level domains, so no proper subClass of the domain shall be taken into account
+        ." FILTER NOT EXISTS { ?domain rdfs:subClassOf+ ?super_domain. ?property rdfs:domain ?super_domain.}"
+      ." } }");
+    foreach ($results as $row) {
+      $primitives[$row->property->getUri()][$row->domain->getUri()] = $row->domain->getUri();
+    }
+
+    //clear up, avoid DatatypeProperties
+    #$domains = array_intersect_key($domains,$properties);   
 
     //take all properties with no super property
     $top_properties = array_diff_key($properties,$super_properties);
@@ -3561,6 +3582,16 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       //  $ranges[$rng] = ['TOPCLASS'=>'TOPCLASS'];
       //}
     }
+    
+#    $prim_check = array_diff_key($top_properties,$primitives);
+#    if (!empty($prim_check)) {
+#      $this->messenger()->addError('No Domain for top-level primitive datatype property: '.implode(', ',$prim_check));;
+##      $invalid_definitions = array_merge($invalid_definitions, $prim_check);
+#    #  $valid_definitions = FALSE;
+#      //foreach($dom_check as $dom) {
+#      //  $domains[$dom] = ['TOPCLASS'=>'TOPCLASS'];
+#      //}
+#    }
 
     //set of properties where the domains and ranges are not fully set
     $not_set = array_diff_key($properties,$top_properties);
@@ -3663,14 +3694,33 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         $ranges[$property] = array_merge($ranges[$property],$add_up);
       }
     }
+    
+    foreach($primitives as $property => $values) {
+      if (isset($primitives[$property])) {
+        $add_up = array();
+        foreach ($primitives[$property] as $domain) {
+          if (isset($sub_classes[$domain]) && $sub_domains = $sub_classes[$domain]) {
+            $add_up = empty($add_up) ? $sub_domains : array_intersect_key($add_up,$sub_domains);
+          }
+        }
+        $primitives[$property] = array_merge($primitives[$property],$add_up);
+      }
+    }
 
     $insert = $this->prepareInsert('domains');
     foreach ($domains as $prop => $classes) {
       foreach ($classes as $class) $insert->values(array('property'=>$prop,'class'=>$class));
     }
     $insert->execute();
+
     $insert = $this->prepareInsert('ranges');
     foreach ($ranges as $prop => $classes) {
+      foreach ($classes as $class) $insert->values(array('property'=>$prop,'class'=>$class));
+    }
+    $insert->execute();
+    
+    $insert = $this->prepareInsert('primitives');
+    foreach ($primitives as $prop => $classes) {
       foreach ($classes as $class) $insert->values(array('property'=>$prop,'class'=>$class));
     }
     $insert->execute();
@@ -3842,6 +3892,31 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     
     $schema['domains'] = array(
       'description' => 'hold information about domains of triple store properties',
+      'fields' => array(
+        'num' => array(
+          'description' => 'the Serial Number for this pairing',
+          'type' => 'serial',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ),
+        'property' => array(
+          'description' => 'the uri of the property',
+          'type' => 'varchar',
+          'length' => '2048',
+          'not null' => TRUE,
+        ),
+        'class' => array(
+          'description' => 'the uri of the domain class',
+          'type' => 'varchar',
+          'length' => '2048',
+          'not null' => TRUE,
+        ),
+      ),
+      'primary key' => array('num'),
+    );
+    
+    $schema['primitives'] = array(
+      'description' => 'hold information about domains of primitive triple store properties',
       'fields' => array(
         'num' => array(
           'description' => 'the Serial Number for this pairing',
