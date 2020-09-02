@@ -69,6 +69,7 @@ class WisskiMirador extends StylePluginBase {
       $to_print .= $base_url;   
     
     $iter = 0;
+    $result_count = count($results);
     
     foreach($results as $result) {
 #      dpm($result->__get('entity:wisski_individual/eid'), "res?");
@@ -79,7 +80,12 @@ class WisskiMirador extends StylePluginBase {
 #      dpm($result, "res?");
       $ent_list[] = array("manifestUri" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "location" => $to_print);
 #      $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $result->eid . "/iiif_manifest", "viewType" => "ImageView" );
-      $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "availableViews" => array( 'ImageView'), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false);
+      if ($result_count > 1) {
+        $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "availableViews" => array( 'ImageView'), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false);
+      }
+      else {
+        $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "availableViews" => array( 'ImageView'), "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false);
+      }
 #      $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $result->eid . "/iiif_manifest", "availableViews" => array( 'ImageView'), "windowOptions" => array( "zoomLevel" => 1, "osdBounds" => array(
 #            "height" => 1500,
 #            "width" => 1500,
@@ -95,13 +101,19 @@ class WisskiMirador extends StylePluginBase {
         $subview = $attachment['#view'];
 
         $subview->execute();
+        $subcount= count($subview->result);
 
         foreach($subview->result as $res) {
 
           $entity_id = empty($res->eid) ? current($res->__get('entity:wisski_individual/eid')) : $res->eid;
 
           $ent_list[] = array("manifestUri" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "location" => $to_print);
-          $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "availableViews" => array( 'ImageView'), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false );
+          if ($subcount > 1) {
+            $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "availableViews" => array( 'ImageView'), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false );
+          }
+          else {
+            $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "availableViews" => array( 'ImageView'), "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false );
+          }
 #          $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $res->eid . "/iiif_manifest", "viewType" => "ImageView" );
 #          $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $res->eid . "/iiif_manifest", "availableViews" => array( 'ImageView'), "windowOptions" => array( "zoomLevel" => 1, "osdBounds" => array( 
 #            "height" => 2000,
