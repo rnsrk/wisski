@@ -777,8 +777,15 @@ class WisskiODBCImportForm extends FormBase {
       // if it is an entity reference - we have to change the text
       // to the id
       if(isset($field_xml['ent_ref_id'])) {
+      
+        // load the fieldconfig
+        $fc = FieldConfig::load('wisski_individual.' . $bundleid. '.' . $fieldid);
+        // get the target bundle id of the field config
+        $targetbundles = $fc->getSettings()['handler_settings']['target_bundles'];
+      
         $options = [
           'target_type' => 'wisski_individual',
+          'target_bundles' => $targetbundles,
           'handler' => 'default',
         ];
 #        dpm(microtime(), "doing entref");
