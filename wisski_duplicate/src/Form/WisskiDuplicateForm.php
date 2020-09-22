@@ -133,6 +133,9 @@ class WisskiDuplicateForm extends FormBase {
           
           $engine = $adapter->getEngine();
           
+          if(!($engine instanceof \Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWithPB))
+            continue;
+          
           $triples = $engine->generateTriplesForPath($pb, $path);
 
           $query = "SELECT ?out (COUNT(DISTINCT ?x0) as ?anzahl) (GROUP_CONCAT( DISTINCT ?x0;separator = ', ') as ?grp) WHERE { " . $triples . " } GROUP BY ?out ORDER BY DESC(?anzahl)";
@@ -154,8 +157,10 @@ class WisskiDuplicateForm extends FormBase {
               
               $grp = "";
               foreach($urls as $key => $url) {
-                $grp .= "<a href='/wisski/get?uri=" . $url . "'>" . $url . "</a>";
-              }              
+                $grp .= "<a href='" . base_path() . "wisski/get?uri=" . $url . "'>" . $url . "</a>, ";
+              }
+              
+              $grp = substr($grp, 0, -2);
 
               $html = $res->anzahl . "x - '" . $res->out . "' - " . $this->t('Entities: ') . $grp . "";
               $options[$i] = $html;
