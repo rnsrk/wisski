@@ -977,7 +977,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           // replace space.
           // we need to replace space to %20
           // because urls are like http://projektdb.gnm.de/provenienz2014/sites/default/files/Z 2156.jpg
-          $file_uri = str_replace(' ', '%20', $file_uri); 
+          $file_uri = str_replace(array(' ','Ä','Ö','Ü','ä','ö','ü','ß'), array('%20','%C3%84','%C3%96','%C3%9C','%C3%A4','%C3%B6','%C3%BC','%C3%9F'), $file_uri); 
 
           $data = @file_get_contents($file_uri, false, $context);
           
