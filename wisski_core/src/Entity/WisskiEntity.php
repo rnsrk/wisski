@@ -62,7 +62,7 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     "edit-form" = "/wisski/navigate/{wisski_individual}/edit",
  *     "admin-form" = "/admin/structure/wisski_core/{wisski_bundle}/edit",
  *   },
- *   translatable = FALSE,
+ *   translatable = TRUE,
  * )
  */
 class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntityInterface {
