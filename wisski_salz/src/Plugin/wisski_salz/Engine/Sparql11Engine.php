@@ -96,7 +96,7 @@ abstract class Sparql11Engine extends EngineBase {
       '#type' => 'textfield',
       '#title' => $this->t('Credentials for HTTP Basic Authentication'),
       '#default_value' => $this->header,
-      '#description' => $this->t('Provide credentials for HTTP Basic Authentication. Leave empty if there if you don\'t know what this is and we won\'t add the header. '),
+      '#description' => $this->t('Provide credentials for HTTP Basic Authentication. Leave empty if there if you don\'t know what this is, otherwise generate using \'printf "%s:%s" "$username" "$password" | base64 -w 0\' on the command line. '),
     ];
     
     $form['read_url'] = [
