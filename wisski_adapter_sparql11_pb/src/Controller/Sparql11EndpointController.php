@@ -56,7 +56,7 @@ class Sparql11EndpointController extends FormBase {
     if(!empty($query_fs['query']))
       $query = $query_fs['query'];
       
-    $form['#title'] = "Query Endpoint " . $engineid;
+    $form['#title'] = "Query Endpoint " . $endpoint_id;
 
     $form['text']['#value'] = "Any SPARQL 1.1 SELECT or ASK Query can be stated here - no updates. You can also use it as a dynamic endpoint via GET/POST with the query parameter.";
 
