@@ -754,7 +754,7 @@ class AdapterHelper {
     //if we reach here, there is no preferred local store
     if (!$ignore_errors) {
       //throw new \Exception('There is no preferred local store set');
-      $link = Link::createFromRoute(t('here',array(),array('context'=> 'There is no preferred local store set. Please specify one ')),'entity.wisski_salz_adapter.collection');
+      $link = Link::createFromRoute(t('here',array(),array('context'=> 'There is no preferred local store set. Please specify one ')),'entity.wisski_salz_adapter.canonical');
       \Drupal::messenger()->addError(t('There is no preferred local store set. Please specify one %here',array('%here' => $link->toString())));
     }
   }
