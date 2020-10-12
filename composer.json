@@ -17,6 +17,6 @@
     "license": "GPL-2.0-or-later",
     "minimum-stability": "dev",
     "require": {
-        "easyrdf/easyrdf":"^0.9"
+        "easyrdf/easyrdf":"^1.0"
     }
 }
