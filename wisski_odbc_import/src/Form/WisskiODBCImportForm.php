@@ -805,7 +805,7 @@ class WisskiODBCImportForm extends FormBase {
             $curr_eid = NULL;
             foreach($curr_bundle as $key_eid => $val_eid) {
               if($val_eid == $fieldvalue) {
-                $curr_eid = $val_eid;
+                $curr_eid = $key_eid;
                 break;
               }
             }
