@@ -801,7 +801,18 @@ class WisskiODBCImportForm extends FormBase {
             $out = $handler->getReferenceableEntities($fieldvalue);
 #          dpm($out, "out");
             $curr_bundle = current($out);
-            $curr_eid = key($curr_bundle);
+            
+            $curr_eid = NULL;
+            foreach($curr_bundle as $key_eid => $val_eid) {
+              if($val_eid == $fieldvalue) {
+                $curr_eid = $val_eid;
+                break;
+              }
+            }
+
+            if(!$curr_eid) 
+              $curr_eid = key($curr_bundle);
+
 #          dpm($curr_eid, "setting..:");
             $entity_fields[$fieldid][$field_key] = $curr_eid;
 #          dpm($out);
