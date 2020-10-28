@@ -23,10 +23,10 @@ use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
 use Drupal\wisski_salz\NonWritableEngineBase;
 use Drupal\wisski_salz\AdapterHelper;
 
-use EasyRdf_Graph;
-use EasyRdf_Namespace;
-use EasyRdf_Literal;
-use EasyRdf_Resource;
+use EasyRdf\Graph;
+use EasyRdf\RdfNamespace;
+use EasyRdf\Literal;
+use EasyRdf\Resource;
 
 
 /**

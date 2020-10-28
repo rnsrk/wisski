@@ -4,14 +4,14 @@ namespace Drupal\wisski_salz\Plugin\wisski_salz\Engine;
 
 require __DIR__ . '/../../../../..//vendor/autoload.php';
 
-use EasyRdf_Sparql_Client;
-use EasyRdf_Namespace;
-use EasyRdf_Http;
-use EasyRdf_Format;
-use EasyRdf_Graph;
-use EasyRdf_Exception;
-use EasyRdf_Utils;
-use EasyRdf_Sparql_Result;
+use EasyRdf\Sparql\Client;
+use EasyRdf\RdfNamespace;
+use EasyRdf\Http;
+use EasyRdf\Format;
+use EasyRdf\Graph;
+use EasyRdf\Exception;
+use EasyRdf\Utils;
+use EasyRdf\Sparql\Result;
 
 /**
 * This is a subclass of EasyRdf_Sparql_client that overrides

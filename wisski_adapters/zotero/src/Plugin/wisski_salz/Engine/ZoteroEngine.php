@@ -18,9 +18,9 @@ use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
 use Drupal\wisski_salz\NonWritableEngineBase;
 use Drupal\wisski_salz\AdapterHelper;
 use DOMDocument;
-use EasyRdf_Graph;
-use EasyRdf_Namespace;
-use EasyRdf_Literal;
+use EasyRdf\Graph;
+use EasyRdf\RdfNamespace;
+use EasyRdf\Literal;
 
 /**
  * Wiki implementation of an external entity storage client.

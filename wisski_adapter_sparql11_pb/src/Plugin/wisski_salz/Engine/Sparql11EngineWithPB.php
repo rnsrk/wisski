@@ -2768,6 +2768,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     
 #    dpm($init_entity, "init");
 #    dpm($force_new, "force!");
+
+#    dpm($init_entity->getTranslationLanguages(), "langs?");
     
     // if there is nothing, continue.
     // by mark: currently the storage calls the createEntity. So this never may be used.
@@ -2941,7 +2943,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       
       $write_values = $field_items;
       
-#      drupal_set_message("write values still is: " . serialize($write_values));
+#      dpm("write values still is: " . serialize($write_values));
       
       // TODO $val is not set: iterate over fieldvalue!
       // if there are old values

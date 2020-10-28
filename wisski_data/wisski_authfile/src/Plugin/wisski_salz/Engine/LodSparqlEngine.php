@@ -22,10 +22,10 @@ use Drupal\wisski_salz\NonWritableEngineBase;
 use Drupal\wisski_salz\AdapterHelper;
 use Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWithPB;
 
-use EasyRdf_Graph;
-use EasyRdf_Namespace;
-use EasyRdf_Literal;
-use EasyRdf_Resource;
+use EasyRdf\Graph;
+use EasyRdf\RdfNamespace;
+use EasyRdf\Literal;
+use EasyRdf\Resource;
 
 
 /**
