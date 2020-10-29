@@ -110,6 +110,13 @@ class PathbuilderManager {
 
       $pb = $pbs[$pb_id];      
 
+      /* Get the correct adapter so we dont do wrong queries... */
+      if($pb->getAdapterId() != $adapter->id()) {
+#        dpm("wrong adapter");
+#        dpm($adapter, "adap?");
+        continue;
+      }
+
 
       $the_pathid = NULL;
       $weight = 99999999999; // beat this ...
