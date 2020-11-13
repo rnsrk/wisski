@@ -14,6 +14,7 @@ use Drupal\Core\Url;
 use Drupal\Core\Link;
 
 use \Drupal\Core\Form\FormBase;
+use EasyRDF\Sparql\Result as EasyRdf_Sparql_Result;
 
 class Sparql11EndpointController extends FormBase {
 
@@ -83,7 +84,7 @@ class Sparql11EndpointController extends FormBase {
     
     if($result) {
       // Select and Ask result in such a Result, we can return this only as text or html
-      if($result instanceOf \EasyRdf_Sparql_Result)
+      if($result instanceOf EasyRdf_Sparql_Result)
         $dump = $result->dump($dumpformat);
       else { // it must be a graph
         // @Todo: Support anything else here.
