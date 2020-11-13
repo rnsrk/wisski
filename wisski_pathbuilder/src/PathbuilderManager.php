@@ -157,8 +157,28 @@ class PathbuilderManager {
 #      dpm(microtime(), "ptr?");
       $values = $adapter->getEngine()->pathToReturnValue($path, $pb, $entity_id, 0, NULL, FALSE);
 #      dpm(microtime(), "ptr!");
-      if(!empty($values))
+
+      // check for empty strings...
+      if(!empty($values) && !empty(current($values)))
         return $values;
+      else {
+        // if we did not find anything in the "primary" path we will have to look at others...
+        foreach($or_paths as $key => $pathid) {
+          if($pathid == $the_pathid)
+            continue; // we already had that
+
+          $path = $paths[$pathid];
+
+
+#          dpm($pathid, "looking at id ");
+#          dpm(serialize($path), "path is");
+          if(!empty($path))
+            $values = $adapter->getEngine()->pathToReturnValue($path, $pb, $entity_id, 0, NULL, FALSE);
+
+          if(!empty($values) && !empty(current($values)))
+            return $values;
+        }
+      }
 
     }
     return array();

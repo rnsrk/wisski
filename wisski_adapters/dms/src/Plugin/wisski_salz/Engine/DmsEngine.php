@@ -57,7 +57,10 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         'invnr' => NULL,
         'imgid' => NULL,
         'depid' => NULL,
-        'xml' => NULL,
+//        'xml' => NULL,
+        'PermanentLocationNote' => NULL,
+        'workingImageUrl' => NULL,
+
         'objectmetadataproviso' => NULL,
         'acquisitionproviso' => NULL,
         'LastEdition' => NULL,
