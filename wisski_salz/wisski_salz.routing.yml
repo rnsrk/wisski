@@ -60,3 +60,10 @@ wisski_salz.admin.overview1:
   requirements:
     _permission: 'administer site configuration'
 
+wisski_salz.wisski_individual.triples:
+  path: '/wisski/navigate/{wisski_individual}/triples'
+  defaults:
+    _controller: '\Drupal\wisski_salz\Controller\wisski_salzTriplesTabController::forward'
+    _title: 'View triples'
+  requirements:
+    _permission: 'access triples'
