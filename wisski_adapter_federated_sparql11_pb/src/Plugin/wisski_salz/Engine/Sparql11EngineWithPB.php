@@ -49,6 +49,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return true;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function supportsTriples() {
+    return true;
+  }
+
 
   /**
    * {@inheritdoc}

@@ -57,10 +57,12 @@ class Sparql11TriplesTabController extends ControllerBase {
       '#header' => array('Subject', 'Predicate', 'Object', 'Graph', 'Adapter'),
     );
 
+    $any_had_triples = false;
     foreach ($adapters as $a) {
       $label = $a->label();
       $e = $a->getEngine();
-      if ($e instanceof Sparql11Engine) {
+      if ($e->supportsTriples()) {
+        $any_had_triples = true;
         $values = 'VALUES ?x { <' . $target_uri . '> } ';
         $q = "SELECT ?g ?s ?sp ?po ?o WHERE { $values { { GRAPH ?g { ?s ?sp ?x } } UNION { GRAPH ?g { ?x ?po ?o } } } }";
 #        dpm($q);
@@ -128,6 +130,13 @@ class Sparql11TriplesTabController extends ControllerBase {
           }
         }
       }
+    }
+
+    if (! $any_had_triples ) { // TODO: text
+      return array(
+        '#type' => 'markup',
+        '#markup' => t('No adapter with ontology'),
+      );
     }
     
 
