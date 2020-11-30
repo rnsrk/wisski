@@ -1327,7 +1327,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
    * {@inheritdoc}
    */
   public function isFederatableSparqlQuery() {
-    return true; // TODO: Check $this->getEngine()
+    return $this->getEngine()->getIsFederatable(); // TODO: Check $this->getEngine()
   }
 
 }

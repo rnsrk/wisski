@@ -35,10 +35,12 @@ use \EasyRdf;
 class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineInterface  {
 
   protected $allow_inverse_property_pattern;
+  protected $is_federatable;
 
   public function defaultConfiguration() {
     return parent::defaultConfiguration() + [
       'allow_inverse_property_pattern' => FALSE,
+      'is_federatable' => FALSE,
     ];
   }
 
@@ -56,6 +58,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return true;
   }
 
+  public function getIsFederatable() {
+    return $this->is_federatable;
+  }
 
   /**
    * {@inheritdoc}
@@ -65,6 +70,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // this does not exist
     parent::setConfiguration($configuration);
     $this->allow_inverse_property_pattern = $this->configuration['allow_inverse_property_pattern'];
+    $this->is_federtable = $this->configuration['is_federtable'];
   }
 
 
@@ -74,6 +80,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getConfiguration() {
     return array(
       'allow_inverse_property_pattern' => $this->allow_inverse_property_pattern,
+      'is_federtable' => $this->is_federtable,
     ) + parent::getConfiguration();
   }
 
@@ -3294,6 +3301,14 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       $always_reason = $always_reason[$this->adapterId()];
     else
       $always_reason = TRUE;
+
+      $form['is_federatable'] = array(
+        '#type' => 'checkbox',
+        '#title' => 'Federatable',
+        '#default_value' => $this->is_federatable,
+        '#return_value' => TRUE,
+        '#description' => 'Marks this adapter as federatable so that it is queried by other services. ',
+      );
     
     $form['allow_inverse_property_pattern'] = array(
       '#type' => 'checkbox',
@@ -3397,7 +3412,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     \Drupal::state()->set('wisski_always_reason', $always_reason);
 
     $this->allow_inverse_property_pattern = $form_state->getValue('allow_inverse_property_pattern');
-  
+    $this->is_federatable = $form_state->getValue('is_federatable');
   }  
   
 
