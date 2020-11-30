@@ -56,6 +56,13 @@ abstract class WisskiQueryBase extends QueryBase implements QueryInterface, Quer
   public function isPathQuery() {
     return $this->query_column_type === self::PATH_QUERY;
   }
+
+  /**
+   * Checks if this query is a federatable sparql query.
+   */
+  public function isFederatableSparqlQuery() {
+    return false;
+  }
   
 
 }

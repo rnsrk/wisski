@@ -2,6 +2,9 @@
 
 namespace Drupal\wisski_salz\Query;
 
+# TODO: Check if we can generalize special cases for query classes!
+# perhaps we can add semantic methods for each of them
+
 use Drupal\wisski_adapter_gnd\Query\Query;
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\Core\Entity\EntityTypeInterface;
@@ -258,11 +261,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
         // check if all queries are sparql queries...
         foreach($this->dependent_queries as $adapter_id => $query) {
-          if($query instanceOf \Drupal\wisski_adapter_sparql11_pb\Query\Query || 
-             $query instanceOf Query ||
-             $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query ) {
-            // if it is a sparql11-query we are save!
-          } else {
+          if (!($query instanceof \Drupal\wisski_salz\WisskiQueryBase && $query->isFederatableSparqlQuery())) {
             $is_sparql = FALSE;        
           }
         }
@@ -329,12 +328,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
                 
         // check if all queries are sparql queries...
         foreach($this->dependent_queries as $adapter_id => $query) {
-          if($query instanceOf \Drupal\wisski_adapter_sparql11_pb\Query\Query || 
-             $query instanceOf Query ||
-             $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query ) {
-            // if it is a sparql11-query we are save!
-          } else {
-            $is_sparql = FALSE;        
+          if (!($query instanceof \Drupal\wisski_salz\WisskiQueryBase && $query->isFederatableSparqlQuery())) {
+            $is_sparql = FALSE;
           }
         }
         
