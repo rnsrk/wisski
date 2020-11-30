@@ -115,7 +115,7 @@ class Sparql11TriplesTabController extends ControllerBase {
               $object_text = $result->o->getUri();
             } else {
               $got_target_url = FALSE;
-              $object_text = $result->o->getValue();
+              $object_text = $result->o->dumpValue('string');
             }
             $graph_uri = isset($result->g) ? $result->g->getUri() : 'DEFAULT';
             $form['out_triples'][] = array(
