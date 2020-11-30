@@ -32,6 +32,22 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   }
 
   /**
+   * Does this Adapter support returning ontologies
+   * @return bool
+   */
+  public function supportsOntology() {
+    return false;
+  }
+
+  /**
+   * Does this Adapter support displaying triples?
+   * @return bool
+   */
+  public function supportsTriples() {
+    return false;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function getName() {

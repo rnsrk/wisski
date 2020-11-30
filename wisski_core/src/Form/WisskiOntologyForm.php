@@ -10,6 +10,7 @@ use Drupal\wisski_salz\Entity\Adapter;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
+use Drupal\Component\Plugin\PluginBase;
 
 
 /**
@@ -92,7 +93,8 @@ class WisskiOntologyForm extends FormBase {
       $engine = $selected_adapter->getEngine();
 
       // if the engine is of type sparql11_with_pb we can load the existing ontologies
-      if($engine->getPluginId() === 'sparql11_with_pb' ) {
+
+      if( $engine->supportsOntology() ) {
 
         #drupal_set_message('Type: ' . $engine->getPluginId());
         $infos = $engine->getOntologies();
@@ -188,7 +190,7 @@ class WisskiOntologyForm extends FormBase {
     #drupal_set_message('hello submit engine ' . $engine->getPluginId());
 
     // if the engine is of type sparql11_with_pb we can load the existing ontologies
-    if($engine->getPluginId() === 'sparql11_with_pb' ) {
+    if( $engine->supportsOntology() ) {
       $infos = $engine->getOntologies();
       #drupal_set_message('infos in submit' . serialize($infos));
       // redirect to the wisski config ontology page
@@ -211,7 +213,7 @@ class WisskiOntologyForm extends FormBase {
     #drupal_set_message('hello engine ' . $engine->getPluginId());
 
     // if the engine is of type sparql11_with_pb we can load the existing ontologies
-    if($engine->getPluginId() === 'sparql11_with_pb' ) {
+    if( $engine->supportsOntology() ) {
       $infos = $engine->getOntologies();
 
       // there already is an ontology and we want to delete it

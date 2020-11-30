@@ -42,6 +42,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     ];
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function supportsOntology() {
+    return true;
+  }
+
 
   /**
    * {@inheritdoc}
