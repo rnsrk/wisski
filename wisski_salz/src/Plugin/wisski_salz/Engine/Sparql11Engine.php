@@ -7,6 +7,9 @@
 
 namespace Drupal\wisski_salz\Plugin\wisski_salz\Engine;
 
+require __DIR__ . '/../../../../..//vendor/autoload.php';
+
+
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 
@@ -14,6 +17,7 @@ use Drupal\wisski_salz\AdapterHelper;
 use Drupal\wisski_salz\EngineBase;
 use Drupal\wisski_salz\RdfSparqlUtil;
 
+use EasyRdf\Sparql\Result as EasyRdf_Sparql_Result;
 
 abstract class Sparql11Engine extends EngineBase {
 
@@ -373,7 +377,7 @@ abstract class Sparql11Engine extends EngineBase {
   private function doQuery($query) {
     if (WISSKI_DEVEL) \Drupal::logger('QUERY '.$this->adapterId())->debug('{q}',array('q'=>$query));
     try {
-      #dpm($query, " time: " . microtime());
+#      dpm($query, " time: " . microtime());
 #      $time = microtime(TRUE);
       $result = $this->getEndpoint()->query($query);
 #      if((microtime(TRUE)-$time) > 0.1)
@@ -381,6 +385,12 @@ abstract class Sparql11Engine extends EngineBase {
       //dpm(microtime(TRUE)-$time, "time?");
       #dpm("end", microtime());
       if (WISSKI_DEVEL) \Drupal::logger('QUERY '.$this->adapterId())->debug('result {r}',array('r'=>serialize($result)));
+
+      # there should never be a non-result, so fake out and return an empty result set
+      if( ! ($result instanceOf EasyRdf_Sparql_Result )) {
+        return new EasyRdf_Sparql_Result('{"head":{"vars":[]},"results":{"bindings":[]}}', "application/sparql-results+json");
+      }
+
       return $result;
     } catch (\Exception $e) {
       $this->messenger()->addError('Something went wrong in \''.__FUNCTION__.'\' for adapter "'.$this->adapterId().'"');
@@ -494,9 +504,9 @@ abstract class Sparql11Engine extends EngineBase {
         return FALSE;
       }
       
-      if($result->isTrue()) {
+      if($result->getBoolean() == true) {
         $out = TRUE;
-      } else if($result->numRows() > 0) {
+      } else if(count($result) > 0) {
         foreach($result as $res) {
           if($res->value->getValue() == TRUE)
             $out = TRUE;
