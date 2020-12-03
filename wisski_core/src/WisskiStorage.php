@@ -27,12 +27,12 @@ use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
 use Drupal\wisski_salz\AdapterHelper;
 use Drupal\wisski_salz\Entity\Adapter;
 
-
+use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 
 /**
  * Test Storage that returns a Singleton Entity, so we can see what the FieldItemInterface does
  */
-class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInterface {
+class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInterface {
 
   /*
   public function create(array $values = array()) {
@@ -70,7 +70,7 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   private $adapter;
   private $preview_image_adapters = array();
 
-  private $tableMapping = NULL;
+//  protected $tableMapping = NULL;
 
   public function getCacheValues($ids, $field_id = array(), $bundle_id = array()) {
   
@@ -1116,38 +1116,16 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
   /**
    * This function is called by the Views module.
    */
+/*
   public function getTableMapping(array $storage_definitions = NULL) {
 
     $definitions = $storage_definitions ? : \Drupal::getContainer()->get('entity_field.manager')->getFieldStorageDefinitions($this->entityTypeId);
-/*
-    if (!empty($definitions)) {
-      if (\Drupal::moduleHandler()->moduleExists('devel')) {
-        #dpm($definitions,__METHOD__);
-      } else drupal_set_message('Non-empty call to '.__METHOD__);
-    }
-*/
 
     $table_mapping = $this->tableMapping;
 
-/*
-    // Here we should get a new DefaultTableMapping
-    // this has to be integrated... @todo    
-    if (!isset($this->tableMapping)) {
-      $table_mapping = new DefaultTableMapping($this->entityType, $definitions); 
-    }
-    
-    $dedicated_table_definitions = array_filter($definitions, function (FieldStorageDefinitionInterface $definition) use ($table_mapping) {
-      return $table_mapping
-        ->requiresDedicatedTableStorage($definition);
-    });
-
-    dpm($dedicated_table_definitions, "dpm");
-    
-    $this->tableMapping = $table_mapping;
-*/
     return $table_mapping;
   }
-
+*/
   /**
    * {@inheritdoc}
    */
@@ -1208,8 +1186,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * {@inheritdoc}
    * @TODO must be implemented
    */
-  protected function doLoadRevisionFieldItems($revision_id) {
-  }
+#  protected function doLoadRevisionFieldItems($revision_id) {
+#  }
 
   /**
    * {@inheritdoc}
@@ -1327,6 +1305,8 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
           //@TODO return correct success code
           $adapter_info = $adapter->writeFieldValues($entity_id, $values, $pb, $bundle_id, $original_values,$create_new, $init);
 
+#          dpm($entity->getTranslationLanguages(), "langs?");
+
           // By Mark: perhaps it would be smarter to give the writeFieldValues the entity
           // object because it could make changes to it
           // e.g. which uris were used for reference (disamb) etc.
@@ -1362,7 +1342,108 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
 
     $bundle = WisskiBundle::load($bundle_id);
     if ($bundle) $bundle->flushTitleCache($entity_id);
+    $this->doSaveWisskiRevision($entity, $names); 
+  }
+  
+  protected function doSaveWisskiRevision(ContentEntityInterface $entity, array $names = [])
+  {
+    $full_save = empty($names);
+    $update = !$full_save || !$entity->isNew();
 
+    if ($full_save) {
+      $shared_table_fields = TRUE;
+      $dedicated_table_fields = TRUE;
+    }
+    else {
+      $table_mapping = $this->getTableMapping();
+      $shared_table_fields = FALSE;
+      $dedicated_table_fields = [];
+
+      // Collect the name of fields to be written in dedicated tables and check
+      // whether shared table records need to be updated.
+      foreach ($names as $name) {
+        $storage_definition = $this->fieldStorageDefinitions[$name];
+        if ($table_mapping->allowsSharedTableStorage($storage_definition)) {
+          $shared_table_fields = TRUE;
+        }
+        elseif ($table_mapping->requiresDedicatedTableStorage($storage_definition)) {
+          $dedicated_table_fields[] = $name;
+        }
+      }
+    }
+
+    // Update shared table records if necessary.
+    if ($shared_table_fields) {
+      $record = $this->mapToStorageRecord($entity->getUntranslated(), $this->baseTable);
+      // Create the storage record to be saved.
+      if ($update) {
+        $default_revision = $entity->isDefaultRevision();
+        if ($default_revision) {
+          $id = $record->{$this->idKey};
+          // Remove the ID from the record to enable updates on SQL variants
+          // that prevent updating serial columns, for example, mssql.
+          unset($record->{$this->idKey});
+          $this->database
+            ->update($this->baseTable)
+            ->fields((array) $record)
+            ->condition($this->idKey, $id)
+            ->execute();
+        }
+        if ($this->revisionTable) {
+          if ($full_save) {
+            $entity->{$this->revisionKey} = $this->saveRevision($entity);
+          }
+          else {
+            $record = $this->mapToStorageRecord($entity->getUntranslated(), $this->revisionTable);
+            // Remove the revision ID from the record to enable updates on SQL
+            // variants that prevent updating serial columns, for example,
+            // mssql.
+            unset($record->{$this->revisionKey});
+            $entity->preSaveRevision($this, $record);
+            $this->database
+              ->update($this->revisionTable)
+              ->fields((array) $record)
+              ->condition($this->revisionKey, $entity->getRevisionId())
+              ->execute();
+          }
+        }
+        if ($default_revision && $this->dataTable) {
+          $this->saveToSharedTables($entity);
+        }
+        if ($this->revisionDataTable) {
+          $new_revision = $full_save && $entity->isNewRevision();
+          $this->saveToSharedTables($entity, $this->revisionDataTable, $new_revision);
+        }
+      }
+      else {
+        $insert_id = $this->database
+          ->insert($this->baseTable, ['return' => Database::RETURN_INSERT_ID])
+          ->fields((array) $record)
+          ->execute();
+        // Even if this is a new entity the ID key might have been set, in which
+        // case we should not override the provided ID. An ID key that is not set
+        // to any value is interpreted as NULL (or DEFAULT) and thus overridden.
+        if (!isset($record->{$this->idKey})) {
+          $record->{$this->idKey} = $insert_id;
+        }
+        $entity->{$this->idKey} = (string) $record->{$this->idKey};
+        if ($this->revisionTable) {
+          $record->{$this->revisionKey} = $this->saveRevision($entity);
+        }
+        if ($this->dataTable) {
+          $this->saveToSharedTables($entity);
+        }
+        if ($this->revisionDataTable) {
+          $this->saveToSharedTables($entity, $this->revisionDataTable);
+        }
+      }
+    }
+
+    // Update dedicated table records if necessary.
+    if ($dedicated_table_fields) {
+      $names = is_array($dedicated_table_fields) ? $dedicated_table_fields : [];
+      $this->saveToDedicatedTables($entity, $update, $names);
+    }
   }
 
   /**
@@ -1436,23 +1517,23 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
    * {@inheritdoc}
    * @TODO must be implemented
    */
-  protected function doDeleteRevisionFieldItems(ContentEntityInterface $revision) {
-  }
+#  protected function doDeleteRevisionFieldItems(ContentEntityInterface $revision) {
+#  }
 
   /**
    * {@inheritdoc}
    * @TODO must be implemented
    */
-  protected function readFieldItemsToPurge(FieldDefinitionInterface $field_definition, $batch_size) {
-    return array();
-  }
+#  protected function readFieldItemsToPurge(FieldDefinitionInterface $field_definition, $batch_size) {
+#    return array();
+#  }
 
   /**
    * {@inheritdoc}
    * @TODO must be implemented
    */
-  protected function purgeFieldItems(ContentEntityInterface $entity, FieldDefinitionInterface $field_definition) {
-  }
+#  protected function purgeFieldItems(ContentEntityInterface $entity, FieldDefinitionInterface $field_definition) {
+#  }
 
   /**
    * {@inheritdoc}
@@ -1833,9 +1914,65 @@ class WisskiStorage extends ContentEntityStorageBase implements WisskiStorageInt
     return $image_style;
   }
 
-  protected function doLoadMultipleRevisionsFieldItems($revision_ids) {
-    // does not work yet.
-    return;
+#  protected function doLoadMultipleRevisionsFieldItems($revision_ids) {
+#    // does not work yet.
+#    return;
+#  }
+
+#  public function getSqlQuery() {
+#    dpm("yay, Im here!");
+#    return parent::getQuery();
+#  }
+
+  public function getDatabase() {
+    return $this->database;
+  }
+  
+  protected function buildQuery($ids, $revision_ids = FALSE) {
+    $query = $this->database->select($this->dataTable, 'base');
+
+    $query->addTag($this->entityTypeId . '_load_multiple');
+
+    if ($revision_ids) {
+      $query->join($this->revisionTable, 'revision', "revision.{$this->idKey} = base.{$this->idKey} AND revision.{$this->revisionKey} IN (:revisionIds[])", [':revisionIds[]' => $revision_ids]);
+    }
+    elseif ($this->revisionTable) {
+      $query->join($this->revisionTable, 'revision', "revision.{$this->revisionKey} = base.{$this->revisionKey}");
+    }
+
+    // Add fields from the {entity} table.
+    $table_mapping = $this->getTableMapping();
+    $entity_fields = $table_mapping->getAllColumns($this->dataTable);
+
+    if ($this->revisionTable) {
+      // Add all fields from the {entity_revision} table.
+      $entity_revision_fields = $table_mapping->getAllColumns($this->revisionTable);
+      $entity_revision_fields = array_combine($entity_revision_fields, $entity_revision_fields);
+      // The ID field is provided by entity, so remove it.
+      unset($entity_revision_fields[$this->idKey]);
+
+      // Remove all fields from the base table that are also fields by the same
+      // name in the revision table.
+      $entity_field_keys = array_flip($entity_fields);
+      foreach ($entity_revision_fields as $name) {
+        if (isset($entity_field_keys[$name])) {
+          unset($entity_fields[$entity_field_keys[$name]]);
+        }
+      }
+      $query->fields('revision', $entity_revision_fields);
+
+      // Compare revision ID of the base and revision table, if equal then this
+      // is the default revision.
+      $query->addExpression('CASE base.' . $this->revisionKey . ' WHEN revision.' . $this->revisionKey . ' THEN 1 ELSE 0 END', 'isDefaultRevision');
+    }
+
+    $query->fields('base', $entity_fields);
+
+    if ($ids) {
+      $query->condition("base.{$this->idKey}", $ids, 'IN');
+    }
+#    dpm(serialize($query), "query?");
+    return $query;
   }
   
 }

@@ -12,6 +12,10 @@ use Drupal\Core\Language\LanguageInterface;
 
 use Drupal\wisski_core\WisskiEntityInterface;
 
+use Drupal\user\EntityOwnerTrait;
+
+use Drupal\Core\Entity\EditorialContentEntityBase;
+
 //keep for later use
 // *		 "views_data" = "Drupal\wisski_core\WisskiEntityViewsData",
 
@@ -45,9 +49,14 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     "revision" = "vid",
  *     "bundle" = "bundle",
  *     "label" = "label",
- *     "preview_image" = "preview_image",
  *     "langcode" = "langcode",
- *     "uuid" = "uuid"
+ *     "uuid" = "uuid",
+ *     "published" = "published"
+ *   },
+ *   revision_metadata_keys = {
+ *     "revision_user" = "revision_uid",
+ *     "revision_created" = "revision_timestamp",
+ *     "revision_log_message" = "revision_log"
  *   },
  *   bundle_entity_type = "wisski_bundle",
  *   label_callback = "wisski_core_generate_title",
@@ -62,10 +71,15 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     "edit-form" = "/wisski/navigate/{wisski_individual}/edit",
  *     "admin-form" = "/admin/structure/wisski_core/{wisski_bundle}/edit",
  *   },
- *   translatable = TRUE,
+ *   base_table = "wisski_basetable",
+ *   data_table = "wisski_datatable",
+ *   revision_table = "wisski_revision",
+ *   revision_data_table = "wisski_data_revision",
+ *   show_revision_ui = TRUE,
+ *   translatable = TRUE
  * )
  */
-class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntityInterface {
+class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInterface { //RevisionableContentEntityBase implements WisskiEntityInterface {
 
 #  public static function create(array $values = array()) {
 #    dpm("hallo welt!");
@@ -79,8 +93,10 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
   
-    $fields = array();
-    
+//    $fields = array();
+    $fields = parent::baseFieldDefinitions($entity_type);
+//    $fields += static::ownerBaseFieldDefinitions($entity_type);
+//    dpm($fields, "fields I get?");   
     $fields['eid'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Entity ID'))
       ->setDescription(t('The ID of this entity.'))
@@ -155,6 +171,29 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
         ),
       ))
       ->setDisplayConfigurable('form', TRUE);
+    
+    $fields['created'] = BaseFieldDefinition::create('created')
+      ->setLabel(t('Authored on'))
+      ->setDescription(t('The time that the WissKI Entity was created.'))
+      ->setRevisionable(TRUE)
+      ->setTranslatable(TRUE)
+      ->setDisplayOptions('view', [
+        'label' => 'hidden',
+        'type' => 'timestamp',
+        'weight' => 0,
+      ])
+      ->setDisplayOptions('form', [
+        'type' => 'datetime_timestamp',
+        'weight' => 10,
+      ])
+      ->setDisplayConfigurable('form', TRUE);
+      
+    $fields['changed'] = BaseFieldDefinition::create('changed')
+      ->setLabel(t('Changed'))
+      ->setDescription(t('The time that the WissKI Entity was last edited.'))
+      ->setRevisionable(TRUE)
+      ->setTranslatable(TRUE);
+      
 
     $fields['status'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Published'))

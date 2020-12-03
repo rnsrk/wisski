@@ -187,3 +187,61 @@ wisski.execute_action:
   requirements:
     _permission: 'administer wisski'
 
+# routes for revisions
+entity.wisski_individual.version_history:
+  path: '/wisski/navigate/{wisski_individual}/revisions'
+  defaults:
+    _title: 'Revisions'
+    _controller: '\Drupal\wisski_core\Controller\WisskiEntityController::revisionOverview'
+  requirements:
+    _permission: 'administer wisski'
+#    _access_node_revision: 'view'
+    wisski_individual: \d+
+#  options:
+#    _node_operation_route: TRUE
+
+entity.wisski_individual.revision:
+  path: '/wisski/navigate/{wisski_individual}/revisions/{wisski_individual_revision}/view'
+  defaults:
+    _controller: '\Drupal\wisski_core\Controller\WisskiEntityController::revisionShow'
+    _title_callback: '\Drupal\wisski_core\Controller\WisskiEntityController::revisionPageTitle'
+  requirements:
+    _permission: 'administer wisski'
+#    _access_node_revision: 'view'
+    wisski_individual: \d+
+
+wisski_individual.revision_revert_confirm:
+  path: '/wisski/navigate/{wisski_individual}/revisions/{wisski_individual_revision}/revert'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\WisskiIndividualRevisionRevertForm'
+    _title: 'Revert to earlier revision'
+  requirements:
+#    _access_wisski_individual_revision: 'update'
+    _permission: 'administer wisski'
+    wisski_individual: \d+
+#  options:
+#    _wisski_individual_operation_route: TRUE
+
+wisski_individual.revision_revert_translation_confirm:
+  path: '/wisski/navigate/{wisski_individual}/revisions/{wisski_individual_revision}/revert/{langcode}'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\WisskiIndividualRevisionRevertTranslationForm'
+    _title: 'Revert to earlier revision of a translation'
+  requirements:
+#    _access_wisski_individual_revision: 'update'
+    _permission: 'administer wisski'
+    wisski_individual: \d+
+#  options:
+#    _wisski_individual_operation_route: TRUE
+
+wisski_individual.revision_delete_confirm:
+  path: '/wisski/navigate/{wisski_individual}/revisions/{wisski_individual_revision}/delete'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\WisskiIndividualRevisionDeleteForm'
+    _title: 'Delete earlier revision'
+  requirements:
+    _permission: 'administer wisski'
+#    _access_wisski_individual_revision: 'delete'
+    wisski_individual: \d+
+#  options:
+#    _wisski_individual_operation_route: TRUE
