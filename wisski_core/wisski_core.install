@@ -30,10 +30,10 @@ function wisski_core_update_8001(&$sandbox) {
       }
     } else {
       \Drupal::messenger()->addError("Could not open file " . $table);
-    } 
+    }
     fclose($file);
   }
-  
+
 }
 
 /**
@@ -72,8 +72,6 @@ function wisski_core_update_8003() {
   }
 }
 
-
-
 /**
  * implements hook_schema()
  */
@@ -99,7 +97,7 @@ function wisski_core_schema() {
   );
 
   $schema['wisski_title_n_grams'] = array(
-    
+
     'description' => 'Stores n-grams of generated entity titles for search and index purposes',
     'fields' => array(
       'ent_num' => array(
@@ -134,9 +132,9 @@ function wisski_core_schema() {
       'entities' => array('ent_num','bundle'),
     ),
   );
-  
+
   $schema['wisski_calling_bundles'] = array(
-    
+
     'description' => 'Caches the calling bundle for individuals so that we can decide on the correct visualization',
     'fields' => array(
       'eid' => array(
@@ -157,9 +155,9 @@ function wisski_core_schema() {
       'bid' => array(array('bid',64)),
     ),
   );
-  
+
   $schema['wisski_preview_images'] = array(
-    
+
     'description' => 'Caches the URI of the preview image for individuals',
     'fields' => array(
       'eid' => array(
@@ -180,9 +178,9 @@ function wisski_core_schema() {
       'bid' => array(array('image_uri',128)),
     ),
   );
-  
+
   $schema['wisski_entity_field_properties'] = array(
-  
+
     'description' => 'Saves secondary field data for WissKI Entities. This includes all the field properties that are set by the user',
     'fields' => array(
       'eid' => array(
@@ -227,7 +225,7 @@ function wisski_core_schema() {
   );
 
   $schema['wisski_core_ontology_namespaces'] = array(
-  
+
     'description' => 'Saves the namespaces on ontology load.',
     'fields' => array(
       'short_name' => array(
@@ -244,7 +242,5 @@ function wisski_core_schema() {
       ),
     ),
   );
-  
-  //dpm($schema);
   return $schema;
 }

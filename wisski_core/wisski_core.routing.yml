@@ -57,6 +57,15 @@ entity.wisski_individual.canonical:
     _entity_access: 'wisski_individual.view'
 #    _access: 'TRUE'
 
+entity.wisski_individual.version_history:
+  path: '/wisski/navigate/{wisski_individual}/revisions'
+  defaults:
+    _controller: '\Drupal\wisski_core\Controller\WisskiEntityRevisionController::revisionOverview'
+    _title: 'Revision'
+  requirements:
+    _permission: 'access content'
+    wisski_individual: \d+
+
 entity.wisski_individual.edit_form:
   path: '/wisski/navigate/{wisski_individual}/edit'
   defaults:

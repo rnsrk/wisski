@@ -10,7 +10,7 @@ use Drupal\wisski_salz\Entity\Adapter;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-
+#use PHPUnit\Util\Xml;
 
 /**
  * Overview form for ontology handling
@@ -150,12 +150,23 @@ class WisskiOntologyForm extends FormBase {
             '#description' => 'Please give the URL to a loadable ontology.',
           );
 
+          // $form['stores']['upload'] = array(
+          //   '#type' => 'file',
+      		//   '#title' => $this->t('Upload OWL'),
+      		//   '#description' => $this
+        	// 	  ->t('Allowed types: @extensions.', [
+        	// 		 '@extensions' => 'owl',
+          //     ]),
+          // );
+
           $form['stores']['load_onto_submit'] = array(
             '#type' => 'submit',
             '#name' => 'Load Ontology',
             '#value' => 'Load Ontology',
            # '#submit' => array('wisski_core_load_ontology'),
           );
+
+          
         }
 
 
@@ -173,12 +184,29 @@ class WisskiOntologyForm extends FormBase {
     return $form['stores'];
   }
 
-
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    #drupal_set_message('hello');
-  }
+    // $all_files = $this
+    //   ->getRequest()->files
+    //   ->get('files', []);
 
+    // if (!empty($all_files['upload'])) {
+    //   $file_upload = $all_files['upload'];
+    //   if ($file_upload
+    //     ->isValid()) {
+    //     $form_state
+    //       ->setValue('upload', $file_upload
+    //       ->getRealPath());
+    //     #$xml = XML::load($file_upload);
+    //     return;
+    //   }
+    // }
+    // $form_state
+    //   ->setErrorByName('upload', $this
+    //   ->t('The file could not be uploaded.'));
+  }
+  
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    dpm($form_state);
     // if there is a selected store - check if there is an ontology in the store
     $selected_id = $form_state->getValue('select_store');
     // load the store adapter entity object by means of the id of the selected store
@@ -196,6 +224,11 @@ class WisskiOntologyForm extends FormBase {
       // rebuild the form to display the information regarding the selected store
       $form_state->setRebuild();
       #$form_state->setUserInput($form_state->getValue('select_store'));
+      #if (!empty($form_state->getValue('upload'))) {
+      #  $engine->addOntologies($form_state->getValue('upload'));
+      #} else {
+      #	$engine->addOntologies($form_state->getValue('load_onto'));
+      #}
       $engine->addOntologies($form_state->getValue('load_onto'));
     }
    return;

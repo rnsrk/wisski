@@ -47,7 +47,7 @@ function wisski_core_excel_export($ob) {
 #  drupal_set_message(serialize($ob));
 #  dpm($ob, "ex");
 
-  $data_rows = $ob['actions']['export']['#submit']['data'];  
+  $data_rows = $ob['actions']['export']['#submit']['data'];
 
   if(empty($data_rows)) {
     \Drupal::messenger()->addError("Please do a search and export the results in excel afterwards.");
@@ -121,7 +121,7 @@ function wisski_core_excel_export($ob) {
 	  if(isset($field_definitions) && !$path->isGroup()) {
 
 	    $fieldid = $pbp['field'];
-	
+
 	    if(isset($fieldid) && isset($field_definitions[$fieldid])) {
 	      $field_def = $field_definitions[$fieldid];
 #	      dpm($field_def, "fd");
@@ -142,10 +142,10 @@ function wisski_core_excel_export($ob) {
 	  }
 	}
 
-	if(count($values) == 1 && ( is_numeric(current($values)) || preg_match('/^((\d+)(\.)*)+$/', current($values), $m) != FALSE) )  
+	if(count($values) == 1 && ( is_numeric(current($values)) || preg_match('/^((\d+)(\.)*)+$/', current($values), $m) != FALSE) )
 	  fwrite($fh, "=\"");
 	else
-	  fwrite($fh, "\"");	
+	  fwrite($fh, "\"");
 
 	$i = 0;
         foreach($values as $value) {
@@ -159,7 +159,7 @@ function wisski_core_excel_export($ob) {
         }
         fwrite($fh, "\"");
         fwrite($fh, "\t");
-      }  
+      }
     }
     fwrite($fh, "\n");
   }
@@ -183,7 +183,7 @@ function wisski_core_excel_export($ob) {
 #  unlink($filename);
 
   exit();
-  
+
   return FALSE;
 }
 
@@ -208,7 +208,7 @@ function wisski_core_entity_prepare_form(EntityInterface $entity, $operation, Fo
   if(isset($storage['form_display'])) {
     $form_display = $storage['form_display'];
 #    dpm(serialize($form_display), "fd");
-    // for every field in this display act    
+    // for every field in this display act
     foreach($form_display->getComponents() as $key => $comp) {
 
       // get the field definition
@@ -244,7 +244,7 @@ function wisski_core_entity_prepare_form(EntityInterface $entity, $operation, Fo
           }
         }
       }
- 
+
     }
   }
 }
@@ -404,7 +404,7 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
   }
 #  dpm($title, "ret2");
   return $title;
-  
+
 }
 
 function wisski_core_flush_title_caches($bundle_ids=NULL,$entity_ids=NULL) {
@@ -431,7 +431,13 @@ function wisski_core_form_alter(&$form, FormStateInterface $form_state, $form_id
     $form['#attached']['library'][] = 'wisski_core/wisski_autocomplete';
   }
 
+  $form['#submit'][] = 'submit_revision';
+
 }
+
+//function submit_revision ($form, $form_state) {
+//  var_dump('Hi from entry hook');
+//}
 
 /**
  * Add the place where the entity is found in navigate
@@ -442,7 +448,7 @@ function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatch
 
   $routename =  $route_match->getRouteName();
 
-  // only do something if we are looking at a wisski individual  
+  // only do something if we are looking at a wisski individual
   if($routename == 'entity.wisski_individual.canonical' || $routename == 'entity.wisski_individual.edit_form' ) {
 
     // where do we come from?
@@ -619,3 +625,4 @@ function wisski_core_menu_links_discovered_alter(&$links) {
     );
   }
 }
+

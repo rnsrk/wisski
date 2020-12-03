@@ -28,8 +28,8 @@ class WisskiEntityViewForwarder {
     $entity_type = $storage->getEntityType();
     $view_builder_class = $entity_type->getViewBuilderClass();
     $view_builder = $view_builder_class::createInstance(\Drupal::getContainer(),$entity_type);
-//    dpm($view_builder);
+    //dpm($view_builder->view($wisski_individual));
     return $view_builder->view($wisski_individual);
   }
-  
+
 }

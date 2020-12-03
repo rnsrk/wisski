@@ -114,7 +114,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
             'preview_image' => array(
               //we want the preview image to be a correct link to the entity
               'data' => array(
-                '#markup' => isset($input_row['preview_image']) 
+                '#markup' => isset($input_row['preview_image'])
                   ? '<a href='.$input_row['url']->toString().'>'.$input_row['preview_image'].'</a>'
                   : '<a href='.$input_row['url']->toString().'>'.$this->t('No preview available').'</a>'
                   ,
@@ -179,8 +179,8 @@ class WisskiEntityListBuilder extends EntityListBuilder {
             $row = array();
             $cell_num = 0;
           }
-        }  
-      }  
+        }
+      }
       //add the last row that might not have been filled to the full extent
       if ($cell_num > 0) $build['table']['#rows']['row'.$row_num] = $row;
     }
@@ -241,7 +241,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
    * We only load entities from the specified bundle
    */
   protected function getEntityIds() {
-    //dpm($this,__METHOD__); 
+    //dpm($this,__METHOD__);
 
     //get us a WisskiQueryDelegator object and give it a sort key
     $storage = $this->getStorage();
@@ -324,6 +324,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       'view' => array('entity.wisski_individual.canonical',$this->t('View')),
       'edit' => array('entity.wisski_individual.edit_form',$this->t('Edit')),
       'delete' => array('entity.wisski_individual.delete_form',$this->t('Delete')),
+      'revision' => array('entity.wisski_individual.version_history',$this->t('Revision')),
     );
     $i = 0;
     $links = array();
@@ -400,7 +401,7 @@ $timethis = microtime(TRUE);
       'label' => $entity_label,
       'url' => $entity_url,
     );
-#    dpm("4.-: " . microtime());    
+#    dpm("4.-: " . microtime());
     //get the preview image URI and...
     $prev_uri = $this->storage->getPreviewImageUri($entity_id,$this->bundle->id());
 #    dpm($prev_uri);
@@ -424,7 +425,7 @@ $timethis = microtime(TRUE) - $timethis;
 $timeall += $timethis;
 
     return $row;
-  } 
+  }
 
   /**
     * this gathers the URI i.e. some public:// or remote path to this entity's
@@ -498,7 +499,7 @@ $timeall += $timethis;
                                        #    dpm("4.2.4.2: " . microtime());
                                              //try to get the WissKI preview image style
                                              $image_style = $this->getPreviewStyle();
-                                       #    dpm("4.2.5: " . microtime());    
+                                       #    dpm("4.2.5: " . microtime());
                                              //process the image with the style
                                              $preview_uri = $image_style->buildUri($output_uri);
                                              //dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
@@ -527,7 +528,7 @@ $timeall += $timethis;
    /*
    private function getPreviewStyle() {
 
-     //cached?    
+     //cached?
      if (isset($this->image_style)) return $this->image_style;
 
      //if not, try to load 'wisski_preview'
@@ -541,13 +542,13 @@ $timeall += $timethis;
        $values = array('name'=>$image_style_name,'label'=>'Wisski Preview Image Style');
        $image_style = ImageStyle::create($values);
 
-       //then gather and set the default values, those might have been set by 
+       //then gather and set the default values, those might have been set by
        //the user
        //@TODO tell the user that changing the settings after the style has
        //been created will not result in newly resized images
        $settings = \Drupal::config('wisski_core.settings');
        $w = $settings->get('wisski_preview_image_max_width_pixel');
-       $h = $settings->get('wisski_preview_image_max_height_pixel');      
+       $h = $settings->get('wisski_preview_image_max_height_pixel');
        $config = array(
          'id' => 'image_scale',
          'data' => array(

@@ -37,6 +37,11 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     },
  *     "access" = "Drupal\wisski_core\Controller\WisskiEntityAccessHandler",
  *   },
+ *   base_table = "wisski_entity",
+ *   data_table = "wisski_entity_field_data",
+ *   revision_table = "wisski_revision",
+ *   revision_data_table = "wisski_revision_data",
+ *   show_revision_ui = TRUE,
  *   render_cache = FALSE,
  *   field_cache = FALSE,
  *   persistent_cache = FALSE,
@@ -45,9 +50,16 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     "revision" = "vid",
  *     "bundle" = "bundle",
  *     "label" = "label",
- *     "preview_image" = "preview_image",
  *     "langcode" = "langcode",
- *     "uuid" = "uuid"
+ *     "uuid" = "uuid",
+ *     "uid" = "uid",
+ *     "owner" = "uid",
+ *   },
+ *   revision_metadata_keys = {
+ *     "revision_default" = "revision_default",
+ *     "revision_user" = "revision_uid",
+ *     "revision_created" = "revision_timestamp",
+ *     "revision_log_message" = "revision_log"
  *   },
  *   bundle_entity_type = "wisski_bundle",
  *   label_callback = "wisski_core_generate_title",
@@ -71,16 +83,16 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
 #    dpm("hallo welt!");
 #    return parent::create($values);
 #  }
-  
+
   //@TODO we have a 'name' entity key and don't know what to do with it. SPARQL adapter uses a 'Tempo Hack'
   //making it the same as 'eid'
   /**
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
-  
-    $fields = array();
-    
+
+    $fields = parent::baseFieldDefinitions($entity_type);
+
     $fields['eid'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Entity ID'))
       ->setDescription(t('The ID of this entity.'))
@@ -103,7 +115,7 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
       ->setDescription(t('The bundle.'))
       ->setSetting('target_type', 'wisski_bundle')
       ->setReadOnly(TRUE);
-    
+
     // TODO: wisski entities are not translatable. do we thus need the lang code?
     $fields['langcode'] = BaseFieldDefinition::create('language')
       ->setLabel(t('Language code'))
@@ -161,10 +173,10 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
 #      ->setDescription(t('A boolean indicating whether the entity is published.'))
       ->setTranslatable(TRUE)
       ->setRevisionable(TRUE);
-    
+
     $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
     $use_status = $set->get('enable_published_status_everwhere');
-    
+
     if($use_status)
       $fields['status']->setDisplayOptions('form', [
         'type' => 'boolean_checkbox',
@@ -174,20 +186,20 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
         'weight' => 120,
         ])
       ->setDisplayConfigurable('form', TRUE);
-    
+
     $fields['preview_image'] = BaseFieldDefinition::create('image')
       ->setLabel(t('Preview Image'))
       ->setDescription(t('A reference to an image file that is used as the preview image of the entity'))
       ->setSetting('target_type','file')
       ->setDefaultValue(NULL)
       ->setDisplayConfigurable('view', TRUE);
-    
+
     return $fields;
   }
-  
+
 
   protected $label = NULL;
-  
+
 
   /**
    * {@inheritdoc}
@@ -203,7 +215,7 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
     #      dpm("yay!");
       $this->label = wisski_core_generate_title($this);
     }
-    
+
     return $this->label;
   }
 
@@ -223,14 +235,14 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
   }
 
 #  public function id() {
-#    
+#
 #    dpm($this->tellMe('id'));
 #    dpm($this->tellMe('label'));
 #    return 42;//parent::id();
 #  }
 
   protected $original_values;
-  
+
   public function saveOriginalValues($storage) {
 #    drupal_set_message("save ori" . microtime());
 #    drupal_set_message("ori was: " . serialize($this->original_values));
@@ -241,15 +253,15 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
   }
 
   public function getOriginalValues() {
-    
+
     return $this->original_values;
   }
-  
+
   public function getValues($storage,$save_field_properties=FALSE) {
 #    drupal_set_message("get values");
     return array($this->extractFieldData($storage,$save_field_properties),$this->original_values);
   }
-  
+
   protected function extractFieldData($storage,$save_field_properties=FALSE) {
 #    dpm("calling extractfieldData with sfp: " . serialize($save_field_properties));
 #    dpm(func_get_args(), "extractFieldData in the beginning");
@@ -266,13 +278,12 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
         ->condition('bid',$this->bundle())
     #    ->condition('fid',$field_name)
         ->execute();
-      
+
       // prepare the insert query.
       // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
       // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
       $query = \Drupal::database()->insert('wisski_entity_field_properties')
         ->fields(array('eid', 'bid', 'fid', 'delta', 'ident', 'properties'));
-        
     }
 
     //$this is iterable itself, iterates over field list
@@ -284,7 +295,7 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
       // so we buffer it here.
       $main_property = NULL;
 
-#      dpm($field_item_list, "save!!");      
+#      dpm($field_item_list, "save!!");
       foreach($field_item_list as $weight => $field_item) {
 
         $field_values = $field_item->getValue();
@@ -303,7 +314,7 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
           $field_values['target_id'] = $storage->getPublicUrlFromFileId($field_values['target_id']);
         }
 
-        // if it is empty it is probably not correctly initialized        
+        // if it is empty it is probably not correctly initialized
         if(empty($main_property))
           $main_property = $field_item->mainPropertyName();
 
@@ -342,7 +353,7 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
             'bid' => $this->bundle(),
             'fid' => $field_name,
             'delta' => $weight,
-            'ident' => strlen($field_values[$main_property]) > 1000 ? substr($field_values[$main_property], 0, 1000) : $field_values[$main_property], 
+            'ident' => strlen($field_values[$main_property]) > 1000 ? substr($field_values[$main_property], 0, 1000) : $field_values[$main_property],
             // this formerly was in here
             // the problem however is that this could never be written, because we don't know what is the disamb...
             #isset($field_values['wisskiDisamb']) ? $field_values['wisskiDisamb'] : $field_values[$main_property],
@@ -360,7 +371,7 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
 
       // do not do this per field, do it as a bunch.
       // execute the insert query
-      #if ($save_field_properties && !empty($this->id())) {     
+      #if ($save_field_properties && !empty($this->id())) {
       #  dpm($query);
       #  $query->execute();
       #}
@@ -370,8 +381,8 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
       if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) || empty($out[$field_name][0][$main_property])) unset($out[$field_name]);
 #      if (!isset($out[$field_name][0]) || empty($out[$field_name][0]) ) unset($out[$field_name]);
     }
-    
-    if ($save_field_properties && !empty($this->id())) {     
+
+    if ($save_field_properties && !empty($this->id())) {
       // @todo: somehow this seems to be triggered twice?!
 #      dpm($query);
       $query->execute();
@@ -395,13 +406,13 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
 
     return $types;
   }
-  
+
   /**
    * Is the entity new? We cannot answer that question with certainty, so we always say NO unless we definitely know it better
    */
   public function isNew() {
-  
+
     return !empty($this->enforceIsNew);
   }
-  
+
 }
