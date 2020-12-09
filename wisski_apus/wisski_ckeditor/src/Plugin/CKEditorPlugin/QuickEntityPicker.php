@@ -37,7 +37,7 @@ class QuickEntityPicker extends CKEditorPluginBase implements CKEditorPluginConf
   /**
    * {@inheritdoc}
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityStorageInterface $linkit_profile_storage) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, $linkit_profile_storage) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->linkitProfileStorage = $linkit_profile_storage;
   }
@@ -46,11 +46,18 @@ class QuickEntityPicker extends CKEditorPluginBase implements CKEditorPluginConf
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    $linkit = NULL;
+    
+    $moduleHandler = \Drupal::service('module_handler');
+    if ($moduleHandler->moduleExists('linkit')) {
+      $linkit = $container->get('entity_type.manager')->getStorage('linkit_profile');
+    }
+    
     return new static(
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('entity.type_manager')->getStorage('linkit_profile')
+      $linkit
     );
   }
 
