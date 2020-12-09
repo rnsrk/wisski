@@ -1347,6 +1347,14 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
   
   protected function doSaveWisskiRevision(ContentEntityInterface $entity, array $names = [])
   {
+
+
+    $uid = $entity->revision_uid;
+     // override the user setting
+    if(isset($uid) && empty($uid->getValue()['target_id']) ) {
+      $entity->revision_uid = $entity->uid;
+    }
+    
     $full_save = empty($names);
     $update = !$full_save || !$entity->isNew();
 
