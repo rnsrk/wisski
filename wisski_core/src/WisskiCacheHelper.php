@@ -26,7 +26,7 @@ class WisskiCacheHelper {
     \Drupal::cache()->delete($cid);
   }
 
-  static function putEntityTitle($entity_id,$entity_title,$bundle_id=NULL) {
+  static function putEntityTitle($entity_id,$entity_title,$bundle_id=NULL, $language = "und") {
     
     if(empty($entity_id)) {
       \Drupal::messenger()->addError("Entity ID was empty - this is evil!");
@@ -36,12 +36,12 @@ class WisskiCacheHelper {
     if(is_object($entity_id))
       $entity_id = $entity_id->id();
     
-    $tags[] = 'wisski_bundled_titles.default';
-    $cid = 'wisski_title.'.$entity_id.'.default';
+    $tags[] = 'wisski_bundled_titles.' . $language . '.default';
+    $cid = 'wisski_title.'.$entity_id.'.' . $language . '.default';
     self::putCacheData($cid,$entity_title,$tags);
     if (!is_null($bundle_id)) {
-      $tags[] = 'wisski_bundled_titles.'.$bundle_id;
-      $cid = 'wisski_title.'.$entity_id.'.'.$bundle_id;
+      $tags[] = 'wisski_bundled_titles.'. $language . '.' . $bundle_id;
+      $cid = 'wisski_title.'.$entity_id.'.'. $language . '.' . $bundle_id;
       self::putCacheData($cid,$entity_title,$tags);
     }
 
@@ -51,9 +51,10 @@ class WisskiCacheHelper {
     if (mb_strlen($entity_title) > 128) {
       $entity_title = mb_substr($entity_title, 0, 128);
     }
+#    dpm("I delete: $entity_id for $language");
     // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
     // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
-    \Drupal::database()->delete('wisski_title_n_grams')->condition('ent_num', $entity_id)->condition('bundle', empty($bundle_id) ? "default" : $bundle_id)->execute();
+    \Drupal::database()->delete('wisski_title_n_grams')->condition('ent_num', $entity_id)->condition('lang', $language)->condition('bundle', empty($bundle_id) ? "default" : $bundle_id)->execute();
     // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
     // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
     \Drupal::database()->insert('wisski_title_n_grams')->fields(array(
@@ -61,6 +62,7 @@ class WisskiCacheHelper {
         'bundle' => empty($bundle_id) ? "default" : $bundle_id,
         'ngram' => $entity_title,
         'n' => mb_strlen($entity_title),
+        'lang' => $language,
       ))->execute();
 
   }
@@ -68,15 +70,19 @@ class WisskiCacheHelper {
   static function getEntityTitle($entity_id,$bundle_id=NULL) {
     
     if (is_null($bundle_id)) $bundle_id = 'default';
-    $cid = 'wisski_title.'.$entity_id.'.'.$bundle_id;
+    $cid = 'wisski_title.'.$entity_id.'.'. $language . '.' . $bundle_id;
     return self::getCacheData($cid);
   }
   
   static function flushEntityTitle($entity_id,$bundle_id=NULL) {
+
+    $available_languages = \Drupal::languageManager()->getLanguages();
   
     if (is_null($bundle_id)) $bundle_id = 'default';
-    $cid = 'wisski_title.'.$entity_id.'.'.$bundle_id;
-    self::flushCacheData($cid);
+    foreach($available_languages as $al => $lang) {
+      $cid = 'wisski_title.'.$entity_id.'.'. $al . '.' . $bundle_id;
+      self::flushCacheData($cid);
+    }
 
     // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
     // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.

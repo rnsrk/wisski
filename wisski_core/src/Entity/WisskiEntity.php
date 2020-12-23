@@ -129,7 +129,7 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
     $fields['label'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Entity name'))
       ->setDescription(t('The human readable name of this entity.'))
-      ->setRequired(TRUE)
+//      ->setRequired(TRUE)
       ->setTranslatable(TRUE)
       ->setRevisionable(TRUE)
       ->setDefaultValueCallback("wisski_core_generate_title")
@@ -232,10 +232,16 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
    * {@inheritdoc}
    */
   public function label() {
+#    dpm("my label was asked");
+#    dpm($this->activeLangcode, "al?");
+#    dpm($this->label, "sis1?");
+/*
     // we cache the label to prevent that it is fetched from db all the time
     if ($this->label === NULL) {
       $this->label = parent::label();
     }
+
+#    dpm($this->label, "sis?");
 
     // this occurs on creation only!
     if($this->label === NULL) {
@@ -243,7 +249,15 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
       $this->label = wisski_core_generate_title($this);
     }
     
+    dpm($this->label, "I give back:");
+
+    return "miau";    
+    return array("en" => array(array("value" => "juhu")), "fr" => array(array("value" => "oh weh")));
+#    return array("x-default" => array(array("value" => "juhu")), "fr" => array(array("value" => "oh weh")));    
     return $this->label;
+  */
+  
+    return parent::label();
   }
 
 

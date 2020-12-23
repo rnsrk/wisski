@@ -1184,10 +1184,22 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * The elemental data aggregation function
    * fetches the data for display purpose
    */
-  public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL, $relative = TRUE) {
+  public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL, $relative = TRUE, $language = LanguageInterface::LANGCODE_DEFAULT ) {
 #    drupal_set_message("I got: $eid " . serialize($path));
 #$tmpt1 = microtime(TRUE);            
 #  drupal_set_message("ptrv: " . microtime());
+
+    $languages = array();
+    
+    if($language == "all") {
+      $to_load = \Drupal::languageManager()->getLanguages();
+      $languages = array_keys($to_load);
+      
+#      dpm($languages, "langs?");
+    } else {
+      $languages = array($language);
+    }
+
     if(empty($path)) {
       $this->messenger()->addError("No path supplied to ptr. This is evil.");
       return array();
@@ -1250,10 +1262,16 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if($path->isGroup()) {
 
         // it is the same as field - so entity_reference is basic shit here
-        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0,  ($starting_position/2), FALSE, NULL, 'entity_reference', $relative);
+//        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0,  ($starting_position/2), FALSE, NULL, 'entity_reference', $relative);
+
+        // here we can probably avoid the language tag...
+        // by mark ;)
+        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0,  ($starting_position/2), FALSE, NULL, 'entity_reference', $relative, array(), 0);
+        
       }
       else {
-        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, ($starting_position/2), FALSE, NULL, 'field', $relative);
+//        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, ($starting_position/2), FALSE, NULL, 'field', $relative);
+        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, ($starting_position/2), FALSE, NULL, 'field', $relative, array(), 0);
       }
 #$tmpt7 = microtime(TRUE);            
 
@@ -1274,7 +1292,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     $sparql .= " } ";
 
-#dpm($sparql);    
+dpm($sparql, "spar-gel");    
 #    drupal_set_message(serialize($sparql) . " on " . serialize($this));
 #    dpm(microtime(), "mic1");
 #$tmpt2 = microtime(TRUE);            
@@ -1282,6 +1300,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #$tmpt3 = microtime(TRUE);  
 #    dpm(microtime(), "mic2");          
 #    drupal_set_message(serialize($result));
+
+    dpm($result, "res?");
 
     $out = array();
     foreach($result as $thing) {
@@ -1298,8 +1318,30 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #      $name = 'x' . (count($path->getPathArray())-1);
       if(!empty($primitive) && $primitive != "empty") {
         if(empty($main_property)) {
+
+//          dpm("I have no main_property");
+
+          $my_language = $thing->out->getLang();
+          
+          // if we have no language, take the default one.
+//          if(empty($my_language))
+//            $my_language = LanguageInterface::LANGCODE_DEFAULT;
+ 
+          // only add it if my language is the language provided to me           
+//          if($my_language == $language)
+//            $out[] = $thing->out->getValue();
+
+          // this probably breaks any case were we assumed we just get a value
+          // I hope this are not too many ;D
+#          dpm("Danger Zone!!", 
           $out[] = $thing->out->getValue();
         } else {
+          
+          $my_language = $thing->out->getLang();
+          
+          // if we have no language, take the default one.
+          if(empty($my_language))
+            $my_language = LanguageInterface::LANGCODE_DEFAULT;
           
           $outvalue = $thing->out->getValue();
 
@@ -1312,19 +1354,24 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #            $outvalue = $this->getDrupalId($outvalue);
 #          dpm($outvalue . " and " . serialize($disamb));          
           if(is_null($disamb) == TRUE) {
-            $out[] = array($main_property => $outvalue);
+            $out[] = array($main_property => $outvalue, "wisski_language" => $my_language);
           }
           else {
             $disambname = 'x'.$disamb;
             if(!isset($thing->{$disambname})) {
-              $out[] = array($main_property => $outvalue);
+              $out[] = array($main_property => $outvalue, "wisski_language" => $my_language);
             }
             else {
-              $out[] = array($main_property => $outvalue, 'wisskiDisamb' => $thing->{$disambname}->dumpValue("text"));
+              $out[] = array($main_property => $outvalue, 'wisskiDisamb' => $thing->{$disambname}->dumpValue("text"), "wisski_language" => $my_language);
             }
           }
         }
       } else {
+      
+        // in this case we always take the language which is available...
+        
+        $my_language = LanguageInterface::LANGCODE_DEFAULT;
+      
         if(empty($main_property)) {
           $out[] = $thing->{$name}->dumpValue("text");
         } else { 
@@ -1348,6 +1395,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #$tmpt4 = microtime(TRUE);            
 #\Drupal::logger('WissKI Adapter ptrv')->debug($pb->id() . " " . $path->id() ."::". htmlentities(\Drupal\Core\Serialization\Yaml::encode( [$tmpt4-$tmpt1,$tmpt7-$tmpt6, $tmpt5-$tmpt1, $tmpt6-$tmpt5, $tmpt2-$tmpt7, $tmpt3-$tmpt2, $tmpt4-$tmpt3])));
 #dpm([$tmpt4-$tmpt1,$tmpt5-$tmpt1, $tmpt6-$tmpt5, $tmpt2-$tmpt6, $tmpt3-$tmpt2, $tmpt4-$tmpt3], $pb->id() . " " . $path->id());
+
+    dpm($out, "out?");
+    
+    // by mark:
+    // up to now out had the structure array( key => array( "value" => "some value that i've got from the Ts") )
+    // in future we want that language dependent. This means we want:
+    // array( "lang" = > array( key => array( "value" => "some value that i've got from the Ts") ) )
 
     return $out;
     
@@ -1399,7 +1453,7 @@ $tsa['pbs'] = join(' ', $pb_ids);
       foreach($field_ids as $fkey => $fieldid) {  
         #drupal_set_message("for field " . $fieldid . " with bundle " . $bundleid_in . " I've got " . serialize($this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in, $language)));
 $tmpc=microtime(true);
-        $got = $this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in, $language);
+        $got = $this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in);
 $tsa[$pb->id()][$fieldid] = (microtime(TRUE)-$tmpc);
 
 #        drupal_set_message("I've got: " . serialize($got));
@@ -1566,11 +1620,16 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         if($pbarray['parent'] > 0 && $path->isGroup()) {
           // @TODO: ueberarbeiten
 #          drupal_set_message("danger zone!");
-          $tmp = $this->pathToReturnValue($path, $pb, $eid, 0, $main_property);            
+          $tmp = $this->pathToReturnValue($path, $pb, $eid, 0, $main_property);
+          //$tmp = $this->pathToReturnValue($path, $pb, $eid, 0, $main_property, TRUE);            
 
           foreach($tmp as $key => $item) {
             $tmp[$key]["target_id"] = $this->getDrupalId($item["target_id"]);
           }
+          
+          // by mark
+          // IF it is a group the language is probably the default language anyway?
+          $tmp = array(LanguageInterface::LANGCODE_DEFAULT => $tmp);          
             
           $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);
         } else {
@@ -1591,7 +1650,11 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           $clearPathArray = $pb->getRelativePath($path, FALSE);
 #$tmpt=microtime(true);
 #          drupal_set_message("a1v1: " . microtime());
-          $tmp = $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property);            
+          $tmp = $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property);        
+          // by mark - for now we load all languages which means we provide "all" as a parameter.
+
+//          $tmp = $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property, TRUE);
+
 #          drupal_set_message("a1v2: " . microtime());
 #\Drupal::logger('WissKI Import lpvff')->debug((microtime(TRUE)-$tmpt). ": $field_id ".$path->id());
 
@@ -1627,6 +1690,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
                 }
               }
               
+              $tmp = array(LanguageInterface::LANGCODE_DEFAULT => $tmp);
+              
               // if we don't skip, add it via array_merge...
               if(!$skip) 
                 $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);
@@ -1634,7 +1699,16 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             }
           } else { // "normal" behaviour
 //          dpm($tmp, "merging with " . serialize($out[$eid][$field_id]));
-            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);
+
+            $new_tmp = array();
+
+            // by mark: Sort by language
+            foreach($tmp as $key => $value) {
+                $new_tmp[$value['wisski_language']][$key] = $value;
+            }
+            
+
+            $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $new_tmp);
           }
         }
         
@@ -1652,7 +1726,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     return new Query($entity_type,$condition,$namespaces,$this);
   }
   
-  public function deleteOldFieldValue($entity_id, $fieldid, $value, $pb, $count = 0, $mainprop = FALSE) {
+  public function deleteOldFieldValue($entity_id, $fieldid, $value, $pb, $count = 0, $mainprop = FALSE, $language = "und") {
  #   drupal_set_message("entity_id: " . $entity_id . " field id: " . $fieldid . " value " . serialize($value));
     // get the pb-entry for the field
     // this is a hack and will break if there are several for one field
@@ -1848,7 +1922,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       //$triples = $this->generateTriplesForPath($pb, $path, $value, $eid, NULL, 0, $diff, FALSE);
       // make a query without the value - this is necessary
       // because we have to think of the weight.
-      $triples = $this->generateTriplesForPath($pb, $path, '', $subject_uri, NULL, 0, $starting_position, FALSE);
+      //$triples = $this->generateTriplesForPath($pb, $path, '', $subject_uri, NULL, 0, $starting_position, FALSE);
+      $triples = $this->generateTriplesForPath($pb, $path, '', $subject_uri, NULL, 0, $starting_position, FALSE, '=', 'field', TRUE, array(), 0, $language);
       
       $sparql .= $triples;
       
@@ -2185,7 +2260,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
    * @param $numbering the initial numbering for the results - typically starting with 0.
    *              But can be modified by this.
    */
-  public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array(), $numbering = 0) {
+  public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array(), $numbering = 0, $language = "und") {
 #    drupal_set_message("gt1: " . microtime());
 #     \Drupal::logger('WissKIsaveProcess')->debug('generate: ' . serialize(func_get_args()));
 #    if($mode == 'entity_reference')
@@ -2463,7 +2538,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         if ($write) {
           // we have to escape it otherwise the sparql query may break
           $primitiveValue = $this->escapeSparqlLiteral($primitiveValue);
-          $query .= "\"$primitiveValue\"";
+          
+          // by mark: here we add the language tag for translatability 
+          //$query .= "\"$primitiveValue\"";
+          if($language != "und")
+            $query .= "\"$primitiveValue\"@$language";
+          else
+            $query .= "\"$primitiveValue\"";
         } else {
 
 /* putting there the literal directly is not a good idea as 
@@ -2544,9 +2625,17 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             }
             else {
               $escapedValue = '"' . $this->escapeSparqlLiteral($primitiveValue) . '"';
+              if($language != "und")
+                $query .= "\"$primitiveValue\"@$language";
+              else
+                $query .= "\"$primitiveValue\"";
             }
           } else {
             $escapedValue = '"' . $primitiveValue . '"';
+            if($language != "und")
+              $query .= "\"$primitiveValue\"@$language";
+            else
+              $query .= "\"$primitiveValue\"";
           }
           
 #          dpm($escapedValue, "esc");
@@ -2639,7 +2728,17 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     return $query;
   }
   
-  public function addNewFieldValue($entity_id, $fieldid, $value, $pb, $mainprop = FALSE) {
+  public function addNewFieldValue($entity_id, $fieldid, $value, $pb, $mainprop = FALSE, $language = "und") {
+
+    dpm($language, "I get?");
+
+    // compatibility purpose.
+    //$entity_id = $entity->id();
+
+#    dpm(serialize($entity), "yay?");
+#    dpm(serialize($value), "value?");
+#    dpm(serialize($fieldid), "fieldid?");
+    
 #    drupal_set_message(" addNewFieldValue I get: " . $entity_id.  " with fid " . $fieldid . " and value " . $value . ' for pb ' . $pb->id() . ' er ' . serialize($value_is_entity_ref));
 #    drupal_set_message(serialize($this->getUri("smthg")));
     $datagraphuri = $this->getDefaultDataGraphUri();
@@ -2709,31 +2808,45 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     if($is_entity_ref) {
       // if it is a group - we take the whole group path as disamb pos
       if($path->isGroup())
-        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), (count($path->getPathArray())+1)/2, $start, TRUE, '', 'entity_reference');
+//        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), (count($path->getPathArray())+1)/2, $start, TRUE, '', 'entity_reference' );
+        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), (count($path->getPathArray())+1)/2, $start, TRUE, '', 'entity_reference', TRUE, array(), 0, $language );        
       else // if it is a field it has a disamb pos!
-        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), $path->getDisamb(), $start, TRUE, '', 'entity_reference');        
+//        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), $path->getDisamb(), $start, TRUE, '', 'entity_reference');        
+        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), $path->getDisamb(), $start, TRUE, '', 'entity_reference', TRUE, array(), 0, $language);
     } else {
       if(empty($path->getDisamb()))
-        $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE);
+//        $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE);
+        $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE, '=', 'field', TRUE, array(), 0, $language);
       else {
 #        drupal_set_message("disamb: " . serialize($disambresult) . " miau " . $path->getDisamb());
         if(empty($disambresult) || empty($disambresult->{"x" . ($path->getDisamb()-1)*2}) )
-          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE);
+//          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE);
+          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE, '=', 'field', TRUE, array(), 0, $language);
         else
           // we may not set a value here - because we have a disamb result!
-          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . ($path->getDisamb()-1)*2}->dumpValue("text"), $path->getDisamb(), $start, TRUE);
+//          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . ($path->getDisamb()-1)*2}->dumpValue("text"), $path->getDisamb(), $start, TRUE);
+          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . ($path->getDisamb()-1)*2}->dumpValue("text"), $path->getDisamb(), $start, TRUE, '=', 'field', TRUE, array(), 0, $language);
       }
     }
     $sparql .= " } } ";
 #     \Drupal::logger('WissKIsaveProcess')->debug('sparql writing in add: ' . htmlentities($sparql));
-#dpm($sparql, __METHOD__ . " sparql");
+    dpm($sparql, __METHOD__ . " sparql");
     $result = $this->directUpdate($sparql);
 
 
 #    drupal_set_message("I add field $field from entity $entity_id that currently has the value $value");
   }
   
-  public function writeFieldValues($entity_id, array $field_values, $pathbuilder, $bundle_id=NULL,$old_values=array(),$force_new=FALSE, $initial_write = FALSE) {
+  public function writeFieldValues($entity, array $field_values, $pathbuilder, $bundle_id=NULL,$old_values=array(),$force_new=FALSE, $initial_write = FALSE, $language = "und") {
+
+    // get back the entity id for compatibility purpose.
+    $entity_id = $entity->id();
+    
+#    dpm($language, "I save for language");
+
+#    dpm($field_values, "I get values?");
+    
+
 #    dpm($old_values, "ov");
 #    dpm($entity_id, "I am saving entity_id");
 #    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
@@ -2762,6 +2875,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // this results in default values of entities not getting initiated. I added
     // another parameter ($initial_write) for that which simply
     // ignores the old field values and forces a write.
+    // @TODO: by mark: This should be checked inside of the entity itself.
     $init_entity = $this->loadEntity($entity_id);
     #$init_entity = $this->hasEntity($entity_id);
 #\Drupal::logger('WissKI Import tmpc')->debug("l:".(microtime(TRUE)-$tmpt));
@@ -2860,8 +2974,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #\Drupal::logger('WissKI Import tmpc')->debug("lf:".(microtime(TRUE)-$tmpt));
 
     //drupal_set_message("the old values were: " . serialize($old_values));
-#    dpm($old_values,'old values');
-#    dpm($field_values,'new values');
+    dpm($old_values,'old values');
+    dpm($field_values,'new values');
 #    dpm($initial_write, "init");
 
     // in case of an initial write we forget the old values.
@@ -2880,7 +2994,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // as we do this we also keep track of values that haven't changed so that we
     // do not have to write them again.
     foreach($old_values as $old_key => $old_value) {
- #     drupal_set_message("deleting key $old_key with value " . serialize($old_value) . " from values " . serialize($field_values));
+#      dpm("deleting key $old_key with value " . serialize($old_value) . " from values " . serialize($field_values));
       if(!isset($field_values[$old_key])) {
         
         // in case there is no main prop it is typically value
@@ -2901,7 +3015,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           
           // if not its a value...
   #        drupal_set_message("I delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
-          $this->deleteOldFieldValue($entity_id, $old_key, $val[$mainprop], $pathbuilder, $key, $mainprop);
+          $this->deleteOldFieldValue($entity_id, $old_key, $val[$mainprop], $pathbuilder, $key, $mainprop, $language);
         }
       }
     }
@@ -2987,6 +3101,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               continue;
             }
             
+            // also if it does not have our language, we can simply skip it.
+            if ($old_item['wisski_language'] != $language) {
+              unset($delete_values[$old_key]);
+              continue;
+            }
+            
+            
             $maincont = FALSE;
             
             foreach ($write_values as $key => $new_item) {
@@ -3016,20 +3137,20 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         if (!empty($delete_values)) {
           foreach ($delete_values as $key => $val) {            
             #drupal_set_message("I1 delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
-            $this->deleteOldFieldValue($entity_id, $field_id, $val[$mainprop], $pathbuilder, $key, $mainprop);
+            $this->deleteOldFieldValue($entity_id, $field_id, $val[$mainprop], $pathbuilder, $key, $mainprop, $language);
           }
         }
       }
       
-#      dpm($write_values, "we have to write");
+      dpm($write_values, "we have to write");
       // now we write all the new values
       // TODO: it seems like there is a duplicate write in case of image files..
       // probably due to the fact that they are not found as old value because the URL is stored.
       // it does not hurt currently, but it is a performance sink.
       foreach ($write_values as $new_item) {
 #        dpm($mainprop, "mainprop");
-        
-        $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder, $mainprop); 
+        dpm($language, "I give it to add New Field Value");
+        $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder, $mainprop, $language); 
       }
   
     }
@@ -3037,6 +3158,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
 
 #    drupal_set_message("out: " . serialize($out));
+    dpm(serialize($out), "out?");
 
     return $out;
 
