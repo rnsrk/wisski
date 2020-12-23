@@ -10,6 +10,7 @@ use Drupal\Core\Link;
 use Drupal\Core\Config\Entity\ConfigEntityBundleBase;
 use Drupal\wisski_core\WisskiBundleInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\Language\LanguageInterface;
 
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
@@ -180,12 +181,16 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     else
       $entity_id = $entity;
 
-      dpm("get title for $entity");
+#      dpm("get title for $entity");
+
+#  dpm(serialize($entity), "yay");
 
     if(is_object($entity))
-      $entity->getLanguage();
+      $language = $entity->language()->getId();
     else
       $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+
+#    dpm($language, "language?");
 
     #drupal_set_message(serialize($pattern));
     #drupal_set_message("generated: " . $this->applyTitlePattern($pattern,$entity_id));
@@ -229,7 +234,16 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #    dpm(microtime(), "generated title $title");
     
 #    dpm(microtime(), "end title");
-    dpm($title, "tit2?");
+    if(is_object($entity)) {
+      return $title[$language];
+    }
+    
+#    return array("x-default" => "mien", "ar" => "ara");
+         
+#      unset($title[$language]);
+#      $title[LanguageInterface::LANGCODE_DEFAULT] = $the_real_title;
+#    }
+#    dpm($title, "tit2?");
 #    return "yay?";
     return $title;
   }
@@ -310,7 +324,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           default: {
             list($pb_id,$path_id) = explode('.',$attributes['name']);
             $values = $this->gatherTitleValues($entity, $path_id, $pb_id);
-            dpm($values,'gathered values for '.$path_id);
+#            dpm($values,'gathered values for '.$path_id);
           }
         }
         if (empty($values)) {
@@ -360,7 +374,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #	TODO: SEE ABOVE
 #          dpm($cardinality, "card");
 #              if ($i >= $cardinality) break;
-          dpm($value, 'get');
+#          dpm($value, 'get');
               if(empty($part[$language]))
                 $part[$language] = "";
               $part[$language] .= "$value";

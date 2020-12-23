@@ -328,7 +328,7 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
 #  dpm(microtime(), "called once!!");
   $create_form_title = FALSE;
 
-  dpm(serialize($wisski_individual), "wisski core generate title");
+#  dpm(serialize($wisski_individual), "wisski core generate title");
 
   if ($wisski_individual instanceof WisskiEntityInterface) {
 
@@ -390,7 +390,7 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
 #      drupal_set_message(serialize($entity_id));
 #      drupal_set_message(serialize($bundle->generateEntityTitle($entity_id,FALSE,$force_new)));
       if ($create_form_title || empty($entity_id)) $title = html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
-      else $title = $bundle->generateEntityTitle($entity_id,FALSE,$force_new);
+      else $title = $bundle->generateEntityTitle($wisski_individual,FALSE,$force_new);
     }
   }
 
@@ -402,7 +402,7 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
     else
       \Drupal::messenger()->addWarning(t('No title could be generated for entity ' . $entity_id . ' with bundle ' . $bundle->label()));
   }
-  dpm($title, "ret2");
+#  dpm($title, "ret2");
 #  return array("en" => array(array("value" => "yay?", "wisski_language" =>
 #  "en")), "fr" => array(array("value" => "juhu", "wisski_language" =>
 #  "fr")));

@@ -110,21 +110,37 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
     // default initialisation.
     $entities = NULL;
     
+    // Here we have to look for all base fields
+    // and basefields are typically stored in
+    // x-default language code (= system default)
+    // these have to be stored accordingly or we burn in translation hell
+
+    $base_fields = \Drupal::service('entity_field.manager')->getBaseFieldDefinitions("wisski_individual");
+
+    $base_field_names = array_keys($base_fields);
+    
     // add the values from the cache
     foreach ($ids as $id) {
       
       //@TODO combine this with getEntityInfo
       if (!empty($values[$id])) {
 #ddl($values, 'values');
-        if (!isset($values[$id]['bundle'])) continue;
 
+        // TODO: CHECK if bundle is in here or if it is in x-default
+        $bundle = ($values[$id]['bundle']);
+        if (!isset($bundle)) {
+          continue;
+        } else {
+          if(isset($values[$id]['bundle']['x-default']))
+            $bundle = $values[$id]['bundle']['x-default'];
+        }
         // load the cache
         // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
         // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
         $cached_field_values = \Drupal::database()->select('wisski_entity_field_properties', 'f')
-          ->fields('f',array('fid', 'ident','delta','properties'))
+          ->fields('f',array('fid', 'ident','delta','properties','lang'))
           ->condition('eid',$id)
-          ->condition('bid',$values[$id]['bundle'])
+          ->condition('bid',$bundle)
 #          ->condition('fid',$field_name)
           ->execute()
           ->fetchAll();
@@ -133,11 +149,57 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 // if you have duplicateable fields it will fail!
 #        dpm($cached_field_values, "argh");                          
 
-        $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($values[$id]['bundle']);
+        $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($bundle);
 
         foreach($cached_field_values as $key => $cached_field_value) {
           $field_id = $cached_field_value->fid;
           
+          // don't act on eid and bundle as these are primarily loaded
+          // from the wisski system itself.
+          // if we don't skip that here we typically load "target_id" => bundleid from
+          // the cache and that is not properly handled lateron.
+          if($field_id == "eid" || $field_id == "bundle")
+            continue;
+          
+          // if it is a base field, simply set it to the appropriate langcode
+          if(in_array($field_id, $base_field_names)) {
+            $base_field_def = $base_fields[$field_id];
+            
+            // if this is not translatable simply throw it in there.
+            if(!$base_field_def->isTranslatable()) {
+#              dpm("$field_id is not translatable");
+              $cached_value = unserialize($cached_field_value->properties);
+              $delta = $cached_field_value->delta;
+              $cardinality = $base_field_def->getCardinality();
+              
+              // if we have a cached value
+              if(!empty($cached_value)) {
+                
+                if($cardinality > 1) {
+                  // either we merge it if there already is something in values
+                  if(isset($values[$id][$field_id][$delta]) && is_array($values[$id][$field_id][$delta])) {
+                    $values[$id][$field_id][$delta] = array_merge($cached_value, $values[$id][$field_id][$delta]);
+                  
+                  } else {
+                    // or we set it directly if there is nothing there yet.
+                    $values[$id][$field_id][$delta] = $cached_value; 
+                  }
+                } else {
+                  // we skip the data if cardinality is 1
+                  if(isset($values[$id][$field_id]) && is_array($values[$id][$field_id])) {
+                    $values[$id][$field_id] = array_merge($cached_value, $values[$id][$field_id]);
+                  
+                  } else {
+                    // or we set it directly if there is nothing there yet.
+                    $values[$id][$field_id] = $cached_value; 
+                  }
+                }
+                continue;
+              }
+            }
+          }
+                    
+          $clanguage = $cached_field_value->lang;
 #          if($field_id == 'b1abe31d92a85c73f932db318068d0d5')
 #            drupal_set_message(serialize($cached_field_value));
 #          dpm($cached_field_value->properties, "sdasdf");
@@ -148,12 +210,12 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
           // if we loaded something from TS we can skip the cache.
           // By Mark: Unfortunatelly this is not true. There is a rare case
           // that there is additional information, e.g. in files.
-          if( isset($values[$id][$field_id]) ) {
+          if( isset($values[$id][$field_id][$clanguage]) ) {
             $cached_value = unserialize($cached_field_value->properties);
             $delta = $cached_field_value->delta;
 
             // if we really have information, merge that!
-            if(isset($values[$id][$field_id][$delta]) && is_array($values[$id][$field_id][$delta]) && !empty($cached_value)) {
+            if(isset($values[$id][$field_id][$clanguage][$delta]) && is_array($values[$id][$field_id][$clanguage][$delta]) && !empty($cached_value)) {
               // by mark:
               // now it might be, that the item in $values[$id][$field_id][$delta] is not the item in
               // $cached_value - this can happen if we have the full uri in ident, but the number from the
@@ -162,7 +224,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
  #             getFileId
 
 #              dpm($values[$id][$field_id][$delta], "I am merging: " . serialize($cached_value));
-              $values[$id][$field_id][$delta] = array_merge($cached_value, $values[$id][$field_id][$delta]); #, $cached_value);
+              $values[$id][$field_id][$clanguage][$delta] = array_merge($cached_value, $values[$id][$field_id][$clanguage][$delta]); #, $cached_value);
             }
 
             continue;
@@ -207,15 +269,16 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #          if(!empty($values[$id][$field_id]))
 #            $values[$id][$field_id] = 
 #          else
-#          dpm($cached_value, "loaded from cache.");
-          $values[$id][$field_id] = $cached_value;
+#          dpm("$field_id loaded from cache." . serialize($cached_value));
+          $values[$id][$field_id][$clanguage] = $cached_value;
         }
         
 #        dpm($values, "values after");
              
         try {
 #        dpm("yay!");
-          dpm($values[$id]);
+#          dpm($values[$id]);
+#          return;
 //          $values[$id]["langcode"][0]['value'] = "ar";
 //          $values[$id]["langcode"][1]['value'] = "en";
 //          $values[$id]["langcode"] = array("x-default" => "en", "fr" => "fr");
@@ -224,7 +287,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 
           $available_languages = \Drupal::languageManager()->getLanguages();
           $available_languages = array_keys($available_languages);
-          $available_languages[] = "x-default";
+#          $available_languages[] = "x-default";
 
           $not_set_languages = array();
 
@@ -234,17 +297,18 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
           foreach($values[$id] as $key => $val) {
             // skip the title as it tries to be delivered in any language
             // @TODO: This might be possible to be changed.
-            if($key == "label")
+            if($key == "label" || $key == "title")
               continue;
 
             foreach($available_languages as $alang) {
+#              dpm("checking $alang in $key with " . serialize($val));
               if(array_key_exists($alang, $val)) {
-                $set_languages[] = $alang;
+                $set_languages[$alang] = $alang;
               } else {
                 // we add it to the not setted languages
                 // because we need that to clear the titles
                 // that should not exist.
-                $not_set_languages[] = $alang;
+                $not_set_languages[$alang] = $alang;
               }
               
               if(count($set_languages) == count($available_languages))
@@ -256,9 +320,10 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
               break;
           }
           
+#          dpm($set_languages, "the setted languages");
           
           // clear the titles that are not represented in the data
-          foreach($set_language as $slang) {
+          foreach($set_languages as $slang) {
             unset($values[$id]["label"][$slang]);
           }
 
@@ -268,11 +333,18 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 //            }
 //          }
 
-          // for now the base fields are simply overwritten by cache. But we can assume
-          // that in future $entity->langcode is correctly initialized from cache
-          // and therefore knows which language is the original language.
 
-          $orig_lang = $values[$id]["langcode"];
+          $orig_lang = "x-default";
+          // fetch the original language from
+          // default langcode
+          // by Mark: I am unsure if this is a correct assumption
+          // it might be that we have to fetch it from elsewhere
+          // but for now this seems ok.
+          foreach($values[$id]["default_langcode"] as $key => $value) {
+            // key is a langcode and value is an array with value key.
+            if($value["value"] == TRUE)
+              $orig_lang = $key;
+          } 
 
 #          dpm("my orig lang is: " . serialize($values[$id]));
 
@@ -283,16 +355,6 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             
 #          dpm("my orig lang is: " . serialize($orig_lang));
 
-
-
-          // Here we have to look for all base fields
-          // and basefields are typically stored in 
-          // x-default language code (= system default)
-          // these have to be stored accordingly or we burn in translation hell
-          
-          $base_fields = \Drupal::service('entity_field.manager')->getBaseFieldDefinitions("wisski_individual");
-          
-          $base_field_names = array_keys($base_fields);
           
 #          dpm(serialize($base_fields), "yay, basefields!");
           
@@ -388,7 +450,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             }
           }
           */
-          dpm(serialize($test), "I've got after base field analysis");
+#          dpm(serialize($test), "I've got after base field analysis");
 
           // we still have to set default_langcode and
           // content_translation_source and published(status) probably? 
@@ -413,7 +475,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #          $test["content_translation_source"] = array("x-default" => "und", "fr" => "en");
           //$test["fb18eeb8a1dce42fc045f3ebd12f20f9"] = array("x-default" => $test["fb18eeb8a1dce42fc045f3ebd12f20f9"]["x-default"], "fr" => $test["fb18eeb8a1dce42fc045f3ebd12f20f9"]["x-default"]);
 
-          dpm($test, "what do we give?");
+#          dpm($test, "what do we give?");
 
 #          $test["default_langcode"]["x-default"] = array("value" => TRUE);
           
@@ -430,7 +492,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #          dpm($this->entityClass, "??");
 #          return;
 
-          $entity = new $this->entityClass($test,$this->entityTypeId, $values[$id]["bundle"], $translations[$id]);
+          $entity = new $this->entityClass($test,$this->entityTypeId, $bundle, $translations[$id]);
           
 #          dpm($entity);
     
@@ -487,7 +549,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 
     #$entity_cache = $this->entity_cache;
     
-    dpm($values, "values in get entity info ");
+#    dpm($values, "values in get entity info ");
 #      dpm(microtime(), "after load");
       $pb_cache = array();
     
@@ -621,7 +683,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
       $this->entity_cache = $entity_cache;
     }
 
-    dpm(serialize($entities), "out?");
+#    dpm(serialize($entities), "out?");
 
 
 #    dpm(microtime(), "exit");
@@ -827,7 +889,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                 
                 if ($field_def instanceof BaseFieldDefinition) {
 
-                  dpm($field_name, "fn?");
+#                  dpm($field_name, "fn?");
 #                  dpm("it is a base field!");
                   //the bundle key will be set via the loop variable $bundleid
                   if ($field_name === 'bundle') continue;
@@ -841,7 +903,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                   // we already know the eid
                   if ($field_name === 'eid') $new_field_values[$id][$field_name] = array($id);
                   
-                  dpm($new_field_values, "nfv?");
+#                  dpm($new_field_values, "nfv?");
                   
                   // and for now we don't handle uuid, vid, langcode, uid, status
                   // do this for performance reasons here.
@@ -882,7 +944,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                     $info[$id][$field_name] = current($new_field_values);
 #                    $info[$id][$field_name] = $new_field_values;
                   }
-                  dpm($info, "done");  
+#                  dpm($info, "done");  
 #                  dpm($info[$id][$field_name], $field_name);
                   if (!isset($info[$id]['bundle'])) $info[$id]['bundle'] = $bundleid;
                   continue;                 
@@ -897,7 +959,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                 $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
 
 //                dpm(microtime(), "after load" . serialize($new_field_values));
-                dpm($new_field_values, "nfv");
+#                dpm($new_field_values, "nfv");
                 if (empty($new_field_values)) continue;
                 $info[$id]['bundle'] = $bundleid;
 
@@ -1432,7 +1494,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
    * @TODO must be implemented
    */
   protected function doSaveFieldItems(ContentEntityInterface $entity, array $names = []) {
-    dpm(serialize($entity), "yay?");
+#    dpm(serialize($entity), "yay?");
 #    return;
 #    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()));
 #    \Drupal::logger('WissKIsaveProcess')->debug(serialize($entity->uid->getValue())); 
@@ -1613,7 +1675,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
     $bundle = WisskiBundle::load($bundle_id);
     if ($bundle) $bundle->flushTitleCache($entity_id);
  
-    dpm(serialize($entity->bundle()), "my bundle really is?");
+#    dpm(serialize($entity->bundle()), "my bundle really is?");
     #    return;
  
     $this->doSaveWisskiRevision($entity, $names); 

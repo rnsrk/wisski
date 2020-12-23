@@ -309,6 +309,10 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
     $out = array();
 
     $fields_to_save = array();
+    
+    // this might be x-default, so we don't use that here.
+    //    $language = $this->activeLangcode;
+    $language = $this->language()->getId();
 
     if ($save_field_properties) {
       //clear the field values for this field in entity in bundle
@@ -317,6 +321,7 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
       \Drupal::database()->delete('wisski_entity_field_properties')
         ->condition('eid',$this->id())
         ->condition('bid',$this->bundle())
+        ->condition('lang',$language)
     #    ->condition('fid',$field_name)
         ->execute();
       
@@ -324,7 +329,7 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
       // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
       // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
       $query = \Drupal::database()->insert('wisski_entity_field_properties')
-        ->fields(array('eid', 'bid', 'fid', 'delta', 'ident', 'properties'));
+        ->fields(array('eid', 'bid', 'fid', 'delta', 'ident', 'properties','lang'));
         
     }
 
@@ -400,6 +405,7 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
             // the problem however is that this could never be written, because we don't know what is the disamb...
             #isset($field_values['wisskiDisamb']) ? $field_values['wisskiDisamb'] : $field_values[$main_property],
             'properties' => serialize($field_values),
+            'lang' => $language,
           );
 
 #          dpm($fields_to_save, "fts");

@@ -1292,7 +1292,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     $sparql .= " } ";
 
-dpm($sparql, "spar-gel");    
+#dpm($sparql, "spar-gel");    
 #    drupal_set_message(serialize($sparql) . " on " . serialize($this));
 #    dpm(microtime(), "mic1");
 #$tmpt2 = microtime(TRUE);            
@@ -1301,7 +1301,7 @@ dpm($sparql, "spar-gel");
 #    dpm(microtime(), "mic2");          
 #    drupal_set_message(serialize($result));
 
-    dpm($result, "res?");
+#    dpm($result, "res?");
 
     $out = array();
     foreach($result as $thing) {
@@ -1396,7 +1396,7 @@ dpm($sparql, "spar-gel");
 #\Drupal::logger('WissKI Adapter ptrv')->debug($pb->id() . " " . $path->id() ."::". htmlentities(\Drupal\Core\Serialization\Yaml::encode( [$tmpt4-$tmpt1,$tmpt7-$tmpt6, $tmpt5-$tmpt1, $tmpt6-$tmpt5, $tmpt2-$tmpt7, $tmpt3-$tmpt2, $tmpt4-$tmpt3])));
 #dpm([$tmpt4-$tmpt1,$tmpt5-$tmpt1, $tmpt6-$tmpt5, $tmpt2-$tmpt6, $tmpt3-$tmpt2, $tmpt4-$tmpt3], $pb->id() . " " . $path->id());
 
-    dpm($out, "out?");
+#    dpm($out, "out?");
     
     // by mark:
     // up to now out had the structure array( key => array( "value" => "some value that i've got from the Ts") )
@@ -2730,7 +2730,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
   
   public function addNewFieldValue($entity_id, $fieldid, $value, $pb, $mainprop = FALSE, $language = "und") {
 
-    dpm($language, "I get?");
+#    dpm($language, "I get?");
 
     // compatibility purpose.
     //$entity_id = $entity->id();
@@ -2830,7 +2830,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     }
     $sparql .= " } } ";
 #     \Drupal::logger('WissKIsaveProcess')->debug('sparql writing in add: ' . htmlentities($sparql));
-    dpm($sparql, __METHOD__ . " sparql");
+#    dpm($sparql, __METHOD__ . " sparql");
     $result = $this->directUpdate($sparql);
 
 
@@ -2974,8 +2974,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #\Drupal::logger('WissKI Import tmpc')->debug("lf:".(microtime(TRUE)-$tmpt));
 
     //drupal_set_message("the old values were: " . serialize($old_values));
-    dpm($old_values,'old values');
-    dpm($field_values,'new values');
+#    dpm($old_values,'old values');
+#    dpm($field_values,'new values');
 #    dpm($initial_write, "init");
 
     // in case of an initial write we forget the old values.
@@ -3142,14 +3142,14 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         }
       }
       
-      dpm($write_values, "we have to write");
+#      dpm($write_values, "we have to write");
       // now we write all the new values
       // TODO: it seems like there is a duplicate write in case of image files..
       // probably due to the fact that they are not found as old value because the URL is stored.
       // it does not hurt currently, but it is a performance sink.
       foreach ($write_values as $new_item) {
 #        dpm($mainprop, "mainprop");
-        dpm($language, "I give it to add New Field Value");
+#        dpm($language, "I give it to add New Field Value");
         $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder, $mainprop, $language); 
       }
   
@@ -3158,7 +3158,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
 
 #    drupal_set_message("out: " . serialize($out));
-    dpm(serialize($out), "out?");
+#    dpm(serialize($out), "out?");
 
     return $out;
 
