@@ -404,8 +404,7 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
   }
 #  dpm($title, "ret2");
 #  return array("en" => array(array("value" => "yay?", "wisski_language" =>
-#  "en")), "fr" => array(array("value" => "juhu", "wisski_language" =>
-#  "fr")));
+#  "en")), "fr" => array(array("value" => "juhu", "wisski_language" =>  "fr")));
 #  return array("en" => "eng", "fr" => "fra");
   return $title;
   

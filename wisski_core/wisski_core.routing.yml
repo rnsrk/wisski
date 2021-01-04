@@ -52,9 +52,11 @@ entity.wisski_individual.canonical:
   path: '/wisski/navigate/{wisski_individual}/view'
   defaults:
     _controller: '\Drupal\wisski_core\Controller\WisskiEntityViewForwarder::forward'
-    _title_callback: 'wisski_core_generate_title'
+    _title_callback: '\Drupal\wisski_core\Controller\WisskiEntityViewForwarder::title'
+#    _title_callback: 'wisski_core_generate_title'
   requirements:
     _entity_access: 'wisski_individual.view'
+    wisski_individual: \d+
 #    _access: 'TRUE'
 
 entity.wisski_individual.edit_form:

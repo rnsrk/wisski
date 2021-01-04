@@ -214,6 +214,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #dpm(microtime(), "begin execute");
 #wisski_tick();
 #wisski_tick("begin exec views");
+#    dpm(serialize($this), "yay?");
     $query = $view->build_info['wisski_query'];
     $count_query = $view->build_info['wisski_count_query'];
     $args = $view->build_info['query_args'];
@@ -564,8 +565,29 @@ class WisskiIndividualQuery extends QueryPluginBase {
             $row['bundle'] = $bid;
             $pseudo_entity_fields[$eid]['bundle'] = $row['bundle'];
           }
-
+          
+          // somehow it awaits a string here.
+          // I don't know why...
+          // In any other case (see below) an array is fine.
+          
           $row['title'] = wisski_core_generate_title($eid, NULL, FALSE, $bid);
+
+          // get the rendering language from the view.          
+          $rendering_language = $this->view->display_handler->getOption('rendering_language');
+          
+          if($rendering_language == "***LANGUAGE_language_interface***") {
+            $rendering_language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+          }
+          
+          if(isset($row['title'][$rendering_language])) {
+            $row['title'] = $row['title'][$rendering_language][0]["value"];
+          } else {
+            $curr_title = current($row['title']);
+            $row['title'] = $curr_title[0]["value"];
+          }
+          
+//          $row['title'] = array("x-default" => array(0 => array("value" => "juhu")));
+#          dpm($row['title'], "??");
           $pseudo_entity_fields[$eid]['title'] = $row['title'];
         }
 
@@ -908,11 +930,15 @@ class WisskiIndividualQuery extends QueryPluginBase {
     
 
     }
+    
+#    dpm(serialize($this->view->display_handler->getOption('rendering_language')));
+    
 #    dpm(serialize($values_per_row));
 #    return;
 #    dpm(microtime(), "end of ...");    
 
     if ($do_dummy_load) {
+      
       foreach ($values_per_row as $lkey => &$row) {
         // if we don't have a bundle we're in danger zone!
         if(empty($row['bundle'])) {
@@ -929,12 +955,19 @@ class WisskiIndividualQuery extends QueryPluginBase {
         // compatibility for old systems like herbar...
         if(!isset($pseudo_entity_fields[$lkey]['eid']))
           $pseudo_entity_fields[$lkey]['eid'] = array('value' => $lkey);
+        
+        // add the title values to the label so it can be rendered correctly...
+        $pseudo_entity_fields[$lkey]['label'] = $values_per_row[$lkey]['title'];  
+        
 #        dpm($row);
 #        $row['_entity'] = entity_load('wisski_individual', $row['eid']);;
 #        $bid = reset($bundle_ids);
 #        $tmp = entity_create('wisski_individual', $row);
 #        dpm($pseudo_entity_fields, "psd");
+    
+    
         $entities = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->addCacheValues(array($lkey => $lkey), $pseudo_entity_fields);
+      
 #        foreach($row as $field_name => $data) {
 #          $entities[$lkey]->$field_name = $data;
 #        }
@@ -951,7 +984,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
 
 #    dpm(microtime(), "after end of ...");
 
-#    dpm($values_per_row, "vpr");
+#    dpm(serialize($values_per_row), "vpr");
 
 #    return;
 

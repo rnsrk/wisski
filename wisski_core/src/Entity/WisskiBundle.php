@@ -172,6 +172,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   protected $cached_titles;
   
   public function generateEntityTitle($entity,$include_bundle=FALSE,$force_new=FALSE) {
+#    dpm(serialize($entity), "what?");
 #    dpm(microtime(), "begin title");
     $pattern = $this->getTitlePattern();
 
@@ -237,6 +238,13 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     if(is_object($entity)) {
       return $title[$language];
     }
+    
+#    foreach($title as $lang => $aTitle) {
+#      if($lang == $language) {
+#        unset($title[$lang]);
+#        $title["x-default"] = $aTitle;
+#      }
+#    }
     
 #    return array("x-default" => "mien", "ar" => "ara");
          
@@ -400,12 +408,20 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     //reorder the parts according original pattern
     $title = array();
     foreach($available_languages as $alanguage) {
-      $title[$alanguage] = "";
+      $title[$alanguage][0]["value"] = "";
+      $title[$alanguage][0]["wisski_language"] = $alanguage;
       foreach ($pattern_order as $pos) {
-        if (isset($parts[$pos])) $title[$alanguage] .= $parts[$pos][$alanguage];
+        if (isset($parts[$pos])) $title[$alanguage][0]["value"] .= $parts[$pos][$alanguage];
       }
+      // if the title is an empty string we probably unset it, because
+      // there seems to be no translation!
+      // this is an assumption and might prove wrong.
+      if (empty(trim($title[$alanguage][0]["value"]))) unset($title[$alanguage]);
+#      if (empty(trim($title[$alanguage]))) $title[$alanguage] = $this->createFallbackTitle($entity_id);
+    }
     
-      if (empty(trim($title[$alanguage]))) $title[$alanguage] = $this->createFallbackTitle($entity_id);
+    if(empty($title)) {
+      return $this->createFallbackTitle($entity_id);
     }
 
 #    dpm($title, "tit?");

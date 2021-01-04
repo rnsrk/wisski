@@ -59,7 +59,6 @@ use Drupal\Core\Entity\EditorialContentEntityBase;
  *     "revision_log_message" = "revision_log"
  *   },
  *   bundle_entity_type = "wisski_bundle",
- *   label_callback = "wisski_core_generate_title",
  *   permission_granularity = "bundle",
  *   admin_permission = "administer wisski",
  *   fieldable = TRUE,
@@ -132,7 +131,7 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
 //      ->setRequired(TRUE)
       ->setTranslatable(TRUE)
       ->setRevisionable(TRUE)
-      ->setDefaultValueCallback("wisski_core_generate_title")
+//      ->setDefaultValueCallback("wisski_core_generate_title")
 //      ->setDefaultValue('')
       ->setSetting('max_length', 255)
       ->setDisplayOptions('form', array(

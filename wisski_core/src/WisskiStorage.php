@@ -323,9 +323,9 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #          dpm($set_languages, "the setted languages");
           
           // clear the titles that are not represented in the data
-          foreach($set_languages as $slang) {
-            unset($values[$id]["label"][$slang]);
-          }
+#          foreach($set_languages as $slang) {
+#            unset($values[$id]["label"][$slang]);
+#          }
 
 //          foreach($values[$id] as $key => $val) {
 //            if(is_array($val)) {
@@ -333,6 +333,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 //            }
 //          }
 
+#          dpm($values[$id], "??");
 
           $orig_lang = "x-default";
           // fetch the original language from
@@ -366,7 +367,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
           // see below ;)
           // in case of a "normal" field we assume that it is always translatable
           // (which typically holds for wisski entities)
-                    
+          
           // after that we can iterate through all non-base-fields and these
           // typically have different languages enabled by default due to the
           // setting in the wisski Entity
@@ -462,6 +463,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #          $test["eid"] = array("x-default" => $test["eid"]);
 #          $test["langcode"] = array("x-default" => "en", "fr" => "fr");
 #          $test["label"] = array("x-default" => "juhu?", "fr" => "oh weh");
+
+#           $test["label"] = "aha?";
 
 #           $bla = array("miau", "genau");
 #           $bla = array(0 => "miau", 1 => "genau");
