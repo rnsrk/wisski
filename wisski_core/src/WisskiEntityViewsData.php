@@ -52,9 +52,20 @@ class WisskiEntityViewsData extends EntityViewsData {
 
 
   public function getViewsData() {
-
+    $parentdata = parent::getViewsData();
     $data = [];
+//    dpm(serialize($data), "data?");
+//    return $data;
     $base_table = 'wisski_individual';
+
+    $data[$base_table] = $parentdata['wisski_basetable'];
+    
+#    foreach($data['wisski_individual'] as $key => $value) {
+#      
+#      dpm("key ist $key");
+#      dpm($value, "val");
+#    }
+    
 
     $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
 
@@ -408,6 +419,7 @@ class WisskiEntityViewsData extends EntityViewsData {
   }
 
   public function getViewsTableForEntityType(EntityTypeInterface $entity_type) {
+//    return 'wisski_basetable';
     return 'wisski_individual';
   }
 }

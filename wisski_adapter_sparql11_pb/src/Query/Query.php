@@ -321,7 +321,7 @@ class Query extends WisskiQueryBase {
 #   dpm($condition, "cond");   
     // these fields cannot be queried with this adapter
     $skip_field_ids = array(
-      'langcode',
+//      'langcode',
       'name',
       'preview_image',
       'status',
@@ -447,6 +447,15 @@ class Query extends WisskiQueryBase {
 
           $query_parts[] = $this->makeBundleCondition($operator, $value);
       
+        }
+        elseif($field == "langcode") {
+          
+          $eids = $this->executeLangcodeCondition($operator, $value, $needs_a_bundle);
+          
+          $entity_ids = $this->join($conjunction, $entity_ids, $eids);
+          if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
+            return array('', array());
+          }
         }
         elseif ($field == "status") {
 #          dpm("yay, status!");
@@ -872,6 +881,44 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       ->condition('ident', $value, '=');
     $entity_ids = $query->execute()->fetchAllKeyed();
     
+    $out = array();
+    
+    $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->getEngine()->adapterId());
+    
+    foreach ($entity_ids as $eid => $bla) {
+      // NOTE: getUrisForDrupalId returns one uri as string as we have
+      // given the adapter
+      $out[$eid] = '' . AdapterHelper::getUrisForDrupalId($eid, $adapter) .'';
+    }
+    
+    return $out;
+
+  }
+  
+  protected function executeLangcodeCondition($operator, $value, $bundleid = '%') {
+    $entity_ids = NULL;
+ 
+    $langcode = current($value);
+ 
+    if($langcode == "***LANGUAGE_language_interface***") {
+      $langcode = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+    }
+ 
+
+//    dpm("I am looking for $langcode");
+
+    // it would be good to supply the bundle here, too...
+    
+    $query = \Drupal::database()->select('wisski_entity_field_properties', 't')
+      ->distinct()
+      ->fields('t', array('eid', 'ident'))
+#      ->condition('adapter_id', $this->getEngine()->adapterId())
+      ->condition('fid', 'langcode', '=')
+      ->condition('bid', $bundleid, '=')
+      ->condition('ident', $langcode, '=');
+    $entity_ids = $query->execute()->fetchAllKeyed();
+#    dpm($bundleid, "bun?");
+#    dpm($value, "val?");
     $out = array();
     
     $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->getEngine()->adapterId());
