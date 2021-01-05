@@ -11,7 +11,61 @@ use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\Core\Routing\LocalRedirectResponse;
 
+use Drupal\Core\Datetime\DateFormatterInterface;
+use Drupal\Core\Render\RendererInterface;
+use Drupal\Core\Entity\EntityRepositoryInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+
 class WisskiEntityController extends ControllerBase {
+
+  /**
+   * The date formatter service.
+   *
+   * @var \Drupal\Core\Datetime\DateFormatterInterface
+   */
+  protected $dateFormatter;
+
+  /**
+   * The renderer service.
+   *
+   * @var \Drupal\Core\Render\RendererInterface
+   */
+  protected $renderer;
+
+  /**
+   * The entity repository service.
+   *
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
+   */
+  protected $entityRepository;
+  
+  /**
+   * Constructs a NodeController object.
+   *
+   * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
+   *   The date formatter service.
+   * @param \Drupal\Core\Render\RendererInterface $renderer
+   *   The renderer service.
+   * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
+   *   The entity repository.
+   */
+  public function __construct(DateFormatterInterface $date_formatter, RendererInterface $renderer, EntityRepositoryInterface $entity_repository) {
+    $this->dateFormatter = $date_formatter;
+    $this->renderer = $renderer;
+    $this->entityRepository = $entity_repository;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('date.formatter'),
+      $container->get('renderer'),
+      $container->get('entity.repository')
+    );
+  }
+
 
   /**
   * {@inheritdoc}
@@ -72,7 +126,30 @@ class WisskiEntityController extends ControllerBase {
    */
   public function revisionPageTitle($wisski_individual_revision) {
     $wisski_individual = $this->entityTypeManager()->getStorage('wisski_individual')->loadRevision($wisski_individual_revision);
-    return $this->t('Revision of %title from %date', ['%title' => $wisski_individual->label(), '%date' => $this->dateFormatter->format($wisski_individual->getRevisionCreationTime())]);
+
+    // as a title we don't take the old one, as it lacks behind by one revision
+    // and the user knows the current title anyway and not the old one.
+    // so we take the current one from the title cache.
+    
+    $title = wisski_core_generate_title($wisski_individual->id());
+#    dpm(serialize($title), "title?");
+#    dpm(serialize($wisski_individual->language()->getId()), "ind?");    
+    $the_revision_langcode = $wisski_individual->language()->getId();
+    
+    $new_title = $wisski_individual->label();
+    
+    if(isset($the_revision_langcode) && isset($title[$the_revision_langcode])) {
+      $new_title = $title[$the_revision_langcode];
+      $new_title = $new_title[0]["value"];
+      if(empty(trim($new_title))) {
+        $new_title = $wisski_individual->label();
+      }
+    }
+    
+#    dpm(serialize($wisski_individual->getRevisionCreationTime()), "yay?");
+#    dpm(serialize($wisski_individual), "yay?");
+    //  The $wisski_individual->label() always is behind by one - I don't really know why this is happening.
+    return $this->t('Revision of %title from %date', ['%title' => $new_title, '%date' => $this->dateFormatter->format($wisski_individual->getRevisionCreationTime())]);
   }
 
   /**

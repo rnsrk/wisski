@@ -66,6 +66,7 @@ entity.wisski_individual.edit_form:
 #    _title: 'Edit entity'
   requirements:
     _entity_access: 'wisski_individual.edit'
+    wisski_individual: \d+
   options:
     _admin_route: 'TRUE'
 
@@ -76,7 +77,8 @@ entity.wisski_individual.delete_form:
 #    _title: 'Delete entity'
   requirements:
     _entity_access: 'wisski_individual.delete'
-
+    wisski_individual: \d+
+    
 entity.wisski_individual.add:
   path: '/wisski/create/{wisski_bundle}'
   defaults:
