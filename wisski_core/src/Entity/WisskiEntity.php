@@ -128,7 +128,7 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
     $fields['label'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Entity name'))
       ->setDescription(t('The human readable name of this entity.'))
-//      ->setRequired(TRUE)
+      ->setRequired(FALSE)
       ->setTranslatable(TRUE)
       ->setRevisionable(TRUE)
 //      ->setDefaultValueCallback("wisski_core_generate_title")
@@ -137,9 +137,11 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
       ->setDisplayOptions('form', array(
         'type' => 'string_textfield',
         'weight' => -5,
+        'region' => 'hidden',
       ))
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayOptions('view', array(
+        'region' => 'hidden',
         'label' => 'hidden',
         'type' => 'string',
         'weight' => -5,
@@ -178,11 +180,14 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
       ->setTranslatable(TRUE)
       ->setDisplayOptions('view', [
         'label' => 'hidden',
+        'region' => 'hidden',
         'type' => 'timestamp',
         'weight' => 0,
       ])
+      ->setDisplayConfigurable('view', TRUE)
       ->setDisplayOptions('form', [
         'type' => 'datetime_timestamp',
+        'region' => 'hidden',
         'weight' => 10,
       ])
       ->setDisplayConfigurable('form', TRUE);
@@ -219,6 +224,8 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
       ->setSetting('target_type','file')
       ->setDefaultValue(NULL)
       ->setDisplayConfigurable('view', TRUE);
+ 
+    
     
     return $fields;
   }
