@@ -1653,6 +1653,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           $tmp = $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property);        
           // by mark - for now we load all languages which means we provide "all" as a parameter.
 
+#          dpm($tmp, "tmp?");
+
 //          $tmp = $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property, TRUE);
 
 #          drupal_set_message("a1v2: " . microtime());
@@ -1716,6 +1718,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           unset($out[$eid]);
       }
     }
+    
+#    dpm($out, "out?");
 #    drupal_set_message("a3: " . microtime());
     return $out;
   }
@@ -2531,6 +2535,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       
       $query .= "<$primitive> ";
 
+#      dpm($query, "before?");
       
       if(!empty($primitiveValue)) {
 #        dpm($primitiveValue, "prim");
@@ -2624,19 +2629,28 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               $cast_outvar = "xsd:decimal($outvar)";
             }
             else {
-              $escapedValue = '"' . $this->escapeSparqlLiteral($primitiveValue) . '"';
+              //$escapedValue = '"' . $this->escapeSparqlLiteral($primitiveValue) . '"';
               if($language != "und")
-                $query .= "\"$primitiveValue\"@$language";
+                #$query .= "\"$primitiveValue\"@$language";
+                $escapedValue = '"' . $this->escapeSparqlLiteral($primitiveValue) . '"@' . $language;
               else
-                $query .= "\"$primitiveValue\"";
+                #$query .= "\"$primitiveValue\"";
+                $escapedValue = '"' . $this->escapeSparqlLiteral($primitiveValue) . '"';
+                
+              
             }
           } else {
-            $escapedValue = '"' . $primitiveValue . '"';
+            //$escapedValue = '"' . $primitiveValue . '"';
             if($language != "und")
-              $query .= "\"$primitiveValue\"@$language";
+              $escapedValue = '"' . $primitiveValue . '"@' . $language;
+              #$query .= "\"$primitiveValue\"@$language";
             else
-              $query .= "\"$primitiveValue\"";
+              $escapedValue = '"' . $primitiveValue . '"';
+              #$query .= "\"$primitiveValue\"";
+              
           }
+
+#          dpm($query, "in between");
           
 #          dpm($escapedValue, "esc");
 
@@ -2702,6 +2716,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       if(!$write)
         $query .= " } . ";
     }
+    
+#    dpm($query, "after?");
 #    \Drupal::logger('WissKIsaveProcess')->debug('erg generate: ' . htmlentities($query));
 #    if($mode == 'entity_reference')
 #      \Drupal::logger('WissKIsaveProcess')->debug('erg generate: ' . htmlentities($query));
@@ -2782,7 +2798,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       $sparql = "SELECT ?x" . (($path->getDisamb()-1)*2) . " WHERE { ";
 
       // starting position one before disamb because disamb counts the number of concepts, startin position however starts from zero
-      $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE);
+      $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE, '=', 'field', TRUE, array(), 0, $language);
 
       $sparql .= " }";
 #      drupal_set_message("spq: " . ($sparql));
@@ -2986,10 +3002,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #\Drupal::logger('WissKI Import tmpc')->debug("lf:".(microtime(TRUE)-$tmpt));
 
     //drupal_set_message("the old values were: " . serialize($old_values));
-#    dpm($old_values,'old values');
-#    dpm($field_values,'new values');
-#    dpm($initial_write, "init");
-#    dpm($language, "lang?");
+    dpm($old_values,'old values');
+    dpm($field_values,'new values');
+    dpm($initial_write, "init");
+    dpm($language, "lang?");
 
     // in case of an initial write we forget the old values.
     if($initial_write)
@@ -3147,7 +3163,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           }
         }
 
-#        dpm($delete_values, "we have to delete");
+        dpm($delete_values, "we have to delete");
         if (!empty($delete_values)) {
           foreach ($delete_values as $key => $val) {            
             #drupal_set_message("I1 delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
@@ -3156,7 +3172,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         }
       }
       
-#      dpm($write_values, "we have to write");
+      dpm($write_values, "we have to write");
       // now we write all the new values
       // TODO: it seems like there is a duplicate write in case of image files..
       // probably due to the fact that they are not found as old value because the URL is stored.

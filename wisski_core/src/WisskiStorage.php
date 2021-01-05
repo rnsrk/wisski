@@ -333,7 +333,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 //            }
 //          }
 
-#          dpm($values[$id], "??");
+//          dpm($values[$id], "??");
 
           $orig_lang = "x-default";
           // fetch the original language from
@@ -346,6 +346,14 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             if($value["value"] == TRUE)
               $orig_lang = $key;
           } 
+          
+          // if the entity has no default langcode (which might be and probably is the default
+          // for old wisski instances) we just use the first language
+          // that comes up
+          if(empty($values[$id]["default_langcode"])) {
+            $orig_lang = current($set_languages);
+            #dpm($set_languages, "set?");
+          }
 
 #          dpm("my orig lang is: " . serialize($values[$id]));
 
