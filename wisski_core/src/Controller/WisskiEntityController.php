@@ -108,7 +108,9 @@ class WisskiEntityController extends ControllerBase {
    */
   public function revisionShow($wisski_individual_revision) {
     $wisski_individual = $this->entityTypeManager()->getStorage('wisski_individual')->loadRevision($wisski_individual_revision);
-#    $wisski_individual = $this->entityRepository->getTranslationFromContext($wisski_individual);
+    $wisski_individual = $this->entityRepository->getTranslationFromContext($wisski_individual);
+
+#    dpm(serialize($wisski_individual), "wki_ind");
     $wisski_individual_view_controller = new \Drupal\Core\Entity\Controller\EntityViewController(\Drupal::service('entity_type.manager'), \Drupal::service('renderer'));
     $page = $wisski_individual_view_controller->view($wisski_individual);
     unset($page['nodes'][$wisski_individual->id()]['#cache']);
