@@ -127,7 +127,8 @@ class WisskiEntityController extends ControllerBase {
    *   The page title.
    */
   public function revisionPageTitle($wisski_individual_revision) {
-    $wisski_individual = $this->entityTypeManager()->getStorage('wisski_individual')->loadRevision($wisski_individual_revision);
+    $wisski_individual_untrans = $this->entityTypeManager()->getStorage('wisski_individual')->loadRevision($wisski_individual_revision);
+    $wisski_individual = $this->entityRepository->getTranslationFromContext($wisski_individual_untrans);
 
     // as a title we don't take the old one, as it lacks behind by one revision
     // and the user knows the current title anyway and not the old one.
