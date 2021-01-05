@@ -2970,6 +2970,15 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       // so we just delete what we see and nothing more!
       
 
+    } else {
+      // we are in edit mode and unfortunatelly old_values is not filled accordingly with language-tags.
+      // so we do this here.
+      $new_structure = array();
+      foreach($old_values as $old_key => $old_value) {
+        $new_structure[$old_key][$language] = $old_value;
+      }
+      
+      $old_values = $new_structure;
     }    
     
     
