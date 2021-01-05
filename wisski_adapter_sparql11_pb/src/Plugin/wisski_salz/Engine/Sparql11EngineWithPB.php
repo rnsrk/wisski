@@ -2901,6 +2901,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       $entity = $init_entity;
 
     $components = array();
+
+#    dpm(serialize($entity), "ente?");
+#    dpm(serialize($entity->getOriginalValues()), "ori?");
     
     if (!isset($old_values) && !empty($init_entity)) {
       // it would be better to gather this information from the form and not from the ts
@@ -2977,6 +2980,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #    dpm($old_values,'old values');
 #    dpm($field_values,'new values');
 #    dpm($initial_write, "init");
+#    dpm($language, "lang?");
 
     // in case of an initial write we forget the old values.
     if($initial_write)
@@ -2994,6 +2998,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // as we do this we also keep track of values that haven't changed so that we
     // do not have to write them again.
     foreach($old_values as $old_key => $old_value) {
+      $old_value = $old_value[$language];
 #      dpm("deleting key $old_key with value " . serialize($old_value) . " from values " . serialize($field_values));
       if(!isset($field_values[$old_key])) {
         
@@ -3042,7 +3047,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       $path = $pathbuilder->getPbEntriesForFid($field_id);
 #      drupal_set_message("found path: " . serialize($path). " " . microtime());
       
-      $old_value = isset($old_values[$field_id]) ? $old_values[$field_id] : array();
+      $old_value = isset($old_values[$field_id][$language]) ? $old_values[$field_id][$language] : array();
 
       if(empty($path)) {
 #        drupal_set_message("I leave here: $field_id " . microtime());
@@ -3133,7 +3138,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           }
         }
 
-        #dpm($delete_values, "we have to delete");
+#        dpm($delete_values, "we have to delete");
         if (!empty($delete_values)) {
           foreach ($delete_values as $key => $val) {            
             #drupal_set_message("I1 delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
