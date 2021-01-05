@@ -990,6 +990,13 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                   }
 #                  dpm($target_bundles);
                   $target_ids = $new_field_values[$id][$field_name];
+                  
+                  // by mark:
+                  // as this is a language-thingie we just take the first one
+                  // for now we assume that these are all the same across the different
+                  // languages
+                  $target_ids = current($target_ids);
+                  
                   if (!is_array($target_ids)) $target_ids = array(array('target_id'=>$target_ids));
                   foreach ($target_ids as $target_id) {
 #dpm($target_id, "bwtb:$aid");                    
@@ -1122,19 +1129,20 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 
 #                  dpm($new_field_values[$id][$field_name], "yay!");
                   
-                  foreach ($new_field_values[$id][$field_name] as $key => &$properties_array) {
-                    // we assume that $value is an image URI which is to be
-                    // replaced by a File entity ID
-                    // we use the special property original_target_id as the
-                    // loadPropertyValuesForField()/pathToReturnValues()
-                    // replaces the URI with the corresp. file entity id.
-                    if (!isset($properties_array['original_target_id']) && !isset($properties_array['target_id'])) continue;
-                    else if(isset($properties_array['target_id']) && !isset($properties_array['original_target_id'])) $properties_array['original_target_id'] = $properties_array['target_id'];
-                    $file_uri = $properties_array['original_target_id'];
-#                    dpm($file_uri, "got");                    
-                    $local_uri = '';
-
-                    $properties_array['target_id'] = $this->getFileId($file_uri,$local_uri, $id);
+                  foreach ($new_field_values[$id][$field_name] as $file_lang => $file_val) {
+                    foreach ($new_field_values[$id][$field_name][$file_lang] as $key => &$properties_array) {
+                      // we assume that $value is an image URI which is to be
+                      // replaced by a File entity ID
+                      // we use the special property original_target_id as the
+                      // loadPropertyValuesForField()/pathToReturnValues()
+                      // replaces the URI with the corresp. file entity id.
+                      if (!isset($properties_array['original_target_id']) && !isset($properties_array['target_id'])) continue;
+                      else if(isset($properties_array['target_id']) && !isset($properties_array['original_target_id'])) $properties_array['original_target_id'] = $properties_array['target_id'];
+                      $file_uri = $properties_array['original_target_id'];
+#       	             dpm($file_uri, "got");                    
+                      $local_uri = '';
+                        
+                      $properties_array['target_id'] = $this->getFileId($file_uri,$local_uri, $id);
 /*
                     $properties_array = array(
                       'target_id' => $this->getFileId($file_uri,$local_uri, $id),
@@ -1145,6 +1153,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                     );
 */
 #                    dpm($local_uri, "uri");
+                    }
                   }
                 }
                 
@@ -1199,7 +1208,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
   public function getFileId($file_uri,&$local_file_uri='', $entity_id = 0) {
     $value = NULL;
     
-#    drupal_set_message('Image uri: '.$file_uri);
+#    dpm('Image uri: '.$file_uri);
     if (empty($file_uri)) return NULL;
     //first try the cache
     $cid = 'wisski_file_uri2id_'.md5($file_uri);
