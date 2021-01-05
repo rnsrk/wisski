@@ -13,7 +13,7 @@ class WisskiEntityForm extends ContentEntityForm {
   public function buildForm(array $form, FormStateInterface $form_state) {
 
     $form = parent::buildForm($form,$form_state);
-    $form['#title'] = $this->t('Edit').' '.wisski_core_generate_title($this->entity,NULL,TRUE);
+    $form['#title'] = $this->t('Edit').' ' . $this->entity->label(); //.wisski_core_generate_title($this->entity,NULL,TRUE);
 
     // this code here is evil!!!
     // whenever you have subentities (referenced by entity reference)
