@@ -3002,10 +3002,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #\Drupal::logger('WissKI Import tmpc')->debug("lf:".(microtime(TRUE)-$tmpt));
 
     //drupal_set_message("the old values were: " . serialize($old_values));
-    dpm($old_values,'old values');
-    dpm($field_values,'new values');
-    dpm($initial_write, "init");
-    dpm($language, "lang?");
+#    dpm($old_values,'old values');
+#    dpm($field_values,'new values');
+#    dpm($initial_write, "init");
+#    dpm($language, "lang?");
 
     // in case of an initial write we forget the old values.
     if($initial_write)
@@ -3163,7 +3163,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           }
         }
 
-        dpm($delete_values, "we have to delete");
+#        dpm($delete_values, "we have to delete");
         if (!empty($delete_values)) {
           foreach ($delete_values as $key => $val) {            
             #drupal_set_message("I1 delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
@@ -3172,7 +3172,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         }
       }
       
-      dpm($write_values, "we have to write");
+#      dpm($write_values, "we have to write");
       // now we write all the new values
       // TODO: it seems like there is a duplicate write in case of image files..
       // probably due to the fact that they are not found as old value because the URL is stored.
