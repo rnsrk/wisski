@@ -339,6 +339,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           if ($attributes['optional'] === FALSE) {
             //we detected an invalid title;
             \Drupal::messenger()->addError('Detected invalid title');
+#            dpm("oh real weh");
             return $this->createFallbackTitle($entity_id);
           } else $parts[$key] = '';
           continue;
@@ -421,6 +422,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     }
     
     if(empty($title)) {
+#      dpm("oh weh!");
       return $this->createFallbackTitle($entity_id);
     }
 
@@ -432,9 +434,21 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   public function createFallbackTitle($entity_id) {
     
+    // we have to add the languages, otherwise it will become ugly.
+    // here we have to iterate the languages
+    $available_languages = \Drupal::languageManager()->getLanguages();
+    $available_languages = array_keys($available_languages);
+
+    $title = array();
+
+    foreach($available_languages as $lang) {
+      $title[$lang][0] = array("value" => $this->fallback_title . " " . $entity_id);
+    }    
+    
+    
     switch ($this->onEmpty()) {
-      case self::FALLBACK_TITLE: return $this->fallback_title; # TODO: The below case has to be rewritten...
-      case self::DEFAULT_PATTERN: return $this->fallback_title;#return $this->applyTitlePattern($this->getDefaultPattern(),$entity_id);
+      case self::FALLBACK_TITLE: return $title; # TODO: The below case has to be rewritten...
+      case self::DEFAULT_PATTERN: return $title;#return $this->applyTitlePattern($this->getDefaultPattern(),$entity_id);
       case self::DONT_SHOW:
       default: return FALSE;
     }
