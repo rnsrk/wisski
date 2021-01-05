@@ -1682,6 +1682,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
           // merge it manually as recursive merge does not work properly in case of multi arrays.
           if ($main_property == 'target_id') {
+#            dpm($tmp);
             foreach($tmp as $key => $item) {
               $skip = false;
             // check if the value is already there...
@@ -1692,11 +1693,21 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
                 }
               }
               
-              $tmp = array(LanguageInterface::LANGCODE_DEFAULT => $tmp);
+              #$tmp = array(LanguageInterface::LANGCODE_DEFAULT => $tmp);
+              
+              // initialize if not existing
+              if(!isset($out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT]))
+                $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT] = array();
               
               // if we don't skip, add it via array_merge...
-              if(!$skip) 
-                $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);
+              if(!$skip) {
+                if(!isset($out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT][$key]))
+                  $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT][$key] = $item;
+                else
+                  $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT][] = $item;
+              }
+
+//                $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT] = array_merge($out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT], $item);
             
             }
           } else { // "normal" behaviour

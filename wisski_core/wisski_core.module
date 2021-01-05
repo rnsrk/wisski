@@ -319,7 +319,8 @@ function wisski_core_entity_view(array &$build, \Drupal\Core\Entity\EntityInterf
  * Base Field is sometimes provided - and we need to be sure that this is not the case in all other cases...
  */
 function wisski_core_generate_title($wisski_individual, $base_field = NULL, $force_new=FALSE, $override_bundle_id = NULL) {
-
+#  return array("en" => array(0 => array("value" => "muhaha")));
+#  dpm(serialize($wisski_individual), "yay, I do something");
   if(!is_bool($force_new)) {
     \Drupal::messenger()->addError("Danger Zone: force_new was not boolean!");
   }
@@ -346,11 +347,14 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
 
       if(!empty($bundle_id)) {
         if ($bundle = WisskiBundle::load($bundle_id)) {
-	  $title = $bundle->generateEntityTitle($wisski_individual,FALSE,$force_new);
+	
+	  
+          $title = $bundle->generateEntityTitle($wisski_individual,FALSE,$force_new);
 
 	  if(empty($title))
             $title = html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
 #	  dpm($title, "ret1");
+#	  $title = "juhu, ein nasenbaer";
           return $title;
         }
       }

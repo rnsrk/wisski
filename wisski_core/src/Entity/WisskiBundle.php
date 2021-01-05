@@ -261,7 +261,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    * this is a seperate function since we want to be able to apply it again in case we end up with an empty title
    */
   private function applyTitlePattern($pattern,$entity) {
- #   dpm(microtime(), "apply");
+#    dpm("apply");
+#    dpm(microtime(), "apply");
+#    dpm(serialize($entity), "ente?");
     // reduce to the id because for historical reasons...
     if(is_object($entity))
       $entity_id = $entity->id();
@@ -271,7 +273,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #    dpm($pattern,__FUNCTION__);
     if(isset($pattern['max_id']))
       unset($pattern['max_id']);
-        
+    
+#    dpm($entity_id, "eid?");    
     // just in case...
     if (empty($pattern)) return $this->createFallbackTitle($entity_id);;
     

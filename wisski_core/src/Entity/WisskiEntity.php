@@ -238,7 +238,7 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
    * {@inheritdoc}
    */
   public function label() {
-#    dpm("my label was asked");
+#    dpm(serialize($this), "my label was asked");
 #    dpm($this->activeLangcode, "al?");
 #    dpm($this->label, "sis1?");
 /*
@@ -262,8 +262,17 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
 #    return array("x-default" => array(array("value" => "juhu")), "fr" => array(array("value" => "oh weh")));    
     return $this->label;
   */
+ 
+    $title = parent::label();
   
-    return parent::label();
+    if($this->label === NULL) { 
+      $title = wisski_core_generate_title($this);
+      $title = $title[0]["value"] . t(" (new)");
+      $this->label = $title;
+    }
+#    dpm($title, "tit?");
+      
+    return $title;
   }
 
 

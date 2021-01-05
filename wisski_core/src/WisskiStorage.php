@@ -969,7 +969,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                 //here we have a "normal field" so we can assume an array of field values is OK
                 $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
 
-//                dpm(microtime(), "after load" . serialize($new_field_values));
+#                dpm("after load" . serialize($new_field_values));
 #                dpm($new_field_values, "nfv");
                 if (empty($new_field_values)) continue;
                 $info[$id]['bundle'] = $bundleid;
