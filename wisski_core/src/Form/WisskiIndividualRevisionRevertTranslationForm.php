@@ -1,21 +1,21 @@
 <?php
 
-namespace Drupal\node\Form;
+namespace Drupal\wisski_core\Form;
 
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\node\NodeInterface;
+use Drupal\wisski_core\WisskiEntityInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Provides a form for reverting a node revision for a single translation.
+ * Provides a form for reverting a WissKI revision for a single translation.
  *
  * @internal
  */
-class NodeRevisionRevertTranslationForm extends NodeRevisionRevertForm {
+class WisskiIndividualRevisionRevertTranslationForm extends WisskiIndividualRevisionRevertForm {
 
   /**
    * The language to be reverted.
@@ -32,10 +32,10 @@ class NodeRevisionRevertTranslationForm extends NodeRevisionRevertForm {
   protected $languageManager;
 
   /**
-   * Constructs a new NodeRevisionRevertTranslationForm.
+   * Constructs a new WisskiIndividualRevisionRevertTranslationForm.
    *
-   * @param \Drupal\Core\Entity\EntityStorageInterface $node_storage
-   *   The node storage.
+   * @param \Drupal\Core\Entity\EntityStorageInterface $wisski_storage
+   *   The wisski storage.
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date formatter service.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
@@ -43,8 +43,8 @@ class NodeRevisionRevertTranslationForm extends NodeRevisionRevertForm {
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
    */
-  public function __construct(EntityStorageInterface $node_storage, DateFormatterInterface $date_formatter, LanguageManagerInterface $language_manager, TimeInterface $time) {
-    parent::__construct($node_storage, $date_formatter, $time);
+  public function __construct(EntityStorageInterface $wisski_storage, DateFormatterInterface $date_formatter, LanguageManagerInterface $language_manager, TimeInterface $time) {
+    parent::__construct($wisski_storage, $date_formatter, $time);
     $this->languageManager = $language_manager;
   }
 
@@ -53,7 +53,7 @@ class NodeRevisionRevertTranslationForm extends NodeRevisionRevertForm {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity_type.manager')->getStorage('node'),
+      $container->get('entity_type.manager')->getStorage('wisski_individual'),
       $container->get('date.formatter'),
       $container->get('language_manager'),
       $container->get('datetime.time')
@@ -64,7 +64,7 @@ class NodeRevisionRevertTranslationForm extends NodeRevisionRevertForm {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'node_revision_revert_translation_confirm';
+    return 'wisski_individual_revision_revert_translation_confirm';
   }
 
   /**
@@ -84,9 +84,10 @@ class NodeRevisionRevertTranslationForm extends NodeRevisionRevertForm {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $node_revision = NULL, $langcode = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual_revision = NULL, $langcode = NULL) {
     $this->langcode = $langcode;
-    $form = parent::buildForm($form, $form_state, $node_revision);
+#    dpm(serialize($wisski_individual_revision), "rev2?");
+    $form = parent::buildForm($form, $form_state, $wisski_individual_revision);
 
     // Unless untranslatable fields are configured to affect only the default
     // translation, we need to ask the user whether they should be included in
@@ -105,10 +106,10 @@ class NodeRevisionRevertTranslationForm extends NodeRevisionRevertForm {
   /**
    * {@inheritdoc}
    */
-  protected function prepareRevertedRevision(NodeInterface $revision, FormStateInterface $form_state) {
+  protected function prepareRevertedRevision(WisskiEntityInterface $revision, FormStateInterface $form_state) {
     $revert_untranslated_fields = (bool) $form_state->getValue('revert_untranslated_fields');
     $translation = $revision->getTranslation($this->langcode);
-    return $this->nodeStorage->createRevision($translation, TRUE, $revert_untranslated_fields);
+    return $this->wisskiStorage->createRevision($translation, TRUE, $revert_untranslated_fields);
   }
 
 }
