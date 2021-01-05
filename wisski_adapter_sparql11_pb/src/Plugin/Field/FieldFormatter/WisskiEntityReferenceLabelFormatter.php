@@ -75,6 +75,12 @@ class WisskiEntityReferenceLabelFormatter extends EntityReferenceLabelFormatter 
       
       if(isset($label[$langcode][0]["value"]))
         $label = $label[$langcode][0]["value"];
+      else {
+        $cur_label = current($label);
+        if(isset($cur_label[0]["value"]))
+          $label = $cur_label[0]["value"];
+      }
+        
       
       // If the link is to be displayed and the entity has a uri, display a
       // link.
