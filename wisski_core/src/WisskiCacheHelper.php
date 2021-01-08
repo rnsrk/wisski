@@ -67,8 +67,12 @@ class WisskiCacheHelper {
 
   }
   
-  static function getEntityTitle($entity_id,$bundle_id=NULL) {
-    
+  static function getEntityTitle($entity_id,$bundle_id=NULL, $language = NULL) {
+    //by MyF: we added the language here like in putEntityTitle() for compability reasons; it is set to the current interface language
+    if(!isset($language)){
+      $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+    }
+
     if (is_null($bundle_id)) $bundle_id = 'default';
     $cid = 'wisski_title.'.$entity_id.'.'. $language . '.' . $bundle_id;
     return self::getCacheData($cid);
