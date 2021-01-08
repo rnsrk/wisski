@@ -201,7 +201,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #    $force_new = true;
     if (!$force_new) {
       $title = $this->getCachedTitle($entity_id);
- #     dpm(microtime(), "got cached title " . serialize($title) . "for entity $entity with pattern " . serialize($pattern));
+#      dpm( "got cached title " . serialize($title) . "for entity $entity with pattern " . serialize($pattern));
+#      $title = NULL;
       if (isset($title)) {
         #drupal_set_message('Title from cache');
         if ($include_bundle) {
@@ -223,8 +224,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
      // TODO: repair this after translation update...
      // this needs to be serialized    
-#    if(!empty($entity_id))
-#      $this->setCachedTitle($entity_id, $title);
+    if(!empty($entity_id))
+      $this->setCachedTitle($entity_id, $title);
 
     if ($include_bundle && $title !== FALSE) {
       \Drupal::messenger()->addStatus('Enhance Title '.$title);
@@ -415,7 +416,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       $title[$alanguage][0]["value"] = "";
       $title[$alanguage][0]["wisski_language"] = $alanguage;
       foreach ($pattern_order as $pos) {
-        if (isset($parts[$pos])) $title[$alanguage][0]["value"] .= $parts[$pos][$alanguage];
+        if (isset($parts[$pos]) && isset($parts[$pos][$alanguage])) $title[$alanguage][0]["value"] .= $parts[$pos][$alanguage];
       }
       // if the title is an empty string we probably unset it, because
       // there seems to be no translation!
@@ -780,16 +781,43 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   }
 
   private function setCachedTitle($entity_id,$title) {
-    
+#    dpm("I am called");
     $this->cached_titles[$entity_id] = $title;
-    WisskiCacheHelper::putEntityTitle($entity_id,$title,$this->id());
+    
+    // if so it is probably a language-array with titles.
+    if(is_array($title)) {
+      foreach($title as $language => $title) {
+        #dpm($title);
+        #dpm($language);
+        WisskiCacheHelper::putEntityTitle($entity_id,$title[0]["value"],$this->id(), $language);
+      }
+    } else {
+      // for now we do nothing, but it might be useful to do something
+      // probably dpm here and see if we ever run into this.
+    }
   }
 
   public function getCachedTitle($entity_id) {
 #    dpm(microtime(), "got cached title!");
     if (!isset($this->cached_titles[$entity_id])) {  
-      if ($title = WisskiCacheHelper::getEntityTitle($entity_id,$this->id())) $this->cached_titles[$entity_id] = $title;
-      else return NULL;
+#      dpm("fetch fresh");
+// we have to iterate this due to language thingies.
+//      if ($title = WisskiCacheHelper::getEntityTitle($entity_id,$this->id())) $this->cached_titles[$entity_id] = $title;
+      $available_languages = \Drupal::languageManager()->getLanguages();
+      $available_languages = array_keys($available_languages);
+      
+      $title = array();
+      
+      foreach($available_languages as $lang) {
+        $titleperlang = WisskiCacheHelper::getEntityTitle($entity_id,$this->id(),$lang);
+        if(!empty($titleperlang))
+          $title[$lang][0] = array("value" => $titleperlang, "wisski_language" => $lang);
+        $this->cached_titles[$entity_id] = $title;
+      }
+      
+      if(empty($title))
+        return NULL;
+      //else return NULL;
     }//dpm($this->cached_titles,'cached titles');
 #    dpm(microtime(), "delivered.");
     return $this->cached_titles[$entity_id];

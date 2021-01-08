@@ -27,6 +27,8 @@ class WisskiCacheHelper {
   }
 
   static function putEntityTitle($entity_id,$entity_title,$bundle_id=NULL, $language = "und") {
+
+    #dpm("I put: " . $entity_id . " " . $entity_title . " " . $bundle_id . " " . $language);
     
     if(empty($entity_id)) {
       \Drupal::messenger()->addError("Entity ID was empty - this is evil!");
@@ -68,6 +70,7 @@ class WisskiCacheHelper {
   }
   
   static function getEntityTitle($entity_id,$bundle_id=NULL, $language = NULL) {
+#    dpm("I am getted");
     //by MyF: we added the language here like in putEntityTitle() for compability reasons; it is set to the current interface language
     if(!isset($language)){
       $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
