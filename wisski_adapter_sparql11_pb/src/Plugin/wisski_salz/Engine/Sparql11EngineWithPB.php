@@ -1494,7 +1494,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
    * @inheritdoc
    * The Yaml-Adapter cannot handle field properties, we insist on field values being the main property
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL, $language = NULL) {
+    if(isset($language)){
+      dpm("High Voltage: " . $language . " is set in loadPropertyValuesForField() in Sparql11EngineWithPB.php and should not be set.");
+    }
 #    drupal_set_message("a1: " . microtime());
 #    drupal_set_message("fun: " . serialize(func_get_args()));
 #    drupal_set_message("2");
