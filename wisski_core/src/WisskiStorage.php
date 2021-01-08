@@ -301,13 +301,14 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
               continue;
 
             foreach($available_languages as $alang) {
-#              dpm("checking $alang in $key with " . serialize($val));
-              if(array_key_exists($alang, $val)) {
+            #  dpm("checking $alang in $key with " . serialize($val));
+            if(is_array($val) && array_key_exists($alang, $val)) {
                 $set_languages[$alang] = $alang;
               } else {
                 // we add it to the not setted languages
                 // because we need that to clear the titles
                 // that should not exist.
+            #    dpm("answer is false");
                 $not_set_languages[$alang] = $alang;
               }
               
@@ -926,7 +927,10 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                   //@TODO make sure, we load the RIGHT value
                   if(empty($new_field_values)) 
 //                    $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
-                    $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid, $language);
+                 
+                  //By MyF: We removed the language from this call => see declaration for more information
+                   # $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid, $language);
+                   $new_field_values = $adapter->loadPropertyValuesForField($field_name,array(),array($id),$bundleid);
                   
 #                  dpm($new_field_values, $field_name);
 
