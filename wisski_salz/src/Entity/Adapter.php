@@ -211,8 +211,8 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
   /**
    * {@inheritdoc}
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
-    return $this->getEngine()->loadPropertyValuesForField($field_id, $property_ids, $entity_ids, $bundle,$language);
+  public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $bundle = NULL) {
+    return $this->getEngine()->loadPropertyValuesForField($field_id, $property_ids, $entity_ids, $bundle);
   }
 
   /**

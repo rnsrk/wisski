@@ -1204,7 +1204,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
       foreach($field_ids as $fkey => $fieldid) {  
         #drupal_set_message("for field " . $fieldid . " with bundle " . $bundleid_in . " I've got " . serialize($this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in, $language)));
 
-        $got = $this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in, $language);
+        $got = $this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in);
 
 #        drupal_set_message("I've got: " . serialize($got));
 
@@ -1241,7 +1241,7 @@ if (!is_object($path)) {ddebug_backtrace(); return array();}
    * @inheritdoc
    * The Yaml-Adapter cannot handle field properties, we insist on field values being the main property
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL) {
 #    drupal_set_message("a1: " . microtime());
 #    drupal_set_message("fun: " . serialize(func_get_args()));
 #    drupal_set_message("2");

@@ -253,7 +253,7 @@ abstract class Sparql11Engine extends EngineBase {
   /**
    * {@inheritdoc}
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
+  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundle = NULL) {
     return array(
       "foo" => array(
         'x-default' => array(

@@ -224,7 +224,7 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
 
       foreach($field_ids as $fkey => $fieldid) {  
         
-        $got = $this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in, $language);
+        $got = $this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in);
 
         if (empty($out)) {
           $out = $got;
@@ -250,7 +250,7 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
   /**
    * {@inheritdoc} 
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
+  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL) {
 
     $main_property = FieldStorageConfig::loadByName('wisski_individual', $field_id);
     if(!empty($main_property)) {

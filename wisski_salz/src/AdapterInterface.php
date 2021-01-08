@@ -94,7 +94,7 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
   /**
    * @see EngineInterface::loadFieldValues()
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT);
+  public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $bundle = NULL);
 
   /**
    * returns an instance of this Adapter's Query Class

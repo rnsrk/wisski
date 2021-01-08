@@ -134,7 +134,7 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurableInterfa
    * @param $language language code for the desired translation
    * @return an array describing the values TODO: describe structure
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT);
+  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundle = NULL);
 
   /**
    * returns an instance of this Adapter's Query Class
