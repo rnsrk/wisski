@@ -151,7 +151,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       if(!empty($title))
         return $title;
     }
-
+    
     return unserialize($this->title_pattern);
 
   }
@@ -175,7 +175,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #    dpm(serialize($entity), "what?");
 #    dpm(microtime(), "begin title");
     $pattern = $this->getTitlePattern();
-
+#    dpm("Pattern is " . serialize($pattern));
     // reduce to the id because for historical reasons...
     if(is_object($entity))
       $entity_id = $entity->id();
@@ -190,7 +190,6 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       $language = $entity->language()->getId();
     else
       $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
-
 #    dpm($language, "language?");
 
     #drupal_set_message(serialize($pattern));
@@ -336,7 +335,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           default: {
             list($pb_id,$path_id) = explode('.',$attributes['name']);
             $values = $this->gatherTitleValues($entity, $path_id, $pb_id);
-#            dpm($values,'gathered values for '.$path_id);
+#             dpm($values,'gathered values for '.$path_id);
           }
         }
         if (empty($values)) {
@@ -372,6 +371,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #            if ($i >= $cardinality) break;
 #          dpm($value, 'get');
             foreach($available_languages as $alanguage) {
+#              dpm("my lang is: " . $alanguage);
               if(empty($part[$alanguage]))
                 $part[$alanguage] = "";
               $part[$alanguage] .= "$value";
@@ -396,16 +396,16 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             if (++$i < $cardinality) $part[$language] .= $delimiter;
           }
         } 
-  
-        if ($attributes['type'] === 'text') {
-          foreach($available_languages as $language) {
-            $part[$language] = $attributes['label'];
-          }
+      }
+
+      if ($attributes['type'] === 'text') {
+        foreach($available_languages as $language) {
+          $part[$language] = $attributes['label'];
         }
+      }
       //if (!empty($attributes['children'])){dpm($part,'Part');dpm($parts,'Parts '.$key);}
       
-        $parts[$key] = $part;
-      }
+      $parts[$key] = $part;
     }
   
 #    dpm(array('parts'=>$parts),'after');
@@ -468,7 +468,6 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     }
     
     $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
-    
 #    dpm(serialize($eid), "eid!!");
     
     // this is the case for create-dialog-thingies where the id is still empty
@@ -582,8 +581,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               // use case: Edit form with some sub-value field and there is an entity reference in it. 
               // Then we may not do this here. Example is divination historische einordnung
               $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", TRUE);
+#              dpm("(in WisskiBundle.php, line 584) my val is (if): " . serialize($tmp));
             } else {
               $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", TRUE);
+#              dpm("(in WisskiBundle.php, line 587) my val is (else): " . serialize($tmp));
             }
 #            dpm($pbpath, "pbp");
 #            dpm($tmp, "tmp");
@@ -646,11 +647,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               // absolute mode and give the length of the group because we find 
               // $eid there.
               $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, count($group->getPathArray())-1, "value", FALSE); 
+#              dpm("(in WisskiBundle.php, line 650) my val is (if): " . serialize($new_values));
             } else // if not they are relative.
-            
-              
               $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "value", TRUE);
-
+#              dpm("(in WisskiBundle.php, line 653) my val is (else): " . serialize($new_values));
 #            dpm(microtime(), "new values");
             if (WISSKI_DEVEL) \Drupal::logger($pb_id.' '.$path_id.' '.__FUNCTION__)->debug('Entity '.$eid."{out}",array('out'=>serialize($new_values)));
           }
@@ -671,7 +671,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         }
       } //else dpm('don\'t know path '.$path_id,$pb_id);
     }
-#    dpm($values, "wäh?");
+ #   dpm($values, "wäh?");
     
     return $values;
   }
