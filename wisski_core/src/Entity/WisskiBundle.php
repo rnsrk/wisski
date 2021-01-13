@@ -201,7 +201,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     if (!$force_new) {
       $title = $this->getCachedTitle($entity_id);
 #      dpm( "got cached title " . serialize($title) . "for entity $entity with pattern " . serialize($pattern));
-      $title = NULL;
+#      $title = NULL;
       if (isset($title)) {
         #drupal_set_message('Title from cache');
         if ($include_bundle) {
@@ -611,6 +611,11 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
                 continue;
 
               // generate the title of that
+              #if(title does not exist in $drupal:installed languages (prüfen ob was ueber die paths gesetzt wird, weil hier / aus dem title pattern  kommen)){
+                #               dann setze title => in die source version
+                #              } else {
+                #               nimm den title wie er ist
+                #             }
               $mytitle = $bundle->generateEntityTitle($item_eid);
               $grptitles[] = $mytitle[$language][0]['value'];
 #              dpm("my grphtitle is " . serialize($mytitle));
