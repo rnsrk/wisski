@@ -353,12 +353,12 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                 $orig_lang = $key;
             } 
           }
-            
+          
           // if the entity has no default langcode (which might be and probably is the default
           // for old wisski instances) we just use the first language
           // that comes up
           if(empty($values[$id]["default_langcode"])) {    
-          //MyF: it might happen that $set_languages is empty! thats why we have to look at the first language in $not_set_languages       
+          //MyF: it might happen that $set_languages is empty! thats why we have to look at the first language in $not_set_languages    
             if(empty($set_languages)){
               $orig_lang = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
             } else {
@@ -440,6 +440,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
               // language tag of the original language for x-default
               if($field_lang == $orig_lang) {
                 $test[$key][LanguageInterface::LANGCODE_DEFAULT] = $field_vals;
+                $test[$key][$orig_lang] = $field_vals;
               } else {
                 // we just trust it for now...
                 $test[$key][$field_lang] = $field_vals;
@@ -498,7 +499,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #          $test["content_translation_source"] = array("x-default" => "und", "fr" => "en");
           //$test["fb18eeb8a1dce42fc045f3ebd12f20f9"] = array("x-default" => $test["fb18eeb8a1dce42fc045f3ebd12f20f9"]["x-default"], "fr" => $test["fb18eeb8a1dce42fc045f3ebd12f20f9"]["x-default"]);
 
-          # dpm($test, "what do we give?");
+#            dpm($test, "what do we give?");
 
 #          $test["default_langcode"]["x-default"] = array("value" => TRUE);
           
