@@ -478,6 +478,7 @@ class Query extends WisskiQueryBase {
 #        dpm("yay!");
           $eids = $this->executeEntityTitleCondition($operator, $value, $needs_a_bundle);
           $entity_ids = $this->join($conjunction, $entity_ids, $eids);
+#          dpm($entity_ids, "ids?");
           if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
             // the condition evaluated to an empty set of entities 
             // and we have to AND; so the result set will be empty.
