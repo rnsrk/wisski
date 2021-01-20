@@ -207,7 +207,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         if ($include_bundle) {
           \Drupal::messenger()->addStatus('Enhance Title '.$title);
           $title = $this->label().': '.$title;
-        }    
+        }
         return $title;
       }
     }
@@ -611,11 +611,6 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
                 continue;
 
               // generate the title of that
-              #if(title does not exist in $drupal:installed languages (prüfen ob was ueber die paths gesetzt wird, weil hier / aus dem title pattern  kommen)){
-                #               dann setze title => in die source version
-                #              } else {
-                #               nimm den title wie er ist
-                #             }
               $mytitle = $bundle->generateEntityTitle($item_eid);
               $grptitles[] = $mytitle[$language][0]['value'];
 #              dpm("my grphtitle is " . serialize($mytitle));

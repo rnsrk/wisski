@@ -117,7 +117,6 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
     // these have to be stored accordingly or we burn in translation hell
 
     $base_fields = \Drupal::service('entity_field.manager')->getBaseFieldDefinitions("wisski_individual");
-    
     $base_field_names = array_keys($base_fields);
     
     // add the values from the cache
@@ -401,7 +400,6 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
               
               // if this is translatable
               if($base_field_def->isTranslatable()) {
-
                 // then we go and look for the first key
                 foreach($val as $pot_lang => $some_field_values) {
                   // if this is a language tag
@@ -436,6 +434,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             // translatable base fields (in fact we do the handling for any 
             // translatable fields)
             foreach($val as $field_lang => $field_vals) {
+ #             dpm($field_vals);
               // if it is the default language of the entity, we exchange the 
               // language tag of the original language for x-default
               if($field_lang == $orig_lang) {
