@@ -1188,6 +1188,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    drupal_set_message("I got: $eid " . serialize($path));
 #$tmpt1 = microtime(TRUE);            
 #  drupal_set_message("ptrv: " . microtime());
+    //MyF: Instead of the LANGCODE_DEFAULT (x-default), we use the displayed language
+    $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
 
     $languages = array();
     
@@ -1341,7 +1343,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           
           // if we have no language, take the default one.
           if(empty($my_language))
-            $my_language = LanguageInterface::LANGCODE_DEFAULT;
+#            $my_language = LanguageInterface::LANGCODE_DEFAULT;
+            //MyF: if there is no language, we set the language to the current displayed language stored in $language (instead of setting it to LanguageInterface::LANGCODE_DEFAULT)
+            $my_language = $language;
+
           
           $outvalue = $thing->out->getValue();
 
@@ -1370,7 +1375,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       
         // in this case we always take the language which is available...
         
-        $my_language = LanguageInterface::LANGCODE_DEFAULT;
+#        $my_language = LanguageInterface::LANGCODE_DEFAULT;
+        //MyF: in this case, we take the language which is displayed (stored in $language)
+#       $my_language = LanguageInterface::LANGCODE_DEFAULT;
+        $my_language = $language;
+#        dpm("(Sparl11EngineWithPB.php, line 1380) I changed my lang from x-default to " . $my_language);
+
       
         if(empty($main_property)) {
           $out[] = $thing->{$name}->dumpValue("text");
