@@ -13,6 +13,8 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
 
+use \EasyRdf\Resource as EasyRdf_Resource;
+
 class Sparql11TriplesTabController extends ControllerBase {
 
   public function forward($wisski_individual) {
