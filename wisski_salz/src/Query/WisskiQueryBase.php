@@ -19,10 +19,10 @@ abstract class WisskiQueryBase extends QueryBase implements QueryInterface, Quer
   const FIELD_QUERY = 1;
   const PATH_QUERY = 2;
 
-  public function __construct(EntityTypeInterface $entity_type,$condition,array $namespaces,EngineInterface $parent_engine=NULL) {
+  public function __construct(EntityTypeInterface $entity_type,$conjunction,array $namespaces,EngineInterface $parent_engine=NULL) {
 #    dpm($parent_engine, "par");
     $namespaces = array_merge($namespaces,QueryBase::getNamespaces($this));
-    parent::__construct($entity_type,$condition,$namespaces);
+    parent::__construct($entity_type,$conjunction,$namespaces);
     $this->parent_engine = $parent_engine;
     $this->query_column_type = self::FIELD_QUERY;
   }

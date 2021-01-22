@@ -69,6 +69,7 @@ class Query extends WisskiQueryBase {
    * - The eids (values-part)
    */
   public function getQueryParts() {
+    // TODO: Iterate over the tree in this::Groups
     list($where_clause, $entity_ids) = $this->makeQueryConditions($this->condition);
         
     return array("where" => $where_clause, "eids" => $entity_ids, "order" => $this->orderby);
@@ -174,7 +175,7 @@ class Query extends WisskiQueryBase {
     // compile the condition clauses into
     // sparql graph patterns and
     // a list of entity ids that the pattern should be restricted to
-#    dpm($this->condition, "condition?");
+//    dpm($this->condition, "condition?");
     list($where_clause, $entity_ids) = $this->makeQueryConditions($this->condition);
 
 #    dpm($this->orderby, "order?");
@@ -318,7 +319,7 @@ class Query extends WisskiQueryBase {
   /** recursively go through $condition tree and match entities against it.
    */
   protected function makeQueryConditions(ConditionInterface $condition) {
-#   dpm($condition, "cond");   
+//    dpm ($this, "makeQueryConditions");
     // these fields cannot be queried with this adapter
     $skip_field_ids = array(
       'langcode',
@@ -346,6 +347,7 @@ class Query extends WisskiQueryBase {
     $contributes_to_pathquery = FALSE;
 #    dpm($condition, "cond");
     foreach($condition->conditions() as $ij => $cond) {
+#      dpm($cond, "cond-iter");
       $field = $cond['field'];
 #      dpm($field, "field");
       $value = $cond['value'];
@@ -804,7 +806,7 @@ class Query extends WisskiQueryBase {
 
 $timethis[] = microtime(TRUE);
 #    dpm(microtime(), "before");
-#    dpm($select, "query on engine " . $this->getEngine()->adapterId());
+#    dpm( $select , "query on engine " . $this->getEngine()->adapterId());
 #    dpm(serialize($this), "this");
     $result = $this->getEngine()->directQuery($select);
 #    dpm($result, "resquery");

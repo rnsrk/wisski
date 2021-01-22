@@ -23,6 +23,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 
 class WisskiEntityViewsData extends EntityViewsData {
+
+  /**
+   * represents the "generate/connect no field please" option in the path['field'] entry
+   */
+  const CONNECT_NO_FIELD = '1ae353e47a8aa3fc995220848780758a'; // TODO: Use WisskiPathbuilderEntity::CONNECT_NO_FIELD ?
   
 
 #  public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
@@ -213,6 +218,7 @@ class WisskiEntityViewsData extends EntityViewsData {
       // we load all paths. then we go though the top groups
       // paths that haven't been handled in a group will be added below
       $orphaned_paths = $pb->getAllPaths();
+      // Use only main bundles, one *could* use 'use-only-main-bundles' config setting
       $groups = $pb->getMainGroups();
       foreach ($groups as $gid => $group) {
         $paths = $pb->getAllPathsForGroupId($gid, TRUE);
@@ -220,42 +226,50 @@ class WisskiEntityViewsData extends EntityViewsData {
           $pid = $path->id();
           // we are gonna handle this path, so it's not orphaned
           unset($orphaned_paths[$pid]);
-          if (!$path->isGroup()) {
 
-            $fieldid = NULL;
-            $pbpath = $pb->getPbPath($path->id());
-            if(!empty($pbpath))
-              $fieldid = $pbpath['field'];
+          // if this is a nested group
+          if ($path->isGroup()) {
+            continue;
+          }
 
-            // if there is no fieldid or it is create no field - do nothing!
-            if(empty($fieldid) || $fieldid == "1ae353e47a8aa3fc995220848780758a") {
-              continue; // the warning is left here only for debug purpose.
-              \Drupal::messenger()->addWarning("Path " . $path->getName() . " has no field definition.");
-            }
+          // extract the fieldid from the pathbuilder
+          $fieldid = NULL;
+          $pbpath = $pb->getPbPath($path->id());
+          
+          if(!empty($pbpath)) {
+            $fieldid = $pbpath['field'];
+          }
 
-            $field = NULL;
+          // if there is no fieldid or it is create no field - do nothing!
+          if(empty($fieldid) || $fieldid == self::CONNECT_NO_FIELD) {
+            continue; // the warning is left here only for debug purpose.
+            \Drupal::messenger()->addWarning("Path " . $path->getName() . " has no field definition.");
+          }
 
-            if(isset($field_storage_def[$fieldid]))
-              $field = $field_storage_def[$fieldid];
+          $field = NULL;
 
-            $standard_values = array();            
+          if(isset($field_storage_def[$fieldid])) {
+            $field = $field_storage_def[$fieldid];
+          }
 
-            if(!empty($field)) {
+          $standard_values = array();            
+
+          if(!empty($field)) {
 #              dpm($field->getType(), "fn");
 
-              $bundleid = $pbpath['bundle'];
+            $bundleid = $pbpath['bundle'];
 
 #              dpm($bundleid, "bun");              
 #              dpm(\Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundleid)[$fieldid], "fdef");
 #
-              if(!isset($fdef_for_bundle[$bundleid]))
-                $fdef_for_bundle[$bundleid] = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual',$bundleid);
+            if(!isset($fdef_for_bundle[$bundleid]))
+              $fdef_for_bundle[$bundleid] = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual',$bundleid);
 
-              if(isset($fdef_for_bundle[$bundleid])) {
-                if(isset($fdef_for_bundle[$bundleid][$fieldid])) {
-                  $fdef = $fdef_for_bundle[$bundleid][$fieldid];
+            if(isset($fdef_for_bundle[$bundleid])) {
+              if(isset($fdef_for_bundle[$bundleid][$fieldid])) {
+                $fdef = $fdef_for_bundle[$bundleid][$fieldid];
 
-                  if(isset($fdef)) {
+                if(isset($fdef)) {
 
 #              $fdef = \Drupal::entityManager()->getFieldDefinitions('wisski_individual',$bundleid)[$fieldid];
 #                $this->entityManager = \Drupal::entityManager();
@@ -263,116 +277,80 @@ class WisskiEntityViewsData extends EntityViewsData {
 #                    dpm($data, "data?");
 #                    dpm($fieldid, "fid?");
 #                    dpm(
-                    $standard_values = $this->mapSingleFieldViewsData($data, $fieldid, $field->getType(), $fieldid, $field->getType(), TRUE, $fdef);
+                  $standard_values = $this->mapSingleFieldViewsData($data, $fieldid, $field->getType(), $fieldid, $field->getType(), TRUE, $fdef);
 #                  dpm($standard_values, "val");
-                  }
                 }
               }
             }
+          }
 
-            // begin with the standard values... it does not hurt if there are no...
-            $data[$base_table]["wisski_path_${pbid}__$pid"] = $standard_values;
+          // begin with the standard values... it does not hurt if there are no...
+          $data[$base_table]["wisski_path_${pbid}__$pid"] = $standard_values;
 
-            // override this
+          // override this
+          // It would have been brilliant if we could combine both pb ID
+          // and path ID by a dot for forming the field's ID as wisski 
+          // entity query encodes paths like that. But Drupal views does 
+          // not allow dots... :(
+          $data[$base_table]["wisski_path_${pbid}__$pid"]['id'] = "wisski_path_{$pbid}__$pid";
+
+          // override the title
+          $data[$base_table]["wisski_path_${pbid}__$pid"]['title'] = $this->t("@group -> @path (@id) in @pb", [
+                "@group" => $group->getName(),
+                "@path" => $path->getName(),
+                "@id" => $pid,
+                "@pb" => $pb->getName(),
+            ]);
+
+          // override the field-properties, as we do know better, what to do with them...
+          $data[$base_table]["wisski_path_${pbid}__$pid"]['field'] = [
+              'id' => 'wisski_entityfield', #'wisski_standard',
+              'field_name' => $fieldid,
+              'entity_type' => $this->entityType->id(),
+              'wisski_field' => "$pbid.$pid",
+            ];
+#            dpm($data[$base_table]["wisski_path_${pbid}__$pid"], "filter!!! $pid");             
+          // override this only if the standard did not set something or it has set "standard" which seems to be stupid
+          if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id']) || 
+              $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id'] == "standard" ||
+              $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id'] == "string" ||
+              // special case for entity reference, because we dont want to have int filter there...
+              (isset($data[$base_table]["wisski_path_${pbid}__$pid"]["relationship"]) && $data[$base_table]["wisski_path_${pbid}__$pid"]["relationship"]["base"] == "wisski_individual" && $data[$base_table]["wisski_path_${pbid}__$pid"]["relationship"]["base field"] == "eid") )
+            $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id'] = 'wisski_field_string'; 
+          $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['pb'] = $pbid;
+          $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['path'] = $pid;
+          $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['wisski_field'] = "$pbid.$pid";
+
+          // override this only if the standard did not set something
+          if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['sort']['id']))
+            $data[$base_table]["wisski_path_${pbid}__$pid"]['sort']['id'] = 'standard'; 
+#           dpm(serialize($data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['id']), $pbid.$pid);     
+          // override this only if the standard did not set something
+          if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['id']) )
+            $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['id'] = 'wisski_string'; 
+#            dpm(serialize($data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['id']), $pbid.$pid);
+          $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['pb'] = $pbid;
+          $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['path'] = $pid;
+          $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['wisski_field'] = "$pbid.$pid";
+
+          $data[$base_table]["wisski_path_${pbid}__$pid"]['entity type'] = $this->entityType->id();
+/*
+          $data[$base_table]["wisski_path_${pbid}__$pid"] = 
             // It would have been brilliant if we could combine both pb ID
             // and path ID by a dot for forming the field's ID as wisski 
             // entity query encodes paths like that. But Drupal views does 
             // not allow dots... :(
-            $data[$base_table]["wisski_path_${pbid}__$pid"]['id'] = "wisski_path_{$pbid}__$pid";
-
-            // override the title
-            $data[$base_table]["wisski_path_${pbid}__$pid"]['title'] = $this->t("@group -> @path (@id) in @pb", [
-                  "@group" => $group->getName(),
-                  "@path" => $path->getName(),
-                  "@id" => $pid,
-                  "@pb" => $pb->getName(),
-              ]);
-
-            // override the field-properties, as we do know better, what to do with them...
-            $data[$base_table]["wisski_path_${pbid}__$pid"]['field'] = [
-                'id' => 'wisski_entityfield', #'wisski_standard',
-                'field_name' => $fieldid,
-                'entity_type' => $this->entityType->id(),
-                'wisski_field' => "$pbid.$pid",
-              ];
-#            dpm($data[$base_table]["wisski_path_${pbid}__$pid"], "filter!!! $pid");             
-            // override this only if the standard did not set something or it has set "standard" which seems to be stupid
-            if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id']) || 
-               $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id'] == "standard" ||
-               $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id'] == "string" ||
-               // special case for entity reference, because we dont want to have int filter there...
-               (isset($data[$base_table]["wisski_path_${pbid}__$pid"]["relationship"]) && $data[$base_table]["wisski_path_${pbid}__$pid"]["relationship"]["base"] == "wisski_individual" && $data[$base_table]["wisski_path_${pbid}__$pid"]["relationship"]["base field"] == "eid") )
-              $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['id'] = 'wisski_field_string'; 
-            $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['pb'] = $pbid;
-            $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['path'] = $pid;
-            $data[$base_table]["wisski_path_${pbid}__$pid"]['filter']['wisski_field'] = "$pbid.$pid";
-
-            // override this only if the standard did not set something
-            if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['sort']['id']))
-              $data[$base_table]["wisski_path_${pbid}__$pid"]['sort']['id'] = 'standard'; 
-#           dpm(serialize($data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['id']), $pbid.$pid);     
-            // override this only if the standard did not set something
-            if(!isset($data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['id']) )
-              $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['id'] = 'wisski_string'; 
-#            dpm(serialize($data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['id']), $pbid.$pid);
-            $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['pb'] = $pbid;
-            $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['path'] = $pid;
-            $data[$base_table]["wisski_path_${pbid}__$pid"]['argument']['wisski_field'] = "$pbid.$pid";
-
-            $data[$base_table]["wisski_path_${pbid}__$pid"]['entity type'] = $this->entityType->id();
-/*
-            $data[$base_table]["wisski_path_${pbid}__$pid"] = 
-              // It would have been brilliant if we could combine both pb ID
-              // and path ID by a dot for forming the field's ID as wisski 
-              // entity query encodes paths like that. But Drupal views does 
-              // not allow dots... :(
-              'id' => "wisski_path_{$pbid}__$pid",  
-              'title' => $this->t("@group -> @path (@id) in @pb", [
-                  "@group" => $group->getName(),
-                  "@path" => $path->getName(),
-                  "@id" => $pid,
-                  "@pb" => $pb->getName(),
-              ]),
-              'field' => [
-                'id' => 'wisski_entityfield', #'wisski_standard',
-                'field_name' => $fieldid,
-                'entity_type' => $this->entityType->id(),
-                'wisski_field' => "$pbid.$pid",
-              ],
-              'filter' => [
-                'id' => 'wisski_field_string', // TODO: depending on the field type we should use other filter types like numeric etc.
-                'pb' => $pbid,
-                'path' => $pid,
-                'wisski_field' => "$pbid.$pid",
-              ],
-              'sort' => [
-                'id' => 'standard',
-              ],
-              'argument' => [
-                'id' => 'wisski_string',
-                'pb' => $pbid,
-                'path' => $pid,
-                'wisski_field' => "$pbid.$pid",
-              ],
-              'entity type' => $this->entityType->id(),
-            ]; */
-          }
-        }
-      }
-
-      // handle orphaned paths
-      foreach ($orphaned_paths as $path) {
-        $pid = $path->id();
-        if (!$path->isGroup()) {
-          $data[$base_table]["wisski_path_${pbid}__$pid"] = [
             'id' => "wisski_path_{$pbid}__$pid",  
-            'title' => $this->t("@path (@id) in @pb (Standalone)", [
+            'title' => $this->t("@group -> @path (@id) in @pb", [
+                "@group" => $group->getName(),
                 "@path" => $path->getName(),
                 "@id" => $pid,
                 "@pb" => $pb->getName(),
             ]),
             'field' => [
-              'id' => 'wisski_standard',
+              'id' => 'wisski_entityfield', #'wisski_standard',
+              'field_name' => $fieldid,
+              'entity_type' => $this->entityType->id(),
               'wisski_field' => "$pbid.$pid",
             ],
             'filter' => [
@@ -391,10 +369,45 @@ class WisskiEntityViewsData extends EntityViewsData {
               'wisski_field' => "$pbid.$pid",
             ],
             'entity type' => $this->entityType->id(),
-          ];
+          ]; */
         }
       }
 
+      // handle orphaned paths
+      foreach ($orphaned_paths as $path) {
+        $pid = $path->id();
+        if ($path->isGroup()) {
+          continue;
+        }
+        $data[$base_table]["wisski_path_${pbid}__$pid"] = [
+          'id' => "wisski_path_{$pbid}__$pid",  
+          'title' => $this->t("@path (@id) in @pb (Standalone)", [
+              "@path" => $path->getName(),
+              "@id" => $pid,
+              "@pb" => $pb->getName(),
+          ]),
+          'field' => [
+            'id' => 'wisski_standard',
+            'wisski_field' => "$pbid.$pid",
+          ],
+          'filter' => [
+            'id' => 'wisski_field_string', // TODO: depending on the field type we should use other filter types like numeric etc.
+            'pb' => $pbid,
+            'path' => $pid,
+            'wisski_field' => "$pbid.$pid",
+          ],
+          'sort' => [
+            'id' => 'standard',
+          ],
+          'argument' => [
+            'id' => 'wisski_string',
+            'pb' => $pbid,
+            'path' => $pid,
+            'wisski_field' => "$pbid.$pid",
+          ],
+          'entity type' => $this->entityType->id(),
+        ];
+      }
     }
 
     $top_bundles = WisskiHelper::getTopBundleIds(TRUE);
@@ -402,7 +415,7 @@ class WisskiEntityViewsData extends EntityViewsData {
       // HERE we should add the fields per bundle
 
     }
-
+//    dpm ($data, "data");
     return $data;
 
   }

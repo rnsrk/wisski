@@ -25,7 +25,7 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *   bundle_label = @Translation("Wisski Bundle"),
  *   handlers = {
  *     "storage" = "Drupal\wisski_core\WisskiStorage",
- *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
+ *     "view_builder" = "Drupal\wisski_core\WisskiEntityViewBuilder",
  *     "views_data" = "Drupal\wisski_core\WisskiEntityViewsData",
  *     "list_builder" = "Drupal\wisski_core\Controller\WisskiEntityListBuilder",
  *     "list_controller" = "Drupal\wisski_core\Controller\WisskiEntityListController",

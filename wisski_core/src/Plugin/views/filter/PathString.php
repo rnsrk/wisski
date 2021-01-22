@@ -70,7 +70,7 @@ class PathString extends ViewsString {
    * {@inheritdoc}
    */
   function opSimple() {
-    $this->query->query->condition($this->realField, $this->value, $this->operator);
+    $this->query->addWhere($this->options['group'], $this->realField, $this->value, $this->operator);
   }
 
 }

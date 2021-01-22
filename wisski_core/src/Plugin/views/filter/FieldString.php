@@ -98,18 +98,17 @@ class FieldString extends ViewsString {
    * {@inheritdoc}
    */
   function opSimple($field) {
-    $this->query->query->condition($field, $this->value, $this->operator);
+    $this->query->addWhere($this->options['group'], $field, $this->value, $this->operator);
   }
 
   function opMulti($field) {
     $value = explode(',', $this->value);
-    $this->query->query->condition($field, $value, $this->operator);
-    
+    $this->query->addWhere($this->options['group'], $field, $value, $this->operator);
   }
   
   function placeholder() {
     $field = isset($this->configuration['wisski_field']) ? $this->configuration['wisski_field'] : $this->realField;
-    $this->query->query->condition($field, $this->value, $this->operator);
+    $this->query->addWhere($this->options['group'], $field, $this->value, $this->operator);
 
   }
 

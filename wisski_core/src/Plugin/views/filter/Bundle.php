@@ -47,7 +47,7 @@ class Bundle extends ViewsBundle {
    * {@inheritdoc}
    */
   function opIn() {
-    $this->query->query->condition($this->realField, $this->value, $this->operator);
+    $this->query->addWhere($this->options['group'], $this->realField, $this->value, $this->operator);
   }
 
 }

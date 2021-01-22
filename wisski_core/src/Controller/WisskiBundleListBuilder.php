@@ -142,7 +142,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     $menus = WisskiBundle::getWissKIMenus();
     
     switch ($this->type) {
-      case self::NAVIGATE: return $this->buildMenuNavigateRow($entity, $menus['navigate']); //$this->buildNavigateRow($entity, $menus['navigate']);
+      case self::NAVIGATE: return $this->buildNavigateRow($entity, $menus['navigate']);
       case self::CREATE: return $this->buildCreateRow($entity, $menus['create']);
       case self::CONFIG: return $this->buildConfigRow($entity);
     }
@@ -150,7 +150,8 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     return array();
   }
   
-  private function buildMenuNavigateRow($entity, $menu_param = "entity.wisski_bundle.entity_list") {
+  private function buildNavigateRow($entity, $menu_param = "entity.wisski_bundle.entity_list") {
+#    dpm( "" );
 
     $p = new MenuTreeParameters();
     $p->addCondition('title', $entity->label(), '=');
@@ -208,33 +209,6 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
       ),
     );
 
-    return $row;
-  }
-  
-  private function buildNavigateRow($entity, $menu_param = "entity.wisski_bundle.entity_list") {
-
-    // see if there is a row in the navigation menu.
-    $entities = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => 'navigate', 'title' => $entity->label() ]);
-    
-    // there should not be more than one.
-    $entities = current($entities);
-
-    if(empty($entities) || !$entities->isEnabled())
-      return array();
-    
-#    dpm($entities);
-
-#    dpm($entity);    
-    $row['label'] = array(
-      'data' => array(
-        '#type' => 'link',
-        '#url' => $entities->getUrlObject(),
-        '#title' => $entities->getTitle(),
-#        '#url' => Url::fromRoute('entity.wisski_bundle.entity_list')
-#          ->setRouteParameters(array('wisski_bundle' => $entity->id())),
-#        '#title' => $entity->label(),
-      ),
-    );
     return $row;
   }
   

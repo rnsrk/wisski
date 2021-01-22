@@ -9,39 +9,308 @@ use Drupal\wisski_adapter_gnd\Query\Query;
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\Core\Entity\EntityTypeInterface;
 
+/**
+ * WisskiQueryDelegator is used to construct Drupal Queries, then translate them to SparQL and execute them.
+ * 
+ * This process consists of three phases:
+ * - "construct" phase: only the constructor is called with a conjuction between all conditions
+ * - "build" phase: conditions and fields are added using the ->condition() and ->field() methods
+ * - "execute" phase: the query is sent to the relevant adapters which translate them to SparQL and execute them. 
+ */
 class WisskiQueryDelegator extends WisskiQueryBase {
 
-  /**
-   * an array of Query Objects keyed by the name of their parent adapter. We need this to make sure, every
-   * dependent query gets the same conditions etc.
-   */
-  private $dependent_queries = array();
-  
+  //
+  // =============== CONSTRUCT PHASE ===============
+  //
+
+  public function __construct(EntityTypeInterface $entity_type,$conjunction,array $namespaces) {
+    parent::__construct($entity_type,$conjunction,$namespaces);
+
+    $this->populateAdapterQueries();
+  }
+    
   /**
    * we cache a list of entity IDs whose corresponding entites have an empty title in the cache table
    * those MUST be deleted from the view
    */
   protected static $empties;
 
-  public function __construct(EntityTypeInterface $entity_type,$condition,array $namespaces) {
-    parent::__construct($entity_type,$condition,$namespaces);
-#    $adapters = entity_load_multiple('wisski_salz_adapter');
+  /** populates self::$empties if it's not already cached */
+  private function populateEmpties() {
+    if (isset(self::$empties)) {
+      return;
+    }
+
+    self::$empties = array();
+
+    $bundleIDs = $this->getWissKIBundleIDs();
+    foreach ($bundleIDs as $bid => $bundleID) {
+      $empties = WisskiCacheHelper::getEntitiesWithEmptyTitle($bundleID);
+      self::$empties = array_merge(self::$empties, $empties);
+    }
+  }
+
+  /**
+   * an array of Query Objects keyed by the name of their parent adapter. 
+   * This function should only be used during the *query construction* phase, and not during execution.
+   * See relevant_adapter_queries.
+   * 
+   * This list always contains all adapter queries, even if some of them might not be used for a particular query. 
+   */
+  private $adapter_queries = NULL;
+
+  /** called once to populate the adapter_queries array  */
+  private function populateAdapterQueries() {
     $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
 
     $preferred_queries = array();
     $other_queries = array();
+    
     foreach ($adapters as $adapter) {
-#      dpm($this->condition, "cond?");
-#      dpm($condition, "cond2");
-#      $query = $adapter->getQueryObject($this->entityType,$this->condition,$this->namespaces);
       $query = $adapter->getQueryObject($this->entityType,$condition,$this->namespaces);
-      if ($adapter->getEngine()->isPreferredLocalStore()) $preferred_queries[$adapter->id()] = $query;
-      else $other_queries[$adapter->id()] = $query;
+      if ($adapter->getEngine()->isPreferredLocalStore()) {
+        $preferred_queries[$adapter->id()] = $query;
+      } else {
+        $other_queries[$adapter->id()] = $query;
+      }
     }
-    $this->dependent_queries = array_merge($preferred_queries,$other_queries);
-#    dpm($this->dependent_queries, "dep!");
+    $this->adapter_queries = array_merge($preferred_queries,$other_queries);
   }
+
+  /**
+   * Like $adapter_queries, but only for adapters relevant to this query. 
+   * This should be populated before every call to query. 
+   */
+  private $relevant_adapter_queries = NULL;
+
+  /**
+   * should be called before a query is executed to populate the relevant adapter queries
+   */
+  private function populateRelevantAdapterQueries() {
+
+    // find all the bundles involved in this query
+    $bundleIDs = $this->getWissKIBundleIDs();
+
+    $pb_man = \Drupal::service('wisski_pathbuilder.manager');
+
+    // find the IDs of adapters known for each adapter
+    $adapterIDs = array();
+    foreach($bundleIDs as $bid => $bundleID) {
+      $adaptersForBundle = $pb_man->getPbsUsingBundle($bundleID);
+      $adapterIDs = array_merge($adapterIDs, $adaptersForBundle);
+    }
+
+    // TODO: Provide some functionality of prioritizing adapters
+    // probably via a ->getAdapterPriority and a stable sort here!
+    // e.g. \Drupal\wisski_adapter_dms\Query\Query should be prioritized
+
+    $this->relevant_adapter_queries = array_filter(
+      $this->adapter_queries,
+      function ($adapterID) use ($adapterIDs) {
+        return in_array($adapterID, $adapterIDs);
+      },
+      ARRAY_FILTER_USE_KEY
+    );
+  }
+
+  /** returns an array of bundle IDs involved in this query */
+  public function getWissKIBundleIDs() {
+    // make a queue of conditions to check recursively
+    $conditionQueue = array($this->condition);
+    $bundleIds = array();
+
+    while(count($conditionQueue) > 0) {
+
+      // take the first condition from the queue
+      // to be safe, ignore non-condition instances
+      $condition = array_shift($conditionQueue);
+      if (!($condition instanceof ConditionParent)) {
+        continue;
+      }
+
+      // iterate over any subconditions declared in this condition
+      // - if it is a nested condition, add it to the queue
+      // - if it is a 'bundle' condition, record the bundle id
+      foreach ($condition->conditions() as $cond) {
+        $field = $cond["field"];
+
+        if (!is_string($field)) { 
+          array_push($conditionQueue, $field);
+          continue;
+        }
+
+        if ($field == "bundle") {
+          array_push($bundleIds, current($cond["value"]));
+        }
+
+      }
+    }
+
+    return array_unique($bundleIds);
+  }
+
+  //
+  // =============== EXECUTE PHASE ===============
+  //
+
+  /**
+   * Execute executes this query and returns an array of results!
+   *
+   * Execute uses three different strategies:
+   * - Case 1: 1 relevant adapter => send query to the adapter
+   * - Case 2: >1 federatable adapters => make a "federated" query and send it to the dominant adapter
+   * - Case 3: non-federatable adapters => send queries to each and merge in php memory (here be dragons!)
+  */
+  public function execute() {
+    $this->populateRelevantAdapterQueries();
+
+    // check if we can do an easy return
+    $easy_ret = $this->executeEasyRet();
+    if($easy_ret != NULL) {
+      return $easy_ret;
+    }
+    
+    $this->populateEmpties();
+    
+    // execute count query or actual query
+    if ($this->count) {
+      return $this->executeCount();
+    }
+
+    return $this->executeNormal();
+  }
+
+  private function executeNormal() {
+    //call initializePager() to initialize the pager if we have one
+    $pager = FALSE;
+    if ($this->pager) {
+      $pager = TRUE;
+      $this->initializePager();
+    }
+    
+    $result = array();
+
+    // only one relevant adapter => execute it
+    if(count($this->relevant_adapter_queries) == 1) {
+
+      // make use of the pager!
+      if ($pager || !empty($this->range)) {
+        return $this->executePaginatedJoin($this->range['length'], $this->range['start']);
+      }
+
+      $query = current($this->adapter_queries);
+      $query = $query->normalQuery();
+      return $query->execute();
+    }
+
+    if($this->hasOnlyFederatableDependents()) {
+
+      // if it is sparql, do a federated query!
+      $first_query = $this->getFederatedQuery(FALSE);
+      $first_query = $first_query->normalQuery();
+      if ($pager || !empty($this->range)) {
+        $first_query->range($this->range['start'],$this->range['length']);
+      }
+
+      // dpm(serialize($first_query), "first?");
+      $ret = $first_query->execute();
+      //  dpm($ret, "ret");
+
+      return $ret;
+    }
+
+    // complicated cases below (we have > 1 adapter and can't federate!)
+    
+    // at least we have a pager!
+    if ($pager || !empty($this->range)) {
+    
+      if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
+        $querytmp = $query->normalQuery();
+        $querytmp->range($this->range['start'],$this->range['length']);
+        $ret = $querytmp->execute();
+#              dpm(serialize($ret), "ret?");
+        if(!empty($ret)) {
+          return $ret;
+        }
+        
+      }
+    
+      // use the old behaviour if we have a pager
+      return $this->executePaginatedJoin($this->range['length'],$this->range['start']);
+    }
+    
+#            dpm("no pager...");
+      // if we dont have a pager, iterate it and sum it up 
+      // @todo: This here is definitely evil. We should give some warning!
+      // here be dragons
+      foreach ($this->relevant_adapter_queries as $query) {
+        $query = $query->normalQuery();
+        $sub_result = $query->execute();
+        $result = array_unique(array_merge($result,$sub_result));
+#              dpm($sub_result, "result?");
+#              dpm(self::$empties, "what is this?!");              
+      }
+      if (!empty(self::$empties)) $result = array_diff($result,self::$empties);
+      return $result;
+  }
+
+   /** execute, but for a count query only */
+   private function executeCount() {
+    // only one dependent query => execute it
+    if(count($this->relevant_adapter_queries) == 1) {
+      $query = current($this->relevant_adapter_queries);
+      
+      $count = $query->countQuery()->execute() ? : 0;
+      $count -= count(self::$empties);
+
+      return $count;
+    }
+
+    // only federatable adapters => execute the federated query
+    if($this->hasOnlyFederatableDependents()) {
+      $first_query = $this->getFederatedQuery(TRUE);
+
+      $count = $first_query->countQuery()->execute() ? : 0;
+      $count -= count(self::$empties);
+
+      return $count;
+    }
+    
+
+    // complicated case: collect a result set and count elements in it
+    $result = array();
   
+    foreach ($this->relevant_adapter_queries as $adapter_id => $query) {
+      
+      // TODO: dms adapter
+      if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
+        /*$query = $query->count();
+
+        $sub_res = $query->execute() ? : 0;
+
+        if(!empty($sub_res)) {
+          $result = $sub_res;
+          continue;
+        }
+        */
+      }
+
+      // get the result for this adapter
+      $sub_result = $query->execute() ? : NULL;
+      if(!is_array($sub_result)) {
+        $sub_result = array();
+      }
+
+      // merge in the results
+      $result = array_unique(array_merge($result, $sub_result), SORT_REGULAR); 
+    }
+
+    $count = count($result);
+    $count -= count(self::$empties);
+    
+    return $count;
+  }
+
   /**
    * Add all parameters for a federated query to one of the query objects 
    * and return this.
@@ -55,11 +324,11 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
     $total_order_string = "";
 
-    $count = count($this->dependent_queries);
+    $count = count($this->adapter_queries);
     
     $real_deps = array();
 
-    foreach ($this->dependent_queries as $adapter_id => $query) {
+    foreach ($this->adapter_queries as $adapter_id => $query) {
 
 #      dpm("dependent on $adapter_id");
 
@@ -161,7 +430,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     if(!empty($max_query_parts)) {   
       $total_service_array = array();
 
-      foreach ($this->dependent_queries as $adapter_id => $query) {
+      foreach ($this->adapter_queries as $adapter_id => $query) {
         if($query instanceOf Query ||
            $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
           // this is null anyway... so skip it
@@ -189,14 +458,30 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     return $first_query;
   }
   
-  public function execute() {
+  /** checks if this query only has federatable dependent queries */
+  private function hasOnlyFederatableDependents() {
+    foreach($this->relevant_adapter_queries as $adapter_id => $query) {
+      if (!($query instanceof \Drupal\wisski_salz\WisskiQueryBase && $query->isFederatableSparqlQuery())) {
+        return FALSE;        
+      }
+    }
 
-    // if we have no conditions and nothing else we probably dont have to do anything?
-    $something_to_do = FALSE; 
+    return TRUE;
+  }
+
+  /**
+   * Traverses the conditions to determine if we can execute this query without sending a Query to the adapters. 
+   * 
+   * If yes, returns the result as it should be returned by execute. 
+   * If no, returns NULL.
+   */
+  protected function executeEasyRet() {
+    // determine if we can do an easy return on the eid field. 
+    // do this only if it is != -1
     $easy_ret = -1;
 
     // iterate through all dependent queries 
-    foreach($this->dependent_queries as $dep) {
+    foreach($this->relevant_adapter_queries as $dep) {
       $cond_wrap = $dep->condition;
       
       if(empty($cond_wrap))
@@ -204,213 +489,56 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
       $conditions = $cond_wrap->conditions();
       
-#      dpm($conditions, "cond?");
+      // dpm($conditions, "cond?");
       
-      // if there is only one
-      if(count($conditions) == 1) {
-        $one_cond = current($conditions);
-        
-        if($one_cond['field'] == "eid" && $one_cond['operator'] == "" && is_integer($one_cond['value'])) {
-          // there is only one condition and this is an integer-condition, 
-          // so we don't have to do anything but to return
-
-          $easy_ret = $one_cond['value'];          
-          
-        }
-        
-      } else {
-        // it is more difficult!
-
-#        dpm($conditions, "more diff!");
-      
-        $something_to_do = TRUE;
-      
+      // there is more than one condition
+      if(count($conditions) != 1) {
+        $easy_ret = -1;
+        continue;
       }
-    }   
 
-#    dpm(count($this->dependent_queries), "dep?");
-#    dpm(serialize($something_to_do), "std");
-#    dpm($easy_ret, "easy");
+      $one_cond = current($conditions);
+      
+      if($one_cond['field'] == "eid" && $one_cond['operator'] == "" && is_integer($one_cond['value'])) {
+        // there is only one condition and this is an integer-condition, 
+        // so we don't have to do anything but to return
 
-    // if we have dependent queries and there is nothing to do and we have an eid, return it.    
-    if(count($this->dependent_queries) > 1 && !$something_to_do && $easy_ret != -1) {
-      return array($easy_ret);
+        $easy_ret = $one_cond['value'];          
+      }
     }
-    
 
-    if (!isset($this->empties)) {
-      $bundle_id = NULL;
-      foreach($this->condition->conditions() as $cond) {
-        if ($cond['field'] === 'bundle') {
-          $bundle_id = $cond['value'];
-          break;
-        }
-      }
-      //it is allowed to have an empty $bundle_id here
-      self::$empties = WisskiCacheHelper::getEntitiesWithEmptyTitle($bundle_id);
-      //dpm(self::$empties,'Empty titled Entities');
-    }  
-    
-    if ($this->count) {
-#      dpm("we have a count query!");
-      $result = array();
-      
-      // only do this if more than one adapter!!!
-      if(count($this->dependent_queries) > 1) {
-        $is_sparql = TRUE;
-
-        // check if all queries are sparql queries...
-        foreach($this->dependent_queries as $adapter_id => $query) {
-          if (!($query instanceof \Drupal\wisski_salz\WisskiQueryBase && $query->isFederatableSparqlQuery())) {
-            $is_sparql = FALSE;        
-          }
-        }
-
-#        dpm(serialize($is_sparql), "is it?");
-
-        if(!$is_sparql) {
-          // this is complicated!     
-          foreach ($this->dependent_queries as $adapter_id => $query) {
-
-//        $query = $query->count();
-
-            if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
-              $query = $query->count();
-
-              $sub_res = $query->execute() ? : 0;
-
-              if(!empty($sub_res)) {
-                $result = $sub_res;
-                continue;
-              }
-
-            }
-
-            $sub_result = $query->execute() ? : 0;
-
-            // this is rather complicated. I don't know why php does this like that...
-            if(!is_array($sub_result))
-              $sub_result = array();
-            $result = array_unique(array_merge($result, $sub_result), SORT_REGULAR); 
-
-          }
-        } else {
-          $first_query = $this->getFederatedQuery(TRUE);
-#          dpm(serialize($first_query), "first query");
-          $result = $first_query->countQuery()->execute() ? : 0;
-#          dpm(serialize($result), "res");
-        }
-//        $result = count($result);
-      } else {
-        $query = current($this->dependent_queries);
-        $result = $query->countQuery()->execute() ? : 0;
-      }
-      
-#     dpm('we counted '.$result);
-#      dpm(serialize(self::$empties), "empties!");
-      if (!empty(self::$empties)) $result -= count(self::$empties);
-      return $result;
-    } else {
-#      dpm("we have no count query!");
-      $pager = FALSE;
-      if ($this->pager) {
-        $pager = TRUE;
-        //initializePager() generates a clone of $this with $count = TRUE
-        //this is then passed to the dependent_queries which are NOT cloned
-        //thus we must reset $count for the dependent_queries
-        $this->initializePager();
-      }
-      $result = array();
-  
-      if(count($this->dependent_queries) > 1) {
-#        dpm("we have a dependent query");
-        $is_sparql = TRUE;
-                
-        // check if all queries are sparql queries...
-        foreach($this->dependent_queries as $adapter_id => $query) {
-          if (!($query instanceof \Drupal\wisski_salz\WisskiQueryBase && $query->isFederatableSparqlQuery())) {
-            $is_sparql = FALSE;
-          }
-        }
-        
-        if(!$is_sparql) {
-          // this is complicated
-#          dpm("complicated...");
-          if ($pager || !empty($this->range)) {
-          
-            if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
-              $querytmp = $query->normalQuery();
-              $querytmp->range($this->range['start'],$this->range['length']);
-              $ret = $querytmp->execute();
-#              dpm(serialize($ret), "ret?");
-              if(!empty($ret))
-                return $ret;
-            } 
-          
-            // use the old behaviour if we have a pager
-            
-            return $this->pagerQuery($this->range['length'],$this->range['start']);
-          } else {
-#            dpm("no pager...");
-            // if we dont have a pager, iterate it and sum it up 
-            // @todo: This here is definitely evil. We should give some warning!
-            foreach ($this->dependent_queries as $query) {
-              $query = $query->normalQuery();
-              $sub_result = $query->execute();
-              $result = array_unique(array_merge($result,$sub_result));
-#              dpm($sub_result, "result?");
-#              dpm(self::$empties, "what is this?!");              
-            }
-            if (!empty(self::$empties)) $result = array_diff($result,self::$empties);
-            return $result;
-          }
-        } else {
-#          dpm("it is sparql");
-          // if it is sparql, do a federated query!
-          $first_query = $this->getFederatedQuery(FALSE);
-          if ($pager || !empty($this->range)) {
-            $first_query = $first_query->normalQuery();
-            $first_query->range($this->range['start'],$this->range['length']);
-          } else {
-            $first_query = $first_query->normalQuery();
-          }
-#          dpm(serialize($first_query), "first?");
-          $ret = $first_query->execute();
-#          dpm($ret, "ret");
-          return $ret;
-        }
-      } else {
-        // if we dont have a dependent query, do it the easy way!
-        if ($pager || !empty($this->range)) {
-          return $this->pagerQuery($this->range['length'],$this->range['start']);
-        } else {
-          $query = current($this->dependent_queries);
-          $query = $query->normalQuery();
-          return $query->execute();
-        }
-      }
-      
-      // this is probably unreachable...
-      if (!empty(self::$empties)) $result = array_diff($result,self::$empties);
-      return $result;
+    if(count($this->relevant_adapter_queries) <= 1 || $easy_ret == -1) {
+      return NULL;
     }
+
+    return array($easy_ret);
   }
   
-  protected function pagerQuery($limit,$offset) {
-    //old versions below  
-    $queries = $this->dependent_queries;
+  /**
+   * Implements a paginated query from the list of relevant adapter queries.
+   */
+  protected function executePaginatedJoin($limit,$offset) {
+    
+    $queries = $this->relevant_adapter_queries;
     $query = array_shift($queries);
+
     $act_offset = $offset;
     $act_limit = $limit;
+    
     $all_results = array();
     $results = array();
+    
     while (!empty($query)) {
+
       $query = $query->normalQuery();
       $query->range($act_offset,$act_limit);
+
       $new_results = $query->execute();
-#      dpm("got: " . serialize($new_results));
       $res_count = count($new_results);
+#      dpm("got: " . serialize($new_results));
+
       if (!empty(self::$empties)) $new_results = array_diff($new_results,self::$empties);
+
       //$post_res_count = count($new_results);      
       //dpm($post_res_count,$act_offset.' '.$act_limit);
       $old_sum = count($results);
@@ -430,8 +558,9 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         
         $res_count = $query->execute();
         #dpm($res_count, "res!");
-        if(!is_array($res_count))
+        if(!is_array($res_count)) {
           $res_count = array();
+        }
 
         $before = count($all_results);
         $all_results = array_unique(array_merge($all_results,$res_count));
@@ -454,17 +583,21 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         $query = array_shift($queries);
       } else break;
     }
+
 #    dpm($results, "res!");
     return $results;
   }
+
+  //
+  // =============== BUILD PHASE ===============
+  //
 
   /**
    * {@inheritdoc}
    */
   public function condition($field, $value = NULL, $operator = NULL, $langcode = NULL) {
     parent::condition($field,$value,$operator,$langcode);
-    foreach ($this->dependent_queries as $query) {
-#      dpm("doing condition " . serialize($field) . " to value " . serialize($value));
+    foreach ($this->adapter_queries as $query) {
       $query->condition($field,$value,$operator.$langcode);
     }
     return $this;
@@ -475,7 +608,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    */
   public function exists($field, $langcode = NULL) {
     parent::exists($field,$langcode);
-    foreach ($this->dependent_queries as $query) $query->exists($field,$langcode);
+    foreach ($this->adapter_queries as $query) $query->exists($field,$langcode);
     return $this;
   }
 
@@ -484,16 +617,16 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    */
   public function notExists($field, $langcode = NULL) {
     parent::notExists($field,$langcode);
-    foreach ($this->dependent_queries as $query) $query->notExists($field,$langcode);
+    foreach ($this->adapter_queries as $query) $query->notExists($field,$langcode);
     return $this;
   }
 
-  /**
+ /**
    * {@inheritdoc}
    */
   public function pager($limit = 10, $element = NULL) {
     parent::pager($limit,$element);
-    //foreach ($this->dependent_queries as $query) $query->pager($limit,$element);
+    foreach ($this->adapter_queries as $query) $query->pager($limit,$element);
     return $this;
   }
 
@@ -502,25 +635,25 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    */
   public function range($start = NULL, $length = NULL) {
     parent::range($start,$length);
-    //foreach ($this->dependent_queries as $query) $query->range($start,$length);
+    foreach ($this->adapter_queries as $query) $query->range($start,$length);
     return $this;
   }
-
+ 
   /**
    * {@inheritdoc}
    */
   public function sort($field, $direction = 'ASC', $langcode = NULL) {
     parent::sort($field,$direction,$langcode);
-    foreach ($this->dependent_queries as $query) $query->sort($field,$direction,$langcode);
+    foreach ($this->adapter_queries as $query) $query->sort($field,$direction,$langcode);
     return $this;
   }
   
   public function setPathQuery() {
-    foreach ($this->dependent_queries as $query) $query->setPathQuery();
+    foreach ($this->adapter_queries as $query) $query->setPathQuery();
   }
   
   public function setFieldQuery() {
-    foreach ($this->dependent_queries as $query) $query->setFieldQuery(); 
+    foreach ($this->adapter_queries as $query) $query->setFieldQuery(); 
   }
   
   /**
