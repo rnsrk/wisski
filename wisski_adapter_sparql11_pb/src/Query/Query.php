@@ -1387,11 +1387,4 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     \Drupal::logger("wisski entity query")->warning("Missing entity query implementation: $msg. Data: {data}", array('data' => serialize($data)));
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function isFederatableSparqlQuery() {
-    // this is federatable for backwards compatibility
-    return true;
-  }
 }

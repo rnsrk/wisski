@@ -25,6 +25,8 @@ abstract class Sparql11Engine extends EngineBase {
 
   protected $read_url;
   protected $write_url;
+
+  protected $is_federatable;
   
   protected $graph_rewrite;
 
@@ -37,6 +39,20 @@ abstract class Sparql11Engine extends EngineBase {
   protected $has_drupal_id;
   
   protected $has_drupal_namespace;
+
+  /**
+   * Does this Adapter support federating queries?
+   */
+  public function supportsFederation() {
+    return $this->$is_federatable;
+  }
+
+  /**
+   * Returns the URL used when federating queries on this adapter
+   */
+  public function getFederationServiceUrl() {
+    return $this->read_url;
+  }
   
   /** Holds the EasyRDF sparql client instance that is used to
    * query the endpoint.
@@ -55,6 +71,7 @@ abstract class Sparql11Engine extends EngineBase {
       'header' => '',
       'read_url' => '',
       'write_url' => '',
+      'is_federatable' => TRUE,
       'graph_rewrite' => FALSE,
       'default_graph' => 'graf://dr.acula/',
       'ontology_graphs' => array(),
@@ -73,6 +90,7 @@ abstract class Sparql11Engine extends EngineBase {
     $this->header = $this->configuration['header'];
     $this->read_url = $this->configuration['read_url'];
     $this->write_url = $this->configuration['write_url'];
+    $this->is_federtable = $this->configuration['is_federtable'];
     $this->graph_rewrite = $this->configuration['graph_rewrite'];
     $this->default_graph = $this->configuration['default_graph'];
     $this->ontology_graphs = $this->configuration['ontology_graphs'];
@@ -90,6 +108,7 @@ abstract class Sparql11Engine extends EngineBase {
       'header' => $this->header,
       'read_url' => $this->read_url,
       'write_url' => $this->write_url,
+      'is_federtable' => $this->is_federtable,
       'graph_rewrite' => $this->graph_rewrite,
       'default_graph' => $this->default_graph,
       'ontology_graphs' => $this->ontology_graphs,
@@ -126,6 +145,14 @@ abstract class Sparql11Engine extends EngineBase {
       '#default_value' => $this->write_url,
       '#description' => $this->t('Here you should state the endpoint URI for insert/update... (writing) sparql queries. Typically you can find it in the triple store interface and it is the same as the above one just with /statements behind it.'),
     ];
+
+    $form['is_federatable'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Federatable'),
+      '#default_value' => $this->is_federatable,
+      '#return_value' => TRUE,
+      '#description' => $this->t('Marks this adapter as federatable so that it is queried by other services. '),
+    );
 
 /*
     // this does not work anymore...
@@ -191,6 +218,7 @@ abstract class Sparql11Engine extends EngineBase {
     $this->header = $form_state->getValue('header');
     $this->read_url = $form_state->getValue('read_url');
     $this->write_url = $form_state->getValue('write_url');
+    $this->is_federatable = $form_state->getValue('is_federatable');
     $this->graph_rewrite = $form_state->getValue('graph_rewrite');
     $this->default_graph = $form_state->getValue('default_graph');
     $this->ontology_graphs = preg_split('/[\s\n\r]+/u', $form_state->getValue('ontology_graphs'), PREG_SPLIT_NO_EMPTY); 

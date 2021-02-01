@@ -430,20 +430,18 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     if(!empty($max_query_parts)) {   
       $total_service_array = array();
 
-      foreach ($this->adapter_queries as $adapter_id => $query) {
+      foreach ($this->relevant_adapter_queries as $adapter_id => $query) {
         if($query instanceOf Query ||
            $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
           // this is null anyway... so skip it
           continue;
         }
           
-        $conf = $query->getEngine()->getConfiguration();
-          
-        $read_url = $conf['read_url'];
+        $service_url = $query->getEngine()->getFederationServiceUrl();
           
         // construct the service-string
         if($count > 1) 
-          $service_string = " { SERVICE <" . $read_url . "> { " . $max_query_parts . " } }";
+          $service_string = " { SERVICE <" . $service_url . "> { " . $max_query_parts . " } }";
         else
           $service_string = $max_query_parts;
 

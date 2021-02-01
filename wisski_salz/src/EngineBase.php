@@ -48,6 +48,20 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   }
 
   /**
+   * Does this Adapter support federating queries?
+   */
+  public function supportsFederation() {
+    return false;
+  }
+
+  /**
+   * Returns the URL used when federating queries on this adapter
+   */
+  public function getFederationServiceUrl() {
+    return NULL;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function getName() {
