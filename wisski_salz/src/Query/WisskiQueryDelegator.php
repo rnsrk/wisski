@@ -7,6 +7,7 @@ namespace Drupal\wisski_salz\Query;
 
 use Drupal\wisski_adapter_gnd\Query\Query;
 use Drupal\wisski_core\WisskiCacheHelper;
+use Drupal\wisski_salz\AdapterHelper;
 use Drupal\Core\Entity\EntityTypeInterface;
 
 use Drupal\Core\Config\Entity\Query\Condition as ConditionParent;
