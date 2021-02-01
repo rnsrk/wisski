@@ -93,6 +93,14 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     // find all the bundles involved in this query
     $bundleIDs = $this->getWissKIBundleIDs();
 
+    // no bundle ids matching the query
+    // probably something went wrong, so fall back to using all adapters!
+    // no need to give an extra warning, that's already done in getWissKIBundleIDs()
+    if (count($bundleIDs) == 0) {
+      $this->relevant_adapter_queries = $this->adapter_queries;
+      return;
+    }
+
     $pb_man = \Drupal::service('wisski_pathbuilder.manager');
 
     // find the IDs of adapters known for each adapter
@@ -150,6 +158,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         }
 
         // requested a specific eid
+        // TODO: this handles only is equal to
         if ($field == "eid") {
           $eidBundleIds = AdapterHelper::getBundleIdsForEntityId($cond['value'], TRUE);
           $bundleIDs = array_merge($bundleIDs, $eidBundleIds);
@@ -157,6 +166,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         }
 
       }
+    }
+
+    if (count($bundleIDs) == 0) {
+      \Drupal::messenger()->addWarning("No bundles are relevant for query");
     }
 
     return array_unique($bundleIds);
