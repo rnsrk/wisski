@@ -44,7 +44,7 @@ abstract class Sparql11Engine extends EngineBase {
    * Does this Adapter support federating queries?
    */
   public function supportsFederation() {
-    return $this->$is_federatable;
+    return $this->is_federatable;
   }
 
   /**
