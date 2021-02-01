@@ -554,8 +554,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    * Implements a paginated query from the list of relevant adapter queries.
    */
   protected function executePaginatedJoin($limit,$offset) {
-    
-    $queries = $this->relevant_adapter_queries;
+
+    $queries = array_merge(array(), $this->relevant_adapter_queries); // copy of the query array!
     $query = array_shift($queries);
 
     $act_offset = $offset;
