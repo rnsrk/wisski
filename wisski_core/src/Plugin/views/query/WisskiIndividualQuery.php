@@ -114,6 +114,53 @@ class WisskiIndividualQuery extends QueryPluginBase {
    */
   public function execute(ViewExecutable $view) {
 
+/*
+  function execute(ViewExecutable $view) {
+#    dpm("yo");
+#    return;
+#  dpm($this->orderby, "orderby!");
+#    dpm($view->field);
+#dpm(microtime(), "begin execute");
+#wisski_tick();
+#wisski_tick("begin exec views");
+#    dpm(serialize($this), "yay?");
+    $query = $view->build_info['wisski_query'];
+    $count_query = $view->build_info['wisski_count_query'];
+    $args = $view->build_info['query_args'];
+
+    $filter_regex = array();
+
+    $bundle_ids = array();
+    $entity_id = NULL;
+#    dpm(serialize($view->filter), "filt");
+    if(!empty($view->filter)) {
+      foreach($view->filter as $key => $one_filter) {
+        if($key == "bundle") {
+#          dpm(serialize($one_filter), "onefilter!!");
+          $bundle_ids = array_merge($bundle_ids, $one_filter->value);
+        } else {
+
+#          dpm(serialize($one_filter), "one filter");        
+          // special case - omit filter for empty values.
+          if($one_filter->value == "" && $one_filter->operator != 'is_empty') {
+            continue;
+          }
+#          dpm(serialize($one_filter));
+#          dpm($one_filter->value, "value");
+#          $filter_regex[$key][] = array('op' => $one_filter->operator, 'val' => $one_filter->value);
+#          dpm($one_filter->configuration['wisski_field'], "key");
+
+          // see if it is a wisski field or not...
+          if(isset($one_filter->configuration['wisski_field'])) {
+            $query->condition($one_filter->configuration['wisski_field'], $one_filter->value, $one_filter->operator);
+          } else {
+            $query->condition($key, $one_filter->value, $one_filter->operator);
+          }
+        }
+      }
+    }    
+*/
+
     // fetch the query and count query from the build_info
     $query = $view->build_info['query'];
     $count_query = $view->build_info['count_query'];
@@ -248,8 +295,28 @@ class WisskiIndividualQuery extends QueryPluginBase {
             $pseudo_entity_fields[$eid]['bundle'] = $row['bundle'];
           }
           
-          // generate the title from the bundle id
-          $row['title'] = wisski_core_generate_title($eid, NULL, FALSE, $row['bundle']); // previously $bid instead of $row['bundle']
+          // somehow it awaits a string here.
+          // I don't know why...
+          // In any other case (see below) an array is fine.
+          
+          $row['title'] = wisski_core_generate_title($eid, NULL, FALSE, $row['bundle']);
+
+          // get the rendering language from the view.          
+          $rendering_language = $this->view->display_handler->getOption('rendering_language');
+          
+          if($rendering_language == "***LANGUAGE_language_interface***") {
+            $rendering_language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+          }
+          
+          if(isset($row['title'][$rendering_language])) {
+            $row['title'] = $row['title'][$rendering_language][0]["value"];
+          } else {
+            $curr_title = current($row['title']);
+            $row['title'] = $curr_title[0]["value"];
+          }
+          
+//          $row['title'] = array("x-default" => array(0 => array("value" => "juhu")));
+#          dpm($row['title'], "??");
           $pseudo_entity_fields[$eid]['title'] = $row['title'];
         }
 
@@ -497,9 +564,9 @@ class WisskiIndividualQuery extends QueryPluginBase {
 
           #dpm($select, "select " . $path->getID() .': '.$path->getDatatypeProperty() . " on " . $adapter->id() );
 #                dpm(microtime(), "before");
-          $result = $engine->directQuery($select);
-
-              #dpm([$select, $result], 'select' . $path->getID());
+                $result = $engine->directQuery($select);
+#                dpm(serialize($result), "res?");
+               #dpm([$select, $result], 'select' . $path->getID());
 
 #                dpm(microtime(), "after");
           foreach ($result as $sparql_row) {
@@ -556,19 +623,20 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #                          $values_per_row[$eid][$field][] = array($main_prop => $val);
 #                          $values_per_row[$eid][$field_to_check][] = array($main_prop => $val);
 #                        } else {
-                  $values_per_row[$eid][$field][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
-                  $values_per_row[$eid][$field_to_check][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+                        $values_per_row[$eid][$field][$sparql_row->$out_prop->getLang()][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisski_language' => $sparql_row->$out_prop->getLang(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+                        $values_per_row[$eid][$field_to_check][$sparql_row->$out_prop->getLang()][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisski_language' => $sparql_row->$out_prop->getLang(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
 #                        }
                 } else {
 #                        dpm(serialize($is_file), "is file!!");
                   if(!empty($is_file)) {
                     $storage = \Drupal::entityTypeManager()->getStorage('wisski_individual');
                     $val = $storage->getFileId($sparql_row->$out_prop->getValue());
-                    $values_per_row[$eid][$field][] = array($main_prop => $val);
-                    $values_per_row[$eid][$field_to_check][] = array($main_prop => $val);
+                    $lang = $sparql_row->$out_prop->getLang();
+                    $values_per_row[$eid][$field][$lang][] = array($main_prop => $val, 'wisski_language' => $lang);
+                    $values_per_row[$eid][$field_to_check][$lang][] = array($main_prop => $val, 'wisski_language' => $lang);
                   } else {
-                    $values_per_row[$eid][$field][] = array($main_prop => $sparql_row->$out_prop->getValue());
-                    $values_per_row[$eid][$field_to_check][] = array($main_prop => $sparql_row->$out_prop->getValue());
+                    $values_per_row[$eid][$field][$sparql_row->$out_prop->getLang()][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisski_language' => $sparql_row->$out_prop->getLang());
+                    $values_per_row[$eid][$field_to_check][$sparql_row->$out_prop->getLang()][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisski_language' => $sparql_row->$out_prop->getLang());
                   }
                 }
               }
@@ -581,7 +649,13 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #if ($field == 'wisski_path_sammlungsobjekt__91') rpm([$path, $result, $values_per_row], '91');
       }
     }
-   
+    
+#    dpm(serialize($this->view->display_handler->getOption('rendering_language')));
+    
+#    dpm(serialize($values_per_row));
+#    return;
+#    dpm(microtime(), "end of ...");    
+
     if ($do_dummy_load) {
       foreach ($values_per_row as $eid => &$row) {
         // if we don't have a bundle we're in danger zone!
@@ -599,33 +673,51 @@ class WisskiIndividualQuery extends QueryPluginBase {
         if(!isset($pseudo_entity_fields[$eid]['eid'])) {
           $pseudo_entity_fields[$eid]['eid'] = array('value' => $eid);
         }
+
+        // add the title values to the label so it can be rendered correctly...
+        $pseudo_entity_fields[$eid]['label'] = $values_per_row[$eid]['title'];  
         
+#        dpm($row);
+#        $row['_entity'] = entity_load('wisski_individual', $row['eid']);;
+#        $bid = reset($bundle_ids);
+#        $tmp = entity_create('wisski_individual', $row);
+#        dpm($pseudo_entity_fields, "psd");
+    
         // store the loaded entities in the cache!
         $entities = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->addCacheValues(array($eid => $eid), $pseudo_entity_fields);
-
-        // store the entity in the row!
-        $row['_entity'] = $entities[$eid];
+      
+#        foreach($row as $field_name => $data) {
+#          $entities[$eid]->$field_name = $data;
+#        }
+#        dpm(serialize($entities), "ent");
+        $row['_entity'] = $entities[$eid];#\Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($values_per_row[$eid]), $values_per_row);
+#        $row['_entity'] = entity_load('wisski_individual', $row['eid']);
+#        $row['_entity'] = entity_create('wisski_individual', $row);
+#        dpm($row, "row");
+#        dpm(serialize($row['_entity']), "ent");
+#        $row['_entity'] = $loaded_ids[$row['eid']];
+#      dpm($row['_entity']->id(), "entity");
       }
     }
    
     return array_values($values_per_row);
   }
 
-    /** return an array containing [$bids, $bid] containing the bundle ids and bundle id for a particular entity */
-    private function get_bids_bid_for_eid($entity_id, $bundle_ids) {
-      // attempt to find all involved bundle ids
-      // if there are none, use Adapter Helper to find them!
-      $bids = $bundle_ids;
-      if(empty($bids)) {
-        $bids = AdapterHelper::getBundleIdsForEntityId($entity_id, TRUE);
-      }
-  
-      // pick the first bundle id for the entity
-      // TODO: Should we do something smarter than the first one here?
-      $bid = reset($bids);
-  
-      return [$bids, $bid];
+  /** return an array containing [$bids, $bid] containing the bundle ids and bundle id for a particular entity */
+  private function get_bids_bid_for_eid($entity_id, $bundle_ids) {
+    // attempt to find all involved bundle ids
+    // if there are none, use Adapter Helper to find them!
+    $bids = $bundle_ids;
+    if(empty($bids)) {
+      $bids = AdapterHelper::getBundleIdsForEntityId($entity_id, TRUE);
     }
+
+    // pick the first bundle id for the entity
+    // TODO: Should we do something smarter than the first one here?
+    $bid = reset($bids);
+
+    return [$bids, $bid];
+  }
 
   /**
    * Loads all entities contained in the passed-in $results.

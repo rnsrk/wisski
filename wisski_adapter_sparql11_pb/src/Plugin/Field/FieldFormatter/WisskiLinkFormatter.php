@@ -259,7 +259,7 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
    * TODO: fix link functions.
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
-    
+#    dpm("view???");
     $settings = $this->getSettings();
     $field = $items->getFieldDefinition();
     $field_settings = $this->getFieldSettings();
@@ -268,10 +268,11 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
 #    drupal_set_message(serialize($items[0]->getParent()->getEntity()->id()));
 
 #    drupal_set_message("yay!" . microtime());
-    
+#    dpm(serialize($items), "items?");
     foreach($items as $delta => $item) {
-#      dpm($item);
+#      dpm(serialize($item), "??");
       $values = $item->toArray();
+#      dpm($values, "values?");
  #     dpm($delta);
 
 #     dpm($item->getEntity());
@@ -340,6 +341,7 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
 
         #  dpm("I generate title for $entity_id");
           $generated_title = wisski_core_generate_title($entity_id);
+          $generated_title = $generated_title[$langcode][0]["value"];
         #  dpm($generated_title, "yay!");
         }
 

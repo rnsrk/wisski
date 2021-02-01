@@ -319,7 +319,8 @@ function wisski_core_entity_view(array &$build, \Drupal\Core\Entity\EntityInterf
  * Base Field is sometimes provided - and we need to be sure that this is not the case in all other cases...
  */
 function wisski_core_generate_title($wisski_individual, $base_field = NULL, $force_new=FALSE, $override_bundle_id = NULL) {
-
+#  return array("en" => array(0 => array("value" => "muhaha")));
+#  dpm(serialize($wisski_individual), "yay, I do something");
   if(!is_bool($force_new)) {
     \Drupal::messenger()->addError("Danger Zone: force_new was not boolean!");
   }
@@ -328,7 +329,7 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
 #  dpm(microtime(), "called once!!");
   $create_form_title = FALSE;
 
-#  dpm(serialize($wisski_individual));
+#  dpm(serialize($wisski_individual), "wisski core generate title");
 
   if ($wisski_individual instanceof WisskiEntityInterface) {
 
@@ -346,11 +347,14 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
 
       if(!empty($bundle_id)) {
         if ($bundle = WisskiBundle::load($bundle_id)) {
-	  $title = $bundle->generateEntityTitle($wisski_individual,FALSE,$force_new);
+	
+	  
+          $title = $bundle->generateEntityTitle($wisski_individual,FALSE,$force_new);
 
 	  if(empty($title))
             $title = html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
 #	  dpm($title, "ret1");
+#	  $title = "juhu, ein nasenbaer";
           return $title;
         }
       }
@@ -390,7 +394,7 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
 #      drupal_set_message(serialize($entity_id));
 #      drupal_set_message(serialize($bundle->generateEntityTitle($entity_id,FALSE,$force_new)));
       if ($create_form_title || empty($entity_id)) $title = html_entity_decode(t('New :bundle_label',array(':bundle_label'=>$bundle->label()))->render());
-      else $title = $bundle->generateEntityTitle($entity_id,FALSE,$force_new);
+      else $title = $bundle->generateEntityTitle($wisski_individual,FALSE,$force_new);
     }
   }
 
@@ -403,6 +407,9 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
       \Drupal::messenger()->addWarning(t('No title could be generated for entity ' . $entity_id . ' with bundle ' . $bundle->label()));
   }
 #  dpm($title, "ret2");
+#  return array("en" => array(array("value" => "yay?", "wisski_language" =>
+#  "en")), "fr" => array(array("value" => "juhu", "wisski_language" =>  "fr")));
+#  return array("en" => "eng", "fr" => "fra");
   return $title;
   
 }

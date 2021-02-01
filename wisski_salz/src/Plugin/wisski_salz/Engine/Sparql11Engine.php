@@ -34,6 +34,10 @@ abstract class Sparql11Engine extends EngineBase {
 
   protected $rdf_sparql_util = NULL;
   
+  protected $has_drupal_id;
+  
+  protected $has_drupal_namespace;
+  
   /** Holds the EasyRDF sparql client instance that is used to
    * query the endpoint.
    * It is not set on construction.
@@ -54,6 +58,8 @@ abstract class Sparql11Engine extends EngineBase {
       'graph_rewrite' => FALSE,
       'default_graph' => 'graf://dr.acula/',
       'ontology_graphs' => array(),
+      'has_drupal_id' => 'graf://dr.acula/has_drupal_id',
+      'has_drupal_namespace' =>'graf://dr.acula/',
     ];
   }
 
@@ -70,6 +76,8 @@ abstract class Sparql11Engine extends EngineBase {
     $this->graph_rewrite = $this->configuration['graph_rewrite'];
     $this->default_graph = $this->configuration['default_graph'];
     $this->ontology_graphs = $this->configuration['ontology_graphs'];
+    $this->has_drupal_id = $this->configuration['has_drupal_id'];
+    $this->has_drupal_namespace = $this->configuration['has_drupal_namespace'];
     $this->store = NULL;
   }
 
@@ -85,6 +93,8 @@ abstract class Sparql11Engine extends EngineBase {
       'graph_rewrite' => $this->graph_rewrite,
       'default_graph' => $this->default_graph,
       'ontology_graphs' => $this->ontology_graphs,
+      'has_drupal_id' => $this->has_drupal_id,
+      'has_drupal_namespace' => $this->has_drupal_namespace,
     ) + parent::getConfiguration();
   }
 
@@ -243,7 +253,7 @@ abstract class Sparql11Engine extends EngineBase {
   /**
    * {@inheritdoc}
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
+  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundle = NULL) {
     return array(
       "foo" => array(
         'x-default' => array(
@@ -591,7 +601,18 @@ abstract class Sparql11Engine extends EngineBase {
     } else throw new \Exception('There is no sameAs property set for this adapter');
 #    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> {<$uri> ?same_as ?uri. ?uri <$orig_prop> ?adapter. }}";
 #    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> ?same_as ?uri } UNION { <$uri> ?same_as ?tmp1 . ?tmp1 ?same_as ?uri } . ?uri <$orig_prop> ?adapter .}} ORDER BY DESC(?uri)";
+
+    // this is the old structure: in graph $orig_prop we had <$uri> same-as-prop ?uri 
+    // unioned with <$uri> same-as-prop something tmp and that has the ?uri
+    // and the ?uri has $orig-prop to some adapter.
+    // this is heavily usage of stupid things... so we don't do that anymore in future...
     $query = "SELECT DISTINCT ?uri ?adapter WHERE { GRAPH <$orig_prop> { { <$uri> $prop ?uri } UNION { <$uri> $prop ?tmp1 . ?tmp1 $prop ?uri } . OPTIONAL { ?uri <$orig_prop> ?adapter .}  } } ORDER BY DESC(?uri)";
+
+    // what we want to have is:
+    // we have a graph $orig_prop and in this we have a set per website and 
+    // in this set we have <drupal_id_property> drupalid (numeric)
+    //                 and <drupal_namespace> the base url of the system (string)
+    
 #    dpm($query, "query");
     $results = $this->directQuery($query);
 #    dpm(serialize($results), "res");

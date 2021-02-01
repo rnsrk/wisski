@@ -615,6 +615,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       'entity_type' =>  $mode,
       'type' => $pbpaths[$pathid]['fieldtype'], #'type' => 'text',//has to fit the field component type, see below
       'translatable' => TRUE,
+      'revisionable' => TRUE,
     ];
       
     if ($pbpaths[$pathid]['fieldtype'] == 'entity_reference')
@@ -628,6 +629,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
       'label' => $field_name,
       // Field translatability should be explicitly enabled by the users.
       'translatable' => FALSE,
+      'revisionable' => TRUE,
       'disabled' => FALSE,
     ];
 

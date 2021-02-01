@@ -391,6 +391,21 @@ $timethis = microtime(TRUE);
 #    dpm("4.1: " . microtime());
     //let the bundle generate the entity title (normally from the title pattern)
     $entity_label = $this->bundle->generateEntityTitle($entity_id);
+    
+    // add language
+    $langcode = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+    if(isset($entity_label[$langcode])) {
+      $entity_label = $entity_label[$langcode][0]["value"];
+    } else {
+      $entity_label = current($entity_label);
+      if(isset($entity_label[0]["value"])) {
+        $entity_label = $entity_label[0]["value"];
+      } else {
+        $entity_label = "WissKI Default Entity Title";
+      }
+    }
+    
+#    dpm($entity_label, "ente?");
 #    dpm("4.2: " . microtime());
     //create a link to the entity's "canonical" route, link templates
     //do not work here, again

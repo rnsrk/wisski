@@ -72,6 +72,64 @@ function wisski_core_update_8003() {
   }
 }
 
+/** language and content entity updates
+  *
+  */
+function wisski_core_update_8004() {
+  try {
+    # \Drupal::entityDefinitionUpdateManager()->applyUpdates();
+
+    $entity_definition_update_manager = \Drupal::entityDefinitionUpdateManager();
+
+    $field_storage = \Drupal::service('entity_field.manager')->getFieldStorageDefinitions('wisski_individual');
+
+    $entity_definition_update_manager->updateFieldableEntityType(\Drupal::entityTypeManager()->getDefinition('wisski_individual'), $field_storage);
+
+  }
+  catch (EntityStorageException $e) {
+    print_r($e);
+  }
+}
+
+/** translation table updates
+  *
+  */
+function wisski_core_update_8005(&$sandbox) {
+
+  $tables = array('wisski_entity_map', 'wisski_title_n_grams', 'wisski_calling_bundles', 'wisski_preview_images', 'wisski_entity_field_properties', 'wisski_core_ontology_namespaces');
+
+  foreach($tables as $table) {
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $result = \Drupal::database()->select($table, 't')->fields('t')->execute();
+    file_put_contents('temporary://' . $table, "");
+    while($thing = $result->fetch()) {
+      file_put_contents('temporary://' . $table, serialize($thing) . "\n", FILE_APPEND);
+    }
+  }
+
+  drupal_uninstall_schema('wisski_core');
+  drupal_install_schema('wisski_core');
+
+  foreach($tables as $table) {
+    $file = fopen('temporary://' . $table, "r");
+    if ($file) {
+      while (($line = fgets($file)) !== false) {
+	$thing = unserialize($line);
+	$thing = (array)$thing;
+        // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+        // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+        \Drupal::database()->insert($table)->fields($thing)->execute();
+#	dpm($line);
+      }
+    } else {
+      \Drupal::messenger()->addError("Could not open file " . $table);
+    } 
+    fclose($file);
+  }
+  
+}
+
 
 
 /**
@@ -127,11 +185,18 @@ function wisski_core_schema() {
         'size' => 'normal',
         'not null' => TRUE,
       ),
+      'lang' => array(
+        'description' => 'the language of the title',
+        'type' => 'char',
+        'length' => 16,
+        'not null' => TRUE,
+	'default' => 'und',
+      ),
     ),
-    'primary key' => array('ent_num','bundle','ngram'),
+    'primary key' => array('ent_num','bundle','ngram','lang'),
     'indexes' => array(
-      'ngrams' => array('ngram','n'),
-      'entities' => array('ent_num','bundle'),
+      'ngrams' => array('ngram','n','lang'),
+      'entities' => array('ent_num','bundle','lang'),
     ),
   );
   
@@ -217,6 +282,13 @@ function wisski_core_schema() {
         'description' => 'array of field properties',
         'type' => 'text',
         'serialize' => TRUE,
+      ),
+      'lang' => array(
+        'description' => 'the language of the field property table entry',
+        'type' => 'char',
+        'length' => 16,
+        'not null' => TRUE,
+	'default' => 'und',
       ),
     ),
     'indexes' => array(

@@ -10,6 +10,7 @@ use Drupal\Core\Link;
 use Drupal\Core\Config\Entity\ConfigEntityBundleBase;
 use Drupal\wisski_core\WisskiBundleInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\Language\LanguageInterface;
 
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
@@ -150,7 +151,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       if(!empty($title))
         return $title;
     }
-
+    
     return unserialize($this->title_pattern);
 
   }
@@ -171,29 +172,42 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   protected $cached_titles;
   
   public function generateEntityTitle($entity,$include_bundle=FALSE,$force_new=FALSE) {
+#    dpm(serialize($entity), "what?");
 #    dpm(microtime(), "begin title");
     $pattern = $this->getTitlePattern();
-
+#    dpm("Pattern is " . serialize($pattern));
     // reduce to the id because for historical reasons...
     if(is_object($entity))
       $entity_id = $entity->id();
     else
       $entity_id = $entity;
 
+#      dpm("get title for $entity");
+
+#  dpm(serialize($entity), "yay");
+
+    if(is_object($entity))
+      $language = $entity->language()->getId();
+    else
+      $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+#    dpm($language, "language?");
 
     #drupal_set_message(serialize($pattern));
     #drupal_set_message("generated: " . $this->applyTitlePattern($pattern,$entity_id));
 #    dpm([$pattern, $entity_id], "eid!");
 #    dpm(serialize($force_new), "force new?");
+#    dpm("you are asking me for $entity_id in language $language");
+#    $force_new = true;
     if (!$force_new) {
       $title = $this->getCachedTitle($entity_id);
- #     dpm(microtime(), "got cached title " . serialize($title) . "for entity $entity with pattern " . serialize($pattern));
+#      dpm( "got cached title " . serialize($title) . "for entity $entity with pattern " . serialize($pattern));
+#      $title = NULL;
       if (isset($title)) {
         #drupal_set_message('Title from cache');
         if ($include_bundle) {
           \Drupal::messenger()->addStatus('Enhance Title '.$title);
           $title = $this->label().': '.$title;
-        }    
+        }
         return $title;
       }
     }
@@ -204,18 +218,41 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     
     //now do the work
     $title = $this->applyTitlePattern($pattern,$entity);
-    
+#    return "yay?";
+#    dpm("I get from atp: $title");
+
+     // TODO: repair this after translation update...
+     // this needs to be serialized    
     if(!empty($entity_id))
-      $this->setCachedTitle($entity_id,$title);
-    
+      $this->setCachedTitle($entity_id, $title);
+
     if ($include_bundle && $title !== FALSE) {
       \Drupal::messenger()->addStatus('Enhance Title '.$title);
       $title = $this->label().': '.$title;
+      # TODO: here we have to include the language
     }   
     
 #    dpm(microtime(), "generated title $title");
     
 #    dpm(microtime(), "end title");
+    if(is_object($entity)) {
+      return $title[$language];
+    }
+    
+#    foreach($title as $lang => $aTitle) {
+#      if($lang == $language) {
+#        unset($title[$lang]);
+#        $title["x-default"] = $aTitle;
+#      }
+#    }
+    
+#    return array("x-default" => "mien", "ar" => "ara");
+         
+#      unset($title[$language]);
+#      $title[LanguageInterface::LANGCODE_DEFAULT] = $the_real_title;
+#    }
+#    dpm($title, "tit2?");
+#    return "yay?";
     return $title;
   }
   
@@ -224,7 +261,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    * this is a seperate function since we want to be able to apply it again in case we end up with an empty title
    */
   private function applyTitlePattern($pattern,$entity) {
- #   dpm(microtime(), "apply");
+#    dpm("apply");
+#    dpm(microtime(), "apply");
+#    dpm(serialize($entity), "ente?");
     // reduce to the id because for historical reasons...
     if(is_object($entity))
       $entity_id = $entity->id();
@@ -234,7 +273,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #    dpm($pattern,__FUNCTION__);
     if(isset($pattern['max_id']))
       unset($pattern['max_id']);
-        
+    
+#    dpm($entity_id, "eid?");    
     // just in case...
     if (empty($pattern)) return $this->createFallbackTitle($entity_id);;
     
@@ -246,6 +286,12 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $count = count($pattern);
     $max = ($count * ($count+1)) / 2;
     $count = 0;
+
+    // here we have to iterate the languages
+    $available_languages = \Drupal::languageManager()->getLanguages();
+    $available_languages = array_keys($available_languages);
+
+  
     while ($count < $max && current($pattern) ) { //&& list($key,$attributes) = each($pattern)) {
       
       $key = key($pattern);
@@ -289,63 +335,124 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           default: {
             list($pb_id,$path_id) = explode('.',$attributes['name']);
             $values = $this->gatherTitleValues($entity, $path_id, $pb_id);
-#            dpm($values,'gathered values for '.$path_id);
+#             dpm($values,'gathered values for '.$path_id);
           }
         }
         if (empty($values)) {
           if ($attributes['optional'] === FALSE) {
             //we detected an invalid title;
             \Drupal::messenger()->addError('Detected invalid title');
+#            dpm("oh real weh");
             return $this->createFallbackTitle($entity_id);
           } else $parts[$key] = '';
           continue;
         }
-        $part = '';
+        $part = array();
         $cardinality = $attributes['cardinality'];
+        // here we did not check for languaged tags
+        // @TODO: Make this check for sanity!
         if ($cardinality < 0 || $cardinality > count($values)) $cardinality = count($values);
         $delimiter = $attributes['delimiter'];
         $i = 0;
-#        dpm($values, "values");
-        foreach ($values as $value) {
-          // fix for empty values, we ignore these for now.
-          // a numeric 0 oder the string "0" also is empty, but we want to 
-          // print them as is
-          if(empty($value) && $value !== 0 && $value !== "0")
-            continue;
+#      dpm($values, "values");
+        foreach ($values as $language => $per_lang_values) {
+          
+          if(is_int($language)) {
+            $value = $per_lang_values;
+            // 
+            // fix for empty values, we ignore these for now.
+            // a numeric 0 oder the string "0" also is empty, but we want to 
+            // print them as is
+            if(empty($value) && $value !== 0 && $value !== "0")
+              continue;
 #          dpm($i, "i");
 #          dpm($cardinality, "card");
-          if ($i >= $cardinality) break;
+#	TODO: We have to reimplement this. I've thrown this out due to language thingies
+#            if ($i >= $cardinality) break;
 #          dpm($value, 'get');
-          $part .= "$value";
-          if (++$i < $cardinality) $part .= $delimiter;
+            foreach($available_languages as $alanguage) {
+#              dpm("my lang is: " . $alanguage);
+              if(empty($part[$alanguage]))
+                $part[$alanguage] = "";
+              $part[$alanguage] .= "$value";
+            }
+            if (++$i < $cardinality) $part[$alanguage] .= $delimiter;
+          } else {
+            // iterate language ...
+            foreach($per_lang_values as $per_lang_value) {
+              $value = $per_lang_value['value'];
+              if(empty($value) && $value !== 0 && $value !== "0")
+                continue;
+#          dpm($i, "i");
+#	TODO: SEE ABOVE
+#          dpm($cardinality, "card");
+#              if ($i >= $cardinality) break;
+#          dpm($value, 'get');
+              if(empty($part[$language]))
+                $part[$language] = "";
+              $part[$language] .= "$value";
+            
+            }
+            if (++$i < $cardinality) $part[$language] .= $delimiter;
+          }
         } 
       }
+
       if ($attributes['type'] === 'text') {
-        $part = $attributes['label'];
+        foreach($available_languages as $language) {
+          $part[$language] = $attributes['label'];
+        }
       }
       //if (!empty($attributes['children'])){dpm($part,'Part');dpm($parts,'Parts '.$key);}
       
       $parts[$key] = $part;
     }
+  
 #    dpm(array('parts'=>$parts),'after');
-    
+#    return "yay?";    
     //reorder the parts according original pattern
-    $title = '';
-    foreach ($pattern_order as $pos) {
-      if (isset($parts[$pos])) $title .= $parts[$pos];
+    $title = array();
+    foreach($available_languages as $alanguage) {
+      $title[$alanguage][0]["value"] = "";
+      $title[$alanguage][0]["wisski_language"] = $alanguage;
+      foreach ($pattern_order as $pos) {
+        if (isset($parts[$pos]) && isset($parts[$pos][$alanguage])) $title[$alanguage][0]["value"] .= $parts[$pos][$alanguage];
+      }
+      // if the title is an empty string we probably unset it, because
+      // there seems to be no translation!
+      // this is an assumption and might prove wrong.
+      if (empty(trim($title[$alanguage][0]["value"]))) unset($title[$alanguage]);
+#      if (empty(trim($title[$alanguage]))) $title[$alanguage] = $this->createFallbackTitle($entity_id);
     }
     
-    if (empty(trim($title))) return $this->createFallbackTitle($entity_id);
+    if(empty($title)) {
+#      dpm("oh weh!");
+      return $this->createFallbackTitle($entity_id);
+    }
 
+#    dpm($title, "tit?");
+#    return "yay?";
     #dpm(func_get_args()+array('result'=>$title),__METHOD__);
     return $title;
   }
   
   public function createFallbackTitle($entity_id) {
     
+    // we have to add the languages, otherwise it will become ugly.
+    // here we have to iterate the languages
+    $available_languages = \Drupal::languageManager()->getLanguages();
+    $available_languages = array_keys($available_languages);
+
+    $title = array();
+
+    foreach($available_languages as $lang) {
+      $title[$lang][0] = array("value" => $this->fallback_title . " " . $entity_id);
+    }    
+    
+    
     switch ($this->onEmpty()) {
-      case self::FALLBACK_TITLE: return $this->fallback_title;
-      case self::DEFAULT_PATTERN: return $this->applyTitlePattern($this->getDefaultPattern(),$entity_id);
+      case self::FALLBACK_TITLE: return $title; # TODO: The below case has to be rewritten...
+      case self::DEFAULT_PATTERN: return $title;#return $this->applyTitlePattern($this->getDefaultPattern(),$entity_id);
       case self::DONT_SHOW:
       default: return FALSE;
     }
@@ -359,6 +466,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
       return NULL;
     }
+    
+    $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
 #    dpm(serialize($eid), "eid!!");
     
     // this is the case for create-dialog-thingies where the id is still empty
@@ -472,8 +581,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               // use case: Edit form with some sub-value field and there is an entity reference in it. 
               // Then we may not do this here. Example is divination historische einordnung
               $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", TRUE);
+#              dpm("(in WisskiBundle.php, line 584) my val is (if): " . serialize($tmp));
             } else {
               $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", TRUE);
+#              dpm("(in WisskiBundle.php, line 587) my val is (else): " . serialize($tmp));
             }
 #            dpm($pbpath, "pbp");
 #            dpm($tmp, "tmp");
@@ -500,8 +611,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
                 continue;
 
               // generate the title of that
-              $grptitles[] = $bundle->generateEntityTitle($item_eid);
-
+              $mytitle = $bundle->generateEntityTitle($item_eid);
+              $grptitles[] = $mytitle[$language][0]['value'];
+#              dpm("my grphtitle is " . serialize($mytitle));
             }
 
             $new_values[] = implode(", ", $grptitles);
@@ -535,20 +647,33 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               // if this bundle is not the bundle where the path is in, we go to
               // absolute mode and give the length of the group because we find 
               // $eid there.
-              $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, count($group->getPathArray())-1, NULL, FALSE); 
+              $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, count($group->getPathArray())-1, "value", FALSE); 
+#              dpm("(in WisskiBundle.php, line 650) my val is (if): " . serialize($new_values));
             } else // if not they are relative.
-              $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, NULL, TRUE);
-
+              $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "value", TRUE);
+#              dpm("(in WisskiBundle.php, line 653) my val is (else): " . serialize($new_values));
 #            dpm(microtime(), "new values");
             if (WISSKI_DEVEL) \Drupal::logger($pb_id.' '.$path_id.' '.__FUNCTION__)->debug('Entity '.$eid."{out}",array('out'=>serialize($new_values)));
           }
+#          dpm("I've got new values: " . serialize($new_values) . " for lang " . $language);
         }  
         if (empty($new_values)) {
           //dpm('don\'t have values for '.$path_id.' in '.$pb_id,$adapter->id());
-        } else $values += $new_values;
+        } else {
+          // add the values to the array
+          
+          foreach($new_values as $new_value) {
+            if(isset($new_value["wisski_language"]))
+              $values[$new_value["wisski_language"]][] = $new_value;
+            else
+              $values[] = $new_value;
+          }
+          //$values += $new_values;
+        }
       } //else dpm('don\'t know path '.$path_id,$pb_id);
     }
-#    dpm($values);
+ #   dpm($values, "wäh?");
+    
     return $values;
   }
   
@@ -657,16 +782,43 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   }
 
   private function setCachedTitle($entity_id,$title) {
-    
+#    dpm("I am called");
     $this->cached_titles[$entity_id] = $title;
-    WisskiCacheHelper::putEntityTitle($entity_id,$title,$this->id());
+    
+    // if so it is probably a language-array with titles.
+    if(is_array($title)) {
+      foreach($title as $language => $title) {
+        #dpm($title);
+        #dpm($language);
+        WisskiCacheHelper::putEntityTitle($entity_id,$title[0]["value"],$this->id(), $language);
+      }
+    } else {
+      // for now we do nothing, but it might be useful to do something
+      // probably dpm here and see if we ever run into this.
+    }
   }
 
   public function getCachedTitle($entity_id) {
 #    dpm(microtime(), "got cached title!");
     if (!isset($this->cached_titles[$entity_id])) {  
-      if ($title = WisskiCacheHelper::getEntityTitle($entity_id,$this->id())) $this->cached_titles[$entity_id] = $title;
-      else return NULL;
+#      dpm("fetch fresh");
+// we have to iterate this due to language thingies.
+//      if ($title = WisskiCacheHelper::getEntityTitle($entity_id,$this->id())) $this->cached_titles[$entity_id] = $title;
+      $available_languages = \Drupal::languageManager()->getLanguages();
+      $available_languages = array_keys($available_languages);
+      
+      $title = array();
+      
+      foreach($available_languages as $lang) {
+        $titleperlang = WisskiCacheHelper::getEntityTitle($entity_id,$this->id(),$lang);
+        if(!empty($titleperlang))
+          $title[$lang][0] = array("value" => $titleperlang, "wisski_language" => $lang);
+        $this->cached_titles[$entity_id] = $title;
+      }
+      
+      if(empty($title))
+        return NULL;
+      //else return NULL;
     }//dpm($this->cached_titles,'cached titles');
 #    dpm(microtime(), "delivered.");
     return $this->cached_titles[$entity_id];

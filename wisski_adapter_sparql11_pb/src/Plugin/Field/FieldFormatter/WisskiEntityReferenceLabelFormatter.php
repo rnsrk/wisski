@@ -70,6 +70,18 @@ class WisskiEntityReferenceLabelFormatter extends EntityReferenceLabelFormatter 
 
       $label = wisski_core_generate_title($item->target_id);
 
+      // for now we take the interface language
+      $langcode = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+      
+      if(isset($label[$langcode][0]["value"]))
+        $label = $label[$langcode][0]["value"];
+      else {
+        $cur_label = current($label);
+        if(isset($cur_label[0]["value"]))
+          $label = $cur_label[0]["value"];
+      }
+        
+      
       // If the link is to be displayed and the entity has a uri, display a
       // link.
       if ($output_as_link ) {

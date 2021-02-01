@@ -12,6 +12,10 @@ use Drupal\Core\Language\LanguageInterface;
 
 use Drupal\wisski_core\WisskiEntityInterface;
 
+use Drupal\user\EntityOwnerTrait;
+
+use Drupal\Core\Entity\EditorialContentEntityBase;
+
 //keep for later use
 // *		 "views_data" = "Drupal\wisski_core\WisskiEntityViewsData",
 
@@ -45,12 +49,16 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     "revision" = "vid",
  *     "bundle" = "bundle",
  *     "label" = "label",
- *     "preview_image" = "preview_image",
  *     "langcode" = "langcode",
- *     "uuid" = "uuid"
+ *     "uuid" = "uuid",
+ *     "published" = "published"
+ *   },
+ *   revision_metadata_keys = {
+ *     "revision_user" = "revision_uid",
+ *     "revision_created" = "revision_timestamp",
+ *     "revision_log_message" = "revision_log"
  *   },
  *   bundle_entity_type = "wisski_bundle",
- *   label_callback = "wisski_core_generate_title",
  *   permission_granularity = "bundle",
  *   admin_permission = "administer wisski",
  *   fieldable = TRUE,
@@ -62,10 +70,15 @@ use Drupal\wisski_core\WisskiEntityInterface;
  *     "edit-form" = "/wisski/navigate/{wisski_individual}/edit",
  *     "admin-form" = "/admin/structure/wisski_core/{wisski_bundle}/edit",
  *   },
- *   translatable = TRUE,
+ *   base_table = "wisski_basetable",
+ *   data_table = "wisski_datatable",
+ *   revision_table = "wisski_revision",
+ *   revision_data_table = "wisski_data_revision",
+ *   show_revision_ui = TRUE,
+ *   translatable = TRUE
  * )
  */
-class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntityInterface {
+class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInterface { //RevisionableContentEntityBase implements WisskiEntityInterface {
 
 #  public static function create(array $values = array()) {
 #    dpm("hallo welt!");
@@ -79,8 +92,10 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
   
-    $fields = array();
-    
+//    $fields = array();
+    $fields = parent::baseFieldDefinitions($entity_type);
+//    $fields += static::ownerBaseFieldDefinitions($entity_type);
+//    dpm($fields, "fields I get?");   
     $fields['eid'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Entity ID'))
       ->setDescription(t('The ID of this entity.'))
@@ -113,18 +128,20 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
     $fields['label'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Entity name'))
       ->setDescription(t('The human readable name of this entity.'))
-      ->setRequired(TRUE)
+      ->setRequired(FALSE)
       ->setTranslatable(TRUE)
       ->setRevisionable(TRUE)
-      ->setDefaultValueCallback("wisski_core_generate_title")
+//      ->setDefaultValueCallback("wisski_core_generate_title")
 //      ->setDefaultValue('')
       ->setSetting('max_length', 255)
       ->setDisplayOptions('form', array(
         'type' => 'string_textfield',
         'weight' => -5,
+        'region' => 'hidden',
       ))
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayOptions('view', array(
+        'region' => 'hidden',
         'label' => 'hidden',
         'type' => 'string',
         'weight' => -5,
@@ -155,6 +172,32 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
         ),
       ))
       ->setDisplayConfigurable('form', TRUE);
+    
+    $fields['created'] = BaseFieldDefinition::create('created')
+      ->setLabel(t('Authored on'))
+      ->setDescription(t('The time that the WissKI Entity was created.'))
+      ->setRevisionable(TRUE)
+      ->setTranslatable(TRUE)
+      ->setDisplayOptions('view', [
+        'label' => 'hidden',
+        'region' => 'hidden',
+        'type' => 'timestamp',
+        'weight' => 0,
+      ])
+      ->setDisplayConfigurable('view', TRUE)
+      ->setDisplayOptions('form', [
+        'type' => 'datetime_timestamp',
+        'region' => 'hidden',
+        'weight' => 10,
+      ])
+      ->setDisplayConfigurable('form', TRUE);
+      
+    $fields['changed'] = BaseFieldDefinition::create('changed')
+      ->setLabel(t('Changed'))
+      ->setDescription(t('The time that the WissKI Entity was last edited.'))
+      ->setRevisionable(TRUE)
+      ->setTranslatable(TRUE);
+      
 
     $fields['status'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Published'))
@@ -181,6 +224,8 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
       ->setSetting('target_type','file')
       ->setDefaultValue(NULL)
       ->setDisplayConfigurable('view', TRUE);
+ 
+    
     
     return $fields;
   }
@@ -193,10 +238,16 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
    * {@inheritdoc}
    */
   public function label() {
+#    dpm(serialize($this), "my label was asked");
+#    dpm($this->activeLangcode, "al?");
+#    dpm($this->label, "sis1?");
+/*
     // we cache the label to prevent that it is fetched from db all the time
     if ($this->label === NULL) {
       $this->label = parent::label();
     }
+
+#    dpm($this->label, "sis?");
 
     // this occurs on creation only!
     if($this->label === NULL) {
@@ -204,7 +255,24 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
       $this->label = wisski_core_generate_title($this);
     }
     
+    dpm($this->label, "I give back:");
+
+    return "miau";    
+    return array("en" => array(array("value" => "juhu")), "fr" => array(array("value" => "oh weh")));
+#    return array("x-default" => array(array("value" => "juhu")), "fr" => array(array("value" => "oh weh")));    
     return $this->label;
+  */
+ 
+    $title = parent::label();
+  
+    if($this->label === NULL) { 
+      $title = wisski_core_generate_title($this);
+      $title = $title[0]["value"] . t(" (new)");
+      $this->label = $title;
+    }
+#    dpm($title, "tit?");
+      
+    return $title;
   }
 
 
@@ -256,6 +324,10 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
     $out = array();
 
     $fields_to_save = array();
+    
+    // this might be x-default, so we don't use that here.
+    //    $language = $this->activeLangcode;
+    $language = $this->language()->getId();
 
     if ($save_field_properties) {
       //clear the field values for this field in entity in bundle
@@ -264,6 +336,7 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
       \Drupal::database()->delete('wisski_entity_field_properties')
         ->condition('eid',$this->id())
         ->condition('bid',$this->bundle())
+        ->condition('lang',$language)
     #    ->condition('fid',$field_name)
         ->execute();
       
@@ -271,7 +344,7 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
       // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
       // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
       $query = \Drupal::database()->insert('wisski_entity_field_properties')
-        ->fields(array('eid', 'bid', 'fid', 'delta', 'ident', 'properties'));
+        ->fields(array('eid', 'bid', 'fid', 'delta', 'ident', 'properties','lang'));
         
     }
 
@@ -347,6 +420,7 @@ class WisskiEntity extends RevisionableContentEntityBase implements WisskiEntity
             // the problem however is that this could never be written, because we don't know what is the disamb...
             #isset($field_values['wisskiDisamb']) ? $field_values['wisskiDisamb'] : $field_values[$main_property],
             'properties' => serialize($field_values),
+            'lang' => $language,
           );
 
 #          dpm($fields_to_save, "fts");

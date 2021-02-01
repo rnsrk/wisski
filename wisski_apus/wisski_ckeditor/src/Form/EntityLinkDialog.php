@@ -63,8 +63,8 @@ class EntityLinkDialog extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity.type_manager')->getStorage('editor'),
-      $container->get('entity.type_manager')->getStorage('linkit_profile')
+      $container->get('entity_type.manager')->getStorage('editor'),
+      $container->get('entity_type.manager')->getStorage('linkit_profile')
     );
   }
 

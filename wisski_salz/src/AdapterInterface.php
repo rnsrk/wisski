@@ -94,7 +94,7 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
   /**
    * @see EngineInterface::loadFieldValues()
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT);
+  public function loadPropertyValuesForField($field_id, array $property_ids, $entity_ids = NULL, $bundle = NULL);
 
   /**
    * returns an instance of this Adapter's Query Class
@@ -111,7 +111,7 @@ interface AdapterInterface extends ConfigEntityInterface, EntityWithPluginCollec
   /**
    * @see EngineInterface::writeFieldValues
    */
-  public function writeFieldValues($entity_id,array $field_values,$pathbuilder,$bundle = NULL,$original_values=array(),$force_creation=FALSE,$initial_write=FALSE);
+  public function writeFieldValues($entity_id,array $field_values,$pathbuilder,$bundle = NULL,$original_values=array(),$force_creation=FALSE,$initial_write=FALSE, $language = LanguageInterface::LANGCODE_DEFAULT);
 
   /**
    * this adapter/engine provides two functions for retrieving path alternatives

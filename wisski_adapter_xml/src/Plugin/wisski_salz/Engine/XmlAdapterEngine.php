@@ -98,7 +98,7 @@ class XmlAdapterEngine extends XmlAdapterBase implements PathbuilderEngineInterf
    * @inheritdoc
    * The Xml-Adapter cannot handle field properties, we insist on field values being the main property
    */
-  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundle=NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
+  public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundle=NULL) {
         
     $main_property = FieldStorageConfig::loadByName($entity_type, $field_name)->getItemDefinition()->mainPropertyName();
     if (in_array($main_property,$property_ids)) {

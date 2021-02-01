@@ -322,7 +322,7 @@ class Query extends WisskiQueryBase {
 //    dpm ($this, "makeQueryConditions");
     // these fields cannot be queried with this adapter
     $skip_field_ids = array(
-      'langcode',
+//      'langcode',
       'name',
       'preview_image',
       'status',
@@ -450,6 +450,15 @@ class Query extends WisskiQueryBase {
           $query_parts[] = $this->makeBundleCondition($operator, $value);
       
         }
+        elseif($field == "langcode") {
+          
+          $eids = $this->executeLangcodeCondition($operator, $value, $needs_a_bundle);
+          
+          $entity_ids = $this->join($conjunction, $entity_ids, $eids);
+          if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
+            return array('', array());
+          }
+        }
         elseif ($field == "status") {
 #          dpm("yay, status!");
           // in $needs_a_bundle there is the bundle if there is something like that
@@ -471,6 +480,7 @@ class Query extends WisskiQueryBase {
 #        dpm("yay!");
           $eids = $this->executeEntityTitleCondition($operator, $value, $needs_a_bundle);
           $entity_ids = $this->join($conjunction, $entity_ids, $eids);
+#          dpm($entity_ids, "ids?");
           if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
             // the condition evaluated to an empty set of entities 
             // and we have to AND; so the result set will be empty.
@@ -596,6 +606,11 @@ class Query extends WisskiQueryBase {
     }  
     
 #    dpm($query_parts, "qpout");
+
+    // this means we had an empty condition... why should we query without a condition?!    
+    if(empty($query_parts))
+      return "";
+      //$query_parts = " GRAPH ?somethingsb0rg { ?x0 ?this_should ?not_happen } ";
     
     // handle sorting
     $sort_params = "";
@@ -763,6 +778,14 @@ class Query extends WisskiQueryBase {
     }
 
     if(count($this->dependent_parts) == 0) {    
+  
+      // special case - if dep is empty and entity ids is empty then we probably search for
+      // anything? Search api suddenly does this from time to time, I don't know why...
+#      dpm(serialize($query_parts), "qp?");
+      if(empty($entity_ids) && empty($query_parts))
+        $query_parts = " GRAPH ?x0_nothing { ?x0 ?p ?o . } . ";
+      
+    
       // we restrict the result set to the entities in $entity_ids by adding a
       // VALUES statement in front of the rest of the where clause.
       // entity_ids is an assoc array where the keys are the ids and the values
@@ -774,10 +797,9 @@ class Query extends WisskiQueryBase {
       if (!empty($filtered_uris)) {	
         $select .= 'VALUES ?x0 { <' . join('> <', $filtered_uris) . '> } ';
       }
-
       $select .= $query_parts;
     } else { 
-    
+
       $first = TRUE;
       // add dependent parts?
       foreach($this->dependent_parts as $part) {
@@ -794,6 +816,8 @@ class Query extends WisskiQueryBase {
     
     
     $select .= ' }';
+
+#    dpm($select, "select is?");
     
 #    dpm($sort_params, "sort?");
     if($sort_params) {
@@ -860,6 +884,44 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       ->condition('ident', $value, '=');
     $entity_ids = $query->execute()->fetchAllKeyed();
     
+    $out = array();
+    
+    $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->getEngine()->adapterId());
+    
+    foreach ($entity_ids as $eid => $bla) {
+      // NOTE: getUrisForDrupalId returns one uri as string as we have
+      // given the adapter
+      $out[$eid] = '' . AdapterHelper::getUrisForDrupalId($eid, $adapter) .'';
+    }
+    
+    return $out;
+
+  }
+  
+  protected function executeLangcodeCondition($operator, $value, $bundleid = '%') {
+    $entity_ids = NULL;
+ 
+    $langcode = current($value);
+ 
+    if($langcode == "***LANGUAGE_language_interface***") {
+      $langcode = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+    }
+ 
+
+//    dpm("I am looking for $langcode");
+
+    // it would be good to supply the bundle here, too...
+    
+    $query = \Drupal::database()->select('wisski_entity_field_properties', 't')
+      ->distinct()
+      ->fields('t', array('eid', 'ident'))
+#      ->condition('adapter_id', $this->getEngine()->adapterId())
+      ->condition('fid', 'langcode', '=')
+      ->condition('bid', $bundleid, '=')
+      ->condition('ident', $langcode, '=');
+    $entity_ids = $query->execute()->fetchAllKeyed();
+#    dpm($bundleid, "bun?");
+#    dpm($value, "val?");
     $out = array();
     
     $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->getEngine()->adapterId());
