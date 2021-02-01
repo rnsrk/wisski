@@ -143,8 +143,17 @@ class WisskiQueryDelegator extends WisskiQueryBase {
           continue;
         }
 
+        // requested a specific bundle
         if ($field == "bundle") {
           array_push($bundleIds, current($cond["value"]));
+          continue;
+        }
+
+        // requested a specific eid
+        if ($field == "eid") {
+          $eidBundleIds = AdapterHelper::getBundleIdsForEntityId($cond['value'], TRUE);
+          $bundleIDs = array_merge($bundleIDs, $eidBundleIds);
+          continue;
         }
 
       }
