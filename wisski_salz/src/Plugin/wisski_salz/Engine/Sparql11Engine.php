@@ -90,7 +90,7 @@ abstract class Sparql11Engine extends EngineBase {
     $this->header = $this->configuration['header'];
     $this->read_url = $this->configuration['read_url'];
     $this->write_url = $this->configuration['write_url'];
-    $this->is_federtable = $this->configuration['is_federtable'];
+    $this->is_federatable = $this->configuration['is_federatable'];
     $this->graph_rewrite = $this->configuration['graph_rewrite'];
     $this->default_graph = $this->configuration['default_graph'];
     $this->ontology_graphs = $this->configuration['ontology_graphs'];
@@ -108,7 +108,7 @@ abstract class Sparql11Engine extends EngineBase {
       'header' => $this->header,
       'read_url' => $this->read_url,
       'write_url' => $this->write_url,
-      'is_federtable' => $this->is_federtable,
+      'is_federatable' => $this->is_federatable,
       'graph_rewrite' => $this->graph_rewrite,
       'default_graph' => $this->default_graph,
       'ontology_graphs' => $this->ontology_graphs,

@@ -9,6 +9,8 @@ use Drupal\wisski_adapter_gnd\Query\Query;
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\Core\Entity\EntityTypeInterface;
 
+use Drupal\Core\Config\Entity\Query\Condition as ConditionParent;
+
 /**
  * WisskiQueryDelegator is used to construct Drupal Queries, then translate them to SparQL and execute them.
  * 
@@ -96,7 +98,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     // find the IDs of adapters known for each adapter
     $adapterIDs = array();
     foreach($bundleIDs as $bid => $bundleID) {
-      $adaptersForBundle = $pb_man->getPbsUsingBundle($bundleID);
+      $pbsForBundle = array_values($pb_man->getPbsUsingBundle($bundleID));
+      $adaptersForBundle = array_map(function($pb) { return $pb['adapter_id']; }, $pbsForBundle);
       $adapterIDs = array_merge($adapterIDs, $adaptersForBundle);
     }
 
@@ -115,6 +118,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
   /** returns an array of bundle IDs involved in this query */
   public function getWissKIBundleIDs() {
+
     // make a queue of conditions to check recursively
     $conditionQueue = array($this->condition);
     $bundleIds = array();
