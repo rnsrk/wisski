@@ -26,7 +26,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   public function __construct(EntityTypeInterface $entity_type,$conjunction,array $namespaces) {
     parent::__construct($entity_type,$conjunction,$namespaces);
 
-    $this->populateAdapterQueries();
+    $this->populateAdapterQueries($entity_type,$conjunction,$namespaces);
   }
     
   /**
@@ -60,14 +60,14 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   private $adapter_queries = NULL;
 
   /** called once to populate the adapter_queries array  */
-  private function populateAdapterQueries() {
+  private function populateAdapterQueries(EntityTypeInterface $entity_type,$conjunction,array $namespaces) {
     $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
 
     $preferred_queries = array();
     $other_queries = array();
     
     foreach ($adapters as $adapter) {
-      $query = $adapter->getQueryObject($this->entityType,$condition,$this->namespaces);
+      $query = $adapter->getQueryObject($entity_type,$conjunction,$namespaces);
       if ($adapter->getEngine()->isPreferredLocalStore()) {
         $preferred_queries[$adapter->id()] = $query;
       } else {
