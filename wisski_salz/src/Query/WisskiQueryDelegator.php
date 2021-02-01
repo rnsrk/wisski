@@ -219,6 +219,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
     // only one relevant adapter => execute it
     if(count($this->relevant_adapter_queries) == 1) {
+      if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: One Adapter");
 
       // make use of the pager!
       if ($pager || !empty($this->range)) {
@@ -231,6 +232,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     }
 
     if($this->hasOnlyFederatableDependents()) {
+      if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: Federation");
 
       // if it is sparql, do a federated query!
       $first_query = $this->getFederatedQuery(FALSE);
@@ -250,7 +252,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     
     // at least we have a pager!
     if ($pager || !empty($this->range)) {
-    
+      if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: In-Memory Pagination");
+
       if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
         $querytmp = $query->normalQuery();
         $querytmp->range($this->range['start'],$this->range['length']);
@@ -265,6 +268,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       // use the old behaviour if we have a pager
       return $this->executePaginatedJoin($this->range['length'],$this->range['start']);
     }
+
+    if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: In-Memory Join");
     
 #            dpm("no pager...");
       // if we dont have a pager, iterate it and sum it up 
@@ -285,6 +290,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    private function executeCount() {
     // only one dependent query => execute it
     if(count($this->relevant_adapter_queries) == 1) {
+      if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Count Strategy: One Adapter");
+
       $query = current($this->relevant_adapter_queries);
       
       $count = $query->countQuery()->execute() ? : 0;
@@ -295,6 +302,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
     // only federatable adapters => execute the federated query
     if($this->hasOnlyFederatableDependents()) {
+      if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Count Strategy: Federation");
+
       $first_query = $this->getFederatedQuery(TRUE);
 
       $count = $first_query->countQuery()->execute() ? : 0;
@@ -302,6 +311,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
       return $count;
     }
+
+    if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Countgi Strategy: In Memory");
     
 
     // complicated case: collect a result set and count elements in it
