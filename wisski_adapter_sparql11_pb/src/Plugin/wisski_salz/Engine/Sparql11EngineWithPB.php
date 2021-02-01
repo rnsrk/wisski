@@ -35,10 +35,12 @@ use \EasyRdf;
 class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineInterface  {
 
   protected $allow_inverse_property_pattern;
+  protected $is_federatable;
 
   public function defaultConfiguration() {
     return parent::defaultConfiguration() + [
       'allow_inverse_property_pattern' => FALSE,
+      'is_federatable' => FALSE,
     ];
   }
 
@@ -56,7 +58,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return true;
   }
 
-
+  public function getIsFederatable() {
+    return $this->is_federatable;
+  }
 
   /**
    * {@inheritdoc}
@@ -66,6 +70,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // this does not exist
     parent::setConfiguration($configuration);
     $this->allow_inverse_property_pattern = $this->configuration['allow_inverse_property_pattern'];
+    $this->is_federtable = $this->configuration['is_federtable'];
   }
 
 
@@ -75,6 +80,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getConfiguration() {
     return array(
       'allow_inverse_property_pattern' => $this->allow_inverse_property_pattern,
+      'is_federtable' => $this->is_federtable,
     ) + parent::getConfiguration();
   }
 
@@ -3481,6 +3487,14 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       '#return_value' => TRUE,
       '#description' => 'Allows selecting properties in inverse direction in pathbuilder. These properties are marked with a leading "^". E.g. for "^ex:prop1", the triple x2 ex:prop x1 must hold instead of x1 ex:prop1 x2.',
     );
+
+    $form['is_federatable'] = array(
+      '#type' => 'checkbox',
+      '#title' => 'Federatable',
+      '#default_value' => $this->is_federatable,
+      '#return_value' => TRUE,
+      '#description' => 'Marks this adapter as federatable so that it is queried by other services. ',
+    );
     
     $form['reasoner'] = array(
       '#type' => 'details',
@@ -3576,6 +3590,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     \Drupal::state()->set('wisski_always_reason', $always_reason);
 
     $this->allow_inverse_property_pattern = $form_state->getValue('allow_inverse_property_pattern');
+    $this->is_federatable = $form_state->getValue('is_federatable');
   
   }  
   
