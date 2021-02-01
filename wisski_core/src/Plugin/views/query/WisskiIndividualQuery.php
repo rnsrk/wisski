@@ -286,6 +286,13 @@ class WisskiIndividualQuery extends QueryPluginBase {
       if ($field == 'title') {
         $bid = (!empty($bundle_ids)) ? reset($bundle_ids) : NULL; // get the first bundle
 
+        // get the rendering language from the view.          
+        $rendering_language = $this->view->display_handler->getOption('rendering_language');
+        
+        if($rendering_language == "***LANGUAGE_language_interface***") {
+          $rendering_language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+        }
+
         foreach ($values_per_row as $eid => &$row) {
           [$bids, $bid] = $this->get_bids_bid_for_eid($eid, $bundle_ids);
 
@@ -300,13 +307,6 @@ class WisskiIndividualQuery extends QueryPluginBase {
           // In any other case (see below) an array is fine.
           
           $row['title'] = wisski_core_generate_title($eid, NULL, FALSE, $row['bundle']);
-
-          // get the rendering language from the view.          
-          $rendering_language = $this->view->display_handler->getOption('rendering_language');
-          
-          if($rendering_language == "***LANGUAGE_language_interface***") {
-            $rendering_language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
-          }
           
           if(isset($row['title'][$rendering_language])) {
             $row['title'] = $row['title'][$rendering_language][0]["value"];
