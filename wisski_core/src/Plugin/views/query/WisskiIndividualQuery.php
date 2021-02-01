@@ -660,7 +660,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
       foreach ($values_per_row as $eid => &$row) {
         // if we don't have a bundle we're in danger zone!
         if(empty($row['bundle'])) {
-        [$bids, $bid] = $this->get_bids_bid_for_eid($eid, $bundle_ids);
+          [$bids, $bid] = $this->get_bids_bid_for_eid($eid, $bundle_ids);
 
           $row['bundles'] = $bids;
           $row['bundle'] = $bid;
@@ -705,15 +705,14 @@ class WisskiIndividualQuery extends QueryPluginBase {
 
   /** return an array containing [$bids, $bid] containing the bundle ids and bundle id for a particular entity */
   private function get_bids_bid_for_eid($entity_id, $bundle_ids) {
-    // attempt to find all involved bundle ids
-    // if there are none, use Adapter Helper to find them!
-    $bids = $bundle_ids;
-    if(empty($bids)) {
-      $bids = AdapterHelper::getBundleIdsForEntityId($entity_id, TRUE);
+    // if we have a single bundle id, don't do a lookup!
+    if (count($bundle_ids) == 1) {
+      return [$bundle_ids, $bundle_ids[0]];
     }
-
-    // pick the first bundle id for the entity
-    // TODO: Should we do something smarter than the first one here?
+    
+    // lookup all the bundle ids for this entity and pick the first one.
+    // TODO: What to do if we have more than one $bids?
+    $bids = AdapterHelper::getBundleIdsForEntityId($entity_id, TRUE);
     $bid = reset($bids);
 
     return [$bids, $bid];
