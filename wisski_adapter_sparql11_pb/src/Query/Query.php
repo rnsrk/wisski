@@ -67,6 +67,7 @@ class Query extends WisskiQueryBase {
    * currently it contains:
    * - The where string
    * - The eids (values-part)
+   * - The order string
    */
   public function getQueryParts() {
     // TODO: Iterate over the tree in this::Groups
@@ -319,7 +320,6 @@ class Query extends WisskiQueryBase {
   /** recursively go through $condition tree and match entities against it.
    */
   protected function makeQueryConditions(ConditionInterface $condition) {
-//    dpm ($this, "makeQueryConditions");
     // these fields cannot be queried with this adapter
     $skip_field_ids = array(
 //      'langcode',
@@ -347,18 +347,17 @@ class Query extends WisskiQueryBase {
     $contributes_to_pathquery = FALSE;
 #    dpm($condition, "cond");
     foreach($condition->conditions() as $ij => $cond) {
-#      dpm($cond, "cond-iter");
+      //dpm($cond, "cond-iter");
       $field = $cond['field'];
-#      dpm($field, "field");
       $value = $cond['value'];
-      
-#      dpm($value, "value");
       
       if ($field instanceof ConditionInterface) {
         // we don't handle this here!
         continue;
       }
-      
+
+      // assertion: "$field" is a string!
+
       if ($field == "bundle") {
         $needs_a_bundle = current((array) $value);
       }
@@ -368,7 +367,8 @@ class Query extends WisskiQueryBase {
       
       if ($this->isPathQuery() && strpos($field, '.') !== FALSE) {
         $is_a_pathquery = TRUE;
-        $pb_and_path = explode(".", $field);
+	$pb_and_path = explode(".", $field);
+#     dpm($pb_and_path, "pb_and_path");
         if (count($pb_and_path) != 2) {
           // bad encoding! can't handle
           \Drupal::messenger()->addStatus(new TranslatableMarkup('Bad pathbuilder and path id "%id" in entity query condition', ['%id' => $field]));

@@ -262,13 +262,5 @@ class Query extends WisskiQueryBase {
   public function conditionAggregateGroupFactory($conjunction = 'AND') {
     return new ConditionAggregate($conjunction, $this);
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function isFederatableSparqlQuery() {
-    // this is federatable for backwards compatibility
-    return true;
-  }
 }
 

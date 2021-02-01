@@ -55,7 +55,7 @@ class AdapterListBuilder extends ConfigEntityListBuilder {
     $row['id'] = $entity->id();
     $row['is_preferred_local_store'] = $this->tickMark($entity->getEngine()->isPreferredLocalStore());
     $row['is_writable'] = $this->tickMark($entity->getEngine()->isWritable());
-    $row['is_federatable'] = $this->tickMark($entity->getEngine()->supportsFederation());
+    $row['is_federatable'] = $this->tickMark($entity->getEngine()->supportsFederation(NULL));
     $row['description'] = $entity->getDescription();
     // You probably want a few more properties here...
     return $row + parent::buildRow($entity);

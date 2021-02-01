@@ -263,13 +263,5 @@ class Query extends WisskiQueryBase {
     return new ConditionAggregate($conjunction, $this);
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function isFederatableSparqlQuery() {
-    // this is federatable for backwards compatibility
-    return true;
-  }
-
 }
 

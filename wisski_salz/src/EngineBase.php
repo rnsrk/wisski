@@ -49,8 +49,11 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
 
   /**
    * Does this Adapter support federating queries?
+   * @param $query Specific query that should be checked for federatableness using this engine. May be NULL.
    */
-  public function supportsFederation() {
+  public function supportsFederation($query = NULL) {
+    // Most implementations may ignore the query parameter.
+    // It is intended for future usage, where some adapters only make specific queries federatable.
     return false;
   }
 

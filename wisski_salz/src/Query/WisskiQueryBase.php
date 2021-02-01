@@ -10,6 +10,7 @@ use Drupal\Core\Entity\Query\QueryAggregateInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\wisski_salz\EngineInterface;
 
+
 abstract class WisskiQueryBase extends QueryBase implements QueryInterface, QueryAggregateInterface {
 
   protected $parent_engine;
@@ -29,6 +30,14 @@ abstract class WisskiQueryBase extends QueryBase implements QueryInterface, Quer
   
   public function getEngine() {
     return $this->parent_engine;
+  }
+
+  /**
+   * Builds a condition AST that is nicely iteratable.
+   */
+  public function getConditionAST(bool $simplify = TRUE) {
+    // the top-most condition is always an aggregate, even if we have only one condition!
+    return ASTHelper::makeConditionAST($this->condition, $simplify);
   }
   
   public function normalQuery() {
@@ -56,13 +65,5 @@ abstract class WisskiQueryBase extends QueryBase implements QueryInterface, Quer
   public function isPathQuery() {
     return $this->query_column_type === self::PATH_QUERY;
   }
-
-  /**
-   * Checks if this query is a federatable sparql query.
-   */
-  public function isFederatableSparqlQuery() {
-    return $this->getEngine()->supportsFederation();
-  }
-  
 
 }

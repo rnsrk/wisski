@@ -5,7 +5,6 @@ namespace Drupal\wisski_salz\Query;
 # TODO: Check if we can generalize special cases for query classes!
 # perhaps we can add semantic methods for each of them
 
-use Drupal\wisski_adapter_gnd\Query\Query;
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\wisski_salz\AdapterHelper;
 use Drupal\Core\Entity\EntityTypeInterface;
@@ -208,6 +207,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   }
 
   private function executeNormal() {
+    // TODO: AST for filters, order
+    dpm($this->getConditionAST(FALSE), "ast::dumb");
+    dpm($this->getConditionAST(TRUE), "ast::smart");
+
     //call initializePager() to initialize the pager if we have one
     $pager = FALSE;
     if ($this->pager) {
@@ -231,19 +234,20 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       return $query->execute();
     }
 
+    //dpm($this->hasOnlyFederatableDependents(), "hasFederatable");
     if($this->hasOnlyFederatableDependents()) {
       if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: Federation");
 
       // if it is sparql, do a federated query!
+      // what does FALSE do here?
       $first_query = $this->getFederatedQuery(FALSE);
+
       $first_query = $first_query->normalQuery();
       if ($pager || !empty($this->range)) {
         $first_query->range($this->range['start'],$this->range['length']);
       }
 
-      // dpm(serialize($first_query), "first?");
       $ret = $first_query->execute();
-      //  dpm($ret, "ret");
 
       return $ret;
     }
@@ -253,12 +257,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     // at least we have a pager!
     if ($pager || !empty($this->range)) {
       if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: In-Memory Pagination");
-
       if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
         $querytmp = $query->normalQuery();
         $querytmp->range($this->range['start'],$this->range['length']);
         $ret = $querytmp->execute();
-#              dpm(serialize($ret), "ret?");
         if(!empty($ret)) {
           return $ret;
         }
@@ -354,154 +356,123 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    * and return this.
    */
   protected function getFederatedQuery($is_count = FALSE) {
-    // if everything is sparql we do a federated query
+    // make a "federated query" object given all the inddividual query objects.
     // see https://www.w3.org/TR/sparql11-federated-query/
+
+    // first query contains the 'first' of the relevant queries.
+    // It is returned from this function and used to start the SERVICE<> query.
     $first_query = NULL;
-      
-    $max_query_parts = "";
 
-    $total_order_string = "";
-
-    $count = count($this->relevant_adapter_queries);
-    
-    $real_deps = array();
-
+    // queries should contain the query instances relevant for this federated queries.
+    // it is keyed by adapter.
+    $queries = array();
     foreach ($this->relevant_adapter_queries as $adapter_id => $query) {
 
-#      dpm("dependent on $adapter_id");
-
-#      dpm($query, "this is the query!");
-
-      if($query instanceOf Query ||
-        $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
-        // this is null anyway... so skip it
-        
-        // reduce count
-        $count--;
-        
+      // if query is irrelevant, skip it!
+      // TODO: This should be covered by $engine->supportsFederation()
+      if($query instanceOf \Drupal\wisski_adapter_gnd\Query\Query ||
+	      $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
         continue;
-      } else {
-        $real_deps[$adapter_id] = $query;
       }
-    }
 
-#    dpm("I am here!!!");
-
-
-    if($count > 1) {
-      foreach ($real_deps as $adapter_id => $query) {
-            
-        if($is_count)
-          $query->countQuery();
-        else
-          $query->normalQuery();
-        
-        // get the query parts
-        $parts = $query->getQueryParts();
-        $where = $parts['where'];
-        $eids = $parts['eids'];
-        $order = $parts['order'];
-
-        if(!empty($order))     
-          $total_order_string .= $order . " ";
-
-#      dpm($where, "where");
-#      dpm($eids, "eids");
-#      dpm($order, "got order!");
-        $filtered_uris = NULL;
-
-        $eids_part = "";
-      
-        // we got eids?
-        if(!empty($eids))
-          $filtered_uris = array_filter($eids);
-        if (!empty($filtered_uris)) {
-          $eids_part .= 'VALUES ?x0 { <' . join('> <', $filtered_uris) . '> } ';
-        }      
-
-        // it might be that this is empty and this makes
-        // a very ugly (while still working, but really ugly!!)
-        // query. So do SOMETHING useful!
-        if(empty($where)) {
-#          $where = "?x0 a ?smthg . ";
-
-
-          // special case: (by mark)
-          // if there is no where 
-          // and there is just one eid
-          // we have a rather trivial answer
-          // so we really dont want to ask the triple store in this
-          // case!!!
-
-#          if(count($eids) == 1) {
-#                  
-#          }
-
-          #dpm($eids, "eids?");
-          
-        }
-
-        // build up a whole string from that      
-        $string_part = $where . "" . $eids_part;
-
-        // only take the maximum, because up to now we mainly do path mode, which is bad anyway
-        // @todo: a clean implementation here would be better!
-        if(strlen($string_part) > strlen($max_query_parts))
-          $max_query_parts = $string_part;
-          
-          // preserve the first query object for later use
-        if(empty($first_query)) {
-          $first_query = $query;
-          continue;
-        }
-      }
-    } else {
-      // this here is a special case - there is only one
-      // query left, so just pass it through!
-      
-      // there is only one in there anyway...
-      foreach($real_deps as $adapter_id => $query) {
+      // set $first_query to the first relevant query.
+      if(empty($first_query)) {
         $first_query = $query;
       }
+      
+      // increase count and store it in queries
+      $queries[$adapter_id] = $query;
+    }
+
+    // bail out and don't actually use federation!
+    // we only have one adapter.
+    $count = count($queries);
+    if ($count <= 1) {
+      return $first_query;
+    }
+
+    // contains the longest query stringification.
+    $max_query_parts = "";
+    
+    // contains an order string that consists of the 'order' query parts
+    // from all the other queries.
+    $total_order_string = "";
+
+    foreach ($queries as $adapter_id => $query) {
+      
+      // build the query and grab the parts
+      $query = $is_count ? $query->countQuery() : $query->normalQuery();
+      $parts = $query->getQueryParts();
+
+      // add the 'order' string to the total order string.
+      $order = $parts['order'];
+      if(!empty($order)) {
+        $total_order_string .= $order . " ";
+      }
+      
+      // grab non-empty eids from the query!
+      $eids = $parts['eids'];
+      if(!empty($eids)) {
+        $eids = array_filter($eids);
+      }
+
+      // build a stringification of the query
+      $string_part = $parts['where'];
+      
+      if (!empty($eids)) {
+        $string_part .= 'VALUES ?x0 { <' . join('> <', $eids) . '> } ';
+      }
+
+      // only take the maximum, because up to now we mainly do path mode, which is bad anyway
+      // @todo: a clean implementation here would be better!
+      if(strlen($string_part) > strlen($max_query_parts)) {
+        $max_query_parts = $string_part;
+      }
+    }
+
+    
+    // if there is no max query, then we can return immediatly.
+    // TODO: Can this case ever occur, or is it covered by the 'count' <= 1 above?
+    if (empty($max_query_parts)) {
+      return $first_query;
+    }
+
+    $first_query->setOrderBy($total_order_string);
+    
+    
+    // iterate over all the adapters and add the 'service' queries as a depdent query.
+    $total_service_array = array();
+    $is_first_query = true;
+    foreach ($queries as $adapter_id => $query) {
+      $service_url = $query->getEngine()->getFederationServiceUrl();
+      
+      $service_string = " { SERVICE <" . $service_url . "> { " . $max_query_parts . " } }";
+      if ($is_first_query) {
+        // the first query (which we're adding the dependent parts to) doesn't need the 'SERVICE' part
+        // because we're querying the adapter itself.
+        $service_string = $max_query_parts;
+        $is_first_query = false;
+      }
+        
+      // add it to the first query                     
+      $total_service_array[] = $service_string;
     }
     
-    if(!empty($max_query_parts)) {   
-      $total_service_array = array();
-
-      foreach ($this->relevant_adapter_queries as $adapter_id => $query) {
-        if($query instanceOf Query ||
-           $query instanceOf \Drupal\wisski_adapter_geonames\Query\Query) {
-          // this is null anyway... so skip it
-          continue;
-        }
-          
-        $service_url = $query->getEngine()->getFederationServiceUrl();
-          
-        // construct the service-string
-        if($count > 1) 
-          $service_string = " { SERVICE <" . $service_url . "> { " . $max_query_parts . " } }";
-        else
-          $service_string = $max_query_parts;
-
-        // add it to the first query                     
-        $total_service_array[] = $service_string;
-      }
-#      dpm($total_service_array, "tos");
-      $first_query->setOrderBy($total_order_string);
-      $first_query->setDependentParts($total_service_array);
-    }
+    $first_query->setDependentParts($total_service_array);
     
     return $first_query;
   }
   
   /** checks if this query only has federatable dependent queries */
   private function hasOnlyFederatableDependents() {
+      //dpm($this->relevant_adapter_queries, "relevant_adapter_queries");
+
     foreach($this->relevant_adapter_queries as $adapter_id => $query) {
-      if (!($query instanceof \Drupal\wisski_salz\WisskiQueryBase && $query->isFederatableSparqlQuery())) {
+      // a query is federatable iff the engine supports federatable dependents.
+      if (!$query->getEngine()->supportsFederation($query)) {
         return FALSE;        
       }
     }
-
     return TRUE;
   }
 
@@ -558,9 +529,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     $queries = array_merge(array(), $this->relevant_adapter_queries); // copy of the query array!
     $query = array_shift($queries);
 
+
     $act_offset = $offset;
     $act_limit = $limit;
-    
+
     $all_results = array();
     $results = array();
     
@@ -569,14 +541,15 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       $query = $query->normalQuery();
       $query->range($act_offset,$act_limit);
 
+
       $new_results = $query->execute();
       $res_count = count($new_results);
-#      dpm("got: " . serialize($new_results));
+
 
       if (!empty(self::$empties)) $new_results = array_diff($new_results,self::$empties);
 
       //$post_res_count = count($new_results);      
-      //dpm($post_res_count,$act_offset.' '.$act_limit);
+      //dpm($post_res_count,$act_offset.' '.$act_limit, "post_res_count... ");
       $old_sum = count($results);
       $results = array_unique(array_merge($results,$new_results));
       $curr_sum = count($results);
@@ -584,7 +557,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       $res_count = $curr_sum - $old_sum;
       $post_res_count = $curr_sum - $old_sum;
 
-#      dpm(serialize($res_count), "res");
+//      dpm(serialize($res_count), "res");
       
       if ($res_count === 0) {
         //$query->count();
@@ -593,7 +566,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 #        if($query 
         
         $res_count = $query->execute();
-        #dpm($res_count, "res!");
         if(!is_array($res_count)) {
           $res_count = array();
         }
@@ -604,9 +576,11 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         
 //        if (!is_numeric($res_count)) $res_count = count($res_count);
         
-        //dpm($res_count,$key.' full count');
+//        dpm($res_count,$key.' full count');
         $act_offset = $act_offset - ($after - $before);
-        if ($act_offset < 0) $act_offset = 0;
+	if ($act_offset < 0) {
+		$act_offset = 0;
+	}
         $query = array_shift($queries);
       } elseif ($post_res_count < $res_count) {
         $act_limit = $act_limit - $post_res_count;
@@ -620,7 +594,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       } else break;
     }
 
-#    dpm($results, "res!");
     return $results;
   }
 

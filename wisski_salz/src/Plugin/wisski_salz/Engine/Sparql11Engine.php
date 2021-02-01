@@ -41,14 +41,14 @@ abstract class Sparql11Engine extends EngineBase {
   protected $has_drupal_namespace;
 
   /**
-   * Does this Adapter support federating queries?
+   * {@inheritdoc}
    */
-  public function supportsFederation() {
+  public function supportsFederation($query = NULL) {
     return $this->is_federatable;
   }
 
   /**
-   * Returns the URL used when federating queries on this adapter
+   * {@inheritdoc}
    */
   public function getFederationServiceUrl() {
     return $this->read_url;
