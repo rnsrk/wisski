@@ -161,14 +161,14 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         // TODO: this handles only is equal to
         if ($field == "eid") {
           $eidBundleIds = AdapterHelper::getBundleIdsForEntityId($cond['value'], TRUE);
-          $bundleIDs = array_merge($bundleIDs, $eidBundleIds);
+          $bundleIds = array_merge($bundleIds, $eidBundleIds);
           continue;
         }
 
       }
     }
 
-    if (count($bundleIDs) == 0) {
+    if (count($bundleIds) == 0) {
       \Drupal::messenger()->addWarning("No bundles are relevant for query");
     }
 
