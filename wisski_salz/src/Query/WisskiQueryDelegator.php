@@ -324,11 +324,11 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
     $total_order_string = "";
 
-    $count = count($this->adapter_queries);
+    $count = count($this->relevant_adapter_queries);
     
     $real_deps = array();
 
-    foreach ($this->adapter_queries as $adapter_id => $query) {
+    foreach ($this->relevant_adapter_queries as $adapter_id => $query) {
 
 #      dpm("dependent on $adapter_id");
 

@@ -3297,18 +3297,19 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
     $always_reason = \Drupal::state()->get('wisski_always_reason');
 
-    if(isset($always_reason[$this->adapterId()]))
+    if(isset($always_reason[$this->adapterId()])) {
       $always_reason = $always_reason[$this->adapterId()];
-    else
+    } else {
       $always_reason = TRUE;
+    }
 
-      $form['is_federatable'] = array(
-        '#type' => 'checkbox',
-        '#title' => 'Federatable',
-        '#default_value' => $this->is_federatable,
-        '#return_value' => TRUE,
-        '#description' => 'Marks this adapter as federatable so that it is queried by other services. ',
-      );
+    $form['is_federatable'] = array(
+      '#type' => 'checkbox',
+      '#title' => 'Federatable',
+      '#default_value' => $this->is_federatable,
+      '#return_value' => TRUE,
+      '#description' => 'Marks this adapter as federatable so that it is queried by other services. ',
+    );
     
     $form['allow_inverse_property_pattern'] = array(
       '#type' => 'checkbox',
