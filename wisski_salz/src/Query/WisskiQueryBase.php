@@ -39,6 +39,12 @@ abstract class WisskiQueryBase extends QueryBase implements QueryInterface, Quer
     // the top-most condition is always an aggregate, even if we have only one condition!
     return ASTHelper::makeConditionAST($this->condition, $simplify);
   }
+
+  public function makeQueryPlan() {
+    $ast = $this->getConditionAST(TRUE);
+    $planner = new QueryPlanner(NULL);
+    return $planner->plan($ast);
+  }
   
   public function normalQuery() {
     $this->count = FALSE;

@@ -90,8 +90,9 @@ class ASTHelper {
   /**
    * simplifyAST performs basic simplification and normalization of ASTs.
    * This does not change the semantics of any conditions but might change the internal order and structure.
-   * 
-   * This function only simplifies LOGICAL_AGGREGATE conditions and does the following:
+   *
+   * This function first replaces unknown FILTERs by NULL.
+   * After that it only simplifies LOGICAL_AGGREGATE conditions and does the following:
    * - Replace empty aggregates by NULL. This is both done for operators "AND" and "OR".
    * - Replace aggregates that only have one child by that child.
    * - Remove empty children.
@@ -109,10 +110,18 @@ class ASTHelper {
       return NULL;
     }
     
-    // if we're a logical aggregate, don't do anything.
-    if ($ast['type'] !== self::TYPE_LOGICAL_AGGREGATE) {
+    // in the filter case, just check that we are a known filter. 
+    // when not a known filter, return NULL.
+    if ($ast['type'] == self::TYPE_FILTER) {
+      if (!self::isKnownField($ast['field'])) {
+        if(WISSKI_DEVEL) \Drupal::logger('wisski_ast')->debug("Encountered unknown field " + $ast['field']);
+
+        return NULL;
+      }
       return $ast;
     }
+
+    // because we're not a filer, we must be a logical aggregate. 
   
     // Rebuild the children array.
     // This variable will eventually contain all the rebuilt children.
@@ -213,6 +222,25 @@ class ASTHelper {
 
     // return the ast itself
     return $ast;
+  }
+
+  /** checks if $filter is a known filter */
+  private static function isKnownField(string $field) {
+    if (
+      $field == 'eid' || 
+      $field == 'bundle' || 
+      $field == 'bundle_label' || 
+    //  $field == 'bundles' || // TODO: not sure where this can happen
+      $field == 'title' || 
+      $field == 'preferred_uri' || 
+      $field == 'status' || 
+      $field == 'preview_image'
+    ) {
+      return true;
+    }
+
+    // wisski_path_${pbid}__$pid
+    return str_starts_with($field, 'wisski_path_') && str_contains($field, '__');
   }
 
   /** deduplicats and consistently orders a list of asts */
