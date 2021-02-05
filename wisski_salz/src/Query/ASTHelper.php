@@ -100,7 +100,7 @@ class ASTHelper {
    * - Remove duplicate children.
    * - Order children consistently (the actual order is an implementation detail and should not be relied upon).
    */
-  public static function simplifyAST(array $ast) {
+  public static function simplifyAST(?array $ast) {
 
     // TODO: This function is somewhat slow beecause we constantly re-create child arrays.
     // For now this is ok, but we might want to change that in the future. 
@@ -265,7 +265,7 @@ class ASTHelper {
    * 
    * Callers may rely on the fact that two ASTs are (structurally) identical if their string representations are identical.
    */
-  public static function stringifyAST(array $ast) {
+  public static function stringifyAST(?array $ast) {
     return json_encode($ast);
   }
 

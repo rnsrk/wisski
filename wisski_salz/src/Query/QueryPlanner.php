@@ -13,13 +13,13 @@ class QueryPlanner {
      * To do this the dynamic_evaluator function must be provided. 
      * It takes as argument a single FILTER and should return a list of bundle ids involved.
      */
-    public function __construct(callback $dynamic_evaluator) {
+    public function __construct(?callback $dynamic_evaluator) {
         $this->dynamic_evaluator = $dynamic_evaluator;
         $this->pb_man = \Drupal::service('wisski_pathbuilder.manager');
         $this->adapter_man = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
     }
 
-    private static function debug($message) {
+    private static function debug(string $message) {
         if(WISSKI_DEVEL) \Drupal::logger('wisski_query_planner')->debug($message);
         // dpm($message); // TODO: Remove me!
     }
@@ -36,7 +36,7 @@ class QueryPlanner {
     /**
      * Plan makes a plan for the provided ast. 
      */
-    public function plan(array $ast) {
+    public function plan(?array $ast) {
         
         $plan = $this->make_plan($ast, $dynamic_evaluator);
         if ($plan['type'] == self::TYPE_EMPTY_PLAN) {
@@ -46,7 +46,7 @@ class QueryPlanner {
         return $plan;
     }
 
-    private function make_plan(array $ast, callback $dynamic_evaluator) {
+    private function make_plan(?array $ast) {
 
         /*
             An AST of a Query is represented as follows:   
@@ -135,7 +135,7 @@ class QueryPlanner {
             $child = $this->make_plan($child);
             array_push($childPlans, $child);
         }
-        
+
         // TODO: Do the actual merging!
         // TODO: CONTINUE IMPLEMENTATION HERE
         // for now we just return the child plans
@@ -388,7 +388,7 @@ class QueryPlanner {
     // contains a mapping from adapter_id => adapter instance
     private $adapter_cache = array();
 
-    private function isAdapterFederatable(string $adapterID, array $ast = NULL) {
+    private function isAdapterFederatable(string $adapterID, ?array $ast = NULL) {
 
         // if the adapter isn't in the cache, fetch it from the manager.
         // TODO: Check that ->load() works
