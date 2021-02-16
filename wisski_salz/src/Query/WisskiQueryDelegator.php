@@ -208,8 +208,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
   private function executeNormal() {
     // TODO: AST for filters, order
-    dpm($this->getConditionAST(TRUE), "ast::smart");
-    dpm($this->makeQueryPlan(), "make plan");
+    //dpm($this->getConditionAST(TRUE), "ast::smart");
+    //dpm($this->makeQueryPlan(), "make plan");
 
     //call initializePager() to initialize the pager if we have one
     $pager = FALSE;
