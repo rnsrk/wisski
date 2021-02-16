@@ -843,4 +843,32 @@ class WisskiIndividualQuery extends QueryPluginBase {
       'operator' => $operator,
     ];
   }
+
+  //MyF: readded this function for compatibility reasons
+  /**
+   * We override this function as the standard sort plugins use it
+   *
+   * @param table not used
+   * @param field the WisskiEntity entity query field by which to sort
+   * @param order sort order
+   * @param alias not used
+   * @param params not used
+   */
+  public function addOrderBy($table, $field = NULL, $order = 'ASC', $alias = '', $params = array()) {
+    // $table is useless here
+    if ($field) {
+      $as = $this->addField($table, $field, $alias, $params);
+
+      $this->orderby[] = array(
+        'field' => $as,
+        'direction' => strtoupper($order),
+      );
+    }
+    if ($table == "rand") {
+      $this->orderby[] = array(
+        'field' => $table,
+        'direction' => strtoupper($order),
+      );
+    }
+  }
 }
