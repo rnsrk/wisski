@@ -14,7 +14,7 @@ class Query extends WisskiQueryBase {
 
 
   public function execute() {
-//    dpm("exe!");
+#    dpm("exe!");
 
     $result = array();
 
