@@ -1714,7 +1714,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               $skip = false;
             // check if the value is already there...
               foreach($out[$eid][$field_id] as $field) {
-                if($field["target_id"] == $item["target_id"]) {
+                // if($field["target_id"] == $item["target_id"]) {
+                if(isset($field[$key]) && $field[$key]["target_id"] == $item["target_id"]) {
                   $skip = TRUE;
                   break;
                 }
