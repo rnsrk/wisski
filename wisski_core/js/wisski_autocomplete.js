@@ -9,9 +9,12 @@
   // to make sure we do not use quotes for inputs with comma.
   Drupal.autocomplete.options.select = function (event, ui) {
 
-    var terms = Drupal.autocomplete.splitValues(event.target.value);
+    //var terms = Drupal.autocomplete.splitValues(event.target.value);
+    // start empty, otherwise cases with a , do not get created correctly...
+    var terms = [];
+    
     // Remove the current input.
-    terms.pop();
+    //terms.pop();
     // Add the selected item.
     terms.push(ui.item.value);
     event.target.value = terms.join(', ');
