@@ -64,21 +64,31 @@ class Query extends WisskiQueryBase {
 
       $special_skip = FALSE;
 
+      $correct_condition = NULL;
       foreach ($this->condition->conditions() as $condition) {
-        $field = $condition['field'];
-        $value = $condition['value'];
+        foreach ($condition['field']->conditions() as $subcondition) {
+#        dpm($subcondition, "I got this");
+        $field = $subcondition['field'];
+        $value = $subcondition['value'];
 #        dpm($field, "field");
-        if($field == "bundle")
+#        dpm($value, "value");
+        if($field == "bundle"){
+          $correct_condition = $condition['field']->conditions();
           $bundlequery = $value;
-        if($field == "eid")
+        }
+        if($field == "eid"){
           $eidquery = $value;
+          $correct_condition = $condition['field']->conditions();
+        }
 
         // the condition is a nested condition e.g. when it comes to search.
         if($field instanceof Condition) {
           $special_skip = TRUE;
         }
-
       }
+    }
+
+#    dpm($correct_condition, "correct one");
 
 #      dpm(serialize($this->condition->conditions()), "bun");
       if(!$special_skip) {
@@ -131,8 +141,9 @@ class Query extends WisskiQueryBase {
 #      dpm($this->sort, "sort");      
 
       foreach($this->condition->conditions() as $condition) {
-        $field = $condition['field'];
-        $value = $condition['value'];
+        foreach ($condition['field']->conditions() as $subcondition) {
+        $field = $subcondition['field'];
+        $value = $subcondition['value'];
 #        drupal_set_message("you are evil!" . microtime() . serialize($this));
 #        return;
 
@@ -149,7 +160,7 @@ class Query extends WisskiQueryBase {
           if($this->count) {
 #   	         drupal_set_message("I give back to you: " . serialize($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE)));
             //wisski_tick('Field query out 2');
-            return $engine->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE, $this->condition->conditions());
+            return $engine->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE, $correct_condition);
           }
 
 #            dpm($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()), 'out!');
@@ -157,7 +168,8 @@ class Query extends WisskiQueryBase {
 #            return;           
           //wisski_tick('Field query out 3');
 
-          $ret = array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions(), $this->sort));
+          dpm($this->sort, "sort?");
+          $ret = array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $correct_condition, $this->sort));
 
           return $ret;
         }
@@ -193,6 +205,7 @@ class Query extends WisskiQueryBase {
           }
         }
       }
+    }
 
     //wisski_tick("afterprocessing");
     
