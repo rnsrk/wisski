@@ -67,6 +67,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 
   public function loadSteps() {
     $url = $this->server . '/' . $this->all_items . '?v=' . $this->version . '&key=' . $this->api_key;
+    dpm($url);
     ini_set("allow_url_fopen", 1);
 
     $json = file_get_contents($url);
@@ -95,6 +96,8 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
     $steps['Literature']['creators'] = NULL;
     $steps['Literature']['directLink'] = NULL;
     $steps['Literature']['itemType'] = NULL;
+    // MyF: added tags
+    $steps['Literature']['tags'] = NULL;
 
     $this->possibleSteps = $steps;
 #    dpm($this->possible_steps);
@@ -102,7 +105,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
   
   public function loadAllItems($count = FALSE, $limit = 25, $offset = 0, $where = "", $sort = "") {
     $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items/top?v=' . $this->version . $where . $sort . '&limit=' . $limit . '&start=' . $offset . '&key=' . $this->api_key;
- #   dpm($url);
+#    dpm($url);
     ini_set("allow_url_fopen", 1);
     
     $json = file_get_contents($url);
@@ -281,7 +284,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
     }
 
     $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items/' . $id . '?v=' . $this->version . '&limit=1&start=0&key=' . $this->api_key;
-#    dpm($url);
+    dpm($url);
 
 #    dpm(serialize($this);
 
@@ -296,7 +299,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
     
     $data = array();
     
-#    dpm($obj, "dat");
+    dpm($obj, "dat");
 #    return;
             
     $outarr = array();
@@ -321,6 +324,17 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
         }
       }
 
+      /*if($key == "tags") {
+      
+        $data['Literature'][$key] = array();
+      
+        foreach($objdata as $tag) {
+          if(isset($tag)) {
+            $data['Literature'][$key][] = $tag;
+          }
+        }
+
+      }*/
     }
     
     $data['Literature']['directLink'][] = $uri;
@@ -646,11 +660,12 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 
         $dt = $path->getDatatypeProperty();
 
-        if($dt == "creators");
+        if($dt == "creators"){
           $dt = "creator";
+        }
 
         $sort .= "&sort=" . $dt . "&direction=" . strtolower($subsort['direction']);
-#      dpm($sort, "sort");
+       dpm($sort, "sort");
       // this can only handle one!
         continue;      
 #      dpm($path, "path!");
