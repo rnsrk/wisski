@@ -190,6 +190,11 @@ class WisskiIndividualQuery extends QueryPluginBase {
       // let the pager add limits and skips
       $view->pager->preExecute($query);
 
+      if($this->orderby) {
+        foreach($this->orderby as $elem) {
+          $query->sort($elem['field'], $elem['direction']);
+        }
+      }
       // We can't have an offset without a limit, so provide a very large limit instead.
       if (!empty($this->limit) || !empty($this->offset)) {
         $limit = intval(!empty($this->limit) ? $this->limit : 999999);
