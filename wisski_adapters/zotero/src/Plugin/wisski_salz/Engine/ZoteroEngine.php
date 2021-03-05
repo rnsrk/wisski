@@ -102,7 +102,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
   
   public function loadAllItems($count = FALSE, $limit = 25, $offset = 0, $where = "", $sort = "") {
     $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items/top?v=' . $this->version . $where . $sort . '&limit=' . $limit . '&start=' . $offset . '&key=' . $this->api_key;
-#    dpm($url);
+ #   dpm($url);
     ini_set("allow_url_fopen", 1);
     
     $json = file_get_contents($url);
@@ -110,7 +110,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
     // get the header for count
     $header = $http_response_header;
     
-#    dpm($header, "header");
+  #  dpm($header, "header");
     
     $objs = json_decode($json);
     
@@ -130,8 +130,10 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
         }
       }
       return 0;
-    } else   
+    } else{
+ #   dpm($data)   
       return $data;
+    }
   
   }
 
@@ -505,6 +507,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 
   public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL) {
 #dpm($path->getName(), 'spam');
+    $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
     $field_id = $pb->getPbPath($path->getID())["field"];
 
     $uri = AdapterHelper::getUrisForDrupalId($eid, $this->adapterId());
@@ -545,10 +548,10 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
       if (empty($main_property)) {
         $out[] = $value;
       } else {
-        $out[] = array($main_property => $value);
+        $out[] = array($main_property => $value, "wisski_language" => $language);
       }
     }
-#    drupal_set_message(serialize($out));
+#   dpm(serialize($out));
     return $out;
 
   }

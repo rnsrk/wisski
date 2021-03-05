@@ -286,11 +286,13 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
           // MyF: This is a special case for example label might be requested without language being set
           // thus it returns an error
           // for now we just continue here, but it might be possible that the cached value needs recursive merging
-          if (!is_array( $values[$id][$field_id])){
-            continue;
+          if (!is_array($values[$id][$field_id])){       
+            $tempVal = $values[$id][$field_id];
+            # dpm($tempVal);
+            $values[$id][$field_id] = array();
+            $values[$id][$field_id][$clanguage] = array(0 => array('value' => $tempVal));
           }
           $values[$id][$field_id][$clanguage] = $cached_value;
-
         }
         
 #        dpm($values, "values after");
