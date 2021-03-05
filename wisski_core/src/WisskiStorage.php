@@ -200,6 +200,9 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
           }
                     
           $clanguage = $cached_field_value->lang;
+#          dpm($values[$id][$field_id], "i am here!");
+#          dpm($field_id, "field id is");
+#          dpm($clanguage, "clang");
 #          if($field_id == 'b1abe31d92a85c73f932db318068d0d5')
 #            drupal_set_message(serialize($cached_field_value));
 #          dpm($cached_field_value->properties, "sdasdf");
@@ -210,7 +213,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
           // if we loaded something from TS we can skip the cache.
           // By Mark: Unfortunatelly this is not true. There is a rare case
           // that there is additional information, e.g. in files.
-          if( isset($values[$id][$field_id][$clanguage]) ) {
+          if(isset($values[$id][$field_id]) && isset($values[$id][$field_id][$clanguage]) ) {
             $cached_value = unserialize($cached_field_value->properties);
             $delta = $cached_field_value->delta;
 
@@ -270,7 +273,24 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #            $values[$id][$field_id] = 
 #          else
 #          dpm("$field_id loaded from cache." . serialize($cached_value));
+#          dpm($clanguage, "clanguage is: ");
+#          dpm($values[$id][$field_id]);
+#          dpm($field_id, "fieldid");
+#          dpm($id, "id");
+          
+
+          if(!isset($values[$id][$field_id])){
+            $values[$id][$field_id] = array();
+          }
+          // @TODO Check
+          // MyF: This is a special case for example label might be requested without language being set
+          // thus it returns an error
+          // for now we just continue here, but it might be possible that the cached value needs recursive merging
+          if (!is_array( $values[$id][$field_id])){
+            continue;
+          }
           $values[$id][$field_id][$clanguage] = $cached_value;
+
         }
         
 #        dpm($values, "values after");
@@ -401,17 +421,19 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
               // if this is translatable
               if($base_field_def->isTranslatable()) {
                 // then we go and look for the first key
-                foreach($val as $pot_lang => $some_field_values) {
-                  // if this is a language tag
-                  if(!in_array($pot_lang, $available_languages)) {
-                    // if not we set it to lang default
-                    // This is the special case where somebody put in
-                    // something that should not have been put into a 
-                    // translatable base field like array("value" => "smthg")
-                    // unfortunately this currently happens 
-                    // @TODO: Fix this case!
-                    $test[$key][LanguageInterface::LANGCODE_DEFAULT] = $val;
-                    break;
+                if(is_array($val)){
+                  foreach($val as $pot_lang => $some_field_values) {
+                    // if this is a language tag
+                    if(!in_array($pot_lang, $available_languages)) {
+                      // if not we set it to lang default
+                      // This is the special case where somebody put in
+                      // something that should not have been put into a 
+                      // translatable base field like array("value" => "smthg")
+                      // unfortunately this currently happens 
+                      // @TODO: Fix this case!
+                      $test[$key][LanguageInterface::LANGCODE_DEFAULT] = $val;
+                      break;
+                    }
                   }
                 }
  
@@ -433,18 +455,21 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             // and now we do the "normal field" handling and the handling for
             // translatable base fields (in fact we do the handling for any 
             // translatable fields)
-            foreach($val as $field_lang => $field_vals) {
- #             dpm($field_vals);
-              // if it is the default language of the entity, we exchange the 
-              // language tag of the original language for x-default
-              if($field_lang == $orig_lang) {
-                $test[$key][LanguageInterface::LANGCODE_DEFAULT] = $field_vals;
-                $test[$key][$orig_lang] = $field_vals;
-              } else {
-                // we just trust it for now...
-                $test[$key][$field_lang] = $field_vals;
+            if(is_array($val)){
+              foreach($val as $field_lang => $field_vals) {
+  #              dpm($field_vals);
+                // if it is the default language of the entity, we exchange the 
+                // language tag of the original language for x-default
+                if($field_lang == $orig_lang) {
+                  $test[$key][LanguageInterface::LANGCODE_DEFAULT] = $field_vals;
+                  $test[$key][$orig_lang] = $field_vals;
+                } else {
+                  // we just trust it for now...
+                  $test[$key][$field_lang] = $field_vals;
+                }
               }
             }
+            
             
             // else we just take it as it is.
 //            if(!empty(array_intersect(array_keys($val), $set_languages))) {

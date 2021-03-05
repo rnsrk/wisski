@@ -280,19 +280,18 @@ class WisskiIndividualQuery extends QueryPluginBase {
     $pb_cache = array();
     $path_cache = array();
    
+     // get the rendering language from the view.
+    $rendering_language = $this->view->display_handler->getOption('rendering_language');
+
+    if($rendering_language == "***LANGUAGE_language_interface***") {
+      $rendering_language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+    }
+
     // iterate over all the fields
     // depending on the field we have, add the right data to the result
     while (($field = array_shift($fields)) !== NULL) {
       if ($field == 'title') {
         $bid = (!empty($bundle_ids)) ? reset($bundle_ids) : NULL; // get the first bundle
-
-        // get the rendering language from the view.          
-        $rendering_language = $this->view->display_handler->getOption('rendering_language');
-        
-        if($rendering_language == "***LANGUAGE_language_interface***") {
-          $rendering_language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
-        }
-
         foreach ($values_per_row as $eid => &$row) {
           [$bids, $bid] = $this->get_bids_bid_for_eid($eid, $bundle_ids);
 
@@ -421,8 +420,9 @@ class WisskiIndividualQuery extends QueryPluginBase {
 
       // load the relevant pathbuilder from the cache
       // populate the cache if it doesn't exist
-      $pb = $pb_cache[$pb_and_path[0]];
-      if (!isset($pb)) {
+      if(isset($pb_cache[$pb_and_path[0]]))
+        $pb = $pb_cache[$pb_and_path[0]];
+      else{    
         $pb = \Drupal::service('entity_type.manager')->getStorage('wisski_pathbuilder')->load($pb_and_path[0]);
         $pb_cache[$pb_and_path[0]] = $pb;
       }
@@ -434,8 +434,9 @@ class WisskiIndividualQuery extends QueryPluginBase {
 
       // load the relevant path from the cache
       // populate the cache if it doesn't exist
-      $path = $path_cache[$pb_and_path[1]];
-      if (!isset($path)) {
+      if(isset($path_cache[$pb_and_path[1]]))
+        $path = $path_cache[$pb_and_path[1]];
+      else{
         $path = \Drupal::service('entity_type.manager')->getStorage('wisski_path')->load($pb_and_path[1]);
         $path_cache[$pb_and_path[1]] = $path;
       }
@@ -643,7 +644,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
               $pseudo_entity_fields[$eid][$field_to_check] = $values_per_row[$eid][$field_to_check];
 #                    $entity_dump[$eid] = \Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($values_per_row[$eid]), $values_per_row);
 
-#                    dpm($values_per_row[$eid]);
+                    dpm($values_per_row[$eid]);
             }
           }
 #if ($field == 'wisski_path_sammlungsobjekt__91') rpm([$path, $result, $values_per_row], '91');
@@ -684,6 +685,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #        dpm($pseudo_entity_fields, "psd");
     
         // store the loaded entities in the cache!
+        dpm($pseudo_entity_fields, "pseudo entity fields");
         $entities = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->addCacheValues(array($eid => $eid), $pseudo_entity_fields);
       
 #        foreach($row as $field_name => $data) {
