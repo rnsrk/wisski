@@ -644,7 +644,8 @@ class WisskiIndividualQuery extends QueryPluginBase {
               $pseudo_entity_fields[$eid][$field_to_check] = $values_per_row[$eid][$field_to_check];
 #                    $entity_dump[$eid] = \Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($values_per_row[$eid]), $values_per_row);
 
-                    dpm($values_per_row[$eid]);
+#                    dpm($values_per_row[$eid]);
+              
             }
           }
 #if ($field == 'wisski_path_sammlungsobjekt__91') rpm([$path, $result, $values_per_row], '91');
@@ -685,7 +686,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
 #        dpm($pseudo_entity_fields, "psd");
     
         // store the loaded entities in the cache!
-        dpm($pseudo_entity_fields, "pseudo entity fields");
+#        dpm($pseudo_entity_fields, "pseudo entity fields");
         $entities = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->addCacheValues(array($eid => $eid), $pseudo_entity_fields);
       
 #        foreach($row as $field_name => $data) {
