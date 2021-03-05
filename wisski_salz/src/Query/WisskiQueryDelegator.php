@@ -254,9 +254,12 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
     // complicated cases below (we have > 1 adapter and can't federate!)
     
+   
+    // to reduce the number of error messages
     // at least we have a pager!
-    if ($pager || !empty($this->range)) {
-      if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: In-Memory Pagination");
+     if ($pager || !empty($this->range)) {
+      // MyF: We have to test this in a later step; so first of all we remove this in order
+      /*if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: In-Memory Pagination");
       if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
         $querytmp = $query->normalQuery();
         $querytmp->range($this->range['start'],$this->range['length']);
@@ -265,7 +268,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
           return $ret;
         }
         
-      }
+      }*/
     
       // use the old behaviour if we have a pager
       return $this->executePaginatedJoin($this->range['length'],$this->range['start']);
