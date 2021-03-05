@@ -48,6 +48,10 @@ class Query extends WisskiQueryBase {
       $limit = $this->range['length'];
       $offset = $this->range['start'];
     } //else dpm($this,'no limits');
+    else {
+      $limit = 0;
+      $offset = 0;
+    }
 
 //wisski_tick('prepared '.$pb->id());
 #    return;
@@ -168,7 +172,7 @@ class Query extends WisskiQueryBase {
 #            return;           
           //wisski_tick('Field query out 3');
 
-          dpm($this->sort, "sort?");
+#          dpm($this->sort, "sort?");
           $ret = array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $correct_condition, $this->sort));
 
           return $ret;

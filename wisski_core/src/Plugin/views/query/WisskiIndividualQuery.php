@@ -31,6 +31,33 @@ use Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWi
 class WisskiIndividualQuery extends QueryPluginBase {
 
   /**
+   * The EntityQuery object used for the query.
+   *
+   * @var \Drupal\Core\Entity\Query\QueryInterface, \Drupal\wisski_salz\Query\WissKIQueryDelegator in our case
+   */
+  public $query;
+  
+  /**
+   * The fields that should be returned explicitly by the query in the
+   * ResultRow objects
+   * 
+   * @var array, keys and values are the field IDs
+   */
+  public $fields = [];
+
+  /**
+   * The order statements for the query
+   * 
+   * @var array
+   */
+  public $orderby;
+  
+  /**
+   * The variable counter for parameters
+   */
+  private $paramcount = 0;
+
+  /**
    * Generate a query and a countquery from all of the information supplied
    * to the object.
    *
@@ -190,6 +217,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
       // let the pager add limits and skips
       $view->pager->preExecute($query);
 
+      // MyF: readded this in order to provide ordering
       if($this->orderby) {
         foreach($this->orderby as $elem) {
           $query->sort($elem['field'], $elem['direction']);
