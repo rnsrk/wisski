@@ -67,7 +67,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
 
   public function loadSteps() {
     $url = $this->server . '/' . $this->all_items . '?v=' . $this->version . '&key=' . $this->api_key;
-    dpm($url);
+#    dpm($url);
     ini_set("allow_url_fopen", 1);
 
     $json = file_get_contents($url);
@@ -284,7 +284,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
     }
 
     $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items/' . $id . '?v=' . $this->version . '&limit=1&start=0&key=' . $this->api_key;
-    dpm($url);
+#    dpm($url);
 
 #    dpm(serialize($this);
 
@@ -299,7 +299,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
     
     $data = array();
     
-    dpm($obj, "dat");
+#    dpm($obj, "dat");
 #    return;
             
     $outarr = array();
@@ -665,7 +665,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
         }
 
         $sort .= "&sort=" . $dt . "&direction=" . strtolower($subsort['direction']);
-       dpm($sort, "sort");
+#       dpm($sort, "sort");
       // this can only handle one!
         continue;      
 #      dpm($path, "path!");
