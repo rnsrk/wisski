@@ -493,18 +493,16 @@ class WisskiIndividualQuery extends QueryPluginBase {
       $first_row = current($values_per_row);
 
       $field_def = \Drupal::service('entity_field.manager')->getFieldMap();#->getFieldDefinitions('wisski_individual',$values_per_row[$eid]['bundle']);
-
       $is_file = FALSE;
       $main_prop = "value";
 
       // get the main property name             
       if(!empty($field_def) && isset($field_def['wisski_individual']) && isset($field_def['wisski_individual'][$field_to_check]) && isset($field_def['wisski_individual'][$field_to_check]['bundles'])) {
         $fbundles = $field_def['wisski_individual'][$field_to_check]['bundles'];
-#                    dpm(current($fbundles), "fb");
+#        dpm(current($fbundles), "fb");
         $field_def = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual',current($fbundles));
-
-#              dpm(serialize($field_def[$field_to_check]->getFieldStorageDefinition()->getDependencies()), "def");
-
+#        dpm(serialize($field_def[$field_to_check]->getFieldStorageDefinition()->getDependencies()), "def");
+#        dpm($field_def, "field def");
         $is_file = in_array('file',$field_def[$field_to_check]->getFieldStorageDefinition()->getDependencies()['module']);
 
         $main_prop = $field_def[$field_to_check]->getFieldStorageDefinition()->getMainPropertyName();
@@ -515,6 +513,10 @@ class WisskiIndividualQuery extends QueryPluginBase {
         foreach($adapters as $adapter) {
           if (!$adapter) {
             $this->messenger()->addError("Bad adapter id for pathbuilder $pb_and_path[0]: " . $pb->getAdapterId());
+            continue;
+          }
+          // MyF: here we skip all adapter that should not handle the pathbuilder (e.g. zotero)
+          if($pb->getAdapterId() != $adapter->id()){
             continue;
           }
           
@@ -583,6 +585,9 @@ class WisskiIndividualQuery extends QueryPluginBase {
           $select .= "} ";
           // NOTE: we need to set the $relative param to FALSE. All other
           // optional params should be default values
+#          dpm($adapter->id(), "engineid");
+#          dpm($pb->id(), "pbid");
+#          dpm($path->id(), "pathid");
           $select .= $engine->generateTriplesForPath($pb, $path, "", NULL, NULL, 0, 0, FALSE, '=', 'field', FALSE);
           #$select .= "}";
 
