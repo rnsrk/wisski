@@ -1,0 +1,7 @@
+wisski.wisski_cleaner:
+  path: '/admin/config/wisski/cleaner'
+  defaults:
+    _form: '\Drupal\wisski_cleaner\Form\WisskiCleanerForm'
+    _title: 'Clean the Triple Store'
+  requirements:
+    _permission: 'administer wisski'

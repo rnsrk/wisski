@@ -1,0 +1,6 @@
+wisski.wisski_cleaner:
+  title: 'WissKI Triplestore Cleaner'
+  description: 'Find loose triples in your triplestore and delete them'
+  parent: wisski.content
+  route_name: wisski.wisski_cleaner
+  weight: 100

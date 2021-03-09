@@ -1,0 +1,10 @@
+name: WissKI Cleaner 
+description: A module to clean the triplestore
+core: 8.x
+package: WissKI
+# version: 0.1-dev
+type: module
+core_version_requirement: ^8 || ^9
+configure: wisski_cleaner.wisski_cleaner
+dependencies:
+  - wisski:wisski_core
