@@ -17,6 +17,20 @@ Basically, we assume that the user always wants to delete the connection, but ma
 
 Using this module we can find all individuals in our triplestore that are not connected to one of our main classes, like people, places, or some special kind of object. In each database there is usually a very limited number of classes that are the center of all connections. This module finds the individuals of any other class that are not connected by any path to an individual of one of the main classes.
 
+## Installation and usage
+
+Install as a standalone module or together with the entire wisski package. You can find it as "WissKI Cleaner" in the *Extend* tab.
+
+To use it go to *Configuration -> WISSKI -> WissKI Triplestore Cleaner*.
+
+1 - Select the adapter, that is in which triple store you are going to search. 
+
+2- Select one or more main classes.
+
+3- Find Loose resources.
+
+Select "Display Triples on Selection" to see all the connections of the resources selected when you click on them. This can help you identify if you actually want to delete it. As a rule of thumb: if it does not belong to a class that you consider a main class in your data and it is only subject in triples, then you can delete it safely. 
+
 ## Things to consider
 
 - The module only finds individuals in the default graph of the store.
