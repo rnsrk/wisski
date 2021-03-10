@@ -100,10 +100,12 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
     $steps['Literature']['tags'] = NULL;
 
     $this->possibleSteps = $steps;
-#    dpm($this->possible_steps);
+#    dpm($this->possibleSteps);
   }
   
   public function loadAllItems($count = FALSE, $limit = 25, $offset = 0, $where = "", $sort = "") {
+#    dpm($where);
+#    dpm($sort);
     $url = $this->server . '/' . $this->is_user_or_group . 's/' . $this->user_group . '/items/top?v=' . $this->version . $where . $sort . '&limit=' . $limit . '&start=' . $offset . '&key=' . $this->api_key;
 #    dpm($url);
     ini_set("allow_url_fopen", 1);
@@ -310,7 +312,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
       if($key == "creators") {
       
         $data['Literature'][$key] = array();
-      
+
         foreach($objdata as $creator) {
           if(isset($creator->lastName) && isset($creator->firstName)) {
             $data['Literature'][$key][] = $creator->lastName . ', ' . $creator->firstName;
@@ -324,23 +326,22 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
         }
       }
 
-      /*if($key == "tags") {
-      
+      if($key == "tags") {
         $data['Literature'][$key] = array();
       
         foreach($objdata as $tag) {
           if(isset($tag)) {
-            $data['Literature'][$key][] = $tag;
+            $data['Literature'][$key][] = $tag->tag;
           }
         }
 
-      }*/
+      }
     }
     
     $data['Literature']['directLink'][] = $uri;
 
     $cache->set($id, $data);
-#    dpm($data, "data");
+#   dpm($data, "data");
     return $data;
 
   }
@@ -665,7 +666,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
         }
 
         $sort .= "&sort=" . $dt . "&direction=" . strtolower($subsort['direction']);
-#       dpm($sort, "sort");
+#        dpm($sort, "sort");
       // this can only handle one!
         continue;      
 #      dpm($path, "path!");

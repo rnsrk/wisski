@@ -16,6 +16,7 @@ use Drupal\wisski_salz\Query\WisskiQueryDelegator;
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\wisski_core\Controller\WisskiEntityListBuilder;
 use Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWithPB;
+use Drupal\wisski_adapter_zotero\Plugin\wisski_salz\Engine\ZoteroEngine;
 
 /**
  * Views query plugin for an SQL query.
@@ -285,7 +286,6 @@ class WisskiIndividualQuery extends QueryPluginBase {
   private function fetchEntityData($entity_ids, $bundle_ids = array()) {
     $fields = $this->fields; // fields to be filled
     $values_per_row = []; // values that are being returned
-
     // we always set the 'eid' field
     foreach ($entity_ids as $entity_id) {
       $values_per_row[$entity_id] = ['eid' => $entity_id];
@@ -525,6 +525,18 @@ class WisskiIndividualQuery extends QueryPluginBase {
           // find a Sparql11EngineWithPB or bail out
           $engine = $adapter->getEngine();
           if (!($engine instanceof Sparql11EngineWithPB)) {
+            // by MyF: We fetch the necessary data for the view by loading all displayed fields of all considered entities in $consideredVal;
+            // afterwards we just copy the data to our output array $pseudo_entity_fields
+            if($engine instanceof ZoteroEngine) {
+              $consideredVal = $engine->loadPropertyValuesForField($field_to_check, array(), $entity_ids, current($fbundles));
+              foreach($entity_ids as $eid) {
+                if(!isset($consideredVal[$eid]) && !isset($consideredVal[$eid][$field_to_check])) {
+                  continue;
+                }
+                $entry = $consideredVal[$eid][$field_to_check];
+                $pseudo_entity_fields[$eid][$field_to_check] = $entry;  
+              }
+            }
             // lets just hope it can handle it somehow...
             // @todo - this is not funny!!!
             continue;
