@@ -14,7 +14,7 @@ class Query extends WisskiQueryBase {
 
 
   public function execute() {
-//    dpm("exe!");
+#    dpm("exe!");
 
     $result = array();
 
@@ -70,19 +70,40 @@ class Query extends WisskiQueryBase {
 
       $correct_condition = NULL;
       foreach ($this->condition->conditions() as $condition) {
-        foreach ($condition['field']->conditions() as $subcondition) {
-#        dpm($subcondition, "I got this");
-        $field = $subcondition['field'];
-        $value = $subcondition['value'];
-#        dpm($field, "field");
-#        dpm($value, "value");
+        if(is_array($condition['field'])){
+
+          dpm($condition, "I got this");
+          foreach ($condition['field']->conditions() as $subcondition) {
+        
+          $field = $subcondition['field'];
+          $value = $subcondition['value'];
+  #        dpm($field, "field");
+  #        dpm($value, "value");
+          if($field == "bundle"){
+            $correct_condition = $condition['field']->conditions();
+            $bundlequery = $value;
+          }
+          if($field == "eid"){
+            $eidquery = $value;
+            $correct_condition = $condition['field']->conditions();
+          }
+
+          // the condition is a nested condition e.g. when it comes to search.
+          if($field instanceof Condition) {
+            $special_skip = TRUE;
+          }
+        }
+        // by MyF: for solr indexing it is necessary to use the old version where condition were no arrays
+      } else {
+        $field = $condition['field'];
+        $value = $condition['value'];
         if($field == "bundle"){
-          $correct_condition = $condition['field']->conditions();
+          $correct_condition = $this->condition->conditions();
           $bundlequery = $value;
         }
         if($field == "eid"){
           $eidquery = $value;
-          $correct_condition = $condition['field']->conditions();
+          $correct_condition = $this->condition->conditions();
         }
 
         // the condition is a nested condition e.g. when it comes to search.
@@ -145,9 +166,76 @@ class Query extends WisskiQueryBase {
 #      dpm($this->sort, "sort");      
 
       foreach($this->condition->conditions() as $condition) {
-        foreach ($condition['field']->conditions() as $subcondition) {
-        $field = $subcondition['field'];
-        $value = $subcondition['value'];
+        if(is_array($condition['field'])){
+          foreach ($condition['field']->conditions() as $subcondition) {
+          $field = $subcondition['field'];
+          $value = $subcondition['value'];
+  #        drupal_set_message("you are evil!" . microtime() . serialize($this));
+  #        return;
+
+  #        drupal_set_message("my cond is: " . serialize($condition));
+
+          // just return something if it is a bundle-condition
+          if($field == 'bundle') {
+
+            if(is_array($value))
+              $value = current($value);
+
+  #  	        drupal_set_message("I go and look for : " . serialize($value) . " and " . serialize($limit) . " and " . serialize($offset) . " and " . $this->count);
+  #          dpm(serialize($this->count), "sis");
+            if($this->count) {
+  #   	         drupal_set_message("I give back to you: " . serialize($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE)));
+              //wisski_tick('Field query out 2');
+              return $engine->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE, $correct_condition);
+            }
+
+  #            dpm($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()), 'out!');
+  #            dpm(array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions())), "muhaha!");
+  #            return;           
+            //wisski_tick('Field query out 3');
+
+  #          dpm($this->sort, "sort?");
+            $ret = array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $correct_condition, $this->sort));
+  #          dpm($ret, "here?");
+            return $ret;
+          }
+
+  #        dpm($field, "fi");
+          if($field instanceof Condition) {
+  #          dpm($field, "field");
+  #          dpm($field->conditions(), "cond");
+
+            foreach($field->conditions() as $subcondition) {
+  #            dpm($subcondition, "sub");
+  #            dpm($subcondition['field'], "val");
+
+              $pb_and_path = explode(".", $subcondition['field']);
+
+              $pathid = $pb_and_path[1];
+
+              $pbp = $pb->getPbPath($pathid);
+
+              $value = $subcondition['value'];
+
+              $bundle = $pbp['bundle'];
+              if($this->count) {
+                $ret = $engine->loadIndividualsForBundle($bundle, $pb, NULL, NULL, TRUE, $field->conditions());
+                return $ret;
+              } else {
+                $ret = $engine->loadIndividualsForBundle($bundle, $pb, 999999, 0, FALSE, $field->conditions());
+  #              dpm($ret, "got");
+  #              dpm($field->conditions(), "cond");
+                return array_keys($ret);
+              }
+
+            }
+          }
+        }
+         // by MyF: for solr indexing it is necessary to use the old version where condition were no arrays
+      } else {
+
+        $field = $condition['field'];
+        $value = $condition['value'];
 #        drupal_set_message("you are evil!" . microtime() . serialize($this));
 #        return;
 
@@ -164,7 +252,7 @@ class Query extends WisskiQueryBase {
           if($this->count) {
 #   	         drupal_set_message("I give back to you: " . serialize($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE)));
             //wisski_tick('Field query out 2');
-            return $engine->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE, $correct_condition);
+            return $engine->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE, $this->condition->conditions());
           }
 
 #            dpm($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()), 'out!');
@@ -172,8 +260,7 @@ class Query extends WisskiQueryBase {
 #            return;           
           //wisski_tick('Field query out 3');
 
-#          dpm($this->sort, "sort?");
-          $ret = array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $correct_condition, $this->sort));
+          $ret = array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions(), $this->sort));
 
           return $ret;
         }
