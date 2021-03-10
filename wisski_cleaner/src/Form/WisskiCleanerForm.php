@@ -266,14 +266,14 @@ class WisskiCleanerForm extends FormBase {
                 '#type' => 'submit',
                 '#value' => $this->t('Delete Selected Resources'),
                 '#submit' => array('::delete_selected'),
-                '#attributes' => array('onclick' => 'if(!confirm("Are you sure you want to delete all selected resources?")){return false;}'),
+                '#attributes' => array('onclick' => 'if(!confirm("Are you sure you want to delete all selected resources? This action can not be undone.")){return false;}'),
               );
 
               $form['stores']['results']['delete_all'] = array(
                 '#type' => 'submit',
                 '#value' => $this->t('Delete All'),
                 '#submit' => array('::delete_all'),
-                '#attributes' => array('onclick' => 'if(!confirm("Are you sure you want to delete all resources found?")){return false;}'),
+                '#attributes' => array('onclick' => 'if(!confirm("Are you sure you want to delete all resources found? This action can not be undone.")){return false;}'),
               );
 
               // Result checkboxes
@@ -415,18 +415,18 @@ class WisskiCleanerForm extends FormBase {
     foreach($result as $row){
       array_push($main_individuals, $row->main->getUri());
     };
-    
 
     $filter = $main_individuals;
     $lastLevel = $main_individuals;
 
+    // SEARCH CONNECTED NODES IN ITERATIONS
     $match = true;
-
     while ($match == true){
       $newLevel = [];
       $currentToDo = $lastLevel;
       while (count($currentToDo) > 0){
         $query = "SELECT DISTINCT ?o WHERE {GRAPH <". $graph . "> {";
+        // We do queries with only 100 statements each time to avoid errors for too long queries
         $lastElement = end(array_slice($currentToDo, 0 , 100));
         foreach ( array_slice($currentToDo, 0 , 100) as $ctd){
           if (filter_var($ctd, FILTER_VALIDATE_URL)){
@@ -447,7 +447,6 @@ class WisskiCleanerForm extends FormBase {
         $currentToDo = array_slice($currentToDo, 100);
       };
 
-
       if (count($newLevel) > 0){
         $lastLevel = Array();
         foreach($newLevel as $nlv){
@@ -459,9 +458,9 @@ class WisskiCleanerForm extends FormBase {
       } else {
         $match = false;
       };
-
     };
 
+    
     $final_set = array_diff($distinct_subjects, $filter);
     // If nothing is found, then write a congrats message
     if(empty($final_set)){
@@ -469,7 +468,7 @@ class WisskiCleanerForm extends FormBase {
     };
     $form_state->set('found_set', $final_set);
 
-    // This is used to not show results after changing the adapter
+    // This variable stores the adapter used in the query, we need it for not showing results after changing the adapter in the selector
     $form_state->set('last_adapter', array('adapt' => strval($selected_adapter)));
 
     $form_state->setRebuild(TRUE);
@@ -521,6 +520,5 @@ class WisskiCleanerForm extends FormBase {
     return;
 
   }
-  
-  
+    
 }
