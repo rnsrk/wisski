@@ -70,9 +70,8 @@ class Query extends WisskiQueryBase {
 
       $correct_condition = NULL;
       foreach ($this->condition->conditions() as $condition) {
-        if(is_array($condition['field'])){
-
-          dpm($condition, "I got this");
+        if(is_array($condition['field']->conditions())){
+#          dpm($condition['field'], "condition field is an array!");
           foreach ($condition['field']->conditions() as $subcondition) {
         
           $field = $subcondition['field'];
@@ -166,7 +165,8 @@ class Query extends WisskiQueryBase {
 #      dpm($this->sort, "sort");      
 
       foreach($this->condition->conditions() as $condition) {
-        if(is_array($condition['field'])){
+        if(is_array($condition['field']->conditions())){
+#          dpm($condition['field'], "condition field is an array!");
           foreach ($condition['field']->conditions() as $subcondition) {
           $field = $subcondition['field'];
           $value = $subcondition['value'];
@@ -275,7 +275,6 @@ class Query extends WisskiQueryBase {
 #            dpm($subcondition['field'], "val");
 
             $pb_and_path = explode(".", $subcondition['field']);
-
             $pathid = $pb_and_path[1];
 
             $pbp = $pb->getPbPath($pathid);
