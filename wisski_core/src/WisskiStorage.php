@@ -343,6 +343,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             if(count($set_languages) == count($available_languages))
               break;
           }
+         
           
 #          dpm($set_languages, "the setted languages");
           
@@ -374,6 +375,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                 $orig_lang = $key;
             } 
           }
+         
           
           // if the entity has no default langcode (which might be and probably is the default
           // for old wisski instances) we just use the first language
@@ -387,6 +389,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             }
             # dpm($set_languages, "set?");
           }
+          
 
 #          dpm("my orig lang is: " . serialize($values[$id]));
 
@@ -413,15 +416,14 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
           // typically have different languages enabled by default due to the
           // setting in the wisski Entity
           foreach($values[$id] as $key => $val) {
-            
-            
-            
             // if it is a base field, simply set it to the appropriate langcode
             if(in_array($key, $base_field_names)) {
               $base_field_def = $base_fields[$key];
+             
               
               // if this is translatable
               if($base_field_def->isTranslatable()) {
+                
                 // then we go and look for the first key
                 if(is_array($val)){
                   foreach($val as $pot_lang => $some_field_values) {
@@ -438,7 +440,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                     }
                   }
                 }
- 
+ #               dpm($test);
+    
                 // if we have found something, we can savely continue.               
                 if(isset($test[$key][LanguageInterface::LANGCODE_DEFAULT]))
                   continue;
@@ -446,9 +449,11 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                 // if not we do the "normal field handling"
                 // because it is a translatable base field
                 // which has language tags that must be replaced accordingly.
-              
               } else {
-                // if it is not translatable, we always put it to x-default.             
+                // if it is not translatable, we always put it to x-default.
+ #               dpm("I am changing it here");
+ #               dpm($key, "key: ");
+ #               dpm($val, "val: ");            
                 $test[$key][LanguageInterface::LANGCODE_DEFAULT] = $val;
                 continue;
               }
@@ -458,15 +463,18 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             // translatable base fields (in fact we do the handling for any 
             // translatable fields)
             if(is_array($val)){
+              
               foreach($val as $field_lang => $field_vals) {
-  #              dpm($field_vals);
                 // if it is the default language of the entity, we exchange the 
                 // language tag of the original language for x-default
+                if(gettype($field_lang) != gettype($orig_lang)){
+#                  dpm("Warning: gettype(field_lang) != gettype(orig_lang)");
+                }
                 if($field_lang == $orig_lang) {
                   $test[$key][LanguageInterface::LANGCODE_DEFAULT] = $field_vals;
                   $test[$key][$orig_lang] = $field_vals;
                 } else {
-                  // we just trust it for now...
+                  // we just trust it for now...                 
                   $test[$key][$field_lang] = $field_vals;
                 }
               }

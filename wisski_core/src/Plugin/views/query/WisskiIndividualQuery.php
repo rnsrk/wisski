@@ -331,7 +331,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
           // fill in missing bundle id
           if(empty($row['bundle'])) {
             $row['bundle'] = $bid;
-            $pseudo_entity_fields[$eid]['bundle'] = $row['bundle'];
+            $pseudo_entity_fields[$eid]['bundle'] = $row['bundle']; 
           }
           
           // somehow it awaits a string here.
@@ -383,7 +383,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
           // fill in missing bundle id
           if(empty($row['bundle'])) {
             $row['bundle'] = $bid;
-            $pseudo_entity_fields[$eid]['bundle'] = $row['bundle'];  
+            $pseudo_entity_fields[$eid]['bundle'] = $row['bundle'];
           }
 
           // fetch the preview image
@@ -529,12 +529,16 @@ class WisskiIndividualQuery extends QueryPluginBase {
             // afterwards we just copy the data to our output array $pseudo_entity_fields
             if($engine instanceof ZoteroEngine) {
               $consideredVal = $engine->loadPropertyValuesForField($field_to_check, array(), $entity_ids, current($fbundles));
+#              dpm($consideredVal);
               foreach($entity_ids as $eid) {
                 if(!isset($consideredVal[$eid]) && !isset($consideredVal[$eid][$field_to_check])) {
                   continue;
                 }
                 $entry = $consideredVal[$eid][$field_to_check];
-                $pseudo_entity_fields[$eid][$field_to_check] = $entry;  
+                // by MyF: Although we do not support multiple languages for zotero entries, we add the language here because this enables the display
+                // of multiple items, like for example the field creator which may refer to multiple authors
+                $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+                $pseudo_entity_fields[$eid][$field_to_check][$language] = $entry;
               }
             }
             // lets just hope it can handle it somehow...
@@ -727,8 +731,9 @@ class WisskiIndividualQuery extends QueryPluginBase {
         }
 
         // add the title values to the label so it can be rendered correctly...
-        $pseudo_entity_fields[$eid]['label'] = $values_per_row[$eid]['title'];  
+        $pseudo_entity_fields[$eid]['label'] = $values_per_row[$eid]['title']; 
         
+#        dpm($pseudo_entity_fields);
 #        dpm($row);
 #        $row['_entity'] = entity_load('wisski_individual', $row['eid']);;
 #        $bid = reset($bundle_ids);
@@ -738,6 +743,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
         // store the loaded entities in the cache!
 #        dpm($pseudo_entity_fields, "pseudo entity fields");
         $entities = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->addCacheValues(array($eid => $eid), $pseudo_entity_fields);
+ #       dpm($entities);
       
 #        foreach($row as $field_name => $data) {
 #          $entities[$eid]->$field_name = $data;
