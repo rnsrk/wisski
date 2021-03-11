@@ -99,7 +99,7 @@ class Sparql11TriplesTabController extends ControllerBase {
 
             $predicateuri = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->po->getUri() ) );
             
-            if($result->o instanceof \EasyRdf\Resource) {
+            if($result->o instanceof \EasyRdf_Resource or get_class($result->o) == "EasyRdf\Resource" ) {
               try {
               
                 $existing_bundles = $e->getBundleIdsForUri($result->o->getUri());
