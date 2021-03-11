@@ -77,7 +77,7 @@ class RdfSparqlUtil {
    * @return a string with the formatted thing
    */
   public function formatTripleSlot($thing) {
-    if ($thing instanceof EasyRdf_Resource) {
+    if ($thing instanceof \EasyRdf\Resource) {
       if ($thing->isBNode()) {
         return $thing->getBNodeId();
       }
