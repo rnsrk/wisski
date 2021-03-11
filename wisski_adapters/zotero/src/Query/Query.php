@@ -70,7 +70,7 @@ class Query extends WisskiQueryBase {
 
       $correct_condition = NULL;
       foreach ($this->condition->conditions() as $condition) {
-        if(is_array($condition['field'])){
+        if(is_object($condition['field'])){
 
           dpm($condition, "I got this");
           foreach ($condition['field']->conditions() as $subcondition) {
@@ -166,7 +166,7 @@ class Query extends WisskiQueryBase {
 #      dpm($this->sort, "sort");      
 
       foreach($this->condition->conditions() as $condition) {
-        if(is_array($condition['field'])){
+        if(is_object($condition['field'])){
           foreach ($condition['field']->conditions() as $subcondition) {
           $field = $subcondition['field'];
           $value = $subcondition['value'];
