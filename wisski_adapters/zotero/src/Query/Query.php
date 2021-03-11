@@ -72,7 +72,7 @@ class Query extends WisskiQueryBase {
       foreach ($this->condition->conditions() as $condition) {
         if(is_object($condition['field'])){
 
-          dpm($condition, "I got this");
+#          dpm($condition, "I got this");
           foreach ($condition['field']->conditions() as $subcondition) {
         
           $field = $subcondition['field'];
