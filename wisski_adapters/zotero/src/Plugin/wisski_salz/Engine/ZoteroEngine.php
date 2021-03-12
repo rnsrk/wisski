@@ -435,6 +435,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL) {
 #dpm(func_get_args(), 'lpvff');
 
+    $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
     $main_property = FieldStorageConfig::loadByName('wisski_individual', $field_id);
     if(!empty($main_property)) {
       $main_property = $main_property->getMainPropertyName();
@@ -506,7 +507,10 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
             $values = $this->pathToReturnValue($path, $pbs[$key], $eid, 0, $main_property);
             if (!empty($values)) {
               foreach ($values as $v) {
-                $out[$eid][$field_id][] = $v;
+                // by MyF: added the $language here to enable the visualization of multiple entries in the entity view; for example if multiple creators
+                // are related to a zotero item, we need the language here in order to visualize them all in a later step and not only the first author
+                $out[$eid][$field_id][$language][] = $v;
+#                dpm($out);
               }
             }
           }

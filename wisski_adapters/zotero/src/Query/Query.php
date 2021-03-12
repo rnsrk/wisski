@@ -72,7 +72,7 @@ class Query extends WisskiQueryBase {
       foreach ($this->condition->conditions() as $condition) {
         if(is_object($condition['field'])){
 
-          dpm($condition, "I got this");
+#          dpm($condition, "I got this");
           foreach ($condition['field']->conditions() as $subcondition) {
         
           $field = $subcondition['field'];
@@ -93,7 +93,7 @@ class Query extends WisskiQueryBase {
             $special_skip = TRUE;
           }
         }
-        // by MyF: for solr indexing it is necessary to use the old version where condition were no arrays
+        // by MyF: for solr indexing it is necessary to use the old version where condition were no objects
       } else {
         $field = $condition['field'];
         $value = $condition['value'];
@@ -173,7 +173,7 @@ class Query extends WisskiQueryBase {
   #        drupal_set_message("you are evil!" . microtime() . serialize($this));
   #        return;
 
-  #        drupal_set_message("my cond is: " . serialize($condition));
+  #        dpm("my cond is: " . serialize($condition));
 
           // just return something if it is a bundle-condition
           if($field == 'bundle') {
@@ -231,7 +231,7 @@ class Query extends WisskiQueryBase {
             }
           }
         }
-         // by MyF: for solr indexing it is necessary to use the old version where condition were no arrays
+         // by MyF: for solr indexing it is necessary to use the old version where condition were no objects
       } else {
 
         $field = $condition['field'];
