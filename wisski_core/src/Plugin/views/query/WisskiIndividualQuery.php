@@ -535,10 +535,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
                   continue;
                 }
                 $entry = $consideredVal[$eid][$field_to_check];
-                // by MyF: Although we do not support multiple languages for zotero entries, we add the language here because this enables the display
-                // of multiple items, like for example the field creator which may refer to multiple authors
-                $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
-                $pseudo_entity_fields[$eid][$field_to_check][$language] = $entry;
+                $pseudo_entity_fields[$eid][$field_to_check] = $entry;
               }
             }
             // lets just hope it can handle it somehow...
