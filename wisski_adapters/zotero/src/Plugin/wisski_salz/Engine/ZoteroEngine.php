@@ -136,7 +136,7 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
       }
       return 0;
     } else{
- #   dpm($data)   
+#    dpm($data);
       return $data;
     }
   
@@ -335,6 +335,18 @@ class ZoteroEngine extends NonWritableEngineBase implements PathbuilderEngineInt
           }
         }
 
+      }
+
+      // by MyF: I added a space in the item type and made the first letter to a capital one;
+      // so journalArticle is now Journal Article; this seems to be more beautiful
+      if($key == "itemType"){
+        $data['Literature'][$key] = array();
+        $pieces = preg_split('/(?=[A-Z])/',$objdata);
+        $concatString = ucfirst($pieces[0]);
+        if(!empty($pieces[1])){
+          $concatString = $concatString . " " . $pieces[1];
+        } 
+        $data['Literature'][$key][] = $concatString;
       }
     }
     
