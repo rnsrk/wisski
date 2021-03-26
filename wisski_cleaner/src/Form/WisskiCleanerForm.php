@@ -33,20 +33,21 @@ class WisskiCleanerForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form = array();
 
-    $pbs = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->loadMultiple();
-    $pathbuilder_options = Array();
-    foreach($pbs as $pb) {
-      $pathbuilderName = $pb->getName();
-      $adapterId = $pb->getAdapterId();
-      $pathbuilder_options[$adapterId] = $pathbuilderName;
+    $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
+    
+    $adapter_options = Array();
+    foreach($adapters as $adp) {
+      $adapterId = $adp->get('id');
+      $adapter_options[$adapterId] = $adapterId;
     };
+
 
     // Adapter selector
     $form['select_adapter'] = array(
       '#type' => 'select',
-      '#title' => $this->t('Select Pathbuilder in which you want to search.'),
+      '#title' => $this->t('Select the Adapter for the Store in which you want to search.'),
       '#default_value' => '0',
-      '#options' => array_merge(array("0" => 'Please select.'), $pathbuilder_options),
+      '#options' => array_merge(array("0" => 'Please select.'), $adapter_options),
       '#attributes' => array('onchange' => 'this.form.submit();'),
       // '#ajax' => array(
       //   'callback' => '::ajaxStoresReset',
