@@ -304,17 +304,19 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       //if we have a dependency make sure we only consider this one, when all dependencies are clear
       if (!empty($attributes['parents'])) {
         foreach ($attributes['parents'] as $parent => $positive) {
-          //dpm($parts,'Ask for '.$parent.' '.($positive ? 'pos' : 'neg'));
+#          dpm($parts,'Ask for '.$parent.' '.($positive ? 'pos' : 'neg'));
           if (!isset($parts[$parent])) {
             $pattern[$key] = $attributes;
             continue 2;
           } elseif ($positive) {
-            if ($parts[$parent] === '') continue 2;
+ #           // by MyF: added check on empty array since the language sensitive rework requires an array check
+            if ($parts[$parent] === '' || empty($parts[$parent])) continue 2;
           } else { //if negative
             if (!empty($parts[$parent])) continue 2;
           }
         }
       }
+ #     dpm($parts,'partagain??'.$parent.' '.($positive ? 'pos' : 'neg'));
       if ($attributes['type'] === 'path') {
         $name = $attributes['name'];
         unset($values);
@@ -335,7 +337,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           default: {
             list($pb_id,$path_id) = explode('.',$attributes['name']);
             $values = $this->gatherTitleValues($entity, $path_id, $pb_id);
-#             dpm($values,'gathered values for '.$path_id);
+#            dpm($values,'gathered values for '.$path_id);
           }
         }
         if (empty($values)) {
@@ -416,7 +418,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       $title[$alanguage][0]["value"] = "";
       $title[$alanguage][0]["wisski_language"] = $alanguage;
       foreach ($pattern_order as $pos) {
-        if (isset($parts[$pos]) && isset($parts[$pos][$alanguage])) $title[$alanguage][0]["value"] .= $parts[$pos][$alanguage];
+        if (isset($parts[$pos]) && isset($parts[$pos][$alanguage])){
+          $title[$alanguage][0]["value"] .= $parts[$pos][$alanguage];
+        }
       }
       // if the title is an empty string we probably unset it, because
       // there seems to be no translation!
@@ -612,6 +616,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
               // generate the title of that
               $mytitle = $bundle->generateEntityTitle($item_eid);
+#              dpm($mytitle, "mytitle is: ");
               $grptitles[] = $mytitle[$language][0]['value'];
 #              dpm("my grphtitle is " . serialize($mytitle));
             }
