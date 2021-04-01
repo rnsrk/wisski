@@ -68,7 +68,14 @@ class WisskiIndividualQuery extends QueryPluginBase {
   public function query($get_count = FALSE) {
     $wisski_individual = \Drupal::entityTypeManager()->getDefinition('wisski_individual');
 
-    $query = new WisskiQueryDelegator($wisski_individual, $this->groupOperator, array()); // TODO: EntityType object
+    // by MyF: removed Tom's query because it ignored that somebody else did 
+    // already modifications to the query; we take the old version here again and add the groupOperator
+    // $query = new WisskiQueryDelegator($wisski_individual, $this->groupOperator, array()); // TODO: EntityType object
+    $query = clone $this->query;
+  //  $query->setGroupOperator($this->groupOperator);
+
+
+
 
     // iterate over the query groups stored in $this->where and
     // - create a new Condition Group Object for each of them
@@ -84,6 +91,7 @@ class WisskiIndividualQuery extends QueryPluginBase {
       }
 
       foreach($group["conditions"] as $cid => $cond) {
+#        dpm($cond, "cond!");
         $qgroup = $qgroup->condition($cond["field"], $cond["value"], $cond["operator"]); 
       }
 
@@ -107,6 +115,16 @@ class WisskiIndividualQuery extends QueryPluginBase {
   public function alter(ViewExecutable $view) {
     /* dpm(func_get_args(), "alter()"); */
   }
+
+   /**
+   * {@inheritdoc}
+   */
+  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+    #    dpm(microtime(), "init");
+        parent::init($view, $display, $options);
+        $this->query = \Drupal::entityTypeManager()->getStorage('wisski_individual')->getQuery();
+        $this->pager = $view->pager;  // TODO: do we need to set it here if pager is only inited in this->build()?
+      }    
 
   /**
    * Builds the necessary info to execute the query.
