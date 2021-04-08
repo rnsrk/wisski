@@ -415,7 +415,7 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
             'bid' => $this->bundle(),
             'fid' => $field_name,
             'delta' => $weight,
-            'ident' => strlen($field_values[$main_property]) > 1000 ? substr($field_values[$main_property], 0, 1000) : $field_values[$main_property], 
+            'ident' => strlen($field_values[$main_property]) > 1000 ? mb_substr($field_values[$main_property], 0, 1000) : $field_values[$main_property], 
             // this formerly was in here
             // the problem however is that this could never be written, because we don't know what is the disamb...
             #isset($field_values['wisskiDisamb']) ? $field_values['wisskiDisamb'] : $field_values[$main_property],
