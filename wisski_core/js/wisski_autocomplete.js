@@ -22,4 +22,13 @@
     return false;
   };
 
+ //Overrides the default extractLastTerm found in core/misc/autocomplete.js
+  Drupal.autocomplete.extractLastTerm = function extractLastTerm(terms) {
+    return terms;
+    //alert(terms);
+    //alert("yay?");
+        //Implement your override behavior here
+  };
+
+
 })(jQuery, Drupal);
