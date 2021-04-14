@@ -922,6 +922,16 @@ class WisskiPathbuilderForm extends EntityForm {
     $map = array();
     
     $this->save($form, $form_state);
+
+    // iterate all pbpaths and look for damaged ones
+    // delete these before save
+    $pbpaths = $pathbuilder->getPbPaths();
+    foreach($pbpaths as $key => $pbpath) {
+      if(empty($pbpath))
+        unset($pbpaths[$key]);
+    }
+    $pathbuilder->setPbPaths($pbpaths);
+
     
 #    dpm($paths, "paths");
     
