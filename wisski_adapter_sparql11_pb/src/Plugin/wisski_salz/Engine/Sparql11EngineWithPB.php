@@ -1518,6 +1518,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
    * The Yaml-Adapter cannot handle field properties, we insist on field values being the main property
    */
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL) {
+
+    // by MyF: We get all available languages here because we need them in the entity reference case in order to support multilanguage cases
+    $available_languages = \Drupal::languageManager()->getLanguages();
+    $available_languages = array_keys($available_languages);
     #if(isset($language)){
     #  dpm("High Voltage: " . $language . " is set in loadPropertyValuesForField() in Sparql11EngineWithPB.php and should not be set.");
     #}
@@ -1709,7 +1713,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
           // merge it manually as recursive merge does not work properly in case of multi arrays.
           if ($main_property == 'target_id') {
-#            dpm($tmp);
+ #           dpm($tmp, "tmp");
             foreach($tmp as $key => $item) {
               $skip = false;
             // check if the value is already there...
@@ -1723,16 +1727,28 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               
               #$tmp = array(LanguageInterface::LANGCODE_DEFAULT => $tmp);
               
+              // by MyF: iterate through all available languages in order to make the entity reference case language dependent
+              // without this change, the entity references were pulled out of the cache and this led to errors in the view (the field was not
+              // display in languages other than the default language)
+              foreach($available_languages as $al){
               // initialize if not existing
-              if(!isset($out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT]))
-                $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT] = array();
-              
-              // if we don't skip, add it via array_merge...
-              if(!$skip) {
-                if(!isset($out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT][$key]))
-                  $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT][$key] = $item;
-                else
-                  $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT][] = $item;
+              // by MyF: ASSUMPTION: we delete the x-default language case since we do not need it anymore
+              /* if (!isset($out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT])){
+                  $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT] = array();
+                }*/
+                if(!isset($out[$eid][$field_id][$al])){
+                  $out[$eid][$field_id][$al] = array();
+                }                
+                // if we don't skip, add it via array_merge...
+                if(!$skip) {
+                  if(!isset($out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT][$key])){
+                 //   $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT][$key] = $item;
+                    $out[$eid][$field_id][$al][$key] = $item;
+                  } else {
+                 //   $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT][] = $item;
+                    $out[$eid][$field_id][$al][] = $item;
+                  }
+                }
               }
 
 //                $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT] = array_merge($out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT], $item);
@@ -2144,6 +2160,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
    * @return True or false if it did not work
    */
   public function deleteEntity($entity) {
+#    dpm("yay?");
     $eid = $entity->id();
     
     if(empty($eid)) {
@@ -2896,6 +2913,11 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
     // get back the entity id for compatibility purpose.
     $entity_id = $entity->id();
+
+#    dpm(serialize($entity->langcode->getValue()), "le langue dü entitü");
+#    dpm(serialize($entity->getTranslationLanguages()), "trans`?");
+#
+#    dpm(serialize($entity), "se ente?");
     
 #    dpm($language, "I save for language");
 
@@ -2932,10 +2954,11 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // ignores the old field values and forces a write.
     // @TODO: by mark: This should be checked inside of the entity itself.
     $init_entity = $this->loadEntity($entity_id);
+    //dpm(serialize($init_entity->getTranslationLanguages()), "trans2?");
     #$init_entity = $this->hasEntity($entity_id);
 #\Drupal::logger('WissKI Import tmpc')->debug("l:".(microtime(TRUE)-$tmpt));
     
-#    dpm($init_entity, "init");
+#    dpm(serialize($init_entity), "init");
 #    dpm($force_new, "force!");
 
 #    dpm($init_entity->getTranslationLanguages(), "langs?");
@@ -3034,7 +3057,77 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       }
       
       $old_values = $new_structure;
-    }    
+    }
+    
+    $old_languages = array();
+    foreach($old_values as $old_entityid => $old_language_values) {
+//      dpm($old_field_values, "??");
+      $lang_keys = array_keys($old_language_values);
+      if(!empty($lang_keys))
+        $old_languages = array_merge($old_languages, $lang_keys);
+    }
+    
+    $curr_languages = array_keys($entity->getTranslationLanguages());
+#    dpm($curr_languages, "curr?");
+#    dpm($old_languages, "old?");
+
+    $deleted_languages = array_diff($old_languages, $curr_languages);
+    // if we have something here we have to delete that language
+    // unfortunatelly this is a non trivial thing on a triple store
+    // and you will burn in hell if you try to ;D
+    
+    foreach($old_values as $old_key => $old_value) {
+      // this is just copy pasted from below. I guess you can do it better
+      // but I wait until the selphie does change this here ;D
+      foreach($deleted_languages as $del_lang) {
+      
+        $entity->removeTranslation($del_lang);
+      
+#        dpm($entity->label(), "label");
+#        dpm(serialize($entity), "ser?");
+      
+        $old_value = $old_value[$del_lang];
+
+        // in case there is no main prop it is typically value
+        if(isset($old_value['main_property']))
+          $mainprop = $old_value['main_property'];
+        else
+          $mainprop = "value";        
+
+#        dpm("we have to delete " . serialize($old_value));
+        foreach($old_value as $key => $val) {
+        
+          // main prop?
+          if(!is_array($val))
+            continue;
+          
+          // empty value?
+          if(empty($val[$mainprop]))
+            continue;
+        
+          $this->deleteOldFieldValue($entity_id, $old_key, $val[$mainprop], $pathbuilder, $key, $mainprop, $del_lang);
+        }
+      }
+    }
+    
+#    dpm(serialize($deleted_languages), "del?");
+    if(!empty($deleted_languages)) {
+#      dpm("Im here!");
+      foreach($deleted_languages as $deleted_language) {
+        $cached_field_values = \Drupal::database()->delete('wisski_entity_field_properties')
+//          ->fields('f',array('fid', 'ident','delta','properties','lang'))
+            ->condition('eid',$entity->id())
+            ->condition('bid',$entity->bundle())
+            ->condition('lang', $deleted_language)
+#          ->condition('fid',$field_name)
+            ->execute();
+       //   ->fetchAll();
+//      dpm(serialize($cached_field_values), "cache?");
+      }
+    }
+    
+    
+#    dpm($deleted_languages, "was deleted");
     
     
     
@@ -3083,7 +3176,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             continue;
           
           // if not its a value...
-        drupal_set_message("I delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
+//        drupal_set_message("I delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
           $this->deleteOldFieldValue($entity_id, $old_key, $val[$mainprop], $pathbuilder, $key, $mainprop, $language);
         }
       }
