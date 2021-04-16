@@ -323,8 +323,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
               continue;
 
             foreach($available_languages as $alang) {
-            # dpm("checking $alang in $key with " . serialize($val));
-            #dpm("my array key: " . array_key_exists($alang, $val));
+#             dpm("checking $alang in $key with " . serialize($val));
+#            dpm("my array key: " . array_key_exists($alang, $val));
             if(is_array($val) && array_key_exists($alang, $val)) {
                 $set_languages[$alang] = $alang;
               } else {
@@ -551,6 +551,10 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #          return;
 
           $entity = new $this->entityClass($test,$this->entityTypeId, $bundle, $translations[$id]);
+
+          $inter_lang = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+
+#          $entity = $entity->getTranslation($inter_lang);
           
 #          dpm($entity);
     
@@ -744,6 +748,14 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 
 
 #    dpm(microtime(), "exit");
+
+#    dpm($entities);
+    
+#    foreach($entities as $entity) {
+#      dpm($entity->isDefaultTranslation());
+#      dpm($entity->activeLangcode);
+#      dpm(LanguageInterface::LANGCODE_DEFAULT);
+#    }
     
     return $entities;
   }
@@ -1578,6 +1590,14 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #    dpm(serialize($entity), "lustige entity");
 #    return NULL;
 
+    // first we get the languages of the entity that should be saved
+    // because it might be that a language should be deleted
+    // only do detailed handling of the language should be saved
+    // otherwise we do nothing - thats what we can do best anyway ;D
+#    $translation_languages = $entity->getTranslationLanguages();
+    
+#    dpm(serialize($translation_languages));
+
     $moduleHandler = \Drupal::service('module_handler');
     if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
       return NULL;
@@ -1599,8 +1619,12 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
     // set second param of getValues to FALSE: we must not write
     // field values to cache now as there may be no eid yet (on create)
 
+#    $entity->updateOriginalValues();
+
     list($values,$original_values) = $entity->getValues($this,FALSE);
+    
 #    dpm($values, "yay?");
+#    dpm($original_values, "ori?");
 #    dpm(serialize($entity->bundle()), "ente?");
 #    dpm(serialize($values['bundle'][0]['target_id']), "is sis shiit?");
 #    return;
@@ -1690,13 +1714,23 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
           
 #          dpm(serialize($entity), "la ente");
 #          dpm(LanguageInterface::LANGCODE_DEFAULT, "default langcode?");
+
+#          dpm(serialize($entity->get('langcode')->getValue()), "langi?");
           
           // this is the language which is selected by the user before creating something
           // (= interface language)
-          $langcode = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+          if(empty($entity->langcode->getValue())) {
+            $langcode = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
 
-          // we have to replace the entities language because it seems to be wrong when sent to us.
-          $entity->set('langcode',array("value" => $langcode));
+            // we have to replace the entities language because it seems to be wrong when sent to us.
+            $entity->set('langcode',array("value" => $langcode));
+          } else {
+            $lc = $entity->langcode->getValue();
+#            dpm(serialize($lc), "lc?");
+            // this is evil because we take simply the first one.
+            $lc = current($lc);
+            $langcode = $lc['value'];
+          }
           
 
           // this it the prefered language of the website          
@@ -1872,6 +1906,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
    * @TODO must be implemented
    */
   protected function doDeleteFieldItems($entities) {
+
+    dpm("yay????");
 
     $moduleHandler = \Drupal::service('module_handler');
     if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
