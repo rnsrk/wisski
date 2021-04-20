@@ -69,7 +69,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
 
     $columns = \Drupal::config('wisski_core.settings')->get('wisski_default_columns_per_page');
     $grid_type = $request_query->get('type') ? : 'grid';
-    $grid_width = $request_query->get('width') ? : !empty($columns) ? $columns : 3;
+    $grid_width = $request_query->get('width') ? : (!empty($columns) ? $columns : 3);
     $this->page = $request_query->get('page') ? : 0;
     //dpm($grid_type.' '.$grid_width);
 #    dpm("2: " . microtime());
