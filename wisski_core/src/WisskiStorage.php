@@ -118,7 +118,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 
     $base_fields = \Drupal::service('entity_field.manager')->getBaseFieldDefinitions("wisski_individual");
     $base_field_names = array_keys($base_fields);
-    
+
     // add the values from the cache
     foreach ($ids as $id) {
       
@@ -128,6 +128,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 
         // TODO: CHECK if bundle is in here or if it is in x-default
         $bundle = ($values[$id]['bundle']);
+        // by MyF: we need the field defs here because it depends on the bundle; this is not sexy but it only works this way
+        $field_defs = \Drupal::service('entity_field.manager')->getFieldDefinitions("wisski_individual", $bundle);
         if (!isset($bundle)) {
           continue;
         } else {
@@ -322,6 +324,38 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             if($key == "label" || $key == "title")
               continue;
 
+            // by MyF: If we consider a field that is an entity reference we want to skip the language since eitherwise the following occurs:
+            // Entity Frosch has two fields: Name: Froeschli, Entity Ref: Teich (both in DE)
+            // Now we translate only the Teich to its english version: Pond
+            // If we switch the interface rendering language now to english we will see the following:
+            // Name: --empty--, Entity Ref: Pond
+            // but we want to display it like that: Name: Froeschli, Entity Ref: Pond
+            // (since there is no english version for the Name or since we do not want to translate it (!), we take the name created with the original language)
+            // The problem is that the variable $set_language below will contain every language which somehow occurs in context of the entity, that means that
+            // the language "en" is added to this variable although there is no english translation for the entity name
+            // to avoid this, we have to continue here, so only languages are added which do not come from entity references
+            $field_def = $field_defs[$key];
+
+            // by MyF: this part does not work as expected; we comment this out since we prefer empty and translated fields
+            // instead of only original languages fields
+            /*
+            if(is_array($val)){
+              $firstVal = current($val);
+              if(!empty($firstVal)){
+                $realFirstVal = current($firstVal);
+                if(!empty($realFirstVal)){
+                  if(isset($realFirstVal["wisskiDisamb"])){
+                    continue;
+                  }
+                }
+              }
+            }
+           // if($field_def->getType() === 'string') and )
+ #           dpm(serialize($field_def->getType() === 'entity_reference'));
+            if ($field_def->getType() === 'entity_reference')
+              continue;
+              */
+
             foreach($available_languages as $alang) {
 #             dpm("checking $alang in $key with " . serialize($val));
 #            dpm("my array key: " . array_key_exists($alang, $val));
@@ -415,6 +449,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
           // after that we can iterate through all non-base-fields and these
           // typically have different languages enabled by default due to the
           // setting in the wisski Entity
+      
+ #         dpm($field_defs, "fieldfed");
           foreach($values[$id] as $key => $val) {
             // if it is a base field, simply set it to the appropriate langcode
             if(in_array($key, $base_field_names)) {
@@ -463,6 +499,18 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             // translatable base fields (in fact we do the handling for any 
             // translatable fields)
             if(is_array($val)){
+
+ #             dpm($val, "val!");
+              $field_def = $field_defs[$key];
+              if ($field_def->getType() === 'entity_reference') {
+                foreach($available_languages as $al){
+                  if(isset($val[LanguageInterface::LANGCODE_DEFAULT])){
+                    $val[$al] = $val[LanguageInterface::LANGCODE_DEFAULT];
+                  } else {
+                    $val[$al] = $val[$orig_lang];
+                  }
+                }
+              }
               
               foreach($val as $field_lang => $field_vals) {
                 // if it is the default language of the entity, we exchange the 
