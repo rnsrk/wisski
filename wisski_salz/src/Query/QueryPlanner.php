@@ -15,8 +15,6 @@ class QueryPlanner {
      */
     public function __construct(?callback $dynamic_evaluator) {
         $this->dynamic_evaluator = $dynamic_evaluator;
-        $this->pb_man = \Drupal::service('wisski_pathbuilder.manager');
-        $this->adapter_man = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
     }
 
     private static function debug(string $message) {
@@ -36,9 +34,9 @@ class QueryPlanner {
     /**
      * Plan makes a plan for the provided ast. 
      */
-    public function plan(?array $ast) {
+    public function plan(?array $aast) {
         
-        $plan = $this->make_plan($ast, $dynamic_evaluator);
+        $plan = $this->make_plan($aast, $dynamic_evaluator);
         if ($plan['type'] == self::TYPE_EMPTY_PLAN) {
             self::debug("Query Planner returned an empty plan!");
             return NULL;
@@ -46,7 +44,7 @@ class QueryPlanner {
         return $plan;
     }
 
-    private function make_plan(?array $ast) {
+    private function make_plan(?array $aast) {
 
         /*
             An AST of a Query is represented as follows:   
@@ -114,7 +112,7 @@ class QueryPlanner {
             
             */
 
-        if ($ast == NULL) {
+        if ($aast == NULL) {
             self::debug("Query Planner encounted NULL");
             return array(
                 'type' => self::TYPE_EMPTY_PLAN,
@@ -122,33 +120,33 @@ class QueryPlanner {
             );
         }
 
-        if ($ast['type'] == ASTHelper::TYPE_FILTER) {
-            return $this->make_filter_plan($ast);
+        if ($aast['type'] == ASTHelper::TYPE_FILTER) {
+            return $this->make_filter_plan($aast);
         }
 
-        return $this->make_logical_aggregate_plan($ast);
+        return $this->make_logical_aggregate_plan($aast);
     }
 
     /** merges plans of the children of the aggregate */
-    protected function make_logical_aggregate_plan(array $ast) {
+    protected function make_logical_aggregate_plan(array $aast) {
 
         // generate plans for each of the children
         $childPlans = array();
-        foreach ($ast['children'] as $child) {
+        foreach ($aast['children'] as $child) {
             $child = $this->make_plan($child);
             array_push($childPlans, $child);
         }
 
-        // TODO: Do the actual merging!
-        // TODO: CONTINUE IMPLEMENTATION HERE
-        // for now we just return the child plans
+        // if the plans are compatible, find the pivot to merge them!
+        $pivot = self::plans_get_pivot($childPlans);
+        if ($pivot !== NULL) {
+            return $this->merge_compatible_plans($aast, $pivot, $childPlans);
+        }
 
-        self::debug("unimplemented merge case!");
-        
+        // TODO: Here be dragons!
         return array(
-            'type' => 'UNIMPLEMENTED',
-            'pivot' => self::plans_get_pivot($childPlans),
-            'ast' => $ast,
+            'type' => 'UNIMPLEMENTED_MERGE_PLANS',
+            'ast' => $aast,
             'children' => $childPlans,
         );
     }
@@ -228,73 +226,15 @@ class QueryPlanner {
     }
 
     /** creates a new plan from a leaf ast */
-    protected function make_filter_plan(array $ast) {
+    protected function make_filter_plan(array $aast) {
         // Because we are at the bottom of the AST we will *always* return a SINGLE_PLAN or EMPTY_PLAN.
-   
-        // first determine the adapters that are involved in this filter node.
-        // also keep track of a reason for these adapters. 
-        [$adapters, $reason] = $this->find_filter_adapters($ast);
 
         // based on the involved adapters, decide which single plan is needed.
         // i.e. do we need an EMPTY_PLAN | SINGLE_ADAPTER_PLAN | SINGLE_FEDERATION_PLAN | SINGLE_PARTITION_PLAN
-        return $this->decide_single_plan($ast, $adapters, $reason);
+        return $this->decide_single_plan($aast, $aast['annotations']['adapters']);
     }
 
-    const TYPE_REASON_STATIC = 'static';
-    const TYPE_REASON_DYNAMIC = 'dynamic';
-
-    private function find_filter_adapters(array $ast) {
-        // find the involved adapters based on the field
-        $field = $ast['field'];
-       
-        // some fields may only be used with an 'AND' conditions and may never introduce a new bundle.
-        // these do not have any involved adapters.
-        if (
-            $field == 'title' ||
-            $field == 'preferred_uri' ||
-            $field == 'status' ||
-            $field == 'preview_image'
-        ) {
-            return [array(), NULL];
-        }
-
-        // these fields have hard-coded bundle ids and introduce specific adapters linked to those bundle ids. 
-        // we don't need to pass this to the '$dynamic_evaluator'
-        if (
-            $field == 'bundle'
-            // $field == 'bundles'
-        ) {
-            $bundles = array_values($ast['value']);
-            $adapters = $this->mergeInvolvedAdapters($bundles);
-            return [$adapters, self::TYPE_REASON_STATIC];
-        }
-
-        // all the other plans are of a dynamic type and need to be evaluated.
-        // for this we can use the dynamic_evaluator/
-
-        $bundles = $this->evaluate_dynamic($ast);
-        $adapters = $this->mergeInvolvedAdapters($bundles);
-        return [$adapters, self::TYPE_REASON_DYNAMIC];
-    }
-
-    private $dynamic_evaluator = NULL;
-    
-    /** calls the dynamic evaluator */
-    protected function evaluate_dynamic(array $filter_ast) {
-        if ($this->dynamic_evaluator == NULL) {
-            return $this->default_dynamic_evaluator($filter_ast);
-        }
-
-        // TODO: Default Dynamic Evaluator
-        return $this->dynamic_evaluator($ast);
-    }
-
-    protected function default_dynamic_evaluator(array $filter_ast) {
-        return array("this_adapter_doesnt_exist"); // TODO: this doesn't do anything sensible at the moment. 
-    }
-        
-
-    private function decide_single_plan(array $ast, array $adapters, ?string $reason) {
+    private function decide_single_plan(array $aast, array $adapters) {
         // now figure out which of the plans we need by counting the number of adapters.
         $count = count($adapters);
 
@@ -302,7 +242,7 @@ class QueryPlanner {
         if ($count == 0) {
             return array(
                 "type" => self::TYPE_EMPTY_PLAN,
-                "ast" => $ast,
+                "ast" => $aast,
             );
         }
 
@@ -312,24 +252,17 @@ class QueryPlanner {
                 "type" => self::TYPE_SINGLE_ADAPTER_PLAN,
                 "reason" => $reason,
                 "adapter" => $adapters[0],
-                "ast" => $ast
+                "ast" => $aast
             );
         }
 
-        // we have more than 1 adapter, so now check if they are all federatable.
-        $all_are_federatable = TRUE;
-        foreach ($adapters as $adapter) {
-            if (!$this->isAdapterFederatable($adapter, $ast)) {
-                $all_are_federatable = FALSE;
-                break;
-            }
-        }
+        $all_are_federatable = $aast['annotations']['federatable'];
 
         // all adapters are federatable => use a TYPE_SINGLE_FEDERATION_PLAN
         if ($all_are_federatable) {
             return array(
                 "type" => self::TYPE_SINGLE_FEDERATION_PLAN,
-                "ast" => $ast,
+                "ast" => $aast,
                 "reason" => $reason, 
                 "adapters" => $adapters,
             );
@@ -340,68 +273,10 @@ class QueryPlanner {
 
         return array(
             "type" => self::TYPE_SINGLE_PARTITION_PLAN,
-            "ast" => $ast,
+            "ast" => $aast,
             "reason" => $reason,
             "adapters" => $adapters,
         );
     }
 
-    // the wisski_pathbuilder.manager that is used to query for
-    // new bundle => adapter mappings. 
-    private $pb_man = NULL;
-
-    // contains a cached mapping from bundle_id to adapters
-    // so that we don't need to query the pb_man again. 
-    private $bundle_to_adapter_cache = array();
-
-    /**
-     * like getInvolvedAdapters(), but for multiple bundleIDs.
-     */
-    private function mergeInvolvedAdapters(array $bundleIDs) {
-        $adapters = array();
-        foreach ($bundleIDs as $bundleID) {
-            $adapters = array_merge($adapters, $this->getInvolvedAdapters($bundleID) );
-        }
-        return array_unique($adapters);
-    }
-
-    /**
-     * Given a bundle ID return the involved adapters. 
-     */
-    private function getInvolvedAdapters(string $bundleID) {
-
-        // popupulate the cache for this bundle id when needed. 
-        if (!array_key_exists($bundleID, $this->bundle_to_adapter_cache)) {
-
-            // find all the pathbuilders that know about this bundle
-            // and then pick the adapters from those!
-            $pbIDs = array_values($this->pb_man->getPbsUsingBundle($bundleID));
-            $adapterIDs = array_map(function($pb) { return $pb['adapter_id']; }, $pbIDs);
-            
-            $this->bundle_to_adapter_cache[$bundleID] = array_unique($adapterIDs);
-        }
-
-        // return it from the cache
-        return $this->bundle_to_adapter_cache[$bundleID];
-    }
-
-    // contains the engine entity manager to lookup adapter from
-    private $adapter_man = NULL;
-
-    // contains a mapping from adapter_id => adapter instance
-    private $adapter_cache = array();
-
-    private function isAdapterFederatable(string $adapterID, ?array $ast = NULL) {
-
-        // if the adapter isn't in the cache, fetch it from the manager.
-        // TODO: Check that ->load() works
-        if (!array_key_exists($adapterID, $this->adapter_cache)) {
-            $this->adapter_cache[$adapterID] = $this->adapter_man->load($adapterID);
-        }
-    
-        // check if the adapter actually supports federation
-        // TODO: Optionally pass AST here?
-        $adapter = $this->adapter_cache[$adapterID];
-        return $adapter->getEngine()->supportsFederation();
-    }
 }

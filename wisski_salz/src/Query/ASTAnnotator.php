@@ -40,7 +40,7 @@ class ASTAnnotator {
 
     private function annotateFilter(array $ast) {
         $aast = array_map(function($element) { return $element; }, $ast); // make a copy of ast
-        $aast['annotations'] = array('bundles' => array(), 'adapters' => array());
+        $aast['annotations'] = array('bundles' => array(), 'adapters' => array(), 'federatable' => TRUE);
         
         // find the involved adapters based on the field
         $field = $ast['field'];
@@ -67,8 +67,20 @@ class ASTAnnotator {
             $bundles = $this->evaluate_dynamic($ast); // subquery bundle ids => call the dynamic evaluator
         }
 
+        // merge all the adapters from all the bundles and check if they are involved!
+        $adapters = $this->mergeInvolvedAdapters($bundles);
+
+        // check if they are all federatable!
+        foreach ($adapters as $adapter) {
+            if (!$this->isAdapterFederatable($adapter, $ast)) {
+                $aast['annotations']['federatable'] = FALSE;
+                break;
+            }
+        }
+
         $aast['annotations']['bundles'] = $bundles;
         $aast['annotations']['adapters'] = $this->mergeInvolvedAdapters($bundles);
+        
 
         return $aast;
     }
@@ -78,6 +90,7 @@ class ASTAnnotator {
 
         $bundles = array();
         $adapters = array();
+        $federatable = TRUE;
 
         // recursively annotate all the children and collect the bundles and adapters involved! 
         $aast['children'] = array_map(function($child) use (&$bundles, &$adapters) {
@@ -85,11 +98,16 @@ class ASTAnnotator {
             if ($childAast !== NULL) {
                 $bundles = array_merge($bundles, $childAast['annotations']['bundles']);
                 $adapters = array_merge($adapters, $childAast['annotations']['adapters']);
+                $federatable = $federatable && $childAast['annotations']['federatable'];
             }
             return $childAast;
         }, $ast['children']);
 
-        $aast['annotations'] = array('bundles' => array_unique($bundles), 'adapters' => array_unique($adapters));
+        $aast['annotations'] = array(
+            'bundles' => array_unique($bundles),
+            'adapters' => array_unique($adapters),
+            'federatable' => array_unique($adapters),
+        );
         return $aast;
     }
     
@@ -151,5 +169,25 @@ class ASTAnnotator {
 
     protected function default_dynamic_evaluator(array $filter_ast) {
         return array(); // TODO: Do something smarter!
+    }
+
+    // contains the engine entity manager to lookup adapter from
+    private $adapter_man = NULL;
+
+    // contains a mapping from adapter_id => adapter instance
+    private $adapter_cache = array();
+
+    private function isAdapterFederatable(string $adapterID, ?array $ast = NULL) {
+
+        // if the adapter isn't in the cache, fetch it from the manager.
+        // TODO: Check that ->load() works
+        if (!array_key_exists($adapterID, $this->adapter_cache)) {
+            $this->adapter_cache[$adapterID] = $this->adapter_man->load($adapterID);
+        }
+    
+        // check if the adapter actually supports federation
+        // TODO: Optionally pass AST here?
+        $adapter = $this->adapter_cache[$adapterID];
+        return $adapter->getEngine()->supportsFederation();
     }
 }
