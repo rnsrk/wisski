@@ -18,7 +18,7 @@ class ASTHelper {
    /*
     An AST of a Query is represented as follows:   
    
-    NODE = LOGICAL_AGGREGATE | FILTER | "null"
+    AST = LOGICAL_AGGREGATE | FILTER | "null"
 
     LOGICAL_AGGREGATE = {
       "type": "logical_aggregate",

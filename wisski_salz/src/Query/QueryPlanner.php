@@ -26,7 +26,7 @@ class QueryPlanner {
 
     const TYPE_EMPTY_PLAN = 'empty';
 
-    const TYPE_SINGLE_SINGLE_PLAN = 'single_single';
+    const TYPE_SINGLE_ADAPTER_PLAN = 'single_adapter';
     const TYPE_SINGLE_FEDERATION_PLAN = 'single_federation';
     const TYPE_SINGLE_PARTITION_PLAN = 'single_partition';
 
@@ -54,7 +54,7 @@ class QueryPlanner {
             PLAN = SINGLE_PLAN | MULTI_PLAN
             AST = NODE (see ASTHelper class)
 
-            // empty plan is a plan that introduces a new conditionn on an existing plan. 
+            // empty plan is a plan that introduces a new condition on an existing plan. 
             // it is not a valid top-level plan. 
             EMPTY_PLAN = {
                 "type": "empty",
@@ -64,11 +64,11 @@ class QueryPlanner {
             // single plans are plans that occur in the leaves of the 'plan' tree.
             // they originate in the leaves of the AST, but may be merged to create new single plans. 
             // These always involve *exactly* one query (which may touch more than one adapter)
-            SINGLE_PLAN = SINGLE_SINGLE_PLAN | SINGLE_FEDERATION_PLAN | SINGLE_PARTITION_PLAN
+            SINGLE_PLAN = SINGLE_ADAPTER_PLAN | SINGLE_FEDERATION_PLAN | SINGLE_PARTITION_PLAN
 
             // a single plan is a plan that involves exactly one adapter.
-            SINGLE_SINGLE_PLAN = {
-                "type": "single_single",
+            SINGLE_ADAPTER_PLAN = {
+                "type": "single_adapter",
                 "ast": AST,
                 "reason": "dynamic" | "static"
                 "adapter": ....
@@ -76,6 +76,7 @@ class QueryPlanner {
 
             // a single query that involves fetching data from multiple adapters. 
             // and they're all federatable.
+            // TODO: How to represent which part goes to which adapter?
             SINGLE_FEDERATION_PLAN = {
                 "type": "single_federation"
                 "ast": AST
@@ -83,14 +84,16 @@ class QueryPlanner {
                 "adapters": ...
             }
 
-            // a single query that involes fetching data from multiple adapters
-            // but these are not federatable.
+            // a single (simple) query (i.e. one bundle) that involes fetching data from multiple adapters
+            // but these are not federatable. 
             SINGLE_PARTITION_PLAN = {
                 "type": "single_partition"
                 "ast": AST
                 "reason": "dynamic" | "static"
                 "adapters": ...
             }
+            // TODO: Rename this to something more useful.
+            // Maybe SINGLE_NOT_FEDERATABLE_PLAN?
         
             // multi plans are plans that involve more than one subquery.
             MULTI_PLAN = MULTI_PLAN_FEDERATION | MULTI_PLAN_PARTITION
@@ -197,8 +200,8 @@ class QueryPlanner {
             return FALSE;
         }
 
-        // TYPE_SINGLE_SINGLE_PLAN requires the same adapter
-        if ($leftType == self::TYPE_SINGLE_SINGLE_PLAN) {
+        // TYPE_SINGLE_ADAPTER_PLAN requires the same adapter
+        if ($leftType == self::TYPE_SINGLE_ADAPTER_PLAN) {
             return $left['adapter'] == $right['adapter'];
         }
 
@@ -233,7 +236,7 @@ class QueryPlanner {
         [$adapters, $reason] = $this->find_filter_adapters($ast);
 
         // based on the involved adapters, decide which single plan is needed.
-        // i.e. do we need an EMPTY_PLAN | SINGLE_SINGLE_PLAN | SINGLE_FEDERATION_PLAN | SINGLE_PARTITION_PLAN
+        // i.e. do we need an EMPTY_PLAN | SINGLE_ADAPTER_PLAN | SINGLE_FEDERATION_PLAN | SINGLE_PARTITION_PLAN
         return $this->decide_single_plan($ast, $adapters, $reason);
     }
 
@@ -303,10 +306,10 @@ class QueryPlanner {
             );
         }
 
-        // if we have exactly one adapter, use TYPE_SINGLE_SINGLE_PLAN.
+        // if we have exactly one adapter, use TYPE_SINGLE_ADAPTER_PLAN.
         if ($count == 1) {
             return array(
-                "type" => self::TYPE_SINGLE_SINGLE_PLAN,
+                "type" => self::TYPE_SINGLE_ADAPTER_PLAN,
                 "reason" => $reason,
                 "adapter" => $adapters[0],
                 "ast" => $ast

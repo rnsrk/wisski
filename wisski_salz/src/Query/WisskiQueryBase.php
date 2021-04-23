@@ -41,9 +41,12 @@ abstract class WisskiQueryBase extends QueryBase implements QueryInterface, Quer
   }
 
   public function makeQueryPlan() {
-    $ast = $this->getConditionAST(TRUE);
+    $annotator = new ASTAnnotator(NULL);
     $planner = new QueryPlanner(NULL);
-    return $planner->plan($ast);
+    
+    $ast = $this->getConditionAST(TRUE);
+    $aast = $annotator->annotate($ast);
+    return $planner->plan($aast);
   }
   
   public function normalQuery() {

@@ -208,8 +208,16 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
   private function executeNormal() {
     // TODO: AST for filters, order
-    //dpm($this->getConditionAST(TRUE), "ast::smart");
-    //dpm($this->makeQueryPlan(), "make plan");
+
+    /*
+    // DEBUG: for now call the AST Annotator only here!
+    // and don't do anything with it ...
+    $annotator = new ASTAnnotator(NULL);
+
+    $ast = $this->getConditionAST(TRUE);
+    $aast = $annotator->annotate($ast);
+    dpm($aast, "aast");
+    */
 
     //call initializePager() to initialize the pager if we have one
     $pager = FALSE;
@@ -229,7 +237,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         return $this->executePaginatedJoin($this->range['length'], $this->range['start']);
       }
 
-      $query = current($this->adapter_queries);
+      $query = current($this->relevant_adapter_queries);
       $query = $query->normalQuery();
       return $query->execute();
     }
