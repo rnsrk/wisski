@@ -30,7 +30,8 @@ class QueryPlanner {
      * Plan makes a plan for the provided ast. 
      */
     public function plan(?array $aast) {
-        $plan = $this->make_plan($aast, $dynamic_evaluator);
+        
+        $plan = $this->make_plan($aast);
         if ($plan['type'] == self::TYPE_EMPTY_PLAN) {
             Debuggable::debug("Query Planner returned an empty plan!");
             return NULL;
@@ -132,7 +133,7 @@ class QueryPlanner {
         }
 
         // if the plans are compatible, find the pivot to merge them!
-        $pivot = self::plans_get_pivot($childPlans);
+        $pivot = QueryPlanner::plans_get_pivot($childPlans);
         if ($pivot !== NULL) {
             return $this->merge_compatible_plans($aast, $pivot, $childPlans);
         }
