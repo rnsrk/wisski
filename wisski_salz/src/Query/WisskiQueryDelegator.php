@@ -212,10 +212,16 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     // DEBUG: for now call the AST Annotator only here!
     // and don't do anything with it ...
     $annotator = new ASTAnnotator(NULL);
+    $planner = new QueryPlanner(NULL);
 
     $ast = $this->getConditionAST(TRUE);
+    dpm($ast, "ast");
+
     $aast = $annotator->annotate($ast);
     dpm($aast, "aast");
+
+    $plan = $planner->plan($aast);
+    dpm($plan, "plan");
 
     //call initializePager() to initialize the pager if we have one
     $pager = FALSE;
