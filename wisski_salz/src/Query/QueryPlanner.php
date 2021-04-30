@@ -32,6 +32,7 @@ class QueryPlanner {
     public function plan(?array $aast) {
         
         $plan = $this->make_plan($aast);
+        // TODO: Handle eid_only plan
         if ($plan['type'] == self::TYPE_EMPTY_PLAN) {
             Debuggable::debug("Query Planner returned an empty plan!");
             return NULL;

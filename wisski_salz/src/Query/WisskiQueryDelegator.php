@@ -233,6 +233,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       $conjuction = $aast['operator'];
     }
 
+    // TODO: Write order into query
     $query = $adapter->getQueryObject($this->entityType,$conjunction,$this->namespaces);
     $this->addConditionFromAst($query, $query, $aast);
     
@@ -381,6 +382,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     $query = $this->makeQueryForAdapterAndAst($adapter, $plan['ast']);
     $query = $query->normalQuery();
 
+    
     if ($pager || !empty($this->range)) {
       $query->range($this->range['start'],$this->range['length']);
     }
