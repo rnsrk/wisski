@@ -209,7 +209,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   private function executeNormal() {
     // TODO: AST for filters, order
 
-    /*
     // DEBUG: for now call the AST Annotator only here!
     // and don't do anything with it ...
     $annotator = new ASTAnnotator(NULL);
@@ -217,7 +216,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     $ast = $this->getConditionAST(TRUE);
     $aast = $annotator->annotate($ast);
     dpm($aast, "aast");
-    */
 
     //call initializePager() to initialize the pager if we have one
     $pager = FALSE;
