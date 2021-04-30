@@ -233,14 +233,13 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       $conjuction = $aast['operator'];
     }
 
-    $condition = $adapter->getQueryObject($this->entityType,$conjunction,$this->namespaces);
-
-    $this->addConditionFromAst($condition, $aast);
+    $query = $adapter->getQueryObject($this->entityType,$conjunction,$this->namespaces);
+    $this->addConditionFromAst($query, $condition, $aast);
     
-    return $condition;
+    return $query;
   }
 
-  private function addConditionFromAst($condition, $aast) {
+  private function addConditionFromAst($query, $condition, $aast) {
 
     if ($aast === NULL) {
       return;
@@ -252,18 +251,14 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     } 
     // create a new condition group and add conditions for all the children
     else if ($aast['type'] === ASTBuilder::TYPE_LOGICAL_AGGREGATE) {
-      if (!method_exists($condition, 'andConditionGroup')) {
-        dpm($condition, "condition");
-        return;
-      }
       if ($aast['operator'] === "AND") {
-        $group = $condition->andConditionGroup();
-      } 
+        $group = $query->andConditionGroup();
+      }
       else if ($aast['operator'] === "OR") {
-        $group = $condition->orConditionGroup();
+        $group = $query->orConditionGroup();
       }
       foreach ($aast['children'] as $child) {
-        $this->addConditionFromAst($group, $child);
+        $this->addConditionFromAst($query, $group, $child);
       }
       $condition->condition($group);
       return;
