@@ -137,13 +137,32 @@ class QueryPlanner {
         if ($pivot !== NULL) {
             return $this->merge_compatible_plans($aast, $pivot, $childPlans);
         }
+        
+        return $this->merge_incompatible_plans($aast, $childPlans);
+    }
 
-        // TODO: Here be dragons!
-        return array(
-            'type' => 'UNIMPLEMENTED_MERGE_PLANS',
+    function merge_incompatible_plans($aast, $childPlans) {
+
+        $newPlan = array(
+            'type' => self::TYPE_MULTI_PARTITION_PLAN,
             'ast' => $aast,
-            'children' => $childPlans,
+            'plans' => $childPlans,
         );
+
+        return $newPlan;
+    }
+
+    function merge_compatible_plans($aast, $pivot, $childPlans) {
+
+        // first version; maybe change plans later
+        $newPlan = array(
+            'type' => $pivot['type'],
+            'ast' => $aast,
+            'adapters' => $pivot['adapters'],
+            'plans' => $pivot['plans'],
+        );
+
+        return $newPlan;
     }
 
     /**
