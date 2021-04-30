@@ -234,7 +234,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     }
 
     $query = $adapter->getQueryObject($this->entityType,$conjunction,$this->namespaces);
-    $this->addConditionFromAst($query, $condition, $aast);
+    $this->addConditionFromAst($query, $query, $aast);
     
     return $query;
   }
