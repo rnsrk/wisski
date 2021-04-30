@@ -252,19 +252,22 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     } 
     // create a new condition group and add conditions for all the children
     else if ($aast['type'] === ASTBuilder::TYPE_LOGICAL_AGGREGATE) {
-      dpm($condition, "condition");
-      return;
-      if ($aast['operator'] === "AND") {
-        $group = $condition->andConditionGroup();
-      } 
-      else if ($aast['operator'] === "OR") {
-        $group = $condition->orConditionGroup();
+      try {
+        if ($aast['operator'] === "AND") {
+          $group = $condition->andConditionGroup();
+        } 
+        else if ($aast['operator'] === "OR") {
+          $group = $condition->orConditionGroup();
+        }
+        foreach ($aast['children'] as $child) {
+          $this->addConditionFromAst($group, $child);
+        }
+        $condition->condition($group);
+        return;
+      } catch(Exception $e) {
+        dpm($condition, "condition");
+        return;
       }
-      foreach ($aast['children'] as $child) {
-        $this->addConditionFromAst($group, $child);
-      }
-      $condition->condition($group);
-      return;
     }
     die("Implementation error!");
   }
