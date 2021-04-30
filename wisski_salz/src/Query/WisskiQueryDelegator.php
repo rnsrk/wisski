@@ -188,11 +188,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    * - Case 3: non-federatable adapters => send queries to each and merge in php memory (here be dragons!)
   */
   public function execute() {
-    $annotator = new ASTAnnotator(NULL);
-    $planner = new QueryPlanner(NULL);
-    $ast = $this->getConditionAST(TRUE);
-    $aast = $annotator->annotate($ast);
-    $plan = $planner->plan($aast);
+    $this->makeQueryPlan();
     dpm($plan, "plan");
 
     // which fields should be returned?
@@ -203,26 +199,37 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     $this->populateRelevantAdapterQueries();
 
     // check if we can do an easy return
+    
     $easy_ret = $this->executeEasyRet();
     if($easy_ret != NULL) {
       return $easy_ret;
     }
     
+    
     $this->populateEmpties();
     
     // execute count query or actual query
     if ($this->count) {
-      return $this->executeCount();
+      return $this->executeCount($plan);
     }
 
-    return $this->executeNormal();
+    return $this->executeNormal($plan);
+  }
+
+  private function makeQueryPlan() {
+    $annotator = new ASTAnnotator(NULL);
+    $planner = new QueryPlanner(NULL);
+    
+    $ast = $this->getConditionAST(TRUE);
+    $aast = $annotator->annotate($ast);
+    return $planner->plan($aast);
   }
 
   // give the actual adapter object not just the string
   private function makeQueryForAdapterAndAst($adapter, $aast) {
 
     $conjunction = 'AND';
-    if ($aast !== NUll && $aast['type'] === ASTG::TYPE_LOGICAL_AGGREGATE) {
+    if ($aast !== NUll && $aast['type'] === ASTBuilder::TYPE_LOGICAL_AGGREGATE) {
       $conjuction = $aast['operator'];
     }
 
@@ -260,23 +267,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     die("Implementation error!");
   }
 
-  private function executeNormal() {
-    // TODO: AST for filters, order
-
-    // DEBUG: for now call the AST Annotator only here!
-    // and don't do anything with it ...
-    $annotator = new ASTAnnotator(NULL);
-    $planner = new QueryPlanner(NULL);
-
-    $ast = $this->getConditionAST(TRUE);
-    dpm($ast, "ast");
-
-    $aast = $annotator->annotate($ast);
-    dpm($aast, "aast");
-
-    $plan = $planner->plan($aast);
-    dpm($plan, "plan");
-
+  private function executeNormal($plan) {
     //call initializePager() to initialize the pager if we have one
     $pager = FALSE;
     if ($this->pager) {
@@ -285,6 +276,30 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     }
     
     $result = array();
+
+    if($plan['type'] === QueryPlanner::TYPE_EMPTY_PLAN) {
+      // this should not happen, query doesn't have any adapters
+      // maybe build sql query if possible
+      return array();
+    }
+    else if($plan['type'] === QueryPlanner::TYPE_SINGLE_ADAPTER_PLAN) {
+      return $this->executeNormalSinglePlan($plan, $pager);
+    }     
+    else if($plan['type'] === QueryPlanner::TYPE_SINGLE_FEDERATION_PLAN) {
+
+    }
+    else if($plan['type'] === QueryPlanner::TYPE_SINGLE_PARTITION_PLAN) {
+
+    }
+    else if($plan['type'] === QueryPlanner::TYPE_MULTI_FEDERATION_PLAN) {
+
+    }
+    else if($plan['type'] === QueryPlanner::TYPE_MULTI_PARTITION_PLAN) {
+
+    } 
+    else {
+      die("Implementation error! Unknown plan.");
+    }
 
     // only one relevant adapter => execute it
     if(count($this->relevant_adapter_queries) == 1) {
@@ -357,8 +372,22 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       return $result;
   }
 
+
+  private function executeNormalSinglePlan($plan, $pager) {
+    dpm("executeNormalSinglePlan");
+    $adapter = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->load($plan['adapter']);
+    $query = $this->makeQueryForAdapterAndAst($adapter, $plan['ast']);
+    $query = $query->normalQuery();
+
+    if ($pager || !empty($this->range)) {
+      $query->range($this->range['start'],$this->range['length']);
+    }
+
+    return $query->execute();
+  }
+
    /** execute, but for a count query only */
-   private function executeCount() {
+   private function executeCount($plan) {
     // only one dependent query => execute it
     if(count($this->relevant_adapter_queries) == 1) {
       if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Count Strategy: One Adapter");
