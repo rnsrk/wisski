@@ -119,11 +119,6 @@ class ASTAnnotator {
         );
         return $aast;
     }
-    
-    private static function debug(string $message) {
-        if(WISSKI_DEVEL) \Drupal::logger('wisski_query_planner')->debug($message);
-        // dpm($message); // TODO: Remove me!
-    }
 
     // the wisski_pathbuilder.manager that is used to query for
     // new bundle => adapter mappings. 

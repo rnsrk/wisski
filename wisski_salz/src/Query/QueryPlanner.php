@@ -17,11 +17,6 @@ class QueryPlanner {
         $this->dynamic_evaluator = $dynamic_evaluator;
     }
 
-    private static function debug(string $message) {
-        if(WISSKI_DEVEL) \Drupal::logger('wisski_query_planner')->debug($message);
-        // dpm($message); // TODO: Remove me!
-    }
-
     const TYPE_EMPTY_PLAN = 'empty';
 
     const TYPE_SINGLE_ADAPTER_PLAN = 'single_adapter';
@@ -35,10 +30,9 @@ class QueryPlanner {
      * Plan makes a plan for the provided ast. 
      */
     public function plan(?array $aast) {
-        
         $plan = $this->make_plan($aast, $dynamic_evaluator);
         if ($plan['type'] == self::TYPE_EMPTY_PLAN) {
-            self::debug("Query Planner returned an empty plan!");
+            Debuggable::debug("Query Planner returned an empty plan!");
             return NULL;
         }
         return $plan;
@@ -113,7 +107,7 @@ class QueryPlanner {
             */
 
         if ($aast == NULL) {
-            self::debug("Query Planner encounted NULL");
+            Debuggable::debug("Query Planner encounted NULL");
             return array(
                 'type' => self::TYPE_EMPTY_PLAN,
                 'ast' => NULL,

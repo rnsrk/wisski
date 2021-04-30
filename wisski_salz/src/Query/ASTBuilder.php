@@ -114,8 +114,7 @@ class ASTBuilder {
     // when not a known filter, return NULL.
     if ($ast['type'] == self::TYPE_FILTER) {
       if (!self::isKnownField($ast['field'])) {
-        if(WISSKI_DEVEL) \Drupal::logger('wisski_ast')->debug("Encountered unknown field " + $ast['field']);
-
+        Debuggable::debug("Encountered unknown field " + $ast['field']);
         return NULL;
       }
       return $ast;
@@ -205,9 +204,9 @@ class ASTBuilder {
       //
       // We still do this because it makes the code simpler (don't need to inspect the operator)
       // and no user would probably provide an empty OR group. 
-      if(WISSKI_DEVEL) {
+      if(Debuggable::debug_enabled()) {
         if ($ast['operator'] == 'OR') {
-          \Drupal::logger('wisski_ast')->debug("Dropping empty 'OR' " + self::TYPE_LOGICAL_AGGREGATE);
+          Debuggable:debug("Dropping empty 'OR' " + self::TYPE_LOGICAL_AGGREGATE);
         }
       }
 
