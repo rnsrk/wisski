@@ -171,17 +171,14 @@ class QueryPlanner {
         if ($type === self::TYPE_EMPTY_PLAN) { // no additional fields
         } else if ($type === self::TYPE_SINGLE_ADAPTER_PLAN) {
             $newPlan['adapter'] = $pivot['adapter'];
-        } else if ($type === self::TYPE_SINGLE_FEDERATION_PLAN) {
-
-        } else if ($type === self::TYPE_SINGLE_PARTITION_PLAN) {
-
-        } else if ($type === self::TYPE_MULTI_FEDERATION_PLAN) {
-
+        } else if ($type === self::TYPE_SINGLE_FEDERATION_PLAN || $type === self::TYPE_SINGLE_PARTITION_PLAN || $type === self::TYPE_MULTI_FEDERATION_PLAN) {
+            $newPlan['adapters'] = $pivot['adapters'];
         } else if ($type === self::TYPE_MULTI_PARTITION_PLAN) {
-
+            $newPlan['plans'] = $childPlans;
         } else {
             // TODO: Implementation error
             // some unknown plan
+            self::debug("Unknown plan. This should not happen!");
         }
 
         return $newPlan;
