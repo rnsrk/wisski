@@ -22,7 +22,7 @@ class ASTBuilder {
 
     LOGICAL_AGGREGATE = {
       "type": "logical_aggregate",
-      "operator" = "and" | "or"
+      "operator" = "AND" | "OR"
       "children" = NODE *
     }
 

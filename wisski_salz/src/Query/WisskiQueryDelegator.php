@@ -188,6 +188,18 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    * - Case 3: non-federatable adapters => send queries to each and merge in php memory (here be dragons!)
   */
   public function execute() {
+    $annotator = new ASTAnnotator(NULL);
+    $planner = new QueryPlanner(NULL);
+    $ast = $this->getConditionAST(TRUE);
+    $aast = $annotator->annotate($ast);
+    $plan = $planner->plan($aast);
+    dpm($plan, "plan");
+
+    // which fields should be returned?
+    // in which order?
+    //makeQueryForAdapterAndAst($adapter, $aast);
+    //$query = makeQueryForAst($aast, $plan);
+
     $this->populateRelevantAdapterQueries();
 
     // check if we can do an easy return
@@ -204,6 +216,48 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     }
 
     return $this->executeNormal();
+  }
+
+  // give the actual adapter object not just the string
+  private function makeQueryForAdapterAndAst($adapter, $aast) {
+
+    $conjunction = 'AND';
+    if ($aast !== NUll && $aast['type'] === ASTG::TYPE_LOGICAL_AGGREGATE) {
+      $conjuction = $aast['operator'];
+    }
+
+    $condition = $adapter->getQueryObject($this->entityType,$conjunction,$this->namespaces);
+
+    $this->addConditionFromAst($condition, $aast);
+    
+    return $condition;
+  }
+
+  private function addConditionFromAst($condition, $aast) {
+
+    if ($aast === NULL) {
+      return;
+    }
+    // we get to the childern here and can simply take the values from the current AST for the condition
+    if ($aast['type'] === ASTBuilder::TYPE_FILTER) {
+      $condition->condition($aast['field'], $aast['value'], $aast['operator'], $aast['langcode']);
+      return;
+    } 
+    // create a new condition group and add conditions for all the children
+    else if ($aast['type'] === ASTBuilder::TYPE_LOGICAL_AGGREGATE) {
+      if ($aast['operator'] === "AND") {
+        $group = $condition->andConditionGroup();
+      } 
+      else if ($aast['operator'] === "OR") {
+        $group = $condition->orConditionGroup();
+      }
+      foreach ($aast['children'] as $child) {
+        $this->addConditionFromAst($group, $child);
+      }
+      $condition->condition($group);
+      return;
+    }
+    die("Implementation error!");
   }
 
   private function executeNormal() {
