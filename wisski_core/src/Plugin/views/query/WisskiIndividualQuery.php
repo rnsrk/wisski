@@ -73,8 +73,10 @@ class WisskiIndividualQuery extends QueryPluginBase {
     // $query = new WisskiQueryDelegator($wisski_individual, $this->groupOperator, array()); // TODO: EntityType object
     $query = clone $this->query;
   //  $query->setGroupOperator($this->groupOperator);
-
-
+  
+    // HACK HACK HACK
+    // See Comment in init for why this is done as opposed to leaving the clone $this->query.
+    $query = \Drupal::entityTypeManager()->getStorage('wisski_individual')->getQuery($this->groupOperator);
 
 
     // iterate over the query groups stored in $this->where and
@@ -122,6 +124,20 @@ class WisskiIndividualQuery extends QueryPluginBase {
   public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
     #    dpm(microtime(), "init");
         parent::init($view, $display, $options);
+
+        // BUG BUG BUG
+        // 
+        // This line causes 'OR' conjunctions to always be treated as an 'AND'.
+        // We should pass $this->groupOperator into the getQuery() function. 
+        // However it has not yet been set.
+        //
+        // a workaround is to re-create the query object later.
+        // for now we leave this line, but ignore the object it creates and replace it with a new object
+        //
+        // If someone else tries this and runs into the same problem, please increment this counter.
+        //
+        // total_hours_wasted_here = 3
+
         $this->query = \Drupal::entityTypeManager()->getStorage('wisski_individual')->getQuery();
         $this->pager = $view->pager;  // TODO: do we need to set it here if pager is only inited in this->build()?
       }    
