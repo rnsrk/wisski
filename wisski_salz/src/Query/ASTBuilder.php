@@ -1,16 +1,16 @@
 <?php
 
 /**
- * contains \Drupal\wisski_salz\ASTHelper
+ * contains \Drupal\wisski_salz\ASTBuilder
  */
 namespace Drupal\wisski_salz\Query;
 
 use Drupal\Core\Config\Entity\Query\Condition as ConditionParent;
 
 /**
- * Class ASTHelper implements various functions based only on the Query AST.
+ * Class ASTBuilder implements various functions based only on the Query AST.
  */
-class ASTHelper {
+class ASTBuilder {
 
   const TYPE_FILTER = "filter";
   const TYPE_LOGICAL_AGGREGATE = "logical_aggregate";

@@ -40,7 +40,7 @@ class ASTAnnotator {
             return NULL;
         }
 
-        if($ast['type'] === ASTHelper::TYPE_FILTER) {
+        if($ast['type'] === ASTBuilder::TYPE_FILTER) {
             return $this->annotateFilter($ast);
         }
 

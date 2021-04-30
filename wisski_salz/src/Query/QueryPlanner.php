@@ -50,7 +50,7 @@ class QueryPlanner {
             An AST of a Query is represented as follows:   
         
             PLAN = SINGLE_PLAN | MULTI_PLAN
-            AST = NODE (see ASTHelper class)
+            AST = NODE (see ASTBuilder class)
 
             // empty plan is a plan that introduces a new condition on an existing plan. 
             // it is not a valid top-level plan. 
@@ -120,7 +120,7 @@ class QueryPlanner {
             );
         }
 
-        if ($aast['type'] == ASTHelper::TYPE_FILTER) {
+        if ($aast['type'] == ASTBuilder::TYPE_FILTER) {
             return $this->make_filter_plan($aast);
         }
 
