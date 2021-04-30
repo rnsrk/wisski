@@ -253,6 +253,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     // create a new condition group and add conditions for all the children
     else if ($aast['type'] === ASTBuilder::TYPE_LOGICAL_AGGREGATE) {
       dpm($condition, "condition");
+      return;
       if ($aast['operator'] === "AND") {
         $group = $condition->andConditionGroup();
       } 
