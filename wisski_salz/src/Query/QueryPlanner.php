@@ -151,6 +151,7 @@ class QueryPlanner {
      * When the plans are not compatible, return NULL.
      */
     protected static function plans_get_pivot(array $plans) {
+        //test
         // iterate over the plans and check that each pair of plans is identical
         $left = NULL;
         $pivot = NULL;
