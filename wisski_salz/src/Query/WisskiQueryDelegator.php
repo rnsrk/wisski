@@ -188,7 +188,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    * - Case 3: non-federatable adapters => send queries to each and merge in php memory (here be dragons!)
   */
   public function execute() {
-    $this->makeQueryPlan();
+    $plan = $this->makeQueryPlan();
     dpm($plan, "plan");
 
     // which fields should be returned?
