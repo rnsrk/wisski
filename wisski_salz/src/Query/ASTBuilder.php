@@ -114,7 +114,7 @@ class ASTBuilder {
     // when not a known filter, return NULL.
     if ($ast['type'] == self::TYPE_FILTER) {
       if (!self::isKnownField($ast['field'])) {
-        Debuggable::debug("Encountered unknown field " + $ast['field']);
+        Debuggable::debug("Encountered unknown field " . $ast['field']);
         return NULL;
       }
       return $ast;
@@ -206,7 +206,7 @@ class ASTBuilder {
       // and no user would probably provide an empty OR group. 
       if(Debuggable::debug_enabled()) {
         if ($ast['operator'] == 'OR') {
-          Debuggable:debug("Dropping empty 'OR' " + self::TYPE_LOGICAL_AGGREGATE);
+          Debuggable:debug("Dropping empty 'OR' " . self::TYPE_LOGICAL_AGGREGATE);
         }
       }
 
