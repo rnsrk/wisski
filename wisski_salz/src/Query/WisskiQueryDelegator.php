@@ -211,7 +211,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
     // DEBUG: for now call the AST Annotator only here!
     // and don't do anything with it ...
-    $annotator = new ASTAnnotator(NULL);
+    // $annotator = new ASTAnnotator(NULL);
 
     $ast = $this->getConditionAST(TRUE);
 //    $aast = $annotator->annotate($ast);
