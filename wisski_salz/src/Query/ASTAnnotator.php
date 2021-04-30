@@ -186,8 +186,6 @@ class ASTAnnotator {
         // if the adapter isn't in the cache, fetch it from the manager.
         // TODO: Check that ->load() works
         if (!array_key_exists($adapterID, $this->adapter_cache)) {
-            dpm( $this->adapter_man, "man");
-            return false;
             $this->adapter_cache[$adapterID] = $this->adapter_man->load($adapterID);
         }
     
