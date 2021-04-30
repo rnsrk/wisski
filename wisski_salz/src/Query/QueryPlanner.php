@@ -161,6 +161,7 @@ class QueryPlanner {
             'type' => $pivot['type'],
             'ast' => $aast,
             'adapters' => $pivot['adapters'],
+            'adapter' => $pivot['adapter'],
             'plans' => $pivot['plans'],
         );
 
