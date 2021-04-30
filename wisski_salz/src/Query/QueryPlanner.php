@@ -134,6 +134,8 @@ class QueryPlanner {
 
         // if the plans are compatible, find the pivot to merge them!
         $pivot = QueryPlanner::plans_get_pivot($childPlans);
+        dpm($pivot, "pivot");
+        dpm($aast, "aast");
         if ($pivot !== NULL) {
             return $this->merge_compatible_plans($aast, $pivot, $childPlans);
         }

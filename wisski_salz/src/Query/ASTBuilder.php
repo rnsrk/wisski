@@ -41,8 +41,6 @@ class ASTBuilder {
   /** makeAST returns an AST from a condition object and optionally simplifies it */
   public static function makeConditionAST(ConditionParent $condition, bool $simplify = TRUE) {
     $ast = self::makeAggregateAST($condition); // a condition is always an aggregate ast
-    dpm((array)($condition), "ast-array");
-    dpm($ast, "ast-proper");
     if (FALSE && $simplify) {
       $ast = self::simplifyAST($ast);
     }
