@@ -276,7 +276,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     
     $result = array();
 
-    if($plan['type'] === QueryPlanner::TYPE_EMPTY_PLAN) {
+    if($plan === NULL) {
+      // TODO: why?
+    }
+    else if($plan['type'] === QueryPlanner::TYPE_EMPTY_PLAN) {
       // this should not happen, query doesn't have any adapters
       // maybe build sql query if possible
       return array();
