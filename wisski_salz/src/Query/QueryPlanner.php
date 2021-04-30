@@ -63,7 +63,6 @@ class QueryPlanner {
             SINGLE_ADAPTER_PLAN = {
                 "type": "single_adapter",
                 "ast": AST,
-                "reason": "dynamic" | "static"
                 "adapter": ....
             }
 
@@ -73,7 +72,6 @@ class QueryPlanner {
             SINGLE_FEDERATION_PLAN = {
                 "type": "single_federation"
                 "ast": AST
-                "reason": "dynamic" | "static"
                 "adapters": ...
             }
 
@@ -82,7 +80,6 @@ class QueryPlanner {
             SINGLE_PARTITION_PLAN = {
                 "type": "single_partition"
                 "ast": AST
-                "reason": "dynamic" | "static"
                 "adapters": ...
             }
             // TODO: Rename this to something more useful.
@@ -160,10 +157,32 @@ class QueryPlanner {
         $newPlan = array(
             'type' => $pivot['type'],
             'ast' => $aast,
+            /*
             'adapters' => $pivot['adapters'],
             'adapter' => $pivot['adapter'],
             'plans' => $pivot['plans'],
+            */
         );
+        
+        // depending on plan type copy fields from the pivot plan over
+
+        $type = $pivot['type'];
+        
+        if ($type === self::TYPE_EMPTY_PLAN) { // no additional fields
+        } else if ($type === self::TYPE_SINGLE_ADAPTER_PLAN) {
+            $newPlan['adapter'] = $pivot['adapter'];
+        } else if ($type === self::TYPE_SINGLE_FEDERATION_PLAN) {
+
+        } else if ($type === self::TYPE_SINGLE_PARTITION_PLAN) {
+
+        } else if ($type === self::TYPE_MULTI_FEDERATION_PLAN) {
+
+        } else if ($type === self::TYPE_MULTI_PARTITION_PLAN) {
+
+        } else {
+            // TODO: Implementation error
+            // some unknown plan
+        }
 
         return $newPlan;
     }
