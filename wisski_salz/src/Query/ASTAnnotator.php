@@ -8,7 +8,7 @@ namespace Drupal\wisski_salz\Query;
 use Drupal\Core\Config\Entity\Query\Condition as ConditionParent;
 
 /**
- * Class ASTAnnotator annotates the AST with bundle and adapter ids.
+ * ASTAnnotator annotates the AST with information required for generating a QueryPlan. 
  */
 class ASTAnnotator {
      /**
@@ -21,11 +21,20 @@ class ASTAnnotator {
     public function __construct(?callback $dynamic_evaluator) {
         $this->dynamic_evaluator = $dynamic_evaluator;
         $this->pb_man = \Drupal::service('wisski_pathbuilder.manager');
-        $this->adapter_man = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
+        $this->adapter_man = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter');
     }
 
-
-
+    /**
+     * Annotate is the main entry point for the ASTAnnotator class.
+     * It takes a plain $ast and returns an annotated $ast.
+     * 
+     * The annotated ast ($aast in code) is like an AST, but contains additional information about each node.
+     * In particular, each node has an additional "annotations" property that contains three properties.
+     * 
+     * - "bundles": An array of all bundles referenced by the current sub-AST.
+     * - "adapters": An array of all the adapters using the provided bunldes.
+     * - "federtable": A boolean inidicating if *all* involved sub-ASTs reference only federatable adapters.
+     */
     public function annotate(?array $ast) {
         if ($ast === NULL) {
             return NULL;
