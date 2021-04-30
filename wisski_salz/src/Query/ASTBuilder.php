@@ -114,8 +114,7 @@ class ASTBuilder {
     // when not a known filter, return NULL.
     if ($ast['type'] == self::TYPE_FILTER) {
       if (!self::isKnownField($ast['field'])) {
-        Debuggable::debug("Encountered unknown field " . $ast['field']);
-        return NULL;
+        Debuggable::debug("Encountered unknown field " . $ast['field'] . ", keeping it for forward compatibility. ");
       }
       return $ast;
     }
@@ -238,8 +237,9 @@ class ASTBuilder {
       return true;
     }
 
-    // wisski_path_${pbid}__$pid
-    return str_starts_with($field, 'wisski_path_') && str_contains($field, '__');
+    // Field representing a path builder field!
+    // "${path}.${field}"
+    return str_contains($field, '.');
   }
 
   /** deduplicats and consistently orders a list of asts */
