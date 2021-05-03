@@ -1729,7 +1729,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               
               // by MyF: iterate through all available languages in order to make the entity reference case language dependent
               // without this change, the entity references were pulled out of the cache and this led to errors in the view (the field was not
-              // display in languages other than the default language)
+              // displayed in languages other than the default language)
              /* foreach($available_languages as $al){
               // initialize if not existing
               // by MyF: ASSUMPTION: we delete the x-default language case since we do not need it anymore
@@ -1753,7 +1753,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               // If we do it like that, translations in entity reference fields cause the source entity to exist in all languages although this is not correct;
               // This is due to the storage which checks in which languages the entity exists and then performs a wrong visualization
               // The further problem is that we do not have access to all translations of an entity since we do not load it here => we have to make this in the
-              // WisskiStorage.php file since we load the entity here
+              // WisskiStorage.php file since we load the entity there
 
               if(!isset($out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT]))
                 $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT] = array();

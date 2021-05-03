@@ -357,7 +357,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
               */
 
             foreach($available_languages as $alang) {
-#             dpm("checking $alang in $key with " . serialize($val));
+#            dpm("checking $alang in $key with " . serialize($val));
 #            dpm("my array key: " . array_key_exists($alang, $val));
             if(is_array($val) && array_key_exists($alang, $val)) {
                 $set_languages[$alang] = $alang;
