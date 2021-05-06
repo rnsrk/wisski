@@ -1955,7 +1955,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
    */
   protected function doDeleteFieldItems($entities) {
 
-    dpm("yay????");
+    //dpm("yay????");
 
     $moduleHandler = \Drupal::service('module_handler');
     if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
