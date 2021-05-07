@@ -359,12 +359,34 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     return $results;
   }
 
-  private function executeCountSinglePlan($plan, $pager) {
+  private function executeCountSinglePlan($plan) {
     dpm("executeCountSinglePlan");
     $adapter = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->load($plan['adapter']);
     $query = $this->makeQueryForAdapterAndAst($adapter, $plan['ast']);
     $query = $query->countQuery();
     return $query->execute();
+  }
+
+  private function executeNormalEmptyPlan($plan, $pager) {
+    $ast = $plan['ast'];
+    
+  }
+
+  private function executeNormalEmptyPlanAST($ast) {
+    if ($ast['type'] === ASTBuilder::TYPE_FILTER) {
+      if ($ast['field'] !== 'eid' && $ast['operator'] !== 'EQUALS') { // Unsupported
+        return array(); 
+      }
+
+
+
+    } else {
+
+    }
+  }
+
+  private function executeCountEmptyPlan($plan) {
+    return count($this->executeNormalEmptyPlan($plan, NULL));
   }
 
 
