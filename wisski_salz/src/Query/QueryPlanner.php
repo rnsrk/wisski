@@ -284,7 +284,6 @@ class QueryPlanner {
         if ($count == 1) {
             return array(
                 "type" => self::TYPE_SINGLE_ADAPTER_PLAN,
-                "reason" => $reason,
                 "adapter" => $adapters[0],
                 "ast" => $aast
             );
@@ -293,11 +292,10 @@ class QueryPlanner {
         $all_are_federatable = $aast['annotations']['federatable'];
 
         // all adapters are federatable => use a TYPE_SINGLE_FEDERATION_PLAN
-        if ($all_are_federatable) {
+        if (False && $all_are_federatable) {
             return array(
                 "type" => self::TYPE_SINGLE_FEDERATION_PLAN,
                 "ast" => $aast,
-                "reason" => $reason, 
                 "adapters" => $adapters,
             );
         }
@@ -308,7 +306,6 @@ class QueryPlanner {
         return array(
             "type" => self::TYPE_SINGLE_PARTITION_PLAN,
             "ast" => $aast,
-            "reason" => $reason,
             "adapters" => $adapters,
         );
     }
