@@ -279,7 +279,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
     if($plan === NULL) {
       \Drupal::messenger()->addWarning("Invalid Query provided. ");
-      return;
+      return array();
     }
     else if($plan['type'] === QueryPlanner::TYPE_EMPTY_PLAN) {
 
