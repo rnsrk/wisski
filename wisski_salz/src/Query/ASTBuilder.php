@@ -40,7 +40,7 @@ class ASTBuilder {
 
   /** makeAST returns an AST from a condition object and optionally simplifies it */
   public static function makeConditionAST(?ConditionParent $condition, bool $simplify = TRUE) {
-    dpm("condition:incoming", $condition);
+    dpm($condition, "condition:incoming");
     $ast = self::makeAggregateAST($condition); // a condition is always an aggregate ast
     if ($simplify) {
       $ast = self::simplifyAST($ast);
