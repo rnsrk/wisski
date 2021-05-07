@@ -40,9 +40,7 @@ class ASTBuilder {
 
   /** makeAST returns an AST from a condition object and optionally simplifies it */
   public static function makeConditionAST(?ConditionParent $condition, bool $simplify = TRUE) {
-    dpm($condition, "makeConditionAST:input");
     $ast = self::makeAggregateAST($condition); // a condition is always an aggregate ast
-    dpm($ast, "makeConditionAST::result");
     if ($simplify) {
       $ast = self::simplifyAST($ast);
     }
@@ -53,7 +51,6 @@ class ASTBuilder {
   private static function makeAggregateAST(?ConditionParent $condition) {
     // received an invalid condition!
     if (!($condition instanceOf ConditionParent)) {
-      dpm($condition, "received invalid condition");
       return NULL;
     }
   
@@ -72,11 +69,6 @@ class ASTBuilder {
         array_push($children, self::makeFilterAST($cond));
         continue;
       }
-      
-      if ($field === NULL) {
-        dpm($cond,"null \$field");
-      }
-
       // it's an aggregate
       array_push($children, self::makeAggregateAST($field));
     }
@@ -91,7 +83,6 @@ class ASTBuilder {
 
   /** makeFilterAST returns an AST of type filter from the condition */
   private static function makeFilterAST(array $condition) {
-    dpm($condition, "MAKEfILER");
     return array(
       "type" => self::TYPE_FILTER,
       "field" => $condition["field"],
