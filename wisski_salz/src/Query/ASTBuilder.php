@@ -66,7 +66,11 @@ class ASTBuilder {
         array_push($children, self::makeFilterAST($cond));
         continue;
       }
-    
+      
+      if ($field === NULL) {
+        dpm($cond, "null \$field");
+      }
+
       // it's an aggregate
       array_push($children, self::makeAggregateAST($field));
     }
