@@ -267,6 +267,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     die("Implementation error!");
   }
 
+  // add a skip pager here as parameter
   private function executeNormal($plan) {
     //call initializePager() to initialize the pager if we have one
     $pager = FALSE;
@@ -293,13 +294,13 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
     }
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_PARTITION_PLAN) {
-
+      return $this->executeSinglePartitionPlan($plan, $pager);
     }
     else if($plan['type'] === QueryPlanner::TYPE_MULTI_FEDERATION_PLAN) {
 
     }
     else if($plan['type'] === QueryPlanner::TYPE_MULTI_PARTITION_PLAN) {
-
+      return $this->executeMultiPartitionPlan($plan, $pager);
     } 
     else {
       die("Implementation error! Unknown plan.");
@@ -322,16 +323,15 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       return $this->executeCountSinglePlan($plan);
     }     
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_FEDERATION_PLAN) {
-
     }
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_PARTITION_PLAN) {
-
+      return $this->executeCountSinglePartitionPlan($plan);
     }
     else if($plan['type'] === QueryPlanner::TYPE_MULTI_FEDERATION_PLAN) {
 
     }
     else if($plan['type'] === QueryPlanner::TYPE_MULTI_PARTITION_PLAN) {
-
+      return $this->executeCountMultiPartitionPlan($plan);
     } 
     else {
       die("Implementation error! Unknown plan.");
@@ -435,6 +435,79 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
   private function executeCountEmptyPlan($plan) {
     return count($this->executeNormalEmptyPlan($plan, NULL));
+  }
+
+  private function executeSinglePartitionPlan($plan, $pager) {
+    // we take the first adapter here for now, later on we want to consider all adapters
+    $adapter = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->load($plan['adapters'][0]);
+    $query = $this->makeQueryForAdapterAndAst($adapter, $plan['ast']);
+    $query = $query->normalQuery();
+
+    
+    if ($pager || !empty($this->range)) {
+      $query->range($this->range['start'],$this->range['length']);
+    }
+
+    $results = $query->execute();
+    return $results;
+  }
+
+  private function executeCountSinglePartitionPlan($plan) {
+    // also here we take the first adapter here for now, later on we want to consider all adapters
+    $adapter = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->load($plan['adapters'][0]);
+    $query = $this->makeQueryForAdapterAndAst($adapter, $plan['ast']);
+    $query = $query->countQuery();
+    return $query->execute();
+  }
+
+  private function executeMultiPartitionPlan($plan, $pager){
+    $ast = $plan['ast'];
+    if($ast['operator'] === 'OR'){
+      $results = array();
+      foreach($plan['plans'] as $child_plan){
+        $results = array_merge($results, $this->executeNormal($child_plan));
+      }
+      if ($pager || !empty($this->range)) {
+      $results = array_slice(array_unique($results), $this->range['start'],$this->range['length']);
+      }
+
+      return $results;
+    } else {
+      // $ast['operator'] === 'AND'
+      // TODO: we have to finish this AND case, since this is just a copy from the other function
+      // Please Tom also check if we did the 'OR' case right
+      // Last one here: 07.05.2021
+      $results = array();
+      foreach($ast['plans'] as $child_plan){
+        $results[] = $this->executeNormal($child_plan);
+      }
+      if(count($results) === 0){
+        return array();
+      }
+
+      $pivot = $results[0];
+      $results = array_slice($results,1);
+      $union_results = array();
+      foreach($pivot as $pivot_element){
+        $isContainedInAll = True;
+        foreach($results as $res){     
+          if(array_search($pivot_element, $res) === False){
+            $isContainedInAll = False;
+            break;
+          }
+        }
+        if($isContainedInAll){
+          $union_results[] = $pivot_element;
+        }
+      }
+      return $union_results;
+    }   
+
+    return array();
+  }
+
+  private function executeCountMultiPartitionPlan($plan){
+    return count($this->executeMultiPartitionPlan($plan, NULL));
   }
 
 
