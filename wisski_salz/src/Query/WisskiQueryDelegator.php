@@ -354,7 +354,9 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       $query->range($this->range['start'],$this->range['length']);
     }
 
-    return $query->execute();
+    $results = $query->execute();
+    dpm($results, "restults");
+    return $results;
   }
 
   private function executeCountSinglePlan($plan, $pager) {
