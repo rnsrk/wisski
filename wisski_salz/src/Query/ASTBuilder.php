@@ -62,13 +62,18 @@ class ASTBuilder {
     foreach ($condition->conditions() as $cond) {
       // if field is a string, it's a leaf!
       $field = $cond["field"];
+      // HACK HACK HACK: Sometimes drupal returns field === NULL
+      // not sure why this happens, but in that case we assume it is an eid field
+      if ($field === NULL) {
+        $field = 'eid';
+      }
       if (is_string($field)) {
         array_push($children, self::makeFilterAST($cond));
         continue;
       }
       
       if ($field === NULL) {
-        dpm($cond, "null \$field");
+        dpm($cond,"null \$field");
       }
 
       // it's an aggregate
