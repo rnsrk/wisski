@@ -278,7 +278,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     $result = array();
 
     if($plan === NULL) {
-      // TODO: why?
+      \Drupal::messenger()->addWarning("Invalid Query provided. ");
+      return;
     }
     else if($plan['type'] === QueryPlanner::TYPE_EMPTY_PLAN) {
       // this should not happen, query doesn't have any adapters
@@ -303,6 +304,9 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     else {
       die("Implementation error! Unknown plan.");
     }
+
+    \Drupal::messenger()->addWarning("Not implemented. ");
+    return;
 
     // only one relevant adapter => execute it
     if(count($this->relevant_adapter_queries) == 1) {
