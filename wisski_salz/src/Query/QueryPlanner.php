@@ -35,7 +35,6 @@ class QueryPlanner {
         // TODO: Handle eid_only plan
         if ($plan['type'] == self::TYPE_EMPTY_PLAN) {
             Debuggable::debug("Query Planner returned an empty plan!");
-            return NULL;
         }
         return $plan;
     }
@@ -45,11 +44,10 @@ class QueryPlanner {
         /*
             An AST of a Query is represented as follows:   
         
-            PLAN = SINGLE_PLAN | MULTI_PLAN
+            PLAN = SINGLE_PLAN | MULTI_PLAN | EMPTY_PLAN
             AST = NODE (see ASTBuilder class)
 
             // empty plan is a plan that introduces a new condition on an existing plan. 
-            // it is not a valid top-level plan. 
             EMPTY_PLAN = {
                 "type": "empty",
                 "ast": AST,
@@ -98,6 +96,7 @@ class QueryPlanner {
             MULTI_PLAN_PARTITION = {
                 type: "multi_partition",
                 "ast": AST
+                "conjunction": 'AND' | 'OR'
                 "plans": PLAN +
             }
 
