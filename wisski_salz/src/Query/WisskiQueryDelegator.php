@@ -370,8 +370,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     $ast = $plan['ast'];
     $results = $this->executeNormalEmptyPlanAST($ast);
     if ($pager || !empty($this->range)) {
-      dpm($this->range['start']);
-      dpm($this->range['length']);
+      $results = array_slice($results, $this->range['start'], $this->range['length']);
     }
     return $results;
   }
