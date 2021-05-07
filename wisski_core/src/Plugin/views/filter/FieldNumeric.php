@@ -92,7 +92,7 @@ class FieldNumeric extends ViewsNumeric {
   protected function opSimple($column) {
     #$this->query->query->condition($this->definition['field_name'], $this->value['value'], $this->operator);
     #$this->query->query->condition("eid", $this->value['value'], $this->operator);
-    $this->query->addWhere($this->options['group'], $field, $this->value, $this->operator);
+    $this->query->addWhere($this->options['group'], $this->$field, $this->value, $this->operator);
   }
 
   /**
