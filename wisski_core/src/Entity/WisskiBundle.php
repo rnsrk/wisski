@@ -166,6 +166,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   
   public function getDefaultPattern() {
     
+    dpm("hallo");
     return \Drupal::config('wisski_core.settings')->get('wisski_default_title_pattern');
   }
   
