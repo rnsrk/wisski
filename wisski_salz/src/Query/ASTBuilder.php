@@ -51,6 +51,7 @@ class ASTBuilder {
   private static function makeAggregateAST(?ConditionParent $condition) {
     // received an invalid condition!
     if (!($condition instanceOf ConditionParent)) {
+      dpm($condition, "condition");
       return NULL;
     }
   
