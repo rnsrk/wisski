@@ -43,7 +43,7 @@ class ASTBuilder {
     dpm($condition, "condition:incoming");
     $ast = self::makeAggregateAST($condition); // a condition is always an aggregate ast
     dpm($ast, "got_ast");
-    if (FALSE && $simplify) {
+    if ($simplify) {
       $ast = self::simplifyAST($ast);
     }
     return $ast;
@@ -80,6 +80,7 @@ class ASTBuilder {
 
   /** makeFilterAST returns an AST of type filter from the condition */
   private static function makeFilterAST(array $condition) {
+    dpm($condition, "MAKEfILER");
     return array(
       "type" => self::TYPE_FILTER,
       "field" => $condition["field"],
