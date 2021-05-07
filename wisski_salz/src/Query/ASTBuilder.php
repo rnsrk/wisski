@@ -39,7 +39,7 @@ class ASTBuilder {
     */
 
   /** makeAST returns an AST from a condition object and optionally simplifies it */
-  public static function makeConditionAST(ConditionParent $condition, bool $simplify = TRUE) {
+  public static function makeConditionAST(?ConditionParent $condition, bool $simplify = TRUE) {
     $ast = self::makeAggregateAST($condition); // a condition is always an aggregate ast
     if ($simplify) {
       $ast = self::simplifyAST($ast);
@@ -48,7 +48,7 @@ class ASTBuilder {
   }
 
   /** makeAggregateAST returns an AST of type logical_aggregate from this condition */
-  private static function makeAggregateAST(ConditionParent $condition) {
+  private static function makeAggregateAST(?ConditionParent $condition) {
     // received an invalid condition!
     if (!($condition instanceOf ConditionParent)) {
       return NULL;
