@@ -282,10 +282,11 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       return NULL;
     }
     else if($plan['type'] === QueryPlanner::TYPE_EMPTY_PLAN) {
+      dpm("executeEmptyPlan");
 
       // this should not happen, query doesn't have any adapters
       // maybe build sql query if possible
-      return NULL;
+      return array(0 => 26);
     }
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_ADAPTER_PLAN) {
       return $this->executeNormalSinglePlan($plan, $pager);
@@ -317,7 +318,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       return 0;
     }
     else if($plan['type'] === QueryPlanner::TYPE_EMPTY_PLAN) {
-      return 0;
+      return 1;
     }
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_ADAPTER_PLAN) {
       return $this->executeCountSinglePlan($plan, $pager);
