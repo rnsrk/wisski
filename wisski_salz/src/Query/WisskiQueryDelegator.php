@@ -200,10 +200,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
     // check if we can do an easy return
     
-    $easy_ret = $this->executeEasyRet();
-    if($easy_ret != NULL) {
-      return $easy_ret;
-    }
+    // $easy_ret = $this->executeEasyRet();
+    // if($easy_ret != NULL) {
+    //   return $easy_ret;
+    // }
     
     
     $this->populateEmpties();
@@ -282,10 +282,9 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       return NULL;
     }
     else if($plan['type'] === QueryPlanner::TYPE_EMPTY_PLAN) {
-
+      return $this->executeNormalEmptyPlan($plan, $pager);
       // this should not happen, query doesn't have any adapters
       // maybe build sql query if possible
-      return NULL;
     }
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_ADAPTER_PLAN) {
       return $this->executeNormalSinglePlan($plan, $pager);
@@ -317,10 +316,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       return 0;
     }
     else if($plan['type'] === QueryPlanner::TYPE_EMPTY_PLAN) {
-      return 0;
+      return $this->executeCountEmptyPlan($plan);
     }
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_ADAPTER_PLAN) {
-      return $this->executeCountSinglePlan($plan, $pager);
+      return $this->executeCountSinglePlan($plan);
     }     
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_FEDERATION_PLAN) {
 
@@ -369,19 +368,62 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
   private function executeNormalEmptyPlan($plan, $pager) {
     $ast = $plan['ast'];
+    return $this->executeNormalEmptyPlanAST($ast);
     
   }
 
   private function executeNormalEmptyPlanAST($ast) {
     if ($ast['type'] === ASTBuilder::TYPE_FILTER) {
-      if ($ast['field'] !== 'eid' && $ast['operator'] !== 'EQUALS') { // Unsupported
+      if ($ast['field'] !== 'eid') { // Unsupported
+        dpm("Field is not 'eid', we do not support this.");
         return array(); 
       }
-
-
-
+      // in case 'eid'
+      // if operator == Null, we can take the value directly
+      if($ast['operator'] == NULL){
+        return array($ast['value']);
+        // if operator != NUll, we have to parse through array
+      } elseif($ast['operator'] === '='){
+          return array((int)($ast['value']['value']));
+      } else {
+          dpm("Unsupported operator.");
+          return array(); 
+      }
     } else {
+        // TYPE_LOGICAL_AGGREGATE: and/or => in this case we want to merge recursively
+        if($ast['operator'] === 'OR'){
+          $results = array();
+          foreach($ast['children'] as $child){
+            $results = array_merge($results, $this->executeNormalEmptyPlanAST($child));
+          }
+          return $results;
+        } else {
+          // if $ast['operator'] === 'AND'
+          $results = array();
+          foreach($ast['children'] as $child){
+            $results[] = $this->executeNormalEmptyPlanAST($child);
+          }
+          if(count($results) === 0){
+            return array();
+          }
 
+          $pivot = $results[0];
+          $results = array_slice($results,1);
+          $union_results = array();
+          foreach($pivot as $pivot_element){
+            $isContainedInAll = True;
+            foreach($results as $res){     
+              if(array_search($pivot_element, $res) === False){
+                $isContainedInAll = False;
+                break;
+              }
+            }
+            if($isContainedInAll){
+              $union_results[] = $pivot_element;
+            }
+          }
+          return $union_results;
+        }   
     }
   }
 
