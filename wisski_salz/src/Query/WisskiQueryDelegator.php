@@ -279,13 +279,13 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
     if($plan === NULL) {
       \Drupal::messenger()->addWarning("Invalid Query provided. ");
-      return array();
+      return NULL;
     }
     else if($plan['type'] === QueryPlanner::TYPE_EMPTY_PLAN) {
 
       // this should not happen, query doesn't have any adapters
       // maybe build sql query if possible
-      return array();
+      return NULL;
     }
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_ADAPTER_PLAN) {
       return $this->executeNormalSinglePlan($plan, $pager);
@@ -307,14 +307,14 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     }
 
     \Drupal::messenger()->addWarning("Not implemented. ");
-    return array();
+    return NULL;
   }
 
 /** execute, but for a count query only */
   private function executeCount($plan) {
     if($plan === NULL) {
       \Drupal::messenger()->addWarning("Invalid Query provided. ");
-      return;
+      return 0;
     }
     else if($plan['type'] === QueryPlanner::TYPE_EMPTY_PLAN) {
       return 0;
