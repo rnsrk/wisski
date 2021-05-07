@@ -368,8 +368,12 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
   private function executeNormalEmptyPlan($plan, $pager) {
     $ast = $plan['ast'];
-    return $this->executeNormalEmptyPlanAST($ast);
-    
+    $results = $this->executeNormalEmptyPlanAST($ast);
+    if ($pager || !empty($this->range)) {
+      dpm($this->range['start']);
+      dpm($this->range['length']);
+    }
+    return $results;
   }
 
   private function executeNormalEmptyPlanAST($ast) {
@@ -379,6 +383,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         return array(); 
       }
       // in case 'eid'
+      // for future: perhaps we also have to consider the language here
+
       // if operator == Null, we can take the value directly
       if($ast['operator'] == NULL){
         return array($ast['value']);
@@ -396,7 +402,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
           foreach($ast['children'] as $child){
             $results = array_merge($results, $this->executeNormalEmptyPlanAST($child));
           }
-          return $results;
+          // we unique here since it is possible that (same) children exist multiple times
+          return array_unique($results);
         } else {
           // if $ast['operator'] === 'AND'
           $results = array();
