@@ -282,6 +282,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       return;
     }
     else if($plan['type'] === QueryPlanner::TYPE_EMPTY_PLAN) {
+
       // this should not happen, query doesn't have any adapters
       // maybe build sql query if possible
       return array();
@@ -306,77 +307,39 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     }
 
     \Drupal::messenger()->addWarning("Not implemented. ");
-    return;
+    return array();
+  }
 
-    // only one relevant adapter => execute it
-    if(count($this->relevant_adapter_queries) == 1) {
-      if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: One Adapter");
+/** execute, but for a count query only */
+  private function executeCount($plan) {
+    if($plan === NULL) {
+      \Drupal::messenger()->addWarning("Invalid Query provided. ");
+      return;
+    }
+    else if($plan['type'] === QueryPlanner::TYPE_EMPTY_PLAN) {
+      return 0;
+    }
+    else if($plan['type'] === QueryPlanner::TYPE_SINGLE_ADAPTER_PLAN) {
+      return $this->executeCountSinglePlan($plan, $pager);
+    }     
+    else if($plan['type'] === QueryPlanner::TYPE_SINGLE_FEDERATION_PLAN) {
 
-      // make use of the pager!
-      if ($pager || !empty($this->range)) {
-        return $this->executePaginatedJoin($this->range['length'], $this->range['start']);
-      }
+    }
+    else if($plan['type'] === QueryPlanner::TYPE_SINGLE_PARTITION_PLAN) {
 
-      $query = current($this->relevant_adapter_queries);
-      $query = $query->normalQuery();
-      return $query->execute();
+    }
+    else if($plan['type'] === QueryPlanner::TYPE_MULTI_FEDERATION_PLAN) {
+
+    }
+    else if($plan['type'] === QueryPlanner::TYPE_MULTI_PARTITION_PLAN) {
+
+    } 
+    else {
+      die("Implementation error! Unknown plan.");
     }
 
-    //dpm($this->hasOnlyFederatableDependents(), "hasFederatable");
-    if($this->hasOnlyFederatableDependents()) {
-      if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: Federation");
-
-      // if it is sparql, do a federated query!
-      // what does FALSE do here?
-      $first_query = $this->getFederatedQuery(FALSE);
-
-      $first_query = $first_query->normalQuery();
-      if ($pager || !empty($this->range)) {
-        $first_query->range($this->range['start'],$this->range['length']);
-      }
-
-      $ret = $first_query->execute();
-
-      return $ret;
-    }
-
-    // complicated cases below (we have > 1 adapter and can't federate!)
-    
-   
-    // to reduce the number of error messages
-    // at least we have a pager!
-     if ($pager || !empty($this->range)) {
-      // MyF: We have to test this in a later step; so first of all we remove this in order
-      /*if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: In-Memory Pagination");
-      if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
-        $querytmp = $query->normalQuery();
-        $querytmp->range($this->range['start'],$this->range['length']);
-        $ret = $querytmp->execute();
-        if(!empty($ret)) {
-          return $ret;
-        }
-        
-      }*/
-    
-      // use the old behaviour if we have a pager
-      return $this->executePaginatedJoin($this->range['length'],$this->range['start']);
-    }
-
-    if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: In-Memory Join");
-    
-#            dpm("no pager...");
-      // if we dont have a pager, iterate it and sum it up 
-      // @todo: This here is definitely evil. We should give some warning!
-      // here be dragons
-      foreach ($this->relevant_adapter_queries as $query) {
-        $query = $query->normalQuery();
-        $sub_result = $query->execute();
-        $result = array_unique(array_merge($result,$sub_result));
-#              dpm($sub_result, "result?");
-#              dpm(self::$empties, "what is this?!");              
-      }
-      if (!empty(self::$empties)) $result = array_diff($result,self::$empties);
-      return $result;
+    \Drupal::messenger()->addWarning("Not implemented. ");
+    return 0;
   }
 
 
@@ -394,68 +357,149 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     return $query->execute();
   }
 
-   /** execute, but for a count query only */
-   private function executeCount($plan) {
-    // only one dependent query => execute it
-    if(count($this->relevant_adapter_queries) == 1) {
-      if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Count Strategy: One Adapter");
-
-      $query = current($this->relevant_adapter_queries);
-      
-      $count = $query->countQuery()->execute() ? : 0;
-      $count -= count(self::$empties);
-
-      return $count;
-    }
-
-    // only federatable adapters => execute the federated query
-    if($this->hasOnlyFederatableDependents()) {
-      if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Count Strategy: Federation");
-
-      $first_query = $this->getFederatedQuery(TRUE);
-
-      $count = $first_query->countQuery()->execute() ? : 0;
-      $count -= count(self::$empties);
-
-      return $count;
-    }
-
-    if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Countgi Strategy: In Memory");
-    
-
-    // complicated case: collect a result set and count elements in it
-    $result = array();
-  
-    foreach ($this->relevant_adapter_queries as $adapter_id => $query) {
-      
-      // TODO: dms adapter
-      if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
-        /*$query = $query->count();
-
-        $sub_res = $query->execute() ? : 0;
-
-        if(!empty($sub_res)) {
-          $result = $sub_res;
-          continue;
-        }
-        */
-      }
-
-      // get the result for this adapter
-      $sub_result = $query->execute() ? : NULL;
-      if(!is_array($sub_result)) {
-        $sub_result = array();
-      }
-
-      // merge in the results
-      $result = array_unique(array_merge($result, $sub_result), SORT_REGULAR); 
-    }
-
-    $count = count($result);
-    $count -= count(self::$empties);
-    
-    return $count;
+  private function executeCountSinglePlan($plan, $pager) {
+    dpm("executeCountSinglePlan");
+    $adapter = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->load($plan['adapter']);
+    $query = $this->makeQueryForAdapterAndAst($adapter, $plan['ast']);
+    $query = $query->countQuery();
+    return $query->execute();
   }
+
+
+// old execute function
+//     // only one relevant adapter => execute it
+//     if(count($this->relevant_adapter_queries) == 1) {
+//       if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: One Adapter");
+
+//       // make use of the pager!
+//       if ($pager || !empty($this->range)) {
+//         return $this->executePaginatedJoin($this->range['length'], $this->range['start']);
+//       }
+
+//       $query = current($this->relevant_adapter_queries);
+//       $query = $query->normalQuery();
+//       return $query->execute();
+//     }
+
+//     //dpm($this->hasOnlyFederatableDependents(), "hasFederatable");
+//     if($this->hasOnlyFederatableDependents()) {
+//       if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: Federation");
+
+//       // if it is sparql, do a federated query!
+//       // what does FALSE do here?
+//       $first_query = $this->getFederatedQuery(FALSE);
+
+//       $first_query = $first_query->normalQuery();
+//       if ($pager || !empty($this->range)) {
+//         $first_query->range($this->range['start'],$this->range['length']);
+//       }
+
+//       $ret = $first_query->execute();
+
+//       return $ret;
+//     }
+
+//     // complicated cases below (we have > 1 adapter and can't federate!)
+    
+   
+//     // to reduce the number of error messages
+//     // at least we have a pager!
+//      if ($pager || !empty($this->range)) {
+//       // MyF: We have to test this in a later step; so first of all we remove this in order
+//       /*if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: In-Memory Pagination");
+//       if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
+//         $querytmp = $query->normalQuery();
+//         $querytmp->range($this->range['start'],$this->range['length']);
+//         $ret = $querytmp->execute();
+//         if(!empty($ret)) {
+//           return $ret;
+//         }
+        
+//       }*/
+    
+//       // use the old behaviour if we have a pager
+//       return $this->executePaginatedJoin($this->range['length'],$this->range['start']);
+//     }
+
+//     if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: In-Memory Join");
+    
+// #            dpm("no pager...");
+//       // if we dont have a pager, iterate it and sum it up 
+//       // @todo: This here is definitely evil. We should give some warning!
+//       // here be dragons
+//       foreach ($this->relevant_adapter_queries as $query) {
+//         $query = $query->normalQuery();
+//         $sub_result = $query->execute();
+//         $result = array_unique(array_merge($result,$sub_result));
+// #              dpm($sub_result, "result?");
+// #              dpm(self::$empties, "what is this?!");              
+//       }
+//       if (!empty(self::$empties)) $result = array_diff($result,self::$empties);
+//       return $result;
+//   }
+  
+
+    // old count function
+  //   // only one dependent query => execute it
+  //   if(count($this->relevant_adapter_queries) == 1) {
+  //     if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Count Strategy: One Adapter");
+
+  //     $query = current($this->relevant_adapter_queries);
+      
+  //     $count = $query->countQuery()->execute() ? : 0;
+  //     $count -= count(self::$empties);
+
+  //     return $count;
+  //   }
+
+  //   // only federatable adapters => execute the federated query
+  //   if($this->hasOnlyFederatableDependents()) {
+  //     if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Count Strategy: Federation");
+
+  //     $first_query = $this->getFederatedQuery(TRUE);
+
+  //     $count = $first_query->countQuery()->execute() ? : 0;
+  //     $count -= count(self::$empties);
+
+  //     return $count;
+  //   }
+
+  //   if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Countgi Strategy: In Memory");
+    
+
+  //   // complicated case: collect a result set and count elements in it
+  //   $result = array();
+  
+  //   foreach ($this->relevant_adapter_queries as $adapter_id => $query) {
+      
+  //     // TODO: dms adapter
+  //     if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
+  //       /*$query = $query->count();
+
+  //       $sub_res = $query->execute() ? : 0;
+
+  //       if(!empty($sub_res)) {
+  //         $result = $sub_res;
+  //         continue;
+  //       }
+  //       */
+  //     }
+
+  //     // get the result for this adapter
+  //     $sub_result = $query->execute() ? : NULL;
+  //     if(!is_array($sub_result)) {
+  //       $sub_result = array();
+  //     }
+
+  //     // merge in the results
+  //     $result = array_unique(array_merge($result, $sub_result), SORT_REGULAR); 
+  //   }
+
+  //   $count = count($result);
+  //   $count -= count(self::$empties);
+    
+  //   return $count;
+  // }
 
   /**
    * Add all parameters for a federated query to one of the query objects 
