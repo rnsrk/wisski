@@ -269,10 +269,11 @@ class QueryPlanner {
     }
 
     private function decide_single_plan(array $aast, array $adapters) {
-        dpm("test");
+       
         // now figure out which of the plans we need by counting the number of adapters.
         $count = count($adapters);
 
+        dpm($count, "count");
         // no adapters => use TYPE_EMPTY_PLAN
         if ($count == 0) {
             return array(
