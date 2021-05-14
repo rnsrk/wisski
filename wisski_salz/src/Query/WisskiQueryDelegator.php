@@ -345,94 +345,94 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     return 0;
   }
 
+  // We want to get the Sparql queries for each adapter. 
+  // Then we put them together to get the federated query.
+  // After that we send the federated query to the pivot adapter, which should return the complete result.
   private function executeSingleFederation($plan, $pager) {
-    dpm("executeNormalSinglePlan");
-    // TODO: check if only relevant adapters within plan (tom?)
+    // dpm("executeNormalSinglePlan");
+    // We get all the relevant adapters here from our plan.
     $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple($plan['adapters']);
-    /*
-    We want to get the sparql queries for each adapter. 
-    Then we put them together to get the federated query.
-    After that we send the federated query to the pivot adapter, which should return the complete result.
-    */
 
-    // get the pathbuilders for relevant bundle ids
     $pb_man = \Drupal::service('wisski_pathbuilder.manager');
     // TODO: iterate over all bundles? maybe delegate to adapter
+    // We get the pathbuilders for the relevant bundle id(s) which are then used to generate the triples for our query.
     $bundleId = $plan['ast']['annotations']['bundles'][0];
     $pbsForBundle = array_values($pb_man->getPbsUsingBundle($bundleId));
 
-    dpm($adapters, "adapters");
-    dpm($pbsForBundle, "pbsForBundles");
-
-    // additional foreach over all bundles?
-
+    // First (static) part of the Sparql query.
     $sparql = "SELECT DISTINCT * WHERE { ";
+    // We simply take (the first) one of the adapters as a pivot adapter, since they all should support federation.
     $pivotAdapter = current($adapters);
-    dpm($pivotAdapter, "pivotAdapter");
+    // Initialize strings for the actual Sparql query parts.
     $triplesForPivotAdapter = "";
     $serviceAdapterString = "";
+
+    // We only want to consider the adapters which are relevant for the bundles. 
+    // Therefore we compare the adapter ids with the bundle relevant adapter ids for the current pathbuilder.
     foreach ($adapters as $adapter) {
       foreach ($pbsForBundle as $pbArray) {
-        //$pathId from bundleid
-        //get actual pb object from pbId (Array)
+        // Get the actual pathbuilder object from its Id.
         $pb = WisskiPathbuilderEntity::load($pbArray['pb_id']);
         if ($adapter->id() === $pb->getAdapterId()) {
+          // We get the actual group object with the help of the corresponding bundle id.
+          // This is needed to gernerate triples for paths.
           $groups = $pb->getGroupsForBundle($bundleId);
-          dpm($groups, "groups");
           foreach ($groups as $group) {
             if ($adapter->id() === $pivotAdapter->id()) {
+              // We are building the part of the Sparql query for the pivot adapter. For thsi part we don't need to specify a service later. 
               $triplesForPivotAdapter = $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), 0, "und");
-              // without service
-
             } else {
+              // We are building the parts of the Sparql query for the other (federatable) adapters. 
+              // There we need to specify a service with the corrsponding triplestore endpoint URLs. 
               $serviceAdapterString .= " UNION { ";
               $triplesForServiceAdapters = $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), 0, "und");
-              //with service
               $endpointUrl = $adapter->getEngine()->getFederationServiceUrl();
-              dpm($endpointUrl, "endpointurl");
               $serviceAdapterString .= "SERVICE <" . $endpointUrl . "> { " ;
               $serviceAdapterString .= $triplesForServiceAdapters . " } } ";
             }
-            // ($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array(), $numbering = 0, $language = "und")
-            
-            // build actual sparql query from triples
-            // pivot has no service statement; but for all other pats, we need the endpoint uri here (adapter -> endpointUri) for the service
-            // this is how the query we want to build should look like
+            // Parameters for generateTriplesForPath: 
+            // $pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array(), $numbering = 0, $language = "und"
+          
+            // This is how the query we want to build should look like:
             //
             //  SELECT DISTINCT * WHERE { 
-            //   GRAPH ?g_x0 { ?x0 a <http://erlangen-crm.org/200717/E21_Person> } .
-            //  } UNION {
+            //   { GRAPH ?g_x0 { ?x0 a <http://erlangen-crm.org/200717/E21_Person> } .
+            //    } UNION {
             //    SERVICE <endpointUri> {
             //      GRAPH ?g_x0 { ?x0 a <http://erlangen-crm.org/200717/E21_Person> } .
             //    }
+            //    }
             //  }
           }
-          
         }
       }
     }
-    // as the first part of our sparql query we add the part without services
+    // As the first part of our sparql query we add the part without services.
     $sparql .= " { " . $triplesForPivotAdapter . " } ";
-    // then we add all the triples with their endpoits as service parts (?)
+    // Then we add all the triples with their endpoits as service parts (?)
     $sparql .= $serviceAdapterString . " } ";
 
-    dpm($sparql, "Spargel?");
+    // dpm($sparql, "Sparql Query");
+    
     $pivotAdapterEngine = $pivotAdapter->getEngine();
     
-    // we need to get the eids from the uris somehow 
+    // We run the Sparql query as a direct query on our pivot adapter engine. We have no query object here and only get the URIs from the triplestore as results.
     $queryResultUris = $pivotAdapterEngine->directQuery($sparql);    
-
+    // Therefore we need to get the eids from the URIs somehow to display them within the view.
     $queryResultEids = array();
     foreach ($queryResultUris as $queryResultUri) {
+      // TODO: Maybe check if x0 is always correct? Maybe dependent on the numbering parameter for generating triples?
       $queryResultEid = $pivotAdapter->getEngine()->getDrupalId($queryResultUri->x0->getUri());
       $queryResultEids[] = $queryResultEid;
     }
+    // TODO: Tom/Mark please check if the following things are okay!
     
     //dpm($queryResultEids, "query result eids");
 
-    // we get duplicate eids in the result
+    // We get duplicate eids in the result; maybe the same entities are stored within different adapters? --> for this reason we reduce the duplicate results (for paging)
     $queryResultEids = array_unique($queryResultEids);
 
+    // We do paging with array slicing here taking only the unique eids from our results. 
     if ($pager || !empty($this->range)) {
       $queryResultEids = array_slice($queryResultEids, $this->range['start'], $this->range['length']);
     }
@@ -444,7 +444,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     // TODO: This is just a simple inefficient solution; make the actual count within the sparql query for better performance
     return count($this->executeSingleFederation($plan, NULL));
   }
-
 
   private function executeNormalSinglePlan($plan, $pager) {
     dpm("executeNormalSinglePlan");
