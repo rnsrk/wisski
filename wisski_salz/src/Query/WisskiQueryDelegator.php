@@ -423,7 +423,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     dpm($sparql, "Spargel?");
     
     
-    dpm($pivotAdapter->directQuery($sparql), "query results");
+    dpm($pivotAdapter->getEngine()->directQuery($sparql), "query results");
 
   }
 
