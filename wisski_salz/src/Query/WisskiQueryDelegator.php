@@ -422,19 +422,16 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
     dpm($sparql, "Spargel?");
     
+    // we need to get the eids from the uris somehow 
     $queryResultUris = $pivotAdapter->getEngine()->directQuery($sparql);
-    $queryRequeryResultEidArray = array();
+    $queryResultEids = array();
     foreach ($queryResultUris as $queryResultUri) {
       $queryResultEid = $pivotAdapter->getEngine()->getDrupalId($queryResultUri->x0->getUri());
-      $queryRequeryResultEidArray[] = $queryResultEid;
+      $queryResultEids[] = $queryResultEid;
     }
-    dpm($queryRequeryResultEidArray, "bla");
-    
-    dpm($pivotAdapter->getEngine()->directQuery($sparql), "query results");
-
-    
-    // we need to get the eids from the uris somehow 
-
+    //dpm($queryResultEids, "bla");
+    //dpm($pivotAdapter->getEngine()->directQuery($sparql), "query results");
+    return $queryResultEids;
   }
 
   private function executeCountSingleFederation($plan) {
