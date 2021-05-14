@@ -325,6 +325,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       return $this->executeCountSinglePlan($plan);
     }     
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_FEDERATION_PLAN) {
+      
       return $this->executeCountSingleFederation($plan);
     }
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_PARTITION_PLAN) {
@@ -364,7 +365,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     dpm($pbsForBundle, "pbsForBundles");
 
     // additional foreach over all bundles?
-    //$numbering = 0;
 
     $sparql = "SELECT DISTINCT * WHERE { ";
     $pivotAdapter = current($adapters);
@@ -427,6 +427,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     }
     //dpm($queryResultEids, "bla");
     //dpm($pivotAdapter->getEngine()->directQuery($sparql), "query results");
+    dpm(count($queryResultEids), "count?");
     return $queryResultEids;
   }
 
