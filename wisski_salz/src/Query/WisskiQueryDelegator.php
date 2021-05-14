@@ -409,8 +409,9 @@ class WisskiQueryDelegator extends WisskiQueryBase {
                   GRAPH ?g_x0 { ?x0 a <http://erlangen-crm.org/200717/E21_Person> } .
                 }
               }
-            */
+            
           }
+          
         }
       }
     }
