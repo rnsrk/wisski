@@ -364,7 +364,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
     foreach ($adapters as $adapter) {
       foreach ($pbsForBundle as $pb) {
-        $triplesForPath = $adapter->generateTriplesForPath($pb, $plan['ast']['annotations']['bundles'][0]);
+        $triplesForPath = $adapter->getEngine()->generateTriplesForPath($pb, $plan['ast']['annotations']['bundles'][0]);
         dpm($triplesForPath, "triplesForpath");
       }
     }
