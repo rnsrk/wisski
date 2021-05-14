@@ -428,7 +428,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       $queryResultEids[] = $queryResultEid;
     }
     
-    dpm($queryResultEids, "query result eids");
+    //dpm($queryResultEids, "query result eids");
+
+    // we get duplicate eids in the result
+    $queryResultEids = array_unique($queryResultEids);
 
     if ($pager || !empty($this->range)) {
       $queryResultEids = array_slice($queryResultEids, $this->range['start'], $this->range['length']);
