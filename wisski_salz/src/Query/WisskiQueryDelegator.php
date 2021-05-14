@@ -349,26 +349,30 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     // TODO: check if only relevant adapters within plan (tom?)
     $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple($plan['adapters']);
     /*
-    we want to ask every adapter for its sparql parts
-    generateTriplesForPath($pb, $path) --> $path = group; 
-    we get sparql queries for each adapter
-    -> put together to a federated query
-    -> send to pivot
-    -> get result from pivot and return 
+    We want to get the sparql queries for each adapter. 
+    Then we put them together to get the federated query.
+    After that we send the federated query to the pivot adapter, which should return the complete result.
     */
-    // ask adapter for group with bundle id
+
+    // get the pathbuilders for relevant bundle ids
     $pb_man = \Drupal::service('wisski_pathbuilder.manager');
     // TODO: iterate over all bundles? maybe delegate to adapter
-    $pbsForBundle = array_values($pb_man->getPbsUsingBundle($plan['ast']['annotations']['bundles'][0]));
+    $bundleId = $plan['ast']['annotations']['bundles'][0];
+    $pbsForBundle = array_values($pb_man->getPbsUsingBundle($bundleId));
 
     dpm($adapters, "adapters");
     dpm($pbsForBundle, "pbsForBundles");
 
     // additional foreach over all bundles?
-    $numbering = 0;
+    //$numbering = 0;
+
+    $sparql = "SELECT DISTINCT * WHERE {";
+
+
+    $pivotAdapter =  $adapters[0];
+    $triplesForPivotAdapter = "";
     foreach ($adapters as $adapter) {
       foreach ($pbsForBundle as $pbArray) {
-        $bundleId = $plan['ast']['annotations']['bundles'][0];
         //$pathId from bundleid
         //get actual pb object from pbId (Array)
         $pb = WisskiPathbuilderEntity::load($pbArray['pb_id']);
@@ -376,14 +380,43 @@ class WisskiQueryDelegator extends WisskiQueryBase {
           $groups = $pb->getGroupsForBundle($bundleId);
           dpm($groups, "groups");
           foreach ($groups as $group) {
+            if ($adapter->id() === $pivotAdapter->id()) {
+              $triplesForPivotAdapter = $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), 0, "und");
+              // without service
+            } else {
+              $triplesForServiceAdapter .= $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), 0, "und");
+              //with service
+              $endpoint = $adapter->getEngine()->getEndpoint();
+              dpm($endpoint, "endpoint");
+
+              $endpointUrl = $adapter->getEngine()->getEndpoint()->read_url();
+              dpm($endpointUrl, "endpointurl");
+            }
+
             // ($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array(), $numbering = 0, $language = "und")
-            $triplesForPath = $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), $numbering, "und");
+            
             dpm($triplesForPath, "triplesForpath");
-            $numbering = $numbering + 1;
+            //$numbering = $numbering + 1;
+            // build actual sparql query from triples
+            // pivot has no service statement; but for all other pats, we need the endpoint uri here (adapter -> endpointUri) for the service
+            /*
+            SELECT DISTINCT * WHERE { 
+               GRAPH ?g_x0 { ?x0 a <http://erlangen-crm.org/200717/E21_Person> } .
+              } UNION {
+                SERVICE <endpointUri> {
+                  GRAPH ?g_x0 { ?x0 a <http://erlangen-crm.org/200717/E21_Person> } .
+                }
+              }
+
+              
+         
+            */
           }
         }
       }
     }
+
+    $sparql .= "}";
    
     
 
