@@ -345,7 +345,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   private function executeSingleFederation($plan, $pager) {
     dpm("executeNormalSinglePlan");
     // TODO: check if only relevant adapters within plan (tom?)
-    $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMuliple($plan['adapters']);
+    $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple($plan['adapters']);
     /*
     we want to ask every adapter for its sparql parts
     generateTriplesForPath($pb, $path) --> $path = group; 
