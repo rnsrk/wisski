@@ -435,8 +435,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
   private function executeCountSingleFederation($plan) {
     // TODO: This is just a simple inefficient solution; make the actual count within the sparql query for better performance
-    dpm(count($this->executeSingleFederation), "76?");
-    return count($this->executeSingleFederation);
+    dpm(count($this->executeSingleFederation($plan, NULL)), "76?");
+    return count($this->executeSingleFederation($plan, NULL));
   }
 
 
