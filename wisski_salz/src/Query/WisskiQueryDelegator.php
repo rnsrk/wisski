@@ -422,13 +422,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     // we need to get the eids from the uris somehow 
     //$queryResultUris = $pivotAdapterEngine->directQuery($sparql);
 
-    if ($pivotAdapterEngine->graph_rewrite) {
-      $query = $pivotAdapterEngine->graphInsertionRewrite($query);
-    }
     $query = $pivotAdapterEngine->rewriteValues($query);
 
     $queryResultUris = $pivotAdapterEngine->doQuery($query);
- 
+  
     
 
     $queryResultEids = array();
