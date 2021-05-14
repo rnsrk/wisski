@@ -416,9 +416,9 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       }
     }
     // as the first part of our sparql query we add the part without services
-    $sparql .= $triplesForPivotAdapter . " } ";
+    $sparql .= " { " . $triplesForPivotAdapter . " } ";
     // then we add all the triples with their endpoits as service parts (?)
-    $sparql .= $serviceAdapterString;
+    $sparql .= $serviceAdapterString . " } ";
 
     dpm($sparql, "Spargel?");
     
