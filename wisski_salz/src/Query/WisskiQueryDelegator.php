@@ -393,7 +393,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
               $endpointUrl = $adapter->getEngine()->getFederationServiceUrl();
               dpm($endpointUrl, "endpointurl");
               $serviceAdapterString .= "SERVICE <" . $endpointUrl . "> { " ;
-              $serviceAdapterString .= $triplesForServiceAdapters . " . } } ";
+              $serviceAdapterString .= $triplesForServiceAdapters . " } } ";
             }
 
             // ($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array(), $numbering = 0, $language = "und")
