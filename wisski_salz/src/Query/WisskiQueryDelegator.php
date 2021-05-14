@@ -372,7 +372,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     $pivotAdapter = current($adapters);
     dpm($pivotAdapter, "pivotAdapter");
     $triplesForPivotAdapter = "";
-      /*
     foreach ($adapters as $adapter) {
       foreach ($pbsForBundle as $pbArray) {
         //$pathId from bundleid
@@ -409,13 +408,14 @@ class WisskiQueryDelegator extends WisskiQueryBase {
                   GRAPH ?g_x0 { ?x0 a <http://erlangen-crm.org/200717/E21_Person> } .
                 }
               }
+            */
             
           }
           
         }
       }
     }
-    */
+    
     $sparql .= "}";
    
     
