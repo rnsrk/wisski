@@ -369,7 +369,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     $sparql = "SELECT DISTINCT * WHERE {";
 
 
-    $pivotAdapter = $adapters->current();
+    $pivotAdapter = current($adapters);
     dpm($pivotAdapter, "pivotAdapter");
     $triplesForPivotAdapter = "";
       /*
