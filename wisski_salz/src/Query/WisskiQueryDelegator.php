@@ -372,15 +372,16 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         //$pathId from bundleid
         //get actual pb object from pbId (Array)
         $pb = WisskiPathbuilderEntity::load($pbArray['pb_id']);
-        $groups = $pb->getGroupsForBundle($bundleId);
-        dpm($groups, "groups");
-        foreach ($groups as $group) {
-          // ($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array(), $numbering = 0, $language = "und")
-          $triplesForPath = $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), $numbering, "und");
-          dpm($triplesForPath, "triplesForpath");
-          $numbering = $numbering + 1;
+        if ($adapter->id() === $pb->getAdapterId()) {
+          $groups = $pb->getGroupsForBundle($bundleId);
+          dpm($groups, "groups");
+          foreach ($groups as $group) {
+            // ($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array(), $numbering = 0, $language = "und")
+            $triplesForPath = $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), $numbering, "und");
+            dpm($triplesForPath, "triplesForpath");
+            $numbering = $numbering + 1;
+          }
         }
-
       }
     }
    
