@@ -369,10 +369,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       foreach ($pbsForBundle as $pb) {
         $bundleId = $plan['ast']['annotations']['bundles'][0];
         //$pathId from bundleid
-        $groups = $pb->getGroupsForBundle($bundleId);
+        //$groups = $pb->getGroupsForBundle($bundleId);
         dpm($groups, "groups");
         foreach ($groups as $group) {
-          $triplesForPath = $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), 0, "und");
+          //$triplesForPath = $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), 0, "und");
           dpm($triplesForPath, "triplesForpath");
         }
 
