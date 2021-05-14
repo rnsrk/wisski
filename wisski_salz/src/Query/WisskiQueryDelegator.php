@@ -428,6 +428,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       $queryResultEids[] = $queryResultEid;
     }
     
+    dpm($queryResultEids, "query result eids");
+
     if ($pager || !empty($this->range)) {
       $queryResultEids = array_slice($queryResultEids, $this->range['start'], $this->range['length']);
     }
