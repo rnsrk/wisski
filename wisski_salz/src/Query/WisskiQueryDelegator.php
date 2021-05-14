@@ -427,15 +427,16 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       $queryResultEid = $pivotAdapter->getEngine()->getDrupalId($queryResultUri->x0->getUri());
       $queryResultEids[] = $queryResultEid;
     }
-    //dpm($queryResultEids, "bla");
-    //dpm($pivotAdapter->getEngine()->directQuery($sparql), "query results");
-    dpm(count($queryResultEids), "count?");
+    
+    if ($pager || !empty($this->range)) {
+      $queryResultEids = array_slice($queryResultEids, $this->range['start'], $this->range['length']);
+    }
+
     return $queryResultEids;
   }
 
   private function executeCountSingleFederation($plan) {
     // TODO: This is just a simple inefficient solution; make the actual count within the sparql query for better performance
-    dpm(count($this->executeSingleFederation($plan, NULL)), "76?");
     return count($this->executeSingleFederation($plan, NULL));
   }
 
