@@ -365,7 +365,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     dpm($pbsForBundle, "pbsForBundles");
 
     // additional foreach over all bundles?
-
+    $numbering = 0;
     foreach ($adapters as $adapter) {
       foreach ($pbsForBundle as $pbArray) {
         $bundleId = $plan['ast']['annotations']['bundles'][0];
@@ -374,7 +374,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         $pb = WisskiPathbuilderEntity::load($pbArray['pb_id']);
         $groups = $pb->getGroupsForBundle($bundleId);
         dpm($groups, "groups");
-        $numbering = 0;
         foreach ($groups as $group) {
           // ($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array(), $numbering = 0, $language = "und")
           $triplesForPath = $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), $numbering, "und");
