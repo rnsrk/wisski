@@ -417,9 +417,20 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     $sparql .= $serviceAdapterString . " } ";
 
     dpm($sparql, "Spargel?");
+    $pivotAdapterEngine = $pivotAdapter->getEngine()
     
     // we need to get the eids from the uris somehow 
-    $queryResultUris = $pivotAdapter->getEngine()->directQuery($sparql);
+    //$queryResultUris = $pivotAdapterEngine->directQuery($sparql);
+
+    if ($pivotAdapterEngine->graph_rewrite) {
+      $query = $pivotAdapterEngine->graphInsertionRewrite($query);
+    }
+    $query = $pivotAdapterEngine->rewriteValues($query);
+
+    $queryResultUris = $pivotAdapterEngine->doQuery($query);
+ 
+    
+
     $queryResultEids = array();
     foreach ($queryResultUris as $queryResultUri) {
       $queryResultEid = $pivotAdapter->getEngine()->getDrupalId($queryResultUri->x0->getUri());
