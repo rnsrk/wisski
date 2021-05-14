@@ -388,7 +388,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
             } else {
               $serviceAdapterString .= " UNION { ";
-              $triplesForServiceAdapters .= $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), 0, "und");
+              $triplesForServiceAdapters = $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), 0, "und");
               //with service
               $endpointUrl = $adapter->getEngine()->getFederationServiceUrl();
               dpm($endpointUrl, "endpointurl");
@@ -420,7 +420,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     // as the first part of our sparql query we add the part without services
     $sparql .= $triplesForPivotAdapter . " } ";
     // then we add all the triples with their endpoits as service parts (?)
-    $sparql .= $triplesForServiceAdapters;
+    $sparql .= $serviceAdapterString;
 
     dpm($sparql, "Spargel?");
    
