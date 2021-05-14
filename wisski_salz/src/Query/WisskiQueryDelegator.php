@@ -395,22 +395,20 @@ class WisskiQueryDelegator extends WisskiQueryBase {
               $serviceAdapterString .= "SERVICE <" . $endpointUrl . "> { " ;
               $serviceAdapterString .= $triplesForServiceAdapters . " } } ";
             }
-
             // ($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array(), $numbering = 0, $language = "und")
             
-            dpm($triplesForPath, "triplesForpath");
-            //$numbering = $numbering + 1;
             // build actual sparql query from triples
             // pivot has no service statement; but for all other pats, we need the endpoint uri here (adapter -> endpointUri) for the service
-            /*
-            SELECT DISTINCT * WHERE { 
-               GRAPH ?g_x0 { ?x0 a <http://erlangen-crm.org/200717/E21_Person> } .
-              } UNION {
-                SERVICE <endpointUri> {
-                  GRAPH ?g_x0 { ?x0 a <http://erlangen-crm.org/200717/E21_Person> } .
-                }
-              }
-            */
+            // this is how the query we want to build should look like
+            //
+            //  SELECT DISTINCT * WHERE { 
+            //   GRAPH ?g_x0 { ?x0 a <http://erlangen-crm.org/200717/E21_Person> } .
+            //  } UNION {
+            //    SERVICE <endpointUri> {
+            //      GRAPH ?g_x0 { ?x0 a <http://erlangen-crm.org/200717/E21_Person> } .
+            //    }
+            //  }
+         
             
           }
           
@@ -423,9 +421,9 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     $sparql .= $serviceAdapterString;
 
     dpm($sparql, "Spargel?");
-   
     
-
+    
+    dpm($pivotAdapter->directQuery($sparql), "query results");
 
   }
 
