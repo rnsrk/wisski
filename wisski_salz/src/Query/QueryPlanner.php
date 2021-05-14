@@ -131,8 +131,8 @@ class QueryPlanner {
 
         // if the plans are compatible, find the pivot to merge them!
         $pivot = QueryPlanner::plans_get_pivot($childPlans);
-        dpm($pivot, "pivot");
-        dpm($aast, "aast");
+        // dpm($pivot, "pivot");
+        // dpm($aast, "aast");
         if ($pivot !== NULL) {
             return $this->merge_compatible_plans($aast, $pivot, $childPlans);
         }
@@ -273,7 +273,6 @@ class QueryPlanner {
         // now figure out which of the plans we need by counting the number of adapters.
         $count = count($adapters);
 
-        dpm($count, "count");
         // no adapters => use TYPE_EMPTY_PLAN
         if ($count == 0) {
             return array(
@@ -292,7 +291,7 @@ class QueryPlanner {
         }
 
         $all_are_federatable = $aast['annotations']['federatable'];
-        dpm($all_are_federatable, "federatable?");
+        // dpm($all_are_federatable, "federatable?");
         // all adapters are federatable => use a TYPE_SINGLE_FEDERATION_PLAN
         if ($all_are_federatable) {
             return array(

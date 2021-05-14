@@ -325,7 +325,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       return $this->executeCountSinglePlan($plan);
     }     
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_FEDERATION_PLAN) {
-      dpm("counting?");
       return $this->executeCountSingleFederation($plan);
     }
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_PARTITION_PLAN) {
