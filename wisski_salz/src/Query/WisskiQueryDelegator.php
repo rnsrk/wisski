@@ -9,6 +9,7 @@ use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\wisski_salz\AdapterHelper;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
 
 use Drupal\Core\Config\Entity\Query\Condition as ConditionParent;
 
@@ -366,13 +367,15 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     // additional foreach over all bundles?
 
     foreach ($adapters as $adapter) {
-      foreach ($pbsForBundle as $pb) {
+      foreach ($pbsForBundle as $pbArray) {
         $bundleId = $plan['ast']['annotations']['bundles'][0];
         //$pathId from bundleid
-        //$groups = $pb->getGroupsForBundle($bundleId);
+        //get actual pb object from pbId (Array)
+        $pb = WisskiPathbuilderEntity::load($pbArray['pb_id']);
+        $groups = $pb->getGroupsForBundle($bundleId);
         dpm($groups, "groups");
         foreach ($groups as $group) {
-          //$triplesForPath = $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), 0, "und");
+          $triplesForPath = $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), 0, "und");
           dpm($triplesForPath, "triplesForpath");
         }
 
