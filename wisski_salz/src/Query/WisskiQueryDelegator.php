@@ -323,7 +323,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       return $this->executeCountSinglePlan($plan);
     }     
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_FEDERATION_PLAN) {
-      // TODO return $this->executeCountSingleFederation($plan);
+      return $this->executeCountSingleFederation($plan);
     }
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_PARTITION_PLAN) {
       return $this->executeCountSinglePartitionPlan($plan);
@@ -343,7 +343,23 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   }
 
   private function executeSingleFederation($plan, $pager) {
-    // TODO
+    dpm("executeNormalSinglePlan");
+    // TODO: check if only relevant adapters within plan (tom?)
+    $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->load($plan['adapters']);
+    /*
+    we want to ask every adapter for its sparql parts
+    generateTriplesForPath($pb, $path) --> $path = group; 
+    we get sparql queries for each adapter
+    -> put together to a federated query
+    -> send to pivot
+    -> get result from pivot and return 
+    */
+    // ask adapter for group with bundle id
+    $pb_man = \Drupal::service('wisski_pathbuilder.manager');
+    $pbsForBundle = array_values($pb_man->getPbsUsingBundle($plan['ast']['annotations']['bundles'][0]));
+    dpm($pbsForBundle, "ps for bundle");
+
+
   }
 
   private function executeCountSingleFederation($plan) {
