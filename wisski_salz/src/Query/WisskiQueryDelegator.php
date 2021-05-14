@@ -356,8 +356,13 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     */
     // ask adapter for group with bundle id
     $pb_man = \Drupal::service('wisski_pathbuilder.manager');
+    // TODO: iterate over all bundles? maybe delegate to adapter
     $pbsForBundle = array_values($pb_man->getPbsUsingBundle($plan['ast']['annotations']['bundles'][0]));
-    dpm($pbsForBundle, "ps for bundle");
+    foreach ($pbsForBundle as $pb) {
+      $triplesForPath = generateTriplesForPath($pb, $plan['ast']['annotations']['bundles'][0]);
+      dpm($triplesForPath, "triplesForpath");
+    }
+    
 
 
   }
