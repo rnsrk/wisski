@@ -387,10 +387,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
             } else {
               $triplesForServiceAdapter .= $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), 0, "und");
               //with service
-              $endpoint = $adapter->getEngine()->getEndpoint();
-              dpm($endpoint, "endpoint");
-
-              $endpointUrl = $adapter->getEngine()->getEndpoint()->read_url();
+              $endpointUrl = $adapter->getEngine()->getFederationServiceUrl();
               dpm($endpointUrl, "endpointurl");
             }
 
