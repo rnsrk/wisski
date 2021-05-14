@@ -269,6 +269,7 @@ class QueryPlanner {
     }
 
     private function decide_single_plan(array $aast, array $adapters) {
+        dpm("test");
         // now figure out which of the plans we need by counting the number of adapters.
         $count = count($adapters);
 
