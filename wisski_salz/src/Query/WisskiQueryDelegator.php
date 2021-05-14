@@ -370,6 +370,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         $pathId = $plan['ast']['annotations']['bundles'][0];
         // get actual path for pathId
         $path = WisskiPathEntity::load($pathId);
+        dpm($path, "path");
         $triplesForPath = $adapter->getEngine()->generateTriplesForPath($pb, $path, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), 0, "und");
         dpm($triplesForPath, "triplesForpath");
       }
