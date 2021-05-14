@@ -291,7 +291,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       return $this->executeNormalSinglePlan($plan, $pager);
     }     
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_FEDERATION_PLAN) {
-
+      return $this->executeSingleFederation($plan, $pager);
     }
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_PARTITION_PLAN) {
       return $this->executeSinglePartitionPlan($plan, $pager);
@@ -323,6 +323,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       return $this->executeCountSinglePlan($plan);
     }     
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_FEDERATION_PLAN) {
+      // TODO return $this->executeCountSingleFederation($plan);
     }
     else if($plan['type'] === QueryPlanner::TYPE_SINGLE_PARTITION_PLAN) {
       return $this->executeCountSinglePartitionPlan($plan);
@@ -339,6 +340,14 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
     \Drupal::messenger()->addWarning("Not implemented. ");
     return 0;
+  }
+
+  private function executeSingleFederation($plan, $pager) {
+    // TODO
+  }
+
+  private function executeCountSingleFederation($plan) {
+    // TODO
   }
 
 
