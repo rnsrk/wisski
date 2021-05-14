@@ -367,8 +367,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     //$numbering = 0;
 
     $sparql = "SELECT DISTINCT * WHERE { ";
-
-
     $pivotAdapter = current($adapters);
     dpm($pivotAdapter, "pivotAdapter");
     $triplesForPivotAdapter = "";
@@ -408,8 +406,6 @@ class WisskiQueryDelegator extends WisskiQueryBase {
             //      GRAPH ?g_x0 { ?x0 a <http://erlangen-crm.org/200717/E21_Person> } .
             //    }
             //  }
-         
-            
           }
           
         }
@@ -435,7 +431,8 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   }
 
   private function executeCountSingleFederation($plan) {
-    // TODO
+    // TODO: This is just a simple inefficient solution; make the actual count within the sparql query for better performance
+    return count($this->executeSingleFederation);
   }
 
 
