@@ -366,12 +366,13 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     // additional foreach over all bundles?
     //$numbering = 0;
 
-    $sparql = "SELECT DISTINCT * WHERE {";
+    $sparql = "SELECT DISTINCT * WHERE { ";
 
 
     $pivotAdapter = current($adapters);
     dpm($pivotAdapter, "pivotAdapter");
     $triplesForPivotAdapter = "";
+    $serviceAdapterString = "";
     foreach ($adapters as $adapter) {
       foreach ($pbsForBundle as $pbArray) {
         //$pathId from bundleid
@@ -384,11 +385,15 @@ class WisskiQueryDelegator extends WisskiQueryBase {
             if ($adapter->id() === $pivotAdapter->id()) {
               $triplesForPivotAdapter = $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), 0, "und");
               // without service
+
             } else {
-              $triplesForServiceAdapter .= $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), 0, "und");
+              $serviceAdapterString .= " UNION { ";
+              $triplesForServiceAdapters .= $adapter->getEngine()->generateTriplesForPath($pb, $group, "", NULL, NULL, 0, 0, FALSE, '=', 'group', TRUE, array(), 0, "und");
               //with service
               $endpointUrl = $adapter->getEngine()->getFederationServiceUrl();
               dpm($endpointUrl, "endpointurl");
+              $serviceAdapterString .= "SERVICE <" $endpointUrl . "> { " ;
+              $serviceAdapterString .= $triplesForServiceAdapters . " . } } ";
             }
 
             // ($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array(), $numbering = 0, $language = "und")
@@ -412,8 +417,12 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         }
       }
     }
-    
-    $sparql .= "}";
+    // as the first part of our sparql query we add the part without services
+    $sparql .= $triplesForPivotAdapter . " } ";
+    // then we add all the triples with their endpoits as service parts (?)
+    $sparql .= $triplesForServiceAdapters;
+
+    dpm($sparql, "Spargel?");
    
     
 
