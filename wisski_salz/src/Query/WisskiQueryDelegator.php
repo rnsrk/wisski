@@ -368,6 +368,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     foreach ($adapters as $adapter) {
       foreach ($pbsForBundle as $pb) {
         $pathId = $plan['ast']['annotations']['bundles'][0];
+        dpm($pathId, "pathId");
         // get actual path for pathId
         $path = WisskiPathEntity::load($pathId);
         dpm($path, "path");
