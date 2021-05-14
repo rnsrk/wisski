@@ -290,7 +290,7 @@ class QueryPlanner {
         }
 
         $all_are_federatable = $aast['annotations']['federatable'];
-
+        dpm($all_are_federatable, "federatable?");
         // all adapters are federatable => use a TYPE_SINGLE_FEDERATION_PLAN
         if ($all_are_federatable) {
             return array(
