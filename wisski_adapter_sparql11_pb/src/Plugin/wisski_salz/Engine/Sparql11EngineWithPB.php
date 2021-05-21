@@ -21,6 +21,7 @@ use Drupal\wisski_salz\AdapterHelper;
 use Drupal\wisski_core\Entity\WisskiEntity;
 
 use Drupal\wisski_adapter_sparql11_pb\Query\Query;
+use EasyRdf\Format as EasyRdf_Format;
 use \EasyRdf;
 
 /**
