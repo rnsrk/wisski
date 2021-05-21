@@ -392,5 +392,13 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
    * {@inheritdoc}
    */
   public abstract function generateFreshIndividualUri();
+
+  /**
+   * {@inheritdoc}
+   */
+  public function checkFunctionality() {
+    \Drupal::messenger()->addStatus("There is no sanity check for this adapter yet - We can't check it for functionality.");
+  }
+
   
 }

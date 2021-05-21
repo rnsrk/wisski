@@ -315,4 +315,11 @@ class Adapter extends ConfigEntityBase implements AdapterInterface {
     return $this->getEngine()->isWritable();
   }
   
+  /**
+   * Checks if the adapter is able to connect and that the settings are right etc.
+   */
+  public function checkFunctionality() {
+    return $this->getEngine()->checkFunctionality();
+  }
+  
 }

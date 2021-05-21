@@ -198,4 +198,11 @@ interface EngineInterface extends PluginInspectionInterface, ConfigurableInterfa
    * @return TRUE if yes, FALSE otherwise
    */
   public function isValidUri($uri);
+
+  /**
+   * Checks if the engine can connect to the data backend correctly
+   * Checks the settings etc.
+   */
+  public function checkFunctionality();
+
 }
