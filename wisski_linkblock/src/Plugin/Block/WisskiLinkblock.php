@@ -141,6 +141,7 @@ class WisskiLinkblock extends BlockBase {
       return $out;
     }
     
+    $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
     
     // load all pbs only in multimode
     if($multimode)
@@ -208,8 +209,6 @@ class WisskiLinkblock extends BlockBase {
               // get the data for this specific thing
               $tmpdata = $engine->pathToReturnValue($path, $pb, $individualid, 0, 'target_id', FALSE);
 #              drupal_set_message("path: " . serialize($path));
-
-#              dpm($tmpdata, "tmp");
               if(!empty($tmpdata)) {
                 $dataout[$path->id()]['path'] = $path;
 
@@ -218,8 +217,22 @@ class WisskiLinkblock extends BlockBase {
                 if(!isset($dataout[$path->id()]['data']))
                   $dataout[$path->id()]['data'] = array();
 
-                $dataout[$path->id()]['data'] = array_merge($dataout[$path->id()]['data'], $tmpdata);
-              }
+                // This part makes the linkblock language sensitive
+                // We store the correct value in $detectedEntry if an adequate translation/language id for this entity exists
+                // In case no translation for the requested language exists, $detectedEntry is empty and we take the first
+                // translation we found for this entry, what should be normally the original language in which the entry was created
+                $detectedEntry = array();
+                foreach ($tmpdata as $tmp_id => $tmp) {
+                  if($tmp['wisski_language'] == $language){
+                    $detectedEntry = array($tmp);
+                    break;
+                  }
+                }
+                if(empty($detectedEntry)){
+                  $detectedEntry = array(current($tmpdata));
+                }
+                $dataout[$path->id()]['data'] = array_merge($dataout[$path->id()]['data'], $detectedEntry);
+             }
             }
 
           }
