@@ -153,14 +153,14 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #    }
 
 #    dpm($fetchUrl, "fu?");
-    $graph = new EasyRdf_Graph($fetchUrl, $data, 'turtle');
+    $graph = new \EasyRdf_Graph($fetchUrl, $data, 'turtle');
 #    dpm($graph, "graph?");    
     if ($graph->countTriples() == 0) {
       return FALSE;
     }
 
     foreach ($this->rdfNamespaces as $prefix => $ns) {
-      EasyRdf_Namespace::set($prefix, $ns);
+      \EasyRdf_Namespace::set($prefix, $ns);
     }
 
     $data = array();
@@ -236,7 +236,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
  
                 
                 $data[$concept][$propChain][] = $value;
-              } else if ($thing instanceof EasyRdf_Literal) {
+              } else if ($thing instanceof \EasyRdf_Literal) {
                 $data[$concept][$propChain][] = $thing->getValue();
 //              } else {
 //                $data[$field][] = $thing->getUri();
