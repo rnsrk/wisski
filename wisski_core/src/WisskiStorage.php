@@ -519,8 +519,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                 if(gettype($field_lang) != gettype($orig_lang)){
 #                  dpm("Warning: gettype(field_lang) != gettype(orig_lang)");
                 }
-		dpm(serialize($field_lang));
-		dpm(serialize($orig_lang));
+		#dpm(serialize($field_lang));
+		#dpm(serialize($orig_lang));
 		if($field_lang == $orig_lang) {
                   $test[$key][LanguageInterface::LANGCODE_DEFAULT] = $field_vals;
                   $test[$key][$orig_lang] = $field_vals;
