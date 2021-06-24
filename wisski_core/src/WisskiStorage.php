@@ -201,7 +201,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             }
           }
                     
-          $clanguage = $cached_field_value->lang;
+          $clanguage = trim($cached_field_value->lang);
 #          dpm($values[$id][$field_id], "i am here!");
 #          dpm($field_id, "field id is");
 #          dpm($clanguage, "clang");
@@ -459,7 +459,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
               
               // if this is translatable
               if($base_field_def->isTranslatable()) {
-                
+#		      dpm($val, "val?");
+#      dpm($available_languages, "langs?");		      
                 // then we go and look for the first key
                 if(is_array($val)){
                   foreach($val as $pot_lang => $some_field_values) {
@@ -476,7 +477,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                     }
                   }
                 }
- #               dpm($test);
+                #dpm($test);
     
                 // if we have found something, we can savely continue.               
                 if(isset($test[$key][LanguageInterface::LANGCODE_DEFAULT]))
@@ -518,7 +519,9 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                 if(gettype($field_lang) != gettype($orig_lang)){
 #                  dpm("Warning: gettype(field_lang) != gettype(orig_lang)");
                 }
-                if($field_lang == $orig_lang) {
+		dpm(serialize($field_lang));
+		dpm(serialize($orig_lang));
+		if($field_lang == $orig_lang) {
                   $test[$key][LanguageInterface::LANGCODE_DEFAULT] = $field_vals;
                   $test[$key][$orig_lang] = $field_vals;
                 } else {
@@ -527,7 +530,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                 }
               }
             }
-            
+           #dpm($test, "test22?"); 
             
             // else we just take it as it is.
 //            if(!empty(array_intersect(array_keys($val), $set_languages))) {
