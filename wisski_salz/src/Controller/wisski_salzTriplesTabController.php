@@ -56,6 +56,7 @@ class wisski_salzTriplesTabController extends ControllerBase {
       '#caption' => $this->t('Out-going triples'),
       '#header' => array('Subject', 'Predicate', 'Object', 'Graph', 'Adapter'),
     );
+    #return $form;
 
     // keep track if some adapter supported triples
     $any_had_triples = false;
@@ -105,8 +106,8 @@ class wisski_salzTriplesTabController extends ControllerBase {
           $subjecturi = Url::fromRoute('wisski_salz.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $target_uri ) );
 
           $predicateuri = Url::fromRoute('wisski_salz.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->po->getUri() ) );
-          
-          if($result->o instanceof \EasyRdf_Resource) {
+#         dpm("??"); 
+          if($result->o instanceof \EasyRdf_Resource or get_class($result->o) == "EasyRdf\Resource") {
             try {
             
               $existing_bundles = $e->getBundleIdsForUri($result->o->getUri());
