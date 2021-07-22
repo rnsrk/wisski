@@ -324,6 +324,10 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             if($key == "label" || $key == "title")
               continue;
 
+            // if we dont have anything, continue.
+            if(!isset($field_defs[$key]))
+              continue;
+
             // by MyF: If we consider a field that is an entity reference we want to skip the language since eitherwise the following occurs:
             // Entity Frosch has two fields: Name: Froeschli, Entity Ref: Teich (both in DE)
             // Now we translate only the Teich to its english version: Pond
@@ -501,6 +505,11 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             // translatable fields)
             if(is_array($val)){
 
+
+              // if we dont have anything, continue.
+              if(!isset($field_defs[$key]))
+                continue;
+                
  #             dpm($val, "val!");
               $field_def = $field_defs[$key];
               if ($field_def->getType() === 'entity_reference') {
