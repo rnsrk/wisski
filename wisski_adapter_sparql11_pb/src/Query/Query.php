@@ -13,29 +13,29 @@ use Drupal\wisski_salz\Query\ConditionAggregate;
 use Drupal\wisski_salz\Query\WisskiQueryBase;
 
 class Query extends WisskiQueryBase {
-  
+
   /**
    * Holds the pathbuilders that this query object is responsible for.
-   * This variable should not be accessed directly, use $this->getPbs() 
+   * This variable should not be accessed directly, use $this->getPbs()
    * instead.
    */
   private $pathbuilders = NULL;
-  
+
   /**
    * Add a variable for dependent query parts
    */
   private $dependent_parts = array();
-  
+
   /**
    * A counter used for naming variables in multi-path sparql queries
    *
    * @var integer
    */
   protected $varCounter = 0;
-  
+
   /**
    * A string of vars to order by in this query
-   * 
+   *
    * @var array
    */
   protected $orderby = "";
@@ -45,23 +45,23 @@ class Query extends WisskiQueryBase {
   }
 
   /**
-   * A function to add dependent parts 
+   * A function to add dependent parts
    * typically a SERVICE-string like:
    * SERVICE <http...serviceurl> { ?s ?p ?o }
    * hopefully it uses the correct variables....
-   */ 
+   */
   public function addDependentParts($parts) {
     $this->dependent_parts[] = $parts;
   }
-  
+
   /**
-   * A function to set dependent parts 
+   * A function to set dependent parts
    * via an array
-   */ 
+   */
   public function setDependentParts($parts) {
     $this->dependent_parts = $parts;
   }
-  
+
   /**
    * Get an array of query parts to build up the dependent queries.
    * currently it contains:
@@ -72,17 +72,17 @@ class Query extends WisskiQueryBase {
   public function getQueryParts() {
     // TODO: Iterate over the tree in this::Groups
     list($where_clause, $entity_ids) = $this->makeQueryConditions($this->condition);
-        
+
     return array("where" => $where_clause, "eids" => $entity_ids, "order" => $this->orderby);
   }
-  
+
   /**
    * {@inheritdoc}
    */
   public function execute() {
 #    $micro = microtime(TRUE);
 #    dpm("yay!");
-#    dpm($this);    
+#    dpm($this);
     // NOTE: this is not thread-safe... shouldn't bother!
     $this->varCounter = 0;
 
@@ -115,7 +115,7 @@ class Query extends WisskiQueryBase {
 #          dpm($field, "this is an object, but it should be a string");
           foreach($field->conditions() as $keynew => $condnew) {
 
-            $key = $keynew; 
+            $key = $keynew;
             $cond = $condnew;
 
             $field = $cond['field'];
@@ -149,30 +149,30 @@ class Query extends WisskiQueryBase {
           }
           $pbid = $pb_and_path[0];
 
-          // if the id is a pathbuilder id, it is a pathquery - so handle it accordingly!        
+          // if the id is a pathbuilder id, it is a pathquery - so handle it accordingly!
           if(in_array($pbid, $pbids) !== FALSE) {
             $pathkey = $key;
           }
-        }   
+        }
       }
 
 
       #dpm($cond, "cond?");
-      #if(strpos($field, '.')    
+      #if(strpos($field, '.')
     }
 
     #dpm($bundlekey, "bk? " . $pathkey);
-    
+
     // if we now have a bundlekey and a pathkey, we can omit the bundle-part probably
     if($bundlekey > -1 && $pathkey > -1) {
       $conditions = &$this->condition->conditions();
-      
+
       #dpm("I unset" . $bundlekey);
-      
+
       unset($conditions[$bundlekey]);
     }
-    
-    
+
+
     // compile the condition clauses into
     // sparql graph patterns and
     // a list of entity ids that the pattern should be restricted to
@@ -181,8 +181,8 @@ class Query extends WisskiQueryBase {
 
 #    dpm($this->orderby, "order?");
 
-#    dpm($where_clause, "where clause in adapter query");
-#    dpm($entity_ids, "eids");
+    //dpm($where_clause, "where clause in adapter query");
+    //dpm($entity_ids, "eids in list");
 #    dpm($this->dependent_parts, "dep");
     // if we have dependent parts, we always want to go to buildAndExecute...
 
@@ -219,7 +219,7 @@ class Query extends WisskiQueryBase {
 #      dpm($entity_ids_too, "too");
 #      dpm($entity_ids, "too2");
       // combine the resulting entities with the ones already found.
-      // we have to OR them: an AND conjunction would have been resolved in 
+      // we have to OR them: an AND conjunction would have been resolved in
       // makeQueryConditions().
       // @TODO: Check AND! This might be wrong again (by Mark)
       $entity_ids = $this->join('OR', $entity_ids, $entity_ids_too);
@@ -234,13 +234,13 @@ class Query extends WisskiQueryBase {
 
     #\Drupal::logger('query adapter ' . $this->getEngine()->adapterId())->debug('query result is {result}', array('result' => serialize($return)));
 #wisski_tick("end query with num ents:" . (is_int($return) ? $return : count($return)));
-#    dpm($return, "what");    
+#    dpm($return, "what");
 #    dpm(microtime(TRUE) - $micro, "took: ");
     return $return;
 
   }
 
-  
+
   public function getPager() {
     $limit = $offset = NULL;
     if (!empty($this->pager) || !empty($this->range)) {
@@ -250,13 +250,13 @@ class Query extends WisskiQueryBase {
     return array($limit, $offset);
   }
 
-  
+
   /** Gets all the pathbuilders that this query is responsible for.
    *
    * @return an array of pathbuilder objects keyed by their ID
    */
   protected function getPbs() {
-    
+
     // As the pbs won't change during query execution, we cache them
     if ($this->pathbuilders === NULL) {
       $aid = $this->getEngine()->adapterId();
@@ -267,9 +267,9 @@ class Query extends WisskiQueryBase {
     return $this->pathbuilders;
 
   }
-    
-  
-  /** Descends the conjunction field until it finds an AND/OR string 
+
+
+  /** Descends the conjunction field until it finds an AND/OR string
    * If none is found, returns the $default.
    *
    * We need this function as the conditions' conjunction field may itself
@@ -289,7 +289,7 @@ class Query extends WisskiQueryBase {
     return $default;
   }
 
-  
+
   /** helper function to join two arrays of entity id => uri pairs according
    * to the query conjunction
    */
@@ -309,14 +309,14 @@ class Query extends WisskiQueryBase {
       // This seems to be wrong because it does renumbering
       // but the key is an eid here -> renumbering is evil!
       //return array_merge($array1, $array2);
-      
+
       return $array1 + $array2;
-      
+
     }
 
   }
 
-  
+
   /** recursively go through $condition tree and match entities against it.
    */
   protected function makeQueryConditions(ConditionInterface $condition) {
@@ -333,24 +333,23 @@ class Query extends WisskiQueryBase {
 
     // get the conjunction (AND/OR)
     $conjunction = $this->getConjunction($condition);
-    
+
     // here we collect entity ids
     $entity_ids = NULL;
     // ... and query parts
     $query_parts = array();
-    
+
     $sort_query_parts = "";
-    
+
     // fetch the bundle in advance e.g. for title generation
-    $needs_a_bundle = NULL;    
+    $needs_a_bundle = NULL;
     $is_a_pathquery = FALSE;
     $contributes_to_pathquery = FALSE;
 #    dpm($condition, "cond");
     foreach($condition->conditions() as $ij => $cond) {
-      //dpm($cond, "cond-iter");
       $field = $cond['field'];
       $value = $cond['value'];
-      
+
       if ($field instanceof ConditionInterface) {
         // we don't handle this here!
         continue;
@@ -361,13 +360,13 @@ class Query extends WisskiQueryBase {
       if ($field == "bundle") {
         $needs_a_bundle = current((array) $value);
       }
-      
+
 #      dpm($this->isPathQuery(), "ispathquery?");
 #      dpm($condition, "cond?");
-      
+
       if ($this->isPathQuery() && strpos($field, '.') !== FALSE) {
         $is_a_pathquery = TRUE;
-	$pb_and_path = explode(".", $field);
+	      $pb_and_path = explode(".", $field);
 #     dpm($pb_and_path, "pb_and_path");
         if (count($pb_and_path) != 2) {
           // bad encoding! can't handle
@@ -386,7 +385,7 @@ class Query extends WisskiQueryBase {
         }
       }
     }
-    
+
 #    dpm(serialize($this->isPathQuery()) . " and " . serialize($contributes_to_pathquery));
     // if this is a pathquery and it does not contribute - we stop here.
     if($is_a_pathquery && !$contributes_to_pathquery) {
@@ -406,54 +405,49 @@ class Query extends WisskiQueryBase {
       // (holds for ANDs).
 
       foreach ($condition->conditions() as $ij => $cond) {
-        
+
         $field = $cond['field'];
         $value = $cond['value'];
         $operator = $cond['operator'];
         // just to be sure!
         $operator = strtoupper($operator);
 #wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition" : "now for '".join(";",(array)$value)."' in field '$field'");
-#\Drupal::logger('query path cond')->debug("$ij::$field::$value::$operator::$conjunction");     
+#\Drupal::logger('query path cond')->debug("$ij::$field::$value::$operator::$conjunction");
 
         // we dispatch over the field
-
         if ($field instanceof ConditionInterface) {
           // this is a nested condition so we have to recurse
-          
           list($qp, $eids) = $this->makeQueryConditions($field);
           $entity_ids = $this->join($conjunction, $entity_ids, $eids);
           if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
-            // the condition evaluated to an empty set of entities 
+            // the condition evaluated to an empty set of entities
             // and we have to AND; so the result set will be empty.
-            // The rest of the conditions can be skipped 
+            // The rest of the conditions can be skipped
             return array('', array());
           }
           $query_parts[] = $qp;
 
         }
         elseif ($field == "eid") {
-          // directly ask Drupal's entity id.
 
+          // directly ask Drupal's entity id.
           $eids = $this->executeEntityIdCondition($operator, $value);
           $entity_ids = $this->join($conjunction, $entity_ids, $eids);
           if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
-            // the condition evaluated to an empty set of entities 
+            // the condition evaluated to an empty set of entities
             // and we have to AND; so the result set will be empty.
-            // The rest of the conditions can be skipped 
+            // The rest of the conditions can be skipped
             return array('', array());
           }
-
         }
         elseif ($field == "bundle") {
           // the bundle is being mapped to pb groups
-
           $query_parts[] = $this->makeBundleCondition($operator, $value);
-      
         }
         elseif($field == "langcode") {
-          
+
           $eids = $this->executeLangcodeCondition($operator, $value, $needs_a_bundle);
-          
+
           $entity_ids = $this->join($conjunction, $entity_ids, $eids);
           if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
             return array('', array());
@@ -464,7 +458,7 @@ class Query extends WisskiQueryBase {
           // in $needs_a_bundle there is the bundle if there is something like that
 
           $eids = $this->executeStatusCondition($operator, $value, $needs_a_bundle);
-          
+
           $entity_ids = $this->join($conjunction, $entity_ids, $eids);
           if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
             return array('', array());
@@ -482,9 +476,9 @@ class Query extends WisskiQueryBase {
           $entity_ids = $this->join($conjunction, $entity_ids, $eids);
 #          dpm($entity_ids, "ids?");
           if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
-            // the condition evaluated to an empty set of entities 
+            // the condition evaluated to an empty set of entities
             // and we have to AND; so the result set will be empty.
-            // The rest of the conditions can be skipped 
+            // The rest of the conditions can be skipped
             return array('', array());
           }
 
@@ -493,23 +487,23 @@ class Query extends WisskiQueryBase {
 #          dpm("does not work!");
           // these fields are not supported on purpose
           //$this->missingImplMsg("Field '$field' intentionally not queryable in entity query", array('condition' => $condition));
-        } 
+        }
         // for the rest of the fields we need to distinguish between field and path
-        // query mode 
+        // query mode
         //
         // TODO: we should not need to distinguish between both modes as we can
         // tell them apart by the dot. This would make query more flexible and
         // allow for queries that contain both path and field conditions.
         elseif ($this->isPathQuery() || strpos($field, '.') !== FALSE) {
           // the field is actually a path so we can query it directly
-    
+
           // the search field id encodes the pathbuilder id and the path id:
           // decode them!
           // TODO: we could omit the pb and search all pbs the contain the path
           $pb_and_path = explode(".", $field);
           if (count($pb_and_path) != 2) {
             // bad encoding! can't handle
-            \Drupal::messenger()->addStatus($this->t('Bad pathbuilder and path id "%id" in entity query condition', ['%id' => $field]));
+            \Drupal::messenger()->addStatus(('Bad pathbuilder and path id "%id" in entity query condition'));
             continue; // with next condition
           }
           $pbid = $pb_and_path[0];
@@ -537,12 +531,12 @@ class Query extends WisskiQueryBase {
 #          dpm($value, "val");
           if (is_null($new_query_part)) {
             if ($conjunction == 'AND') {
-              // the condition would definitely evaluate to an empty set of 
+              // the condition would definitely evaluate to an empty set of
               // entities and we have to AND; so the result set will be empty.
-              // The rest of the conditions can be skipped 
+              // The rest of the conditions can be skipped
               return array('', array());
             }
-            // else: we are in OR mode so we can just skip the condition that 
+            // else: we are in OR mode so we can just skip the condition that
             // would evaluate to an empty set
           }
           else {
@@ -550,19 +544,19 @@ class Query extends WisskiQueryBase {
               $query_parts[] = $new_query_part;
           }
 
-        } 
+        }
         else {
           // the field must be mapped to one or many paths which are then queried
-          
+
           $new_query_part = $this->makeFieldCondition($field, $operator, $value);
           if (is_null($new_query_part)) {
             if ($conjunction == 'AND') {
-              // the condition would definitely evaluate to an empty set of 
+              // the condition would definitely evaluate to an empty set of
               // entities and we have to AND; so the result set will be empty.
-              // The rest of the conditions can be skipped 
+              // The rest of the conditions can be skipped
               return array('', array());
             }
-            // else: we are in OR mode so we can just skip the condition that 
+            // else: we are in OR mode so we can just skip the condition that
             // would evaluate to an empty set
           }
           else {
@@ -572,7 +566,7 @@ class Query extends WisskiQueryBase {
         }
       }
     }
-    
+
     // if we have a query part that is NULL, this means that the field is not
     // supported by this adapter. If we are in AND mode, this means that the
     // whole condition is not satisfiable and we return the empty set.
@@ -580,6 +574,7 @@ class Query extends WisskiQueryBase {
     foreach ($query_parts as $i => $part) {
       if ($part === NULL) {
         if ($conjunction == 'AND') {
+          //dpm($entity_ids, "return if part is null");
           return array('', array());
         }
         else {  // OR
@@ -603,18 +598,20 @@ class Query extends WisskiQueryBase {
     else {
       // OR
       $query_parts = ' {{ ' . join(' } UNION { ', $query_parts) . ' }} ';
-    }  
-    
+    }
+
 #    dpm($query_parts, "qpout");
 
-    // this means we had an empty condition... why should we query without a condition?!    
-    if(empty($query_parts))
-      return "";
+    // this means we had an empty condition... why should we query without a condition?!
+    if(empty($query_parts)){
+      return array('', $entity_ids);
+      //return "";
+    }
       //$query_parts = " GRAPH ?somethingsb0rg { ?x0 ?this_should ?not_happen } ";
-    
+
     // handle sorting
     $sort_params = "";
-    
+
     foreach($this->sort as $sortkey => $elem) {
 #      dpm($elem, "sort");
 #      if($elem['field'] == "title") {
@@ -624,7 +621,7 @@ class Query extends WisskiQueryBase {
       $field = $elem['field'];
 
       if (strpos($field, "wisski_path_") === 0 && strpos($field, "__") !== FALSE) {
-        
+
         $pb_and_path = explode("__", substr($field, 12), 2);
         if (count($pb_and_path) != 2) {
           \Drupal::messenger()->addError("Bad field id for Wisski views: $field");
@@ -653,7 +650,7 @@ class Query extends WisskiQueryBase {
             }
             $vars['out'] = "c${i}_out";
 
-            $sort_part = $this->getEngine()->generateTriplesForPath($pb, $path, "", NULL, NULL, 0, $starting_position, FALSE, '=', 'field', FALSE, $vars);            
+            $sort_part = $this->getEngine()->generateTriplesForPath($pb, $path, "", NULL, NULL, 0, $starting_position, FALSE, '=', 'field', FALSE, $vars);
 
             $sort = " OPTIONAL { " . $sort_part . " } ";
 
@@ -671,14 +668,14 @@ class Query extends WisskiQueryBase {
             $this->orderby = $this->orderby . $sort_params;
 
 #            dpm($query_parts);
-#            $query_parts 
+#            $query_parts
           }
         }
       } else {
         if($field == "rand") {
           $this->orderby = $this->orderby . ' RAND() ';
         }
-        
+
         if($field == "eid") {
           global $base_url;
           $my_url = $base_url . "/wisski/navigate/";
@@ -687,14 +684,12 @@ class Query extends WisskiQueryBase {
 #          dpm($eid_sort, "yay!");
           $query_parts = $query_parts . $eid_sort;
           $this->orderby = $this->orderby . $sort_params;
-                    
+
         }
       }
-    } 
-    
-#   dpm($query_parts);
-#  dpm($entity_ids);   
-    // 
+    }
+
+    //
     if ($entity_ids === NULL) {
       return array($query_parts, $entity_ids);
     }
@@ -717,7 +712,7 @@ class Query extends WisskiQueryBase {
         // we can't do a query on a single store here... it will not have all results!
         //$entity_ids = $this->buildAndExecSparql($query_parts, $entity_ids);
         //return array('', $entity_ids);
-        
+
         // do it if we have a single store system.
         if(empty($this->dependent_parts)) {
           // By Mark: We need the sorting parameter here, as it will delivery wrong results otherwise.
@@ -729,7 +724,7 @@ class Query extends WisskiQueryBase {
           // uses order by, the query should use this, too.
           // so we should at least give back the order by part of the query!
           //return array('', $entity_ids);
-          
+
 #          dpm($sort_query_parts, "sort query parts!");
           // this is a guess! If there is no query that may follow up, we can safely skip the order by part.
           if(count($this->dependent_parts) == 0)
@@ -748,17 +743,17 @@ class Query extends WisskiQueryBase {
         // we just can pass both on
         return array($query_parts, $entity_ids);
       }
-    } 
+    }
 
   }
 
-  
+
   /** Builds a Sparql SELECT query from the given parameter and sends it to the
    * query's adapter for execution.
    *
    * @param $query_parts the where clause of the query. The query always asks
    *        about ?x0 so query_parts must contain this variable.
-   * @param $entity_ids an assoc array of entity id => uri pairs that the 
+   * @param $entity_ids an assoc array of entity id => uri pairs that the
    *        resulting array is restricted to.
    * @param $count whether this is a count query
    * @param $limit max number of returned entities / the pager limit
@@ -768,7 +763,7 @@ class Query extends WisskiQueryBase {
    *         or an integer $count is TRUE.
    */
   protected function buildAndExecSparql($query_parts, $entity_ids, $count = FALSE, $limit = 0, $offset = 0, $sort_params = "") {
-    
+
     if ($count) {
       // we don't do this anymore...
       $select = 'SELECT (COUNT(DISTINCT ?x0) as ?cnt) WHERE { ';
@@ -777,53 +772,53 @@ class Query extends WisskiQueryBase {
       $select = 'SELECT DISTINCT ?x0 WHERE { ';
     }
 
-    if(count($this->dependent_parts) == 0) {    
-  
+    if(count($this->dependent_parts) == 0) {
+
       // special case - if dep is empty and entity ids is empty then we probably search for
       // anything? Search api suddenly does this from time to time, I don't know why...
 #      dpm(serialize($query_parts), "qp?");
       if(empty($entity_ids) && empty($query_parts))
         $query_parts = " GRAPH ?x0_nothing { ?x0 ?p ?o . } . ";
-      
-    
+
+
       // we restrict the result set to the entities in $entity_ids by adding a
       // VALUES statement in front of the rest of the where clause.
       // entity_ids is an assoc array where the keys are the ids and the values
       // are the corresp URIs. When there is no URI (for the adapter) the URI is
       // empty and needs to be filtered out for the VALUES construct.
       $filtered_uris = NULL;
-      if(!empty($entity_ids))	
+      if(!empty($entity_ids))
         $filtered_uris = array_filter($entity_ids);
-      if (!empty($filtered_uris)) {	
+      if (!empty($filtered_uris)) {
         $select .= 'VALUES ?x0 { <' . join('> <', $filtered_uris) . '> } ';
       }
       $select .= $query_parts;
-    } else { 
+    } else {
 
       $first = TRUE;
       // add dependent parts?
       foreach($this->dependent_parts as $part) {
-    
+
         if(!$first) {
           $select .= " UNION ";
-        } 
-      
+        }
+
         $select .= $part;
 
         $first = FALSE;
       }
     }
-    
-    
+
+
     $select .= ' }';
 
 #    dpm($select, "select is?");
-    
+
 #    dpm($sort_params, "sort?");
     if($sort_params) {
       $select .= " ORDER BY " . $sort_params;
     }
-    
+
     if ($limit) {
       $select .= " LIMIT $limit OFFSET $offset";
     }
@@ -868,13 +863,13 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     return $return;
 
   }
-  
+
   protected function executeStatusCondition($operator, $value, $bundleid = '%') {
     $entity_ids = NULL;
- 
+
 
     // it would be good to supply the bundle here, too...
-    
+
     $query = \Drupal::database()->select('wisski_entity_field_properties', 't')
       ->distinct()
       ->fields('t', array('eid', 'ident'))
@@ -883,35 +878,35 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       ->condition('bid', $bundleid, '=')
       ->condition('ident', $value, '=');
     $entity_ids = $query->execute()->fetchAllKeyed();
-    
+
     $out = array();
-    
+
     $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->getEngine()->adapterId());
-    
+
     foreach ($entity_ids as $eid => $bla) {
       // NOTE: getUrisForDrupalId returns one uri as string as we have
       // given the adapter
       $out[$eid] = '' . AdapterHelper::getUrisForDrupalId($eid, $adapter) .'';
     }
-    
+
     return $out;
 
   }
-  
+
   protected function executeLangcodeCondition($operator, $value, $bundleid = '%') {
     $entity_ids = NULL;
- 
+
     $langcode = current($value);
- 
+
     if($langcode == "***LANGUAGE_language_interface***") {
       $langcode = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
     }
- 
+
 
 //    dpm("I am looking for $langcode");
 
     // it would be good to supply the bundle here, too...
-    
+
     $query = \Drupal::database()->select('wisski_entity_field_properties', 't')
       ->distinct()
       ->fields('t', array('eid', 'ident'))
@@ -923,25 +918,25 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
 #    dpm($bundleid, "bun?");
 #    dpm($value, "val?");
     $out = array();
-    
+
     $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->getEngine()->adapterId());
-    
+
     foreach ($entity_ids as $eid => $bla) {
       // NOTE: getUrisForDrupalId returns one uri as string as we have
       // given the adapter
       $out[$eid] = '' . AdapterHelper::getUrisForDrupalId($eid, $adapter) .'';
     }
-    
+
     return $out;
 
   }
-  
+
 
   protected function executeEntityIdCondition($operator, $value) {
     $entity_ids = NULL;
-    
+
 #    dpm($value, "value?");
-    
+
     if (empty($value)) {
       // if no value is given, then condition is always true.
       // this may be the case when a field's mere existence is checked;
@@ -993,9 +988,9 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       }
 #       dpm($this->condition, "condition");
 #               dpm($entity_ids, "out");
-            
-      
-      
+
+
+
     }
 #    dpm($value, "val");
 #    dpm($operator, "op");
@@ -1016,12 +1011,12 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     }
     else {
       // we directly access the title cache table. this is the only way to
-      // effeciently query the title. However, this may not always return 
-      // all expected entity ids as 
+      // effeciently query the title. However, this may not always return
+      // all expected entity ids as
       // - a title may not yet been written to the table.
       // NOTE: This query is not aware of bundle conditions that may sort out
       // titles that are associated with "wrong" bundles.
-      // E.g: an entity X is of bundle A and B. A query on bundle A and title 
+      // E.g: an entity X is of bundle A and B. A query on bundle A and title
       // pattern xyz is issued. xyz matches entity title, but for bundle B.
       // The query will still deliver X as it matches both conditions
       // seperately, but not combined!
@@ -1036,13 +1031,13 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       }
       elseif ($operator == 'CONTAINS' || $operator == "STARTS_WITH" || $operator == "ENDS_WITH") {
         $select->condition('ngram', ($operator == 'CONTAINS' ? "%" : "") . $select->escapeLike($value) . "%", 'LIKE');
-      } 
+      }
       else {
         $this->missingImplMsg("Operator '$operator' in title field query", array('condition' => $value));
         return $entity_ids; // NULL
       }
 
-#      dpm($bundleid, "bundleid!");      
+#      dpm($bundleid, "bundleid!");
       if($bundleid)
         $select->condition('bundle', $bundleid);
 
@@ -1057,7 +1052,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       $rows = $select
           ->execute()
           ->fetchAll();
-        
+
       foreach ($rows as $row) {
         $entity_ids[$row->ent_num] = $row->ent_num;
       }
@@ -1074,7 +1069,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       $entity_ids = $query->execute()->fetchAllKeyed();
 #      dpm($entity_ids, "sec");
 //      $out_entities = array();
-      
+
       // redo the sorting
       foreach($rows as $row) {
         if (isset($entity_ids[$row->ent_num])) {
@@ -1083,14 +1078,14 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       }
 #      dpm( $out_entities, "out!");
       $entity_ids = $out_entities;
-    
+
     }
     return $entity_ids;
   }
 
-  
+
   protected function makeBundleCondition($operator, $value) {
-    
+
     $query_parts = array();
 
     if (empty($operator) || $operator == 'IN' || $operator == '=') {
@@ -1098,14 +1093,14 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       $engine = $this->getEngine();
 
       $i = $this->varCounter++;
-      
+
       // we have to igo thru all the groups that belong to this bundle
       foreach ($this->getPbs() as $pb) {
         foreach ($bundle_ids as $bid) {
           $groups = $pb->getGroupsForBundle($bid);
           foreach ($groups as $group) {
 
-            // build up an array for separating the variables of the sparql 
+            // build up an array for separating the variables of the sparql
             // subqueries.
             // only the first var x0 get to be the same so that everything maps
             // to the same entity
@@ -1113,7 +1108,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
             $starting_position = $pb->getRelativeStartingPosition($group, FALSE);
 #            drupal_set_message(serialize($group));
 #            drupal_set_message(serialize($starting_position));
-            
+
             $vars[$starting_position] = 'x0';
             for ($j = count($group->getPathArray()); $j > $starting_position; $j--) {
               $vars[$j] = "c${i}_x$j";
@@ -1131,25 +1126,25 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     else {
       $this->missingImplMsg("Operator '$operator' in bundle fieldquery", array(func_get_args()));
     }
-    
+
     if (empty($query_parts)) {
       // the bundle is not handled by this adapter
       // we signal that this query should be skipped
       return NULL;
-    } 
+    }
     else {
-      $query_parts = '{{ ' . join('} UNION {', $query_parts) . '}} ';  
+      $query_parts = '{{ ' . join('} UNION {', $query_parts) . '}} ';
 
       return $query_parts;
     }
-  
+
   }
-  
+
 
   protected function makeFieldCondition($field, $operator, $value) {
-    
+
     $query_parts = array();
-    
+
     $count = 0;
     $path_available = FALSE;
     foreach ($this->getPbs() as $pb) {
@@ -1168,7 +1163,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     if (!$path_available) {
       // the adapter is not responsible for this field.
       // we just skip this condition
-      // TODO: should we rather declare the condition as failed? (return NULL) 
+      // TODO: should we rather declare the condition as failed? (return NULL)
       return '';
     }
     elseif ($count == 0) {
@@ -1178,10 +1173,10 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       return $query_parts[0];
     }
     else {
-      $query_parts = '{{ ' . join('} UNION {', $query_parts) . '}} ';  
+      $query_parts = '{{ ' . join('} UNION {', $query_parts) . '}} ';
       return $query_parts;
     }
-    
+
   }
 
 
@@ -1207,12 +1202,12 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       }
     }
     #\Drupal::logger('query path cond')->debug("start path cond:".$this->varCounter.";$operator:$value;".($path->getDatatypeProperty()?:"no dt"));
-    
+
     $dt_prop = $path->getDatatypeProperty();
     $obj_uris = array();
     if ((empty($dt_prop) || $dt_prop == 'empty') && !$path->isGroup()) {
       // we have a regular path without datatype property
-      // TODO: if value is an array how do we want to treat it? 
+      // TODO: if value is an array how do we want to treat it?
       if (!is_array($value)) {
         // if value is a scalar we treat it as title pattern and do a search
         // for these entities first.
@@ -1243,7 +1238,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         // id. this is used in condition filters e.g.
         if(is_numeric($value) && ($operator == "HAS_EID" || $operator == "has_eid") ) {
 #          dpm("we take value...");
-          
+
           $entity_ids = array($value => $value);
         }
 
@@ -1254,7 +1249,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
 #          dpm($entity_ids, "ents?");
           }
         }
-        
+
         // if there are no preferred bundles or querying them yielded no result
         // we search in all the other bundles
         if (empty($entity_ids) && !empty($bundles)) {
@@ -1272,25 +1267,25 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         // get the uris for the entity ids
         $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->getEngine()->adapterId());
         foreach ($entity_ids as $eid) {
-          // NOTE: getUrisForDrupalId returns one uri as string as we have 
+          // NOTE: getUrisForDrupalId returns one uri as string as we have
           // given the adapter
           $obj_uris[] = '<' . AdapterHelper::getUrisForDrupalId($eid, $adapter) .'>';
         }
-        
+
       }
     } else {
       // it has a datatype-property?
-      
+
       // This is a special case for the eid-thingies...
-      // for example if there is a filter...      
+      // for example if there is a filter...
       if(is_numeric($value) && ($operator == "HAS_EID" || $operator == "has_eid") ) {
         $entity_ids = array($value => $value);
-      
+
         $obj_pos = $path->getDisamb() ? $path->getDisamb() * 2 - 2 : (count($path->getPathArray()) - 1);
-        
+
         // reset value as it is not so important anymore... we have the eid!
         $value = NULL;
-      
+
         // get the uris for the entity ids
         $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($this->getEngine()->adapterId());
         foreach ($entity_ids as $eid) {
@@ -1301,7 +1296,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       }
     }
 
-    // build up an array for separating the variables of the sparql 
+    // build up an array for separating the variables of the sparql
     // subqueries.
     // only the first var x0 get to be the same so that everything maps
     // to the same entity
@@ -1324,7 +1319,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     if (!empty($obj_uris) && $operator != "EMPTY") {
       $query_part .= ' VALUES ?' . $vars[$obj_pos] . ' { ' . join(' ', $obj_uris) . ' }';
     }
-    
+
     // this might be a hack - we search for the first . and
     // put the optional there.
 /*
@@ -1332,7 +1327,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       $pos = strpos($query_part, "} .");
       $query_part = substr_replace($query_part, "} . OPTIONAL { ", $pos, 3);
       $dt = $path->getDataTypeProperty();
-      if(!empty($dt) && $dt != "empty") 
+      if(!empty($dt) && $dt != "empty")
         $query_part = $query_part . " } . FILTER( !bound(?" . $vars['out'] . " ) )";
       else // if it has no dt we use the last element.
         $query_part = $query_part . " } . FILTER( !bound(?" . $vars[count($path->getPathArray())-1] . " ) )";
@@ -1341,10 +1336,10 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     }
 */
     return $query_part;
-    
+
   }
 
-  
+
   protected function queryReferencedEntities($bundle_ids, $title_search_string, $operator) {
     // we start a new query
     $result = \Drupal::entityQuery('wisski_individual')
@@ -1377,9 +1372,9 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     return new ConditionAggregate($conjunction, $this);
   }
 
-  
+
   /** Places a screen and log message for functionality that is not implemented (yet).
-   * 
+   *
    */
   protected function missingImplMsg($msg, $data) {
 #    dpm("bump", "bump");
