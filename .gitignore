@@ -4,3 +4,4 @@ DEADJOE
 .*.swn
 *~
 vendor
+composer.lock
