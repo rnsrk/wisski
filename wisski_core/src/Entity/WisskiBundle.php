@@ -219,7 +219,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     //now do the work
     $title = $this->applyTitlePattern($pattern,$entity);
 #    return "yay?";
-#    dpm("I get from atp: $title");
+#   dpm($title);
 
      // TODO: repair this after translation update...
      // this needs to be serialized    
@@ -353,12 +353,14 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         $cardinality = $attributes['cardinality'];
         // here we did not check for languaged tags
         // @TODO: Make this check for sanity!
-        if ($cardinality < 0 || $cardinality > count($values)) $cardinality = count($values);
+        // MyFi: fixed this :)
+        if ($cardinality < 0 || $cardinality > count($values)) $cardinality = count($values[$language]);
         $delimiter = $attributes['delimiter'];
-        $i = 0;
-#      dpm($values, "values");
+        // MyFi: reset i per $language, so we put it into the foreach afterwards
+        // $i = 0;
+ #       dpm($values, "values");
         foreach ($values as $language => $per_lang_values) {
-          
+          $i = 0;
           if(is_int($language)) {
             $value = $per_lang_values;
             // 
@@ -383,6 +385,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             // iterate language ...
             foreach($per_lang_values as $per_lang_value) {
               $value = $per_lang_value['value'];
+  #            dpm($value);
               if(empty($value) && $value !== 0 && $value !== "0")
                 continue;
 #          dpm($i, "i");
@@ -392,12 +395,18 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #          dpm($value, 'get');
               if(empty($part[$language]))
                 $part[$language] = "";
+              # before: if multiple entries were in $value, then they were concatenated to $part[$language]
+              # before:  $part[$language] .= "$value";
+              # this is wrong since this did not consider delimiters that were given in the title pattern
+              # we need an iteration here over all entries in $value so we deleted we "}" after this block to
+              # include this in the outer foreach loop
               $part[$language] .= "$value";
-            
+              // }      
+              if (++$i < $cardinality) $part[$language] .= $delimiter;
             }
-            if (++$i < $cardinality) $part[$language] .= $delimiter;
           }
-        } 
+        }
+ #       dpm($part[$language]);
       }
 
       if ($attributes['type'] === 'text') {
@@ -426,6 +435,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       // there seems to be no translation!
       // this is an assumption and might prove wrong.
       if (empty(trim($title[$alanguage][0]["value"]))) unset($title[$alanguage]);
+ #     dpm($title);
 #      if (empty(trim($title[$alanguage]))) $title[$alanguage] = $this->createFallbackTitle($entity_id);
     }
     
@@ -616,7 +626,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
               // generate the title of that
               $mytitle = $bundle->generateEntityTitle($item_eid);
-#              dpm($mytitle, "mytitle is: ");
+ #             dpm($mytitle, "mytitle is: ");
               $grptitles[] = $mytitle[$language][0]['value'];
 #              dpm("my grphtitle is " . serialize($mytitle));
             }
