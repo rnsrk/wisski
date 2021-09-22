@@ -725,6 +725,13 @@ class WisskiIndividualQuery extends QueryPluginBase
                             $values_per_row[$eid][$field_to_check][] = array('value' => $referenced_title, 'target_id' => $referenced_eid, 'wisskiDisamb' => $referenced_uri);
                             #$values_per_row[$eid][$field][] = $referenced_eid;
                         } else {
+                            // get the language
+                            $lang = $sparql_row->$out_prop->getLang();
+                            // by Mark:
+                            // if it is unspecified we just set it to x-default
+                            // this is an assumption proofed to be true - might also be UND or EN
+                            if(empty($lang))
+                              $lang = "x-default";
                             if (!empty($disamb)) {
                                 if (!empty($is_file)) {
                                     $this->messenger()->addWarning("On your image path there is a disamb set. How do you think the system now should behave? Make the image clickable or what?!");
@@ -735,20 +742,21 @@ class WisskiIndividualQuery extends QueryPluginBase
                                 #                          $values_per_row[$eid][$field][] = array($main_prop => $val);
                                 #                          $values_per_row[$eid][$field_to_check][] = array($main_prop => $val);
                                 #                        } else {
-                                $values_per_row[$eid][$field][$sparql_row->$out_prop->getLang()][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisski_language' => $sparql_row->$out_prop->getLang(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
-                                $values_per_row[$eid][$field_to_check][$sparql_row->$out_prop->getLang()][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisski_language' => $sparql_row->$out_prop->getLang(), 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+                                $values_per_row[$eid][$field][$lang][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisski_language' => $lang, 'wisskiDisamb' => $sparql_row->$disamb->getUri());
+                                $values_per_row[$eid][$field_to_check][$lang][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisski_language' => $lang, 'wisskiDisamb' => $sparql_row->$disamb->getUri());
                                 #                        }
                             } else {
                                 #                        dpm(serialize($is_file), "is file!!");
                                 if (!empty($is_file)) {
                                     $storage = \Drupal::entityTypeManager()->getStorage('wisski_individual');
                                     $val = $storage->getFileId($sparql_row->$out_prop->getValue());
-                                    $lang = $sparql_row->$out_prop->getLang();
+#                                    $lang = $sparql_row->$out_prop->getLang();
                                     $values_per_row[$eid][$field][$lang][] = array($main_prop => $val, 'wisski_language' => $lang);
                                     $values_per_row[$eid][$field_to_check][$lang][] = array($main_prop => $val, 'wisski_language' => $lang);
                                 } else {
-                                    $values_per_row[$eid][$field][$sparql_row->$out_prop->getLang()][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisski_language' => $sparql_row->$out_prop->getLang());
-                                    $values_per_row[$eid][$field_to_check][$sparql_row->$out_prop->getLang()][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisski_language' => $sparql_row->$out_prop->getLang());
+#                                    dpm($sparql_row->$out_prop->getLang(), "lang?");
+                                    $values_per_row[$eid][$field][$lang][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisski_language' => $lang);
+                                    $values_per_row[$eid][$field_to_check][$lang][] = array($main_prop => $sparql_row->$out_prop->getValue(), 'wisski_language' => $lang);
                                 }
                             }
                         }
@@ -765,7 +773,7 @@ class WisskiIndividualQuery extends QueryPluginBase
 
         #    dpm(serialize($this->view->display_handler->getOption('rendering_language')));
 
-        #    dpm(serialize($values_per_row));
+            dpm(serialize($values_per_row));
         #    return;
         #    dpm(microtime(), "end of ...");
 
