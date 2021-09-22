@@ -773,7 +773,7 @@ class WisskiIndividualQuery extends QueryPluginBase
 
         #    dpm(serialize($this->view->display_handler->getOption('rendering_language')));
 
-            dpm(serialize($values_per_row));
+        #    dpm(serialize($values_per_row));
         #    return;
         #    dpm(microtime(), "end of ...");
 
