@@ -286,11 +286,6 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $count = count($pattern);
     $max = ($count * ($count+1)) / 2;
     $count = 0;
-
-    // here we have to iterate the languages
-    $available_languages = \Drupal::languageManager()->getLanguages();
-    $available_languages = array_keys($available_languages);
-
   
     while ($count < $max && current($pattern) ) { //&& list($key,$attributes) = each($pattern)) {
       
@@ -354,11 +349,17 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         // here we did not check for languaged tags
         // @TODO: Make this check for sanity!
         // MyFi: fixed this :)
-        if ($cardinality < 0 || $cardinality > count($values)) $cardinality = count($values[$language]);
+
+        $available_languages = \Drupal::languageManager()->getLanguages();
+        $available_languages = array_keys($available_languages);
+
+        if ($cardinality < 0 || $cardinality > count($values)) $cardinality = count($values);
+#        dpm(count($values[$available_languages[0]]), "count is!");
         $delimiter = $attributes['delimiter'];
         // MyFi: reset i per $language, so we put it into the foreach afterwards
         // $i = 0;
  #       dpm($values, "values");
+
         foreach ($values as $language => $per_lang_values) {
           $i = 0;
           if(is_int($language)) {
@@ -375,7 +376,6 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #            if ($i >= $cardinality) break;
 #          dpm($value, 'get');
             foreach($available_languages as $alanguage) {
-#              dpm("my lang is: " . $alanguage);
               if(empty($part[$alanguage]))
                 $part[$alanguage] = "";
               $part[$alanguage] .= "$value";
@@ -385,7 +385,6 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             // iterate language ...
             foreach($per_lang_values as $per_lang_value) {
               $value = $per_lang_value['value'];
-  #            dpm($value);
               if(empty($value) && $value !== 0 && $value !== "0")
                 continue;
 #          dpm($i, "i");
@@ -393,6 +392,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #          dpm($cardinality, "card");
 #              if ($i >= $cardinality) break;
 #          dpm($value, 'get');
+#              dpm($language, "language");
               if(empty($part[$language]))
                 $part[$language] = "";
               # before: if multiple entries were in $value, then they were concatenated to $part[$language]
@@ -411,7 +411,16 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
       if ($attributes['type'] === 'text') {
         foreach($available_languages as $language) {
-          $part[$language] = $attributes['label'];
+          // MyFi: we add additional text blocks defined in the title pattern only for languages, where entries exist.
+          // If an entry is not translated, we do not want any text block to be added
+          // Later in the code (I think in another .php file), we following can be observed:
+          // If a title in the displayed language does not exist (= if no translation exists), the title in the
+          // original language will be taken instead
+          // we described our decision to use the title in the original language if no translation exists in our
+          // DHD paper that will hopefully published October 2021
+          if(isset($part[$language])){
+            $part[$language] = $attributes['label'];
+          }
         }
       }
       //if (!empty($attributes['children'])){dpm($part,'Part');dpm($parts,'Parts '.$key);}
@@ -440,9 +449,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     }
     
     if(empty($title)) {
-#      dpm("oh weh!");
       return $this->createFallbackTitle($entity_id);
     }
+
 
 #    dpm($title, "tit?");
 #    return "yay?";
