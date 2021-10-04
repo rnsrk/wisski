@@ -98,6 +98,7 @@ class WisskiIndividualQuery extends QueryPluginBase
             }
 
             foreach ($group["conditions"] as $cid => $cond) {
+#                dpm($cond, "cond?");
                 // An dieser Stelle muss auch die formulars gehandelt werden.
                 if ($cond['operator'] == 'formula') {
                     //$has_condition = TRUE;
@@ -955,7 +956,18 @@ class WisskiIndividualQuery extends QueryPluginBase
      */
     public function addWhere($group, $field, $value = NULL, $operator = NULL)
     {
-        #dpm("yay");
+        // By Mark: Due to the new query engine 
+        // we have to fix some operators here.
+        // we dislike "Like" for example as it is absolutely database-like... and the people
+        // add %% in front and so on - I don't know why they do it like that and
+        // probably there is a better way to do this...
+        // but for now we get rid of this here.
+        if($operator == "LIKE") {
+          $operator = "CONTAINS";
+          $value = str_replace("%", "", $value);
+        }
+        
+//        dpm($field, "yay");
         // Ensure all variants of 0 are actually 0. Thus '', 0 and NULL are all
         // the default group.
         if (empty($group)) {
