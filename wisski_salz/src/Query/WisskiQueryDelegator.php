@@ -98,6 +98,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     // no need to give an extra warning, that's already done in getWissKIBundleIDs()
     if (count($bundleIDs) == 0) {
       $this->relevant_adapter_queries = $this->adapter_queries;
+#      dpm($this->relevant_adapter_queries, "query?");
       return;
     }
 
@@ -130,6 +131,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     // make a queue of conditions to check recursively
     $conditionQueue = array($this->condition);
     $bundleIds = array();
+    $is_an_eid_query = FALSE;
 
     while(count($conditionQueue) > 0) {
 
@@ -161,6 +163,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         // TODO: this handles only is equal to
         if ($field == "eid") {
           $eidBundleIds = AdapterHelper::getBundleIdsForEntityId($cond['value'], TRUE);
+          // by mark: if there are no bundles to represent this, this might be true anyway
+          // so skip the message... it is just annoying
+          $is_an_eid_query = TRUE;
+
           $bundleIds = array_merge($bundleIds, $eidBundleIds);
           continue;
         }
@@ -168,7 +174,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       }
     }
 
-    if (count($bundleIds) == 0) {
+    if (count($bundleIds) == 0 && !$is_an_eid_query) {
       \Drupal::messenger()->addWarning("No bundles are relevant for query");
     }
 
