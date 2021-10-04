@@ -467,8 +467,10 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #      dpm($available_languages, "langs?");		      
                 // then we go and look for the first key
                 if(is_array($val)){
+                  $does_it_have_any_language = FALSE;
                   foreach($val as $pot_lang => $some_field_values) {
                     // if this is a language tag
+                    /*
                     if(!in_array($pot_lang, $available_languages)) {
                       // if not we set it to lang default
                       // This is the special case where somebody put in
@@ -476,10 +478,26 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                       // translatable base field like array("value" => "smthg")
                       // unfortunately this currently happens 
                       // @TODO: Fix this case!
+                      
+                      // By Mark: This case also happens if there is a language in the
+                      // ts that is not in the drupal... so this check is too weak 
+                      // and we should NOT do this!
+                      
+                      
                       $test[$key][LanguageInterface::LANGCODE_DEFAULT] = $val;
+//                      dpm($available_languages, "avail?");
+//                      dpm($pot_lang, "pot?");
                       break;
                     }
+                    */
+                    if(in_array($pot_lang, $available_languages)) {
+                      $does_it_have_any_language = TRUE;
+                    }
+                    
                   }
+                  
+                  if(!$does_it_have_any_language)
+                    $test[$key][LanguageInterface::LANGCODE_DEFAULT] = $val;
                 }
                 #dpm($test);
     
@@ -539,7 +557,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                 }
               }
             }
-           #dpm($test, "test22?"); 
+           dpm($test, "test22?"); 
             
             // else we just take it as it is.
 //            if(!empty(array_intersect(array_keys($val), $set_languages))) {
