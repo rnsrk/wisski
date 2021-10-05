@@ -314,11 +314,34 @@ class WisskiLinkblock extends BlockBase {
             $out[] = [ '#markup' => '</br>' ];
 
           } else {
+            // By Mark: Here we need language handling...
+            $title = wisski_core_generate_title($entity_id, NULL, FALSE, $bundle);
 
+            // now we have in title an array... but this is not very happy for post-processing... we need to get
+            // the correct title for the display language from this.
+            
+            $curr_lang = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+            
+            if(isset($title[$curr_lang])) {
+              // if the current language is in there - take it
+              $title = current($title[$curr_lang]);
+              
+              if(isset($title['value']))
+                $title = $title['value'];
+
+            } else {
+             // if not, take any for now
+             // @TODO: This assumption might be false! It might be better to take something different!
+              $title = current(current($title));
+              
+              if(isset($title['value']))
+                $title = $title['value'];
+            }
+            
             $out[] = array(
               '#type' => 'link',
 #  	          '#title' => $data['target_id'],
-              '#title' => wisski_core_generate_title($entity_id, NULL, FALSE, $bundle),
+              '#title' => $title,
               '#url' => Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity_id]), 
               //Url::fromUri('internal:/' . $url . '?wisski_bundle=' . $bundle),
             );
@@ -334,7 +357,7 @@ class WisskiLinkblock extends BlockBase {
         
       }  
     }
-
+#    dpm($out, "out?");
     return $out;
   }
 
