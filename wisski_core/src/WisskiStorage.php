@@ -382,7 +382,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
               break;
           }
          
-          
+#          dpm($available_languages, "available langs");          
 #          dpm($set_languages, "the setted languages");
           
           // clear the titles that are not represented in the data
@@ -425,9 +425,9 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             } else {
               $orig_lang = current($set_languages);
             }
+            
             # dpm($set_languages, "set?");
-          }
-          
+          }          
 
 #          dpm("my orig lang is: " . serialize($values[$id]));
 
@@ -435,6 +435,17 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
           // therefore we correct it here for further development
           if(is_array($orig_lang))
             $orig_lang = current($orig_lang);
+          
+          // by Mark:
+          // if the orig_lang is not in the available languages there is something fishy
+          // and we will have difficulties because data wont be loaded actively.
+          // so in this case we rewrite the orig lang.
+          if(!in_array($orig_lang, $available_languages)) {
+            $orig_lang = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+//            dpm($orig_lang, "orig?");
+//            dpm($available_languages, "avail?");
+          }
+          
             
 #          dpm("my orig lang is: " . serialize($orig_lang));
 
@@ -543,9 +554,9 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
               foreach($val as $field_lang => $field_vals) {
                 // if it is the default language of the entity, we exchange the 
                 // language tag of the original language for x-default
-                if(gettype($field_lang) != gettype($orig_lang)){
+                #if(gettype($field_lang) != gettype($orig_lang)){
 #                  dpm("Warning: gettype(field_lang) != gettype(orig_lang)");
-                }
+                #}
 		#dpm(serialize($field_lang));
 		#dpm(serialize($orig_lang));
 		if($field_lang == $orig_lang) {
@@ -557,7 +568,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                 }
               }
             }
-#           dpm($test, "test22?"); 
+           #dpm($test, "test22?"); 
             
             // else we just take it as it is.
 //            if(!empty(array_intersect(array_keys($val), $set_languages))) {
