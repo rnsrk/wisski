@@ -799,7 +799,8 @@ class WisskiIndividualQuery extends QueryPluginBase
                 }
 
                 // add the title values to the label so it can be rendered correctly...
-                $pseudo_entity_fields[$eid]['label'] = $values_per_row[$eid]['title'];
+                if(isset($values_per_row[$eid]['title']))
+                  $pseudo_entity_fields[$eid]['label'] = $values_per_row[$eid]['title'];
 
                 #        dpm($pseudo_entity_fields);
                 #        dpm($row);
