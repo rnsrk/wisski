@@ -183,8 +183,11 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       }
     }
 
+    // By Mark
+    // this is annoying... it might be possible that there is no bundle id...
     if (count($bundleIds) == 0 && !$is_an_eid_query) {
-      \Drupal::messenger()->addWarning("No bundles are relevant for query");
+#      \Drupal::messenger()->addWarning("No bundles are relevant for query");
+#      dpm($this);
     }
 
     return array_unique($bundleIds);
