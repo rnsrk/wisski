@@ -152,7 +152,14 @@ class WisskiEntityController extends ControllerBase {
 #    dpm(serialize($wisski_individual->getRevisionCreationTime()), "yay?");
 #    dpm(serialize($wisski_individual), "yay?");
     //  The $wisski_individual->label() always is behind by one - I don't really know why this is happening.
-    return $this->t('Revision of %title from %date', ['%title' => $new_title, '%date' => $this->dateFormatter->format($wisski_individual->getRevisionCreationTime())]);
+    
+    $creationtime = $wisski_individual->getRevisionCreationTime();
+    if(!empty($creationtime))
+      $date = $this->dateFormatter->format($wisski_individual->getRevisionCreationTime());
+    else
+      $date = "somewhen";
+    
+    return $this->t('Revision of %title from %date', ['%title' => $new_title, '%date' => $date]);
   }
 
   /**
@@ -218,9 +225,13 @@ class WisskiEntityController extends ControllerBase {
           '#account' => $revision->getRevisionUser(),
         ];
 
-        
+
+        $ts = $revision->revision_timestamp->value;
         // Use revision link to link to revisions that are not active.
-        $date = $dateFormatter->format($revision->revision_timestamp->value, 'short');
+        if(!empty($ts))
+          $date = $dateFormatter->format($revision->revision_timestamp->value, 'short');
+        else
+          $date = "Somewhen before";
 
         // We treat also the latest translation-affecting revision as current
         // revision, if it was the default revision, as its values for the
