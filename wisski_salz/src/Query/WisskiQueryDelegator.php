@@ -162,6 +162,15 @@ class WisskiQueryDelegator extends WisskiQueryBase {
         // requested a specific eid
         // TODO: this handles only is equal to
         if ($field == "eid") {
+          $entid = $cond['value'];
+          
+          // By Mark: 
+          // if somehow it is an array for example if "IN" is used
+          // we better make it an id.
+          
+          if(is_array($cond['value']))
+            $entid = current($entid);
+          
           $eidBundleIds = AdapterHelper::getBundleIdsForEntityId($cond['value'], TRUE);
           // by mark: if there are no bundles to represent this, this might be true anyway
           // so skip the message... it is just annoying

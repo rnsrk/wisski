@@ -848,6 +848,11 @@ class AdapterHelper {
 
   public static function getBundleIdsForEntityId($entity_id, $only_top_bundles) {
     
+    if(is_array($entity_id)) {
+      \Drupal::messenger()->addError(t('getBundleIdsForEntityId was called with array' . serialize($entity_id)));
+      return;
+    }
+    
     $cache_bin = 'wisski_salz_eid_to_bundle_and_adapter_cache';
     
     $cid = 'bundle_cache_' . $entity_id . '__'; // if nothing comes here it is ask for any bundle..
