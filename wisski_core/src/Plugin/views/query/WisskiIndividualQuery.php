@@ -57,6 +57,8 @@ class WisskiIndividualQuery extends QueryPluginBase
      * The variable counter for parameters
      */
     private $paramcount = 0;
+    
+    public $groupOperator;
 
     /**
      * Generate a query and a countquery from all of the information supplied
@@ -824,7 +826,7 @@ class WisskiIndividualQuery extends QueryPluginBase
                 #      dpm($row['_entity']->id(), "entity");
             }
         }
-
+#        dpm($values_per_row, "rows?");
         return array_values($values_per_row);
     }
 
