@@ -222,6 +222,15 @@ class WisskiPathbuilderForm extends EntityForm {
                      ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
 
+        if(!empty($pbpaths[$path->id()]['field']) && !empty($pbpaths[$path->id()]['parent']) && !empty($pbpaths[$path->id()]['fieldtype'])) {
+          $links['fieldsedit'] = array(
+            'title' => $this->t('Manage Field Settings'),
+          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
+            'url' => \Drupal\Core\Url::fromRoute('entity.field_config.wisski_individual_field_edit_form')
+                   ->setRouteParameters(array('wisski_bundle' => $pbpaths[$pbpaths[$path->id()]['parent']]['bundle'], 'field_config' => 'wisski_individual.' . $pbpaths[$pbpaths[$path->id()]['parent']]['bundle'] . '.' . $pbpaths[$path->id()]['field'])),
+          );
+        }
+
         if(!empty($pbpaths[$path->id()]) && !empty($pbpaths[$path->id()]['bundle'])) { 
           $links['bundleedit'] = array(
             'title' => $this->t('Edit Bundle'),
