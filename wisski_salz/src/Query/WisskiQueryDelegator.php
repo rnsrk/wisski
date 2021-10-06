@@ -171,7 +171,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
           if(is_array($cond['value']))
             $entid = current($entid);
           
-          $eidBundleIds = AdapterHelper::getBundleIdsForEntityId($cond['value'], TRUE);
+          $eidBundleIds = AdapterHelper::getBundleIdsForEntityId($entid, TRUE);
           // by mark: if there are no bundles to represent this, this might be true anyway
           // so skip the message... it is just annoying
           $is_an_eid_query = TRUE;
