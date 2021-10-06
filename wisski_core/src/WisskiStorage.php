@@ -464,7 +464,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
           // after that we can iterate through all non-base-fields and these
           // typically have different languages enabled by default due to the
           // setting in the wisski Entity
-      
+#          dpm($values[$id], "val?");      
  #         dpm($field_defs, "fieldfed");
           foreach($values[$id] as $key => $val) {
             // if it is a base field, simply set it to the appropriate langcode
@@ -474,12 +474,13 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
               
               // if this is translatable
               if($base_field_def->isTranslatable()) {
-#		      dpm($val, "val?");
+#		      dpm($val, "val? for $key");
 #      dpm($available_languages, "langs?");		      
                 // then we go and look for the first key
                 if(is_array($val)){
                   $does_it_have_any_language = FALSE;
                   foreach($val as $pot_lang => $some_field_values) {
+                    
                     // if this is a language tag
                     /*
                     if(!in_array($pot_lang, $available_languages)) {
@@ -501,7 +502,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                       break;
                     }
                     */
-                    if(in_array($pot_lang, $available_languages)) {
+                    
+                    if(in_array($pot_lang, $available_languages) || $pot_lang == "und") {
                       $does_it_have_any_language = TRUE;
                     }
                     
@@ -546,7 +548,13 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                   if(isset($val[LanguageInterface::LANGCODE_DEFAULT])){
                     $val[$al] = $val[LanguageInterface::LANGCODE_DEFAULT];
                   } else {
-                    $val[$al] = $val[$orig_lang];
+                    $my_val = array(); 
+                    if(isset($val[$orig_lang])) 
+                      $my_val = $val[$orig_lang];
+                    else // if the orig lang is not set it becomes difficult...
+                      $my_val = current($val);
+
+                    $val[$al] = $my_val;
                   }
                 }
               }
@@ -557,12 +565,26 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                 #if(gettype($field_lang) != gettype($orig_lang)){
 #                  dpm("Warning: gettype(field_lang) != gettype(orig_lang)");
                 #}
+                
+                // check if we have languages that are very odd like und and und is not in the
+                // available languages.
+		
+		if($field_lang == "und" && !in_array($field_lang, $available_languages)) {
+		  $curr_lang = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+		  if(!isset($val[$curr_lang]))
+      		    $field_lang = $curr_lang;
+                  else if(!isset($val[$orig_lang]))
+                    $field_lang = $orig_lang;
+		}
+		
+		
 		#dpm(serialize($field_lang));
 		#dpm(serialize($orig_lang));
 		if($field_lang == $orig_lang) {
                   $test[$key][LanguageInterface::LANGCODE_DEFAULT] = $field_vals;
                   $test[$key][$orig_lang] = $field_vals;
                 } else {
+                                  
                   // we just trust it for now...                 
                   $test[$key][$field_lang] = $field_vals;
                 }
@@ -1815,10 +1837,18 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             $entity->set('langcode',array("value" => $langcode));
           } else {
             $lc = $entity->langcode->getValue();
-#            dpm(serialize($lc), "lc?");
+#            $lc_prop = $entity->langcode->
+
             // this is evil because we take simply the first one.
-            $lc = current($lc);
-            $langcode = $lc['value'];
+            //$lc = current($lc);
+            
+            // go deeper...
+            while(is_array($lc))
+              $lc = current($lc);              
+            
+            $langcode = $lc;
+            
+#            dpm($lc);
           }
           
 
@@ -1826,10 +1856,18 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
           //$default_langcode = \Drupal::service('language_manager')->getDefaultLanguage()->getId();
           //if($langcode == $default_langcode) $langcode = "und";
           
-#          dpm($langCode, "current langcode?");
+#          dpm($langcode, "current langcode?");
           
 #          foreach($translations as $language => $translation) {
  #           dpm($language, "I give");
+#          dpm($entity, "ent?");
+#          dpm($values, "vals?");
+#          dpm($pb, "pb?");
+#          dpm($bundle_id, "bun?");
+#          dpm($original_values, "ori?");
+#          dpm($create_new, "cr?");
+#          dpm($init, "init?");
+#          dpm($langcode, "lang?");
           $adapter_info = $adapter->writeFieldValues($entity, $values, $pb, $bundle_id, $original_values,$create_new, $init, $langcode);
 #          }
 
@@ -1880,12 +1918,21 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
   protected function doSaveWisskiRevision(ContentEntityInterface $entity, array $names = [])
   {
     #dpm(serialize($entity), "in do save wisski revision");
-    
 
     $uid = $entity->revision_uid;
      // override the user setting
     if(isset($uid) && empty($uid->getValue()['target_id']) ) {
       $entity->revision_uid = $entity->uid;
+    }
+    
+    // check if published is set because we will get an error
+    // if it is null
+    
+    $published = $entity->published;
+    
+    if(isset($published) && empty($published->getValue())) {
+      // assume everything is published.
+      $entity->setPublished(TRUE);
     }
     
     $full_save = empty($names);
