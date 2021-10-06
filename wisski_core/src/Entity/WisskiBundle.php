@@ -200,7 +200,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #    $force_new = true;
     if (!$force_new) {
       $title = $this->getCachedTitle($entity_id);
-#      dpm( "got cached title " . serialize($title) . "for entity $entity with pattern " . serialize($pattern));
+ #     dpm( "got cached title " . serialize($title) . "for entity $entity with pattern " . serialize($pattern));
 #      $title = NULL;
       if (isset($title)) {
         #drupal_set_message('Title from cache');
@@ -208,6 +208,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           \Drupal::messenger()->addStatus('Enhance Title '.$title);
           $title = $this->label().': '.$title;
         }
+#        dpm("ret");
         return $title;
       }
     }
@@ -261,6 +262,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    * this is a seperate function since we want to be able to apply it again in case we end up with an empty title
    */
   private function applyTitlePattern($pattern,$entity) {
+
+    $available_languages = \Drupal::languageManager()->getLanguages();
+    $available_languages = array_keys($available_languages);
+
 #    dpm("apply");
 #    dpm(microtime(), "apply");
 #    dpm(serialize($entity), "ente?");
@@ -350,8 +355,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         // @TODO: Make this check for sanity!
         // MyFi: fixed this :)
 
-        $available_languages = \Drupal::languageManager()->getLanguages();
-        $available_languages = array_keys($available_languages);
+        #$available_languages = \Drupal::languageManager()->getLanguages();
+        #$available_languages = array_keys($available_languages);
 
         if ($cardinality < 0 || $cardinality > count($values)) $cardinality = count($values);
 #        dpm(count($values[$available_languages[0]]), "count is!");
