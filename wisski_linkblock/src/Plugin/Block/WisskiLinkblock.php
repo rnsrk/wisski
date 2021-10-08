@@ -223,7 +223,7 @@ class WisskiLinkblock extends BlockBase {
                 // translation we found for this entry, what should be normally the original language in which the entry was created
                 $detectedEntry = array();
                 foreach ($tmpdata as $tmp_id => $tmp) {
-                  if($tmp['wisski_language'] == $language){
+                  if(isset($tmp['wisski_language']) && $tmp['wisski_language'] == $language){
                     $detectedEntry = array($tmp);
                     break;
                   }
