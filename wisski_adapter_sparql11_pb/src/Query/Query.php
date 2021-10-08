@@ -181,8 +181,8 @@ class Query extends WisskiQueryBase {
 
 #    dpm($this->orderby, "order?");
 
-    //dpm($where_clause, "where clause in adapter query");
-    //dpm($entity_ids, "eids in list");
+#    dpm($where_clause, "where clause in adapter query");
+#    dpm($entity_ids, "eids in list");
 #    dpm($this->dependent_parts, "dep");
     // if we have dependent parts, we always want to go to buildAndExecute...
 
@@ -320,6 +320,7 @@ class Query extends WisskiQueryBase {
   /** recursively go through $condition tree and match entities against it.
    */
   protected function makeQueryConditions(ConditionInterface $condition) {
+#    dpm("yay???");
     // these fields cannot be queried with this adapter
     $skip_field_ids = array(
 //      'langcode',
@@ -411,6 +412,7 @@ class Query extends WisskiQueryBase {
         $operator = $cond['operator'];
         // just to be sure!
         $operator = strtoupper($operator);
+#        dpm($field, "going into field");
 #wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition" : "now for '".join(";",(array)$value)."' in field '$field'");
 #\Drupal::logger('query path cond')->debug("$ij::$field::$value::$operator::$conjunction");
 
@@ -496,16 +498,19 @@ class Query extends WisskiQueryBase {
         // allow for queries that contain both path and field conditions.
         elseif ($this->isPathQuery() || strpos($field, '.') !== FALSE) {
           // the field is actually a path so we can query it directly
-
+ #         dpm("path!!");
           // the search field id encodes the pathbuilder id and the path id:
           // decode them!
           // TODO: we could omit the pb and search all pbs the contain the path
           $pb_and_path = explode(".", $field);
           if (count($pb_and_path) != 2) {
+#            dpm("bad encoding?");
             // bad encoding! can't handle
             \Drupal::messenger()->addStatus(('Bad pathbuilder and path id "%id" in entity query condition'));
             continue; // with next condition
           }
+#          dpm($pb_and_path, "pbandp?");
+          
           $pbid = $pb_and_path[0];
           $pbs = $this->getPbs();
           if (!isset($pbs[$pbid])) {
@@ -547,7 +552,7 @@ class Query extends WisskiQueryBase {
         }
         else {
           // the field must be mapped to one or many paths which are then queried
-
+#          dpm("could not make map!");
           $new_query_part = $this->makeFieldCondition($field, $operator, $value);
           if (is_null($new_query_part)) {
             if ($conjunction == 'AND') {

@@ -92,6 +92,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
     // find all the bundles involved in this query
     $bundleIDs = $this->getWissKIBundleIDs();
+#    dpm($bundleIDs, "found bundleids");
 
     // no bundle ids matching the query
     // probably something went wrong, so fall back to using all adapters!

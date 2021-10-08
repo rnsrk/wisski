@@ -1115,7 +1115,7 @@ abstract class Sparql11Engine extends EngineBase {
   * @return a sparql statement, usually a FILTER statement
   */
   public function _buildSearchFilter(array $search, $dtVar, $depth = 0) {
-    
+#    dpm($search, "search?");
     if (empty($search)) {
 
       return '';

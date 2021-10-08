@@ -302,6 +302,7 @@ class WisskiIndividualQuery extends QueryPluginBase
             // and also find involved bundles!
             $entity_ids = $query->execute();
             $bundle_ids = $query->getWissKIBundleIDs();
+#            dpm($entity_ids, "eids?");
 
             // turn the returned Entity IDs and populate $view->result[]
             $values_per_row = $this->fetchEntityData($entity_ids, $bundle_ids);
@@ -970,7 +971,39 @@ class WisskiIndividualQuery extends QueryPluginBase
           $value = str_replace("%", "", $value);
         }
         
-//        dpm($field, "yay");
+        #dpm($field, "yay");
+//        dpm(serialize(\Drupal\views\Views::viewsData()->get('wisski_individual')), "sis?");
+        // it starts with a dot
+        // this means it is a relative field
+        // and we have to solve it to its real wisski thingies
+        // if it is a wisski field at all
+        if(strpos($field, ".") === 0) {
+          $viewsdata = \Drupal\views\Views::viewsData()->get('wisski_individual');
+            
+          // cut away the dot and have a look.
+          $viewsdata = $viewsdata[substr($field, 1)];
+          
+          if(isset($viewsdata['field']) && isset($viewsdata['field']['wisski_field']))  
+            $wisski_field = $viewsdata['field']['wisski_field'];
+          else // no wisski field?
+            $wisski_field = "";
+        
+          if(!empty($wisski_field))
+            $field = $wisski_field;
+            
+          // in this case we also have to check if the operator
+          // is correct in case of entity reference thingies
+          if(is_numeric($value) && $operator == "=") {
+              $operator = "has_eid";
+          }
+
+          #dpm($wisski_field, "ws?");
+        }            
+            
+            
+        
+#        dpm($value, "value");
+#        dpm($operator, "op");
         // Ensure all variants of 0 are actually 0. Thus '', 0 and NULL are all
         // the default group.
         if (empty($group)) {

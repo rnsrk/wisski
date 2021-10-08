@@ -185,6 +185,7 @@ class WisskiEntityController extends ControllerBase {
     $langcode = $wisski_individual->language()->getId();
     $langname = $wisski_individual->language()->getName();
     $languages = $wisski_individual->getTranslationLanguages();
+//    dpm($langcode);
     $has_translations = (count($languages) > 1);
     $wisski_individual_storage = $this->entityTypeManager()->getStorage('wisski_individual');
 #    $type = $wisski_individual->getType();
