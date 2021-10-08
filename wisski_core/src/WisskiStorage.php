@@ -841,6 +841,9 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #    dpm(microtime(), "last!");
 #    dpm(array('in'=>$ids,'out'=>$entities),__METHOD__);
 
+      // early opt out
+      if(empty($entities))
+        return array();
 
       // somehow the validation for example seems to call everything more than once
       // therefore we cache every full call...
