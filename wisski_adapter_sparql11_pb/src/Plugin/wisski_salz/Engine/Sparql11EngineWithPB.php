@@ -1766,6 +1766,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
                 else
                   $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT][] = $item;
             
+                // by mark: we also add it in the correct language
+#                if(isset($item['wisski_language']))
+#                  $out[$eid][$field_id][$item['wisski_language']][$key] = $item;
+            
 //                $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT] = array_merge($out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT], $item);
             
              }
@@ -2878,7 +2882,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       $disambresult = $this->directQuery($sparql);
 #dpm(array($sparql, $disambresult), __METHOD__ . " disamb query");
       if(!empty($disambresult))
-        $disambresult = $disambresult[0];
+        if(isset($disambresult[0]))
+          $disambresult = $disambresult[0];
+        else
+          $disambresult = current($disambresult);
         // this fails due to some bug?
         //$disambresult = current($disambresult);      
     } 
