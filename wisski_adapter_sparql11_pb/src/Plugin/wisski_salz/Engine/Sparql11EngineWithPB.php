@@ -2880,14 +2880,26 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #      drupal_set_message("spq: " . ($sparql));
 #      dpm($path, "path");
       $disambresult = $this->directQuery($sparql);
-#dpm(array($sparql, $disambresult), __METHOD__ . " disamb query");
-      if(!empty($disambresult))
-        if(isset($disambresult[0]))
-          $disambresult = $disambresult[0];
-        else
-          $disambresult = current($disambresult);
+#      dpm("disamb query one: " . serialize($disambresult));
+#dpm(array($sparql, $disambresult), __METHOD__ . " disamb query1");
+      if(!empty($disambresult) && isset($disambresult[0]) && !empty($disambresult[0])) {
+#        dpm("it is not empty!");
+        $disambresult = $disambresult[0];
         // this fails due to some bug?
-        //$disambresult = current($disambresult);      
+        //$disambresult = current($disambresult);
+        
+     } else {
+       // it might be that we have some lagacy data and the language is not 
+       // set in the ts... so we have to do a search without language tag, too.
+       $sparql = "SELECT ?x" . (($path->getDisamb()-1)*2) . " WHERE { ";
+       $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE, '=', 'field', TRUE, array(), 0);
+       $sparql .= " }";
+       $disambresult = $this->directQuery($sparql);
+       if(!empty($disambresult) && isset($disambresult[0]) && !empty($disambresult[0]) ) {
+         $disambresult = $disambresult[0];
+       }
+#       dpm(array($sparql, $disambresult), __METHOD__ . " disamb query2");
+     }      
     } 
 
     // rename to uri
