@@ -208,6 +208,11 @@ class WisskiLinkblock extends BlockBase {
 
               // get the data for this specific thing
               $tmpdata = $engine->pathToReturnValue($path, $pb, $individualid, 0, 'target_id', FALSE);
+              $detectedEntries = array();
+              
+              
+#              dpm(serialize($tmpdata), "tmp?");
+#              dpm($path, "path?");
 #              drupal_set_message("path: " . serialize($path));
               if(!empty($tmpdata)) {
                 $dataout[$path->id()]['path'] = $path;
@@ -221,17 +226,28 @@ class WisskiLinkblock extends BlockBase {
                 // We store the correct value in $detectedEntry if an adequate translation/language id for this entity exists
                 // In case no translation for the requested language exists, $detectedEntry is empty and we take the first
                 // translation we found for this entry, what should be normally the original language in which the entry was created
-                $detectedEntry = array();
+                //$detectedEntry = array();
+#                dpm($tmpdata, "tmp?");
+                
                 foreach ($tmpdata as $tmp_id => $tmp) {
-                  if(isset($tmp['wisski_language']) && $tmp['wisski_language'] == $language){
-                    $detectedEntry = array($tmp);
-                    break;
+                  // check if language exists or if it is und 
+                  // it also might be that it does not exist - e.g. if
+                  // the path is an entity reference
+                  if(isset($tmp['wisski_language']) && ($tmp['wisski_language'] == $language || $tmp['wisski_language'] == "und")){
+                    $detectedEntries[] = $tmp;
+                    // we do not break here - otherwise we don't get all results for this path!
+                    //break;
                   }
                 }
-                if(empty($detectedEntry)){
-                  $detectedEntry = array(current($tmpdata));
+                
+                
+                if(empty($detectedEntries)){
+                  // this is greatly wrong!
+                  // tmpdata is an array of values for this path and not a single one.
+                  //$detectedEntry = array(current($tmpdata));
+                  $detectedEntries = $tmpdata;
                 }
-                $dataout[$path->id()]['data'] = array_merge($dataout[$path->id()]['data'], $detectedEntry);
+                $dataout[$path->id()]['data'] = array_merge($dataout[$path->id()]['data'], $detectedEntries);
              }
             }
 
