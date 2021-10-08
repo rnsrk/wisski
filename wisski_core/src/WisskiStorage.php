@@ -1938,6 +1938,13 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
       $entity->setPublished(TRUE);
     }
     
+    // check if default langcode is set because we will get an error if it is null...
+    $default_langcode = $entity->default_langcode;
+    if(isset($default_langcode) && empty($default_langcode->getValue())) {
+      $my_lang = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+      $entity->set("default_langcode", $my_lang);
+    }
+    
     $full_save = empty($names);
     $update = !$full_save || !$entity->isNew();
 
