@@ -319,6 +319,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
  #     dpm($parts,'partagain??'.$parent.' '.($positive ? 'pos' : 'neg'));
       if ($attributes['type'] === 'path') {
         $name = $attributes['name'];
+        
+        $part = array();
+        
         unset($values);
         switch ($name) {
           case 'eid':
@@ -349,7 +352,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           } else $parts[$key] = '';
           continue;
         }
-        $part = array();
+
         $cardinality = $attributes['cardinality'];
         // here we did not check for languaged tags
         // @TODO: Make this check for sanity!
