@@ -106,6 +106,8 @@ class WisskiEntitySearch extends SearchPluginBase {
       }
     }
     $return = array();
+#    dpm(serialize($results), "res?");
+    $curr_lang = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
     foreach ($results as $bundle_id => $entity_ids) {
       $bundle = \Drupal::service('entity_type.manager')->getStorage('wisski_bundle')->load($bundle_id);
       foreach ($entity_ids as $entity_id) {
@@ -115,6 +117,33 @@ class WisskiEntitySearch extends SearchPluginBase {
         // entity. this would prevent WissKI from generating and displaying the
         // right title.
         $title = wisski_core_generate_title($entity_id, NULL, FALSE, $bundle_id);
+
+        // if we get a title array, go in there.
+        if(is_array($title)) {
+          if(isset($title['curr_lang'])) {
+            $title = $title['curr_lang'];
+            
+            // take the first one
+            if(isset($title[0]))
+              $title = $title[0];
+            
+            // and then the value
+            if(isset($title['value']))
+              $title = $title['value'];
+          } else {
+            $title = current($title);
+            
+            // take the first one
+            if(isset($title[0]))
+              $title = $title[0];
+            
+            // and then the value
+            if(isset($title['value']))
+              $title = $title['value'];
+          }
+        }
+        
+            
         #$preview = getPreviewImageUri($entity_id, $bundle_id);
 #        $preview = WisskiCacheHelper::getPreviewImageUri($entity_id);
 #        dpm($preview, "prev");
