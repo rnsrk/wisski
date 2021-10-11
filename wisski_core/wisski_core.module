@@ -514,7 +514,10 @@ function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatch
 
       if(!empty($result) && isset($result['view_id'])) {
         // the parent is a view - so we probably want to render this...
-        $link = Link::createFromRoute($result['_title'], $result['_route'], array(), array('query' => $query_array));
+	if(!empty($result['_title']))
+          $link = Link::createFromRoute($result['_title'], $result['_route'], array(), array('query' => $query_array));
+	else
+	  $link = Link::createFromRoute("Link had no Title", $result['_route'], array(), array('query' => $query_array));
 
         $breadcrumb->addLink($link);
       }
