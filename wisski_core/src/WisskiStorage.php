@@ -852,6 +852,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #      dpm($entity_cache, "already have: ");
     
       foreach($entities as $id => $value) {
+#        dpm(serialize($value->bundle->getValue()), "for $id");
         $entity_cache[$id] = $value;
       }
     
@@ -954,7 +955,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
         $this->writeToCache($id, $cached_bundle);
       } else {
         $cached_bundle = WisskiCacheHelper::getCallingBundle($id);
-#      drupal_set_message($id . " " . serialize($bundle_ids) . " and " . serialize($cached_bundle));      
+#        dpm($id . " " . serialize($bundle_ids) . " and " . serialize($cached_bundle));      
         // only use that if it is a top bundle when the checkbox was set. Always use it otherwise.
         if ($cached_bundle) {
           if($only_use_topbundles && empty($mainentityid) && !in_array($cached_bundle, $topBundles)) {
@@ -1914,7 +1915,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
  
 #    dpm(serialize($entity->bundle()), "my bundle really is?");
     #    return;
- 
+#    if($entity->isNewRevision())
+#      dpm(serialize("new revision!!"));
     $this->doSaveWisskiRevision($entity, $names); 
   }
   

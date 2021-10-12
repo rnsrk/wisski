@@ -35,7 +35,6 @@ function wisski_core_help($route_name, RouteMatchInterface $route_match) {
   }
 }
 
-
 function wisski_core_cache_flush() {
 
   WisskiCacheHelper::flushAllEntityTitles();
@@ -226,7 +225,7 @@ function wisski_core_entity_prepare_form(EntityInterface $entity, $operation, Fo
         // get the target bundles
         $target_bundles = $settings['handler_settings']['target_bundles'];
 
-#	dpm($target_bundles, "target");
+#	dpm($target_bundles, "target for entity id " . $entity->id());
 
         // get all values
         $values = $entity->get($key)->getValue();

@@ -44,6 +44,15 @@ class WisskiEntityForm extends ContentEntityForm {
     return $form;
   }
 
+   /**
+   * {@inheritdoc}
+   *
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+#    dpm("validate for wisski called!!");
+    parent::validateForm($form, $form_state);
+  }
+
   public function save(array $form, FormStateInterface $form_state) {
 #    dpm($form, "form");
 #    dpm($form_state, "fs");

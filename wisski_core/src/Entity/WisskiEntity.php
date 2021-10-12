@@ -39,6 +39,7 @@ use Drupal\Core\Entity\EditorialContentEntityBase;
  *       "add" = "Drupal\wisski_core\Form\WisskiEntityForm",
  *       "delete" = "Drupal\wisski_core\Form\WisskiEntityDeleteForm",
  *     },
+ *     "inline_form" = "Drupal\wisski_core\Form\WisskiInlineEntityForm",
  *     "access" = "Drupal\wisski_core\Controller\WisskiEntityAccessHandler",
  *   },
  *   render_cache = FALSE,
