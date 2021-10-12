@@ -296,7 +296,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       
       $key = key($pattern);
       $attributes = current($pattern);
-            
+      $part = array();
+      
       $count++;
       unset($pattern[$key]);
       reset($pattern);
@@ -320,7 +321,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       if ($attributes['type'] === 'path') {
         $name = $attributes['name'];
         
-        $part = array();
+        //$part = array();
         
         unset($values);
         switch ($name) {
