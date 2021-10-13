@@ -1744,7 +1744,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #    dpm(serialize($values['bundle'][0]['target_id']), "is sis shiit?");
 #    return;
     $bundle_id = $values['bundle'][0]['target_id'];
-   
+#    dpm("saving ". $entity->id() . " with bundle " . serialize($values['bundle']) . " or " . serialize($entity->bundle()));   
     if (empty($bundle_id)) $bundle_id = $entity->bundle();
     // TODO: What shall we do if bundle_id is still empty. Can this happen?
 
@@ -1947,6 +1947,29 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
       $entity->set("default_langcode", $my_lang);
     }
     
+    $original = !empty($entity->original) ? $entity->original : NULL;
+    
+    // skip the last step if the bundle diverges
+    $skip_last_step = FALSE;
+    
+    if(!empty($original)) {
+      if(!empty($original->bundle) && !empty($entity->bundle)) {
+        $obid = $original->bundle->target_id;
+        $ebid = $entity->bundle->target_id;
+        if($obid === $ebid) {
+          #dpm("bundles are the same!");
+        } else {
+          \Drupal::messenger()->addStatus('Warning: Entity ' . $entity->id() . " was loaded with a different bundle id. Most times this comes from the selection of bundle override in the WissKI Settings. Deactivate that there to get rid of this message.");
+          $skip_last_step = TRUE;
+          //$original->set("bundle", $entity->bundle->target_id);
+          #dpm("divergent bundle: " .serialize($original->bundle->target_id) . " vs. " .serialize($entity->bundle->target_id));
+          // reset original bundle
+          //$entity->original = $original;
+          //dpm(serialize($entity));
+        }
+      }
+    }
+    
     $full_save = empty($names);
     $update = !$full_save || !$entity->isNew();
 
@@ -2042,10 +2065,14 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
       }
     }
 
-    // Update dedicated table records if necessary.
-    if ($dedicated_table_fields) {
-      $names = is_array($dedicated_table_fields) ? $dedicated_table_fields : [];
-      $this->saveToDedicatedTables($entity, $update, $names);
+#    dpm(serialize($entity));
+
+    if(!$skip_last_step) {
+      // Update dedicated table records if necessary.
+      if ($dedicated_table_fields) {
+        $names = is_array($dedicated_table_fields) ? $dedicated_table_fields : [];
+        $this->saveToDedicatedTables($entity, $update, $names);
+      }
     }
   }
 
