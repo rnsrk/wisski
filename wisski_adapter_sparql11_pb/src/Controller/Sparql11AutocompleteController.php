@@ -37,7 +37,7 @@
 #      $matches[] = array('value' => "dfdf", "label" => "sdfsdffd");
 #      return new JsonResponse($matches);
       $string = $request->query->get('q');
-      if ($string) {
+      if (isset($string)) {
 #        drupal_set_message("str: " . serialize($string));
 #        drupal_set_message("pathid: " . serialize($pathid));
         $path = WisskiPathEntity::load($pathid);
