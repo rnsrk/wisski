@@ -229,10 +229,12 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
       
       
       $selected_field_name = $default_value;
-      $trigger = $form_state->getTriggeringElement();
-      //dpm($trigger,'Trigger');
-      if ($trigger['#name'] == 'select_field' || $trigger['#name'] == 'field') {
-        $selected_field_name = $form_state->getValue($trigger['#name']) ? : '';
+      if (isset($trigger['#name'])) {
+        $trigger = $form_state->getTriggeringElement();
+        //dpm($trigger,'Trigger');
+        if ($trigger['#name'] == 'select_field' || $trigger['#name'] == 'field') {
+          $selected_field_name = $form_state->getValue($trigger['#name']) ? : '';
+        }
       }
       $form['field_form']['choose_field']['field'] = array(
         '#type' => 'textfield',
@@ -296,9 +298,10 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
       // --- what is the current (default) value for the display of this field ---
       $ftvalue = NULL;
       // check if we are in ajax-mode, then there is something in form-state
-      if ($trigger['#name'] === 'fieldtype')
-        $ftvalue = $form_state->getValue('fieldtype');
-      
+      if (isset($trigger['#name'])) {
+        if ($trigger['#name'] === 'fieldtype')
+          $ftvalue = $form_state->getValue('fieldtype');
+      }
       //if the FT itself was not triggered, we should look up in the field selection
       if (empty($ftvalue) && isset($selected_field_values))
         $ftvalue = $selected_field_values['field_type'];//$form_state->getValue('fieldtype');
