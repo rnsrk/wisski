@@ -206,78 +206,88 @@ class WisskiPathbuilderForm extends EntityForm {
 
         $form['pathbuilder_table'][$path->id()]['weight'] = $pathform['weight'];
 
+        # Get bundle id, sometimes fields do not have bundle value
+        $bundle_id = $pbpaths[$path->id()]['bundle'];
+        if(empty($bundle_id)) {
+          $bundle_id = $pbpaths[$pbpaths[$path->id()]['parent']]['bundle'];
+        }
+        
+        $field_id = $pbpaths[$path->id()]['field'];
+
         // an array of links that can be selected in the dropdown operations list
+        # edit path 
         $links = array();
         $links['edit'] = array(
           'title' => $this->t('Edit'),
-       # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->getID())),
+        # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->getID())),
           'url' => Url::fromRoute('entity.wisski_path.edit_form')
-                     ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
+          ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
 
+        #edit field config in pathbuilder environment
         $links['fieldconfig'] = array(
           'title' => $this->t('Configure Field'),
-         # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
+        # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
           'url' => Url::fromRoute('entity.wisski_pathbuilder.configure_field_form')
-                     ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
+          ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
-
-        if(!empty($pbpaths[$path->id()]['field']) && !empty($pbpaths[$path->id()]['parent']) && !empty($pbpaths[$path->id()]['fieldtype'])) {
-          $links['fieldsedit'] = array(
-            'title' => $this->t('Manage Field Settings'),
-          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
-            'url' => \Drupal\Core\Url::fromRoute('entity.field_config.wisski_individual_field_edit_form')
-                   ->setRouteParameters(array('wisski_bundle' => $pbpaths[$pbpaths[$path->id()]['parent']]['bundle'], 'field_config' => 'wisski_individual.' . $pbpaths[$pbpaths[$path->id()]['parent']]['bundle'] . '.' . $pbpaths[$path->id()]['field'])),
-          );
-        }
-
-        if(!empty($pbpaths[$path->id()]) && !empty($pbpaths[$path->id()]['bundle'])) { 
-          $links['bundleedit'] = array(
-            'title' => $this->t('Edit Bundle'),
-         # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
-            'url' => Url::fromRoute('entity.wisski_bundle.edit_form')
-                     ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
-          );
-/*        
-          $links['fieldsedit'] = array(
-            'title' => $this->t('Manage Fields for Bundle'),
-         # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
-            'url' => \Drupal\Core\Url::fromRoute('entity.field_config.wisski_individual.default')
-                     ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
-          );
- */       
+        
+/*
+            if(!empty($pbpaths[$path->id()]) && !empty($bundle_id)) { 
           $links['formedit'] = array(
             'title' => $this->t('Manage Form Display for Bundle'),
          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
             'url' => Url::fromRoute('entity.entity_form_display.wisski_individual.default')
-                     ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
+                     ->setRouteParameters(array('wisski_bundle' => $bundle_id)),
           );
+*/
 
+/*
           $links['displayedit'] = array(
             'title' => $this->t('Manage Display for Bundle'),
          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
             'url' => Url::fromRoute('entity.entity_view_display.wisski_individual.default')
-                     ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
+                     ->setRouteParameters(array('wisski_bundle' => $bundle_id)),
           );
         }
+*/
 
         $links['delete_local'] = array(
           'title' => $this->t('Delete path only from this pathbuilder'),
           'url' => Url::fromRoute('entity.wisski_path.delete_local_form')
-                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
+          ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
 
         $links['delete'] = array(
           'title' => $this->t('Delete path completely'),
           'url' => Url::fromRoute('entity.wisski_path.delete_form')
-                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
+          ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
 
         $links['duplicate'] = array(
           'title' => $this->t('Duplicate'),
           'url' => Url::fromRoute('entity.wisski_path.duplicate_form')
-                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
+          ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
+
+        # Go to bundle structure
+        if($path->isGroup()) { 
+          $links['bundleedit'] = array(
+            'title' => $this->t('Shortcut to Structure'),
+          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
+            'url' => Url::fromRoute('entity.wisski_bundle.edit_form')
+            ->setRouteParameters(array('wisski_bundle' => $bundle_id)),
+          );
+
+        # go to field structure
+        } else {
+          $links['fieldsedit'] = array(
+            'title' => $this->t('Shortcut to Structure'),
+          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
+            'url' => \Drupal\Core\Url::fromRoute('entity.field_config.wisski_individual_field_edit_form')
+            ->setRouteParameters(array('wisski_bundle' => $bundle_id, 'field_config' => 'wisski_individual.' . $bundle_id . '.' . $field_id)),
+          );
+        }
 
         // Operations (dropbutton) column.
       #  $operations = parent::getDefaultOperations($pathbuilder);
