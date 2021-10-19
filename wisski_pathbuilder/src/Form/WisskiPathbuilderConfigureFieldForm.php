@@ -139,8 +139,10 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 #      return $form;
       $value = $default_value;
       $trigger = $form_state->getTriggeringElement();
-      if ($trigger['#name'] == 'select_bundle') {
-        $value = $form_state->getValue('select_bundle') ? : '';
+      if (isset($trigger['#name'])) {
+        if ($trigger['#name'] == 'select_bundle') {
+          $value = $form_state->getValue('select_bundle') ? : '';
+        }
       }
       $form['choose_bundle']['bundle'] = array(
         '#type' => 'textfield',
