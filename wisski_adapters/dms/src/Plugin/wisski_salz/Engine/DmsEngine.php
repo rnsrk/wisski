@@ -443,7 +443,8 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
                 
                 if(count($index[$key]) > 2) {
                   unset($walk_values[$val_key]);
-                  $index[$val_key] = array_slice($index[$val_key], 1, -1);  
+                  if(isset($index[$val_key]))
+                    $index[$val_key] = array_slice($index[$val_key], 1, -1);  
                 }
 
                 $tmp_out = &$tmp_out[$key];
