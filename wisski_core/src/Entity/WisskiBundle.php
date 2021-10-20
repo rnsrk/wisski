@@ -266,6 +266,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $available_languages = \Drupal::languageManager()->getLanguages();
     $available_languages = array_keys($available_languages);
 
+    // here we store if any path part is given for a certain language.
+    $has_any_path_part_per_language = array();
+
 #    dpm("apply");
 #    dpm(microtime(), "apply");
 #    dpm(serialize($entity), "ente?");
@@ -365,9 +368,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         if ($cardinality < 0 || $cardinality > count($values)) $cardinality = count($values);
 #        dpm(count($values[$available_languages[0]]), "count is!");
         $delimiter = $attributes['delimiter'];
+#        dpm($delimiter, "delimiter is?");
         // MyFi: reset i per $language, so we put it into the foreach afterwards
         // $i = 0;
- #       dpm($values, "values");
+#        dpm($values, "values");
 
         foreach ($values as $language => $per_lang_values) {
           $i = 0;
@@ -388,6 +392,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               if(empty($part[$alanguage]))
                 $part[$alanguage] = "";
               $part[$alanguage] .= "$value";
+              
+              // we found something for this language!
+              $has_any_path_part_per_language[$alanguage] = TRUE;
             }
             if (++$i < $cardinality) $part[$alanguage] .= $delimiter;
           } else {
@@ -410,15 +417,19 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               # we need an iteration here over all entries in $value so we deleted we "}" after this block to
               # include this in the outer foreach loop
               $part[$language] .= "$value";
+              // we found something for this language!
+              $has_any_path_part_per_language[$language] = TRUE;
               // }      
               if (++$i < $cardinality) $part[$language] .= $delimiter;
             }
           }
         }
- #       dpm($part[$language]);
+#        dpm($part[$language]);
       }
 
       if ($attributes['type'] === 'text') {
+#        dpm(serialize($attributes));
+#        dpm($available_languages, "avail?");
         foreach($available_languages as $language) {
           // MyFi: we add additional text blocks defined in the title pattern only for languages, where entries exist.
           // If an entry is not translated, we do not want any text block to be added
@@ -427,10 +438,16 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           // original language will be taken instead
           // we described our decision to use the title in the original language if no translation exists in our
           // DHD paper that will hopefully published October 2021
-          if(isset($part[$language])){
+          //
+          // By Mark:
+          // This does not work - $part[$language] is always empty. It is not built together like that as every
+          // part for element is pushed to the parts array. You at least would have to check the parts array for entries
+          // but this is too complicated either. Lets better sort it out later on...
+//          if(isset($part[$language])){
             $part[$language] = $attributes['label'];
-          }
+//          }
         }
+#        dpm($part, "part?");
       }
       //if (!empty($attributes['children'])){dpm($part,'Part');dpm($parts,'Parts '.$key);}
       
@@ -453,6 +470,12 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       // there seems to be no translation!
       // this is an assumption and might prove wrong.
       if (empty(trim($title[$alanguage][0]["value"]))) unset($title[$alanguage]);
+ 
+      
+      // here we should kill titles consisting only of static elements, too, because that
+      // usually is an error in multi-lingual-settings.
+      if(!isset($has_any_path_part_per_language[$alanguage])) unset($title[$alanguage]);
+      
  #     dpm($title);
 #      if (empty(trim($title[$alanguage]))) $title[$alanguage] = $this->createFallbackTitle($entity_id);
     }
