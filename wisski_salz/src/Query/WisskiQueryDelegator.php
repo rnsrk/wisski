@@ -286,16 +286,18 @@ class WisskiQueryDelegator extends WisskiQueryBase {
     // at least we have a pager!
      if ($pager || !empty($this->range)) {
       // MyF: We have to test this in a later step; so first of all we remove this in order
-      /*if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: In-Memory Pagination");
-      if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
-        $querytmp = $query->normalQuery();
-        $querytmp->range($this->range['start'],$this->range['length']);
-        $ret = $querytmp->execute();
-        if(!empty($ret)) {
-          return $ret;
+      if (WISSKI_DEVEL) \Drupal::logger('wisski_query_delegator')->debug("Query Strategy: In-Memory Pagination");
+      foreach ($this->relevant_adapter_queries as $adapter_id => $query) {
+        if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
+          $querytmp = $query->normalQuery();
+          $querytmp->range($this->range['start'],$this->range['length']);
+          $ret = $querytmp->execute();
+          if(!empty($ret)) {
+            return $ret;
+          }
         }
         
-      }*/
+      }
     
       // use the old behaviour if we have a pager
       return $this->executePaginatedJoin($this->range['length'],$this->range['start']);
@@ -354,15 +356,16 @@ class WisskiQueryDelegator extends WisskiQueryBase {
       
       // TODO: dms adapter
       if($query instanceOf \Drupal\wisski_adapter_dms\Query\Query) {
-        /*$query = $query->count();
+        $query = $query->count();
 
         $sub_res = $query->execute() ? : 0;
 
         if(!empty($sub_res)) {
-          $result = $sub_res;
-          continue;
+#          $result = $sub_res;
+          // For now DMS overrules them all!
+          return $sub_res;
         }
-        */
+        
       }
 
       // get the result for this adapter
