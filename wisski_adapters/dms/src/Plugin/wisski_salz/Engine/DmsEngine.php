@@ -37,7 +37,7 @@ use Drupal\Component\Serialization\Json;
  */
 class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterface {
 
-  protected $uriPattern  = "!^http://objektkatalog.gnm.de/object/(.+)$!u";
+  protected $uriPattern  = "!^http://objektkatalog.gnm.de/objekt/(.+)$!u";
   
   /**
    * Workaround for super-annoying easyrdf buggy behavior:
@@ -337,6 +337,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     $cache = \Drupal::cache('wisski_adapter_dms');
     $data = $cache->get($id);
     if ($data) {
+#      dpm($data->data);
       return $data->data;
     }
 
@@ -362,6 +363,8 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     $keys = array_keys($this->possibleSteps['Object']);
 #    dpm($keys, "key");    
     while($a_ret = sqlsrv_fetch_array($stmt))  {
+#      dpm($a_ret);
+#        dpm($data);
       foreach($keys as $step) {
         $data['Object'][$step] = array($a_ret[$step]);
       }
@@ -369,7 +372,23 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     
     $steps = $this->possibleSteps['Object'];
     $keys = array_keys($steps);
+
+    if(isset($data['Object']['imagepath']) && isset($data['Object']['imagepath'][0])) {
+      $imagestring = $data['Object']['imagepath'][0];
     
+      $imagestring = str_replace("_k2.jpg", "_k3.jpg", $imagestring);
+    
+      $imagearray = explode(".jpg,", $imagestring);
+      
+      foreach($imagearray as $imgkey => $imgarr) {
+        // as long as it is not the last one.
+        if($imgkey < count($imagearray)-1)
+          $imagearray[$imgkey] = $imgarr . ".jpg";
+      }  
+    
+#    dpm($imagearray);
+      $data['Object']['imagepath'] = $imagearray;
+    }    
 
 #    dpm(htmlentities(serialize($data['Object'])), "step?");
     
@@ -470,6 +489,10 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         }
       }
     }
+
+#    $available_languages = \Drupal::languageManager()->getLanguages();
+#    $available_languages = array_keys($available_languages);
+    
 
 
     $cache->set($id, $data);
@@ -647,9 +670,10 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
             } else {
               $values = $this->pathToReturnValue($path, $pbs[$key], $eid, 0, $main_property);
               if (!empty($values)) {
-                foreach ($values as $v) {
-                  $out[$eid][$field_id][] = $v;
-                }
+                 $out[$eid][$field_id][] = $values;
+#                foreach ($values as $v) {
+#                  $out[$eid][$field_id][] = $v;
+#                }
               }
             }
           }
@@ -663,8 +687,24 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
   }
 
 
-  public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL) {
+  public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL, $relative = TRUE, $language = LanguageInterface::LANGCODE_DEFAULT) {
 #dpm($path->getName(), 'spam');
+
+    $languages = array();
+    if($language == LanguageInterface::LANGCODE_DEFAULT)
+      $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+
+    if($language == "all") {
+      $to_load = \Drupal::languageManager()->getLanguages();
+      $languages = array_keys($to_load);
+
+#      dpm($languages, "langs?");
+    } else {
+      $languages = array($language);
+    }
+
+
+
     $field_id = $pb->getPbPath($path->getID())["field"];
 
     $uri = AdapterHelper::getUrisForDrupalId($eid, $this->adapterId());
@@ -711,14 +751,35 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     $out = array();
 #    dpm($data_walk, "walk");
 #    return $out;
+    
+    $available_languages = \Drupal::languageManager()->getLanguages();
+    $available_languages = array_keys($available_languages);
+    
     foreach ($data_walk as $value) {
       if (empty($main_property)) {
         $out[] = $value;
       } else {
-        $out[] = array($main_property => $value);
+        $out[] = array($main_property => $value, 'wisski_language' => $language);
       }
     }
-#    drupal_set_message(serialize($out));
+    
+#    dpm(serialize($out));
+
+    // add languages
+/*
+    $available_languages = \Drupal::languageManager()->getLanguages();
+    $available_languages = array_keys($available_languages);
+
+    $real_out = array();
+    
+    foreach($available_languages as $lang) {
+      $real_out[$lang] = $out;
+    }
+    
+    dpm($real_out, "real out?");
+    return $real_out;
+*/  
+#    dpm(serialize($out));
     return $out;
 
   }
@@ -792,9 +853,19 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
    */ 
   public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE) {
 
+    if(empty($bundleid)) {
+      foreach($conditions as $cond) {
+        if($cond["field"] == "bundle") {
+          $val = $cond["value"];
+          $bundleid = $val;
+        }
+      }
+    }
+
     // check if it knows the bundle.
     $group = $pathbuilder->getGroupsForBundle(current($bundleid));
-    
+
+#    dpm($conditions, "cond?");    
 #    dpm($bundleid, "bundle?");
     
 #    dpm($group, "group?");
@@ -948,9 +1019,15 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #  $result = array();
 #     dpm(microtime(), "micin");          
       $outarr = array();
+#      dpm(serialize(sqlsrv_errors()), "error?");
       while($a_ret = sqlsrv_fetch_array($stmt, SQLSRV_SCROLL_FIRST))  {
+#        dpm(serialize($a_ret), "??");
 #        dpm(microtime(), "start");
-        $uri = "http://objektkatalog.gnm.de/object/" . $a_ret['invnr'];
+        $invnr = $a_ret['invnr'];
+        
+        $invnr = urlencode($invnr);
+        
+        $uri = "http://objektkatalog.gnm.de/objekt/" . $invnr;
 
         $uriname = AdapterHelper::getDrupalIdForUri($uri,TRUE,$this->adapterId());
         $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
@@ -961,5 +1038,46 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       return $outarr;
     }
   }
+
+  public function getImagesForEntityId($entityid, $bundleid) {
+    $pbs = $this->getPbsForThis();
+
+    //$entityid = $this->getDrupalId($entityid);
+
+
+
+    $ret = array();
+
+    foreach($pbs as $pb) {
+#    drupal_set_message("yay!" . $entityid . " and " . $bundleid);
+
+      $groups = $pb->getGroupsForBundle($bundleid);
+
+      foreach($groups as $group) {
+        $paths = $pb->getImagePathIDsForGroup($group->id());
+
+#      drupal_set_message("paths: " . serialize($paths));
+
+        foreach($paths as $pathid) {
+
+          $path = WisskiPathEntity::load($pathid);
+
+#        drupal_set_message(serialize($path));
+
+#        drupal_set_message("thing: " . serialize($this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $entityid, 0, NULL, 0)));
+
+          // this has to be an absulte path - otherwise subgroup images won't load.
+          $new_ret = $this->pathToReturnValue($path, $pb, $entityid, 0, NULL, FALSE);
+#          if (!empty($new_ret)) dpm($pb->id().' '.$pathid.' '.$entitid,'News');
+          $ret = array_merge($ret, $new_ret);
+
+        }
+      }
+    }
+#    drupal_set_message("returning: " . serialize($ret));
+    //dpm($ret,__FUNCTION__);
+    return $ret;
+  }
+
 
 } 
