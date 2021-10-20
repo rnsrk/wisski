@@ -366,7 +366,11 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #      dpm($a_ret);
 #        dpm($data);
       foreach($keys as $step) {
-        $data['Object'][$step] = array($a_ret[$step]);
+        if(isset($a_ret[$step]))
+          $data['Object'][$step] = array($a_ret[$step]);
+        else {
+          $data['Object'][$step] = array();
+        }
       }
     }
     
@@ -401,7 +405,9 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         
         // what do we get out there?
 #        $outvals = array();
-        
+        if(!is_array($data['Object'][$step]))
+          continue;
+          
         // this should be only one!!!!
         foreach($data['Object'][$step] as $xml) {
 #        $xml = $data['Object'][$step];
