@@ -346,7 +346,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #    dpm(microtime(), "microtime: ");
 #    dpm(serialize(sqlsrv_errors()), "error");
     #    
-    $query = "SELECT TOP 1 * FROM " . $this->table . " WHERE invnr = '" . $id . "'";
+    $query = "SELECT TOP 1 * FROM " . $this->table . " WHERE invnr = '" . $id . "'  AND StatusId = 5";
 #    $query = "SELECT TOP 1 * FROM " . $this->table . " WHERE invnr = '" . $id . "' LEFT OUTER JOIN DMS2ObjectKatalog.PrimaryImage ON " . $this->table . ".imgid = DMS2ObjectKatalog.PrimaryImage.imageid";
 #        
 #    $ret = sqlsrv_query($con, $query);
@@ -961,6 +961,12 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     }
 
 #    dpm(microtime(), "after cond?");
+
+    if(empty($where))
+      $where = "WHERE StatusId = 5";
+    else
+      $where .= " AND StatusId = 5";
+
     
 
     if($count) {
