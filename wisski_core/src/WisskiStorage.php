@@ -127,7 +127,10 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #ddl($values, 'values');
 
         // TODO: CHECK if bundle is in here or if it is in x-default
-        $bundle = ($values[$id]['bundle']);
+        if(isset($values[$id]['bundle']))
+          $bundle = ($values[$id]['bundle']);
+        else
+          $bundle = NULL;
         // by MyF: we need the field defs here because it depends on the bundle; this is not sexy but it only works this way
         $field_defs = \Drupal::service('entity_field.manager')->getFieldDefinitions("wisski_individual", $bundle);
         if (!isset($bundle)) {
