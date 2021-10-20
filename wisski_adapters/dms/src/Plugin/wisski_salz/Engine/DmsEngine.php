@@ -408,7 +408,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         
         // what do we get out there?
 #        $outvals = array();
-        if(!is_array($data['Object'][$step]))
+        if(!is_array($data) || !is_array($data['Object']) || !is_array($data['Object'][$step]))
           continue;
           
         // this should be only one!!!!
