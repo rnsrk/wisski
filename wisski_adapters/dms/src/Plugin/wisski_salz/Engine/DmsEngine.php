@@ -58,8 +58,8 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         'imgid' => NULL,
         'depid' => NULL,
 //        'xml' => NULL,
-        'PermanentLocationNote' => NULL,
-        'workingImageUrl' => NULL,
+#        'PermanentLocationNote' => NULL,
+#        'workingImageUrl' => NULL,
 
         'objectmetadataproviso' => NULL,
         'acquisitionproviso' => NULL,
@@ -73,8 +73,9 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         'InventoryZustandsbeschreibung' => NULL,
         'StandigerStandort' => NULL,
         'VitrinenText' => NULL,
-        'XML_ConstructorsInfo' => array(
-          'results' => array(
+        
+        'XML_ConstructorsInfo' => NULL,
+/*          'results' => array(
             'lido:eventActor' => array(
               'lido:actorInRole' => array(
                 'lido:actor' => array(
@@ -88,7 +89,8 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
               )
             )
           )
-        ),
+        ),*/
+        'XML_Fundangaben' => NULL,
         'XML_ConstructionDates' => array(
           'results' => array(
             'lido:eventDate' => array(
@@ -126,7 +128,8 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
             'lido:displayObjectMeasurements' => NULL,
           ),
         ),
-        'XML_Inscriptions' => array(
+        'XML_Inscriptions' => NULL,
+/*        'XML_Inscriptions' => array(
           'results' => array(
             'lido:inscriptions' => array(
               'lido:inscriptionDescription' => array(
@@ -134,7 +137,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
               ),
             ),
           ),
-        ),
+        ),*/
         'XML_DarstellungSubjectSets' => array(
           'results' => array(
             'lido:subjectSet' => array(
@@ -174,7 +177,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
           ),
         ),
         'imagepath' => NULL,
-            
+        'CurrentOwnership' => NULL,
               
       ),
   );
@@ -422,8 +425,8 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
           $ret = xml_parse_into_struct($parser, $xml, $vals, $index);
           xml_parser_free($parser);
-#          dpm(serialize($index), "ret?");
-#          dpm(serialize($vals), "step?");
+ #         dpm(serialize($index), "ret?");
+ #         dpm(serialize($vals), "step?");
           
           $walk_array = $steps[$step];
           $walk_values = $vals;
