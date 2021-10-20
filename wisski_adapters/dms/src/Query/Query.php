@@ -16,6 +16,8 @@ class Query extends WisskiQueryBase {
   public function execute() {
 #    dpm("exe!");
 
+#    return;
+
 #    dpm(serialize($this->count), "count?1");
 
 #    dpm($this->condition, "cond?");
@@ -57,8 +59,9 @@ class Query extends WisskiQueryBase {
       $limit = $this->range['length'];
       $offset = $this->range['start'];
     } //else dpm($this,'no limits');
-
+#
 #    dpm($limit, "limit?");
+#    dpm($offset, "offset?");
 
 //wisski_tick('prepared '.$pb->id());
 #    return;
@@ -80,6 +83,14 @@ class Query extends WisskiQueryBase {
         $field = $condition['field'];
         $value = $condition['value'];
 
+        if(!is_string($condition['field'])) {
+          // might be one deeper
+          $condition = current($condition['field']->conditions());
+#          dpm($condition, "cond?");
+          $field = $condition['field'];
+          $value = $condition['value'];
+        }
+
 #        dpm($field, "asked for field");
 #        dpm($value, "asked for value");
 
@@ -91,6 +102,7 @@ class Query extends WisskiQueryBase {
 
 #        dpm($eidquery,"eidquery");
 #        dpm($bundlequery, "bundlequery");
+#        return;
 
       $giveback = array();
 
@@ -121,6 +133,8 @@ class Query extends WisskiQueryBase {
             } else {
 
             }    
+            
+#            dpm("bundle?");
             // load the bundles for this id
             $bundleids = $engine->getBundleIdsForEntityId($eid);        
 
@@ -140,8 +154,21 @@ class Query extends WisskiQueryBase {
       //wisski_tick("field query half");
 
       foreach($this->condition->conditions() as $condition) {
+        if(!is_string($condition['field'])) {
+          // might be one deeper
+          $condition = current($condition['field']->conditions());
+#          dpm($condition, "cond?");
+          $field = $condition['field'];
+          $value = $condition['value'];
+        }
+        
         $field = $condition['field'];
         $value = $condition['value'];
+        
+        // if there is an array in value but it has only one value (comes from delegator!)
+        // then we take the value!
+#        if(is_array($value) && count($value) == 1)
+#          $value = current($value);
 #        drupal_set_message("you are evil!" . microtime() . serialize($this));
 #        return;
 
@@ -166,8 +193,16 @@ class Query extends WisskiQueryBase {
 #          dpm($value, "value");
 #          dpm($pb, "pb");
 #          dpm($limit, "limit");
+#          dpm($offset, "off");
+#          return;
 #          dpm($engine, "engine");
-          return array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()));
+
+#dpm(microtime(), "start query");
+          $ret = $engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions());
+#dpm(microtime(), "end query");
+#          dpm($ret, "ret?");
+
+          return array_keys($ret);
         }
 
         if($field == 'label' ) {
