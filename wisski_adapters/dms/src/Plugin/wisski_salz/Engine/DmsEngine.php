@@ -325,6 +325,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         return FALSE;
       } elseif (preg_match($this->uriPattern, $uri, $matches)) {
         $id = $matches[1];
+        $id = urldecode($id);
       } else {
         // not a URI
         return FALSE;
