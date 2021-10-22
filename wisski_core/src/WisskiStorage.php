@@ -1206,10 +1206,22 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                   $formats = \Drupal::service('entity_type.manager')->getStorage('filter_format')->loadByProperties(array('status' => TRUE));
                   $format = current($formats);
 #                  dpm($format->get("format"), "format");
+                  // By Mark: This has changed due to language thingies...
+                  // we have to change that here but be backward compatible.
                   foreach($new_field_values as &$xid) {
                     foreach($xid as &$xfieldname) {
                       foreach ($xfieldname as &$xindex) {
-                        $xindex['format'] = $format->get("format");
+                        $found_smthg = FALSE;
+                        if(is_array($xindex)) {
+                          foreach($xindex as &$subindex) {
+                            if(isset($subindex['wisski_language']))
+                              $subindex['format'] = $format->get("format");
+                              $found_smthg = TRUE;
+                          }
+                        }
+
+                        if(!$found_smthg)
+                          $xindex['format'] = $format->get("format");
                       }
                     }
                   }
