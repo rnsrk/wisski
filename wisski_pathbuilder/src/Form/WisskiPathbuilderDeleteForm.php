@@ -28,8 +28,9 @@ class WisskiPathbuilderDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    $this->messenger()->addStatus(htmlentities(new Url('entity.wisski_pathbuilder.collection')));
-    return new Url('entity.wisski_pathbuilder.collection');
+    $url = new Url('entity.wisski_pathbuilder.collection');
+    #$this->messenger()->addStatus(htmlentities($url->toString()));
+    return $url;
   }
   
   /**
