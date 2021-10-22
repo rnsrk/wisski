@@ -231,11 +231,12 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
       
       
       $selected_field_name = $default_value;
-      if (isset($trigger['#name'])) {
+
         $trigger = $form_state->getTriggeringElement();
-        //dpm($trigger,'Trigger');
-        if ($trigger['#name'] == 'select_field' || $trigger['#name'] == 'field') {
-          $selected_field_name = $form_state->getValue($trigger['#name']) ? : '';
+        if (isset($trigger['#name'])) {
+          //dpm($trigger,'Trigger');
+          if ($trigger['#name'] == 'select_field' || $trigger['#name'] == 'field') {
+            $selected_field_name = $form_state->getValue($trigger['#name']) ? : '';
         }
       }
       $form['field_form']['choose_field']['field'] = array(
