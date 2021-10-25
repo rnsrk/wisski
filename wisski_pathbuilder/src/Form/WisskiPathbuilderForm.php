@@ -208,8 +208,9 @@ class WisskiPathbuilderForm extends EntityForm {
 
         # Get bundle id, sometimes fields do not have bundle value
         $bundle_id = $pbpaths[$path->id()]['bundle'];
+        $bundle_id_from_parent = isset($pbpaths[$pbpaths[$path->id()]['parent']]['bundle']) ? $pbpaths[$pbpaths[$path->id()]['parent']]['bundle'] : Null;
         if(empty($bundle_id)) {
-          $bundle_id = $pbpaths[$pbpaths[$path->id()]['parent']]['bundle'];
+          $bundle_id = $bundle_id_from_parent;
         }
         
         $field_id = $pbpaths[$path->id()]['field'];
@@ -230,12 +231,12 @@ class WisskiPathbuilderForm extends EntityForm {
                      ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
 
-        if(!empty($pbpaths[$path->id()]) && !empty($pbpaths[$path->id()]['bundle'])) { 
+        if(!empty($pbpaths[$path->id()]) && !empty($bundle_id)) { 
           $links['bundleedit'] = array(
             'title' => $this->t('Edit Bundle'),
          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
             'url' => Url::fromRoute('entity.wisski_bundle.edit_form')
-                     ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
+                     ->setRouteParameters(array('wisski_bundle' => $bundle_id)),
           );
 /*        
           $links['fieldsedit'] = array(
@@ -249,14 +250,14 @@ class WisskiPathbuilderForm extends EntityForm {
             'title' => $this->t('Manage Form Display for Bundle'),
          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
             'url' => Url::fromRoute('entity.entity_form_display.wisski_individual.default')
-                     ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
+                     ->setRouteParameters(array('wisski_bundle' => $bundle_id)),
           );
 
           $links['displayedit'] = array(
             'title' => $this->t('Manage Display for Bundle'),
          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
             'url' => Url::fromRoute('entity.entity_view_display.wisski_individual.default')
-                     ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
+                     ->setRouteParameters(array('wisski_bundle' => $bundle_id)),
           );
         }
 
