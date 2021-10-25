@@ -3,7 +3,7 @@
  * @file
  * Contains \Drupal\wisski_pathbuilder\Form\WisskiPathbuilderForm
  */
- 
+
 namespace Drupal\wisski_pathbuilder\Form;
 
 use Drupal\wisski_salz\Entity\Adapter;
@@ -26,7 +26,7 @@ use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity as Pathbuilder;
  * 
  * Fom class for adding/editing WisskiPathbuilder config entities.
  */
- 
+
 class WisskiPathbuilderForm extends EntityForm {
 
   public $with_solr;
@@ -34,7 +34,7 @@ class WisskiPathbuilderForm extends EntityForm {
    /**
    * {@inheritdoc}
    */
-  public function form(array $form, FormStateInterface $form_state) {
+   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
     
     // what entity do we work on?
@@ -62,7 +62,7 @@ class WisskiPathbuilderForm extends EntityForm {
         '#description' => $this->t("Name of the Pathbuilder-Tree."),
         '#required' => true,
       );
-    
+      
       // we need an id
       $form['id'] = array(
         '#type' => 'machine_name',
@@ -118,7 +118,7 @@ class WisskiPathbuilderForm extends EntityForm {
           array('data' => $this->t('Operations'),'colspan' => 11),
         );
       }
-     
+      
       $form['pathbuilder_table'] = array(
         '#type' => 'table',
 #        '#theme' => 'table__menu_overview',
@@ -155,7 +155,7 @@ class WisskiPathbuilderForm extends EntityForm {
         
         $pathforms = array_merge($pathforms, $this->recursive_render_tree($grouparray, 0, 0, 0, $ns));
       }
-    
+      
       $pbpaths = $pathbuilder->getPbPaths();
 
       // iterate through all the pathforms and bring the forms in a tree together
@@ -215,44 +215,36 @@ class WisskiPathbuilderForm extends EntityForm {
         
         $field_id = $pbpaths[$path->id()]['field'];
 
+
         // an array of links that can be selected in the dropdown operations list
+        # edit path 
         $links = array();
         $links['edit'] = array(
           'title' => $this->t('Edit'),
-        #'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->getID())),
+        # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->getID())),
           'url' => Url::fromRoute('entity.wisski_path.edit_form')
-                     ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
+          ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
 
+        #edit field config in pathbuilder environment
         $links['fieldconfig'] = array(
           'title' => $this->t('Configure Field'),
-         # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
+        # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
           'url' => Url::fromRoute('entity.wisski_pathbuilder.configure_field_form')
-                     ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
+          ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
-
-        if(!empty($pbpaths[$path->id()]) && !empty($bundle_id)) { 
-          $links['bundleedit'] = array(
-            'title' => $this->t('Edit Bundle'),
-         # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
-            'url' => Url::fromRoute('entity.wisski_bundle.edit_form')
-                     ->setRouteParameters(array('wisski_bundle' => $bundle_id)),
-          );
-/*        
-          $links['fieldsedit'] = array(
-            'title' => $this->t('Manage Fields for Bundle'),
-         # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
-            'url' => \Drupal\Core\Url::fromRoute('entity.field_config.wisski_individual.default')
-                     ->setRouteParameters(array('wisski_bundle' => $pbpaths[$path->id()]['bundle'])),
-          );
- */       
+        
+/*
+            if(!empty($pbpaths[$path->id()]) && !empty($bundle_id)) { 
           $links['formedit'] = array(
             'title' => $this->t('Manage Form Display for Bundle'),
          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
             'url' => Url::fromRoute('entity.entity_form_display.wisski_individual.default')
                      ->setRouteParameters(array('wisski_bundle' => $bundle_id)),
           );
+*/
 
+/*
           $links['displayedit'] = array(
             'title' => $this->t('Manage Display for Bundle'),
          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
@@ -260,24 +252,46 @@ class WisskiPathbuilderForm extends EntityForm {
                      ->setRouteParameters(array('wisski_bundle' => $bundle_id)),
           );
         }
+*/
 
         $links['delete_local'] = array(
           'title' => $this->t('Delete path only from this pathbuilder'),
           'url' => Url::fromRoute('entity.wisski_path.delete_local_form')
-                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
+          ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
 
         $links['delete'] = array(
           'title' => $this->t('Delete path completely'),
           'url' => Url::fromRoute('entity.wisski_path.delete_form')
-                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
+          ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
 
         $links['duplicate'] = array(
           'title' => $this->t('Duplicate'),
           'url' => Url::fromRoute('entity.wisski_path.duplicate_form')
-                   ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
+          ->setRouteParameters(array('wisski_pathbuilder'=>$pathbuilder->id(), 'wisski_path' => $path->id())),
         );
+
+        if (!empty($bundle_id)) {
+        # Go to bundle structure
+          if($path->isGroup()) { 
+            $links['bundleedit'] = array(
+              'title' => $this->t('Shortcut to Structure'),
+          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
+              'url' => Url::fromRoute('entity.wisski_bundle.edit_form')
+              ->setRouteParameters(array('wisski_bundle' => $bundle_id)),
+            );
+
+        # go to field structure
+          } else {
+            $links['fieldsedit'] = array(
+              'title' => $this->t('Shortcut to Structure'),
+          # 'url' => $path->urlInfo('edit-form', array('wisski_pathbuilder'=>$pathbuilder->id())),
+              'url' => \Drupal\Core\Url::fromRoute('entity.field_config.wisski_individual_field_edit_form')
+              ->setRouteParameters(array('wisski_bundle' => $bundle_id, 'field_config' => 'wisski_individual.' . $bundle_id . '.' . $field_id)),
+            );
+          }
+        }
 
         // Operations (dropbutton) column.
       #  $operations = parent::getDefaultOperations($pathbuilder);
@@ -433,7 +447,7 @@ class WisskiPathbuilderForm extends EntityForm {
     ksort($files);
 
     $items = array();
-        
+    
     foreach($files as $file) {
     #  $form['export']['export'][] = array('#type' => 'link', '#title' => $file->filename, '#url' => Url::fromUri(file_create_url($file->uri)));
       $items[] = array('#type' => 'link', '#title' => $file->filename, '#url' => Url::fromUri(file_create_url($file->uri)));
@@ -447,7 +461,7 @@ class WisskiPathbuilderForm extends EntityForm {
       '#attributes' => array('class' => 'pb_export'),
     );
     
-      
+    
     $form['export']['exportbutton'] = array(
       '#type' => 'submit',
       '#value' => 'Create Exportfile',
@@ -471,7 +485,7 @@ class WisskiPathbuilderForm extends EntityForm {
    * {@inheritdoc}
    */
   protected function actions(array $form, FormStateInterface $form_state) {
-        
+    
     $element = parent::actions($form, $form_state);
     $element['#type'] = '#dropbutton';
 
@@ -484,7 +498,7 @@ class WisskiPathbuilderForm extends EntityForm {
         '#weight' => -10,
         '#dropbutton' => 'save',
       );
-             
+    
     $element['submit']['#value'] = $this->t('Save without form generation');
     $element['submit']['#dropbutton'] = 'save';
     return $element;
@@ -495,7 +509,7 @@ class WisskiPathbuilderForm extends EntityForm {
     
     // get the pathbuilder    
     $pathbuilder = $this->entity;
- 
+    
     // fetch the paths
     $paths = $form_state->getValue('pathbuilder_table');
     
@@ -504,7 +518,7 @@ class WisskiPathbuilderForm extends EntityForm {
     
 #    dpm($paths);
     foreach($paths as $key => $path) {
-    
+      
       $pbp = $pathbuilder->getPbPath($path['id']);
 #      dpm($path, "path!");
       
@@ -534,10 +548,10 @@ class WisskiPathbuilderForm extends EntityForm {
 
         if(in_array($subkey, array('relativepath')))
           continue;
- 
+        
         if($subkey == "parent")
           $subkey = "group_id";
- 
+        
         $this_path->addChild($subkey, htmlspecialchars($value));
       }
       
@@ -564,7 +578,7 @@ class WisskiPathbuilderForm extends EntityForm {
     $dom->formatOutput = true;
     
     $export_path = 'public://wisski_pathbuilder/export/' . $pathbuilder->id() . date('_Ymd\THis');
-            
+    
     $file = file_save_data($dom->saveXML(), $export_path, FileSystemInterface::EXISTS_RENAME);
   }
   
@@ -686,7 +700,7 @@ class WisskiPathbuilderForm extends EntityForm {
     // if we did not get something, stop.
     if(empty($pbpath))
       return array();
-      
+    
 #    if(empty($namespaces))
 #      $namespaces =
 
@@ -801,11 +815,11 @@ class WisskiPathbuilderForm extends EntityForm {
     
     
     $pathform['#attributes'] = $enabled ? array('class' => array('menu-enabled')) : array('class' => array('menu-disabled')); 
-      
+    
   #  $pathform['title'] = '<a href="/dev/contact" data-drupal-selector="edit-links-menu-plugin-idcontactsite-page-title-1" id="edit-links-menu-plugin-idcontactsite-page-title-1" class="menu-item__link">Contact</a>';
     #$path->name;
     $pathform['title'] = array('#type' => 'label', '#title' =>
-    $path->getName(), '#attributes' => $path->isGroup() ?  array('style' => 'font-weight: bold;') : array('style' => 'font-weight: normal; font-style:italic;') );
+      $path->getName(), '#attributes' => $path->isGroup() ?  array('style' => 'font-weight: bold;') : array('style' => 'font-weight: normal; font-style:italic;') );
 
     if (!$enabled) {
       $pathform['title']['#suffix'] = ' (' . $this->t('disabled') . ')';
@@ -821,66 +835,66 @@ class WisskiPathbuilderForm extends EntityForm {
      $pathform['path'] = array(
        '#markup' => $path->printPath($namespaces),
        '#allowed_tags' => array('span'),
-      );
-           
-      if(!$this->with_solr) {
+     );
+     
+     if(!$this->with_solr) {
 #        $pathform['solr']['#type'] = 'hidden';
 #        $pathform['solr']['#value'] = $solr;
-      } else {
-        $pathform['solr'] = array(
-          '#markup' => "<span class = 'wki-pb-solr'>" . $solr . "</span>",
-          '#allowed_tags' => array('span'),
-        );
-      }
-     
-     // if it is a group, mark it as such.
-     if($path->isGroup()) {
-       $pathform['path']['#markup']  = 'Group [' . $pathform['path']['#markup'];
-       $pathform['path']['#markup'] .= ']';
-     }
-      
-    $pathform['enabled'] = array(
-      '#type' => 'checkbox',
-      '#title' => $this->t('Enable @title path', array('@title' => $path->getName())),
-      '#title_display' => 'invisible',
-      '#default_value' => $enabled
-    );
-
-    $field_type_label = $fieldtype ? \Drupal::service('plugin.manager.field.field_type')->getDefinition($fieldtype)['label'] : '';
-    $pathform['field_type_informative'] = array(
-      '#type' => 'item',
-      '#value' => $fieldtype,
-      '#markup' => $field_type_label,
-    );
-
-    $pathform['cardinality'] = array(
-      '#type' => 'item',
-      '#markup' => WisskiPathbuilderConfigureFieldForm::cardinalityOptions()[$cardinality],
-      '#value' => $cardinality,
-      '#title' => $this->t('Field Cardinality'),
-      '#title_display' => 'attribute',
-    );
-
-    $pathform['weight'] = array(
-#      '#type' => 'weight',
-      '#type' => 'textfield',
-#      '#delta' => 100, # Do something more cute here $delta,
-      '#default_value' => $weight,
-      '#title' => $this->t('Weight for @title', array('@title' => $path->getName())),
-      '#title_display' => 'invisible',
-    );
-
-    $pathform['id'] = array(
-#      '#type' => 'value',
-      '#type' => 'hidden',
-      '#value' => $path->id(),
-    );
+     } else {
+      $pathform['solr'] = array(
+        '#markup' => "<span class = 'wki-pb-solr'>" . $solr . "</span>",
+        '#allowed_tags' => array('span'),
+      );
+    }
     
-    $pathform['parent'] = array(
+     // if it is a group, mark it as such.
+    if($path->isGroup()) {
+     $pathform['path']['#markup']  = 'Group [' . $pathform['path']['#markup'];
+     $pathform['path']['#markup'] .= ']';
+   }
+   
+   $pathform['enabled'] = array(
+    '#type' => 'checkbox',
+    '#title' => $this->t('Enable @title path', array('@title' => $path->getName())),
+    '#title_display' => 'invisible',
+    '#default_value' => $enabled
+  );
+
+   $field_type_label = $fieldtype ? \Drupal::service('plugin.manager.field.field_type')->getDefinition($fieldtype)['label'] : '';
+   $pathform['field_type_informative'] = array(
+    '#type' => 'item',
+    '#value' => $fieldtype,
+    '#markup' => $field_type_label,
+  );
+
+   $pathform['cardinality'] = array(
+    '#type' => 'item',
+    '#markup' => WisskiPathbuilderConfigureFieldForm::cardinalityOptions()[$cardinality],
+    '#value' => $cardinality,
+    '#title' => $this->t('Field Cardinality'),
+    '#title_display' => 'attribute',
+  );
+
+   $pathform['weight'] = array(
+#      '#type' => 'weight',
+    '#type' => 'textfield',
+#      '#delta' => 100, # Do something more cute here $delta,
+    '#default_value' => $weight,
+    '#title' => $this->t('Weight for @title', array('@title' => $path->getName())),
+    '#title_display' => 'invisible',
+  );
+
+   $pathform['id'] = array(
 #      '#type' => 'value',
-      '#type' => 'hidden',
-      '#value' => $parent,
-    );
+    '#type' => 'hidden',
+    '#value' => $path->id(),
+  );
+   
+   $pathform['parent'] = array(
+#      '#type' => 'value',
+    '#type' => 'hidden',
+    '#value' => $parent,
+  );
 
     // all this information is not absolutely necessary for the pb - so we skip it here.
     // if we don't do this max_input_vars and max_input_nesting overflows
@@ -923,7 +937,7 @@ class WisskiPathbuilderForm extends EntityForm {
   public function save_and_generate_forms(array $form, FormStateInterface $form_state) {
     // get the pathbuilder    
     $pathbuilder = $this->entity;
- 
+    
     // fetch the paths
     $paths = $form_state->getValue('pathbuilder_table');
     
@@ -960,61 +974,61 @@ class WisskiPathbuilderForm extends EntityForm {
           } else {
             $field = $pbpath['field'];
           }
-                    
+          
           // delete old fields
           $field_storages = \Drupal::service('entity_type.manager')->getStorage('field_storage_config')->loadByProperties(array('field_name' => $field));
           if(!empty($field_storages))
             foreach($field_storages as $field_storage)
               $field_storage->delete();
-          
-          $field_objects = \Drupal::service('entity_type.manager')->getStorage('field_config')->loadByProperties(array('field_name'=> $field));
-          if(!empty($field_objects)) 
-            foreach($field_objects as $field_object)
-              $field_object->delete();
-         
-          continue;
-          
-        }
-        
-        if(!empty($path['parent']) && $paths[$path['parent']]['enabled'] == 0) {
+            
+            $field_objects = \Drupal::service('entity_type.manager')->getStorage('field_config')->loadByProperties(array('field_name'=> $field));
+            if(!empty($field_objects)) 
+              foreach($field_objects as $field_object)
+                $field_object->delete();
+              
+              continue;
+              
+            }
+            
+            if(!empty($path['parent']) && $paths[$path['parent']]['enabled'] == 0) {
           // take it with us if the parent is disabled down the tree
-          $paths[$key]['enabled'] = 0;
+              $paths[$key]['enabled'] = 0;
 
-          continue;
-        }
-        
+              continue;
+            }
+            
 #        drupal_set_message($path['id']);
-        
+            
         // generate fields!
-        $pathob = WisskiPathEntity::load($path['id']);
-        
-        if($pathob->isGroup()) {
+            $pathob = WisskiPathEntity::load($path['id']);
+            
+            if($pathob->isGroup()) {
           // save the original bundle id because
           // if it is overwritten in create process
           // we won't have it anymore.
-          $pbpaths = $pathbuilder->getPbPaths();
-                
+              $pbpaths = $pathbuilder->getPbPaths();
+              
           // which group should I handle?
-          $my_group = $pbpaths[$pathob->id()];
-          
+              $my_group = $pbpaths[$pathob->id()];
+              
           // original bundle
-          $ori_bundle = $my_group['bundle'];
-          
-          $pathbuilder->generateBundleForGroup($pathob->id());
-                    
-          if(!in_array($pathob->id(), array_keys($pathbuilder->getMainGroups())))
-            $pathbuilder->generateFieldForSubGroup($pathob->id(), $pathob->getName(), $ori_bundle);  
-        } else {
+              $ori_bundle = $my_group['bundle'];
+              
+              $pathbuilder->generateBundleForGroup($pathob->id());
+              
+              if(!in_array($pathob->id(), array_keys($pathbuilder->getMainGroups())))
+                $pathbuilder->generateFieldForSubGroup($pathob->id(), $pathob->getName(), $ori_bundle);  
+            } else {
 #        dpm($pathob,'$pathob');
-          $pathbuilder->generateFieldForPath($pathob->id(), $pathob->getName());
+              $pathbuilder->generateFieldForPath($pathob->id(), $pathob->getName());
+            }
+            
+          }
+          $pathbuilder->save();
         }
         
       }
-      $pathbuilder->save();
-    }
-    
-  }
-    
+      
   /**
    * {@inheritdoc}
    */
@@ -1085,7 +1099,7 @@ class WisskiPathbuilderForm extends EntityForm {
     $form_state->setRedirect('entity.wisski_pathbuilder.edit_form', array('wisski_pathbuilder'=>$this->entity->id()));
 #    else
 #      $form_state->setRedirect('entity.wisski_pathbuilder.collection');
- }
+  }
 }
-    
- 
+
+
