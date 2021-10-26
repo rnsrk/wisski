@@ -46,6 +46,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   /**
    * {@inheritdoc}
    */
+//  public function setBaseFieldFromStoreForUri($uri, $basefield, $value) {
+#    dpm("s1et base field was called with $uri, $basefield and $value.");
+//    return NULL;
+//  }
+
+
+  /**
+   * {@inheritdoc}
+   */
   public function supportsOntology() {
     return true;
   }

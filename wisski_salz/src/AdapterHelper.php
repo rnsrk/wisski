@@ -377,6 +377,15 @@ class AdapterHelper {
     $id = \Drupal::database()->insert('wisski_salz_id2uri')
       ->fields(array('uri'=>$uri,'adapter_id'=>$adapter_id))
       ->execute();
+    
+    // add the basefields to the local_adapt for sorting etc.
+    // this will have to be expanded to all adapters later on...
+    if(!empty($local_adapter)) {
+    
+      // "eid" has to be dynamically here!
+      $local_adapter->getEngine()->setBaseFieldFromStoreForUri($uri, "eid", $id);
+    }
+        
     // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
     // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
     \Drupal::database()->update('wisski_salz_id2uri')

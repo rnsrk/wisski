@@ -43,6 +43,143 @@ abstract class Sparql11Engine extends EngineBase {
   /**
    * {@inheritdoc}
    */
+  public function getAllBaseFieldsFromStoreForUri($uri) {
+#    dpm("s1et base field was called with $uri, $basefield and $value.");
+
+    #    dpm(microtime(), "yay?");
+    
+//    $uris[AdapterHelper::getDrupalAdapterNameAlias()] = AdapterHelper::generateWisskiUriFromId($entity_id);
+    //we use the originates property as name fot the graph for sameAs info
+    $basefieldinfo = $this->getBaseFieldGraph();
+
+    if(empty($basefieldinfo)) {
+      $this->messenger()->addError("No Default Basefield Graph Uri was set in the store configuration. Please fix it!");
+      return FALSE;
+    }
+
+#    $escvalue = $this->escapeSparqlLiteral($value);
+#    $basefieldurl = $this->getDefaultDataGraphUri() . $basefield;
+    
+    try {
+#        drupal_set_message(htmlentities("INSERT DATA { GRAPH <$orig_prop> { $origin $same }}"), "yay!");
+      $result = $this->directQuery("SELECT ?basefieldurl ?value { GRAPH <$basefieldinfo> { <$uri> ?basefieldurl ?value . ?basefieldurl a owl:AnnotationProperty . }}");
+      
+      $out = FALSE;
+
+      // if we know nothing - stop it!      
+      if(!$result) {
+        return FALSE;
+      }
+      
+      if(count($result) > 0) {
+        foreach($result as $res) {
+          $basefieldurl = $res->basefieldurl->getValue();
+          $basefield = substr($basefieldurl, count($basefieldinfo));
+          
+          $out[$basefield] = $res->value->getValue();
+        }
+      }
+            
+      return $out;
+      
+#      return TRUE;
+    } catch (\Exception $e) {
+      \Drupal::logger(__METHOD__)->error($e->getMessage());
+    }
+    
+    return FALSE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getBaseFieldFromStoreForUri($uri, $basefield) {
+#    dpm("s1et base field was called with $uri, $basefield and $value.");
+
+    #    dpm(microtime(), "yay?");
+    
+//    $uris[AdapterHelper::getDrupalAdapterNameAlias()] = AdapterHelper::generateWisskiUriFromId($entity_id);
+    //we use the originates property as name fot the graph for sameAs info
+    $basefieldinfo = $this->getBaseFieldGraph();
+
+    if(empty($basefieldinfo)) {
+      $this->messenger()->addError("No Default Basefield Graph Uri was set in the store configuration. Please fix it!");
+      return FALSE;
+    }
+
+#    $escvalue = $this->escapeSparqlLiteral($value);
+    $basefieldurl = $this->getDefaultDataGraphUri() . $basefield;
+    
+    try {
+#        drupal_set_message(htmlentities("INSERT DATA { GRAPH <$orig_prop> { $origin $same }}"), "yay!");
+      $result = $this->directQuery("SELECT ?value { GRAPH <$basefieldinfo> { <$uri> <$basefieldurl> ?value . <$basefieldurl> a owl:AnnotationProperty . }}");
+      
+      $out = FALSE;
+
+      // if we know nothing - stop it!      
+      if(!$result) {
+        return FALSE;
+      }
+      
+      if(count($result) > 0) {
+        foreach($result as $res) {
+          $out[] = $res->value->getValue();
+        }
+      }
+            
+      return $out;
+      
+#      return TRUE;
+    } catch (\Exception $e) {
+      \Drupal::logger(__METHOD__)->error($e->getMessage());
+    }
+    
+    return FALSE;
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function setBaseFieldFromStoreForUri($uri, $basefield, $value) {
+#    dpm("s1et base field was called with $uri, $basefield and $value.");
+
+    #    dpm(microtime(), "yay?");
+    
+//    $uris[AdapterHelper::getDrupalAdapterNameAlias()] = AdapterHelper::generateWisskiUriFromId($entity_id);
+    //we use the originates property as name fot the graph for sameAs info
+    $basefieldinfo = $this->getBaseFieldGraph();
+
+    if(empty($basefieldinfo)) {
+      $this->messenger()->addError("No Default Basefield Graph Uri was set in the store configuration. Please fix it!");
+      return FALSE;
+    }
+    
+    if(is_array($value))
+      $value = serialize($value);
+
+    $escvalue = $this->escapeSparqlLiteral($value);
+    
+    $basefieldurl = $this->getDefaultDataGraphUri() . $basefield;
+    
+    try {
+#        drupal_set_message(htmlentities("INSERT DATA { GRAPH <$orig_prop> { $origin $same }}"), "yay!");
+      // special case for int because we want to sort otherwise with that...
+      if(is_int($escvalue) || ctype_digit($escvalue))
+        $this->directUpdate("INSERT DATA { GRAPH <$basefieldinfo> { <$uri> <$basefieldurl> " . $escvalue . " . <$basefieldurl> a owl:AnnotationProperty . }}");
+      else
+        $this->directUpdate("INSERT DATA { GRAPH <$basefieldinfo> { <$uri> <$basefieldurl> '" . $escvalue . "' . <$basefieldurl> a owl:AnnotationProperty . }}");
+      return TRUE;
+    } catch (\Exception $e) {
+      \Drupal::logger(__METHOD__)->error($e->getMessage());
+    }
+    
+    return FALSE;
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
   public function supportsFederation($query = NULL) {
     return $this->is_federatable;
   }
@@ -781,6 +918,11 @@ abstract class Sparql11Engine extends EngineBase {
   public function getOriginatesProperty() {
     
     return $this->getDefaultDataGraphUri()."originatesFrom";
+  }
+  
+  public function getBaseFieldGraph() {
+    
+    return $this->getDefaultDataGraphUri()."baseFields";
   }
 
   public function getDefaultDataGraphUri() {

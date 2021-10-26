@@ -355,6 +355,15 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     return AdapterHelper::getUrisForDrupalId($id, $this->adapterId(), $create);
   }
   
+  public function getBaseFieldFromStoreForUri($uri, $basefield) {
+    return NULL;
+  }
+  
+  public function setBaseFieldFromStoreForUri($uri, $basefield, $value) {
+#    dpm("set base field was called with $uri, $basefield and $value.");
+    return NULL;
+  }
+  
   /**
    * here we have to avoid a name clash. getUriForDrupalId was already there and is heavily used.
    * Thus the somewhat strange name for this function here
