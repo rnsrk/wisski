@@ -52,7 +52,7 @@ entity.wisski_pathbuilder.configure_field_form:
  # path: '/admin/config/wisski/path/{wisski_path}'
   defaults:
     _entity_form: 'wisski_pathbuilder.configure_field_form'
-    _title: 'Edit Path'
+    _title: 'Configure Field'
   requirements:
     _permission: 'administer wisski paths'
 
