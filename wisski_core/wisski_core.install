@@ -130,7 +130,31 @@ function wisski_core_update_8005(&$sandbox) {
   
 }
 
+/** Add entity id to triplestore 
+  *
+  */
+function wisski_core_update_8006(&$sandbox) {
+  $result = \Drupal::database()->select("wisski_salz_id2uri", 't')->fields('t')->execute();
+  $adapters = array();
+  while($thing = $result->fetchObject()) {
+    $adapter_id = $thing->adapter_id;
+    $adapter = NULL;
+    $eid = $thing->eid;
+    $uri = $thing->uri;
 
+    // if there is nothing to do, skip it.
+    if(empty($eid) || empty($uri))
+      continue;
+
+    if(!isset($adapters[$adapter_id])) {
+      $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($adapter_id);
+      $adapters[$adapter_id] = $adapter;
+    } else
+      $adapter = $adapters[$adapter_id];
+
+    $adapter->getEngine()->setBaseFieldFromStoreForUri($uri, "eid", $eid);
+  }
+}
 
 /**
  * implements hook_schema()
