@@ -119,6 +119,13 @@ class WisskiEntityFieldRenderer extends EntityFieldRenderer {
                                   
               }
 */
+              // By Mark:
+              // in case of aux entities we would need to translate them
+              // unfortunatelly I dont know how to do this...
+              // so this might be A TODO.
+              if(isset($data['x-default']))
+                $data = $data['x-default'];
+
               $tmpentity->set($field_name, $data);
 
               $aux_entities[$field_id][$result_row->index] = $tmpentity;

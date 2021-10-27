@@ -209,6 +209,7 @@ class AdapterHelper {
    * the mapping denotes that the very adapter is holding information about that very URI
    */
   public static function getSameUris($uri,$input_adapter_id=NULL) {
+#    dpm($uri);
 
     // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
     // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
@@ -289,6 +290,7 @@ class AdapterHelper {
    * @return the entity's Drupal ID
    */
   public static function doGetDrupalIdForUri($uri,$create_on_fail=TRUE,$input_adapter_id=NULL) {
+#    dpm($uri);
 
     // it is an uri that already contains the entity id - return that and do nothing...
     if(strpos($uri, "/wisski/navigate/") !== FALSE) {
@@ -412,6 +414,7 @@ class AdapterHelper {
    * highly difficult...
    */
   public static function getOnlyOneUriPerAdapterForDrupalId($eid, $adapter_id=NULL, $create = TRUE) {
+#    dpm($eid);
     if (!is_numeric($eid)) {
       //we probably got a URI as input, check that and return the input if it's valid
       //otherwise we cant do anything
@@ -446,6 +449,17 @@ class AdapterHelper {
   }
   
   public static function getUrisForDrupalId($eid, $adapter_id=NULL, $create = TRUE) {
+
+    // do some caching!
+    $cache = \Drupal::cache('wisski_adapterhelper');
+    $id = $eid . "-" . $adapter_id;
+    $data = $cache->get($id);
+    if ($data) {
+#      dpm($data->data);
+      return $data->data;
+    }
+    
+    
 #    dpm($eid, "caller!");        
     if (!is_numeric($eid)) {
       //we probably got a URI as input, check that and return the input if it's valid
@@ -461,8 +475,12 @@ class AdapterHelper {
       }
       return FALSE;
     }
+    
+#    dpm(microtime(), "before doGetUrisForDrupalId $eid, $adapter_id");
     $result = self::doGetUrisForDrupalId($eid, $adapter_id, $create);
-
+#    dpm(microtime(), "after doGetUrisForDrupalId");
+#    dpm($result, "res?");
+    
     if(!empty($result) && is_array($result)) {
       foreach($result as $key => $value) {
         if(isset($value->uri)) {
@@ -475,6 +493,7 @@ class AdapterHelper {
     }
 
     #  $result = array_keys($result);
+    $cache->set($id, $result);
 
  #   dpm(array('$eid'=>$eid,'$adapter_id'=>isset($adapter_id)? $adapter_id : 'NULL')+array('return'=>$result),__FUNCTION__);
     return $result;

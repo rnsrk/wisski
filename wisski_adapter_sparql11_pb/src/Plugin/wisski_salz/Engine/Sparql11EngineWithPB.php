@@ -1193,6 +1193,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    */
   public function hasEntity($entity_id) {
   
+#    dpm("has Entity?");
+    
+#    dpm($this->getBaseFieldFromStoreForUri($uri, $entity_id));
+  
     $uri = $this->getUriForDrupalId($entity_id, FALSE);
 
     $out = NULL;

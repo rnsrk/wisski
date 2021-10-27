@@ -136,7 +136,7 @@ abstract class Sparql11Engine extends EngineBase {
     
     return FALSE;
   }
-  
+    
   /**
    * {@inheritdoc}
    */

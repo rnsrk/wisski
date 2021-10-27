@@ -12,3 +12,4 @@ services:
     arguments: ['@entity_type.manager']
   wisski.forwarder:
     class: Drupal\wisski_core\Controller\WisskiEntityViewForwarder
+  

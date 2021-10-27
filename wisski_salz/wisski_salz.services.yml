@@ -8,6 +8,13 @@ services:
       - { name: cache.bin }
     factory: cache_factory:get
     arguments: [eid_to_bundle_and_adapter_cache]
+  cache.wisski_adapterhelper:
+    class: Drupal\Core\Cache\CacheBackendInterface
+    tags:
+      - { name: cache.bin }
+    factory: cache_factory:get
+    arguments: [wisski_adapterhelper]
+
 
 # stuff from external entities
 #  entity.query.external:
