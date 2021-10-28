@@ -452,7 +452,13 @@ class AdapterHelper {
 
     // do some caching!
     $cache = \Drupal::cache('wisski_adapterhelper');
-    $id = $eid . "-" . $adapter_id;
+    $real_adapter_id = "";
+    if(is_object($adapter_id))
+      $real_adapter_id = $adapter_id->id();
+    else
+      $real_adapter_id = $adapter_id;
+      
+    $id = $eid . "-" . $real_adapter_id;
     $data = $cache->get($id);
     if ($data) {
 #      dpm($data->data);
