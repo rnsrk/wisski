@@ -1099,6 +1099,14 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
 #    dpm($value, "val?");
     $query_parts = "";
 
+    if(empty($operator)) {
+      $operator = "=";
+#      dpm(" argh!");
+    }
+
+    if(empty($value))
+      return "";
+
     $basefieldinfo = $this->getEngine()->getBaseFieldGraph();
     
     $basefield = "eid";
