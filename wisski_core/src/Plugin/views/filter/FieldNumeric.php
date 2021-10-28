@@ -26,6 +26,7 @@ class FieldNumeric extends ViewsNumeric {
    * We don't support every operator from the parent class ("not between", for example),
    * hence the need to define only the operators we do support.
    */
+   /*
   function operators() {
     $operators = array(
       '<' => array(
@@ -73,7 +74,7 @@ class FieldNumeric extends ViewsNumeric {
     );
 
     return $operators;
-  }
+  }*/
 
   /**
    * {@inheritdoc}
@@ -89,17 +90,19 @@ class FieldNumeric extends ViewsNumeric {
   /**
    * {@inheritdoc}
    */
+/*
   protected function opSimple($column) {
     #$this->query->query->condition($this->definition['field_name'], $this->value['value'], $this->operator);
     #$this->query->query->condition("eid", $this->value['value'], $this->operator);
-    $this->query->addWhere($this->options['group'], $field, $this->value, $this->operator);
+    $this->query->addWhere($this->options['group'], $this->field, $this->value['value'], $this->operator);
   }
-
+*/
   /**
    * {@inheritdoc}
    */
+   /*
   protected function opBetween($column) {
     $this->query->addWhere($this->options['group'], $this->field, [$this->value['min'], $this->value['max']], "BETWEEN");
-  }
+  }*/
 
 }

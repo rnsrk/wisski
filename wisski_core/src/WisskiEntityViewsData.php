@@ -101,7 +101,7 @@ class WisskiEntityViewsData extends EntityViewsData {
         'id' => 'wisski_field_numeric',
       ],
       'argument' => [
-        'id' => 'numeric',
+        'id' => 'wisski_field_numeric',
       ],
       'entity type' => $this->entityType->id(), // this should always be wisski_individual, used by WizardPluginBase
     ];

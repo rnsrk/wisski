@@ -638,6 +638,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    * {@inheritdoc}
    */
   public function condition($field, $value = NULL, $operator = NULL, $langcode = NULL) {
+#    dpm("cond! " . serialize($field));
     parent::condition($field,$value,$operator,$langcode);
     foreach ($this->adapter_queries as $query) {
       $query->condition($field,$value,$operator.$langcode);
@@ -649,6 +650,7 @@ class WisskiQueryDelegator extends WisskiQueryBase {
    * {@inheritdoc}
    */
   public function exists($field, $langcode = NULL) {
+#    dpm("exists! " . serialize($field));
     parent::exists($field,$langcode);
     foreach ($this->adapter_queries as $query) $query->exists($field,$langcode);
     return $this;

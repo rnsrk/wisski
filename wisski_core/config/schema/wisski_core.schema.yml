@@ -27,3 +27,43 @@ wisski_core.wisski_bundle.*:
 views.filter.wisski_bundle:
   type: views.filter.bundle
   label: 'WBundle'
+
+views.filter.wisski_field_numeric:
+  type: views_filter
+  label: 'Numeric'
+  mapping:
+    expose:
+      type: mapping
+      label: 'Exposed'
+      mapping:
+        min_placeholder:
+          type: label
+          label: 'Min placeholder'
+        max_placeholder:
+          type: label
+          label: 'Max placeholder'
+        placeholder:
+          type: label
+          label: 'Placeholder'
+
+views.filter_value.wisski_field_numeric:
+  type: mapping
+  label: 'Numeric'
+  mapping:
+    min:
+      type: string
+      label: 'Min'
+    max:
+      type: string
+      label: 'And max'
+    value:
+      type: string
+      label: 'Value'
+
+views.filter_value.*:
+  type: string
+  label: 'Filter value'
+
+views.filter_value.equality:
+  type: string
+  label: 'Equality'

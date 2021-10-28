@@ -133,6 +133,7 @@ class PathbuilderManager {
             // only take this if the weight is better or the same.
             $the_pathid = $pathid;
             $weight = $pbp['weight'];
+//            $or_paths[$key] = $pathid;
           }
         } else if(empty($the_pathid)) {
           // if there was nothing before, something is better at least.
@@ -163,11 +164,12 @@ class PathbuilderManager {
         return $values;
       else {
         // if we did not find anything in the "primary" path we will have to look at others...
-        foreach($or_paths as $key => $pathid) {
+        /*
+        foreach($paths as $key => $pathid) {
           if($pathid == $the_pathid)
             continue; // we already had that
 
-          $path = $paths[$pathid];
+          $path = $paths[$key];
 
 
 #          dpm($pathid, "looking at id ");
@@ -178,6 +180,7 @@ class PathbuilderManager {
           if(!empty($values) && !empty(current($values)))
             return $values;
         }
+        */
       }
 
     }

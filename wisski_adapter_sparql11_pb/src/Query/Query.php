@@ -412,7 +412,7 @@ class Query extends WisskiQueryBase {
         $operator = $cond['operator'];
         // just to be sure!
         $operator = strtoupper($operator);
-#        dpm($field, "going into field");
+#        dpm(serialize($cond), "going into field");
 #wisski_tick($field instanceof ConditionInterface ? "recurse in nested condition" : "now for '".join(";",(array)$value)."' in field '$field'");
 #\Drupal::logger('query path cond')->debug("$ij::$field::$value::$operator::$conjunction");
 
@@ -431,15 +431,21 @@ class Query extends WisskiQueryBase {
 
         }
         elseif ($field == "eid") {
+#          dpm($field, "I ask for eid!");
+          if(drupal_get_installed_schema_version("wisski_core") >= 8006) {
+            if(!empty($value))
+              $query_parts[] = $this->makeTSEntityIdCondition($operator, $value);
+          } else {
 
-          // directly ask Drupal's entity id.
-          $eids = $this->executeEntityIdCondition($operator, $value);
-          $entity_ids = $this->join($conjunction, $entity_ids, $eids);
-          if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
-            // the condition evaluated to an empty set of entities
-            // and we have to AND; so the result set will be empty.
-            // The rest of the conditions can be skipped
-            return array('', array());
+            // directly ask Drupal's entity id.
+            $eids = $this->executeEntityIdCondition($operator, $value);
+            $entity_ids = $this->join($conjunction, $entity_ids, $eids);
+            if ($entity_ids !== NULL && count($entity_ids) == 0 && $conjunction == 'AND') {
+              // the condition evaluated to an empty set of entities
+              // and we have to AND; so the result set will be empty.
+              // The rest of the conditions can be skipped
+              return array('', array());
+            }
           }
         }
         elseif ($field == "bundle") {
@@ -1088,6 +1094,20 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     return $entity_ids;
   }
 
+  protected function makeTSEntityIdCondition($operator, $value) {
+#    dpm($operator ,"op?");
+#    dpm($value, "val?");
+    $query_parts = "";
+
+    $basefieldinfo = $this->getEngine()->getBaseFieldGraph();
+    
+    $basefield = "eid";
+    $basefieldurl = $this->getEngine()->getDefaultDataGraphUri() . $basefield;
+    
+    $query_parts = "{ GRAPH <$basefieldinfo> { ?x0 <$basefieldurl> ?eid . <$basefieldurl> a owl:AnnotationProperty . FILTER( ?eid $operator $value ) . }} ";
+
+    return $query_parts;
+  }
 
   protected function makeBundleCondition($operator, $value) {
 
