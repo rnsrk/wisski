@@ -134,8 +134,13 @@ function wisski_core_update_8005(&$sandbox) {
   *
   */
 function wisski_core_update_8006(&$sandbox) {
-  $result = \Drupal::database()->select("wisski_salz_id2uri", 't')->fields('t')->execute();
+  $val = \Drupal::state()->get('wisski_update_last_key');
+  if(empty($val))
+    $val = 0;
+
+  $result = \Drupal::database()->select("wisski_salz_id2uri", 't')->fields('t')->condition('eid', $val, '>')->orderBy('eid', 'ASC')->execute();
   $adapters = array();
+
   while($thing = $result->fetchObject()) {
     $adapter_id = $thing->adapter_id;
     $adapter = NULL;
@@ -153,7 +158,10 @@ function wisski_core_update_8006(&$sandbox) {
       $adapter = $adapters[$adapter_id];
 
     $adapter->getEngine()->setBaseFieldFromStoreForUri($uri, "eid", $eid);
+    \Drupal::state()->set('wisski_update_last_key',$eid);
   }
+  \Drupal::state()->delete('wisski_update_last_key');
+//  drupal_set_installed_schema_version('wisski_core', '8006');
 }
 
 /**
