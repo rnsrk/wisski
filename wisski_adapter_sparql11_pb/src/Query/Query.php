@@ -1112,7 +1112,23 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     $basefield = "eid";
     $basefieldurl = $this->getEngine()->getDefaultDataGraphUri() . $basefield;
     
-    $query_parts = "{ GRAPH <$basefieldinfo> { ?x0 <$basefieldurl> ?eid . <$basefieldurl> a owl:AnnotationProperty . FILTER( ?eid $operator $value ) . }} ";
+    if(is_array($value) && count($value) == 1) { 
+      $value = current($value);
+      if($operator == "IN") 
+        $operator = "=";  
+    }
+    
+    if(!is_array($value))
+      $query_parts = "{ GRAPH <$basefieldinfo> { ?x0 <$basefieldurl> ?eid . <$basefieldurl> a owl:AnnotationProperty . FILTER( ?eid $operator $value ) . }} ";
+    else {
+#      dpm($value, "val?");
+      $query_parts = "{ GRAPH <$basefieldinfo> { ?x0 <$basefieldurl> ?eid . <$basefieldurl> a owl:AnnotationProperty . FILTER( ?eid $operator (";
+      foreach($value as $one_val) {
+        $query_parts .= "$one_val, ";
+      }
+      $query_parts = substr($query_parts, 0, -2);
+      $query_parts .= ")) . }} ";
+    }
 
     return $query_parts;
   }
