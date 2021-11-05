@@ -443,10 +443,65 @@ function wisski_core_form_alter(&$form, FormStateInterface $form_state, $form_id
  * Add the place where the entity is found in navigate
  */
 function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatchInterface $route_match, array $context) {
-#	dpm("yay2");
+//  dpm("yay2");
 //  dpm(serialize($context), "con");
-
   $routename =  $route_match->getRouteName();
+
+  // if $routename == 'view.{bundleID}.{bundleID} => e.g. in case of navigate
+  // this adds "navigate" to the breadcrumbs
+  if(strpos($routename, 'view.') === 0) { 
+    $request = \Drupal::request();
+    $referer = $request->headers->get('referer');
+
+    $query_array = array();
+
+    global $base_url;
+
+    $new_base_url=$base_url;
+
+    $base_url_parts=parse_url($base_url);
+    $host=$base_url_parts["host"];
+
+    if(strpos($base_url, $host) !== FALSE)
+      $new_base_url=substr($base_url, strpos($base_url, $host));
+
+    $schemacount=0;
+
+    if(strpos($referer, $host) !== FALSE)
+      $schemacount=strpos($referer, $host);
+
+    if(strpos($referer, $new_base_url) !== FALSE)
+      $referer = substr($referer, $schemacount + strlen($new_base_url));
+
+    // cut away everything after ? since it are parameters...
+    if(strpos($referer, "?") !== FALSE) {
+      // get the query part.
+      $query = substr($referer, strpos($referer, "?")+1);
+
+      // parse the query
+      parse_str($query, $query_array);
+
+      // cut it away from referer
+      $referer = substr($referer, 0, strpos($referer, "?"));
+    }
+
+    // what exactly is the route where we come from?
+    $router = \Drupal::service('router.no_access_checks');
+
+
+    // get the route provider
+    $rpv = \Drupal::service('router.route_provider');
+
+    # the function: getRoutesByPattern() return an empty array on 89er and on 177er view.bundleid.bundleid
+    # is this a PHP version prob?!
+    $routes = $rpv->getRoutesByPattern($referer)->all();
+
+    if (isset($routes['entity.wisski_individual.list'])){
+      $route = $routes['entity.wisski_individual.list'];
+      $link = Link::createFromRoute($route->getDefault('_title'), "entity.wisski_individual.list");
+      $breadcrumb->addLink($link);
+    }
+  }
 
   // only do something if we are looking at a wisski individual  
   if($routename == 'entity.wisski_individual.canonical' || $routename == 'entity.wisski_individual.edit_form' ) {
@@ -494,30 +549,43 @@ function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatch
     // get the route provider
     $rpv = \Drupal::service('router.route_provider');
 
+    # the function: getRoutesByPattern() return an empty array on 89er and on 177er view.bundleid.bundleid
+    # is this a PHP version prob?!
     $routes = $rpv->getRoutesByPattern($referer)->all();
 
     $routes = array_keys($routes);
 
     $previous_route_name = current($routes);
 
-    #dpm($referer, "pr?");
+//  dpm($referer, "pr?");
 
     // if this holds, it is a view.
     if(strpos($previous_route_name, 'view.') === 0) {
 
       try {
         $result = $router->match($referer);
+    
       } catch (Exception $e) {
         // was not found!
       }
 
-      if(!empty($result) && isset($result['view_id'])) {
-        // the parent is a view - so we probably want to render this...
-	if(!empty($result['_title']))
-          $link = Link::createFromRoute($result['_title'], $result['_route'], array(), array('query' => $query_array));
-	else
-	  $link = Link::createFromRoute("Link had no Title", $result['_route'], array(), array('query' => $query_array));
 
+      if(!empty($result) && isset($result['view_id'])) {
+   
+      
+        // the parent is a view - so we probably want to render this...
+      	if(!empty($result['_title']))
+          $link = Link::createFromRoute($result['_title'], $result['_route'], array(), array('query' => $query_array));
+        else {
+          // $exploded_route_name = explode('.', $previous_route_name);
+          // $bundleID = $exploded_route_name[1];
+          $bundle = WisskiBundle::load($result['view_id']);
+          if(!empty($bundle->label())){
+            $result['_title'] = $bundle->label();
+            $link = Link::createFromRoute($result['_title'], $result['_route'], array(), array('query' => $query_array));
+          } else
+	          $link = Link::createFromRoute("Link had no Title", $result['_route'], array(), array('query' => $query_array));
+        }
         $breadcrumb->addLink($link);
       }
     } else {
@@ -538,11 +606,11 @@ function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatch
 
       if($only_use_topbundles && !in_array($bundleid, $topBundles)) {
         $bundleid = AdapterHelper::getBundleIdsForEntityId($entity->id(), TRUE);
-	$bundleid = current($bundleid);
+	      $bundleid = current($bundleid);
       }
 
-#    dpm($bundleid, "bundleid");
-#    dpm($entity->id(), "eid");
+//    dpm($bundleid, "bundleid");
+//    dpm($entity->id(), "eid");
       if(!empty($bundleid)) {
         $bundle = WisskiBundle::load($bundleid);
         if(!empty($bundle) && !empty($bundle->label())) {
