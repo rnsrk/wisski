@@ -579,12 +579,22 @@ function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatch
         else {
           // $exploded_route_name = explode('.', $previous_route_name);
           // $bundleID = $exploded_route_name[1];
-          $bundle = WisskiBundle::load($result['view_id']);
-          if(!empty($bundle->label())){
-            $result['_title'] = $bundle->label();
+
+          // if we have a title callback, call
+          // the title callback
+          if(isset($result['_title_callback'])) {
+            $result['_title'] = call_user_func($result['_title_callback'], $result['view_id'])->__toString();
+          } else {
+            // if we dont have that it is hopefully a bundle?!
+            $bundle = WisskiBundle::load($result['view_id']);
+            if(!empty($bundle) && !empty($bundle->label()))
+              $result['_title'] = $bundle->label();
+          }
+
+          if(!empty($result['_title'])){
             $link = Link::createFromRoute($result['_title'], $result['_route'], array(), array('query' => $query_array));
           } else
-	          $link = Link::createFromRoute("Link had no Title", $result['_route'], array(), array('query' => $query_array));
+            $link = Link::createFromRoute("Link had no Title", $result['_route'], array(), array('query' => $query_array));
         }
         $breadcrumb->addLink($link);
       }
