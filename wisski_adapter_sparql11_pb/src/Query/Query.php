@@ -433,8 +433,10 @@ class Query extends WisskiQueryBase {
         elseif ($field == "eid") {
 #          dpm($field, "I ask for eid!");
           if(drupal_get_installed_schema_version("wisski_core") >= 8006) {
-            if(!empty($value))
+            if(!empty($value) && !is_string($value))
               $query_parts[] = $this->makeTSEntityIdCondition($operator, $value);
+            else // if it is a string or it is not fulfillable otherwise we just skip.
+              return array('', array());
           } else {
 
             // directly ask Drupal's entity id.
