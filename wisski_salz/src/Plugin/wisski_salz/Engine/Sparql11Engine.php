@@ -569,7 +569,7 @@ abstract class Sparql11Engine extends EngineBase {
       return $result;
     } catch (\Exception $e) {
       $this->messenger()->addError('Something went wrong in \''.__FUNCTION__.'\' for adapter "'.$this->adapterId().'"');
-      \Drupal::logger('QUERY '.$this->adapterId())->error('query "{query}" caused error: {exception}',array('query' => $query, 'exception'=> (string) $e));
+      \Drupal::logger('QUERY '.$this->adapterId())->error('query "{query}" caused error: {e}',array('query' => $query, 'e'=> (string) $e));
     }
   }
   
@@ -656,7 +656,7 @@ abstract class Sparql11Engine extends EngineBase {
     }
     catch (\Exception $e) {
       $this->messenger()->addError('Something went wrong in \''.__FUNCTION__.'\' for adapter "'.$this->adapterId().'"');
-      \Drupal::logger('UPDATE '.$this->adapterId())->error('query "{query}" caused error: {exception}',array('query' => $query, 'exception'=> (string) $e));
+      \Drupal::logger('UPDATE '.$this->adapterId())->error('query "{query}" caused error: {e}',array('query' => $query, 'e'=> (string) $e));
       return NULL;
     }
   }
