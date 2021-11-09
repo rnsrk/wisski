@@ -293,7 +293,7 @@ class WisskiIndividualQuery extends QueryPluginBase
             }
             // We can't have an offset without a limit, so provide a very large limit instead.
             if (!empty($this->limit) || !empty($this->offset)) {
-                $limit = intval(!empty($this->limit) ? $this->limit : 999999);
+                $limit = intval(!empty($this->limit) ? $this->limit : 9999999);
                 $offset = intval(!empty($this->offset) ? $this->offset : 0);
                 $query = $query->range($offset, $limit);
             }
