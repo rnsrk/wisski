@@ -12,7 +12,7 @@ use Drupal\wisski_core\WisskiHelper;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\wisski_core\WisskiEntityInterface;
 use Drupal\wisski_core\Entity\WisskiEntity;
-
+use Drupal\views\Routing\ViewPageController;
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\wisski_salz\AdapterHelper;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -548,7 +548,6 @@ function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatch
 
     // get the route provider
     $rpv = \Drupal::service('router.route_provider');
-
     # the function: getRoutesByPattern() return an empty array on 89er and on 177er view.bundleid.bundleid
     # is this a PHP version prob?!
     $routes = $rpv->getRoutesByPattern($referer)->all();
@@ -582,8 +581,22 @@ function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatch
 
           // if we have a title callback, call
           // the title callback
+          
+
+          #dpm($result, "result");
+          #dpm($viewTitle, "titlecallback");
           if(isset($result['_title_callback'])) {
-            $result['_title'] = call_user_func($result['_title_callback'], $result['view_id'])->__toString();
+            // get the callback function
+            $callbackFunction = $result['_title_callback'];
+            // get the class name by slicing the string until the first encounter of ':''
+            $className = substr($callbackFunction, 0, strpos($callbackFunction, ':'));
+            // get the method name by slicing the string until the last encounter of : + 1
+            $methodNeedle = strrpos($callbackFunction, ':') + 1;
+            $methodName = substr($callbackFunction, $methodNeedle);
+            #dpm($className, "className");
+            #dpm($methodName, "MethodName");
+            // call the method with parameter on the fly 
+            $result['_title'] = call_user_func([new $className, $methodName], $result['view_id']);
           } else {
             // if we dont have that it is hopefully a bundle?!
             $bundle = WisskiBundle::load($result['view_id']);
