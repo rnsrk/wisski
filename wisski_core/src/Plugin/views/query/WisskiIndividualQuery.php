@@ -293,7 +293,7 @@ class WisskiIndividualQuery extends QueryPluginBase
             }
             // We can't have an offset without a limit, so provide a very large limit instead.
             if (!empty($this->limit) || !empty($this->offset)) {
-                $limit = intval(!empty($this->limit) ? $this->limit : 999999);
+                $limit = intval(!empty($this->limit) ? $this->limit : 9999999);
                 $offset = intval(!empty($this->offset) ? $this->offset : 0);
                 $query = $query->range($offset, $limit);
             }
@@ -305,17 +305,26 @@ class WisskiIndividualQuery extends QueryPluginBase
 #            dpm($entity_ids, "eids?");
 
             // turn the returned Entity IDs and populate $view->result[]
-            $values_per_row = $this->fetchEntityData($entity_ids, $bundle_ids);
-            foreach ($values_per_row as $rowid => $values) {
+            if(!empty($entity_ids)) {
+              $values_per_row = $this->fetchEntityData($entity_ids, $bundle_ids);
+              foreach ($values_per_row as $rowid => $values) {
                 $row = new ResultRow($values);
                 $row->index = $rowid;
                 $view->result[] = $row;
+              }
+            } else {
+              // should we do something here?!
             }
 
             // update the pager
             $view->pager->postExecute($view->result);
             $view->pager->updatePageInfo();
             $view->total_rows = $view->pager->getTotalItems();
+
+            // it might be that we dont have a proper pager,
+            // so we want to overwrite this here?
+            if(empty($view->total_rows))
+              $view->total_rows = count($values_per_row);
 
             // Load all entities contained in the results.
             $this->loadEntities($view->result);
