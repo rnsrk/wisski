@@ -12,7 +12,6 @@ use Drupal\wisski_core\WisskiHelper;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\wisski_core\WisskiEntityInterface;
 use Drupal\wisski_core\Entity\WisskiEntity;
-use Drupal\views\Routing\ViewPageController;
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\wisski_salz\AdapterHelper;
 use Drupal\Core\Field\BaseFieldDefinition;
