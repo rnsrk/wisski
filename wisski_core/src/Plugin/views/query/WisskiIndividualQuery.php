@@ -305,11 +305,15 @@ class WisskiIndividualQuery extends QueryPluginBase
 #            dpm($entity_ids, "eids?");
 
             // turn the returned Entity IDs and populate $view->result[]
-            $values_per_row = $this->fetchEntityData($entity_ids, $bundle_ids);
-            foreach ($values_per_row as $rowid => $values) {
+            if(!empty($entity_ids)) {
+              $values_per_row = $this->fetchEntityData($entity_ids, $bundle_ids);
+              foreach ($values_per_row as $rowid => $values) {
                 $row = new ResultRow($values);
                 $row->index = $rowid;
                 $view->result[] = $row;
+              }
+            } else {
+              // should we do something here?!
             }
 
             // update the pager
