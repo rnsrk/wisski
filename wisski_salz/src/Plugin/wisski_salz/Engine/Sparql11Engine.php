@@ -515,9 +515,9 @@ abstract class Sparql11Engine extends EngineBase {
   * @return @see EasyRdf_Sparql_Client->query
   */
   public function directQuery($query) {
- #   dpm($query, "I do query!");
+    dpm($query, "I do query!");
 
-    $mic = microtime(true);
+    #$mic = microtime(true);
     if ($this->graph_rewrite) $query = $this->graphInsertionRewrite($query);
     
     
@@ -663,7 +663,7 @@ abstract class Sparql11Engine extends EngineBase {
 
   public function checkUriExists($uri) {
     
-    //dpm($this,__FUNCTION__);
+    #dpm($this,__FUNCTION__);
     if ($this->isValidUri("<$uri>")) {
       $query = "ASK {{<$uri> ?p ?o.} UNION {?s ?p <$uri>.}}";
 #      dpm($query);
