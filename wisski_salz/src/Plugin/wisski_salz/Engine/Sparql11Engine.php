@@ -515,7 +515,7 @@ abstract class Sparql11Engine extends EngineBase {
   * @return @see EasyRdf_Sparql_Client->query
   */
   public function directQuery($query) {
-    dpm($query, "I do query!");
+    #dpm($query, "I do query!");
 
     #$mic = microtime(true);
     if ($this->graph_rewrite) $query = $this->graphInsertionRewrite($query);
