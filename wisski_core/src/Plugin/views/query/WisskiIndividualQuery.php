@@ -321,6 +321,11 @@ class WisskiIndividualQuery extends QueryPluginBase
             $view->pager->updatePageInfo();
             $view->total_rows = $view->pager->getTotalItems();
 
+            // it might be that we dont have a proper pager,
+            // so we want to overwrite this here?
+            if(empty($view->total_rows))
+              $view->total_rows = count($values_per_row);
+
             // Load all entities contained in the results.
             $this->loadEntities($view->result);
         } catch (DatabaseExceptionWrapper $e) { // something went wrong in the database
