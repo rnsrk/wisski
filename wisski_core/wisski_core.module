@@ -585,15 +585,8 @@ function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatch
           #dpm($result, "result");
           #dpm($viewTitle, "titlecallback");
           if(isset($result['_title_callback'])) {
-            // get the callback function
-            $callbackFunction = $result['_title_callback'];
-            // get the class name by slicing the string until the first encounter of ':''
-            $className = substr($callbackFunction, 0, strpos($callbackFunction, ':'));
-            // get the method name by slicing the string until the last encounter of : + 1
-            $methodNeedle = strrpos($callbackFunction, ':') + 1;
-            $methodName = substr($callbackFunction, $methodNeedle);
-            #dpm($className, "className");
-            #dpm($methodName, "MethodName");
+            // get the callback function and assign contained class and menthod
+            [$className, $methodName]  = explode('::', $result['_title_callback']);
             // call the method with parameter on the fly 
             $result['_title'] = call_user_func([new $className, $methodName], $result['view_id']);
           } else {
