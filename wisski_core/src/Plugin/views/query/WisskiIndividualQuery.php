@@ -60,6 +60,10 @@ class WisskiIndividualQuery extends QueryPluginBase
     
     public $groupOperator;
 
+#    public function render() {
+#      dpm("render!");
+#    }
+
     /**
      * Generate a query and a countquery from all of the information supplied
      * to the object.
@@ -303,10 +307,12 @@ class WisskiIndividualQuery extends QueryPluginBase
             $entity_ids = $query->execute();
             $bundle_ids = $query->getWissKIBundleIDs();
 #            dpm($entity_ids, "eids?");
+            $values_per_row = 0;
 
             // turn the returned Entity IDs and populate $view->result[]
             if(!empty($entity_ids)) {
               $values_per_row = $this->fetchEntityData($entity_ids, $bundle_ids);
+#              dpm($values_per_row, "vpr?");
               foreach ($values_per_row as $rowid => $values) {
                 $row = new ResultRow($values);
                 $row->index = $rowid;
@@ -323,7 +329,7 @@ class WisskiIndividualQuery extends QueryPluginBase
 
             // it might be that we dont have a proper pager,
             // so we want to overwrite this here?
-            if(empty($view->total_rows))
+            if(empty($view->total_rows) && !empty($values_per_row))
               $view->total_rows = count($values_per_row);
 
             // Load all entities contained in the results.
@@ -336,7 +342,8 @@ class WisskiIndividualQuery extends QueryPluginBase
                 throw new DatabaseExceptionWrapper("Exception in {$view->storage->label()}[{$view->storage->id()}]: {$e->getMessage()}");
             }
         }
-
+#        dpm($view->total_rows, "res?");
+#        dpm($view->result, "res?");
         $view->execute_time = microtime(TRUE) - $start;
     }
 
@@ -348,6 +355,7 @@ class WisskiIndividualQuery extends QueryPluginBase
         // TODO: Figure out a clean approach to this
 
         $view->pager->total_items = $count_query->execute(); // ->fetchField();
+#        dpm($view->pager->total_items, "????");
         if (!empty($view->pager->options['offset'])) {
             $view->pager->total_items -= $view->pager->options['offset'];
         }
@@ -364,11 +372,12 @@ class WisskiIndividualQuery extends QueryPluginBase
         $fields = $this->fields; // fields to be filled
         $values_per_row = []; // values that are being returned
         // we always set the 'eid' field
-        foreach ($entity_ids as $entity_id) {
+        // By Mark: Don't do this anymore. It is evil if we don't have any data!
+/*        foreach ($entity_ids as $entity_id) {
             $values_per_row[$entity_id] = ['eid' => $entity_id];
         }
         unset($fields['eid']);
-
+*/
         $eid_to_uri_per_aid = [];
 
         // store here only fields that may be attached to the entity.
@@ -400,9 +409,16 @@ class WisskiIndividualQuery extends QueryPluginBase
         // iterate over all the fields
         // depending on the field we have, add the right data to the result
         while (($field = array_shift($fields)) !== NULL) {
+#            dpm($field, "field?");
+            if ($field == 'eid') {
+              foreach ($entity_ids as $entity_id) {
+                $values_per_row[$entity_id] = ['eid' => $entity_id];
+              }
+            }
             if ($field == 'title') {
                 $bid = (!empty($bundle_ids)) ? reset($bundle_ids) : NULL; // get the first bundle
-                foreach ($values_per_row as $eid => &$row) {
+                foreach ($entity_ids as $eid) { // $values_per_row as $eid => &$row) {
+                    $row = &$values_per_row[$eid];
                     [$bids, $bid] = $this->get_bids_bid_for_eid($eid, $bundle_ids);
 
                     // fill in missing bundle id
@@ -436,7 +452,8 @@ class WisskiIndividualQuery extends QueryPluginBase
                 // find the preferred local store
                 $localstore = AdapterHelper::getPreferredLocalStore();
 
-                foreach ($values_per_row as $eid => &$row) {
+                foreach ($entity_ids as $eid) { // $values_per_row as $eid => &$row) {
+                    $row = &$values_per_row[$eid];
                     if (!$localstore) {
                         $row['preferred_uri'] = '';
                         continue;
@@ -454,7 +471,8 @@ class WisskiIndividualQuery extends QueryPluginBase
                 // prepare the listbuilder for external access.
                 \Drupal::entityTypeManager()->getStorage('wisski_individual')->preparePreviewImages();
 
-                foreach ($values_per_row as $eid => &$row) {
+                foreach ($entity_ids as $eid) { // $values_per_row as $eid => &$row) {
+                    $row = &$values_per_row[$eid];
                     [$bids, $bid] = $this->get_bids_bid_for_eid($eid, $bundle_ids);
 
                     // fill in missing bundle id
@@ -485,7 +503,8 @@ class WisskiIndividualQuery extends QueryPluginBase
 
             if ($field == 'bundle' || $field == 'bundle_label' || $field == 'bundles') {
 
-                foreach ($values_per_row as $eid => &$row) {
+                foreach ($entity_ids as $eid) { //$values_per_row as $eid => &$row) {
+                    $row = &$values_per_row[$eid];
                     [$bids, $bid] = $this->get_bids_bid_for_eid($eid, $bundle_ids);
 
                     $row['bundles'] = $bids;
@@ -786,7 +805,7 @@ class WisskiIndividualQuery extends QueryPluginBase
 
         #    dpm(serialize($this->view->display_handler->getOption('rendering_language')));
 
-        #    dpm(serialize($values_per_row));
+#            dpm(serialize($values_per_row));
         #    return;
         #    dpm(microtime(), "end of ...");
 
@@ -984,6 +1003,11 @@ class WisskiIndividualQuery extends QueryPluginBase
         if($operator == "LIKE") {
           $operator = "CONTAINS";
           $value = str_replace("%", "", $value);
+        }
+        
+        if($operator == "NOT LIKE") {
+          $operator = "!=";
+//          $value = str_replace("%", "", $value);
         }
         
         #dpm($field, "yay");
