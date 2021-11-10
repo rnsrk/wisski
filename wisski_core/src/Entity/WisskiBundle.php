@@ -365,7 +365,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         #$available_languages = \Drupal::languageManager()->getLanguages();
         #$available_languages = array_keys($available_languages);
 
-        if ($cardinality < 0 || $cardinality > count($values)) $cardinality = count($values);
+//        if ($cardinality < 0 || $cardinality > count($values)) $cardinality = count($values);
 #        dpm(count($values[$available_languages[0]]), "count is!");
         $delimiter = $attributes['delimiter'];
 #        dpm($delimiter, "delimiter is?");
@@ -374,6 +374,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #        dpm($values, "values");
 
         foreach ($values as $language => $per_lang_values) {
+          // we have to evaluate cardinality here because it is per language...
+          if ($cardinality < 0 || $cardinality > count($per_lang_values)) $cardinality = count($per_lang_values);
           $i = 0;
           if(is_int($language)) {
             $value = $per_lang_values;
