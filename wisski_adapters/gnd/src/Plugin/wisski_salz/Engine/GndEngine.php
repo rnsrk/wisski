@@ -7,6 +7,8 @@
 
 namespace Drupal\wisski_adapter_gnd\Plugin\wisski_salz\Engine;
 
+require __DIR__ . '/../../../../../..//vendor/autoload.php';
+
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Language\LanguageInterface;
