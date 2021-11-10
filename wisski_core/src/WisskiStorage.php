@@ -152,7 +152,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #          ->fetchAllAssoc('fid');
 // fetchAllAssoc('fid') is wrong here because
 // if you have duplicateable fields it will fail!
-#        dpm($cached_field_values, "argh");                          
+#        dpm($cached_field_values, "cache");
+#        dpm($id, "id?");                          
 
         $pbs_info = \Drupal::service('wisski_pathbuilder.manager')->getPbsUsingBundle($bundle);
 
@@ -1281,16 +1282,29 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                         // TODO - adapt to language!
                         foreach($cached_field_values as $key => $cached_field_value) {
 #                          dpm($nfv[$main_property], "comparing to " . $cached_field_value->ident);
-                          if((string)$cached_field_value->ident === (string)$nfv[$main_property] ) {
-                            unset($cached_field_values[$key]);
-                            $found_cached_field_value = $cached_field_value;
-                            break;
+                          if(isset($nfv[$main_property])) {
+                            if((string)$cached_field_value->ident === (string)$nfv[$main_property] ) {
+                              unset($cached_field_values[$key]);
+                              $found_cached_field_value = $cached_field_value;
+                              break;
+                            }
+                          } else if(is_string($nfv)) {
+                            if((string)$cached_field_value->ident === (string)$nfv ) {
+                              unset($cached_field_values[$key]);
+                              $found_cached_field_value = $cached_field_value;
+                              break;
+                            }
                           }
+                          #else if(!isset($nfv[$main_property]))
+                          #                          dpm($nfv);
                         }
                       
                         // if we found something go for it...
                         if (isset($found_cached_field_value)) {
-                          $head[$found_cached_field_value->delta] = $nfv + unserialize($found_cached_field_value->properties);
+                          if(is_array($nfv))
+                            $head[$found_cached_field_value->delta] = $nfv + unserialize($found_cached_field_value->properties);
+                          else
+                            $head[$found_cached_field_value->delta] = unserialize($found_cached_field_value->properties);
                         } else $tail[] = $nfv;
                       }
 
