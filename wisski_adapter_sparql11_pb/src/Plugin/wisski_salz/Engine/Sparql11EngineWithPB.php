@@ -2733,10 +2733,11 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             if($language != "und")
               $escapedValue = '"' . $primitiveValue . '"@' . $language;
               #$query .= "\"$primitiveValue\"@$language";
-            else
+            else {
+              //$escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $primitiveValue . '" )';
               $escapedValue = '"' . $primitiveValue . '"';
               #$query .= "\"$primitiveValue\"";
-              
+            }              
           }
 
 #          dpm($query, "in between");
@@ -2791,7 +2792,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           // speed up in case of equivalence
           if($op == "=" ) {
             if(is_numeric($primitiveValue))
-              $escapedValue = "'" . $escapedValue . "'";
+              $escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $escapedValue . '" )'; //"'" . $escapedValue . "'";
             $query .= " " . $escapedValue . " . ";
           } elseif( $op == "EMPTY" || $op == "NOT EMPTY") { 
             $query .= " $outvar . ";
@@ -2890,6 +2891,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE, '=', 'field', TRUE, array(), 0, $language);
 
       $sparql .= " }";
+      dpm($sparql, "disamb?");
 #      drupal_set_message("spq: " . ($sparql));
 #      dpm($path, "path");
       $disambresult = $this->directQuery($sparql);
