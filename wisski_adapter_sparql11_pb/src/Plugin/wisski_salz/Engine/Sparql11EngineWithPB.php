@@ -7,6 +7,8 @@
 
 namespace Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine;
 
+require __DIR__ . '/../../../../..//vendor/autoload.php';
+
 use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -2733,10 +2735,11 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             if($language != "und")
               $escapedValue = '"' . $primitiveValue . '"@' . $language;
               #$query .= "\"$primitiveValue\"@$language";
-            else
+            else {
+              //$escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $primitiveValue . '" )';
               $escapedValue = '"' . $primitiveValue . '"';
               #$query .= "\"$primitiveValue\"";
-              
+            }              
           }
 
 #          dpm($query, "in between");
@@ -2791,7 +2794,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           // speed up in case of equivalence
           if($op == "=" ) {
             if(is_numeric($primitiveValue))
-              $escapedValue = "'" . $escapedValue . "'";
+              $escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $escapedValue . '" )'; //"'" . $escapedValue . "'";
             $query .= " " . $escapedValue . " . ";
           } elseif( $op == "EMPTY" || $op == "NOT EMPTY") { 
             $query .= " $outvar . ";
@@ -2890,6 +2893,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE, '=', 'field', TRUE, array(), 0, $language);
 
       $sparql .= " }";
+      dpm($sparql, "disamb?");
 #      drupal_set_message("spq: " . ($sparql));
 #      dpm($path, "path");
       $disambresult = $this->directQuery($sparql);
@@ -3469,7 +3473,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
    */
   public function getNamespacesFromDocument($iri) {
     $file = file_get_contents($iri);
-    $format = \EasyRdf_Format::guessFormat($file, $iri); 
+    $format = EasyRdf_Format::guessFormat($file, $iri); 
     // unfortunately EasyRdf does not provide any API to get the declared
     // namespaces although in general its Parsers do handle them.
     // Therefore we have to provide our own namespace parsers. 
@@ -3665,6 +3669,16 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         '#prefix' => '<div id="wisski-reasoner-start-button">',
         '#suffix' => '</div>',
       ),
+      'delete_reasoning_button' => array(
+        '#type' => 'button',
+        '#value' => $this->t('Delete reasoning tables'),
+        '#ajax' => array(
+          'wrapper' => 'wisski-reasoner-block',
+          'callback' => array($this,'deleteReasoning'),
+        ),
+        '#prefix' => '<div id="wisski-reasoner-delete-button">',
+        '#suffix' => '</div>',
+      ),
       'always_reason_this_store' => array(
         '#type' => 'checkbox',
         '#title' => $this->t('Always do reasoning on this adapter.'),
@@ -3755,6 +3769,14 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $form['reasoner']['tester']['check_results']['#value'] = $candidate."\n".$result."\n\n".$this->t('Full list of results')."\n\t".implode("\n\t",$full_results);
     return $form['reasoner']['tester']['check_results'];
   }
+
+  public function deleteReasoning(array $form,FormStateInterface $form_state) {
+    $this->prepareTables();
+    $this->messenger()->addMessage("Reasoning-Tables are reset.");
+    $form_state->setRedirect('<current>');
+    return $form['reasoner'];
+  }
+
 
   public function startReasoning(array $form,FormStateInterface $form_state) {
     
