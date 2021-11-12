@@ -2356,6 +2356,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
    *              But can be modified by this.
    */
   public function generateTriplesForPath($pb, $path, $primitiveValue = "", $subject_in = NULL, $object_in = NULL, $disambposition = 0, $startingposition = 0, $write = FALSE, $op = '=', $mode = 'field', $relative = TRUE, $variable_prefixes = array(), $numbering = 0, $language = "und") {
+#    dpm($language, "called with language!");
 #    drupal_set_message("gt1: " . microtime());
 #     \Drupal::logger('WissKIsaveProcess')->debug('generate: ' . serialize(func_get_args()));
 #    if($mode == 'entity_reference')
@@ -2726,8 +2727,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
                 $escapedValue = '"' . $this->escapeSparqlLiteral($primitiveValue) . '"@' . $language;
               else
                 #$query .= "\"$primitiveValue\"";
-                $escapedValue = '"' . $this->escapeSparqlLiteral($primitiveValue) . '"';
-                
+                //$escapedValue = '"' . $this->escapeSparqlLiteral($primitiveValue) . '"';
+                $escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $this->escapeSparqlLiteral($primitiveValue) . '" )';
               
             }
           } else {
@@ -2736,8 +2737,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               $escapedValue = '"' . $primitiveValue . '"@' . $language;
               #$query .= "\"$primitiveValue\"@$language";
             else {
-              //$escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $primitiveValue . '" )';
-              $escapedValue = '"' . $primitiveValue . '"';
+              $escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $primitiveValue . '" )';
+              //$escapedValue = '"' . $primitiveValue . '"';
               #$query .= "\"$primitiveValue\"";
             }              
           }

@@ -759,11 +759,15 @@ class WisskiIndividualQuery extends QueryPluginBase
                         } else {
                             // get the language
                             $lang = $sparql_row->$out_prop->getLang();
+#                            dpm($lang);
                             // by Mark:
                             // if it is unspecified we just set it to x-default
                             // this is an assumption proofed to be true - might also be UND or EN
+                            // 
+                            // this was probably wrong. Lets try the current language...
                             if(empty($lang))
-                              $lang = "x-default";
+                              $lang = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+                              //$lang = "x-default";
                             if (!empty($disamb)) {
                                 if (!empty($is_file)) {
                                     $this->messenger()->addWarning("On your image path there is a disamb set. How do you think the system now should behave? Make the image clickable or what?!");
