@@ -3669,6 +3669,16 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         '#prefix' => '<div id="wisski-reasoner-start-button">',
         '#suffix' => '</div>',
       ),
+      'delete_reasoning_button' => array(
+        '#type' => 'button',
+        '#value' => $this->t('Delete reasoning tables'),
+        '#ajax' => array(
+          'wrapper' => 'wisski-reasoner-block',
+          'callback' => array($this,'deleteReasoning'),
+        ),
+        '#prefix' => '<div id="wisski-reasoner-delete-button">',
+        '#suffix' => '</div>',
+      ),
       'always_reason_this_store' => array(
         '#type' => 'checkbox',
         '#title' => $this->t('Always do reasoning on this adapter.'),
@@ -3759,6 +3769,14 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $form['reasoner']['tester']['check_results']['#value'] = $candidate."\n".$result."\n\n".$this->t('Full list of results')."\n\t".implode("\n\t",$full_results);
     return $form['reasoner']['tester']['check_results'];
   }
+
+  public function deleteReasoning(array $form,FormStateInterface $form_state) {
+    $this->prepareTables();
+    $this->messenger()->addMessage("Reasoning-Tables are reset.");
+    $form_state->setRedirect('<current>');
+    return $form['reasoner'];
+  }
+
 
   public function startReasoning(array $form,FormStateInterface $form_state) {
     
