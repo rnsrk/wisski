@@ -7,6 +7,8 @@
 
 namespace Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine;
 
+require __DIR__ . '/../../../../..//vendor/autoload.php';
+
 use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -3471,7 +3473,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
    */
   public function getNamespacesFromDocument($iri) {
     $file = file_get_contents($iri);
-    $format = \EasyRdf_Format::guessFormat($file, $iri); 
+    $format = EasyRdf_Format::guessFormat($file, $iri); 
     // unfortunately EasyRdf does not provide any API to get the declared
     // namespaces although in general its Parsers do handle them.
     // Therefore we have to provide our own namespace parsers. 
