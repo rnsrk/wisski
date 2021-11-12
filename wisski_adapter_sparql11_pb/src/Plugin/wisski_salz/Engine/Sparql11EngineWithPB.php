@@ -2893,7 +2893,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE, '=', 'field', TRUE, array(), 0, $language);
 
       $sparql .= " }";
-      dpm($sparql, "disamb?");
+#      dpm($sparql, "disamb?");
 #      drupal_set_message("spq: " . ($sparql));
 #      dpm($path, "path");
       $disambresult = $this->directQuery($sparql);
