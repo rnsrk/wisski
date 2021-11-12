@@ -211,7 +211,7 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
       $fv = array($this->configuration['entry_uri_field'] => array ( array($mainprop => $uri), "main_property" => $mainprop));
 
       if(!empty($pb) && !empty($fv) && !empty($bundle) ) 
-        $engine->writeFieldValues($entity_id, $fv, $pb, $bundle);
+        $engine->writeFieldValues($object, $fv, $pb, $bundle);
       else {
         // provide some debug if something went wrongly....
         $this->messenger()->addError("I could not find PB (" . serialize($pb) . ") or fv (" . serialize($fv) . ") or bundle (" . serialize($bundle) . ") in Engine (" . serialize($engine) . ")");
