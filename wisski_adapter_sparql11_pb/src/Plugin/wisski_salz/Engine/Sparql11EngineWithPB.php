@@ -2721,6 +2721,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               $cast_outvar = "xsd:decimal($outvar)";
             }
             else {
+#              dpm("else?");
               //$escapedValue = '"' . $this->escapeSparqlLiteral($primitiveValue) . '"';
               if($language != "und")
                 #$query .= "\"$primitiveValue\"@$language";
@@ -2732,13 +2733,16 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               
             }
           } else {
+#            dpm("else!");
             //$escapedValue = '"' . $primitiveValue . '"';
             if($language != "und")
               $escapedValue = '"' . $primitiveValue . '"@' . $language;
               #$query .= "\"$primitiveValue\"@$language";
             else {
-              $escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $primitiveValue . '" )';
-              //$escapedValue = '"' . $primitiveValue . '"';
+              if($op == "EQUALS" || $op == "equals" || $op == "LIKE" || $op == "=")
+                $escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $primitiveValue . '" )';
+              else
+                $escapedValue = '"' . $primitiveValue . '"';
               #$query .= "\"$primitiveValue\"";
             }              
           }
