@@ -164,6 +164,26 @@ function wisski_core_update_8006(&$sandbox) {
 //  drupal_set_installed_schema_version('wisski_core', '8006');
 }
 
+/** Add wisski uri field to entity 
+  *
+  */
+function wisski_core_update_8007(&$sandbox) {
+  $definition_manager = \Drupal::entityDefinitionUpdateManager();
+  $newStorage = Drupal\Core\Field\BaseFieldDefinition::create('uri')
+      ->setLabel(t('WissKI URI'))
+      ->setDescription(t('The WissKI URI from the TS (in case you need it)'))
+      ->setReadOnly(TRUE)
+      ->setDisplayOptions('view', array(
+        'region' => 'hidden',
+        'label' => 'hidden',
+        'type' => 'string',
+        'weight' => -5,
+      ))
+      ->setDisplayConfigurable('view', TRUE);
+
+  $definition_manager->installFieldStorageDefinition('wisski_uri','wisski_individual', 'wisski_core', $newStorage);
+}
+
 /**
  * implements hook_schema()
  */
