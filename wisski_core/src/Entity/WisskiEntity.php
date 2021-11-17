@@ -119,6 +119,18 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
       ->setDescription(t('The bundle.'))
       ->setSetting('target_type', 'wisski_bundle')
       ->setReadOnly(TRUE);
+      
+    $fields['wisski_uri'] = BaseFieldDefinition::create('uri')
+      ->setLabel(t('WissKI URI'))
+      ->setDescription(t('The WissKI URI from the TS (in case you need it)'))
+      ->setReadOnly(TRUE)
+      ->setDisplayOptions('view', array(
+        'region' => 'hidden',
+        'label' => 'hidden',
+        'type' => 'string',
+        'weight' => -5,
+      ))
+      ->setDisplayConfigurable('view', TRUE);
     
     // TODO: wisski entities are not translatable. do we thus need the lang code?
     $fields['langcode'] = BaseFieldDefinition::create('language')

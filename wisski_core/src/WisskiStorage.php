@@ -1091,6 +1091,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                   if ($field_name === 'label') $new_field_values[$id][$field_name] = array(wisski_core_generate_title($id)); 
                   // we already know the eid
                   if ($field_name === 'eid') $new_field_values[$id][$field_name] = array($id);
+
+                  if ($field_name === 'wisski_uri') $new_field_values[$id][$field_name] = array($adapter->getEngine()->getUriForDrupalId($id, FALSE));
                   
 #                  dpm($new_field_values, "nfv?");
                   
