@@ -19,6 +19,7 @@ use Drupal\views\Plugin\views\filter\StringFilter as ViewsString;
 class FieldString extends ViewsString {
 
   function operators() {
+#    dpm("op!!");
     $operators = parent::operators();
     $operators_new = array(
     /*
@@ -77,7 +78,7 @@ class FieldString extends ViewsString {
     
     $operators = array_merge($operators, $operators_new);
 
-#    dpm($operators, "op");
+#    dpm(serialize($operators), "op");
 
     return $operators;
   }
@@ -105,6 +106,61 @@ class FieldString extends ViewsString {
     $value = explode(',', $this->value);
     $this->query->addWhere($this->options['group'], $field, $value, $this->operator);
   }
+  
+  protected function opStartsWith($field) {
+    $operator = $this->getConditionOperator('STARTS_WITH');
+//    $this->query->addWhere($this->options['group'], $field, $this->connection->escapeLike($this->value) . '', $operator);
+    $this->query->addWhere($this->options['group'], $field, $this->value . '', $operator);
+  }
+
+  protected function opNotStartsWith($field) {
+    $operator = $this->getConditionOperator('NOT_STARTS_WITH');
+    $this->query->addWhere($this->options['group'], $field, '' . $this->value . '', $operator);
+  }
+
+  protected function opEndsWith($field) {
+    $operator = $this->getConditionOperator('ENDS_WITH');
+    $this->query->addWhere($this->options['group'], $field, '' . $this->value, $operator);
+  }
+
+  protected function opNotEndsWith($field) {
+    $operator = $this->getConditionOperator('NOT_ENDS_WITH');
+    $this->query->addWhere($this->options['group'], $field, '' . $this->value . '', $operator);
+  }
+
+  protected function opNotLike($field) {
+    $operator = $this->getConditionOperator('NOT');
+    $this->query->addWhere($this->options['group'], $field, '' . $this->value . '', $operator);
+  }
+
+  protected function opShorterThan($field) {
+    $operator = $this->getConditionOperator('SHORTERTHAN');
+    //$placeholder = $this->placeholder();
+    // Type cast the argument to an integer because the SQLite database driver
+    // has to do some specific alterations to the query base on that data type.
+    //$this->query->addWhereExpression($this->options['group'], "LENGTH($field) > $placeholder", [$placeholder => (int) $this->value]);
+    $this->query->addWhere($this->options['group'], $field, '' . $this->value . '', $operator);
+  }
+
+  protected function opLongerThan($field) {
+    $operator = $this->getConditionOperator('LONGERTHAN');
+    //$placeholder = $this->placeholder();
+    // Type cast the argument to an integer because the SQLite database driver
+    // has to do some specific alterations to the query base on that data type.
+    //$this->query->addWhereExpression($this->options['group'], "LENGTH($field) > $placeholder", [$placeholder => (int) $this->value]);
+    $this->query->addWhere($this->options['group'], $field, '' . $this->value . '', $operator);
+  }
+
+  /**
+   * Filters by a regular expression.
+   *
+   * @param string $field
+   *   The expression pointing to the queries field, for example "foo.bar".
+   */
+  protected function opRegex($field) {
+    $this->query->addWhere($this->options['group'], $field, $this->value, 'REGEXP');
+  }
+
   
   function placeholder() {
     $field = isset($this->configuration['wisski_field']) ? $this->configuration['wisski_field'] : $this->realField;

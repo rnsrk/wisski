@@ -1014,7 +1014,10 @@ class WisskiIndividualQuery extends QueryPluginBase
 //          $value = str_replace("%", "", $value);
         }
         
-        #dpm($field, "yay");
+#        dpm($group, "group");
+#        dpm($field, "field");
+#        dpm($value, "value");
+#        dpm($operator, "operator");
 //        dpm(serialize(\Drupal\views\Views::viewsData()->get('wisski_individual')), "sis?");
         // it starts with a dot
         // this means it is a relative field

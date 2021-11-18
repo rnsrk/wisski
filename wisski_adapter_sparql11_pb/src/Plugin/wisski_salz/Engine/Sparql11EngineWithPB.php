@@ -2678,10 +2678,24 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             // this should be faster on most triplestores than REGEX.
             //$primitiveValue = '^' . $this->escapeSparqlRegex($primitiveValue, TRUE);
           }
+          elseif($op == 'NOT_STARTS_WITH' || $op == 'not_starts_with') {
+            $regex = true;
+            $safe = TRUE;
+            $negate = TRUE;
+          }
           elseif($op == 'ENDS_WITH' || $op == 'ends_with') {
             $regex = true;
             $safe = TRUE;
 //            $primitiveValue = $this->escapeSparqlRegex($primitiveValue, TRUE) . '$';
+          }
+          elseif($op == 'NOT_ENDS_WITH' || $op == 'not_ends_with') {
+            $regex = true;
+            $safe = TRUE;
+            $negate = TRUE;
+          }
+          elseif($op == 'REGEXP') {
+            $regex = true;
+            $safe = TRUE;
           }
           elseif($op == 'CONTAINS' || $op == 'contains' || $op == 'NOT') {
             $regex = true;
@@ -2763,9 +2777,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               $val_max = $this->escapeSparqlLiteral($val_max);
             }
             $filter = "$cast_outvar >= $val_min & $cast_outvar <= $val_max";
-          } else  if($op == "STARTS_WITH" || $op == 'starts_with') {
+          } else  if($op == "STARTS_WITH" || $op == 'starts_with' || $op == "NOT_STARTS_WITH") {
             $filter = "strStarts($cast_outvar, $escapedValue)";
-          } else if ($op == "ENDS_WITH" || $op == 'ends_with') {
+          } else if ($op == "ENDS_WITH" || $op == 'ends_with' || $op == "NOT_ENDS_WITH") {
             $filter = "strEnds($cast_outvar, $escapedValue)";
           } /* This is wrong here...
           else if($op == "EMPTY") {
@@ -2790,9 +2804,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             $filter = "$cast_outvar " . $op . ' ' . $escapedValue;
           }
 
-          if ($negate && $op != "CONTAINS") {
-            $filter = "NOT( $filter )";
-          } else if($negate && $op == "CONTAINS") {
+//          if ($negate && $op != "CONTAINS") {
+//            $filter = "NOT( $filter )";
+//          } else 
+          if($negate ) {//&& $op == "CONTAINS") {
             $filter = "!" . $filter;
           }
 
