@@ -3175,6 +3175,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       
 #        dpm($entity->label(), "label");
 #        dpm(serialize($entity), "ser?");
+
+        if(empty($old_value[$del_lang]));
+          continue;
       
         $old_value = $old_value[$del_lang];
 
@@ -3245,6 +3248,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // as we do this we also keep track of values that haven't changed so that we
     // do not have to write them again.
     foreach($old_values as $old_key => $old_value) {
+      
+      if(!isset($old_value[$language]))
+        continue;
+        
       $old_value = $old_value[$language];
 #      dpm("deleting key $old_key with value " . serialize($old_value) . " from values " . serialize($field_values));
       if(!isset($field_values[$old_key])) {
