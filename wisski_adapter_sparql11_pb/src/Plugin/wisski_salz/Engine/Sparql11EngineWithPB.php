@@ -1935,41 +1935,51 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           // TODO: check if we can use the new *relative* methods
           $parent_path_array = $parent->getPathArray();
           $pathcnt = (count($parent_path_array) + 1) / 2;
+
+          // we need to take the start, too.          
+          $pathcnt = $pathcnt -1;
         }
 
         // we have to set disamb manually to the last instance
         // otherwise generateTriplesForPath() won't produce right triples
-        if($path->isGroup()) { // only do this for groups - for fields we have to handle this otherwise.
-          $disamb = (count($path_array) + 1) / 2;
+        // By Mark:
+        // In modern d9 drupal systems entity reference is a common thing to do
+        // so don't queue up like that.
         
-          // the var that interests us is the one before disamb.
-          // substract 2 as the disamb count starts from 1 whereas vars start from 0!
-          // in W8, the x increases by 2!
-          $subject_var = "x" . (($disamb - 2) * 2);
+//        if($path->isGroup()) { // only do this for groups - for fields we have to handle this otherwise.
+        if(!empty($path->getDisamb()))
+          $disamb = (count($path_array) + 1) / 2;
+        else
+          $disamb = $path->getDisamb();
+        
+        // the var that interests us is the one before disamb.
+        // substract 2 as the disamb count starts from 1 whereas vars start from 0!
+        // in W8, the x increases by 2!
+        $subject_var = "x" . (($disamb - 2) * 2);
 
-          // build up a select query that get us 
-          $select  = "SELECT DISTINCT ?$subject_var WHERE {";
-          $select .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $object_uri, $disamb, $pathcnt, FALSE, NULL, 'entity_reference');
-          $select .= "}";
+        // build up a select query that get us 
+        $select  = "SELECT DISTINCT ?$subject_var WHERE {";
+        $select .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $object_uri, $disamb, $pathcnt, FALSE, NULL, 'entity_reference');
+        $select .= "}";
 
-#          dpm($select, "select");
+#        dpm($select, "select");
           
-          $result = $this->directQuery($select);
+        $result = $this->directQuery($select);
 
-          if ($result->numRows() == 0) {
-            // there is no relation any more. has been deleted before!?
-            return;
-          }
+        if ($result->numRows() == 0) {
+          // there is no relation any more. has been deleted before!?
+          return;
+        }
 #ddl(array($disamb, $subject_var, $select,$result, $result->numRows()), 'delete disamb select');
 
-          // reset subjects
-          $subject_uris = array();
-          foreach ($result as $row) {
-            $subject_uris[] = $row->{$subject_var}->getUri();
-          }
-        } else { // this is the case for the entity-reference fields that are not made by wisski
-          $subject_uris = array($subject_uri);
+        // reset subjects
+        $subject_uris = array();
+        foreach ($result as $row) {
+          $subject_uris[] = $row->{$subject_var}->getUri();
         }
+//        } else { // this is the case for the entity-reference fields that are not made by wisski
+//          $subject_uris = array($subject_uri);
+//        }
 
       }
             
