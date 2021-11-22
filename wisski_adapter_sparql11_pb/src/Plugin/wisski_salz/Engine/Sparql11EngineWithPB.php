@@ -3176,7 +3176,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #        dpm($entity->label(), "label");
 #        dpm(serialize($entity), "ser?");
 
-        if(!isset($old_value[$del_lang]) || empty($old_value[$del_lang]));
+        if(!isset($old_value[$del_lang]) || empty($old_value[$del_lang]))
           continue;
       
         $old_value = $old_value[$del_lang];
