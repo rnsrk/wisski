@@ -84,12 +84,12 @@ function wisski_core_update_8004() {
     $field_storage = \Drupal::service('entity_field.manager')->getFieldStorageDefinitions('wisski_individual');
 
     $entity_definition_update_manager->updateFieldableEntityType(\Drupal::entityTypeManager()->getDefinition('wisski_individual'), $field_storage);
-    drupal_set_installed_schema_version('wisski_core', '8007');
+#    drupal_set_installed_schema_version('wisski_core', '8007');
   }
   catch (EntityStorageException $e) {
     print_r($e);
   }
-  drupal_set_installed_schema_version('wisski_core', '8007');
+#  drupal_set_installed_schema_version('wisski_core', '8007');
 }
 
 /** translation table updates
