@@ -1,0 +1,7 @@
+wisski.wisski_doi_settings:
+  path: '/admin/config/wisski/wisski_doi_settings'
+  defaults:
+    _form: '\Drupal\wisski_doi\Form\WisskiDOISettings'
+    _title: 'WissKI DOI Settings'
+  requirements:
+    _permission: 'administer wisski bundles'
