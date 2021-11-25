@@ -1,0 +1,16 @@
+wisski.wisski_doi_settings.tabs:
+  route_name: wisski.wisski_doi_settings.tabs.default
+  title: DOI repository settings
+  base_route: wisski.wisski_doi_settings.tabs.default
+
+wisski.wisski_doi_settings.bundle_administration:
+  route_name: wisski.wisski_doi_settings.tabs.bundle_administration
+  title: DOI bundle administration
+  base_route: wisski.wisski_doi_settings.tabs.default
+  weight: 2
+
+wisski.wisski_doi_settings.doi_request:
+    route_name: wisski.wisski_doi_settings.tabs.doi_request
+    title: Request DOIs
+    base_route: wisski.wisski_doi_settings.tabs.default
+    weight: 3

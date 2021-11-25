@@ -17,7 +17,7 @@
  * Controller for DOI Settings
  *
  */
-class WisskiDOISettings extends FormBase {
+class WisskiDOIRepositorySettings extends FormBase {
 
   public function getFormId() {
     return 'wisski_doi_settings';
