@@ -392,7 +392,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #          dpm($i, "i");
 #          dpm($cardinality, "card");
 #	TODO: We have to reimplement this. I've thrown this out due to language thingies
-#            if ($i >= $cardinality) break;
+            // MyFi: commented this in again because this is important for the functionality of "Show#" in the title pattern setting of the bundle
+            // otherwise multiple values would be written one following another without the delimiter if the setting is: "Show#1"
+            if ($i >= $cardinality) break;
 #          dpm($value, 'get');
             foreach($available_languages as $alanguage) {
               if(empty($part[$alanguage]))
