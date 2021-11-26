@@ -30,10 +30,10 @@ function wisski_core_update_8001(&$sandbox) {
       }
     } else {
       \Drupal::messenger()->addError("Could not open file " . $table);
-    } 
+    }
     fclose($file);
   }
-  
+
 }
 
 /**
@@ -125,13 +125,13 @@ function wisski_core_update_8005(&$sandbox) {
       }
     } else {
       \Drupal::messenger()->addError("Could not open file " . $table);
-    } 
+    }
     fclose($file);
   }
-  
+
 }
 
-/** Add entity id to triplestore 
+/** Add entity id to triplestore
   *
   */
 function wisski_core_update_8006(&$sandbox) {
@@ -166,7 +166,7 @@ function wisski_core_update_8006(&$sandbox) {
 //  drupal_set_installed_schema_version('wisski_core', '8006');
 }
 
-/** Add wisski uri field to entity 
+/** Add wisski uri field to entity
   *
   */
 function wisski_core_update_8007(&$sandbox) {
@@ -184,45 +184,6 @@ function wisski_core_update_8007(&$sandbox) {
       ->setDisplayConfigurable('view', TRUE);
 
   $definition_manager->installFieldStorageDefinition('wisski_uri','wisski_individual', 'wisski_core', $newStorage);
-}
-
-/** Add new table for DOIs 
-  *
-  */
-function wisski_core_update_8008(&$sandbox) {
-
-  $tables = array('wisski_entity_map', 'wisski_title_n_grams', 'wisski_calling_bundles', 'wisski_preview_images', 'wisski_entity_field_properties', 'wisski_core_ontology_namespaces');
-
-  foreach($tables as $table) {
-    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
-    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
-    $result = \Drupal::database()->select($table, 't')->fields('t')->execute();
-    file_put_contents('temporary://' . $table, "");
-    while($thing = $result->fetch()) {
-      file_put_contents('temporary://' . $table, serialize($thing) . "\n", FILE_APPEND);
-    }
-  }
-
-  drupal_uninstall_schema('wisski_core');
-  drupal_install_schema('wisski_core');
-
-  foreach($tables as $table) {
-    $file = fopen('temporary://' . $table, "r");
-    if ($file) {
-      while (($line = fgets($file)) !== false) {
-	$thing = unserialize($line);
-	$thing = (array)$thing;
-        // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
-        // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
-        \Drupal::database()->insert($table)->fields($thing)->execute();
-#	dpm($line);
-      }
-    } else {
-      \Drupal::messenger()->addError("Could not open file " . $table);
-    } 
-    fclose($file);
-  }
-  
 }
 
 /**
@@ -250,7 +211,7 @@ function wisski_core_schema() {
   );
 
   $schema['wisski_title_n_grams'] = array(
-    
+
     'description' => 'Stores n-grams of generated entity titles for search and index purposes',
     'fields' => array(
       'ent_num' => array(
@@ -292,9 +253,9 @@ function wisski_core_schema() {
       'entities' => array('ent_num','bundle','lang'),
     ),
   );
-  
+
   $schema['wisski_calling_bundles'] = array(
-    
+
     'description' => 'Caches the calling bundle for individuals so that we can decide on the correct visualization',
     'fields' => array(
       'eid' => array(
@@ -315,9 +276,9 @@ function wisski_core_schema() {
       'bid' => array(array('bid',64)),
     ),
   );
-  
+
   $schema['wisski_preview_images'] = array(
-    
+
     'description' => 'Caches the URI of the preview image for individuals',
     'fields' => array(
       'eid' => array(
@@ -338,9 +299,9 @@ function wisski_core_schema() {
       'bid' => array(array('image_uri',128)),
     ),
   );
-  
+
   $schema['wisski_entity_field_properties'] = array(
-  
+
     'description' => 'Saves secondary field data for WissKI Entities. This includes all the field properties that are set by the user',
     'fields' => array(
       'eid' => array(
@@ -392,7 +353,7 @@ function wisski_core_schema() {
   );
 
   $schema['wisski_core_ontology_namespaces'] = array(
-  
+
     'description' => 'Saves the namespaces on ontology load.',
     'fields' => array(
       'short_name' => array(
@@ -408,31 +369,6 @@ function wisski_core_schema() {
         'not null' => TRUE,
       ),
     ),
-  );
-  
-  $schema['wisski_doi'] = array(
-  
-    'description' => 'Saves the namespaces on ontology load.',
-    'fields' => array(
-      'did' =>  array(
-        'description' => 'Primarykey for DOI table',
-        'type' => 'serial',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-      'doi' =>  array(
-        'description' => 'The actual DOI.',
-        'type' => 'varchar',
-        'length' => 255,
-      ),
-      'vid' =>  array(
-        'description' => 'The ID of the corresponding revision.',
-        'type' => 'int',
-        'size' => 'big',
-        'not null' => TRUE,
-      ),
-    ),
-    'primary key' => array('did'),
   );
 
   //dpm($schema);
