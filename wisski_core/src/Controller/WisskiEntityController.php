@@ -192,7 +192,7 @@ class WisskiEntityController extends ControllerBase {
     $type = "wisski_individual";
 
     $build['#title'] = $has_translations ? $this->t('@langname revisions for %title', ['@langname' => $langname, '%title' => $wisski_individual->label()]) : $this->t('Revisions for %title', ['%title' => $wisski_individual->label()]);
-    $header = [$this->t('Revision'), $this->t('Operations')];
+    $header = [$this->t('Revision'), $this->t('DOI'), $this->t('Operations')];
 
     $revert_permission = (($account->hasPermission("revert $type revisions") || $account->hasPermission('revert all revisions') || $account->hasPermission('administer nodes')) && $wisski_individual->access('update'));
     $delete_permission = (($account->hasPermission("delete $type revisions") || $account->hasPermission('delete all revisions') || $account->hasPermission('administer nodes')) && $wisski_individual->access('delete'));
@@ -263,17 +263,42 @@ class WisskiEntityController extends ControllerBase {
         $renderer->addCacheableDependency($column['data'], $username);
         $row[] = $column;
 
+        // DOI code
+        $hasDOI = FALSE;
+        if ($hasDOI) {
+          $row[] = [
+            'data' => [
+              '#prefix' => '<em>',
+              '#markup' => $this->t('Revision has DOI'),
+              '#suffix' => '</em>',
+            ],
+          ];
+
+        } else {
+          // DOI
+          $linksDOI = [];
+          // maybe change later to form elements?
+          $linkDOI = [
+            'title' => $this->t('Get DOI'),
+            'url' => Url::fromRoute('wisski_individual.revision_get_doi', ['wisski_individual' => $wisski_individual->id(), 'wisski_individual_revision' => $vid]),
+          ];
+          $linksDOI['add'] = $linkDOI;
+          $row[] = [
+            'data' => [
+              '#type' => 'operations',
+              '#links' => $linksDOI,
+            ],
+          ];
+        }
+        
         if ($is_current_revision) {
+          // Operations
           $row[] = [
             'data' => [
               '#prefix' => '<em>',
               '#markup' => $this->t('Current revision'),
               '#suffix' => '</em>',
-            ],
-          ];
-
-          $rows[] = [
-            'data' => $row,
+            ], 
             'class' => ['revision-current'],
           ];
         }
@@ -295,15 +320,16 @@ class WisskiEntityController extends ControllerBase {
             ];
           }
 
+          // Operations
           $row[] = [
             'data' => [
               '#type' => 'operations',
               '#links' => $links,
             ],
           ];
-
-          $rows[] = $row;
         }
+#       dpm($row);
+        $rows[] = $row;
       }
     }
 

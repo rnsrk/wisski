@@ -249,3 +249,13 @@ wisski_individual.revision_delete_confirm:
     wisski_individual: \d+
 #  options:
 #    _wisski_individual_operation_route: TRUE
+
+wisski_individual.revision_get_doi:
+  path: '/wisski/navigate/{wisski_individual}/revisions/{wisski_individual_revision}/getDOI'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\WisskiIndividualRequestDOIConfirmForm'
+    _title: 'Do you want to request a new DOI?'
+  requirements:
+    _permission: 'administer wisski'
+#    _access_node_revision: 'view'
+    wisski_individual: \d+
