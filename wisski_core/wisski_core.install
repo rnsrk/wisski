@@ -186,6 +186,45 @@ function wisski_core_update_8007(&$sandbox) {
   $definition_manager->installFieldStorageDefinition('wisski_uri','wisski_individual', 'wisski_core', $newStorage);
 }
 
+/** Add new table for DOIs 
+  *
+  */
+function wisski_core_update_8008(&$sandbox) {
+
+  $tables = array('wisski_entity_map', 'wisski_title_n_grams', 'wisski_calling_bundles', 'wisski_preview_images', 'wisski_entity_field_properties', 'wisski_core_ontology_namespaces');
+
+  foreach($tables as $table) {
+    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    $result = \Drupal::database()->select($table, 't')->fields('t')->execute();
+    file_put_contents('temporary://' . $table, "");
+    while($thing = $result->fetch()) {
+      file_put_contents('temporary://' . $table, serialize($thing) . "\n", FILE_APPEND);
+    }
+  }
+
+  drupal_uninstall_schema('wisski_core');
+  drupal_install_schema('wisski_core');
+
+  foreach($tables as $table) {
+    $file = fopen('temporary://' . $table, "r");
+    if ($file) {
+      while (($line = fgets($file)) !== false) {
+	$thing = unserialize($line);
+	$thing = (array)$thing;
+        // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+        // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+        \Drupal::database()->insert($table)->fields($thing)->execute();
+#	dpm($line);
+      }
+    } else {
+      \Drupal::messenger()->addError("Could not open file " . $table);
+    } 
+    fclose($file);
+  }
+  
+}
+
 /**
  * implements hook_schema()
  */
@@ -371,6 +410,31 @@ function wisski_core_schema() {
     ),
   );
   
+  $schema['wisski_doi'] = array(
+  
+    'description' => 'Saves the namespaces on ontology load.',
+    'fields' => array(
+      'did' =>  array(
+        'description' => 'Primarykey for DOI table',
+        'type' => 'serial',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'doi' =>  array(
+        'description' => 'The actual DOI.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'vid' =>  array(
+        'description' => 'The ID of the corresponding revision.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('did'),
+  );
+
   //dpm($schema);
   return $schema;
 }
