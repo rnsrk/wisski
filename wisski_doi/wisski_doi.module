@@ -1,0 +1,44 @@
+<?php
+
+use Drupal\Core\Url;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+
+function wisski_doi_revision_menu_header_alter()
+{
+  return [new TranslatableMarkup('Revision'), new TranslatableMarkup('DOI'), new TranslatableMarkup('Operations')];
+}
+
+
+function wisski_doi_revision_menu_column_alter($row, $wisski_individual, $vid)
+{
+  // DOI code
+  $hasDOI = FALSE;
+  if ($hasDOI) {
+    $row[] = [
+      'data' => [
+        '#prefix' => '<em>',
+        '#markup' => new TranslatableMarkup('Revision has DOI'),
+        '#suffix' => '</em>',
+      ],
+    ];
+
+  } else {
+    // DOI
+    $linksDOI = [];
+    // maybe change later to form elements?
+    $linkDOI = [
+      'title' => new TranslatableMarkup('Get DOI'),
+      'url' => Url::fromRoute('wisski_individual.revision_get_doi', ['wisski_individual' => $wisski_individual->id(), 'wisski_individual_revision' => $vid]),
+    ];
+    $linksDOI['add'] = $linkDOI;
+    $row[] = [
+      'data' => [
+        '#type' => 'operations',
+        '#links' => $linksDOI,
+      ],
+    ];
+  }
+
+  return $row;
+}
+
