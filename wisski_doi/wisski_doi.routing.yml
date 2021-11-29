@@ -21,3 +21,13 @@ wisski.wisski_doi_settings.tabs.doi_request:
     _title: 'WissKI DOI request'
   requirements:
     _permission: 'administer wisski bundles'
+
+wisski_individual.revision_get_doi:
+  path: '/wisski/navigate/{wisski_individual}/revisions/{wisski_individual_revision}/getDOI'
+  defaults:
+    _form: '\Drupal\wisski_doi\Form\WisskiRequestDOIConfirmForm'
+    _title: 'Do you want to request a new DOI?'
+  requirements:
+    _permission: 'administer wisski'
+    #    _access_node_revision: 'view'
+    wisski_individual: \d+

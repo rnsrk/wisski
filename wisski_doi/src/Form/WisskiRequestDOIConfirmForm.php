@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\wisski_core\Form;
+namespace Drupal\wisski_doi\Form;
 
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Datetime\DateFormatterInterface;
@@ -8,7 +8,6 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-use Drupal\wisski_core\WisskiEntityInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -16,7 +15,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @internal
  */
-class WisskiIndividualRequestDOIConfirmForm extends ConfirmFormBase {
+class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
 
   /**
    * The WisskiEntity revision.
@@ -77,7 +76,7 @@ class WisskiIndividualRequestDOIConfirmForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'wisski_individual_request_doi_form';
+    return 'wisski_doi_request_form';
   }
 
   /**
@@ -127,10 +126,10 @@ class WisskiIndividualRequestDOIConfirmForm extends ConfirmFormBase {
     return [
         '#markup' => 'Submitted DOI!',
     ];
-  
+
 
     //$this->revision = $this->prepareRevertedRevision($this->revision, $form_state);
-    $this->revision->revision_log = t('Copy of the revision from %date.', ['%date' => $this->dateFormatter->format($original_revision_timestamp)]);
+    $this->revision->revision_log = $this->t('Copy of the revision from %date.', ['%date' => $this->dateFormatter->format($original_revision_timestamp)]);
     $this->revision->setRevisionUserId($this->currentUser()->id());
     $this->revision->setRevisionCreationTime($this->time->getRequestTime());
     $this->revision->setChangedTime($this->time->getRequestTime());
