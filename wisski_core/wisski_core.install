@@ -342,7 +342,7 @@ function wisski_core_schema() {
         'type' => 'char',
         'length' => 16,
         'not null' => TRUE,
-	'default' => 'und',
+	'default' => \Drupal::service('language_manager')->getCurrentLanguage()->getId(),
       ),
     ),
     'indexes' => array(
