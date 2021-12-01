@@ -3013,7 +3013,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #    dpm($old_values, "ov");
 #    dpm($entity_id, "I am saving entity_id");
 #    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
-    dpm(func_get_args(), __METHOD__);    
+#    dpm(func_get_args(), __METHOD__);    
 #    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()));
     // tricky thing here is that the entity_ids that are coming in typically
     // are somewhere from a store. In case of rdf it is easy - they are uris.
