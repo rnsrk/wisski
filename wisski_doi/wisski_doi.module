@@ -61,32 +61,3 @@ function wisski_doi_entity_operation_alter(array &$operations, \Drupal\Core\Enti
   );
 }
 
-function wisski_doi_menu_local_tasks_alter(&$data, $route_name, \Drupal\Core\Cache\RefinableCacheableDependencyInterface &$cacheability)
-{
-  if ($route_name == 'entity.wisski_bundle.edit_form') {
-    $path = \Drupal::service("path.current")->getPath();
-    $url = explode('/', $path);
-    $bundleId = $url[4];
-    dpm($data);
-    $editUrl = Url::fromRoute('entity.wisski_bundle.doi_scheme', ['wisski_bundle' => $bundleId]);
-    $data['tabs'][0]['entity.wisski_bundle.doi_scheme'] = [
-      '#theme' => 'menu_local_task',
-      '#link' => [
-        'title' => t('DOI Schema'),
-        'url' => $editUrl,
-        'localized_options' => [
-          'attributes' => [
-            'title' => t('DOI Schema'),
-          ],
-        ],
-      ],
-      '#weight' => 10,
-    ];
-
-    $cacheability
-      ->addCacheContexts([
-        'user.permissions',
-      ]);
-  }
-}
-

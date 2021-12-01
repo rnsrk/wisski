@@ -19,9 +19,21 @@ class WisskiDOISchemeForm extends FormBase {
   }
 
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $items = array();
 
-    $items['source'] = array(
+    $form = array();
+
+    $settings = $this->configFactory()->getEditable('wisski_doi.wisski_doi_scheme_form');
+
+    $form['#wisski_doi_scheme_settings'] = $settings;
+
+    $form['schema'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Schema'),
+      '#default_value' => $settings->get('schema'),
+      '#description' => $this->t('The Schema.'),
+    ];
+
+    $form['source'] = array(
       '#type' => 'fieldset',
       '#title' => t('Specify scheme file'),
       '#required' => TRUE,
@@ -45,19 +57,33 @@ class WisskiDOISchemeForm extends FormBase {
       ),
     );
 
-    $items['submit'] = array(
+    $form['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Save'),
       '#weight' => 100,
     );
 
-    return $items;
+    return $form;
 
   }
-
 
   public function submitForm(array &$form, FormStateInterface $form_state)
   {
-    // TODO: Implement submitForm() method.
+    $settings = $form['#wisski_doi_scheme_settings'];
+    $new_vals = $form_state->getValues();
+    dpm($new_vals);
+    if (!empty($new_vals['paste'])) {
+      $settings->set('schema', $new_vals['paste']);
+      $this->messenger()->addStatus($this->t('Saved Schema from direct paste.'));
+    } elseif (!empty($new_vals['upload'])) {
+      $settings->set('schema', $new_vals['upload']);
+      $this->messenger()->addStatus($this->t('Saved Schema from upload.'));
+    } else {
+      $this->messenger()->addStatus($this->t('Please provide a schema!'));
+    }
+    dpm(serialize($settings));
+    $settings->save();
+    #$form_state->setRedirect('entity.wisski_bundle.doi_scheme');
   }
+
 }
