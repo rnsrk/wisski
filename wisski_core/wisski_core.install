@@ -186,6 +186,17 @@ function wisski_core_update_8007(&$sandbox) {
   $definition_manager->installFieldStorageDefinition('wisski_uri','wisski_individual', 'wisski_core', $newStorage);
 }
 
+/** Update language in entity field properties table 
+  *
+  */
+function wisski_core_update_8008(&$sandbox) {
+  $lang = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+
+  $result = \Drupal::database()->update("wisski_entity_field_properties")->fields(['lang' => $lang])->condition('lang', 'und', '=')->execute();
+//  UPDATE `wisski_entity_field_properties` SET `lang` = 'en' WHERE `lang` = 'und'
+
+}
+
 /**
  * implements hook_schema()
  */
@@ -342,7 +353,7 @@ function wisski_core_schema() {
         'type' => 'char',
         'length' => 16,
         'not null' => TRUE,
-	'default' => 'und',
+	'default' => \Drupal::service('language_manager')->getCurrentLanguage()->getId(),
       ),
     ),
     'indexes' => array(
