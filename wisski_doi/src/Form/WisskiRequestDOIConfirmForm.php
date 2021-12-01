@@ -8,6 +8,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
+use Drupal\wisski_doi\Controller\WisskiDOIController;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -123,23 +124,13 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    return [
-        '#markup' => 'Submitted DOI!',
-    ];
+    $wisskiDOIController = new WisskiDOIController();
+    $wisskiDOIController->doiIndidualRequest();
 
-
-    //$this->revision = $this->prepareRevertedRevision($this->revision, $form_state);
-    $this->revision->revision_log = $this->t('Copy of the revision from %date.', ['%date' => $this->dateFormatter->format($original_revision_timestamp)]);
-    $this->revision->setRevisionUserId($this->currentUser()->id());
-    $this->revision->setRevisionCreationTime($this->time->getRequestTime());
-    $this->revision->setChangedTime($this->time->getRequestTime());
-    $this->revision->save();
-    //dpm()
-
+    $original_revision_timestamp = $this->revision->getRevisionCreationTime();
     $this->logger('content')->notice('@type: reverted %title revision %revision.', ['@type' => $this->revision->bundle(), '%title' => $this->revision->label(), '%revision' => $this->revision->getRevisionId()]);
     $this->messenger()
-      ->addStatus($this->t('@type %title has been reverted to the revision from %revision-date.', [
-        '@type' => 'The WissKI Entity',
+      ->addStatus($this->t('DOI has been requested for %title from %revision-date', [
         '%title' => $this->revision->label(),
         '%revision-date' => $this->dateFormatter->format($original_revision_timestamp),
       ]));

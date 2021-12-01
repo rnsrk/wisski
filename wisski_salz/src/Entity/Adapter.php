@@ -40,8 +40,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *     "canonical" = "/admin/config/wisski_salz/adapter",
  *     "add-form" = "/admin/config/wisski_salz/adapter/add",
  *     "edit-form" = "/admin/config/wisski_salz/adapter/{wisski_salz_adapter}/edit",
- *     "delete-form" = "/admin/config/wisski_salz/adapter/{wisski_salz_adapter}/delete",
- *     "collection" = "/admin/config/wisski_salz/adapter"
+ *     "delete-form" = "/admin/config/wisski_salz/adapter/{wisski_salz_adapter}/delete"
  *   },
  *   config_export = {
  *     "id",

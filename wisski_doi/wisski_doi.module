@@ -2,13 +2,17 @@
 
 use Drupal\Core\Url;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\wisski_core\WisskiBundleInterface;
+use Drupal\wisski_core\WisskiEntityInterface;
 
+
+// Alter the header in revisions table at wisski individuals
 function wisski_doi_revision_menu_header_alter()
 {
   return [new TranslatableMarkup('Revision'), new TranslatableMarkup('DOI'), new TranslatableMarkup('Operations')];
 }
 
-
+// Add a DOI column in revisions table at wisski individuals
 function wisski_doi_revision_menu_column_alter($row, $wisski_individual, $vid)
 {
   // DOI code
@@ -38,7 +42,22 @@ function wisski_doi_revision_menu_column_alter($row, $wisski_individual, $vid)
       ],
     ];
   }
-
   return $row;
+}
+
+// Add a operations menu entry "DOI Scheme" at "WissKI Groups and Bundles" in Structure
+function wisski_doi_entity_operation_alter(array &$operations, \Drupal\Core\Entity\EntityInterface $entity)
+{
+  $entityTypeId = $entity->getEntityTypeId();
+  if ($entityTypeId !== 'wisski_bundle') {
+    return;
+  }
+  $bundleId = $entity->id();
+  $editUrl = Url::fromRoute('entity.wisski_bundle.doi_scheme', ['wisski_bundle' => $bundleId]);
+  $operations['doi_scheme'] = array(
+    'title' => t('DOI Scheme'),
+    'weight' => 100,
+    'url' => $editUrl,
+  );
 }
 

@@ -19,22 +19,10 @@ class WisskiDOIController {
   }
 
   /**
-   * Tab to choose bundles for DOI assignment and schema configuration.
+   * Tab to request DOIs for selected individual.
    * @return string[]
    */
-  public function doiBundleAdministration() {
-    return [
-      '#markup' => 'Bundle administration',
-    ];
-  }
-
-  /**
-   * Tab to request DOIs for selected bundles.
-   * @return string[]
-   */
-  public function doiRequest() {
-    return [
-      '#markup' => 'Request dois',
-    ];
+  public function doiIndidualRequest() {
+    dpm('doiIndividualRequest');
   }
 }
