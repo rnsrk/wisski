@@ -2,6 +2,7 @@
 
 namespace Drupal\wisski_doi\Form;
 
+use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\Environment;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -41,20 +42,19 @@ class WisskiDOISchemeForm extends FormBase
       'upload' => array(
         '#type' => 'file',
         '#title' => t('File upload'),
-        /*
         '#upload_validators' => array(
           'file_validate_extensions' => array('json'),
           'file_validate_size' => [Environment::getUploadMaxSize()],
         ),
-        */
         '#description' => $this->t('Only JSON files allowed, max filesize is %filesize.', ['%filesize' => format_size(Environment::getUploadMaxSize())]),
+        '#default_value' => $settings->get('paste'),
       ),
       // simple text area
       'paste' => array(
         '#type' => 'textarea',
         '#title' => $this->t('Direct paste'),
         '#rows' => 20,
-        '#default_value' => $settings->get('schema'),
+        '#default_value' => $settings->get('paste'),
       ),
     );
 
@@ -69,34 +69,55 @@ class WisskiDOISchemeForm extends FormBase
   }
 
 
-    public function validateForm(array &$form, FormStateInterface $form_state) {
-      $upload = $form_state->getValue('upload');
-
-      dpm(json_decode($upload));
-      $paste = $form_state->getValue('paste');
-      if (empty($upload) && empty($paste)) {
-        $form_state->setErrorByName('upload', $this->t('You have to provide a file or insert a direct paste.'));
-        $form_state->setErrorByName('paste', $this->t('You have to provide a file or insert a direct paste.'));
-        $continue = FALSE;
-      }
+  public function validateForm(array &$form, FormStateInterface $form_state)
+  {
+    // load from file
+    $file_url = NULL;
+    $files = file_managed_file_save_upload($form['source']['upload'], $form_state);
+    // load from direkt paste
+    $paste = $form_state->getValues()['paste'];
+    // there is a file, get the content
+    if ($files) {
+      $file = reset($files);  // first one in array (array is keyed by file id)
+      $data = file_get_contents($file->getFileUri());
+    } // if not get it from paste
+    elseif ($paste) {
+      $data = $paste;
+    } else {
+      // if no file is given, it is an error
+      $form_state->setError($form['source'], $this->t('You must specify an JSON file!'));
     }
+    // if we came here, the user uploaded some data, but it may be invalid
+    $data = null;
+    $data = JSON::decode($data) ? $data : Null;
+    if (!$data) {
+      $form_state->setError($form['source'], $this->t('JSON.'));
+    } else {
+      // as we have saved the file already, we cache its path for submitForm()
+      $storage = $form_state->getStorage();
+      $storage['doi_scheme'] = $data;
+      $form_state->setStorage($storage);
+    }
+  }
 
   public function submitForm(array &$form, FormStateInterface $form_state)
   {
+    // laod existing data
     $settings = $form['#wisski_doi_scheme_settings'];
+    $json_content = $form_state->getStorage()['doi_scheme'];
     $new_vals = $form_state->getValues();
-    dpm($new_vals);
-    if (!empty($new_vals['upload'])) {
-      $settings->set('paste', $new_vals['upload']);
+
+    if (!empty($json_content)) {
+      // lock for upload first
+      $settings->set('paste', $json_content);
       $this->messenger()->addStatus($this->t('Saved Schema from upload.'));
-    } elseif
-    (!empty($new_vals['paste'])) {
+    } elseif (!empty($new_vals['paste'])) {
+      // if there is none, take direct paste
       $settings->set('paste', $new_vals['paste']);
       $this->messenger()->addStatus($this->t('Saved Schema from direct paste.'));
     } else {
       $this->messenger()->addStatus($this->t('Please provide a schema!'));
     }
-    dpm(serialize($settings));
     $settings->save();
     #$form_state->setRedirect('entity.wisski_bundle.doi_scheme');
   }
