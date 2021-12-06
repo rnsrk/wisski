@@ -9,6 +9,7 @@ use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\wisski_doi\Controller\WisskiDOIController;
+use Kint;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -84,7 +85,7 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getQuestion() {
-    return t('Are you sure you want to request a DOI for the revision from %revision-date?', ['%revision-date' => $this->dateFormatter->format($this->revision->getRevisionCreationTime())]);
+    return t('Are you sure you want to request a draft DOI for the revision?');
   }
 
   /**
@@ -105,7 +106,6 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getDescription() {
-    return 'TODO: description text';
   }
 
   /**
@@ -113,8 +113,19 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual_revision = NULL) {
     $this->revision = $this->wisskiStorage->loadRevision($wisski_individual_revision);
-    dpm($this->revision);
     $form = parent::buildForm($form, $form_state);
+    $form['table'] = [
+      '#type' => 'table',
+      '#header' => [$this->t('Property'), $this->t('Value')],
+      '#rows' => [
+        [$this->t('BundleID'), $this->revision->bundle()],
+        [$this->t('EntityID'), $this->revision->id()],
+        [$this->t('Revision'), $this->dateFormatter->format($this->revision->getRevisionCreationTime())],
+      ],
+      '#description' => $this->t('Revision Data'),
+      '#weight' => 1,
+    ];
+    dpm($form);
 
     return $form;
   }
