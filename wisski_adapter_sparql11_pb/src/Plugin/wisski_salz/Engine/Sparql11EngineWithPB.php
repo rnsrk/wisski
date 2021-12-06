@@ -2750,11 +2750,15 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               if($language != "und")
                 #$query .= "\"$primitiveValue\"@$language";
                 $escapedValue = '"' . $this->escapeSparqlLiteral($primitiveValue) . '"@' . $language;
-              else
+              else {
                 #$query .= "\"$primitiveValue\"";
                 //$escapedValue = '"' . $this->escapeSparqlLiteral($primitiveValue) . '"';
-                $escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $this->escapeSparqlLiteral($primitiveValue) . '" )';
-              
+                if($op == "=")
+                  $escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $this->escapeSparqlLiteral($primitiveValue) . '" )';
+                else
+                  $escapedValue = '"' . $this->escapeSparqlLiteral($primitiveValue) . '"';
+#                $escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $this->escapeSparqlLiteral($primitiveValue) . '" )';
+              }
             }
           } else {
 #            dpm("else!");
