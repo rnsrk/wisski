@@ -9,12 +9,20 @@ use Drupal\wisski_core\WisskiEntityInterface;
 // Alter the header in revisions table at wisski individuals
 function wisski_doi_revision_menu_header_alter()
 {
-  return [new TranslatableMarkup('Revision'), new TranslatableMarkup('DOI'), new TranslatableMarkup('Operations')];
+  return [new TranslatableMarkup('Revision'), new TranslatableMarkup('DOI'), new TranslatableMarkup('DOI Operations'), new TranslatableMarkup('Operations')];
 }
 
 // Add a DOI column in revisions table at wisski individuals
 function wisski_doi_revision_menu_column_alter($row, $wisski_individual, $vid)
 {
+
+  $row[] = [
+    'data' => [
+      '#prefix' => '<em>',
+      '#markup' => new TranslatableMarkup('Here comes the DOI'),
+      '#suffix' => '</em>',
+    ],
+  ];
   // DOI code
   $hasDOI = FALSE;
   if ($hasDOI) {
@@ -31,7 +39,7 @@ function wisski_doi_revision_menu_column_alter($row, $wisski_individual, $vid)
     $linksDOI = [];
     // maybe change later to form elements?
     $linkDOI = [
-      'title' => new TranslatableMarkup('Get DOI'),
+      'title' => new TranslatableMarkup('Get Draft DOI'),
       'url' => Url::fromRoute('wisski_individual.revision_get_doi', ['wisski_individual' => $wisski_individual->id(), 'wisski_individual_revision' => $vid]),
     ];
     $linksDOI['add'] = $linkDOI;

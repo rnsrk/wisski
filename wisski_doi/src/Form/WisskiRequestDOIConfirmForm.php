@@ -98,7 +98,7 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getConfirmText() {
-    return t('Request DOI');
+    return t('Request Draft DOI');
   }
 
   /**
@@ -113,8 +113,7 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual_revision = NULL) {
     $this->revision = $this->wisskiStorage->loadRevision($wisski_individual_revision);
-#    dpm(serialize($wisski_individual_revision), "trying to load?");
-#    dpm(serialize($this->revision), "got revision?");
+    dpm($this->revision);
     $form = parent::buildForm($form, $form_state);
 
     return $form;

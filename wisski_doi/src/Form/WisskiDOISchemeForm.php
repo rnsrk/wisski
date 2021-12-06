@@ -26,7 +26,7 @@ class WisskiDOISchemeForm extends FormBase
 
     $form = array();
 
-    //load exisiting data
+    //load existing data
     $settings = $this->configFactory()->getEditable('wisski_doi.wisski_doi_scheme_form');
 
     // save existing data in form property
@@ -72,6 +72,7 @@ class WisskiDOISchemeForm extends FormBase
   public function validateForm(array &$form, FormStateInterface $form_state)
   {
     // load from file
+    $data = NULL;
     $file_url = NULL;
     $files = file_managed_file_save_upload($form['source']['upload'], $form_state);
     // load from direkt paste
@@ -88,10 +89,9 @@ class WisskiDOISchemeForm extends FormBase
       $form_state->setError($form['source'], $this->t('You must specify an JSON file!'));
     }
     // if we came here, the user uploaded some data, but it may be invalid
-    $data = null;
     $data = JSON::decode($data) ? $data : Null;
     if (!$data) {
-      $form_state->setError($form['source'], $this->t('JSON.'));
+      $form_state->setError($form['source'], $this->t('Invalid JSON.'));
     } else {
       // as we have saved the file already, we cache its path for submitForm()
       $storage = $form_state->getStorage();
@@ -110,11 +110,11 @@ class WisskiDOISchemeForm extends FormBase
     if (!empty($json_content)) {
       // lock for upload first
       $settings->set('paste', $json_content);
-      $this->messenger()->addStatus($this->t('Saved Schema from upload.'));
+      $this->messenger()->addStatus($this->t('Saved Schema.'));
     } elseif (!empty($new_vals['paste'])) {
       // if there is none, take direct paste
       $settings->set('paste', $new_vals['paste']);
-      $this->messenger()->addStatus($this->t('Saved Schema from direct paste.'));
+      $this->messenger()->addStatus($this->t('Saved Schema.'));
     } else {
       $this->messenger()->addStatus($this->t('Please provide a schema!'));
     }
