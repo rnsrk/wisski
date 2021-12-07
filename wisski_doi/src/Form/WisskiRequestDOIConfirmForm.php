@@ -8,7 +8,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-use Drupal\wisski_doi\Controller\WisskiDOIController;
+use Drupal\wisski_doi\Controller\WisskiDOIRESTController;
 use Kint;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -114,19 +114,23 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual_revision = NULL) {
     $this->revision = $this->wisskiStorage->loadRevision($wisski_individual_revision);
     $form = parent::buildForm($form, $form_state);
+    $doi_settings = \Drupal::configFactory()->getEditable('wisski_doi.wisski_doi_settings');
     $form['table'] = [
       '#type' => 'table',
       '#header' => [$this->t('Property'), $this->t('Value')],
       '#rows' => [
         [$this->t('BundleID'), $this->revision->bundle()],
         [$this->t('EntityID'), $this->revision->id()],
-        [$this->t('Revision'), $this->dateFormatter->format($this->revision->getRevisionCreationTime())],
-      ],
+        [$this->t('Date'), $this->dateFormatter->format($this->revision->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s')],
+        [$this->t('Author'), $this->revision->getRevisionUser()->getDisplayName()],
+        [$this->t('Title'), $this->revision->label()],
+        [$this->t('Publisher'), $doi_settings->get('data_publisher')]
+        ],
+
       '#description' => $this->t('Revision Data'),
       '#weight' => 1,
     ];
-    dpm($form);
-
+    //dpm($form['table']);
     return $form;
   }
 
@@ -134,8 +138,8 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $wisskiDOIController = new WisskiDOIController();
-    $wisskiDOIController->doiIndidualRequest();
+    $wisskiDOIController = new WisskiDOIRESTController();
+    $wisskiDOIController->getDraftDOI($form['table']);
 
     $original_revision_timestamp = $this->revision->getRevisionCreationTime();
     $this->logger('content')->notice('@type: reverted %title revision %revision.', ['@type' => $this->revision->bundle(), '%title' => $this->revision->label(), '%revision' => $this->revision->getRevisionId()]);
