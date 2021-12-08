@@ -27,6 +27,12 @@ function wisski_doi_schema()
         'size' => 'big',
         'not null' => TRUE,
       ),
+      'type' => array(
+        'description' => 'Type: draft, registered, findable',
+        'type' => 'varchar',
+        'size' => '10',
+        'not null' => TRUE,
+      ),
     ),
     'primary key' => array('did'),
   );

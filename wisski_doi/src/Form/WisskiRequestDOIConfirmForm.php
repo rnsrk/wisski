@@ -114,18 +114,25 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual_revision = NULL) {
     $this->revision = $this->wisskiStorage->loadRevision($wisski_individual_revision);
     $form = parent::buildForm($form, $form_state);
-    $doi_settings = \Drupal::configFactory()->getEditable('wisski_doi.wisski_doi_settings');
+    $doi_settings = \Drupal::configFactory()
+      ->getEditable('wisski_doi.wisski_doi_settings');
     $form['table'] = [
       '#type' => 'table',
       '#header' => [$this->t('Property'), $this->t('Value')],
       '#rows' => [
         [$this->t('BundleID'), $this->revision->bundle()],
         [$this->t('EntityID'), $this->revision->id()],
-        [$this->t('Date'), $this->dateFormatter->format($this->revision->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s')],
-        [$this->t('Author'), $this->revision->getRevisionUser()->getDisplayName()],
-        [$this->t('Title'), $this->revision->label()],
-        [$this->t('Publisher'), $doi_settings->get('data_publisher')]
+        [
+          $this->t('Date'),
+          $this->dateFormatter->format($this->revision->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
         ],
+        [
+          $this->t('Author'),
+          $this->revision->getRevisionUser()->getDisplayName(),
+        ],
+        [$this->t('Title'), $this->revision->label()],
+        [$this->t('Publisher'), $doi_settings->get('data_publisher')],
+      ],
 
       '#description' => $this->t('Revision Data'),
       '#weight' => 1,
@@ -142,15 +149,11 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
     $wisskiDOIController->getDraftDOI($form['table']);
 
     $original_revision_timestamp = $this->revision->getRevisionCreationTime();
-    $this->logger('content')->notice('@type: reverted %title revision %revision.', ['@type' => $this->revision->bundle(), '%title' => $this->revision->label(), '%revision' => $this->revision->getRevisionId()]);
-    $this->messenger()
-      ->addStatus($this->t('DOI has been requested for %title from %revision-date', [
-        '%title' => $this->revision->label(),
-        '%revision-date' => $this->dateFormatter->format($original_revision_timestamp),
-      ]));
+
     $form_state->setRedirect(
-      'entity.wisski_individual.version_history',
-      ['wisski_individual' => $this->revision->id()]
+      'entity.wisski_individual.version_history', [
+        'wisski_individual' => $this->revision->id(),
+      ]
     );
   }
 
