@@ -46,6 +46,8 @@ class WisskiMirador extends StylePluginBase {
     
     $results = $view->result;
     
+#    dpm($results);
+    
     $ent_list = array();
     $direct_load_list = array();
     
@@ -78,7 +80,8 @@ class WisskiMirador extends StylePluginBase {
       $entity_id = empty($result->eid) ? current($result->__get('entity:wisski_individual/eid')) : $result->eid; 
 
 #      dpm($result, "res?");
-      $ent_list[] = array("manifestUri" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "location" => $to_print);
+#      $ent_list[] = array("manifestId" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "manifestUri" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "location" => $to_print);
+      $ent_list[] = array("manifestId" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest");
 #      $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $result->eid . "/iiif_manifest", "viewType" => "ImageView" );
       if ($result_count > 1) {
         $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "availableViews" => array( 'ImageView'), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false);
@@ -106,8 +109,8 @@ class WisskiMirador extends StylePluginBase {
         foreach($subview->result as $res) {
 
           $entity_id = empty($res->eid) ? current($res->__get('entity:wisski_individual/eid')) : $res->eid;
-
-          $ent_list[] = array("manifestUri" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "location" => $to_print);
+          $ent_list[] = array("manifestId" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest");
+#          $ent_list[] = array("manifestId" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "manifestUri" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "location" => $to_print);
           if ($subcount > 1) {
             $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "availableViews" => array( 'ImageView'), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false );
           }
