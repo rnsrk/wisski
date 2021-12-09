@@ -1,11 +1,10 @@
 mirador:
   js:
-    /libraries/mirador/build/mirador/mirador.js: { }
+    /libraries/mirador/dist/mirador.min.js: { }
     js/wisski_mirador.js: { }
   css:
     theme:
       css/wisski_mirador.css: {}
-      /libraries/mirador/build/mirador/css/mirador-combined.css: {}
   dependencies:
     - core/jquery
     - core/drupal
