@@ -4211,7 +4211,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         $table_name = $adapter_id.'_'.$type;
         if ($schema->tableExists($table_name)) {
           if($drop) 
-            $database->dropTable($table_name)->execute();
+            $database->schema()->dropTable($table_name);
           else
             $database->truncate($table_name)->execute();
         } else {
