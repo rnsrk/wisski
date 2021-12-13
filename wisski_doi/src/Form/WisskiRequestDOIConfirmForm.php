@@ -2,9 +2,11 @@
 
 namespace Drupal\wisski_doi\Form;
 
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\wisski_core\WisskiStorageInterface;
+use Drupal\wisski_core\WisskiEntityInterface;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Datetime\DateFormatterInterface;
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
@@ -23,14 +25,14 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
    *
    * @var \Drupal\wisski_core\WisskiEntityInterface
    */
-  protected \Drupal\wisski_core\WisskiEntityInterface $revision;
+  protected WisskiEntityInterface $revision;
 
   /**
    * The WissKI storage.
    *
    * @var \Drupal\wisski_core\WisskiStorageInterface
    */
-  protected \Drupal\wisski_core\WisskiStorageInterface|EntityStorageInterface $wisskiStorage;
+  protected WisskiStorageInterface $wisskiStorage;
 
   /**
    * The date formatter service.
@@ -56,14 +58,14 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
   /**
    * Constructs a new NodeRevisionRevertForm.
    *
-   * @param \Drupal\Core\Entity\EntityStorageInterface $wisski_storage
+   * @param \Drupal\wisski_core\WisskiStorageInterface $wisski_storage
    *   The WissKI Storage.
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date formatter service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
    */
-  public function __construct(EntityStorageInterface $wisski_storage, DateFormatterInterface $date_formatter, TimeInterface $time) {
+  public function __construct(WisskiStorageInterface $wisski_storage, DateFormatterInterface $date_formatter, TimeInterface $time) {
     $this->wisskiStorage = $wisski_storage;
     $this->dateFormatter = $date_formatter;
     $this->time = $time;
@@ -74,10 +76,10 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-          $container->get('entity_type.manager')->getStorage('wisski_individual'),
-          $container->get('date.formatter'),
-          $container->get('datetime.time')
-      );
+      $container->get('entity_type.manager')->getStorage('wisski_individual'),
+      $container->get('date.formatter'),
+      $container->get('datetime.time')
+    );
   }
 
   /**
@@ -90,7 +92,7 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getQuestion(): \Drupal\Core\StringTranslation\TranslatableMarkup {
+  public function getQuestion(): TranslatableMarkup {
     return t('Are you sure you want to request a draft DOI for the revision?');
   }
 
@@ -104,7 +106,7 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getConfirmText(): \Drupal\Core\StringTranslation\TranslatableMarkup {
+  public function getConfirmText(): TranslatableMarkup {
     return t('Request Draft DOI');
   }
 
@@ -119,33 +121,32 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual = NULL): array {
     $this->wisskiIndividual = $this->wisskiStorage->load($wisski_individual);
-    //$this->revision = $wisski_individual_storage->loadRevision($wisski_individual->getRevisionId());
+    //$this->revision = $this->wisskiStorage->loadRevision($this->wisskiIndividual->getRevisionId());
     $form = parent::buildForm($form, $form_state);
     $doi_settings = \Drupal::configFactory()
       ->getEditable('wisski_doi.wisski_doi_settings');
-   /*
+
     $form['table'] = [
       '#type' => 'table',
       '#header' => [$this->t('Property'), $this->t('Value')],
       '#rows' => [
-      [$this->t('BundleID'), $this->revision->bundle()],
-      [$this->t('EntityID'), $this->revision->id()],
-      [
-        $this->t('Date'),
-        $this->dateFormatter->format($this->revision->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
-      ],
-      [
-        $this->t('Author'),
-        $this->revision->getRevisionUser()->getDisplayName(),
-      ],
-      [$this->t('Title'), $this->revision->label()],
-      [$this->t('Publisher'), $doi_settings->get('data_publisher')],
+        [$this->t('BundleID'), $this->wisskiIndividual->bundle()],
+        [$this->t('EntityID'), $this->wisskiIndividual->id()],
+        [
+          $this->t('Date'),
+          $this->dateFormatter->format($this->wisskiIndividual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
+        ],
+        [
+          $this->t('Author'),
+          $this->wisskiIndividual->getRevisionUser()->getDisplayName(),
+        ],
+        [$this->t('Title'), $this->wisskiIndividual->label()],
+        [$this->t('Publisher'), $doi_settings->get('data_publisher')],
       ],
 
       '#description' => $this->t('Revision Data'),
       '#weight' => 1,
     ];
-   */
     // dpm($form['table']);.
     return $form;
   }
@@ -158,16 +159,16 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
     $wisskiDOIController->getDraftDOI($form['table']);
 
     $original_revision_timestamp = $this->revision->getRevisionCreationTime();
-/*
+    /*
     $form_state->setRedirect(
-          'entity.wisski_individual.version_history',
+    'entity.wisski_individual.version_history',
 
-          [
-            'wisski_individual' => $this->revision->id(),
-          ]
+    [
+    'wisski_individual' => $this->revision->id(),
+    ]
 
-      );
-*/
+    );
+     */
   }
 
 }

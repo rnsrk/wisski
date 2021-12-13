@@ -11,7 +11,9 @@ namespace Drupal\wisski_doi\Exception;
 class WisskiDOISettingsNotFoundException extends \Exception {
 
   /**
+   * Check if settings are set.
    *
+   * @throws \Drupal\wisski_doi\Exception\WisskiDOISettingsNotFoundException
    */
   public function checkDoiSetting($doiSettings) {
     foreach ($doiSettings as $setting => $value) {
