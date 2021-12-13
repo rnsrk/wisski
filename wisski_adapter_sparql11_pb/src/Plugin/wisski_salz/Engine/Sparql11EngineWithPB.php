@@ -3812,7 +3812,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
   }
 
   public function deleteReasoning(array $form,FormStateInterface $form_state) {
-    $this->prepareTables();
+    $this->prepareTables(TRUE);
     $this->messenger()->addMessage("Reasoning-Tables are reset.");
     $form_state->setRedirect('<current>');
     return $form['reasoner'];
@@ -4201,7 +4201,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     }
   }
   
-  protected function prepareTables() {
+  protected function prepareTables($drop = FALSE) {
     
     try {
       $database = \Drupal::service('database');
@@ -4210,7 +4210,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       foreach (self::getReasonerTableSchema() as $type => $table_schema) {
         $table_name = $adapter_id.'_'.$type;
         if ($schema->tableExists($table_name)) {
-          $database->truncate($table_name)->execute();
+          if($drop) 
+            $database->schema()->dropTable($table_name);
+          else
+            $database->truncate($table_name)->execute();
         } else {
           $schema->createTable($table_name,$table_schema);
         }

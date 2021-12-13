@@ -1,11 +1,21 @@
-You have to enhance mirador.js after built a little.
+Installation guide:
 
-add: (function($, jQuery) {
-...
-}(jQuery, jQuery)); around all the mirador-thingies.
+You have to install Mirador 3 for this package to work. It should typically be installed 
+at libraries/mirador in the drupal root directory. For this you can take (09.12.2021)
+the following steps:
 
-This is line ... to line ... currently.
+git clone https://github.com/ProjectMirador/mirador.git mirador
 
-Then it should work!
+cd mirador
 
-Cheers! 
+npm install mirador
+
+npm run build
+
+
+
+After that you have the following files in the dist subdirectory:
+mirador.min.js  mirador.min.js.LICENSE.txt  mirador.min.js.map
+
+
+
