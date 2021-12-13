@@ -120,8 +120,9 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual = NULL): array {
+
     $this->wisskiIndividual = $this->wisskiStorage->load($wisski_individual);
-    //$this->revision = $this->wisskiStorage->loadRevision($this->wisskiIndividual->getRevisionId());
+    // $this->revision = $this->wisskiStorage->loadRevision($this->wisskiIndividual->getRevisionId());
     $form = parent::buildForm($form, $form_state);
     $doi_settings = \Drupal::configFactory()
       ->getEditable('wisski_doi.wisski_doi_settings');
@@ -153,22 +154,35 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
 
   /**
    * {@inheritdoc}
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $wisskiDOIController = new WisskiDOIRESTController();
-    $wisskiDOIController->getDraftDOI($form['table']);
-
-    $original_revision_timestamp = $this->revision->getRevisionCreationTime();
-    /*
-    $form_state->setRedirect(
-    'entity.wisski_individual.version_history',
-
-    [
-    'wisski_individual' => $this->revision->id(),
-    ]
-
+    $doiRevision = $this->wisskiStorage->createRevision($this->wisskiIndividual);
+    $doiRevision->setNewRevision(TRUE);
+    $doiRevision->revision_log = t('DOI revision from %creation_date, requested at %request_date.', [
+      '%creation_date' => $this->dateFormatter->format($this->wisskiIndividual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
+      '%request_date' => $this->dateFormatter->format($this->time->getCurrentTime(), 'custom', 'd.m.Y H:i:s'),
+    ]);
+    // $this->revision->setRevisionCreationTime($this->time->getRequestTime());
+    // $this->revision->setChangedTime($this->time->getRequestTime());
+    // $this->revision->isDefaultRevision(TRUE);
+    $doiRevision->save();
+    $currentRevision = $this->wisskiStorage->createRevision($this->wisskiIndividual);
+    $currentRevision->revision_log = t('Revision copy, because of DOI request from %creation_date.', [
+      '%creation_date' => $this->dateFormatter->format($this->wisskiIndividual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
+    ],
     );
-     */
+    $currentRevision->save();
+    // $this->wisskiIndividual->save();
+    // $wisskiDOIController->getDraftDOI($form['table']);
+    $form_state->setRedirect(
+      'entity.wisski_individual.version_history',
+      [
+        'wisski_individual' => $this->wisskiIndividual->id(),
+      ]
+    );
   }
 
 }
