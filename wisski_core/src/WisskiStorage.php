@@ -875,6 +875,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #      dpm($entity->activeLangcode);
 #      dpm(LanguageInterface::LANGCODE_DEFAULT);
 #    }
+
+#    \Drupal::logger('wisski salz')->warning("Log {id} ", array('id' => serialize($entities) ) );
     
     return $entities;
   }
@@ -1094,6 +1096,16 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 
                   if ($field_name === 'wisski_uri') $new_field_values[$id][$field_name] = array($adapter->getEngine()->getUriForDrupalId($id, FALSE));
                   
+                  if ($field_name === 'preview_image') {
+                    $preview_image_uri = $this->getPreviewImageUri($id, $bundleid);
+
+                    // prefix with public path
+                    if (strpos($preview_image_uri, "public://") !== FALSE) {
+                      $preview_image_uri = str_replace("public:/", \Drupal::service('stream_wrapper.public')->baseUrl(), $preview_image_uri);
+                    }
+                    
+                    $new_field_values[$id][$field_name] = array($preview_image_uri);
+                  }
 #                  dpm($new_field_values, "nfv?");
                   
                   // and for now we don't handle uuid, vid, langcode, uid, status
