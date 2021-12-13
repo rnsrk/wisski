@@ -5,9 +5,8 @@ namespace Drupal\wisski_doi\Controller;
 use Drupal\Core\Controller\ControllerBase;
 
 /**
- * Controller to render DOI Administration
+ * Controller to render DOI Administration.
  */
-
 class WisskiDoiAdministration extends ControllerBase {
 
   /**
