@@ -1,41 +1,44 @@
 <?php
 
-/*
- * Install new database table 'wisski_doi'
+/**
+ * @file
+ * Install new database table 'wisski_doi'.
  */
 
-function wisski_doi_schema()
-{
-  $schema['wisski_doi'] = array(
+/**
+ * Define scheme of wisski_doi table.
+ */
+function wisski_doi_schema() {
+  $schema['wisski_doi'] = [
 
     'description' => 'Saves the namespaces on ontology load.',
-    'fields' => array(
-      'did' => array(
+    'fields' => [
+      'did' => [
         'description' => 'Primarykey for DOI table',
         'type' => 'serial',
         'size' => 'normal',
         'not null' => TRUE,
-      ),
-      'doi' => array(
+      ],
+      'doi' => [
         'description' => 'The actual DOI.',
         'type' => 'varchar',
         'length' => 255,
-      ),
-      'vid' => array(
+      ],
+      'vid' => [
         'description' => 'The ID of the corresponding revision.',
         'type' => 'int',
         'size' => 'big',
         'not null' => TRUE,
-      ),
-      'type' => array(
+      ],
+      'type' => [
         'description' => 'Type: draft, registered, findable',
         'type' => 'varchar',
         'size' => '10',
         'not null' => TRUE,
-      ),
-    ),
-    'primary key' => array('did'),
-  );
+      ],
+    ],
+    'primary key' => ['did'],
+  ];
 
   return $schema;
 }
