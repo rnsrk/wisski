@@ -85,9 +85,20 @@ class WisskiDOIRESTController extends ControllerBase {
               "title" => $body['#rows'][4][1],
             ],
           ],
+          "dates" => [
+            "dateType" => 'Created',
+            "dateInformation" => $body['#rows'][2][1],
+          ],
+
           "prefix" => $this->doiSettings['doiPrefix'],
           "publisher" => $body['#rows'][3][1],
           "publicationYear" => substr($body['#rows'][2][1], 6, 4),
+          "language" => $body['#rows'][6][1],
+          "types" => [
+            "resourceTypeGeneral" => "Dataset",
+          ],
+          "url" => $body['#rows'][8][1],
+          "schemaVersion" => "http://datacite.org/schema/kernel-4",
         ],
       ],
     ];
@@ -117,10 +128,23 @@ class WisskiDOIRESTController extends ControllerBase {
       $response = $error->getResponse();
       // Get the info returned from the remote server.
       $error_content = json_decode($response->getBody()->getContents(), TRUE);
-      $error_tip = match ($error_content['errors'][0]['status']) {
-        "400" => 'Your used doi scheme or content data may be faulty.',
-        default => '',
-      };
+
+      /*
+       * Match only works in PHP 8
+       * $error_tip = match ($error_content['errors'][0]['status']) {
+       * "400" => 'Your used doi scheme or content data may be faulty.',
+       *  default => 'Sorry, no tip for this error code.',
+       * };
+       */
+
+      switch ($error_content['errors'][0]['status']) {
+        case "400":
+          $error_tip = 'Your used doi scheme or content data may be faulty.';
+          break;
+
+        default:
+          $error_tip = 'Sorry, no tip for this error code.';
+      }
 
       // Error Code and Message.
       $message = $this->t('API connection error. Error code: %error_code. Error message: %error_message. %error_tip', [

@@ -53,7 +53,7 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
    *
    * @var \Drupal\wisski_core\WisskiEntityInterface
    */
-  private $wisskiIndividual;
+  private WisskiEntityInterface $wisskiIndividual;
 
   /**
    * Constructs a new NodeRevisionRevertForm.
@@ -83,46 +83,48 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
   }
 
   /**
-   * {@inheritdoc}
+   * The machine name of the form.
    */
   public function getFormId(): string {
     return 'wisski_doi_request_form';
   }
 
   /**
-   * {@inheritdoc}
+   * The question of the confirm form.
    */
   public function getQuestion(): TranslatableMarkup {
     return t('Are you sure you want to request a draft DOI for the revision?');
   }
 
   /**
-   * {@inheritdoc}
+   * Route, if you hit chancel.
    */
   public function getCancelUrl(): Url {
     return new Url('entity.wisski_individual.canonical', ['wisski_individual' => $this->wisskiIndividual->id()]);
   }
 
   /**
-   * {@inheritdoc}
+   * Text on the submit button.
    */
   public function getConfirmText(): TranslatableMarkup {
     return t('Request Draft DOI');
   }
 
   /**
-   * {@inheritdoc}
+   * Details between title and body.
    */
   public function getDescription() {
   }
 
   /**
-   * {@inheritdoc}
+   * Build table from DOI settings and WissKI individual state.
+   *
+   * Load DOI settings from Manage->Configuration->WissKI:WissKI DOI Settings.
+   * Store it in a table.
    */
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual = NULL): array {
 
     $this->wisskiIndividual = $this->wisskiStorage->load($wisski_individual);
-    // $this->revision = $this->wisskiStorage->loadRevision($this->wisskiIndividual->getRevisionId());
     $form = parent::buildForm($form, $form_state);
     $doi_settings = \Drupal::configFactory()
       ->getEditable('wisski_doi.wisski_doi_settings');
@@ -134,7 +136,7 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
         [$this->t('BundleID'), $this->wisskiIndividual->bundle()],
         [$this->t('EntityID'), $this->wisskiIndividual->id()],
         [
-          $this->t('Date'),
+          $this->t('Creation Date'),
           $this->dateFormatter->format($this->wisskiIndividual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
         ],
         [
@@ -143,40 +145,66 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
         ],
         [$this->t('Title'), $this->wisskiIndividual->label()],
         [$this->t('Publisher'), $doi_settings->get('data_publisher')],
+        [$this->t('Language'), $this->wisskiIndividual->language()->getId()],
+        [$this->t('Resource type general'), $this->t('Dataset')],
       ],
 
       '#description' => $this->t('Revision Data'),
       '#weight' => 1,
     ];
-    // dpm($form['table']);.
     return $form;
   }
 
   /**
-   * {@inheritdoc}
+   * Save to revisions and request a DOI for one.
+   *
+   * First save a DOI revision to receive a revision id,
+   * request a DOI for that revision,then save a second
+   * time to store the revision and DOI in Drupal DB.
    *
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $wisskiDOIController = new WisskiDOIRESTController();
+
+    /*
+     * Save two revisions, because current revision has no
+     * revision URI. Start with first save process.
+     */
     $doiRevision = $this->wisskiStorage->createRevision($this->wisskiIndividual);
     $doiRevision->setNewRevision(TRUE);
     $doiRevision->revision_log = t('DOI revision from %creation_date, requested at %request_date.', [
       '%creation_date' => $this->dateFormatter->format($this->wisskiIndividual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
       '%request_date' => $this->dateFormatter->format($this->time->getCurrentTime(), 'custom', 'd.m.Y H:i:s'),
     ]);
-    // $this->revision->setRevisionCreationTime($this->time->getRequestTime());
-    // $this->revision->setChangedTime($this->time->getRequestTime());
-    // $this->revision->isDefaultRevision(TRUE);
     $doiRevision->save();
-    $currentRevision = $this->wisskiStorage->createRevision($this->wisskiIndividual);
-    $currentRevision->revision_log = t('Revision copy, because of DOI request from %creation_date.', [
-      '%creation_date' => $this->dateFormatter->format($this->wisskiIndividual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
+
+    /*
+     * Assemble revision URL and store it in form.
+     */
+    $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
+    $doiRevisionId = $doiRevision->getRevisionId();
+    $doiRevisionURL = $http . $_SERVER['HTTP_HOST'] . '/wisski/navigate/' . $this->wisskiIndividual->id() . '/revisions/' . $doiRevisionId . '/view';
+    $form['table']['#rows'][] = [$this->t('URL'), $doiRevisionURL];
+
+    /*
+     * Request draft DOI.
+     */
+    $wisskiDOIController = new WisskiDOIRESTController();
+    $wisskiDOIController->getDraftDoi($form['table']);
+
+    /*
+     * Start second save process. This is the current revision now.
+     */
+    $doiRevision = $this->wisskiStorage->createRevision($this->wisskiIndividual);
+    $doiRevision->revision_log = t('Revision copy, because of DOI request from %request_date.', [
+      '%request_date' => $this->dateFormatter->format($this->time->getCurrentTime(), 'custom', 'd.m.Y H:i:s'),
     ],
     );
-    $currentRevision->save();
-    // $this->wisskiIndividual->save();
-    // $wisskiDOIController->getDraftDOI($form['table']);
+    $doiRevision->save();
+
+    /*
+     * Redirect to version history.
+     */
     $form_state->setRedirect(
       'entity.wisski_individual.version_history',
       [
