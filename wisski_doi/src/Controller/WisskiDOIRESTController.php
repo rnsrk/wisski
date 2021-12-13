@@ -2,25 +2,43 @@
 
 namespace Drupal\wisski_doi\Controller;
 
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Client;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\wisski_doi\Exception\WisskiDOISettingsNotFoundException;
 
 /**
- * Class WisskiDOIRESTController.
+ * Handles the communication with DOI REST API.
+ *
+ * Contains function to create, read, update and delete DOIs.
  *
  * @package Drupal\wisski_doi\Controller
  */
 class WisskiDOIRESTController extends ControllerBase {
 
-  private \GuzzleHttp\Client $httpClient;
+  /**
+   * Drupal http Rest Client.
+   *
+   * @var \GuzzleHttp\Client
+   */
+
+  private Client $httpClient;
+
+  /**
+   * Settings from DOI Configuration page.
+   *
+   * @var array
+   */
 
   private array $doiSettings;
 
-
   /**
+   * Construct instance with DOI settings and check them.
+   *
    * Create a GuzzleClient localy (may a service injection is better?)
    * Take settings from wisski_doi_settings form
    * (Configuration->[WISSKI]->WissKI DOI Settings)
+   * Checks if settings are missing.
    */
   public function __construct() {
     $this->httpClient = \Drupal::httpClient();
@@ -34,18 +52,25 @@ class WisskiDOIRESTController extends ControllerBase {
       "doiRepositoryPassword" => $settings->get('doi_repository_password'),
     ];
     try {
-      (new WisskiDOISettingsNotFoundException)->checkDOISetting($this->doiSettings);
-    } catch (WisskiDOISettingsNotFoundException $error) {
+      (new WisskiDOISettingsNotFoundException)->checkDoiSetting($this->doiSettings);
+    }
+    catch (WisskiDOISettingsNotFoundException $error) {
       $this->messenger()
         ->addError($error->getMessage());
     }
 
   }
 
-
-
-
-  public function getDraftDOI($body) {
+  /**
+   * Receive draft DOIs from repa.
+   *
+   * @param array $body
+   *   The DOI Schema for the provider.
+   *
+   * @throws \GuzzleHttp\Exception\RequestException
+   *   Throws exception when respons status 40x.
+   */
+  public function getDraftDoi(array $body) {
 
     $body = [
       "data" => [
@@ -67,8 +92,7 @@ class WisskiDOIRESTController extends ControllerBase {
       ],
     ];
     $json_body = json_encode($body);
-    //dpm(base64_encode($this->doiRepositoryId.":".$this->doiRepositoryPassword));
-
+    // dpm(base64_encode($this->doiRepositoryId.":".$this->doiRepositoryPassword));.
     try {
       $response = $this->httpClient->request('POST', $this->doiSettings['baseUri'], [
         'body' => $json_body,
@@ -78,31 +102,27 @@ class WisskiDOIRESTController extends ControllerBase {
         ],
         'http_errors' => TRUE,
       ]);
+      // dpm(json_decode($response->getBody()->getContents(), TRUE));.
       $this->messenger()
         ->addStatus($this->t('DOI has been requested'));
 
       // Write DOI to Drupal DB, table 'wisski_doi'
-      //writeDOIToDB();
+      // writeDOIToDB();
     }
-      /**
-       * @throws \GuzzleHttp\Exception\GuzzleException
-       */
-      // Try to catch the GuzzleException. This indicates a failed response from the remote API.
-    catch (\GuzzleHttp\Exception\RequestException $error) {
-      // Get the original response
+
+    // Try to catch the GuzzleException. This indicates a failed
+    // response from the remote API.
+    catch (GuzzleException $error) {
+      // Get the original response.
       $response = $error->getResponse();
       // Get the info returned from the remote server.
       $error_content = json_decode($response->getBody()->getContents(), TRUE);
-      switch ($error_content['errors'][0]['status']) {
-        case "400":
-          $error_tip = 'Your used doi scheme or content data may be faulty.';
-          break;
-        default:
-          $error_tip = '';
-          break;
-      }
+      $error_tip = match ($error_content['errors'][0]['status']) {
+        "400" => 'Your used doi scheme or content data may be faulty.',
+        default => '',
+      };
 
-      // Error Code and Message
+      // Error Code and Message.
       $message = $this->t('API connection error. Error code: %error_code. Error message: %error_message. %error_tip', [
         '%error_code' => $error_content['errors'][0]['status'],
         '%error_message' => $error_content['errors'][0]['title'],
@@ -110,13 +130,16 @@ class WisskiDOIRESTController extends ControllerBase {
       ]);
       $this->messenger()
         ->addError($message);
-      // Log the error
+      // Log the error.
       \Drupal::logger('wisski_doi')->error($message);
-    } // A non-Guzzle error occurred. The type of exception is unknown, so a generic log item is created.
+    }
+    // A non-Guzzle error occurred. The type of exception
+    // is unknown, so a generic log item is created.
     catch (\Exception $error) {
       // Log the error.
       \Drupal::logger('wisski_doi')
         ->error($this->t('An unknown error occurred while trying to connect to the remote API. This is not a Guzzle error, nor an error in the remote API, rather a generic local error ocurred. The reported error was @error', ['@error' => $error->getMessage()]));
+
     }
 
   }

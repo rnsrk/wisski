@@ -8,12 +8,12 @@ use Drupal\Core\Controller\ControllerBase;
  * Controller to render DOI Administration
  */
 
-class WisskiDoiOverview extends ControllerBase {
+class WisskiDoiAdministration extends ControllerBase {
 
   /**
    * Returns a render-able array for a test page.
    */
-  public function overwiew() {
+  public function overview() {
     $build = [
       '#markup' => $this->t('Hello World!'),
     ];

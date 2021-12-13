@@ -1,17 +1,5 @@
-wisski.wisski_doi_settings.tabs:
-  route_name: wisski.wisski_doi_settings.tabs.default
-  title: DOI repository settings
-  base_route: wisski.wisski_doi_settings.tabs.default
-
-entity.wisski_bundle.tabs.doi_scheme:
-  route_name: entity.wisski_bundle.doi_scheme
-  title: DOI Schema
-  base_route: entity.wisski_bundle.edit_form
-  weight: 20
-
-entity.wisski_individual.tabs.doi:
-  route_name: wisski_individual.doi.administration
-  title: DOI
-  base_route: entity.wisski_individual.canonical
-  weight: 20
+administer wisski dois:
+  title: 'Administer WissKI DOIs'
+  description: 'Administer (Request, Update, Delete DOIs'
+  restrict access: true
 

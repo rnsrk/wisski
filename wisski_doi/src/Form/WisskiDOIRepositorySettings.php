@@ -1,28 +1,25 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\wisski_iip_image\Form\WisskiIIIFSettings
- */
-
 namespace Drupal\wisski_doi\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 
-use Drupal\Core\Url;
-
-
 /**
- * Controller for DOI Settings
- *
+ * Controller for DOI Settings.
  */
 class WisskiDOIRepositorySettings extends FormBase {
 
-  public function getFormId() {
+  /**
+   * Ddsik.
+   */
+  public function getFormId(): string {
     return 'wisski_doi_settings';
   }
 
+  /**
+   *
+   */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
     $form = [];
@@ -80,9 +77,11 @@ class WisskiDOIRepositorySettings extends FormBase {
     ];
 
     return $form;
-
   }
 
+  /**
+   *
+   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $settings = $form['#wisski_doi_settings'];
     $newVals = $form_state->getValues();
@@ -99,7 +98,6 @@ class WisskiDOIRepositorySettings extends FormBase {
     $this->messenger()->addStatus($this->t('Changed DOI settings'));
 
     $form_state->setRedirect('system.admin_config');
-
   }
 
 }
