@@ -61,7 +61,7 @@ class WisskiEntityController extends ControllerBase {
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container): WisskiEntityController|static {
+  public static function create(ContainerInterface $container) {
     return new static(
       $container->get('date.formatter'),
       $container->get('renderer'),
@@ -72,7 +72,7 @@ class WisskiEntityController extends ControllerBase {
   /**
    * This is a dummy function.
    */
-  public function content(): array {
+  public function content() {
     $form = [];
     $form[] = [
       '#type' => 'markup',
@@ -88,7 +88,7 @@ class WisskiEntityController extends ControllerBase {
   /**
    * Add WissKI bundle form.
    */
-  public function add(WisskiBundleInterface $wisski_bundle): array {
+  public function add(WisskiBundleInterface $wisski_bundle) {
     // dpm(microtime(), "before");.
     $entity = \Drupal::service('entity_type.manager')
       ->getStorage('wisski_individual')
@@ -111,7 +111,7 @@ class WisskiEntityController extends ControllerBase {
    *
    * @throws \Exception
    */
-  public function revisionShow(int $wisski_individual_revision): array {
+  public function revisionShow(int $wisski_individual_revision) {
     $wisski_individual = $this->entityTypeManager()
       ->getStorage('wisski_individual')
       ->loadRevision($wisski_individual_revision);
@@ -135,7 +135,7 @@ class WisskiEntityController extends ControllerBase {
    *
    * @throws \Exception
    */
-  public function revisionPageTitle(int $wisski_individual_revision): TranslatableMarkup {
+  public function revisionPageTitle(int $wisski_individual_revision) {
     $wisski_individual_untrans = $this->entityTypeManager()
       ->getStorage('wisski_individual')
       ->loadRevision($wisski_individual_revision);
@@ -192,7 +192,7 @@ class WisskiEntityController extends ControllerBase {
    *
    * @throws \Exception
    */
-  public function revisionOverview(WisskiEntityInterface $wisski_individual): array {
+  public function revisionOverview(WisskiEntityInterface $wisski_individual) {
 
     // dpm(serialize($wisski_individual), "ind?");
     // dpm("yay?");
@@ -409,7 +409,7 @@ class WisskiEntityController extends ControllerBase {
    * @return int[]
    *   Node revision IDs (in descending order).
    */
-  protected function getRevisionIds(WisskiEntityInterface $wisski_individual, WisskiStorageInterface $wisski_individual_storage): array {
+  protected function getRevisionIds(WisskiEntityInterface $wisski_individual, WisskiStorageInterface $wisski_individual_storage) {
     // dpm(serialize($wisski_individual->id()), "id?");
     // dpm(serialize($wisski_individual->getEntityType()
     // ->getKey('id')), "idkey?");
