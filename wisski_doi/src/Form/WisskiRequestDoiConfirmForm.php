@@ -56,6 +56,13 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
   private WisskiEntityInterface $wisskiIndividual;
 
   /**
+   * All information for the DOI request and write process to wisski_doi table.
+   *
+   * @var array
+   */
+  private array $doiInfo;
+
+  /**
    * Constructs a new NodeRevisionRevertForm.
    *
    * @param \Drupal\wisski_core\WisskiStorageInterface $wisski_storage
@@ -126,27 +133,37 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
 
     $this->wisskiIndividual = $this->wisskiStorage->load($wisski_individual);
     $form = parent::buildForm($form, $form_state);
-    $doi_settings = \Drupal::configFactory()
+    $doiSettings = \Drupal::configFactory()
       ->getEditable('wisski_doi.wisski_doi_settings');
 
+    $this->doiInfo = [
+      "bundleId" => $this->wisskiIndividual->bundle(),
+      "entityID" => $this->wisskiIndividual->id(),
+      "creationDate" => $this->dateFormatter->format($this->wisskiIndividual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
+      "author" => $this->wisskiIndividual->getRevisionUser()->getDisplayName(),
+      "title" => $this->wisskiIndividual->label(),
+      "publisher" => $doiSettings->get('data_publisher'),
+      "language" => $this->wisskiIndividual->language()->getId(),
+      "resourceType" => $this->t('Dataset'),
+    ];
     $form['table'] = [
       '#type' => 'table',
       '#header' => [$this->t('Property'), $this->t('Value')],
       '#rows' => [
-        [$this->t('BundleID'), $this->wisskiIndividual->bundle()],
-        [$this->t('EntityID'), $this->wisskiIndividual->id()],
+        [$this->t('BundleID'), $this->doiInfo['bundleId']],
+        [$this->t('EntityID'), $this->doiInfo['entityID']],
         [
           $this->t('Creation Date'),
-          $this->dateFormatter->format($this->wisskiIndividual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
+          $this->doiInfo['creationDate'],
         ],
         [
           $this->t('Author'),
-          $this->wisskiIndividual->getRevisionUser()->getDisplayName(),
+          $this->doiInfo['author'],
         ],
-        [$this->t('Title'), $this->wisskiIndividual->label()],
-        [$this->t('Publisher'), $doi_settings->get('data_publisher')],
-        [$this->t('Language'), $this->wisskiIndividual->language()->getId()],
-        [$this->t('Resource type general'), $this->t('Dataset')],
+        [$this->t('Title'), $this->doiInfo['title']],
+        [$this->t('Publisher'), $this->doiInfo['publisher']],
+        [$this->t('Language'), $this->doiInfo['language']],
+        [$this->t('Resource type general'), $this->doiInfo['resourceType']],
       ],
 
       '#description' => $this->t('Revision Data'),
@@ -183,13 +200,20 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
     $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
     $doiRevisionId = $doiRevision->getRevisionId();
     $doiRevisionURL = $http . $_SERVER['HTTP_HOST'] . '/wisski/navigate/' . $this->wisskiIndividual->id() . '/revisions/' . $doiRevisionId . '/view';
-    $form['table']['#rows'][] = [$this->t('URL'), $doiRevisionURL];
+
+    /*
+     * Append revision info to doiInfo.
+     */
+    $this->doiInfo += [
+      "revisionId" => $doiRevisionId,
+      "revisionUrl" => $doiRevisionURL,
+    ];
 
     /*
      * Request draft DOI.
      */
     $wisskiDOIController = new WisskiDoiRestController();
-    $wisskiDOIController->getDraftDoi($form['table']);
+    $wisskiDOIController->getDraftDoi($this->doiInfo);
 
     /*
      * Start second save process. This is the current revision now.

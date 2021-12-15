@@ -27,21 +27,23 @@ class WisskiDoiDbController extends ControllerBase {
   /**
    * Write DOI data to DB.
    *
-   * @param array $response
-   *   The Response of the DOI provider. Implemented at
+   * @param string $doi
+   *   The DOI from the response of the DOI provider. Implemented at
    *   WisskiDoiRestController::getDraftDoi, invoked from
    *   WisskiRequestDoiConfirmForm.
+   * @param int $revisionId
+   *   The revision ID, in Drupal called "vid".
    */
-  public function writeDoi(array $response) {
-    dpm($response);
-    /*
+  public function writeToDb(string $doi, int $revisionId) {
+    dpm($doi);
+    dpm($revisionId);
+
     $result = $this->connection->insert('wisski_doi')
       ->fields([
-        'doi' => 'Example',
-        'vid' => 1,
+        'doi' => $doi,
+        'vid' => $revisionId,
       ])
       ->execute();
-*/
   }
 
 }

@@ -62,45 +62,45 @@ class WisskiDoiRestController extends ControllerBase {
   }
 
   /**
-   * Receive draft DOIs from repa.
+   * Receive draft DOIs from repo.
    *
-   * @param array $table
+   * @param array $doiInfo
    *   The DOI Schema for the provider.
    *
    * @var array $body
    *   Scheme for DOI provider.
    *
    * @throws \GuzzleHttp\Exception\RequestException
-   *   Throws exception when respons status 40x.
+   *   Throws exception when response status 40x.
    */
-  public function getDraftDoi(array $table) {
+  public function getDraftDoi(array $doiInfo) {
 
     $body = [
       "data" => [
         "attributes" => [
           "creators" => [
             [
-              "name" => $table['#rows'][3][1],
+              "name" => $doiInfo['author'],
             ],
           ],
           "titles" => [
             [
-              "title" => $table['#rows'][4][1],
+              "title" => $doiInfo['title'],
             ],
           ],
           "dates" => [
             "dateType" => 'Created',
-            "dateInformation" => $table['#rows'][2][1],
+            "dateInformation" => $doiInfo['creationDate'],
           ],
 
           "prefix" => $this->doiSettings['doiPrefix'],
-          "publisher" => $table['#rows'][5][1],
-          "publicationYear" => substr($table['#rows'][2][1], 6, 4),
-          "language" => $table['#rows'][6][1],
+          "publisher" => $doiInfo['publisher'],
+          "publicationYear" => substr($doiInfo['creationDate'], 6, 4),
+          "language" => $doiInfo['language'],
           "types" => [
             "resourceTypeGeneral" => "Dataset",
           ],
-          "url" => $table['#rows'][8][1],
+          "url" => $doiInfo['revisionUrl'],
           "schemaVersion" => "http://datacite.org/schema/kernel-4",
         ],
       ],
@@ -173,7 +173,8 @@ class WisskiDoiRestController extends ControllerBase {
      * Write response to database table wisski_doi.
      */
     if (isset($response)) {
-      (new WisskiDoiDbController)->writeDoi($response,);
+      dpm($doiInfo);
+      (new WisskiDoiDbController)->writeToDb($response['data']['id'], $doiInfo['revisionId']);
     }
     else {
       \Drupal::logger('wisski_doi')
