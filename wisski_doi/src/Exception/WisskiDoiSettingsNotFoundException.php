@@ -8,17 +8,17 @@ namespace Drupal\wisski_doi\Exception;
  * Load the settings from the DOI configuration page and
  * checks if values are missing.
  */
-class WisskiDOISettingsNotFoundException extends \Exception {
+class WisskiDoiSettingsNotFoundException extends \Exception {
 
   /**
    * Check if settings are set.
    *
-   * @throws \Drupal\wisski_doi\Exception\WisskiDOISettingsNotFoundException
+   * @throws \Drupal\wisski_doi\Exception\WisskiDoiSettingsNotFoundException
    */
   public function checkDoiSetting($doiSettings) {
     foreach ($doiSettings as $setting => $value) {
       if (empty($value)) {
-        throw new WisskiDOISettingsNotFoundException("'$setting' not set, please go to Configure->[WISSKI]->WissKI DOI settings and do so.");
+        throw new WisskiDoiSettingsNotFoundException("'$setting' not set, please go to Configure->[WISSKI]->WissKI DOI settings and do so.");
       }
     }
   }

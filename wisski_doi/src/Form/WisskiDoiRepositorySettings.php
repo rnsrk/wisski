@@ -8,7 +8,7 @@ use Drupal\Core\Form\FormStateInterface;
 /**
  * Controller for DOI Settings.
  */
-class WisskiDOIRepositorySettings extends FormBase {
+class WisskiDoiRepositorySettings extends FormBase {
 
   /**
    * Ddsik.

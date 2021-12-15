@@ -1,7 +1,7 @@
 wisski.wisski_doi_settings.tabs.default:
   path: '/admin/config/wisski/wisski_doi_settings'
   defaults:
-    _form: '\Drupal\wisski_doi\Form\WisskiDOIRepositorySettings'
+    _form: '\Drupal\wisski_doi\Form\WisskiDoiRepositorySettings'
     _title: 'WissKI DOI Settings'
   requirements:
     _permission: 'administer wisski bundles'
@@ -9,7 +9,7 @@ wisski.wisski_doi_settings.tabs.default:
 wisski_individual.revision_get_doi:
   path: '/wisski/navigate/{wisski_individual}/revision/getdoi'
   defaults:
-    _form: '\Drupal\wisski_doi\Form\WisskiRequestDOIConfirmForm'
+    _form: '\Drupal\wisski_doi\Form\WisskiRequestDoiConfirmForm'
     _title: 'Do you want to request a new DOI?'
   requirements:
     _permission: 'administer wisski'
@@ -19,7 +19,7 @@ entity.wisski_bundle.doi_scheme:
   path: '/admin/structure/wisski_core/{wisski_bundle}/doi_scheme'
   #path: '/admin/structure/wisski_core/doi_scheme'
   defaults:
-    _form: '\Drupal\wisski_doi\Form\WisskiDOISchemeForm'
+    _form: '\Drupal\wisski_doi\Form\WisskiDoiSchemeForm'
     _title: 'DOI Scheme'
   requirements:
     _permission: 'administer wisski'

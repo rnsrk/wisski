@@ -10,7 +10,7 @@ use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-use Drupal\wisski_doi\Controller\WisskiDOIRESTController;
+use Drupal\wisski_doi\Controller\WisskiDoiRestController;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -18,7 +18,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @internal
  */
-class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
+class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
 
   /**
    * The WisskiEntity revision.
@@ -172,8 +172,7 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
      */
     $doiRevision = $this->wisskiStorage->createRevision($this->wisskiIndividual);
     $doiRevision->setNewRevision(TRUE);
-    $doiRevision->revision_log = t('DOI revision from %creation_date, requested at %request_date.', [
-      '%creation_date' => $this->dateFormatter->format($this->wisskiIndividual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
+    $doiRevision->revision_log = t('DOI revision requested at %request_date.', [
       '%request_date' => $this->dateFormatter->format($this->time->getCurrentTime(), 'custom', 'd.m.Y H:i:s'),
     ]);
     $doiRevision->save();
@@ -189,7 +188,7 @@ class WisskiRequestDOIConfirmForm extends ConfirmFormBase {
     /*
      * Request draft DOI.
      */
-    $wisskiDOIController = new WisskiDOIRESTController();
+    $wisskiDOIController = new WisskiDoiRestController();
     $wisskiDOIController->getDraftDoi($form['table']);
 
     /*

@@ -13,7 +13,7 @@ use Drupal\Core\Form\FormStateInterface;
  *
  * @internal
  */
-class WisskiDOISchemeForm extends FormBase
+class WisskiDoiSchemeForm extends FormBase
 {
 
   public function getFormId()
