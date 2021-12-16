@@ -14,16 +14,12 @@ class WisskiDoiAdministration extends ControllerBase {
    */
   public function overview() {
     $eid = 6;
-    $records = (new WisskiDoiDbController)->readDoiRecords($eid);
+    $rows = (new WisskiDoiDbController)->readDoiRecords($eid);
+    dpm($rows);
     $build['table'] = [
       '#type' => 'table',
-      '#header' => [
-        $this->t('Revision'),
-        $this->t('Creation Date'),
-        $this->t('DOI'),
-        $this->t('Type'),
-      ],
-      '#rows' => [],
+      '#header' => array_keys($rows[0]),
+      '#rows' => $rows,
       '#description' => $this->t('DOI information'),
       '#weight' => 1,
     ];

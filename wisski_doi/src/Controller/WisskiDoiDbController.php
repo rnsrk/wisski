@@ -50,7 +50,11 @@ class WisskiDoiDbController extends ControllerBase {
   }
 
   /**
-   * Select the records corresponding to a entity.
+   * Select the records corresponding to an entity.
+   *
+   * We parse the strClass $records to an array with the
+   * json_decode/json_encode() functions and drop the auto indent
+   * primary key (did).
    *
    * @param int $eid
    *   The entity id.
@@ -61,8 +65,16 @@ class WisskiDoiDbController extends ControllerBase {
   public function readDoiRecords(int $eid) {
     $query = $this->connection->query("SELECT * FROM wisski_doi WHERE eid = {eid}");
     $result = $query->fetchAll();
-    dpm($result);
-    return $result;
+    foreach ($result as $record) {
+      $row = json_decode(json_encode($record), TRUE);
+      $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
+      $link =  '/wisski/navigate/' . $row['eid'] . '/revisions/' . $row['vid'] . '/view';
+      $row['revisionUrl'] = ['data' => $this->t('<a href=":link">:link</a>', [':link' => $link])];
+
+      $row = array_splice($row, 2, 4);
+      $rows[] = $row;
+    }
+    return $rows;
   }
 
 }
