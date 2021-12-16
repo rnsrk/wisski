@@ -19,6 +19,11 @@ function wisski_doi_schema() {
         'size' => 'normal',
         'not null' => TRUE,
       ],
+      'eid' => [
+        'description' => 'The entity id.',
+        'type' => 'int',
+        'size' => 'big',
+      ],
       'doi' => [
         'description' => 'The actual DOI.',
         'type' => 'varchar',
@@ -33,7 +38,7 @@ function wisski_doi_schema() {
       'type' => [
         'description' => 'Type: draft, registered, findable',
         'type' => 'varchar',
-        'size' => '10',
+        'length' => 10,
         'not null' => TRUE,
       ],
     ],

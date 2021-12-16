@@ -27,23 +27,42 @@ class WisskiDoiDbController extends ControllerBase {
   /**
    * Write DOI data to DB.
    *
-   * @param string $doi
+   * @param array $dbData
+   *   Contains:
    *   The DOI from the response of the DOI provider. Implemented at
    *   WisskiDoiRestController::getDraftDoi, invoked from
    *   WisskiRequestDoiConfirmForm.
-   * @param int $revisionId
-   *   The revision ID, in Drupal called "vid".
+   *   The revision ID as vid.
+   *   The entity ID as eid.
+   *   The type of the DOI (draft, registered, findable).
+   *
+   * @throws \Exception
    */
-  public function writeToDb(string $doi, int $revisionId) {
-    dpm($doi);
-    dpm($revisionId);
-
+  public function writeToDb(array $dbData) {
     $result = $this->connection->insert('wisski_doi')
       ->fields([
-        'doi' => $doi,
-        'vid' => $revisionId,
+        'eid' => $dbData['eid'],
+        'doi' => $dbData['doi'],
+        'vid' => $dbData['vid'],
+        'type' => $dbData['type'],
       ])
       ->execute();
+  }
+
+  /**
+   * Select the records corresponding to a entity.
+   *
+   * @param int $eid
+   *   The entity id.
+   *
+   * @return array
+   *   Dataset of corresponding DOIs to an entity.
+   */
+  public function readDoiRecords(int $eid) {
+    $query = $this->connection->query("SELECT * FROM wisski_doi WHERE eid = {eid}");
+    $result = $query->fetchAll();
+    dpm($result);
+    return $result;
   }
 
 }

@@ -3,6 +3,7 @@
 namespace Drupal\wisski_doi\Form;
 
 use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\user\Entity\User;
 use Drupal\wisski_core\WisskiStorageInterface;
 use Drupal\wisski_core\WisskiEntityInterface;
 use Drupal\Component\Datetime\TimeInterface;
@@ -135,17 +136,25 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
     $form = parent::buildForm($form, $form_state);
     $doiSettings = \Drupal::configFactory()
       ->getEditable('wisski_doi.wisski_doi_settings');
+      $revisionUser = $this->wisskiIndividual->getRevisionUser();
+    if (!empty($revisionUser)) {
+      $author = $revisionUser->getDisplayName();
+    } else {
+      $uid = $this->wisskiIndividual->get('uid')->getValue()[0]['target_id'];
+      $author = User::load($uid)->getDisplayName();
+    }
 
     $this->doiInfo = [
       "bundleId" => $this->wisskiIndividual->bundle(),
       "entityID" => $this->wisskiIndividual->id(),
       "creationDate" => $this->dateFormatter->format($this->wisskiIndividual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
-      "author" => $this->wisskiIndividual->getRevisionUser()->getDisplayName(),
+      "author" => $author,
       "title" => $this->wisskiIndividual->label(),
       "publisher" => $doiSettings->get('data_publisher'),
       "language" => $this->wisskiIndividual->language()->getId(),
       "resourceType" => $this->t('Dataset'),
     ];
+
     $form['table'] = [
       '#type' => 'table',
       '#header' => [$this->t('Property'), $this->t('Value')],

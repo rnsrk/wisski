@@ -1,6 +1,6 @@
 entity.wisski_individual.actions.add_doi:
   route_name: 'wisski_individual.revision_get_doi'
-  title: 'Get draft DOI'
+  title: 'Get findable DOI'
   appears_on:
     - wisski_individual.doi.administration
   permission:
