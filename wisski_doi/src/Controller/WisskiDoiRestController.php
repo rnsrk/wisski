@@ -64,13 +64,13 @@ class WisskiDoiRestController extends ControllerBase {
   /**
    * Receive draft DOIs from repo.
    *
-   * @param array $doiInfo
-   *   The DOI Schema for the provider.
-   *
    * @var array $body
    *   Scheme for DOI provider.
    *
-   * @throws \GuzzleHttp\Exception\RequestException
+   * @param array $doiInfo
+   *   The DOI Schema for the provider.
+   *
+   * @throws \GuzzleHttp\Exception\RequestException*@throws \Exception
    *   Throws exception when response status 40x.
    */
   public function getDraftDoi(array $doiInfo) {
@@ -78,6 +78,7 @@ class WisskiDoiRestController extends ControllerBase {
     $body = [
       "data" => [
         "attributes" => [
+          "event" => "publish",
           "creators" => [
             [
               "name" => $doiInfo['author'],
@@ -173,8 +174,13 @@ class WisskiDoiRestController extends ControllerBase {
      * Write response to database table wisski_doi.
      */
     if (isset($response)) {
-      dpm($doiInfo);
-      (new WisskiDoiDbController)->writeToDb($response['data']['id'], $doiInfo['revisionId']);
+      $dbData = [
+        "doi" => $response['data']['id'],
+        "vid" => $doiInfo['revisionId'],
+        "eid" => $doiInfo['entityID'],
+        "type" => $response['data']['attributes']['state'],
+      ];
+      (new WisskiDoiDbController)->writeToDb($dbData);
     }
     else {
       \Drupal::logger('wisski_doi')

@@ -10,11 +10,18 @@ use Drupal\Core\Controller\ControllerBase;
 class WisskiDoiAdministration extends ControllerBase {
 
   /**
-   * Returns a render-able array for a test page.
+   * Returns a render-able array for the DOI administration page.
    */
   public function overview() {
-    $build = [
-      '#markup' => $this->t('Hello World!'),
+    $eid = 6;
+    $rows = (new WisskiDoiDbController)->readDoiRecords($eid);
+    dpm($rows);
+    $build['table'] = [
+      '#type' => 'table',
+      '#header' => array_keys($rows[0]),
+      '#rows' => $rows,
+      '#description' => $this->t('DOI information'),
+      '#weight' => 1,
     ];
     return $build;
   }

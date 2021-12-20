@@ -5,14 +5,11 @@ viewer:
       css/blockmirador.css: {}
   js:
     js/blockmirador.js: {}
-    js/mirador.min.js: {}
+    /libraries/mirador/dist/mirador.min.js: {}
     js/mirador_noconflict.js: {}
   dependencies:
     - core/drupal
     - core/jquery
     - core/jquery.once
     - core/drupalSettings
-
-
-
   
