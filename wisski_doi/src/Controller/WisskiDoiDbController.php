@@ -63,14 +63,16 @@ class WisskiDoiDbController extends ControllerBase {
    *   Dataset of corresponding DOIs to an entity.
    */
   public function readDoiRecords(int $eid) {
-    $query = $this->connection->query("SELECT * FROM wisski_doi WHERE eid = {eid}");
+    $query = $this->connection->query("SELECT * FROM wisski_doi WHERE eid = {$eid}");
     $result = $query->fetchAll();
+    $rows = [];
     foreach ($result as $record) {
       $row = json_decode(json_encode($record), TRUE);
+      $doiLink = 'https://doi.org/' . $row['doi'];
+      $row['doi'] = ['data' => $this->t('<a href=":doiLink" class="wisski-doi-link">:doiLink</a>', [':doiLink' => $doiLink])];
       $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
-      $link =  '/wisski/navigate/' . $row['eid'] . '/revisions/' . $row['vid'] . '/view';
-      $row['revisionUrl'] = ['data' => $this->t('<a href=":link">:link</a>', [':link' => $link])];
-
+      $revisionLink = $http .  $_SERVER['HTTP_HOST'] . '/wisski/navigate/' . $row['eid'] . '/revisions/' . $row['vid'] . '/view';
+      $row['revisionUrl'] = ['data' => $this->t('<a href=":revisionLink">:revisionLink</a>', [':revisionLink' => $revisionLink])];
       $row = array_splice($row, 2, 4);
       $rows[] = $row;
     }

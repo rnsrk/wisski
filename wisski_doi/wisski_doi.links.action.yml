@@ -1,6 +1,14 @@
-entity.wisski_individual.actions.add_doi:
-  route_name: 'wisski_individual.revision_get_doi'
-  title: 'Get findable DOI'
+entity.wisski_individual.actions.add_doi_for_static:
+  route_name: 'wisski_individual.revision_get_doi_for_static'
+  title: 'Get DOI for static revision'
+  appears_on:
+    - wisski_individual.doi.administration
+  permission:
+    - 'administer dois'
+
+entity.wisski_individual.actions.add_doi_for_current:
+  route_name: 'wisski_individual.revision_get_doi_for_current'
+  title: 'Get DOI for current revision'
   appears_on:
     - wisski_individual.doi.administration
   permission:

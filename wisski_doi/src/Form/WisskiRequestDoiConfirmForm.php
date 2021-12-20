@@ -2,6 +2,8 @@
 
 namespace Drupal\wisski_doi\Form;
 
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\user\Entity\User;
 use Drupal\wisski_core\WisskiStorageInterface;
@@ -13,6 +15,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\wisski_doi\Controller\WisskiDoiRestController;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Provides a form for reverting a wisski_individual revision.
@@ -64,6 +67,13 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
   private array $doiInfo;
 
   /**
+   * The logging text of the revision.
+   *
+   * @var string
+   */
+  protected string $revision_log;
+
+  /**
    * Constructs a new NodeRevisionRevertForm.
    *
    * @param \Drupal\wisski_core\WisskiStorageInterface $wisski_storage
@@ -98,10 +108,19 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
   }
 
   /**
+   *
+   */
+  protected function getEditableConfigNames() {
+    return [
+      'contributor.items',
+    ];
+  }
+
+  /**
    * The question of the confirm form.
    */
   public function getQuestion(): TranslatableMarkup {
-    return t('Are you sure you want to request a draft DOI for the revision?');
+    return $this->t('Are you sure you want to request a findable DOI for this revision?');
   }
 
   /**
@@ -115,7 +134,7 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
    * Text on the submit button.
    */
   public function getConfirmText(): TranslatableMarkup {
-    return t('Request Draft DOI');
+    return $this->t('Request DOI for this revision');
   }
 
   /**
@@ -125,21 +144,106 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
   }
 
   /**
+   *
+   */
+  public static function addContributor(array &$form, FormStateInterface $form_state) : AjaxResponse {
+
+    $contributor = $form_state->getValue('contributor');
+    $contributorItems = \Drupal::configFactory()->getEditable('contributor.items');
+    $contributors = $contributorItems->get('contributors');
+    $error = NULL;
+
+    try {
+      /* Validate for duplicates.
+       */
+
+      if (is_null($contributors)) {
+        $contributors = [];
+      }
+      if (!in_array($contributor, $contributors)) {
+        $contributors[] = $contributor;
+      }
+      else {
+        $error = t('Contributor %contributor already exists in this list', ['%contributor' => $contributor]);
+      }
+    }
+
+    catch (\Exception $e) {
+      $error = t('Wrong text format. Enter a valid text format.');
+    }
+
+    $contributorItems->set('contributors', $contributors)->save();
+    $response = new AjaxResponse();
+    $response->addCommand(new ReplaceCommand('#contributor-list', WisskiRequestDoiConfirmForm::renderContributors($contributors, $error)));
+
+    return $response;
+  }
+
+  /**
+   * Delete the specified contributor.
+   */
+  public static function removeContributor(string $contributor, Request $request) : AjaxResponse {
+    $contributorItems = \Drupal::configFactory()->getEditable('contributor.items');
+    $contributors = $contributorItems->get('contributors');
+
+    if (!is_null($contributors) && ($ind = array_search($contributor, $contributors)) !== FALSE) {
+      unset($contributors[$ind]);
+      $contributorItems->set('contributors', $contributors)->save();
+    }
+
+    $response = new AjaxResponse();
+    $response->addCommand(new ReplaceCommand('#contributor-list', WisskiRequestDoiConfirmForm::renderContributors($contributors)));
+
+    return $response;
+  }
+
+  /**
+   * Delete all dates.
+   */
+  public static function clearContributors(Request $request) : AjaxResponse {
+    $contributorItems = \Drupal::configFactory()->getEditable('contributor.items');
+    $contributorItems->set('contributors', NULL)->save();
+    $response = new AjaxResponse();
+    $response->addCommand(new ReplaceCommand('#contributor-list', WisskiRequestDoiConfirmForm::renderContributors(NULL)));
+    return $response;
+  }
+
+  /**
+   *
+   */
+  protected static function renderContributors($contributors, $error = NULL) {
+    $contributors = ['person a'];
+    $theme = [
+      '#theme' => 'contributor-list',
+      '#contributors' => $contributors,
+      '#error' => $error,
+    ];
+    $renderer = \Drupal::service('renderer');
+
+    return $renderer->render($theme);
+  }
+
+  /**
    * Build table from DOI settings and WissKI individual state.
    *
    * Load DOI settings from Manage->Configuration->WissKI:WissKI DOI Settings.
    * Store it in a table.
    */
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual = NULL): array {
+    /* #tree will ensure the HTML elements get named distinctively.
+     * Not just name=[name] but name=[container][123][name].
+     */
+    $form['#tree'] = TRUE;
 
     $this->wisskiIndividual = $this->wisskiStorage->load($wisski_individual);
     $form = parent::buildForm($form, $form_state);
     $doiSettings = \Drupal::configFactory()
       ->getEditable('wisski_doi.wisski_doi_settings');
-      $revisionUser = $this->wisskiIndividual->getRevisionUser();
+    $revisionUser = $this->wisskiIndividual->getRevisionUser();
     if (!empty($revisionUser)) {
       $author = $revisionUser->getDisplayName();
-    } else {
+    }
+    else {
       $uid = $this->wisskiIndividual->get('uid')->getValue()[0]['target_id'];
       $author = User::load($uid)->getDisplayName();
     }
@@ -152,32 +256,94 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
       "title" => $this->wisskiIndividual->label(),
       "publisher" => $doiSettings->get('data_publisher'),
       "language" => $this->wisskiIndividual->language()->getId(),
-      "resourceType" => $this->t('Dataset'),
+      "resourceType" => 'Dataset',
     ];
 
-    $form['table'] = [
-      '#type' => 'table',
-      '#header' => [$this->t('Property'), $this->t('Value')],
-      '#rows' => [
-        [$this->t('BundleID'), $this->doiInfo['bundleId']],
-        [$this->t('EntityID'), $this->doiInfo['entityID']],
-        [
-          $this->t('Creation Date'),
-          $this->doiInfo['creationDate'],
+    $resourceTypeOptions = [
+      'Audiovisual' => 'Audiovisual',
+      'Collection' => 'Collection',
+      'DataPaper' => 'DataPaper',
+      'Dataset' => 'Dataset',
+      'Event' => 'Event',
+      'Image' => 'Image',
+      'InteractiveResource' => 'InteractiveResource',
+      'Model' => 'Model',
+      'PhysicalObject' => 'PhysicalObject',
+      'Service' => 'Service',
+      'Software' => 'Software',
+      'Sound' => 'Sound',
+      'Text' => 'Text',
+      'Workflow' => 'Workflow',
+      'Other' => 'Other',
+    ];
+
+    $form['entityID'] = [
+      '#type' => 'item',
+      '#value' => $this->doiInfo['entityID'],
+      '#markup' => $this->doiInfo['entityID'],
+      '#title' => $this->t('Entity ID'),
+      '#description' => $this->t('The entity ID of the WissKI individual.'),
+    ];
+    $form['creationDate'] = [
+      '#type' => 'item',
+      '#value' => $this->doiInfo['creationDate'],
+      '#title' => $this->t('Creation date'),
+      '#markup' => $this->doiInfo['creationDate'],
+      '#description' => $this->t('The datetime, when the revision was created.'),
+    ];
+    $form['author'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Author'),
+      '#default_value' => $this->doiInfo['author'],
+      '#description' => $this->t('The author of the selected revision.'),
+    ];
+
+    $contributorItems = $this->config('contributor.items');
+
+    $form['contributors'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('Contributors'),
+      '#description' => $this->t('Additional Contributors like previous editors of the dataset.'),
+    ];
+    $form['contributors']['contributor'] = [
+      '#type' => 'textfield',
+      '#suffix' => WisskiRequestDoiConfirmForm::renderContributors($contributorItems->get('contributors')),
+      '#ajax' => [
+        'callback' => 'Drupal\wisski_doi\Form\WisskiRequestDoiConfirmForm::addContributor',
+        'wrapper' => 'contributor-list',
+        'progress' => [
+          'type' => 'throbber',
+          'message' => $this->t('Adding contributor...'),
         ],
-        [
-          $this->t('Author'),
-          $this->doiInfo['author'],
-        ],
-        [$this->t('Title'), $this->doiInfo['title']],
-        [$this->t('Publisher'), $this->doiInfo['publisher']],
-        [$this->t('Language'), $this->doiInfo['language']],
-        [$this->t('Resource type general'), $this->doiInfo['resourceType']],
       ],
-
-      '#description' => $this->t('Revision Data'),
-      '#weight' => 1,
     ];
+
+    $form['title'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Title'),
+      '#default_value' => $this->doiInfo['title'],
+      '#description' => $this->t('The title, resolved from title pattern.'),
+    ];
+    $form['publisher'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Publisher'),
+      '#default_value' => $this->doiInfo['publisher'],
+      '#description' => $this->t('The publisher of the database.'),
+    ];
+    $form['language'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Language'),
+      '#default_value' => $this->doiInfo['language'],
+      '#description' => $this->t('The language of the dataset.'),
+    ];
+    $form['resourceType'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Type of record'),
+      '#options' => $resourceTypeOptions,
+      '#default_value' => 'Dataset',
+      '#description' => $this->t('The type of data in DOI terms, usually "Dataset".'),
+    ];
+
     return $form;
   }
 
@@ -193,12 +359,18 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
     /*
+     * Get new values from form state
+     */
+    $newVals = $form_state->cleanValues()->getValues();
+    $this->doiInfo = $newVals;
+
+    /*
      * Save two revisions, because current revision has no
      * revision URI. Start with first save process.
      */
     $doiRevision = $this->wisskiStorage->createRevision($this->wisskiIndividual);
     $doiRevision->setNewRevision(TRUE);
-    $doiRevision->revision_log = t('DOI revision requested at %request_date.', [
+    $doiRevision->revision_log = $this->t('DOI revision requested at %request_date.', [
       '%request_date' => $this->dateFormatter->format($this->time->getCurrentTime(), 'custom', 'd.m.Y H:i:s'),
     ]);
     $doiRevision->save();
@@ -221,14 +393,14 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
     /*
      * Request draft DOI.
      */
-    $wisskiDOIController = new WisskiDoiRestController();
-    $wisskiDOIController->getDraftDoi($this->doiInfo);
+    $wisskiDoiRestController = new WisskiDoiRestController();
+    $wisskiDoiRestController->getDraftDoi($this->doiInfo);
 
     /*
      * Start second save process. This is the current revision now.
      */
     $doiRevision = $this->wisskiStorage->createRevision($this->wisskiIndividual);
-    $doiRevision->revision_log = t('Revision copy, because of DOI request from %request_date.', [
+    $doiRevision->revision_log = $this->t('Revision copy, because of DOI request from %request_date.', [
       '%request_date' => $this->dateFormatter->format($this->time->getCurrentTime(), 'custom', 'd.m.Y H:i:s'),
     ],
     );

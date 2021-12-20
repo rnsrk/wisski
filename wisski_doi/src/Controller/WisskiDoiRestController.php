@@ -174,6 +174,7 @@ class WisskiDoiRestController extends ControllerBase {
      * Write response to database table wisski_doi.
      */
     if (isset($response)) {
+      dpm($response);
       $dbData = [
         "doi" => $response['data']['id'],
         "vid" => $doiInfo['revisionId'],

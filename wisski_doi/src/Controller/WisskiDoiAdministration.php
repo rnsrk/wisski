@@ -12,17 +12,24 @@ class WisskiDoiAdministration extends ControllerBase {
   /**
    * Returns a render-able array for the DOI administration page.
    */
-  public function overview() {
-    $eid = 6;
-    $rows = (new WisskiDoiDbController)->readDoiRecords($eid);
-    dpm($rows);
-    $build['table'] = [
-      '#type' => 'table',
-      '#header' => array_keys($rows[0]),
-      '#rows' => $rows,
-      '#description' => $this->t('DOI information'),
-      '#weight' => 1,
-    ];
+  public function overview($wisski_individual) {
+    $wisski_individual = intval($wisski_individual);
+
+    $rows = (new WisskiDoiDbController)->readDoiRecords($wisski_individual) ?? NULL;
+    if ($rows) {
+      $build['table'] = [
+        '#type' => 'table',
+        '#header' => array_keys($rows[0]),
+        '#rows' => $rows,
+        '#description' => $this->t('DOI information'),
+        '#weight' => 1,
+      ];
+    }
+    else {
+      $build = [
+        '#markup' => '<p>' . $this->t('No DOIs associated with the entity.') . '</p>',
+      ];
+    }
     return $build;
   }
 
