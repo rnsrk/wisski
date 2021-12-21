@@ -26,7 +26,6 @@ wisski_individual.revision_get_doi_for_current:
 
 entity.wisski_bundle.doi_scheme:
   path: '/admin/structure/wisski_core/{wisski_bundle}/doi_scheme'
-  #path: '/admin/structure/wisski_core/doi_scheme'
   defaults:
     _form: '\Drupal\wisski_doi\Form\WisskiDoiSchemeForm'
     _title: 'DOI Scheme'

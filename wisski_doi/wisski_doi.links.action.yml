@@ -1,6 +1,6 @@
 entity.wisski_individual.actions.add_doi_for_static:
   route_name: 'wisski_individual.revision_get_doi_for_static'
-  title: 'Get DOI for static revision'
+  title: 'Get DOI for stable state'
   appears_on:
     - wisski_individual.doi.administration
   permission:
@@ -8,7 +8,7 @@ entity.wisski_individual.actions.add_doi_for_static:
 
 entity.wisski_individual.actions.add_doi_for_current:
   route_name: 'wisski_individual.revision_get_doi_for_current'
-  title: 'Get DOI for current revision'
+  title: 'Get DOI for current state'
   appears_on:
     - wisski_individual.doi.administration
   permission:

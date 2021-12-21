@@ -14,7 +14,6 @@ class WisskiDoiAdministration extends ControllerBase {
    */
   public function overview($wisski_individual) {
     $wisski_individual = intval($wisski_individual);
-
     $rows = (new WisskiDoiDbController)->readDoiRecords($wisski_individual) ?? NULL;
     if ($rows) {
       $build['table'] = [

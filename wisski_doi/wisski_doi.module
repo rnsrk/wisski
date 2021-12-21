@@ -59,7 +59,6 @@ function wisski_doi_entity_operation_alter(array &$operations, EntityInterface $
  */
 
 function wisski_doi_theme() {
-  dpm('contributors_theme');
   return [
     'contributors' => [
       'render element' => 'children',

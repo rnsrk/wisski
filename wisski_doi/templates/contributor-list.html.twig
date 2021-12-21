@@ -1,5 +1,3 @@
-
-{{ kint(contributors) }}
 <div class="wisski-doi-settings-contributor" id="contributor-list">
   {% if error is not empty %}
     <div role="contentinfo" aria-label="Error message" class="messages messages--error">
@@ -9,15 +7,27 @@
       </div>
     </div>
   {% endif %}
-{%  if contributors is not empty %}
-  <h3 class="label">{% trans %}Contributor list{% endtrans %}</h3>
-  <a href="{{ path('wisski_individual.doi.contributors.clear_contributors') }}" class="use-ajax wisski-doi-settings-contributor--clear">{% trans %}Clear list{% endtrans %}</a>
-  <ul class="wisski-doi-settings-contributor--list">
-    {% for contributor in contributors %}
-      <li class="wisski-doi-settings-holiday--item"><span class="wisski-doi-settings-holiday--date">{{ contributor }}</span><a href="{{ path('wisski_individual.doi.contributors.remove_contributor', {'contributor': contributor}) }}" class="use-ajax wisski-doi-settings-contributor--remove">{% trans %}Remove{% endtrans %}</a></li>
-    {% endfor %}
-  </ul>
-{% else %}
-  {% trans %}Contributor list is empty{% endtrans %}
-{% endif %}
+  {% if contributors is not empty %}
+
+    <section class="wisski-doi-settings-contributor--list">
+      <div class="wisski-doi-settings-holiday--item">
+        <h3 class="label">{% trans %}Contributor list{% endtrans %}</h3>
+        <div>
+          <a href="{{ path('wisski_individual.doi.contributors.clear_contributors') }}"
+             class="use-ajax wisski-doi-settings-contributor--clear">{% trans %}Clear list{% endtrans %}</a>
+        </div>
+      </div>
+      {% for contributor in contributors %}
+        <div class="wisski-doi-settings-holiday--item">
+          <div class="wisski-doi-settings-contributors--contributor">{{ contributor }}</div>
+          <div>
+            <a href="{{ path('wisski_individual.doi.contributors.remove_contributor', {'contributor': contributor}) }}"
+               class="use-ajax wisski-doi-settings-contributor--remove">{% trans %}Remove{% endtrans %}</a>
+          </div>
+        </div>
+      {% endfor %}
+    </section>
+  {% else %}
+    {% trans %}Contributor list is empty{% endtrans %}
+  {% endif %}
 </div>

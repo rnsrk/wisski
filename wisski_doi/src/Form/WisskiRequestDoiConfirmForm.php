@@ -141,49 +141,55 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
    * Details between title and body.
    */
   public function getDescription() {
+    return $this->t('This saves this revision and assigns a DOI to it.
+    The DOI points only to this revision, you can not change the data of the
+    dataset afterwards (only the metadata of the DOI). If you like to assign a DOI which points
+    always to the current state of the dataset, please use "Get DOI for current state".');
   }
 
   /**
    *
    */
-  public static function addContributor(array &$form, FormStateInterface $form_state) : AjaxResponse {
-
-    $contributor = $form_state->getValue('contributor');
-    $contributorItems = \Drupal::configFactory()->getEditable('contributor.items');
+  public static function addContributor(array &$form, FormStateInterface $form_state): AjaxResponse {
+    $contributor = $form_state->getValue('contributors')['contributorGroup']['contributor'];
+    $contributorItems = \Drupal::configFactory()
+      ->getEditable('contributor.items');
     $contributors = $contributorItems->get('contributors');
     $error = NULL;
 
     try {
       /* Validate for duplicates.
        */
-
-      if (is_null($contributors)) {
-        $contributors = [];
-      }
-      if (!in_array($contributor, $contributors)) {
-        $contributors[] = $contributor;
+      if (!empty($contributor)) {
+        if (is_null($contributors)) {
+          $contributors = [];
+        }
+        if (!in_array($contributor, $contributors)) {
+          $contributors[] = $contributor;
+        }
+        else {
+          $error = t('Contributor %contributor already exists in this list', ['%contributor' => $contributor]);
+        }
       }
       else {
-        $error = t('Contributor %contributor already exists in this list', ['%contributor' => $contributor]);
+        $error = t('Contributor is empty!');
       }
     }
-
     catch (\Exception $e) {
       $error = t('Wrong text format. Enter a valid text format.');
     }
-
     $contributorItems->set('contributors', $contributors)->save();
     $response = new AjaxResponse();
     $response->addCommand(new ReplaceCommand('#contributor-list', WisskiRequestDoiConfirmForm::renderContributors($contributors, $error)));
-
     return $response;
   }
 
   /**
    * Delete the specified contributor.
    */
-  public static function removeContributor(string $contributor, Request $request) : AjaxResponse {
-    $contributorItems = \Drupal::configFactory()->getEditable('contributor.items');
+  public function removeContributor(string $contributor, Request $request): AjaxResponse {
+    $contributorItems = \Drupal::configFactory()
+      ->getEditable('contributor.items');
     $contributors = $contributorItems->get('contributors');
 
     if (!is_null($contributors) && ($ind = array_search($contributor, $contributors)) !== FALSE) {
@@ -200,8 +206,9 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
   /**
    * Delete all dates.
    */
-  public static function clearContributors(Request $request) : AjaxResponse {
-    $contributorItems = \Drupal::configFactory()->getEditable('contributor.items');
+  public function clearContributors(Request $request): AjaxResponse {
+    $contributorItems = \Drupal::configFactory()
+      ->getEditable('contributor.items');
     $contributorItems->set('contributors', NULL)->save();
     $response = new AjaxResponse();
     $response->addCommand(new ReplaceCommand('#contributor-list', WisskiRequestDoiConfirmForm::renderContributors(NULL)));
@@ -209,10 +216,9 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
   }
 
   /**
-   *
+   * Render Contributors template.
    */
-  protected static function renderContributors($contributors, $error = NULL) {
-    $contributors = ['person a'];
+  public static function renderContributors($contributors, $error = NULL) {
     $theme = [
       '#theme' => 'contributor-list',
       '#contributors' => $contributors,
@@ -303,19 +309,32 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
     $form['contributors'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Contributors'),
+
+    ];
+    $form['contributors']['contributorGroup'] = [
+      '#type' => 'fieldgroup',
+      '#attributes' => ['class' => ['wisski-doi-contributorGroup']],
+    ];
+
+    $form['contributors']['contributorGroup']['contributor'] = [
+      '#type' => 'textfield',
       '#description' => $this->t('Additional Contributors like previous editors of the dataset.'),
     ];
-    $form['contributors']['contributor'] = [
-      '#type' => 'textfield',
-      '#suffix' => WisskiRequestDoiConfirmForm::renderContributors($contributorItems->get('contributors')),
+    $form['contributors']['contributorGroup']['submit'] = [
+      '#type' => 'button',
       '#ajax' => [
-        'callback' => 'Drupal\wisski_doi\Form\WisskiRequestDoiConfirmForm::addContributor',
+        'callback' => '::addContributor',
         'wrapper' => 'contributor-list',
         'progress' => [
           'type' => 'throbber',
           'message' => $this->t('Adding contributor...'),
         ],
       ],
+      '#value' => $this->t('Add'),
+    ];
+    $form['contributors']['contributorTable'] = [
+      '#type' => 'item',
+      '#markup' => WisskiRequestDoiConfirmForm::renderContributors($contributorItems->get('contributors')),
     ];
 
     $form['title'] = [
@@ -344,6 +363,7 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
       '#description' => $this->t('The type of data in DOI terms, usually "Dataset".'),
     ];
 
+    $form['#attached']['library'][] = 'wisski_doi/wisskiDoi';
     return $form;
   }
 
@@ -363,7 +383,6 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
      */
     $newVals = $form_state->cleanValues()->getValues();
     $this->doiInfo = $newVals;
-
     /*
      * Save two revisions, because current revision has no
      * revision URI. Start with first save process.
