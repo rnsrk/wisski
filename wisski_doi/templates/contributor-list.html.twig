@@ -1,3 +1,19 @@
+{#
+/**
+ * @file
+ * Theme to display contributors at DOI request page.
+ *
+ * Provide the possibility to clear the list and remove
+ * single contributors.
+ *
+ * Available variables:
+ * - contributors: The names like "Noah Musterperson".
+ * - error: The error, if contributor field fails the validation.
+ *
+ * @ingroup themeable
+ */
+#}
+
 <div class="wisski-doi-settings-contributor" id="contributor-list">
   {% if error is not empty %}
     <div role="contentinfo" aria-label="Error message" class="messages messages--error">
