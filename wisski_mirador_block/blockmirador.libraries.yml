@@ -6,10 +6,10 @@ viewer:
   js:
     js/blockmirador.js: {}
     /libraries/mirador/dist/mirador.min.js: {}
-    js/mirador_noconflict.js: {}
+    #js/mirador_noconflict.js: {}
   dependencies:
-    - core/drupal
     - core/jquery
-    - core/jquery.once
+    - core/drupal
     - core/drupalSettings
+    - core/once
   

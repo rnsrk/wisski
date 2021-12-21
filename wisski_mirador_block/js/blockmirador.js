@@ -1,15 +1,17 @@
-(function ($, Drupal, drupalSettings) {
-  $(function() {
+(function ($, Drupal, drupalSettings, once) {
+  Drupal.behaviors.wisski_mirador_block_Behavior = {
+    attach: function (context, settings) {
+      $('div#block-miradorblockviewer', context).once('wisski_mirador_block').each(function (element) {
 
     const iiif_field = drupalSettings.blockmirador.iiif_field;
-
+console.log(iiif_field);
     const viewer_height = drupalSettings.blockmirador.viewer_height;
     
-    const iiif_manifest = $('div.field--name-'+ iiif_field+'> div.field__item').text();
+    const iiif_manifest = $('div.field--name-'+ iiif_field + ' div.field__item').text();
     
-
+console.log(iiif_manifest);
     if (iiif_manifest.length > 0){
-      if (iiif_manifest.includes('manifest.json') ){
+      if (iiif_manifest.includes('manifest') ){
         const mirador = Mirador.viewer({
           id: "mirador_block",
           allowFullscreen: true,
@@ -30,4 +32,6 @@
 
     
  });
-})(jQuery, Drupal, drupalSettings);
+    }
+}
+})(jQuery, Drupal, drupalSettings, once);
