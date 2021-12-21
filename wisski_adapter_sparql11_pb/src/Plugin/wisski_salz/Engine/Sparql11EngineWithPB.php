@@ -654,6 +654,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }  */
     }
 
+#    dpm($query, "query?");
+
     $result = $this->directQuery($query);
     $output = array();
     foreach ($result as $obj) {
@@ -3851,8 +3853,11 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     //find one step property hierarchy, i.e. properties that are direct children or direct parents to each other
     // no sub-generations are gathered
     $result = $this->directQuery(
-      "SELECT ?property ?super WHERE { GRAPH ?g {"
-        ."{{?property a owl:ObjectProperty.} UNION {?property a rdf:Property}}} . GRAPH ?g1 { "
+// we don't do the graph thing in reasoner-queries because graphdb 9.10 does not support this
+// anymore :(
+//      "SELECT ?property ?super WHERE { GRAPH ?g {"
+      "SELECT ?property ?super WHERE { {"
+        ."{{?property a owl:ObjectProperty.} UNION {?property a rdf:Property}}} . { "
         ."?property rdfs:subPropertyOf ?super.  "
         ."FILTER NOT EXISTS {?mid_property rdfs:subPropertyOf+ ?super. ?property rdfs:subPropertyOf ?mid_property.}"
       ."} } ");
@@ -3872,7 +3877,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     //now lets find inverses
     $insert = $this->prepareInsert('inverses');
     $inverses = array();
-    $results = $this->directQuery("SELECT ?prop ?inverse WHERE { GRAPH ?g {{?prop owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf ?prop.}} }");
+    
+//    $results = $this->directQuery("SELECT ?prop ?inverse WHERE { GRAPH ?g {{?prop owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf ?prop.}} }");
+    $results = $this->directQuery("SELECT ?prop ?inverse WHERE { {{?prop owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf ?prop.}} }");
     foreach ($results as $row) {
       $prop = $row->prop->getUri();
       $inv = $row->inverse->getUri();
@@ -3887,7 +3894,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     //find all classes
     $insert = $this->prepareInsert('classes');
     $classes = array();
-    $results = $this->directQuery("SELECT ?class WHERE { GRAPH ?g {{?class a owl:Class.} UNION {?class a rdfs:Class}} }");
+    
+    $results = $this->directQuery("SELECT ?class WHERE { {{?class a owl:Class.} UNION {?class a rdfs:Class}} }");
+    //$results = $this->directQuery("SELECT ?class WHERE { GRAPH ?g {{?class a owl:Class.} UNION {?class a rdfs:Class}} }");
     foreach ($results as $row) {
       $class = $row->class->getUri();
       $classes[$class] = $class;
@@ -3900,10 +3909,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     //find full class hierarchy
     $super_classes = array();
     $sub_classes = array();
-    $results = $this->directQuery("SELECT ?class ?super WHERE { GRAPH ?g {"
+    
+    $results = $this->directQuery("SELECT ?class ?super WHERE { {"
+    //$results = $this->directQuery("SELECT ?class ?super WHERE { GRAPH ?g {"
       ."?class rdfs:subClassOf+ ?super. "
       ."FILTER (!isBlank(?class)) "
-      ."FILTER (!isBlank(?super)) } . GRAPH ?g1 {"
+//      ."FILTER (!isBlank(?super)) } . GRAPH ?g1 {"
+        ."FILTER (!isBlank(?super)) } . {"
       ."{{?super a owl:Class.} UNION {?super a rdfs:Class.}} "
     ."} }");
     foreach ($results as $row) {
@@ -3920,7 +3932,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $domains = array();
 
     $results = $this->directQuery(
-      "SELECT ?property ?domain WHERE { GRAPH ?g {"
+      "SELECT ?property ?domain WHERE { {"
+//      "SELECT ?property ?domain WHERE { GRAPH ?g {"
         ." ?property rdfs:domain ?domain ."
         // we only need top level domains, so no proper subClass of the domain shall be taken into account
         ." FILTER NOT EXISTS { ?domain rdfs:subClassOf+ ?super_domain. ?property rdfs:domain ?super_domain.}"
@@ -3936,7 +3949,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $ranges = array();
 
     $results = $this->directQuery(
-      "SELECT ?property ?range WHERE { GRAPH ?g {"
+      "SELECT ?property ?range WHERE { {"
+//      "SELECT ?property ?range WHERE { GRAPH ?g {"
         ." ?property rdfs:range ?range ."
         // we only need top level ranges, so no proper subClass of the range shall be taken into account
         ." FILTER NOT EXISTS { ?range rdfs:subClassOf+ ?super_range. ?property rdfs:range ?super_range.}"
@@ -3952,7 +3966,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $primitives = array();
 
     $results = $this->directQuery(
-      "SELECT ?property ?domain WHERE { GRAPH ?g {"
+      "SELECT ?property ?domain WHERE { {"
+//      "SELECT ?property ?domain WHERE { GRAPH ?g {"
         ." ?property rdfs:domain ?domain . {{ ?property a owl:DatatypeProperty.} UNION {?property a rdf:Property }} ."
         // we only need top level domains, so no proper subClass of the domain shall be taken into account
         ." FILTER NOT EXISTS { ?domain rdfs:subClassOf+ ?super_domain. ?property rdfs:domain ?super_domain.}"
@@ -4175,7 +4190,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           ." UNION "
           ."{GRAPH ?g2 {?inverse owl:inverseOf ?sub_inverse.}}"
         ."}"
-        ."{GRAPH ?g3 {<$property_uri> rdfs:subPropertyOf* ?sub_inverse}}"
+//        ."{GRAPH ?g3 {<$property_uri> rdfs:subPropertyOf* ?sub_inverse}}"
+        ."{ {<$property_uri> rdfs:subPropertyOf* ?sub_inverse}}"
       ."}"
     );
 
