@@ -11,6 +11,10 @@ class WisskiDoiAdministration extends ControllerBase {
 
   /**
    * Returns a render-able array for the DOI administration page.
+   *
+   * @return array
+   *   The render array of the connected DOIs from the DB table
+   *   wisski_doi as a table.
    */
   public function overview($wisski_individual) {
     $wisski_individual = intval($wisski_individual);

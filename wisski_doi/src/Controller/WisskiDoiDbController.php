@@ -36,10 +36,13 @@ class WisskiDoiDbController extends ControllerBase {
    *   The entity ID as eid.
    *   The type of the DOI (draft, registered, findable).
    *
+   * @return Null
+   *   Query execution return nothing.
+   *
    * @throws \Exception
    */
   public function writeToDb(array $dbData) {
-    $result = $this->connection->insert('wisski_doi')
+    return $this->connection->insert('wisski_doi')
       ->fields([
         'eid' => $dbData['eid'],
         'doi' => $dbData['doi'],
@@ -71,7 +74,7 @@ class WisskiDoiDbController extends ControllerBase {
       $doiLink = 'https://doi.org/' . $row['doi'];
       $row['doi'] = ['data' => $this->t('<a href=":doiLink" class="wisski-doi-link">:doiLink</a>', [':doiLink' => $doiLink])];
       $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
-      $revisionLink = $http .  $_SERVER['HTTP_HOST'] . '/wisski/navigate/' . $row['eid'] . '/revisions/' . $row['vid'] . '/view';
+      $revisionLink = $http . $_SERVER['HTTP_HOST'] . '/wisski/navigate/' . $row['eid'] . '/revisions/' . $row['vid'] . '/view';
       $row['revisionUrl'] = ['data' => $this->t('<a href=":revisionLink">:revisionLink</a>', [':revisionLink' => $revisionLink])];
       $row = array_splice($row, 2, 4);
       $rows[] = $row;

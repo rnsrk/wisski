@@ -2,10 +2,10 @@
 
 namespace Drupal\wisski_doi\Controller;
 
-use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Client;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\wisski_doi\Exception\WisskiDoiSettingsNotFoundException;
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 
 /**
  * Handles the communication with DOI REST API.
@@ -17,12 +17,11 @@ use Drupal\wisski_doi\Exception\WisskiDoiSettingsNotFoundException;
 class WisskiDoiRestController extends ControllerBase {
 
   /**
-   * Drupal http Rest Client.
+   * Guzzle\Client instance.
    *
    * @var \GuzzleHttp\Client
    */
-
-  private Client $httpClient;
+  protected $httpClient;
 
   /**
    * Settings from DOI Configuration page.
@@ -39,6 +38,7 @@ class WisskiDoiRestController extends ControllerBase {
    * Take settings from wisski_doi_settings form
    * (Configuration->[WISSKI]->WissKI DOI Settings)
    * Checks if settings are missing.
+   *
    */
   public function __construct() {
     $this->httpClient = \Drupal::httpClient();
@@ -64,13 +64,10 @@ class WisskiDoiRestController extends ControllerBase {
   /**
    * Receive draft DOIs from repo.
    *
-   * @var array $body
-   *   Scheme for DOI provider.
-   *
    * @param array $doiInfo
    *   The DOI Schema for the provider.
    *
-   * @throws \GuzzleHttp\Exception\RequestException*@throws \Exception
+   * @throws \GuzzleHttp\Exception\RequestException|\Exception
    *   Throws exception when response status 40x.
    */
   public function getDraftDoi(array $doiInfo) {
@@ -126,7 +123,7 @@ class WisskiDoiRestController extends ControllerBase {
     /* Try to catch the GuzzleException. This indicates a failed
      * response from the remote API.
      */
-    catch (GuzzleException $error) {
+    catch (RequestException $error) {
       // Get the original response.
       $response = $error->getResponse();
       // Get the info returned from the remote server.
@@ -169,12 +166,13 @@ class WisskiDoiRestController extends ControllerBase {
         ->error($this->t('An unknown error occurred while trying to connect to the remote API. This is not a Guzzle error, nor an error in the remote API, rather a generic local error occurred. The reported error was @error', ['@error' => $error->getMessage()]));
 
     }
+    catch (GuzzleException $e) {
+    }
 
     /*
      * Write response to database table wisski_doi.
      */
     if (isset($response)) {
-      dpm($response);
       $dbData = [
         "doi" => $response['data']['id'],
         "vid" => $doiInfo['revisionId'],

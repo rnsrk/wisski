@@ -108,7 +108,7 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
   }
 
   /**
-   *
+   * Storage of the contributor names.
    */
   protected function getEditableConfigNames() {
     return [
@@ -148,7 +148,7 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
   }
 
   /**
-   *
+   * Add a contributor name to the storage.
    */
   public static function addContributor(array &$form, FormStateInterface $form_state): AjaxResponse {
     $contributor = $form_state->getValue('contributors')['contributorGroup']['contributor'];
@@ -412,8 +412,7 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
     /*
      * Request draft DOI.
      */
-    $wisskiDoiRestController = new WisskiDoiRestController();
-    $wisskiDoiRestController->getDraftDoi($this->doiInfo);
+    (new WisskiDoiRestController())->getDraftDoi($this->doiInfo);
 
     /*
      * Start second save process. This is the current revision now.
