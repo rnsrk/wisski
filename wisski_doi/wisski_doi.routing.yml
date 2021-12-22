@@ -51,5 +51,12 @@ wisski_individual.doi.contributors.clear_contributors:
   requirements:
     _permission: 'administer wisski dois'
 
-route_callbacks:
-  - '\Drupal\wisski_doi\Controller\WisskiDoiAdministration::routes'
+wisski_individual.revision_get_doi_for_current:
+  path: '/wisski/navigate/{wisski_individual}/revision/get-doi-for-current'
+  defaults:
+    _form: '\Drupal\wisski_doi\Form\WisskiConfirmFormDoiRequestForCurrentRevision'
+    _title: 'Do you want to request a new DOI for the current revision?'
+  requirements:
+    _permission: 'administer wisski dois'
+    wisski_individual: '\d+'
+
