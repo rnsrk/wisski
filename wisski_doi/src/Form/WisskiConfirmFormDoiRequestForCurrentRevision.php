@@ -5,6 +5,7 @@ namespace Drupal\wisski_doi\Form;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\wisski_doi\Controller\WisskiDoiDbController;
+use Drupal\wisski_doi\Controller\WisskiDoiRestController;
 use Drupal\wisski_salz\AdapterHelper;
 
 /**
@@ -20,9 +21,13 @@ class WisskiConfirmFormDoiRequestForCurrentRevision extends WisskiConfirmFormDoi
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
     $rows = (new WisskiDoiDbController)->readDoiRecords($form_state->getValue('entityId'));
+    $continue = TRUE;
     foreach ($rows as $row => $key) {
-      $form_state->setErrorByName('entityId', $this->t('You have already a DOI for the current revision! If you want to assign a DOI to a static revision, return to DOI Administration page and click "Get DOI for static state".'));
-      $key['vid'] ?? $continue = FALSE;
+      if ($key['isCurrent']) {
+        $form_state->setErrorByName('entityId', $this->t('You have already a DOI for the current revision! If you want to assign a DOI to a static revision, return to DOI Administration page and click "Get DOI for static state".'));
+        $continue = FALSE;
+        break;
+      }
     }
   }
 
@@ -94,8 +99,7 @@ class WisskiConfirmFormDoiRequestForCurrentRevision extends WisskiConfirmFormDoi
       "revisionUrl" => $doiCurrentRevisionURL,
     ];
     // Request DOI.
-    //(new WisskiDoiRestController())->getDoi($doiInfo);
-
+    (new WisskiDoiRestController())->getDoi($doiInfo);
     // Redirect to DOI administration.
     $form_state->setRedirect(
       'wisski_individual.doi.administration', ['wisski_individual' => $this->wisski_individual->id()]
