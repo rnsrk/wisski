@@ -36,6 +36,7 @@ class WisskiDoiAdministration extends ControllerBase {
         '#rows' => $rows,
         '#description' => $this->t('DOI information'),
         '#weight' => 1,
+        '#cache' => ['max-age' => 0],
       ];
     }
     else {
@@ -43,6 +44,7 @@ class WisskiDoiAdministration extends ControllerBase {
         '#markup' => '<p>' . $this->t('No DOIs associated with the entity.') . '</p>',
       ];
     }
+    dpm($build);
     return $build;
   }
 
@@ -59,6 +61,7 @@ class WisskiDoiAdministration extends ControllerBase {
     $row['doi'] = ['data' => $this->t('<a href=":doiLink" class="wisski-doi-link">:doiLink</a>', [':doiLink' => $doiLink])];
     $row['revisionUrl'] = ['data' => $this->t('<a href=":revisionLink">:revisionLink</a>', [':revisionLink' => $row['revisionUrl']])];
     $links = [];
+
     $links['edit'] = [
       'title' => $this->t('Edit'),
       'url' => Url::fromRoute('wisski_individual.doi.edit_metadata', [
@@ -73,6 +76,7 @@ class WisskiDoiAdministration extends ControllerBase {
         'wisski_individual' => $wisski_individual,
       ]),
     ];
+
     $row['isCurrent'] ? $row['isCurrent'] = 'current' : $row['isCurrent'] = 'static';
     $row['Operations'] =
       [

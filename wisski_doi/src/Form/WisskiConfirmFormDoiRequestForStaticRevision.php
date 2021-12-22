@@ -64,7 +64,7 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
    *
    * @var array
    */
-  private array $doiInfo;
+  protected array $doiInfo;
 
   /**
    * The logging text of the revision.
@@ -164,8 +164,8 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
         if (is_null($contributors)) {
           $contributors = [];
         }
-        if (!in_array($contributor, $contributors)) {
-          $contributors[] = $contributor;
+        if (!in_array($contributor, array_column($contributors, 'name'))) {
+          $contributors[] = ['name' => $contributor];
         }
         else {
           $error = t('Contributor %contributor already exists in this list', ['%contributor' => $contributor]);
@@ -174,8 +174,7 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
       else {
         $error = t('Contributor is empty!');
       }
-    }
-    catch (\Exception $e) {
+    } catch (\Exception $e) {
       $error = t('Wrong text format. Enter a valid text format.');
     }
     $contributorItems->set('contributors', $contributors)->save();
@@ -191,8 +190,7 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
     $contributorItems = \Drupal::configFactory()
       ->getEditable('contributor.items');
     $contributors = $contributorItems->get('contributors');
-
-    if (!is_null($contributors) && ($ind = array_search($contributor, $contributors)) !== FALSE) {
+    if (!is_null($contributors) && ($ind = array_search($contributor, array_column($contributors, 'name'))) !== FALSE) {
       unset($contributors[$ind]);
       $contributorItems->set('contributors', $contributors)->save();
     }
@@ -259,21 +257,22 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
       $uid = $this->wisski_individual->get('uid')->getValue()[0]['target_id'];
       $author = User::load($uid)->getDisplayName();
     }
-
-
-
     // Assemble parts of DOI information for request.
     $this->doiInfo = [
       "bundleId" => $this->wisski_individual->bundle(),
       "entityId" => $this->wisski_individual->id(),
       "creationDate" => $this->dateFormatter->format($this->wisski_individual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
       "author" => $author,
+      "contributors" => $contributorItems->get('contributors'),
       "title" => $this->wisski_individual->label(),
       "publisher" => $doiSettings->get('data_publisher'),
       "language" => $this->wisski_individual->language()->getId(),
       "resourceType" => 'Dataset',
     ];
-
+    /* Check if there is data from an update,
+     * see WisskiDoiUpdateMeta::buildForm().
+     */
+    $this->doiInfo = !empty($form_state->get('doiInfo')) ? $form_state->get('doiInfo') : $this->doiInfo;
     // Resource type option from DataCite schema.
     $resourceTypeOptions = [
       'Audiovisual' => 'Audiovisual',
@@ -389,10 +388,16 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    // Get AJAX info.
+    $contributorItems = \Drupal::configFactory()
+      ->getEditable('contributor.items');
 
     // Get new values from form state.
     $newVals = $form_state->cleanValues()->getValues();
     $this->doiInfo = $newVals;
+
+    // Have to overwrite contributors cause AJAX mess up the form_state.
+    $this->doiInfo['contributors'] = $contributorItems->get('contributors');
     /*
      * Save two revisions, because current revision has no
      * revision URI. Start with first save process.

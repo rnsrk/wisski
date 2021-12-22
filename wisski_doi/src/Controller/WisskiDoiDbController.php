@@ -67,8 +67,26 @@ class WisskiDoiDbController extends ControllerBase {
    * @return array
    *   Dataset of corresponding DOIs to an entity.
    */
-  public function readDoiRecords(int $eid) {
-    $query = $this->connection->query("SELECT * FROM wisski_doi WHERE eid = {$eid}");
+  public function readDoiRecords(int $eid, int $did = NULL) {
+    $query = $this->connection
+      ->select('wisski_doi')
+      ->fields('wisski_doi', [
+        'did',
+        'eid',
+        'doi',
+        'vid',
+        'type',
+        'revisionUrl',
+        'isCurrent',
+      ])
+      ->condition('eid', $eid, '=');
+
+    if ($did) {
+      $query = $query->condition('did', $did, '=')->execute();
+    }
+    else {
+      $query = $query->execute();
+    }
     $result = $query->fetchAll();
     return array_map(function ($record) {
       return json_decode(json_encode($record), TRUE);

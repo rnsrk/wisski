@@ -70,6 +70,7 @@ class WisskiDoiRestController extends ControllerBase {
    *   Throws exception when response status 40x.
    */
   public function getDoi(array $doiInfo) {
+    dpm($doiInfo, 'doiInfo');
     $body = [
       "data" => [
         "attributes" => [
@@ -79,6 +80,7 @@ class WisskiDoiRestController extends ControllerBase {
               "name" => $doiInfo['author'],
             ],
           ],
+          "contributors" => $doiInfo['contributors'],
           "titles" => [
             [
               "title" => $doiInfo['title'],
@@ -97,11 +99,12 @@ class WisskiDoiRestController extends ControllerBase {
             "resourceTypeGeneral" => "Dataset",
           ],
           "url" => $doiInfo['revisionUrl'],
-          "schemaVersion" => "http://datacite.org/schema/kernel-4",
         ],
       ],
     ];
+    dpm($body, 'body');
     $json_body = json_encode($body);
+    dpm($json_body, 'json');
     // dpm(base64_encode($this->doiRepositoryId.":".$this->doiRepositoryPassword));.
     try {
       $response = $this->httpClient->request('POST', $this->doiSettings['baseUri'], [
@@ -117,7 +120,6 @@ class WisskiDoiRestController extends ControllerBase {
         ->addStatus($this->t('DOI has been requested'));
       $response = json_decode($response->getBody()->getContents(), TRUE);
     }
-
     /* Try to catch the GuzzleException. This indicates a failed
      * response from the remote API.
      */
@@ -125,7 +127,8 @@ class WisskiDoiRestController extends ControllerBase {
       // Get the original response.
       $response = $error->getResponse();
       // Get the info returned from the remote server.
-      $error_content = empty($response) ? ['errors' => [['status' => "500"]]] : json_decode($response->getBody()->getContents(), TRUE);
+      $error_content = empty($response) ? ['errors' => [['status' => "500"]]] : json_decode($response->getBody()
+        ->getContents(), TRUE);
 
       /*
        * Match only works in PHP 8
@@ -147,6 +150,8 @@ class WisskiDoiRestController extends ControllerBase {
 
         case "500":
           $error_tip = 'There was no response at all, have you defined the base uri?';
+          break;
+
         default:
           $error_tip = 'Sorry, no tip for this error code.';
       }
@@ -182,14 +187,86 @@ class WisskiDoiRestController extends ControllerBase {
     $dbData = [
       "doi" => $response['data']['id'],
       "vid" => $doiInfo['revisionId'] ?? NULL,
-      "eid" => $doiInfo['entityID'],
+      "eid" => $doiInfo['entityId'],
       "type" => $response['data']['attributes']['state'],
       "revisionUrl" => $doiInfo['revisionUrl'],
     ];
     (new WisskiDoiDbController)->writeToDb($dbData);
   }
 
+  /**
+   * Read the metadata from DOI provider.
+   *
+   * @param string $doi
+   *   The DOI, like 10.82102/rhwt-d19.
+   *
+   * @throws \GuzzleHttp\Exception\GuzzleException
+   */
+  public function readMetadata(string $doi) {
+    try {
+      $url = $this->doiSettings['baseUri'] . '/' . $doi;
+
+      $response = $this->httpClient->request('GET', $url, [
+        'headers' => [
+          'Accept' => 'application/vnd.api+json',
+        ],
+      ]);
+
+      $this->messenger()
+        ->addStatus($this->t('Reached DOI provider, got data.'));
+      return json_decode($response->getBody()->getContents(), TRUE);
+    }
+    /* Try to catch the GuzzleException. This indicates a failed
+     * response from the remote API.
+     */
+    catch (RequestException $error) {
+      // Get the original response.
+      $response = $error->getResponse();
+      // Get the info returned from the remote server.
+      $error_content = empty($response) ? ['errors' => [['status' => "500"]]] : json_decode($response->getBody()
+        ->getContents(), TRUE);
+
+      /*
+       * Match only works in PHP 8
+       * $error_tip = match ($error_content['errors'][0]['status']) {
+       * "400" => 'Your used doi scheme or content data may be faulty.',
+       *  default => 'Sorry, no tip for this error code.',
+       * };
+       */
+
+      switch ($error_content['errors'][0]['status']) {
+
+        case "404":
+          $error_tip = 'Your DOI or base uri are maybe wrong.';
+          break;
+
+        case "500":
+          $error_tip = 'There was no response at all, have you defined the base uri?';
+          break;
+
+        default:
+          $error_tip = 'Sorry, no tip for this error code.';
+      }
+
+      // Error Code and Message.
+      $message = $this->t('API connection error. Error code: %error_code. Error message: %error_message %error_tip', [
+        '%error_code' => $error_content['errors'][0]['status'],
+        '%error_message' => $error_content['errors'][0]['title'],
+        '%error_tip' => $error_tip,
+      ]);
+      $this->messenger()
+        ->addError($message);
+      // Log the error.
+      \Drupal::logger('wisski_doi')->error($message);
+    }
+
+  }
+
+  /**
+   *
+   */
   public function editMetadata($doi) {
 
   }
+
 }

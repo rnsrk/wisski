@@ -39,8 +39,8 @@ wisski_individual.doi.for_current_revision:
 wisski_individual.doi.edit_metadata:
   path: '/wisski/navigate/{wisski_individual}/{did}/edit-metadata'
   defaults:
-    _form: '\Drupal\wisski_doi\Form\WisskiConfirmFormDoiRequestForCurrentRevision'
-    _title: 'Do you want to request a new DOI for the current revision?'
+    _form: '\Drupal\wisski_doi\Form\WisskiDoiUpdateMetadata'
+    _title: 'Edit Doi Metadata'
   requirements:
     _permission: 'administer wisski dois'
     wisski_individual: '\d+'
