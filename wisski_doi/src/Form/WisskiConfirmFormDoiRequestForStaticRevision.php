@@ -22,7 +22,7 @@ use Symfony\Component\HttpFoundation\Request;
  *
  * @internal
  */
-class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
+class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
 
   /**
    * The WisskiEntity revision.
@@ -57,7 +57,7 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
    *
    * @var \Drupal\wisski_core\WisskiEntityInterface
    */
-  private WisskiEntityInterface $wisskiIndividual;
+  protected WisskiEntityInterface $wisskiIndividual;
 
   /**
    * All information for the DOI request and write process to wisski_doi table.
@@ -103,8 +103,8 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
   /**
    * The machine name of the form.
    */
-  public function getFormId(): string {
-    return 'wisski_doi_request_form';
+  public function getFormId() {
+    return 'wisski_doi_request_form_for_static_revision';
   }
 
   /**
@@ -180,7 +180,7 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
     }
     $contributorItems->set('contributors', $contributors)->save();
     $response = new AjaxResponse();
-    $response->addCommand(new ReplaceCommand('#contributor-list', WisskiRequestDoiConfirmForm::renderContributors($contributors, $error)));
+    $response->addCommand(new ReplaceCommand('#contributor-list', WisskiConfirmFormDoiRequestForStaticRevision::renderContributors($contributors, $error)));
     return $response;
   }
 
@@ -198,7 +198,7 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
     }
 
     $response = new AjaxResponse();
-    $response->addCommand(new ReplaceCommand('#contributor-list', WisskiRequestDoiConfirmForm::renderContributors($contributors)));
+    $response->addCommand(new ReplaceCommand('#contributor-list', WisskiConfirmFormDoiRequestForStaticRevision::renderContributors($contributors)));
 
     return $response;
   }
@@ -211,7 +211,7 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
       ->getEditable('contributor.items');
     $contributorItems->set('contributors', NULL)->save();
     $response = new AjaxResponse();
-    $response->addCommand(new ReplaceCommand('#contributor-list', WisskiRequestDoiConfirmForm::renderContributors(NULL)));
+    $response->addCommand(new ReplaceCommand('#contributor-list', WisskiConfirmFormDoiRequestForStaticRevision::renderContributors(NULL)));
     return $response;
   }
 
@@ -241,10 +241,16 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
      */
     $form['#tree'] = TRUE;
 
+    // Load WissKI entity.
     $this->wisskiIndividual = $this->wisskiStorage->load($wisski_individual);
+
+    // Load existing form data.
     $form = parent::buildForm($form, $form_state);
     $doiSettings = \Drupal::configFactory()
       ->getEditable('wisski_doi.wisski_doi_settings');
+    $contributorItems = $this->config('contributor.items');
+
+    // Get author of dataset.
     $revisionUser = $this->wisskiIndividual->getRevisionUser();
     if (!empty($revisionUser)) {
       $author = $revisionUser->getDisplayName();
@@ -254,6 +260,9 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
       $author = User::load($uid)->getDisplayName();
     }
 
+
+
+    // Assemble parts of DOI information for request.
     $this->doiInfo = [
       "bundleId" => $this->wisskiIndividual->bundle(),
       "entityID" => $this->wisskiIndividual->id(),
@@ -265,6 +274,7 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
       "resourceType" => 'Dataset',
     ];
 
+    // Resource type option from DataCite schema.
     $resourceTypeOptions = [
       'Audiovisual' => 'Audiovisual',
       'Collection' => 'Collection',
@@ -283,6 +293,10 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
       'Other' => 'Other',
     ];
 
+    /* Create form elements
+     * Contributors are nested and get populated with AJAX functions and
+     * a template @file contributor-list.html.twig
+     */
     $form['entityID'] = [
       '#type' => 'item',
       '#value' => $this->doiInfo['entityID'],
@@ -303,8 +317,6 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
       '#default_value' => $this->doiInfo['author'],
       '#description' => $this->t('The author of the selected revision.'),
     ];
-
-    $contributorItems = $this->config('contributor.items');
 
     $form['contributors'] = [
       '#type' => 'fieldset',
@@ -334,7 +346,7 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
     ];
     $form['contributors']['contributorTable'] = [
       '#type' => 'item',
-      '#markup' => WisskiRequestDoiConfirmForm::renderContributors($contributorItems->get('contributors')),
+      '#markup' => WisskiConfirmFormDoiRequestForStaticRevision::renderContributors($contributorItems->get('contributors')),
     ];
 
     $form['title'] = [
@@ -378,9 +390,7 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
-    /*
-     * Get new values from form state
-     */
+    // Get new values from form state.
     $newVals = $form_state->cleanValues()->getValues();
     $this->doiInfo = $newVals;
     /*
@@ -393,30 +403,21 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
       '%request_date' => $this->dateFormatter->format($this->time->getCurrentTime(), 'custom', 'd.m.Y H:i:s'),
     ]);
     $doiRevision->save();
-
-    /*
-     * Assemble revision URL and store it in form.
-     */
+    // Assemble revision URL and store it in form.
     $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
     $doiRevisionId = $doiRevision->getRevisionId();
     $doiRevisionURL = $http . $_SERVER['HTTP_HOST'] . '/wisski/navigate/' . $this->wisskiIndividual->id() . '/revisions/' . $doiRevisionId . '/view';
 
-    /*
-     * Append revision info to doiInfo.
-     */
+    // Append revision info to doiInfo.
     $this->doiInfo += [
       "revisionId" => $doiRevisionId,
       "revisionUrl" => $doiRevisionURL,
     ];
 
-    /*
-     * Request draft DOI.
-     */
-    (new WisskiDoiRestController())->getDraftDoi($this->doiInfo);
+    // Request draft DOI.
+    (new WisskiDoiRestController())->getDoi($this->doiInfo);
 
-    /*
-     * Start second save process. This is the current revision now.
-     */
+    // Start second save process. This is the current revision now.
     $doiRevision = $this->wisskiStorage->createRevision($this->wisskiIndividual);
     $doiRevision->revision_log = $this->t('Revision copy, because of DOI request from %request_date.', [
       '%request_date' => $this->dateFormatter->format($this->time->getCurrentTime(), 'custom', 'd.m.Y H:i:s'),
@@ -424,9 +425,7 @@ class WisskiRequestDoiConfirmForm extends ConfirmFormBase {
     );
     $doiRevision->save();
 
-    /*
-     * Redirect to version history.
-     */
+    // Redirect to version history.
     $form_state->setRedirect(
       'entity.wisski_individual.version_history',
       [

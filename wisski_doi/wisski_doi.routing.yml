@@ -9,17 +9,8 @@ wisski.wisski_doi_settings.tabs.default:
 wisski_individual.revision_get_doi_for_static:
   path: '/wisski/navigate/{wisski_individual}/revision/get-doi-for-static'
   defaults:
-    _form: '\Drupal\wisski_doi\Form\WisskiRequestDoiConfirmForm'
+    _form: '\Drupal\wisski_doi\Form\WisskiConfirmFormDoiRequestForStaticRevision'
     _title: 'Do you want to request a new DOI for a static revision?'
-  requirements:
-    _permission: 'administer wisski'
-    wisski_individual: \d+
-
-wisski_individual.revision_get_doi_for_current:
-  path: '/wisski/navigate/{wisski_individual}/revision/get-doi-for-current'
-  defaults:
-    _form: '\Drupal\wisski_doi\Form\WisskiRequestDoiConfirmForm'
-    _title: 'Do you want to request a new DOI for the current revision?'
   requirements:
     _permission: 'administer wisski'
     wisski_individual: \d+
@@ -47,7 +38,7 @@ wisski_individual.doi.administration:
 wisski_individual.doi.contributors.remove_contributor:
   path: '/ajax/admin/doi/contributors/remove/{contributor}'
   defaults:
-    _controller: '\Drupal\wisski_doi\Form\WisskiRequestDoiConfirmForm::removeContributor'
+    _controller: '\Drupal\wisski_doi\Form\WisskiConfirmFormDoiRequestForStaticRevision::removeContributor'
     _title: 'Remove contributor'
   requirements:
     _permission: 'administer wisski dois'
@@ -55,7 +46,10 @@ wisski_individual.doi.contributors.remove_contributor:
 wisski_individual.doi.contributors.clear_contributors:
   path: '/ajax/admin/doi/contributors/clear'
   defaults:
-    _controller: '\Drupal\wisski_doi\Form\WisskiRequestDoiConfirmForm::clearContributors'
+    _controller: '\Drupal\wisski_doi\Form\WisskiConfirmFormDoiRequestForStaticRevision::clearContributors'
     _title: 'Clear contributors'
   requirements:
     _permission: 'administer wisski dois'
+
+route_callbacks:
+  - '\Drupal\wisski_doi\Controller\WisskiDoiAdministration::routes'

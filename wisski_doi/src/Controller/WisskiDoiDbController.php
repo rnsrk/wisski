@@ -31,7 +31,7 @@ class WisskiDoiDbController extends ControllerBase {
    *   Contains:
    *   The DOI from the response of the DOI provider. Implemented at
    *   WisskiDoiRestController::getDraftDoi, invoked from
-   *   WisskiRequestDoiConfirmForm.
+   *   WisskiConfirmFormDoiRequestForStaticRevision.
    *   The revision ID as vid.
    *   The entity ID as eid.
    *   The type of the DOI (draft, registered, findable).
@@ -46,8 +46,10 @@ class WisskiDoiDbController extends ControllerBase {
       ->fields([
         'eid' => $dbData['eid'],
         'doi' => $dbData['doi'],
-        'vid' => $dbData['vid'],
+        'vid' => $dbData['vid'] ?? NULL,
         'type' => $dbData['type'],
+        'revisionUrl' => $dbData['revisionUrl'],
+        'isCurrent' => empty($dbData['vid']) ? 1 : 0,
       ])
       ->execute();
   }
@@ -73,9 +75,7 @@ class WisskiDoiDbController extends ControllerBase {
       $row = json_decode(json_encode($record), TRUE);
       $doiLink = 'https://doi.org/' . $row['doi'];
       $row['doi'] = ['data' => $this->t('<a href=":doiLink" class="wisski-doi-link">:doiLink</a>', [':doiLink' => $doiLink])];
-      $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
-      $revisionLink = $http . $_SERVER['HTTP_HOST'] . '/wisski/navigate/' . $row['eid'] . '/revisions/' . $row['vid'] . '/view';
-      $row['revisionUrl'] = ['data' => $this->t('<a href=":revisionLink">:revisionLink</a>', [':revisionLink' => $revisionLink])];
+      $row['revisionUrl'] = ['data' => $this->t('<a href=":revisionLink">:revisionLink</a>', [':revisionLink' => $row['revisionUrl']])];
       $row = array_splice($row, 2, 4);
       $rows[] = $row;
     }
