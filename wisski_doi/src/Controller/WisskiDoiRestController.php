@@ -70,7 +70,6 @@ class WisskiDoiRestController extends ControllerBase {
    *   Throws exception when response status 40x.
    */
   public function getDoi(array $doiInfo) {
-
     $body = [
       "data" => [
         "attributes" => [
@@ -190,4 +189,7 @@ class WisskiDoiRestController extends ControllerBase {
     (new WisskiDoiDbController)->writeToDb($dbData);
   }
 
+  public function editMetadata($doi) {
+
+  }
 }

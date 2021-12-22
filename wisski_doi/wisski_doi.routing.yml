@@ -6,23 +6,6 @@ wisski.wisski_doi_settings.tabs.default:
   requirements:
     _permission: 'administer wisski bundles'
 
-wisski_individual.revision_get_doi_for_static:
-  path: '/wisski/navigate/{wisski_individual}/revision/get-doi-for-static'
-  defaults:
-    _form: '\Drupal\wisski_doi\Form\WisskiConfirmFormDoiRequestForStaticRevision'
-    _title: 'Do you want to request a new DOI for a static revision?'
-  requirements:
-    _permission: 'administer wisski'
-    wisski_individual: \d+
-
-entity.wisski_bundle.doi_scheme:
-  path: '/admin/structure/wisski_core/{wisski_bundle}/doi_scheme'
-  defaults:
-    _form: '\Drupal\wisski_doi\Form\WisskiDoiSchemeForm'
-    _title: 'DOI Scheme'
-  requirements:
-    _permission: 'administer wisski'
-
 wisski_individual.doi.administration:
   path: '/wisski/navigate/{wisski_individual}/doi'
   defaults:
@@ -34,6 +17,44 @@ wisski_individual.doi.administration:
     parameters:
       wisski_individual:
         type: wisski_individual
+
+wisski_individual.doi.for_static_revision:
+  path: '/wisski/navigate/{wisski_individual}/revision/get-doi-for-static'
+  defaults:
+    _form: '\Drupal\wisski_doi\Form\WisskiConfirmFormDoiRequestForStaticRevision'
+    _title: 'Do you want to request a new DOI for a static revision?'
+  requirements:
+    _permission: 'administer wisski'
+    wisski_individual: \d+
+
+wisski_individual.doi.for_current_revision:
+  path: '/wisski/navigate/{wisski_individual}/revision/get-doi-for-current'
+  defaults:
+    _form: '\Drupal\wisski_doi\Form\WisskiConfirmFormDoiRequestForCurrentRevision'
+    _title: 'Do you want to request a new DOI for the current revision?'
+  requirements:
+    _permission: 'administer wisski dois'
+    wisski_individual: '\d+'
+
+wisski_individual.doi.edit_metadata:
+  path: '/wisski/navigate/{wisski_individual}/{did}/edit-metadata'
+  defaults:
+    _form: '\Drupal\wisski_doi\Form\WisskiConfirmFormDoiRequestForCurrentRevision'
+    _title: 'Do you want to request a new DOI for the current revision?'
+  requirements:
+    _permission: 'administer wisski dois'
+    wisski_individual: '\d+'
+    did: '\d+'
+
+wisski_individual.doi.delete:
+  path: '/wisski/navigate/{wisski_individual}/{did}/delete'
+  defaults:
+    _form: '\Drupal\wisski_doi\Form\WisskiConfirmFormDoiRequestForCurrentRevision'
+    _title: 'Do you want to request a new DOI for the current revision?'
+  requirements:
+    _permission: 'administer wisski dois'
+    wisski_individual: '\d+'
+    did: '\d+'
 
 wisski_individual.doi.contributors.remove_contributor:
   path: '/ajax/admin/doi/contributors/remove/{contributor}'
@@ -51,12 +72,5 @@ wisski_individual.doi.contributors.clear_contributors:
   requirements:
     _permission: 'administer wisski dois'
 
-wisski_individual.revision_get_doi_for_current:
-  path: '/wisski/navigate/{wisski_individual}/revision/get-doi-for-current'
-  defaults:
-    _form: '\Drupal\wisski_doi\Form\WisskiConfirmFormDoiRequestForCurrentRevision'
-    _title: 'Do you want to request a new DOI for the current revision?'
-  requirements:
-    _permission: 'administer wisski dois'
-    wisski_individual: '\d+'
+
 

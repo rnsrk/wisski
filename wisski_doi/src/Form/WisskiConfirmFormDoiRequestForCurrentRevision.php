@@ -2,9 +2,9 @@
 
 namespace Drupal\wisski_doi\Form;
 
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
-use Drupal\Core\Url;
-use Drupal\wisski_doi\Controller\WisskiDoiRestController;
+use Drupal\wisski_doi\Controller\WisskiDoiDbController;
 use Drupal\wisski_salz\AdapterHelper;
 
 /**
@@ -13,6 +13,18 @@ use Drupal\wisski_salz\AdapterHelper;
  * @internal
  */
 class WisskiConfirmFormDoiRequestForCurrentRevision extends WisskiConfirmFormDoiRequestForStaticRevision {
+
+  /**
+   *
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    parent::validateForm($form, $form_state);
+    $rows = (new WisskiDoiDbController)->readDoiRecords($form_state->getValue('entityId'));
+    foreach ($rows as $row => $key) {
+      $form_state->setErrorByName('entityId', $this->t('You have already a DOI for the current revision! If you want to assign a DOI to a static revision, return to DOI Administration page and click "Get DOI for static state".'));
+      $key['vid'] ?? $continue = FALSE;
+    }
+  }
 
   /**
    * The machine name of the form.
@@ -52,7 +64,8 @@ class WisskiConfirmFormDoiRequestForCurrentRevision extends WisskiConfirmFormDoi
    * request a DOI for that revision,then save a second
    * time to store the revision and DOI in Drupal DB.
    *
-   * @throws \Drupal\Core\Entity\EntityStorageException
+   * @throws \Exception
+   *   Error if WissKI entity URI could not be loaded (?).
    */
   public function submitForm(array &$form, $form_state) {
 
@@ -60,7 +73,7 @@ class WisskiConfirmFormDoiRequestForCurrentRevision extends WisskiConfirmFormDoi
     $doiInfo = $form_state->cleanValues()->getValues();
 
     // Get WissKI entity URI.
-    $target_uri = AdapterHelper::getOnlyOneUriPerAdapterForDrupalId($this->wisskiIndividual->id());
+    $target_uri = AdapterHelper::getOnlyOneUriPerAdapterForDrupalId($this->wisski_individual->id());
     $target_uri = current($target_uri);
     $doiInfo += [
       "entityUri" => $target_uri,
@@ -80,16 +93,12 @@ class WisskiConfirmFormDoiRequestForCurrentRevision extends WisskiConfirmFormDoi
     $doiInfo += [
       "revisionUrl" => $doiCurrentRevisionURL,
     ];
-    dpm($doiInfo);
     // Request DOI.
-    (new WisskiDoiRestController())->getDoi($doiInfo);
+    //(new WisskiDoiRestController())->getDoi($doiInfo);
 
-    // Redirect to version history.
+    // Redirect to DOI administration.
     $form_state->setRedirect(
-      'entity.wisski_individual.version_history',
-      [
-        'wisski_individual' => $this->wisskiIndividual->id(),
-      ]
+      'wisski_individual.doi.administration', ['wisski_individual' => $this->wisski_individual->id()]
     );
   }
 

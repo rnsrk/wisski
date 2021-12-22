@@ -57,7 +57,7 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
    *
    * @var \Drupal\wisski_core\WisskiEntityInterface
    */
-  protected WisskiEntityInterface $wisskiIndividual;
+  protected WisskiEntityInterface $wisski_individual;
 
   /**
    * All information for the DOI request and write process to wisski_doi table.
@@ -127,7 +127,7 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
    * Route, if you hit chancel.
    */
   public function getCancelUrl(): Url {
-    return new Url('entity.wisski_individual.canonical', ['wisski_individual' => $this->wisskiIndividual->id()]);
+    return new Url('wisski_individual.doi.administration', ['wisski_individual' => $this->wisski_individual->id()]);
   }
 
   /**
@@ -242,7 +242,7 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
     $form['#tree'] = TRUE;
 
     // Load WissKI entity.
-    $this->wisskiIndividual = $this->wisskiStorage->load($wisski_individual);
+    $this->wisski_individual = $this->wisskiStorage->load($wisski_individual);
 
     // Load existing form data.
     $form = parent::buildForm($form, $form_state);
@@ -251,12 +251,12 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
     $contributorItems = $this->config('contributor.items');
 
     // Get author of dataset.
-    $revisionUser = $this->wisskiIndividual->getRevisionUser();
+    $revisionUser = $this->wisski_individual->getRevisionUser();
     if (!empty($revisionUser)) {
       $author = $revisionUser->getDisplayName();
     }
     else {
-      $uid = $this->wisskiIndividual->get('uid')->getValue()[0]['target_id'];
+      $uid = $this->wisski_individual->get('uid')->getValue()[0]['target_id'];
       $author = User::load($uid)->getDisplayName();
     }
 
@@ -264,13 +264,13 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
 
     // Assemble parts of DOI information for request.
     $this->doiInfo = [
-      "bundleId" => $this->wisskiIndividual->bundle(),
-      "entityID" => $this->wisskiIndividual->id(),
-      "creationDate" => $this->dateFormatter->format($this->wisskiIndividual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
+      "bundleId" => $this->wisski_individual->bundle(),
+      "entityId" => $this->wisski_individual->id(),
+      "creationDate" => $this->dateFormatter->format($this->wisski_individual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
       "author" => $author,
-      "title" => $this->wisskiIndividual->label(),
+      "title" => $this->wisski_individual->label(),
       "publisher" => $doiSettings->get('data_publisher'),
-      "language" => $this->wisskiIndividual->language()->getId(),
+      "language" => $this->wisski_individual->language()->getId(),
       "resourceType" => 'Dataset',
     ];
 
@@ -297,10 +297,10 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
      * Contributors are nested and get populated with AJAX functions and
      * a template @file contributor-list.html.twig
      */
-    $form['entityID'] = [
+    $form['entityId'] = [
       '#type' => 'item',
-      '#value' => $this->doiInfo['entityID'],
-      '#markup' => $this->doiInfo['entityID'],
+      '#value' => $this->doiInfo['entityId'],
+      '#markup' => $this->doiInfo['entityId'],
       '#title' => $this->t('Entity ID'),
       '#description' => $this->t('The entity ID of the WissKI individual.'),
     ];
@@ -397,7 +397,7 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
      * Save two revisions, because current revision has no
      * revision URI. Start with first save process.
      */
-    $doiRevision = $this->wisskiStorage->createRevision($this->wisskiIndividual);
+    $doiRevision = $this->wisskiStorage->createRevision($this->wisski_individual);
     $doiRevision->setNewRevision(TRUE);
     $doiRevision->revision_log = $this->t('DOI revision requested at %request_date.', [
       '%request_date' => $this->dateFormatter->format($this->time->getCurrentTime(), 'custom', 'd.m.Y H:i:s'),
@@ -406,7 +406,7 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
     // Assemble revision URL and store it in form.
     $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
     $doiRevisionId = $doiRevision->getRevisionId();
-    $doiRevisionURL = $http . $_SERVER['HTTP_HOST'] . '/wisski/navigate/' . $this->wisskiIndividual->id() . '/revisions/' . $doiRevisionId . '/view';
+    $doiRevisionURL = $http . $_SERVER['HTTP_HOST'] . '/wisski/navigate/' . $this->wisski_individual->id() . '/revisions/' . $doiRevisionId . '/view';
 
     // Append revision info to doiInfo.
     $this->doiInfo += [
@@ -418,7 +418,7 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
     (new WisskiDoiRestController())->getDoi($this->doiInfo);
 
     // Start second save process. This is the current revision now.
-    $doiRevision = $this->wisskiStorage->createRevision($this->wisskiIndividual);
+    $doiRevision = $this->wisskiStorage->createRevision($this->wisski_individual);
     $doiRevision->revision_log = $this->t('Revision copy, because of DOI request from %request_date.', [
       '%request_date' => $this->dateFormatter->format($this->time->getCurrentTime(), 'custom', 'd.m.Y H:i:s'),
     ],
@@ -427,10 +427,7 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
 
     // Redirect to version history.
     $form_state->setRedirect(
-      'entity.wisski_individual.version_history',
-      [
-        'wisski_individual' => $this->wisskiIndividual->id(),
-      ]
+      'wisski_individual.doi.administration', ['wisski_individual' => $this->wisski_individual->id()]
     );
   }
 
