@@ -1,9 +1,10 @@
-(function ($, Drupal, drupalSettings, once) {
+(function ($, Drupal, drupalSettings) {
   Drupal.behaviors.wisski_mirador_Behavior = {
     attach: function (context, settings) {
 //      alert($.fn.jquery);
-      $('div#viewer', context).once('wisski_mirador').each(function () {
-//        once('wisski_mirador_Behavior', 'html', context).forEach( function () {
+//      $('div#viewer', context).once('wisski_mirador').each(function () {
+//      $('div#viewer', context).once('wisski_mirador').each(function () {
+        once('wisski_mirador_Behavior', 'div#viewer', context).forEach( function (element) {
 //        alert($.fn.jquery);
 //        alert(jQuery19.fn.jquery);
 //        (function($, jQuery) {
@@ -106,4 +107,4 @@
       });
     }
   };
-})(jQuery, Drupal, drupalSettings, once);
+})(jQuery, Drupal, drupalSettings);

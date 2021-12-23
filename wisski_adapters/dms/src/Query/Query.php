@@ -121,8 +121,12 @@ class Query extends WisskiQueryBase {
 #          dpm($eidquery, "thing");
 
         if($bundlequery === NULL) {
-          $giveback = array_values($eidquery); // array($thing['eid']);
-
+          if(!is_array($eidquery)) {
+            if(is_numeric($eidquery))
+              $giveback = array($eidquery => $eidquery);
+          } else {
+            $giveback = array_values($eidquery); // array($thing['eid']);
+          }
         } else {
 
           foreach($eidquery as $key => $eid) {
@@ -146,9 +150,11 @@ class Query extends WisskiQueryBase {
             //wisski_tick('Field query out 1');
           }
 #          drupal_set_message(serialize($giveback) . "I give back for ask " . serialize($eidquery));
-          return $giveback;
+#          dpm("I give back: " . $giveback);
+#          return $giveback;
 
         }
+        return $giveback;
       }
 #      dpm("half");    
       //wisski_tick("field query half");
