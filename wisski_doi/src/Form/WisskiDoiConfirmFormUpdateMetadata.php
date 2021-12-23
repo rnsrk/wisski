@@ -15,6 +15,8 @@ use Drupal\wisski_salz\AdapterHelper;
  */
 class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiForStaticRevision {
 
+  private array $dbRecord;
+
   /**
    * The machine name of the form.
    */
@@ -45,6 +47,18 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
   }
 
   /**
+   *
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    parent::validateForm($form, $form_state);
+    $continue = TRUE;
+    if (!($this->dbRecord['type'] == 'draft') && $form_state->getValue('type') == 'draft') {
+      $form_state->setErrorByName('entityId', $this->t('You can not change a registered or findable DOI back to draft, sorry. Pick a suitable type'));
+      $continue = FALSE;
+    }
+  }
+
+  /**
    * Save to revisions and request a DOI for one.
    *
    * First save a DOI revision to receive a revision id,
@@ -55,10 +69,9 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
    *   Error if WissKI entity URI could not be loaded (?).
    */
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual = NULL, $did = NULL): array {
-    $dbRecord = (new WisskiDoiDbController())->readDoiRecords($wisski_individual, $did)[0];
-    if ($dbRecord['type'] == 'findable') {
-      $doiInfo = (new WisskiDoiRestController())->readMetadata($dbRecord['doi']);
-      dpm($doiInfo);
+    $this->dbRecord = (new WisskiDoiDbController())->readDoiRecords($wisski_individual, $did)[0];
+    if ($this->dbRecord['type'] == 'findable') {
+      $doiInfo = (new WisskiDoiRestController())->readMetadata($this->dbRecord['doi']);
       $form_state->set('doiInfo', [
         "entityId" => $wisski_individual,
         "creationDate" => $doiInfo['data']['attributes']['dates'][0]['dateInformation'],
@@ -77,11 +90,17 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
 
   /**
    *
+   * @throws \Exception
    */
   public function submitForm(array &$form, $form_state) {
 
     // Get new values from form state.
     $doiInfo = $form_state->cleanValues()->getValues();
+
+    // Get DOI.
+    $doiInfo += [
+      "doi" => $this->dbRecord['doi'],
+    ];
 
     // Get WissKI entity URI.
     $target_uri = AdapterHelper::getOnlyOneUriPerAdapterForDrupalId($this->wisski_individual->id());
@@ -105,7 +124,9 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
       "revisionUrl" => $doiCurrentRevisionURL,
     ];
     // Request DOI.
-    (new WisskiDoiRestController())->getDoi($doiInfo);
+    $response = (new WisskiDoiRestController())->createOrUpdateDoi($doiInfo, TRUE);
+    $response['responseStatus'] == 200 ? (new WisskiDoiDBController())->updateDbRecord($doiInfo['type'], intval($this->dbRecord['did'])) : \Drupal::logger('wisski_doi')
+      ->error($this->t('Something went wrong Updating the DOI. Leave the database untouched'));
     // Redirect to DOI administration.
     $form_state->setRedirect(
       'wisski_individual.doi.administration', ['wisski_individual' => $this->wisski_individual->id()]

@@ -99,7 +99,12 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
       "revisionUrl" => $doiCurrentRevisionURL,
     ];
     // Request DOI.
-    (new WisskiDoiRestController())->getDoi($doiInfo);
+    $response = (new WisskiDoiRestController())->createOrUpdateDoi($doiInfo);
+    dpm($response['responseStatus']);
+    dpm($doiInfo);
+    $response['responseStatus'] == 201 ? (new WisskiDoiDBController())->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
+      ->error($this->t('Something went wrong Updating the DOI. Leave the database untouched'));
+    // Redirect to DOI administration.
     // Redirect to DOI administration.
     $form_state->setRedirect(
       'wisski_individual.doi.administration', ['wisski_individual' => $this->wisski_individual->id()]

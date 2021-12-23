@@ -13,6 +13,7 @@ use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
+use Drupal\wisski_doi\Controller\WisskiDoiDbController;
 use Drupal\wisski_doi\Controller\WisskiDoiRestController;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -409,6 +410,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
    * time to store the revision and DOI in Drupal DB.
    *
    * @throws \Drupal\Core\Entity\EntityStorageException
+   * @throws \Exception
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Get AJAX info.
@@ -442,8 +444,11 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
       "revisionUrl" => $doiRevisionURL,
     ];
 
-    // Request draft DOI.
-    (new WisskiDoiRestController())->getDoi($this->doiInfo);
+    // Request DOI.
+    $response = (new WisskiDoiRestController())->createOrUpdateDoi($this->doiInfo);
+    // Safe to db if successfully.
+    $response['responseStatus'] == 201 ? (new WisskiDoiDBController())->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
+      ->error($this->t('Something went wrong creating the DOI. Leave the database untouched'));
 
     // Start second save process. This is the current revision now.
     $doiRevision = $this->wisskiStorage->createRevision($this->wisski_individual);

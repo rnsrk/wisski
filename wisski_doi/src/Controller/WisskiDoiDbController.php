@@ -106,7 +106,33 @@ class WisskiDoiDbController extends ControllerBase {
   public function deleteDoiRecord(int $did = NULL) {
     $result = $this->connection->delete('wisski_doi')->condition('did', $did)->execute();
     $this->messenger()
-      ->addStatus($this->t('DOI has been requested'));
+      ->addStatus($this->t('Deleted DOI record from DB.'));
+    return $result;
+  }
+
+  /**
+   * Update the DOI record.
+   *
+   * @param string $type
+   *   The internal DOI id.
+   * @param int|null $did
+   *   The internal DOI id.
+   *
+   * @return array
+   *   Dataset of corresponding DOIs to an entity.
+   */
+  public function updateDbRecord(string $type, int $did = NULL) {
+    if (!$did) {
+      $this->messenger()
+        ->addError($this->t('There is no did.'));
+      return NULL;
+    }
+    $result = $this->connection->update('wisski_doi')
+      ->fields([
+        'type' => $type,
+      ])->condition('did', $did)->execute();
+    $this->messenger()
+      ->addStatus($this->t('Updated DOI record from DB.'));
     return $result;
   }
 

@@ -4,6 +4,7 @@ namespace Drupal\wisski_doi\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\wisski_doi\Exception\WisskiDoiSettingsNotFoundException;
+use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 
 /**
@@ -60,31 +61,24 @@ class WisskiDoiRestController extends ControllerBase {
   }
 
   /**
-   * Receive DOIs from repo.
+   * Receive DOIs from repo or update existing
    *
    * @param array $doiInfo
    *   The DOI Schema for the provider.
+   * @param bool $update
+   *   True, if it is a update.
    *
-   * @throws \GuzzleHttp\Exception\RequestException|\Exception
+   * @return array
+   *   Data to write to DB.
+   *
+   * @throws \GuzzleHttp\Exception\RequestException|\Exception|
    *   Throws exception when response status 40x.
    */
-  public function getDoi(array $doiInfo) {
+  public function createOrUpdateDoi(array $doiInfo, bool $update = FALSE) {
 
-    switch ($doiInfo['type']) {
+    // If type is draft, event has to be empty.
+    $event = ($doiInfo['type']) ?: "";
 
-      case 'register':
-        $event = "register";
-        break;
-
-      case 'publish':
-        $event = "publish";
-        break;
-
-      default:
-        $event = "";
-        break;
-    }
-    dpm($doiInfo, 'doiInfo');
     $body = [
       "data" => [
         "attributes" => [
@@ -101,10 +95,11 @@ class WisskiDoiRestController extends ControllerBase {
             ],
           ],
           "dates" => [
-            "dateType" => 'Created',
-            "dateInformation" => $doiInfo['creationDate'],
+            [
+              "dateType" => 'Created',
+              "dateInformation" => $doiInfo['creationDate'],
+            ],
           ],
-
           "prefix" => $this->doiSettings['doiPrefix'],
           "publisher" => $doiInfo['publisher'],
           "publicationYear" => substr($doiInfo['creationDate'], 6, 4),
@@ -119,7 +114,15 @@ class WisskiDoiRestController extends ControllerBase {
     $json_body = json_encode($body);
     // dpm(base64_encode($this->doiRepositoryId.":".$this->doiRepositoryPassword));.
     try {
-      $response = $this->httpClient->request('POST', $this->doiSettings['baseUri'], [
+      if ($update) {
+        $method = 'PUT';
+        $uri = $this->doiSettings['baseUri'] . '/' . $doiInfo['doi'];
+      }
+      else {
+        $method = 'POST';
+        $uri = $this->doiSettings['baseUri'];
+      }
+      $response = $this->httpClient->request($method, $uri, [
         'body' => $json_body,
         'headers' => [
           'Authorization' => 'Basic ' . base64_encode($this->doiSettings['doiRepositoryId'] . ":" . $this->doiSettings['doiRepositoryPassword']),
@@ -127,16 +130,31 @@ class WisskiDoiRestController extends ControllerBase {
         ],
         'http_errors' => TRUE,
       ]);
-
+      $responseContent = json_decode($response->getBody()->getContents(), TRUE);
+      $action = $update ? 'updated' : 'requested';
       $this->messenger()
-        ->addStatus($this->t('DOI has been requested'));
-      $response = json_decode($response->getBody()->getContents(), TRUE);
+        ->addStatus($this->t('DOI has been %action', ['%action' => $action]));
+      return [
+        'dbData' => [
+          "doi" => $responseContent['data']['id'],
+          "vid" => $doiInfo['revisionId'] ?? NULL,
+          "eid" => $doiInfo['entityId'],
+          "type" => $responseContent['data']['attributes']['state'],
+          "revisionUrl" => $doiInfo['revisionUrl'],
+        ],
+        'responseStatus' => $response->getStatusCode(),
+      ];
     }
     /* Try to catch the GuzzleException. This indicates a failed
      * response from the remote API.
      */
     catch (RequestException $error) {
-      return $this->errorResponse($error);
+      \Drupal::logger('wisski_doi')
+        ->error($this->t('Request error: @error', ['@error' => $error->getMessage()]));
+      return [
+        'dbDate' => NULL,
+        'responseStatus' => $this->errorResponse($error)->getStatusCode(),
+      ];
     }
 
     // A non-Guzzle error occurred. The type of exception
@@ -145,20 +163,20 @@ class WisskiDoiRestController extends ControllerBase {
       // Log the error.
       \Drupal::logger('wisski_doi')
         ->error($this->t('An unknown error occurred while trying to connect to the remote API. This is not a Guzzle error, nor an error in the remote API, rather a generic local error occurred. The reported error was @error', ['@error' => $error->getMessage()]));
-      $response = $error->getResponse();
+      return [
+        'dbDate' => NULL,
+        'responseStatus' => $this->errorResponse($error)->getStatusCode(),
+      ];
     }
-
-    /*
-     * Write response to database table wisski_doi.
-     */
-    $dbData = [
-      "doi" => $response['data']['id'],
-      "vid" => $doiInfo['revisionId'] ?? NULL,
-      "eid" => $doiInfo['entityId'],
-      "type" => $response['data']['attributes']['state'],
-      "revisionUrl" => $doiInfo['revisionUrl'],
+    catch (GuzzleException $e) {
+    }
+    // Log the error.
+    \Drupal::logger('wisski_doi')
+      ->error($this->t('An unknown error occurred while trying to connect to the remote API. This is not a Guzzle error, nor an error in the remote API, rather a generic local error occurred. The reported error was @error', ['@error' => $error->getMessage()]));
+    return [
+      'dbDate' => NULL,
+      'responseStatus' => $this->errorResponse($error)->getStatusCode(),
     ];
-    (new WisskiDoiDbController)->writeToDb($dbData);
   }
 
   /**
@@ -172,7 +190,6 @@ class WisskiDoiRestController extends ControllerBase {
   public function readMetadata(string $doi) {
     try {
       $url = $this->doiSettings['baseUri'] . '/' . $doi;
-      dpm($url);
       $response = $this->httpClient->request('GET', $url, [
         'headers' => [
           'Accept' => 'application/vnd.api+json',
@@ -189,14 +206,6 @@ class WisskiDoiRestController extends ControllerBase {
     catch (RequestException $error) {
       return $this->errorResponse($error);
     }
-
-  }
-
-  /**
-   *
-   */
-  public function editMetadata($doi) {
-
   }
 
   /**
@@ -216,7 +225,7 @@ class WisskiDoiRestController extends ControllerBase {
       ]);
 
       $this->messenger()
-        ->addStatus($this->t('Reached DOI provider, deleted DOI.'));
+        ->addStatus($this->t('Deleted DOI from provider.'));
       return $response->getStatusCode();
     }
     /* Try to catch the GuzzleException. This indicates a failed
