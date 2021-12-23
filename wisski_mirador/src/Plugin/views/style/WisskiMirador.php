@@ -42,7 +42,7 @@ class WisskiMirador extends StylePluginBase {
 
     $view = $this->view;
     
-#    dpm($view);
+#    dpm($view->field);
     
     $results = $view->result;
     
@@ -74,20 +74,54 @@ class WisskiMirador extends StylePluginBase {
     $result_count = count($results);
     
     foreach($results as $result) {
+    
+#      dpm($result);
+#      dpm(serialize($this->view));
 #      dpm($result->__get('entity:wisski_individual/eid'), "res?");
 
+      $entity_id = NULL;
       // tuning for solr which does not have eids but stores it in entity:wisski_individual/eid
-      $entity_id = empty($result->eid) ? current($result->__get('entity:wisski_individual/eid')) : $result->eid; 
+      if(empty($result->eid)) {
+        if(method_exists($result, "__get")) {
+          if(!empty(current($result->__get('entity:wisski_individual/eid')))) {
+            $entity_id = current($result->__get('entity:wisski_individual/eid'));
+          }
+        }
+      }
+        
+#      $entity_id = empty($result->eid) ? if(!empty(current($result->__get('entity:wisski_individual/eid'))) { current($result->__get('entity:wisski_individual/eid')) } : $result->eid; 
 
 #      dpm($result, "res?");
 #      $ent_list[] = array("manifestId" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "manifestUri" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "location" => $to_print);
-      $ent_list[] = array("manifestId" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest");
+      if(!empty($entity_id)) {
+        $ent_list[] = array("manifestId" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest");
 #      $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $result->eid . "/iiif_manifest", "viewType" => "ImageView" );
-      if ($result_count > 1) {
-        $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "availableViews" => array( 'ImageView'), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false);
-      }
-      else {
-        $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "availableViews" => array( 'ImageView'), "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false);
+        if ($result_count > 1) {
+          $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "availableViews" => array( 'ImageView'), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false);
+        }
+        else {
+          $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "availableViews" => array( 'ImageView'), "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false);
+        }
+      } else {
+        $field_to_load_http_uri_from = $view->field;
+        $field_to_load_http_uri_from = array_keys($field_to_load_http_uri_from);
+        $field_to_load_http_uri_from = current($field_to_load_http_uri_from);
+
+#        dpm($result->$field_to_load_http_uri_from);
+        
+        $result_field = $result->$field_to_load_http_uri_from;
+        
+#        dpm($result_field);
+        $result_field = current($result_field);
+        if(!empty($result_field["value"]))
+          $result_field = $result_field["value"];
+        else
+          $result_field = $result_field[0]["value"];
+        
+        $ent_list[] = array("manifestId" => $result_field);
+        
+#        dpm($ent_list, "ente?");
+        
       }
 #      $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $result->eid . "/iiif_manifest", "availableViews" => array( 'ImageView'), "windowOptions" => array( "zoomLevel" => 1, "osdBounds" => array(
 #            "height" => 1500,
