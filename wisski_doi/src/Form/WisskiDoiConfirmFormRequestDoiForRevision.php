@@ -100,8 +100,6 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
     ];
     // Request DOI.
     $response = (new WisskiDoiRestController())->createOrUpdateDoi($doiInfo);
-    dpm($response['responseStatus']);
-    dpm($doiInfo);
     $response['responseStatus'] == 201 ? (new WisskiDoiDBController())->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
       ->error($this->t('Something went wrong Updating the DOI. Leave the database untouched'));
     // Redirect to DOI administration.
