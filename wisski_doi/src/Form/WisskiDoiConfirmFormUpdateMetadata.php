@@ -13,7 +13,7 @@ use Drupal\wisski_salz\AdapterHelper;
  *
  * @internal
  */
-class WisskiDoiUpdateMetadata extends WisskiConfirmFormDoiRequestForStaticRevision {
+class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiForStaticRevision {
 
   /**
    * The machine name of the form.
@@ -56,18 +56,21 @@ class WisskiDoiUpdateMetadata extends WisskiConfirmFormDoiRequestForStaticRevisi
    */
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual = NULL, $did = NULL): array {
     $dbRecord = (new WisskiDoiDbController())->readDoiRecords($wisski_individual, $did)[0];
-    $doiInfo = (new WisskiDoiRestController())->readMetadata($dbRecord['doi']);
-    dpm($doiInfo);
-    $form_state->set('doiInfo', [
-      "entityId" => $wisski_individual,
-      "creationDate" => $doiInfo['data']['attributes']['dates'][0]['dateInformation'],
-      "author" => $doiInfo['data']['attributes']['creators'][0]['name'],
-      "contributors" => $doiInfo['data']['attributes']['contributors'],
-      "title" => $doiInfo['data']['attributes']['titles'][0]['title'],
-      "publisher" => $doiInfo['data']['attributes']['publisher'],
-      "language" => $doiInfo['data']['attributes']['language'],
-      "resourceType" => $doiInfo['data']['attributes']['types']['resourceTypeGeneral'],
-    ]);
+    if ($dbRecord['type'] == 'findable') {
+      $doiInfo = (new WisskiDoiRestController())->readMetadata($dbRecord['doi']);
+      dpm($doiInfo);
+      $form_state->set('doiInfo', [
+        "entityId" => $wisski_individual,
+        "creationDate" => $doiInfo['data']['attributes']['dates'][0]['dateInformation'],
+        "type" => 'publish',
+        "author" => $doiInfo['data']['attributes']['creators'][0]['name'],
+        "contributors" => $doiInfo['data']['attributes']['contributors'],
+        "title" => $doiInfo['data']['attributes']['titles'][0]['title'],
+        "publisher" => $doiInfo['data']['attributes']['publisher'],
+        "language" => $doiInfo['data']['attributes']['language'],
+        "resourceType" => $doiInfo['data']['attributes']['types']['resourceTypeGeneral'],
+      ]);
+    }
 
     return parent::buildForm($form, $form_state, $wisski_individual);
   }
@@ -102,7 +105,7 @@ class WisskiDoiUpdateMetadata extends WisskiConfirmFormDoiRequestForStaticRevisi
       "revisionUrl" => $doiCurrentRevisionURL,
     ];
     // Request DOI.
-    // (new WisskiDoiRestController())->getDoi($doiInfo);
+    (new WisskiDoiRestController())->getDoi($doiInfo);
     // Redirect to DOI administration.
     $form_state->setRedirect(
       'wisski_individual.doi.administration', ['wisski_individual' => $this->wisski_individual->id()]

@@ -13,7 +13,7 @@ use Drupal\wisski_salz\AdapterHelper;
  *
  * @internal
  */
-class WisskiConfirmFormDoiRequestForCurrentRevision extends WisskiConfirmFormDoiRequestForStaticRevision {
+class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequestDoiForStaticRevision {
 
   /**
    *

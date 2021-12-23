@@ -42,9 +42,9 @@ class WisskiDoiAdministration extends ControllerBase {
     else {
       $build = [
         '#markup' => '<p>' . $this->t('No DOIs associated with the entity.') . '</p>',
+        '#cache' => ['max-age' => 0],
       ];
     }
-    dpm($build);
     return $build;
   }
 
@@ -69,13 +69,15 @@ class WisskiDoiAdministration extends ControllerBase {
         'wisski_individual' => $wisski_individual,
       ]),
     ];
-    $links['delete'] = [
-      'title' => $this->t('Delete'),
-      'url' => Url::fromRoute('wisski_individual.doi.delete', [
-        'did' => $row['did'],
-        'wisski_individual' => $wisski_individual,
-      ]),
-    ];
+    if ($row['type'] == 'draft') {
+      $links['delete'] = [
+        'title' => $this->t('Delete'),
+        'url' => Url::fromRoute('wisski_individual.doi.delete', [
+          'did' => $row['did'],
+          'wisski_individual' => $wisski_individual,
+        ]),
+      ];
+    }
 
     $row['isCurrent'] ? $row['isCurrent'] = 'current' : $row['isCurrent'] = 'static';
     $row['Operations'] =

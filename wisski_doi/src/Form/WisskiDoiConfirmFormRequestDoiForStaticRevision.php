@@ -22,7 +22,7 @@ use Symfony\Component\HttpFoundation\Request;
  *
  * @internal
  */
-class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
+class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
 
   /**
    * The WisskiEntity revision.
@@ -174,12 +174,13 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
       else {
         $error = t('Contributor is empty!');
       }
-    } catch (\Exception $e) {
+    }
+    catch (\Exception $e) {
       $error = t('Wrong text format. Enter a valid text format.');
     }
     $contributorItems->set('contributors', $contributors)->save();
     $response = new AjaxResponse();
-    $response->addCommand(new ReplaceCommand('#contributor-list', WisskiConfirmFormDoiRequestForStaticRevision::renderContributors($contributors, $error)));
+    $response->addCommand(new ReplaceCommand('#contributor-list', WisskiDoiConfirmFormRequestDoiForStaticRevision::renderContributors($contributors, $error)));
     return $response;
   }
 
@@ -196,7 +197,7 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
     }
 
     $response = new AjaxResponse();
-    $response->addCommand(new ReplaceCommand('#contributor-list', WisskiConfirmFormDoiRequestForStaticRevision::renderContributors($contributors)));
+    $response->addCommand(new ReplaceCommand('#contributor-list', WisskiDoiConfirmFormRequestDoiForStaticRevision::renderContributors($contributors)));
 
     return $response;
   }
@@ -209,7 +210,7 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
       ->getEditable('contributor.items');
     $contributorItems->set('contributors', NULL)->save();
     $response = new AjaxResponse();
-    $response->addCommand(new ReplaceCommand('#contributor-list', WisskiConfirmFormDoiRequestForStaticRevision::renderContributors(NULL)));
+    $response->addCommand(new ReplaceCommand('#contributor-list', WisskiDoiConfirmFormRequestDoiForStaticRevision::renderContributors(NULL)));
     return $response;
   }
 
@@ -262,6 +263,7 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
       "bundleId" => $this->wisski_individual->bundle(),
       "entityId" => $this->wisski_individual->id(),
       "creationDate" => $this->dateFormatter->format($this->wisski_individual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
+      "type" => 'draft',
       "author" => $author,
       "contributors" => $contributorItems->get('contributors'),
       "title" => $this->wisski_individual->label(),
@@ -292,6 +294,18 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
       'Other' => 'Other',
     ];
 
+    /*
+     * publish - Triggers a state move from draft or registered to findable.
+     * register - Triggers a state move from draft to registered (register)
+     * or from findable to registered (hide).
+     * draft - Triggers a state move from findable to registered.
+     */
+    $doiTypes = [
+      'draft' => 'Draft',
+      'register' => 'Registered',
+      'publish' => 'Findable',
+    ];
+
     /* Create form elements
      * Contributors are nested and get populated with AJAX functions and
      * a template @file contributor-list.html.twig
@@ -310,6 +324,15 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
       '#markup' => $this->doiInfo['creationDate'],
       '#description' => $this->t('The datetime, when the revision was created.'),
     ];
+
+    $form['type'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Type'),
+      '#options' => $doiTypes,
+      '#default_value' => $this->doiInfo['type'],
+      '#description' => $this->t('The type of the DOI. Registered and findable DOIs can not be deleted!'),
+    ];
+
     $form['author'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Author'),
@@ -345,7 +368,7 @@ class WisskiConfirmFormDoiRequestForStaticRevision extends ConfirmFormBase {
     ];
     $form['contributors']['contributorTable'] = [
       '#type' => 'item',
-      '#markup' => WisskiConfirmFormDoiRequestForStaticRevision::renderContributors($contributorItems->get('contributors')),
+      '#markup' => WisskiDoiConfirmFormRequestDoiForStaticRevision::renderContributors($contributorItems->get('contributors')),
     ];
 
     $form['title'] = [

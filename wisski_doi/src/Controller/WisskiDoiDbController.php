@@ -31,7 +31,7 @@ class WisskiDoiDbController extends ControllerBase {
    *   Contains:
    *   The DOI from the response of the DOI provider. Implemented at
    *   WisskiDoiRestController::getDraftDoi, invoked from
-   *   WisskiConfirmFormDoiRequestForStaticRevision.
+   *   WisskiDoiConfirmFormRequestDoiForStaticRevision.
    *   The revision ID as vid.
    *   The entity ID as eid.
    *   The type of the DOI (draft, registered, findable).
@@ -82,15 +82,32 @@ class WisskiDoiDbController extends ControllerBase {
       ->condition('eid', $eid, '=');
 
     if ($did) {
-      $query = $query->condition('did', $did, '=')->execute();
+      $query = $query->condition('did', $did, '=');
     }
-    else {
-      $query = $query->execute();
-    }
-    $result = $query->fetchAll();
+    $result = $query->orderBy('did', 'DESC')->execute()->fetchAll();
     return array_map(function ($record) {
       return json_decode(json_encode($record), TRUE);
     }, $result);
+  }
+
+  /**
+   * Delete the DOI record.
+   *
+   * We parse the strClass $records to an array with the
+   * json_decode/json_encode() functions. More transitions in
+   * WisskiDoiAdministration::rowBuilder().
+   *
+   * @param int|null $did
+   *   The internal DOI id.
+   *
+   * @return array
+   *   Dataset of corresponding DOIs to an entity.
+   */
+  public function deleteDoiRecord(int $did = NULL) {
+    $result = $this->connection->delete('wisski_doi')->condition('did', $did)->execute();
+    $this->messenger()
+      ->addStatus($this->t('DOI has been requested'));
+    return $result;
   }
 
 }
