@@ -28,11 +28,99 @@ class WisskiMirador extends StylePluginBase {
   protected function defineOptions() {
     $options = parent::defineOptions();
     $options['path'] = array('default' => 'wisski_mirador');
+    $options['enable_annotations'] = array('default' => "");
+    $options['entity_type_for_annotation'] = array('default' => "");
+    $options['bundle_for_annotation'] = array('default' => "");
+    $options['field_for_annotation_id'] = array('default' => "");
+    $options['field_for_annotation_json'] = array('default' => "");
+    $options['field_for_annotation_entity'] = array('default' => "");
+    $options['field_for_annotation_reference'] = array('default' => "");
+    
     return $options;
   }
   
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     parent::buildOptionsForm($form, $form_state);
+    
+    $form['enable_annotations'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable Annotations'),
+      '#description' => $this->t('This enables annotation storage with Mirador. Annotations are stored locally and you have to define a mapping in Drupal to an associated entity here.'),
+      '#default_value' => $this->options['enable_annotations'],
+    ];
+    
+    $form['entity_type_for_annotation'] = [
+      '#title' => $this->t('Entity type for annotations'),
+      '#description' => $this->t('The machine name of the entity type the annotations are stored to.'),
+      '#type' => 'textfield',
+      '#size' => '50',
+      '#default_value' => $this->options['entity_type_for_annotation'],
+    ];
+    
+    $form['bundle_for_annotation'] = [
+      '#title' => $this->t('Bundle for annotations'),
+      '#description' => $this->t('The machine id of the bundle the annotations are stored to. The bundle needs fields to store the annotations which are defined below.'),
+      '#type' => 'textfield',
+      '#size' => '50',
+      '#default_value' => $this->options['bundle_for_annotation'],
+    ];
+
+    $form['field_for_annotation_id'] = [
+      '#title' => $this->t('Field for annotation id'),
+      '#description' => $this->t('The machine id of the field for the id of the annotation. This is needed for searching etc.'),
+      '#type' => 'textfield',
+      '#size' => '50',
+      '#default_value' => $this->options['field_for_annotation_id'],
+    ];
+
+    $form['field_for_annotation_json'] = [
+      '#title' => $this->t('Field for annotation json dump'),
+      '#description' => $this->t('This field (machine id) serves as a data dump for the whole annotation json.'),
+      '#type' => 'textfield',
+      '#size' => '50',
+      '#default_value' => $this->options['field_for_annotation_json'],
+    ];    
+
+    $form['field_for_annotation_entity'] = [
+      '#title' => $this->t('Field for annotation entity'),
+      '#description' => $this->t('This field (machine name) stores the entity that is annotated (usually the filename of the image file).'),
+      '#type' => 'textfield',
+      '#size' => '50',
+      '#default_value' => $this->options['field_for_annotation_entity'],
+    ];
+    
+    $form['field_for_annotation_reference'] = [
+      '#title' => $this->t('Field for annotation reference'),
+      '#description' => $this->t('This field (machine name) stores the referred entity the annotation is created upon (e.g. the object that the above file depicts).'),
+      '#type' => 'textfield',
+      '#size' => '50',
+      '#default_value' => $this->options['field_for_annotation_reference'],
+    ];
+    
+    return $form;
+  }
+  
+  public function usesFields() {
+    return TRUE;
+  }
+
+  public function validate() {
+    $fields = FALSE;
+
+    foreach ($this->displayHandler->getHandlers('field') as $field) {
+      if (empty($field->options['exclude'])) {
+        $fields = TRUE;
+      }
+    }
+
+    if (!$fields) {
+      $errors[] = $this->t('No fields are selected for display purpose. For Mirador you either need to display entity id (then the manifests get loaded automatically) or you need to display a field with a reference (http...) to an IIIF manifest.');
+    }
+    
+    if(empty($errors))
+      parent::validate();
+    
+    return $errors;
   }
 
   /**
@@ -75,11 +163,17 @@ class WisskiMirador extends StylePluginBase {
     
     foreach($results as $result) {
     
-#      dpm($result);
+#      dpm($result->eid);
+#      return;
 #      dpm(serialize($this->view));
 #      dpm($result->__get('entity:wisski_individual/eid'), "res?");
 
-      $entity_id = NULL;
+      
+      if(isset($result->eid))
+        $entity_id = $result->eid;
+      else
+        $entity_id = NULL;
+
       // tuning for solr which does not have eids but stores it in entity:wisski_individual/eid
       if(empty($result->eid)) {
         if(method_exists($result, "__get")) {
