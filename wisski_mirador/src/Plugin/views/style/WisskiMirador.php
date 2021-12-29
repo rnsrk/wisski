@@ -107,6 +107,8 @@ class WisskiMirador extends StylePluginBase {
   public function validate() {
     $fields = FALSE;
 
+    $errors = array();
+
     foreach ($this->displayHandler->getHandlers('field') as $field) {
       if (empty($field->options['exclude'])) {
         $fields = TRUE;
@@ -287,6 +289,9 @@ class WisskiMirador extends StylePluginBase {
     $form['#allowed_tags'] = array('div', 'select', 'option','a', 'script');
 #    #$form['#attached']['drupalSettings']['wisski_jit'] = $wisski_individual;
     $form['#attached']['library'][] = "wisski_mirador/mirador";
+
+    $session = \Drupal::request()->getSession();
+    $session->set('mirador-options', $this->options);
 
     return $form;
   
