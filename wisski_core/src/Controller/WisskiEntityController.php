@@ -218,14 +218,7 @@ class WisskiEntityController extends ControllerBase {
       ['%title' => $wisski_individual->label()]
     );
 
-    if (\Drupal::moduleHandler()->moduleExists('wisski_doi')) {
-      $header = \Drupal::moduleHandler()
-        ->invokeAll('revision_menu_header_alter');
-    }
-    else {
-      $header = [$this->t('Revision'), $this->t('Operations')];
-    }
-
+    $header = [$this->t('Revision'), $this->t('Operations')];
     $revert_permission = (($account->hasPermission("revert $type revisions") || $account->hasPermission('revert all revisions') || $account->hasPermission('administer nodes')) && $wisski_individual->access('update'));
     $delete_permission = (($account->hasPermission("delete $type revisions") || $account->hasPermission('delete all revisions') || $account->hasPermission('administer nodes')) && $wisski_individual->access('delete'));
 

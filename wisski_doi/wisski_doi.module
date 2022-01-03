@@ -21,38 +21,6 @@ function wisski_doi_revision_menu_header_alter() {
 }
 
 /**
- * Add a DOI column in revisions table at wisski individuals.
- */
-function wisski_doi_revision_menu_column_alter($row, $wisski_individual, $vid) {
-
-  $row[] = [
-    'data' => [
-      '#prefix' => '<em>',
-      '#markup' => new TranslatableMarkup('Here comes the DOI'),
-      '#suffix' => '</em>',
-    ],
-  ];
-  return $row;
-}
-
-/**
- * Add menu entry "DOI Scheme" at "WissKI Groups and Bundles" in Structure.
- */
-function wisski_doi_entity_operation_alter(array &$operations, EntityInterface $entity) {
-  $entityTypeId = $entity->getEntityTypeId();
-  if ($entityTypeId !== 'wisski_bundle') {
-    return;
-  }
-  $bundleId = $entity->id();
-  $editUrl = Url::fromRoute('entity.wisski_bundle.doi_scheme', ['wisski_bundle' => $bundleId]);
-  $operations['doi_scheme'] = [
-    'title' => t('DOI Scheme'),
-    'weight' => 100,
-    'url' => $editUrl,
-  ];
-}
-
-/**
  * Provide render template for contributors at DOI request form.
  *
  * @return array
