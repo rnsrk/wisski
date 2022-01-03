@@ -295,17 +295,6 @@ class WisskiEntityController extends ControllerBase {
         $renderer->addCacheableDependency($column['data'], $username);
         $row[] = $column;
 
-        /*
-         * Implement DOI column in revision table.
-         */
-        if (\Drupal::moduleHandler()->moduleExists('wisski_doi')) {
-          $row = \Drupal::moduleHandler()
-            ->invokeAll('revision_menu_column_alter', [
-              $row,
-              $wisski_individual,
-              $vid,
-            ]);
-        }
         if ($is_current_revision) {
           /*
            * Operations Column in revision table if current revision.
