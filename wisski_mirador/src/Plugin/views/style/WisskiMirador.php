@@ -35,6 +35,32 @@ class WisskiMirador extends StylePluginBase {
     $options['field_for_annotation_json'] = array('default' => "");
     $options['field_for_annotation_entity'] = array('default' => "");
     $options['field_for_annotation_reference'] = array('default' => "");
+    $options['window_settings'] = array('default' => '{
+            "allowClose": false,
+            "allowFullscreen": true,
+            "allowMaximize": false,
+            "allowTopMenuButton": true,
+            "allowWindowSideBar": true,
+            "sideBarPanel": "info",
+            "defaultSideBarPanel": "attribution",
+            "sideBarOpenByDefault": false,
+            "defaultView": "single",
+            "forceDrawAnnotations": true,
+            "hideWindowTitle": true,
+            "highlightAllAnnotations": false,
+            "imageToolsEnabled": true,
+            "showLocalePicker": true,
+            "sideBarOpen": true,
+            "switchCanvasOnSearch": true,
+            "panels": {
+              "info": true,
+              "attribution": true,
+              "canvas": true,
+              "annotations": true,
+              "search": true,
+              "layers": true
+            }
+      }');
     
     return $options;
   }
@@ -95,6 +121,13 @@ class WisskiMirador extends StylePluginBase {
       '#type' => 'textfield',
       '#size' => '50',
       '#default_value' => $this->options['field_for_annotation_reference'],
+    ];
+    
+    $form['window_settings'] = [
+      '#title' => $this->t('window'),
+      '#description' => $this->t('Settings for Mirador "window" parameter'),
+      '#type' => 'textarea',
+      '#default_value' => $this->options['window_settings'],
     ];
     
     return $form;
@@ -279,6 +312,9 @@ class WisskiMirador extends StylePluginBase {
     $form = array();
     
     $form['#attached']['drupalSettings']['wisski']['mirador']['data'] = $ent_list;
+    $form['#attached']['drupalSettings']['wisski']['mirador']['options'] = $this->options;
+    
+    $form['#attached']['drupalSettings']['wisski']['mirador']['window_settings'] = json_decode($this->options['window_settings'], TRUE);
     $form['#attached']['drupalSettings']['wisski']['mirador']['layout'] = $layout_str;
 
     if($layout < 9) {

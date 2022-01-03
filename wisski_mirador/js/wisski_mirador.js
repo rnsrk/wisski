@@ -10,8 +10,10 @@
 //        (function($, jQuery) {
 //          alert(jQuery.fn.jquery);
 
-          console.log('yay', drupalSettings.wisski.mirador.data);          
-          console.log('yay', drupalSettings.wisski.mirador.windowObjects);
+//          console.log('yay', drupalSettings.wisski.mirador.data);          
+//          console.log('yay', drupalSettings.wisski.mirador.windowObjects);
+//          console.log('yay', drupalSettings.wisski.mirador.options);
+//          console.log('yay', drupalSettings.wisski.mirador.window_settings);
 
 //import Mirador from 'mirador/dist/es/src/index';
 //import { miradorImageToolsPlugin } from 'mirador-image-tools';
@@ -21,12 +23,16 @@
           let plugins = [];    
 //          console.log(window.miradorPlugins);
           if (window.miradorPlugins && window.miradorPlugins.length) {
-            console.log(window.miradorPlugins);
+//            console.log(window.miradorPlugins);
 //            window.miradorPlugins.        
             for (let {plugin, name} of window.miradorPlugins) {	
+              if(name == "annotations" && drupalSettings.wisski.mirador.options.enable_annotations == 0) {
+                // in this case we do nothing - because then annotation is disabled!
+              } else {
               //if (window.globalMiradorPlugins.includes(name)) {                
                 plugins = [...plugins, ...plugin];            
-              //}          
+              //}
+              }          
             }
           }
 //            alert(jQuery.fn.jquery);
@@ -44,31 +50,7 @@
           },
           id: "viewer",
           allowFullscreen: true,
-          "window": {
-            "allowClose": false,
-            "allowFullscreen": true,
-            "allowMaximize": false,
-            "allowTopMenuButton": true,
-            "allowWindowSideBar": true,
-            "sideBarPanel": "info",
-            "defaultSideBarPanel": "attribution",
-            "sideBarOpenByDefault": false,
-            "defaultView": "single",
-            "forceDrawAnnotations": true,
-            "hideWindowTitle": true,
-            "highlightAllAnnotations": false,
-            "showLocalePicker": true,
-            "sideBarOpen": true,
-            "switchCanvasOnSearch": true,
-            "panels": {
-              "info": true,
-              "attribution": true,
-              "canvas": true,
-              "annotations": true,
-              "search": true,
-              "layers": true
-            }
-          },
+          "window": drupalSettings.wisski.mirador.window_settings,
           windows: drupalSettings.wisski.mirador.data, //[
             //{ manifestId: "https://wisskid9.gnm.de/wisski/navigate/426/iiif_manifest" },
             //{ manifestId: "https://wisskid9.gnm.de/wisski/navigate/269/iiif_manifest" },
