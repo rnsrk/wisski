@@ -15,3 +15,5 @@ This requests a DOI for the current revision of the dataset. If a new revision i
 You can edit the metadata of the DOI. If you are in Draft or Registered mode, WissKI fills the fields with the current local data; if you are in findable mode, WissKI receives the field data from the online repository.
 ## States
 DOIs have three [states](https://support.datacite.org/docs/doi-states): Draft, registered and findable. Only drafts can be deleted, and registered and findable states can not reduce back to draft. Be careful here.
+## Uninstall
+Beware: If you remove the module, the Drupal database table "wisski_doi" is also removed, so you do not see, which entities have already a DOI. Simple do not uninstall this module or backup the database table "wisski_doi" if you like to preserve a concordance
