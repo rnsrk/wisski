@@ -84,6 +84,12 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
       "entityUri" => $target_uri,
     ];
 
+    // Get AJAX info.
+    $contributorItems = \Drupal::configFactory()
+      ->getEditable('contributor.items');
+    // Have to overwrite contributors cause AJAX mess up the form_state.
+    $this->doiInfo['contributors'] = $contributorItems->get('contributors');
+
     /*
      * No need to save a revision, because the revisionUrl points to the
      * resolver with the entity URI and not to a "real" revision URL, like
