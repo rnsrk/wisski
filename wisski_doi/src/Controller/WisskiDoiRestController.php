@@ -151,9 +151,10 @@ class WisskiDoiRestController extends ControllerBase {
     catch (RequestException $error) {
       \Drupal::logger('wisski_doi')
         ->error($this->t('Request error: @error', ['@error' => $error->getMessage()]));
+      #$errorCode = $this->errorResponse($error)->getStatusCode() ?? '500';
       return [
         'dbDate' => NULL,
-        'responseStatus' => $this->errorResponse($error)->getStatusCode(),
+        'responseStatus' => $error->getCode(),
       ];
     }
 
@@ -165,7 +166,7 @@ class WisskiDoiRestController extends ControllerBase {
         ->error($this->t('An unknown error occurred while trying to connect to the remote API. This is not a Guzzle error, nor an error in the remote API, rather a generic local error occurred. The reported error was @error', ['@error' => $error->getMessage()]));
       return [
         'dbDate' => NULL,
-        'responseStatus' => $this->errorResponse($error)->getStatusCode(),
+        'responseStatus' => $error->getCode(),
       ];
     }
     catch (GuzzleException $e) {
@@ -175,7 +176,7 @@ class WisskiDoiRestController extends ControllerBase {
       ->error($this->t('An unknown error occurred while trying to connect to the remote API. This is not a Guzzle error, nor an error in the remote API, rather a generic local error occurred. The reported error was @error', ['@error' => $error->getMessage()]));
     return [
       'dbDate' => NULL,
-      'responseStatus' => $this->errorResponse($error)->getStatusCode(),
+      'responseStatus' => $error->getCode(),
     ];
   }
 
