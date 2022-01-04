@@ -66,6 +66,7 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
    * time to store the revision and DOI in Drupal DB.
    *
    * @throws \Exception
+   * @throws \GuzzleHttp\Exception\GuzzleException
    *   Error if WissKI entity URI could not be loaded (?).
    */
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual = NULL, $did = NULL): array {
@@ -96,11 +97,15 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
 
     // Get new values from form state.
     $doiInfo = $form_state->cleanValues()->getValues();
-
     // Get DOI.
     $doiInfo += [
       "doi" => $this->dbRecord['doi'],
     ];
+
+    // Contributors have to be received extra.
+    $contributorItems = \Drupal::configFactory()
+      ->getEditable('contributor.items');
+    $doiInfo['contributors'] = $contributorItems->get('contributors');
 
     // Get WissKI entity URI.
     $target_uri = AdapterHelper::getOnlyOneUriPerAdapterForDrupalId($this->wisski_individual->id());

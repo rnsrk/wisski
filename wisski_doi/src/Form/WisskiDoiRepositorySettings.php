@@ -57,6 +57,13 @@ class WisskiDoiRepositorySettings extends FormBase {
       '#description' => $this->t('The place where you administer your DOIs, like "My DOI Repository".'),
     ];
 
+    $form['doi_schema_version'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Schema Version'),
+      '#default_value' => $settings->get('doi_schema_version'),
+      '#description' => $this->t('The version of DOI kernel, like "4.4".'),
+    ];
+
     $form['doi_prefix'] = [
       '#type' => 'textfield',
       '#title' => $this->t('DOI Prefix'),
@@ -88,6 +95,7 @@ class WisskiDoiRepositorySettings extends FormBase {
 
     $settings->set('doi_provider', $newVals['doi_provider']);
     $settings->set('doi_repository_id', $newVals['doi_repository_id']);
+    $settings->set('doi_schema_version', $newVals['doi_schema_version']);
     $settings->set('doi_prefix', $newVals['doi_prefix']);
     $settings->set('doi_base_uri', $newVals['doi_base_uri']);
     $settings->set('doi_repository_password', $newVals['doi_repository_password']);

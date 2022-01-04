@@ -47,6 +47,7 @@ class WisskiDoiRestController extends ControllerBase {
     $this->doiSettings = [
       "baseUri" => $settings->get('doi_base_uri'),
       "doiRepositoryId" => $settings->get('doi_repository_id'),
+      "doiSchemaVersion" => $settings->get('doi_schema_version'),
       "doiPrefix" => $settings->get('doi_prefix'),
       "doiRepositoryPassword" => $settings->get('doi_repository_password'),
     ];
@@ -108,6 +109,7 @@ class WisskiDoiRestController extends ControllerBase {
             "resourceTypeGeneral" => "Dataset",
           ],
           "url" => $doiInfo['revisionUrl'],
+          "schemaVersion" => $this->doiSettings['doiSchemaVersion'],
         ],
       ],
     ];
@@ -154,7 +156,7 @@ class WisskiDoiRestController extends ControllerBase {
       #$errorCode = $this->errorResponse($error)->getStatusCode() ?? '500';
       return [
         'dbDate' => NULL,
-        'responseStatus' => $error->getCode(),
+        'responseStatus' => $this->errorResponse($error),
       ];
     }
 
@@ -166,7 +168,7 @@ class WisskiDoiRestController extends ControllerBase {
         ->error($this->t('An unknown error occurred while trying to connect to the remote API. This is not a Guzzle error, nor an error in the remote API, rather a generic local error occurred. The reported error was @error', ['@error' => $error->getMessage()]));
       return [
         'dbDate' => NULL,
-        'responseStatus' => $error->getCode(),
+        'responseStatus' => $this->errorResponse($error),
       ];
     }
     catch (GuzzleException $e) {
@@ -176,7 +178,7 @@ class WisskiDoiRestController extends ControllerBase {
       ->error($this->t('An unknown error occurred while trying to connect to the remote API. This is not a Guzzle error, nor an error in the remote API, rather a generic local error occurred. The reported error was @error', ['@error' => $error->getMessage()]));
     return [
       'dbDate' => NULL,
-      'responseStatus' => $error->getCode(),
+      'responseStatus' => $this->errorResponse($error),
     ];
   }
 
@@ -280,6 +282,10 @@ class WisskiDoiRestController extends ControllerBase {
         $error_tip = 'Are you trying to delete a registered or findable DOI?';
         break;
 
+      case "422":
+        $error_tip = 'Your JSON values are not accepted, check your schema version!';
+        break;
+
       case "500":
         $error_tip = 'There was no response at all, have you defined the base uri?';
         break;
@@ -298,7 +304,7 @@ class WisskiDoiRestController extends ControllerBase {
       ->addError($message);
     // Log the error.
     \Drupal::logger('wisski_doi')->error($message);
-    return NULL;
+    return $response->getStatusCode();
   }
 
 }
