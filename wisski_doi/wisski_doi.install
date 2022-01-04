@@ -8,7 +8,7 @@
 /**
  * Define scheme of wisski_doi table.
  */
-function wisski_doi_install() {
+function wisski_doi_schema() {
   $schema['wisski_doi'] = [
 
     'description' => 'Saves the namespaces on ontology load.',
@@ -58,10 +58,4 @@ function wisski_doi_install() {
   ];
 
   return $schema;
-}
-
-/**
- * Implements hook_uninstall().
- */
-function wisski_doi_uninstall() {
 }
