@@ -264,7 +264,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
       "bundleId" => $this->wisski_individual->bundle(),
       "entityId" => $this->wisski_individual->id(),
       "creationDate" => $this->dateFormatter->format($this->wisski_individual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
-      "type" => 'draft',
+      "state" => 'draft',
       "author" => $author,
       "contributors" => $contributorItems->get('contributors'),
       "title" => $this->wisski_individual->label(),
@@ -301,7 +301,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
      * or from findable to registered (hide).
      * draft - Triggers a state move from findable to registered.
      */
-    $doiTypes = [
+    $doiStates = [
       'draft' => 'Draft',
       'register' => 'Registered',
       'publish' => 'Findable',
@@ -326,12 +326,12 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
       '#description' => $this->t('The datetime, when the revision was created.'),
     ];
 
-    $form['type'] = [
+    $form['state'] = [
       '#type' => 'select',
-      '#title' => $this->t('Type'),
-      '#options' => $doiTypes,
-      '#default_value' => $this->doiInfo['type'],
-      '#description' => $this->t('The type of the DOI. Registered and findable DOIs can not be deleted!'),
+      '#title' => $this->t('State'),
+      '#options' => $doiStates,
+      '#default_value' => $this->doiInfo['state'],
+      '#description' => $this->t('The state of the DOI. Registered and findable DOIs can not be deleted!'),
     ];
 
     $form['author'] = [

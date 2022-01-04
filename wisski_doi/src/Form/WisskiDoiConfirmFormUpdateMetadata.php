@@ -52,8 +52,8 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
     $continue = TRUE;
-    if (!($this->dbRecord['type'] == 'draft') && $form_state->getValue('type') == 'draft') {
-      $form_state->setErrorByName('entityId', $this->t('You can not change a registered or findable DOI back to draft, sorry. Pick a suitable type'));
+    if (!($this->dbRecord['state'] == 'draft') && $form_state->getValue('state') == 'draft') {
+      $form_state->setErrorByName('entityId', $this->t('You can not change a registered or findable DOI back to draft, sorry. Pick a suitable state'));
       $continue = FALSE;
     }
   }
@@ -70,12 +70,12 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
    */
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual = NULL, $did = NULL): array {
     $this->dbRecord = (new WisskiDoiDbController())->readDoiRecords($wisski_individual, $did)[0];
-    if ($this->dbRecord['type'] == 'findable') {
+    if ($this->dbRecord['state'] == 'findable') {
       $doiInfo = (new WisskiDoiRestController())->readMetadata($this->dbRecord['doi']);
       $form_state->set('doiInfo', [
         "entityId" => $wisski_individual,
         "creationDate" => $doiInfo['data']['attributes']['dates'][0]['dateInformation'],
-        "type" => 'publish',
+        "state" => 'publish',
         "author" => $doiInfo['data']['attributes']['creators'][0]['name'],
         "contributors" => $doiInfo['data']['attributes']['contributors'],
         "title" => $doiInfo['data']['attributes']['titles'][0]['title'],
@@ -125,7 +125,7 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
     ];
     // Request DOI.
     $response = (new WisskiDoiRestController())->createOrUpdateDoi($doiInfo, TRUE);
-    $response['responseStatus'] == 200 ? (new WisskiDoiDBController())->updateDbRecord($doiInfo['type'], intval($this->dbRecord['did'])) : \Drupal::logger('wisski_doi')
+    $response['responseStatus'] == 200 ? (new WisskiDoiDBController())->updateDbRecord($doiInfo['state'], intval($this->dbRecord['did'])) : \Drupal::logger('wisski_doi')
       ->error($this->t('Something went wrong Updating the DOI. Leave the database untouched'));
     // Redirect to DOI administration.
     $form_state->setRedirect(

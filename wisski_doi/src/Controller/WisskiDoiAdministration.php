@@ -32,7 +32,7 @@ class WisskiDoiAdministration extends ControllerBase {
       // Build table.
       $build['table'] = [
         '#type' => 'table',
-        '#header' => ['ID', 'DOI', 'Type', 'RevisionURL', 'State', 'Operations'],
+        '#header' => ['ID', 'DOI', 'State', 'RevisionURL', 'State', 'Operations'],
         '#rows' => $rows,
         '#description' => $this->t('DOI information'),
         '#weight' => 1,
@@ -69,7 +69,7 @@ class WisskiDoiAdministration extends ControllerBase {
         'wisski_individual' => $wisski_individual,
       ]),
     ];
-    if ($row['type'] == 'draft') {
+    if ($row['state'] == 'draft') {
       $links['delete'] = [
         'title' => $this->t('Delete'),
         'url' => Url::fromRoute('wisski_individual.doi.delete', [

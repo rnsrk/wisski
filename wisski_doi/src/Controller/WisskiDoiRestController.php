@@ -77,7 +77,7 @@ class WisskiDoiRestController extends ControllerBase {
   public function createOrUpdateDoi(array $doiInfo, bool $update = FALSE) {
 
     // If type is draft, event has to be empty.
-    $event = ($doiInfo['type']) ?: "";
+    $event = ($doiInfo['state']) ?: "";
 
     $body = [
       "data" => [
@@ -139,7 +139,7 @@ class WisskiDoiRestController extends ControllerBase {
           "doi" => $responseContent['data']['id'],
           "vid" => $doiInfo['revisionId'] ?? NULL,
           "eid" => $doiInfo['entityId'],
-          "type" => $responseContent['data']['attributes']['state'],
+          "state" => $responseContent['data']['attributes']['state'],
           "revisionUrl" => $doiInfo['revisionUrl'],
         ],
         'responseStatus' => $response->getStatusCode(),

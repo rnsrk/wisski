@@ -34,7 +34,7 @@ class WisskiDoiDbController extends ControllerBase {
    *   WisskiDoiConfirmFormRequestDoiForStaticRevision.
    *   The revision ID as vid.
    *   The entity ID as eid.
-   *   The type of the DOI (draft, registered, findable).
+   *   The state of the DOI (draft, registered, findable).
    *
    * @return Null
    *   Query execution return nothing.
@@ -47,7 +47,7 @@ class WisskiDoiDbController extends ControllerBase {
         'eid' => $dbData['eid'],
         'doi' => $dbData['doi'],
         'vid' => $dbData['vid'] ?? NULL,
-        'type' => $dbData['type'],
+        'state' => $dbData['state'],
         'revisionUrl' => $dbData['revisionUrl'],
         'isCurrent' => empty($dbData['vid']) ? 1 : 0,
       ])
@@ -75,7 +75,7 @@ class WisskiDoiDbController extends ControllerBase {
         'eid',
         'doi',
         'vid',
-        'type',
+        'state',
         'revisionUrl',
         'isCurrent',
       ])
@@ -113,7 +113,7 @@ class WisskiDoiDbController extends ControllerBase {
   /**
    * Update the DOI record.
    *
-   * @param string $type
+   * @param string $state
    *   The internal DOI id.
    * @param int|null $did
    *   The internal DOI id.
@@ -121,7 +121,7 @@ class WisskiDoiDbController extends ControllerBase {
    * @return array
    *   Dataset of corresponding DOIs to an entity.
    */
-  public function updateDbRecord(string $type, int $did = NULL) {
+  public function updateDbRecord(string $state, int $did = NULL) {
     if (!$did) {
       $this->messenger()
         ->addError($this->t('There is no did.'));
@@ -129,7 +129,7 @@ class WisskiDoiDbController extends ControllerBase {
     }
     $result = $this->connection->update('wisski_doi')
       ->fields([
-        'type' => $type,
+        'state' => $state,
       ])->condition('did', $did)->execute();
     $this->messenger()
       ->addStatus($this->t('Updated DOI record from DB.'));
