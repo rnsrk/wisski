@@ -34,8 +34,8 @@ function wisski_doi_schema() {
         'type' => 'int',
         'size' => 'big',
       ],
-      'type' => [
-        'description' => 'Type: draft, registered, findable',
+      'state' => [
+        'description' => 'State: draft, registered, findable',
         'type' => 'varchar',
         'length' => 10,
         'not null' => TRUE,
@@ -48,8 +48,9 @@ function wisski_doi_schema() {
       ],
       'isCurrent' => [
         'description' => 'Is this revision the current revision?',
-        'type' => 'bool',
-        'default' => FALSE,
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
         'not null' => TRUE,
       ],
     ],
