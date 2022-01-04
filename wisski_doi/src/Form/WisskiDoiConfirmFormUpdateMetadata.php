@@ -47,15 +47,22 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
   }
 
   /**
-   *
+   * Validate if event is suitable.
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
     $continue = TRUE;
-    if (!($this->dbRecord['state'] == 'draft') && $form_state->getValue('state') == 'draft') {
+    if ($form_state->getValue('event') == 'draft' && in_array($this->dbRecord['state'], [
+      'registered', 'findable',
+    ])) {
       $form_state->setErrorByName('entityId', $this->t('You can not change a registered or findable DOI back to draft, sorry. Pick a suitable state'));
       $continue = FALSE;
     }
+    elseif ($form_state->getValue('event') == 'hide' && $this->dbRecord['state'] != 'findable') {
+      $form_state->setErrorByName('entityId', $this->t('You can not hide a draft or a registered DOI, sorry. Pick a suitable state'));
+      $continue = FALSE;
+    }
+    return $continue;
   }
 
   /**
@@ -76,7 +83,7 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
       $form_state->set('doiInfo', [
         "entityId" => $wisski_individual,
         "creationDate" => $doiInfo['data']['attributes']['dates'][0]['dateInformation'],
-        "state" => 'publish',
+        "event" => 'publish',
         "author" => $doiInfo['data']['attributes']['creators'][0]['name'],
         "contributors" => $doiInfo['data']['attributes']['contributors'],
         "title" => $doiInfo['data']['attributes']['titles'][0]['title'],
@@ -130,7 +137,7 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
     ];
     // Request DOI.
     $response = (new WisskiDoiRestController())->createOrUpdateDoi($doiInfo, TRUE);
-    $response['responseStatus'] == 200 ? (new WisskiDoiDBController())->updateDbRecord($doiInfo['state'], intval($this->dbRecord['did'])) : \Drupal::logger('wisski_doi')
+    $response['responseStatus'] == 200 ? (new WisskiDoiDBController())->updateDbRecord($response['dbData']['state'], intval($this->dbRecord['did'])) : \Drupal::logger('wisski_doi')
       ->error($this->t('Something went wrong Updating the DOI. Leave the database untouched'));
     // Redirect to DOI administration.
     $form_state->setRedirect(
