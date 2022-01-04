@@ -251,7 +251,6 @@ class WisskiDoiRestController extends ControllerBase {
     // Get the info returned from the remote server.
     $error_content = empty($response) ? ['errors' => [['status' => "500"]]] : json_decode($response->getBody()
       ->getContents(), TRUE);
-
     /*
      * Match only works in PHP 8
      * $error_tip = match ($error_content['errors'][0]['status']) {
@@ -304,7 +303,7 @@ class WisskiDoiRestController extends ControllerBase {
       ->addError($message);
     // Log the error.
     \Drupal::logger('wisski_doi')->error($message);
-    return $response->getStatusCode();
+    return $error_content['errors'][0]['status'];
   }
 
 }
