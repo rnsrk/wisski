@@ -7,7 +7,7 @@
 
 namespace Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine;
 
-require __DIR__ . '/../../../../..//vendor/autoload.php';
+require __DIR__ . '/../../../../../vendor/autoload.php';
 
 use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
@@ -100,15 +100,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function providesFastMode() {
     return TRUE;
   }
-  
+
   /**
    * {@inheritdoc}
    */
   public function providesCacheMode() {
-  
+
     return TRUE;
   }
-  
+
   /**
    * returns TRUE if the cache is pre-computed and ready to use, FALSE otherwise
    */
@@ -116,10 +116,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     //see $this->doTheReasoning()
     // and $this->getPropertiesFromCache() / $this->getClassesFromCache
     //the rasoner sets all reasoning based caches i.e. it is sufficient to check, that one of them is set
-    
+
     //if ($cache = \Drupal::cache()->get('wisski_reasoner_properties')) return TRUE;
     //return FALSE;
-    
+
     return $this->isPrepared();
   }
 
@@ -128,12 +128,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * returns the possible next steps in path creation, if $this->providesFastMode() returns TRUE then this
    * MUST react fast i.e. in the blink of an eye if $fast_mode = TRUE and it MUST return the complete set of options if $fast_mode=FALSE
    * otherwise it should ignore the $fast_mode parameter
-   */  
+   */
   public function getPathAlternatives($history = [], $future = [],$fast_mode=FALSE,$empty_uri='empty') {
 
 #    \Drupal::logger('WissKI path alternatives: '.($fast_mode ? 'fast mode' : "normal mode"))->debug('History: '.serialize($history)."\n".'Future: '.serialize($future));
     $search_properties = NULL;
-    
+
     $last = NULL;
     if (!empty($history)) {
       $candidate = array_pop($history);
@@ -150,13 +150,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }
       elseif ($this->isValidUri('<'.$candidate.'>')) {
         $last = "$inv_sign$candidate";
-        if ($this->isAProperty($candidate) === FALSE) $search_properties = TRUE; 
+        if ($this->isAProperty($candidate) === FALSE) $search_properties = TRUE;
       } else {
         if (WISSKI_DEVEL) \Drupal::logger('WissKI path alternatives')->debug('invalid URI '.$candidate);
         return array();
       }
     }
-    
+
     $next = NULL;
     if (!empty($future)) {
       $candidate = array_shift($future);
@@ -179,7 +179,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
       }
     }
-#  dpm(serialize($search_properties), "sp");    
+#  dpm(serialize($search_properties), "sp");
 #    \Drupal::logger('WissKI next '.($search_properties ? 'properties' : 'classes'))->debug('Last: '.$last.', Next: '.$next);
     //$search_properties is TRUE if and only if last and next are valid URIs and no owl:Class-es
     if ($search_properties) {
@@ -191,7 +191,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    dpm(func_get_args()+array('result'=>$return),__FUNCTION__);
     return $return;
   }
-  
+
   /**
    * @{inheritdoc}
    */
@@ -199,11 +199,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 //
 //  \Drupal::logger('WissKI SPARQL Client')->debug("normal mode");
 //    if (empty($history) && empty($future)) {
-//      
+//
 //      return $this->getClasses();
 //
 //    } elseif (!empty($history)) {
-//      
+//
 //      $last = array_pop($history);
 //      $next = empty($future) ? NULL : $future[0];
 //
@@ -222,43 +222,43 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 //      return [];
 //    }
 //
-//    
+//
 //  }
-  
+
   /**
    * @{inheritdoc}
    */
   public function getPrimitiveMapping($step) {
-  
+
     $out = $this->retrieve('primitives','property', 'class', $step);
 #    dpm($step);
 #    dpm($out);
     if (!empty($out)) return $out;
-    
+
     // in case of properties we can skip this
     if ($step[0] == '^') return array();
 
     $info = [];
 
     // this might need to be adjusted for other standards than rdf/owl
-    $query = 
+    $query =
       "SELECT DISTINCT ?property "
       ."WHERE { { "
         ."?property a owl:DatatypeProperty . "
         ."?property rdfs:domain ?d_superclass. "
 #        ."<$step> rdfs:subClassOf* ?d_superclass. } }"
-         
+
 #        ."{ GRAPH ?g3 { ?property rdfs:subPropertyOf* ?d_subprop } } . ";
 #        ."{ GRAPH ?g3 { ?property rdfs:subPropertyOf* ?d_subprop } } . { GRAPH ?g4 { ?d_subprop rdfs:domain ?d_superclass . } . } . "
 #        ."{ GRAPH ?g5 { <$step> rdfs:subClassOf* ?d_superclass. } . } . }"
       ;
-      
+
       // By Mark: TODO: Please check this. I have absolutely
       // no idea what this does, I just copied it from below
       // and I really really hope that Dorian did know what it
-      // does and it will work forever.      
+      // does and it will work forever.
 
-      $query .= 
+      $query .=
         "{"
           ."{?d_def_prop rdfs:domain ?d_def_class.}"
           ." UNION "
@@ -294,7 +294,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #    dpm($query, 'res');
 
     if (count($result) == 0) return array();
-    
+
     $output = array();
     foreach ($result as $obj) {
       $prop = $obj->property->getUri();
@@ -302,10 +302,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
     uksort($output,'strnatcasecmp');
     return $output;
-  } 
+  }
 
   public function getStepInfo($step, $history = [], $future = []) {
-    
+
     $info = [];
 
     $query = "SELECT DISTINCT ?label WHERE { GRAPH ?g { <$step> <http://www.w3.org/2000/01/rdf-schema#label> ?label . } } LIMIT 1";
@@ -327,7 +327,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function isaProperty($p) {
 
     //you cannot use GRAPH in an ASK query
-    //return $this->directQuery("ASK { GRAPH ?g { <$p> a owl:ObjectProperty . } }")->isTrue(); 
+    //return $this->directQuery("ASK { GRAPH ?g { <$p> a owl:ObjectProperty . } }")->isTrue();
 
     //we obviously have to solve it via SELECT
     $result = $this->directQuery(
@@ -336,13 +336,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         ."GRAPH ?g { "
           ."{ ?x a owl:ObjectProperty . } UNION { ?x a rdf:Property.}"
         ."}"
-      ."}"   
-    );   
+      ."}"
+    );
     return $result->numRows() > 0;
-  } 
-  
+  }
+
   public function getClasses() {
-  
+
     $out = $this->retrieve('classes','class');
     if (!empty($out)) return $out;
     $query = "SELECT DISTINCT ?class WHERE { "
@@ -352,9 +352,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         ."UNION "
         ."{ GRAPH ?g3 {?ind a ?class. ?class a ?type} }"
         ." . FILTER(!isBlank(?class))"
-        ."} ";  
+        ."} ";
     $result = $this->directQuery($query);
-    
+
     if (count($result) > 0) {
       $out = array();
       foreach ($result as $obj) {
@@ -366,9 +366,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
     return FALSE;
   }
-  
+
   public function getProperties() {
-  
+
     $out = $this->retrieve('properties','property');
     if (!empty($out)) return $out;
     $query = "SELECT DISTINCT ?property WHERE { "
@@ -377,9 +377,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         ."{ GRAPH ?g2 {?property a rdf:Property .} } "
       ." . "
       ."FILTER(!isBlank(?property))"
-    ."} ";  
+    ."} ";
     $result = $this->directQuery($query);
-    
+
     if (count($result) > 0) {
       $out = array();
       foreach ($result as $obj) {
@@ -451,14 +451,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     else return $dom_properties;
     return array_intersect_key($dom_properties,$rng_properties);
   }
-    
 
-  /** Gets all graphs that are considered containing ontology information / 
+
+  /** Gets all graphs that are considered containing ontology information /
    * triples by this engine.
    *
    * This defaults to the graphs retrieved from the triple store but may also
    * be overridden by the user.
-   * 
+   *
    * @return an array of graph URIs
    */
   public function getOntologyGraphs() {
@@ -467,11 +467,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $graph_uris = $this->queryOntologyGraphsFromStore();
     }
     return $graph_uris;
-  } 
-  
+  }
+
 
   /** Gets all graphs that contain an ontology
-   * 
+   *
    * @return an array of graph URIs
    */
   public function queryOntologyGraphsFromStore() {
@@ -487,19 +487,19 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
 
   public function getPropertiesFromStore($class=NULL,$class_after = NULL,$fast_mode=FALSE) {
-    
+
      if ($fast_mode) {
-      // the fast mode will only gather properties that are declared as 
+      // the fast mode will only gather properties that are declared as
       // domain/range directly. This will only return an incomplete set of
       // properties unless we have resp. reasoning capabilities
-      
+
       $query = "SELECT DISTINCT ?property WHERE { \n";
       if (isset($class)) $query .= "  GRAPH ?g3 { ?property rdfs:domain <$class>. }\n";
       if (isset($class_after)) $query .= "  GRAPH ?g4 { ?property rdfs:range <$class_after>. }\n";
       $query .= "  { { GRAPH ?g1 { ?property a owl:ObjectProperty. } } UNION { GRAPH ?g2 { ?property a rdf:Property. } } }\n";
       $query .= "}";
 
-    } 
+    }
     else {
       // the complete mode makes more sophisticated queries that also return
       // properties that are declared domain/range indirectly, i.e. somewhere
@@ -510,18 +510,18 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // Use all the graphs that contain ontology/tbox triples.
       // We have to use FROM GRAPH in complete mode as the
       // */+ modifiers will not work on multiple graphs if combined with a
-      // GRAPH ?g {} statement. And we have to use GRAPH ?g {} for fuseki 
+      // GRAPH ?g {} statement. And we have to use GRAPH ?g {} for fuseki
       // support...
       // If there are no ontology graphs, we use the default graph
       $ontology_graphs = $this->getOntologyGraphs();
-      $from_graphs = " "; 
+      $from_graphs = " ";
       if (!empty($ontology_graphs)) {
         $from_graphs = "\nFROM <" . join(">\nFROM <", $ontology_graphs) . ">\n";
       }
       $query = "SELECT DISTINCT ?property${from_graphs}WHERE {\n";
 
       if (isset($class)) {
-        $query .= 
+        $query .=
            "  <$class> rdfs:subClassOf* ?d_def_class.\n"
           ."  {\n"
           ."    { ?d_def_prop rdfs:domain ?d_def_class. }\n"
@@ -552,7 +552,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           ."  }\n";
       }
       if (isset($class_after)) {
-        $query .= 
+        $query .=
            "  <$class_after> rdfs:subClassOf* ?r_def_class.\n"
           ."  {\n"
           ."    { ?r_def_prop rdfs:range ?r_def_class. }\n"
@@ -581,11 +581,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           ."      }\n"
           ."    }\n"
           ."  }\n";
-      }  
+      }
     $query .= "  { { ?property a owl:ObjectProperty. } UNION { ?property a rdf:Property. } }\n";
     $query .= "}";
 /*      if (isset($class)) {
-        $query .= 
+        $query .=
            "  GRAPH ?g8 { <$class> rdfs:subClassOf* ?d_def_class. }\n"
           ."  {\n"
           ."    { GRAPH ?g5 { ?d_def_prop rdfs:domain ?d_def_class.}}\n"
@@ -618,7 +618,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           ."  }\n";
       }
       if (isset($class_after)) {
-        $query .= 
+        $query .=
            "  GRAPH ?g19 { <$class_after> rdfs:subClassOf* ?r_def_class.}\n"
           ."  {\n"
           ."    { GRAPH ?g16 { ?r_def_prop rdfs:range ?r_def_class.} }\n"
@@ -726,7 +726,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     } else return $rng_classes;
     return array_intersect_key($rng_classes,$dom_classes);
     */
-#    dpm(func_get_args()+array('result'=>$return),__FUNCTION__);    
+#    dpm(func_get_args()+array('result'=>$return),__FUNCTION__);
     //DB version
     $rng_classes = $this->retrieve('ranges','class','property',$property);
 #    dpm($rng_classes, "ranges");
@@ -736,11 +736,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 
   public function getClassesFromStore($property=NULL,$property_after = NULL,$fast_mode=FALSE) {
-  
+
     $query = "SELECT DISTINCT ?class WHERE {  {"
       ."{ {?class a owl:Class. } UNION { ?class a rdfs:Class.} }"
       ;
-    if ($fast_mode) {  
+    if ($fast_mode) {
       if (isset($property)) $query .= "<$property> rdfs:range ?class. ";
       if (isset($property_after)) $query .= "<$property_after> rdfs:domain ?class. ";
     } else {
@@ -763,13 +763,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             ."?d_sub_prop rdfs:domain ?d_any_class. "
           ."} "
           ."?class rdfs:subClassOf* ?d_super_class. ";
-      }  
+      }
     }
     $query .= "} }";
 
 #    drupal_set_message(serialize($query));
     $result = $this->directQuery($query);
-    
+
     if (count($result) == 0) return array();
 
     $output = array();
@@ -785,7 +785,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   /******************* End of BASIC Pathbuilder Support ***********************/
 
   // copy from yaml-adapter - likes camels.
-  
+
   private $entity_info;
 
   /*
@@ -797,49 +797,49 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $pbs = $this->getPbsForThis();
 
     $entityid = $this->getDrupalId($entityid);
-    
+
     $ret = array();
-      
+
     foreach($pbs as $pb) {
 #    drupal_set_message("yay!" . $entityid . " and " . $bundleid);
-    
+
       $groups = $pb->getGroupsForBundle($bundleid);
-    
+
       foreach($groups as $group) {
         $paths = $pb->getImagePathIDsForGroup($group->id());
-    
+
 #      drupal_set_message("paths: " . serialize($paths));
-            
+
         foreach($paths as $pathid) {
-    
+
           $path = WisskiPathEntity::load($pathid);
-        
+
 #        drupal_set_message(serialize($path));
-        
+
 #        drupal_set_message("thing: " . serialize($this->pathToReturnValue($path->getPathArray(), $path->getDatatypeProperty(), $entityid, 0, NULL, 0)));
-        
+
           // this has to be an absulte path - otherwise subgroup images won't load.
           $new_ret = $this->pathToReturnValue($path, $pb, $entityid, 0, NULL, FALSE);
 #          if (!empty($new_ret)) dpm($pb->id().' '.$pathid.' '.$entitid,'News');
           $ret = array_merge($ret, $new_ret);
-          
-        } 
+
+        }
       }
-    }    
+    }
 #    drupal_set_message("returning: " . serialize($ret));
     //dpm($ret,__FUNCTION__);
     return $ret;
   }
-  
+
   /**
    * @see getBundleIdsForUri()
    *
    *
    */
   public function getBundleIdsForEntityId($entityid) {
-    
+
     if (is_numeric($entityid)) {
-      $uri = $this->getUriForDrupalId($entityid, FALSE);    
+      $uri = $this->getUriForDrupalId($entityid, FALSE);
     } else {
       $uri = $entityid;
     }
@@ -855,13 +855,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         return $this->getBundleIdsForUri($uri);
       }
     }
-    
+
 #    wsmlog(__METHOD__ . ": could not find URI for entityid '$entityid'", 'warning');
     $this->messenger()->addError("Could not find URI for entityid '$entityid'");
     return array();
 
   }
-        
+
   /** Get the IDs of all bundles that can be used for the given instance.
    *
    * It returns only bundles defined via pathbuilders that are associated with
@@ -876,15 +876,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    */
   public function getBundleIdsForUri($uri) {
     $pbs = $this->getPbsForThis();
-    
+
     $query = "SELECT ?class WHERE { GRAPH ?g { <" . $uri . "> a ?class } }";
-    
+
     $result = $this->directQuery($query);
 
     $out = array();
     foreach($result as $thing) {
       $uri_to_find = $thing->class->getUri();
-  
+
       $topbundles = array();
       $nontopbundles = array();
 
@@ -893,30 +893,30 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
         if(empty($bundles))
           continue;
-          
+
         list($tmptopbundles, $tmpnontopbundles) = $bundles;
- 
+
         $topbundles = array_merge($topbundles, $tmptopbundles);
         $nontopbundles = array_merge($nontopbundles, $tmpnontopbundles);
       }
 #      dpm($topbundles);
-      
+
       foreach($nontopbundles as $key => $value) {
         $out = array_merge(array($key => $value), $out);
       }
-      
+
       foreach($topbundles as $key => $value) {
         $out = array_merge(array($key => $value), $out);
       }
-      
+
     }
 
 #    dpm($out, "out");
 
-    return $out;    
-    
+    return $out;
+
   }
-  
+
   /**
    * Gets the array part to get from one subgroup to another
    *
@@ -934,59 +934,59 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $allpbpaths = $pb->getPbPaths();
     $pbarray = $allpbpaths[$group->id()];
 
-    // do some error handling    
+    // do some error handling
     if(!$group->isGroup()) {
       $this->messenger()->addError("getClearGroupArray called with something that is not a group: " . serialize($group));
       return;
     }
-        
+
     // if we are a top group, won't do anything.
     if($pbarray['parent'] > 0) {
-        
+
       // first we have to calculate our own ClearPathArray
       $clearGroupArray = $this->getClearPathArray($group, $pb);
-    
+
       // then we have to get our parents array
       $pbparentarray = $allpbpaths[$pbarray['parent']];
-      
+
       $parentpath = WisskiPathEntity::load($pbarray["parent"]);
-      
+
       // if there is nothing, do nothing!
       // I am unsure if that ever could occur
       if(empty($parentpath))
         return;
-      
+
       // -1 because we don't want to cut our own concept
       $parentcnt = count($parentpath->getPathArray())-1;
 
 #      drupal_set_message("before cut: " . serialize($patharraytoget));
-      
+
       for($i=0; $i<$parentcnt; $i++) {
         unset($patharraytoget[$i]);
       }
-      
+
 #      drupal_set_message("in between: " . serialize($patharraytoget));
-      
+
       $patharraytoget = array_values($patharraytoget);
-      
+
 #      drupal_set_message("cga: " . serialize($clearGroupArray));
-      
+
       $max = count($patharraytoget);
-      
+
       // we have to cut away everything that is in $cleargrouparray
       // so we take the whole length and subtract that as a starting point
       // and go up from there
       for($i=(count($patharraytoget)-count($clearGroupArray)+1);$i<$max;$i++)
         unset($patharraytoget[$i]);
-      
+
 #      drupal_set_message("after cut: " . serialize($patharraytoget));
-      
-      $patharraytoget = array_values($patharraytoget);      
-      
+
+      $patharraytoget = array_values($patharraytoget);
+
     }
-    return $patharraytoget;    
+    return $patharraytoget;
   }
-  
+
   /**
    * This is Obsolete!
    *
@@ -1001,26 +1001,26 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $this->messenger()->addError('getClearPathArray found no path or no pathbuilder. Error!');
       return array();
     }
-    
+
     $patharraytoget = $path->getPathArray();
     $allpbpaths = $pb->getPbPaths();
     $pbarray = $allpbpaths[$path->id()];
-    
+
 #    dpm($pbarray, "pbarray!");
     // is it in a group?
     if(!empty($pbarray['parent'])) {
 
       $pbparentarray = $allpbpaths[$pbarray['parent']];
-      
+
       // how many path-parts are in the pb-parent?
       $parentpath = WisskiPathEntity::load($pbarray["parent"]);
-            
+
       // if there is nothing, do nothing!
       // I am unsure if that ever could occur
       if(empty($parentpath))
         return;
-      
-      
+
+
       // we have to handle groups other than paths
       if($path->isGroup()) {
         // so this is a subgroup?
@@ -1031,18 +1031,18 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // strip exactly that.
         for($i=0; $i< $pathcnt; $i++) {
           unset($patharraytoget[$i]);
-        }        
-      
+        }
+
       } else {
         // this is no subgroup, it is a path
 #        if(!empty($pbparentarray['parent'])) {
-          // only do something if it is a path in a subgroup, not in a main group  
+          // only do something if it is a path in a subgroup, not in a main group
 
 #          $parentparentpath = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pbparentarray["parent"]);
 
-          // in that case we have to remove the subgroup-part, however minus one, as it is the       
+          // in that case we have to remove the subgroup-part, however minus one, as it is the
 #          $pathcnt = count($parentpath->getPathArray()) - count($this->getClearPathArray($parentpath, $pb));
-          $pathcnt = count($parentpath->getPathArray()) - 1; #count($parentparentpath->getPathArray());        
+          $pathcnt = count($parentpath->getPathArray()) - 1; #count($parentparentpath->getPathArray());
 
 #          dpm($pathcnt, "pathcnt");
 #          dpm($parentpath->getPathArray(), "pa!");
@@ -1053,13 +1053,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 #        }
       }
     }
-          
+
 #          drupal_set_message("parent is: " . serialize($pbparentarray));
-          
+
 #          drupal_set_message("I am getting: " . serialize($patharraytoget));
-          
+
     $patharraytoget = array_values($patharraytoget);
-    
+
     return $patharraytoget;
   }
 
@@ -1067,7 +1067,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * Gets the bundle and loads every individual in the TS
    * and returns an array of ids if there is something...
    *
-   */ 
+   */
   public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE) {
 
     $conds = array();
@@ -1076,15 +1076,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if($cond["field"] != "bundle") {
         // get pb entries
         $pbentries = $pathbuilder->getPbEntriesForFid($cond["field"]);
-        
+
         if(empty($pbentries))
           continue;
-        
+
         $path = WisskiPathEntity::load($pbentries['id']);
-        
+
         if(empty($path))
           continue;
-        
+
         $conds[] = $path;
       }
     }
@@ -1094,15 +1094,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $query = "SELECT (COUNT(?x0) as ?cnt) WHERE {";
     else
       $query = "SELECT ?x0 WHERE {";
-    
+
 
     if(empty($conds)) {
-      
+
       // there should be someone asking for more than one...
       $groups = $pathbuilder->getGroupsForBundle($bundleid);
-      
-      
-      // no group defined in this pb - return   
+
+
+      // no group defined in this pb - return
       if(empty($groups)) {
         if ($count) return 0;
         return array();
@@ -1112,18 +1112,18 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // in future: iterate here!
       // @TODO!
       $group = $groups[0];
-    
-      // get the group 
+
+      // get the group
       // this does not work for subgroups! do it otherwise!
-      #$grouppath = $group->getPathArray();    
+      #$grouppath = $group->getPathArray();
 #      $grouppath = $this->getClearPathArray($group, $pathbuilder);
       $grouppath = $pathbuilder->getRelativePath($group, FALSE);
-                         
+
       foreach($grouppath as $key => $pathpart) {
         if($key % 2 == 0)
           $query .= " ?x" . $key . " a <". $pathpart . "> . ";
         else
-          $query .= " ?x" . ($key-1) . " <" . $pathpart . "> ?x" . ($key+1) . " . "; 
+          $query .= " ?x" . ($key-1) . " <" . $pathpart . "> ?x" . ($key+1) . " . ";
       }
     } else {
       foreach($conds as $path) {
@@ -1132,12 +1132,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
 
     $query .= "}";
-    
+
     if(is_null($limit) == FALSE && is_null($offset) == FALSE && empty($count))
       $query .= " LIMIT $limit OFFSET $offset ";
-     
+
 #    drupal_set_message("query: " . serialize($query) . " and " . microtime());
-    
+
 #    return;
     //dpm($query,__FUNCTION__.' '.$this->adapterId());
     // ask for the query
@@ -1150,21 +1150,21 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // later on we need names here!
     foreach($result as $thing) {
 
-      // if it is a count query, return the integer      
+      // if it is a count query, return the integer
       if(!empty($count)) {
         //dpm($thing,'Count Thing');
         return $thing->cnt->getValue();
       }
-      
+
       $uri = $thing->x0->dumpValue("text");
-      
+
       #$uri = str_replace('/','\\',$uri);
       // this is no uri anymore - rename this variable.
-      
+
       $uriname = $this->getDrupalId($uri);
-      
+
       // store the bundleid to the bundle-cache as it might be important
-      // for subsequent queries.      
+      // for subsequent queries.
       $pathbuilder->setBundleIdForEntityId($uriname, $bundleid);
 
       $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
@@ -1177,13 +1177,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return $outarr;
   }
 
-  public function loadEntity($id) {    
+  public function loadEntity($id) {
     // simply give back something without thinking about it.
     $out['eid'] = $id;
-        
+
     return $out;
   }
-  
+
   /**
    * This is deprecated and unfunctional
    */
@@ -1191,43 +1191,43 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $this->messenger()->addError("I may not be called: loadMultipleEntities. ");
     return;
   }
-    
+
   /**
    * @inheritdoc
    */
   public function hasEntity($entity_id) {
-  
+
 #    dpm("has Entity?");
-    
+
 #    dpm($this->getBaseFieldFromStoreForUri($uri, $entity_id));
-  
+
     $uri = $this->getUriForDrupalId($entity_id, FALSE);
 
     $out = NULL;
-    
+
     if($uri)
       $out = $this->checkUriExists($uri);
 
     return $out;
   }
-  
+
   /**
    * The elemental data aggregation function
    * fetches the data for display purpose
    */
   public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL, $relative = TRUE, $language = LanguageInterface::LANGCODE_DEFAULT ) {
 #    drupal_set_message("I got: $eid " . serialize($path));
-#$tmpt1 = microtime(TRUE);            
+#$tmpt1 = microtime(TRUE);
 #  drupal_set_message("ptrv: " . microtime());
     //MyF: Instead of the LANGCODE_DEFAULT (x-default), we use the displayed language
     $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
 
     $languages = array();
-    
+
     if($language == "all") {
       $to_load = \Drupal::languageManager()->getLanguages();
       $languages = array_keys($to_load);
-      
+
 #      dpm($languages, "langs?");
     } else {
       $languages = array($language);
@@ -1242,9 +1242,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $primitive = $path->getDatatypeProperty();
     else
       $primitive = NULL;
-      
+
     $disamb = $path->getDisamb();
-    
+
     // also
     if($disamb > 0)
       $disamb = ($disamb-1)*2;
@@ -1252,7 +1252,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $disamb = NULL;
 
     $sparql = "SELECT DISTINCT ";
-    
+
     if($relative) {
       $starting_position = count($path->getPathArray()) - count($pb->getRelativePath($path));
     } else {
@@ -1263,7 +1263,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if(!is_null($disamb)) { //&& $disamb === $starting_position) {
       $sparql .= "?x" . $disamb . " ";
     }
-    
+
     // $starting_position+2 because we can omit x0 in this place - it will always be replaced
     // by the eid of this thing here.
     /*
@@ -1272,24 +1272,24 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $sparql .= "?x" . $i . " ";
     }
     */
-    
+
     // get the queried one.
     $name = 'x' . (count($path->getPathArray())-1);
-    
+
     // in case of primitives it is not the above one but "out"
     if(!empty($primitive) && $primitive != "empty")
       $sparql .= "?out ";
     else if($name != "x" . $disamb) // but in all other cases it is the above one.
       $sparql .= "?" . $name . " ";
-          
+
     $sparql .= "WHERE { ";
 
 #    drupal_set_message("ptrv2: " . microtime());
     if(!empty($eid)) {
       // rename to uri
-#$tmpt5 = microtime(TRUE);            
+#$tmpt5 = microtime(TRUE);
       $eid = $this->getUriForDrupalId($eid, TRUE);
-#$tmpt6 = microtime(TRUE);            
+#$tmpt6 = microtime(TRUE);
 
       // if the path is a group it has to be a subgroup and thus entity reference.
       if($path->isGroup()) {
@@ -1300,13 +1300,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // here we can probably avoid the language tag...
         // by mark ;)
         $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0,  ($starting_position/2), FALSE, NULL, 'entity_reference', $relative, array(), 0);
-        
+
       }
       else {
 //        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, ($starting_position/2), FALSE, NULL, 'field', $relative);
         $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, ($starting_position/2), FALSE, NULL, 'field', $relative, array(), 0);
       }
-#$tmpt7 = microtime(TRUE);            
+#$tmpt7 = microtime(TRUE);
 
     } else {
       $this->messenger()->addError("No EID for data. Error. ");
@@ -1325,20 +1325,20 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     $sparql .= " } ";
 
-#dpm($sparql, "spar-gel");    
+#dpm($sparql, "spar-gel");
 #    drupal_set_message(serialize($sparql) . " on " . serialize($this));
 #    dpm(microtime(), "mic1");
-#$tmpt2 = microtime(TRUE);            
+#$tmpt2 = microtime(TRUE);
     $result = $this->directQuery($sparql);
-#$tmpt3 = microtime(TRUE);  
-#    dpm(microtime(), "mic2");          
+#$tmpt3 = microtime(TRUE);
+#    dpm(microtime(), "mic2");
 #    drupal_set_message(serialize($result));
 
 #    dpm($result, "res?");
 
     $out = array();
     foreach($result as $thing) {
-      
+
       // if $thing is just a true or not true statement
       // TODO: by Martin: is this really working and if so in which case?
       // Also, what does true/false statement mean? we know that it's not an ASK query
@@ -1346,7 +1346,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $this->messenger()->addError("This is ultra-evil!");
         continue;
       }
-      
+
 #      $name = 'x' . (count($patharray)-1);
 #      $name = 'x' . (count($path->getPathArray())-1);
       if(!empty($primitive) && $primitive != "empty") {
@@ -1355,40 +1355,40 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 //          dpm("I have no main_property");
 
           $my_language = $thing->out->getLang();
-          
+
           // if we have no language, take the default one.
 //          if(empty($my_language))
 //            $my_language = LanguageInterface::LANGCODE_DEFAULT;
- 
-          // only add it if my language is the language provided to me           
+
+          // only add it if my language is the language provided to me
 //          if($my_language == $language)
 //            $out[] = $thing->out->getValue();
 
           // this probably breaks any case were we assumed we just get a value
           // I hope this are not too many ;D
-#          dpm("Danger Zone!!", 
+#          dpm("Danger Zone!!",
           $out[] = $thing->out->getValue();
         } else {
-          
+
           $my_language = $thing->out->getLang();
-          
+
           // if we have no language, take the default one.
           if(empty($my_language))
 #            $my_language = LanguageInterface::LANGCODE_DEFAULT;
             //MyF: if there is no language, we set the language to the current displayed language stored in $language (instead of setting it to LanguageInterface::LANGCODE_DEFAULT)
             $my_language = $language;
 
-          
+
           $outvalue = $thing->out->getValue();
 
           // special case: DateTime... render this as normal value for now.
           if(is_a($outvalue, "DateTime")) {
             $outvalue = (string)$outvalue->format('Y-m-d\TH:i:s.u');;
           }
-          
+
 #          if($path->isGroup() && $main_property == "target_id")
 #            $outvalue = $this->getDrupalId($outvalue);
-#          dpm($outvalue . " and " . serialize($disamb));          
+#          dpm($outvalue . " and " . serialize($disamb));
           if(is_null($disamb) == TRUE) {
             $out[] = array($main_property => $outvalue, "wisski_language" => $my_language);
           }
@@ -1403,24 +1403,24 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           }
         }
       } else {
-      
+
         // in this case we always take the language which is available...
-        
+
 #        $my_language = LanguageInterface::LANGCODE_DEFAULT;
         //MyF: in this case, we take the language which is displayed (stored in $language)
 #       $my_language = LanguageInterface::LANGCODE_DEFAULT;
         $my_language = $language;
 #        dpm("(Sparl11EngineWithPB.php, line 1380) I changed my lang from x-default to " . $my_language);
 
-      
+
         if(empty($main_property)) {
           $out[] = $thing->{$name}->dumpValue("text");
-        } else { 
+        } else {
           $outvalue = $thing->{$name}->dumpValue("text");
-          
+
 #          if($path->isGroup() && $main_property == "target_id")
 #            $outvalue = $this->getDrupalId($outvalue);
-        
+
           if(is_null($disamb) == TRUE)
             $out[] = array($main_property => $outvalue);
           else {
@@ -1433,21 +1433,21 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
       }
     }
-#$tmpt4 = microtime(TRUE);            
+#$tmpt4 = microtime(TRUE);
 #\Drupal::logger('WissKI Adapter ptrv')->debug($pb->id() . " " . $path->id() ."::". htmlentities(\Drupal\Core\Serialization\Yaml::encode( [$tmpt4-$tmpt1,$tmpt7-$tmpt6, $tmpt5-$tmpt1, $tmpt6-$tmpt5, $tmpt2-$tmpt7, $tmpt3-$tmpt2, $tmpt4-$tmpt3])));
 #dpm([$tmpt4-$tmpt1,$tmpt5-$tmpt1, $tmpt6-$tmpt5, $tmpt2-$tmpt6, $tmpt3-$tmpt2, $tmpt4-$tmpt3], $pb->id() . " " . $path->id());
 
 #    dpm($out, "out?");
-    
+
     // by mark:
     // up to now out had the structure array( key => array( "value" => "some value that i've got from the Ts") )
     // in future we want that language dependent. This means we want:
     // array( "lang" = > array( key => array( "value" => "some value that i've got from the Ts") ) )
 
     return $out;
-    
+
   }
-  
+
   /**
    * @inheritdoc
    */
@@ -1455,13 +1455,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     // tricky thing here is that the entity_ids that are coming in typically
     // are somewhere from a store. In case of rdf it is easy - they are uris.
-    // In case of csv or something it is more tricky. So I don't wan't to 
+    // In case of csv or something it is more tricky. So I don't wan't to
     // simply go to the store and tell it "give me the bundle of this".
     // The field ids come in handy here - fields are typically attached
     // to a bundle anyway. so I just get the bundle from there. I think it is
-    // rather stupid that this function does not load the field values per 
+    // rather stupid that this function does not load the field values per
     // bundle - it is implicitely anyway like that.
-    // 
+    //
     // so I ignore everything and just target the field_ids that are mapped to
     // paths in the pathbuilder.
 
@@ -1481,17 +1481,17 @@ $tsa = ['start'=>microtime(true)];
 $tsa['pbs'] = join(' ', $pb_ids);
 
     $out = array();
-        
+
     // get the adapterid that was loaded
     // haha, this is the engine-id...
     //$adapterid = $this->getConfiguration()['id'];
-        
+
     foreach($pbs as $pb) {
-      
+
       // if we find any data, we set this to true.
       $found_any_data = FALSE;
-        
-      foreach($field_ids as $fkey => $fieldid) {  
+
+      foreach($field_ids as $fkey => $fieldid) {
         #drupal_set_message("for field " . $fieldid . " with bundle " . $bundleid_in . " I've got " . serialize($this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in, $language)));
 $tmpc=microtime(true);
         $got = $this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in);
@@ -1513,20 +1513,20 @@ $tsa[$pb->id()][$fieldid] = (microtime(TRUE)-$tmpc);
 
 #        drupal_set_message("out after got: " . serialize($out));
       }
-      
+
 #      drupal_set_message("out is empty? " . serialize($out) . serialize(empty($out)));
-      
+
       // @TODO this is a hack.
       // if we did not find any data we unset this part so we don't return anything
       // however this might be evil in cases of edit or something...
       if(empty($out))
         return array();
     }
-    
+
 #    drupal_set_message("I return: " . serialize($out));
 $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #\Drupal::logger('Sparql Adapter')->debug(str_replace("\n", '<br/>', htmlentities("loadFieldValues:\n".\Drupal\Core\Serialization\Yaml::encode($tsa))));
-    
+
     return $out;
 
   }
@@ -1547,7 +1547,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #    drupal_set_message("a1: " . microtime());
 #    drupal_set_message("fun: " . serialize(func_get_args()));
 #    drupal_set_message("2");
-#   
+#
 #    drupal_set_message("muha: " . serialize($field_id));
     $field_storage_config = FieldStorageConfig::loadByName('wisski_individual', $field_id);#->getItemDefinition()->mainPropertyName();
 #    drupal_set_message("a11: " . microtime());
@@ -1559,7 +1559,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     if (empty($field_storage_config)) {
       // this is the case for base fields (fields that are defined directly in
       // the entity class)
-      
+
       // we can handle base-fields in advance.
       if($field_id == "bundle" || $field_id == "eid") {
         foreach($entity_ids as $eid) {
@@ -1569,16 +1569,16 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             continue;
           }
 #        drupal_set_message("I am asked for fids: " . serialize($field_ids));
-  
+
           if($field_id == "eid") {
             $out[$eid][$field_id] = array($eid);
             continue;
           }
-      
+
           // Bundle is a special case.
           // If we are asked for a bundle, we first look in the pb cache for the bundle
-          // because it could have been set by 
-          // measures like navigate or something - so the entity is always displayed in 
+          // because it could have been set by
+          // measures like navigate or something - so the entity is always displayed in
           // a correct manor.
           // If this is not set we just select the first bundle that might be appropriate.
           // We select this with the first field that is there. @TODO:
@@ -1587,7 +1587,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           // however this would need more tables with mappings that will be slow in case
           // of a lot of data...
           if($field_id == "bundle") {
-            
+
             if(!empty($bundleid_in)) {
               $out[$eid]['bundle'] = array($bundleid_in);
               continue;
@@ -1595,7 +1595,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
             // get all the bundles for the eid from us
             $bundles = $this->getBundleIdsForEntityId($eid);
-          
+
             if(!empty($bundles)) {
               // if there is only one, we take that one.
               #foreach($bundles as $bundle) {
@@ -1605,7 +1605,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               continue;
             } else {
               // if there is none return NULL
-              $out[$eid]['bundle'] = NULL;              
+              $out[$eid]['bundle'] = NULL;
               continue;
             }
           }
@@ -1613,7 +1613,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       }
       return $out;
     }
-    
+
 
     if(!empty($field_storage_config)) {
       $main_property = $field_storage_config->getMainPropertyName();
@@ -1629,22 +1629,22 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $relevant_pb_ids = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->getQuery()
       ->condition('adapter', $this->adapterId())->execute();
 
-#    drupal_set_message("a3: " . microtime());    
+#    drupal_set_message("a3: " . microtime());
     // this approach will be not fast enough in the future...
     // the pbs have to have a better mapping of where and how to find fields
     $pbs = WisskiPathbuilderEntity::loadMultiple($relevant_pb_ids);
-    
+
 #    drupal_set_message("a4: " . microtime());
-    
+
     // what we loaded once we don't want to load twice.
     $adapter_cache = array();
-        
-    // go through all relevant pbs        
+
+    // go through all relevant pbs
     foreach($pbs as $pb) {
 
       // get the pbarray for this field
       $pbarray = $pb->getPbEntriesForFid($field_id);
-          
+
       // if there is no data about this path - how did we get here in the first place?
       // fields not in sync with pb?
       if(empty($pbarray["id"]))
@@ -1655,13 +1655,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       // if there is no path we can skip that
       if(empty($path))
         continue;
-                          
+
       // if we find any data, we set this to true.
       $found_any_data = FALSE;
-      
+
       foreach($entity_ids as $eid) {
         // every other field is an array, we guess
-        // this might be wrong... cardinality?          
+        // this might be wrong... cardinality?
         if(!isset($out[$eid][$field_id]))
           $out[$eid][$field_id] = array();
 
@@ -1670,22 +1670,22 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           // @TODO: ueberarbeiten
 #          drupal_set_message("danger zone!");
           $tmp = $this->pathToReturnValue($path, $pb, $eid, 0, $main_property);
-          //$tmp = $this->pathToReturnValue($path, $pb, $eid, 0, $main_property, TRUE);            
+          //$tmp = $this->pathToReturnValue($path, $pb, $eid, 0, $main_property, TRUE);
 
           foreach($tmp as $key => $item) {
             $tmp[$key]["target_id"] = $this->getDrupalId($item["target_id"]);
           }
-          
+
           // by mark
           // IF it is a group the language is probably the default language anyway?
-          $tmp = array(LanguageInterface::LANGCODE_DEFAULT => $tmp);          
-            
+          $tmp = array(LanguageInterface::LANGCODE_DEFAULT => $tmp);
+
           $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $tmp);
         } else {
           // it is a field?
           // get the parentid
           $parid = $pbarray["parent"];
-            
+
           // get the parent (the group the path belongs to) to get the common group path
           $par = WisskiPathEntity::load($parid);
 
@@ -1695,11 +1695,11 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             continue;
           }
 
-          // get the clear path array            
+          // get the clear path array
           $clearPathArray = $pb->getRelativePath($path, FALSE);
 #$tmpt=microtime(true);
 #          drupal_set_message("a1v1: " . microtime());
-          $tmp = $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property);        
+          $tmp = $this->pathToReturnValue($path, $pb, $eid, count($path->getPathArray()) - count($clearPathArray), $main_property);
           // by mark - for now we load all languages which means we provide "all" as a parameter.
 
 #          dpm($tmp, "tmp?");
@@ -1710,9 +1710,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #\Drupal::logger('WissKI Import lpvff')->debug((microtime(TRUE)-$tmpt). ": $field_id ".$path->id());
 
           if ($main_property == 'target_id') {
-              
+
             $oldtmp = $tmp;
-            
+
             // special case for files - do not ask for a uri.
             if($target_type == "file") {
               foreach($tmp as $key => $item) {
@@ -1720,7 +1720,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
                 $tmp[$key]["original_target_id"] = $item["target_id"];
               }
             } else {
-              
+
               foreach($tmp as $key => $item) {
                 $tmp[$key]["original_target_id"] = $item["target_id"];
                 $tmp[$key]["target_id"] = $this->getDrupalId(isset($item['wisskiDisamb']) ? $item["wisskiDisamb"] : $item["target_id"]);
@@ -1742,9 +1742,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
                   break;
                 }
               }
-              
+
               #$tmp = array(LanguageInterface::LANGCODE_DEFAULT => $tmp);
-              
+
               // by MyF: iterate through all available languages in order to make the entity reference case language dependent
               // without this change, the entity references were pulled out of the cache and this led to errors in the view (the field was not
               // displayed in languages other than the default language)
@@ -1753,7 +1753,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               // by MyF: ASSUMPTION: we delete the x-default language case since we do not need it anymore
                 if(!isset($out[$eid][$field_id][$al])){
                   $out[$eid][$field_id][$al] = array();
-                }                
+                }
                 // if we don't skip, add it via array_merge...
                 if(!$skip) {
                   if(!isset($out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT][$key])){
@@ -1775,20 +1775,20 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
               if(!isset($out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT]))
                 $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT] = array();
-            
+
             // if we don't skip, add it via array_merge...
               if(!$skip) {
                 if(!isset($out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT][$key]))
                   $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT][$key] = $item;
                 else
                   $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT][] = $item;
-            
+
                 // by mark: we also add it in the correct language
 #                if(isset($item['wisski_language']))
 #                  $out[$eid][$field_id][$item['wisski_language']][$key] = $item;
-            
+
 //                $out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT] = array_merge($out[$eid][$field_id][LanguageInterface::LANGCODE_DEFAULT], $item);
-            
+
              }
            }
           } else { // "normal" behaviour
@@ -1800,28 +1800,28 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             foreach($tmp as $key => $value) {
                 $new_tmp[$value['wisski_language']][$key] = $value;
             }
-            
+
 
             $out[$eid][$field_id] = array_merge($out[$eid][$field_id], $new_tmp);
           }
         }
-        
+
         if(empty($out[$eid][$field_id]))
           unset($out[$eid]);
       }
     }
-    
+
 #    dpm($out, "out?");
 #    drupal_set_message("a3: " . microtime());
     return $out;
   }
-  
-  
+
+
   public function getQueryObject(EntityTypeInterface $entity_type,$condition,array $namespaces) {
-    //do NOT copy this to parent, this is namespace dependent  
+    //do NOT copy this to parent, this is namespace dependent
     return new Query($entity_type,$condition,$namespaces,$this);
   }
-  
+
   public function deleteOldFieldValue($entity_id, $fieldid, $value, $pb, $count = 0, $mainprop = FALSE, $language = "und") {
  #   drupal_set_message("entity_id: " . $entity_id . " field id: " . $fieldid . " value " . serialize($value));
     // get the pb-entry for the field
@@ -1829,10 +1829,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $pbarray = $pb->getPbEntriesForFid($fieldid);
 
     $field_storage_config = FieldStorageConfig::loadByName('wisski_individual', $fieldid);
-    
+
     // store the target type to see if it references to a file for special handling
     $target_type = NULL;
-    
+
     if(!empty($field_storage_config)) {
       $target_type = $field_storage_config->getSetting("target_type");
     }
@@ -1846,12 +1846,12 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       $this->messenger()->addWarning.("Danger zone: in PB " . $pb->getName() . " field $fieldid was queried with value $value in deleteOldFieldValue, but the path with array " . serialize($pbarray) . " has no id.");
       return;
     }
-    
+
     // so what? delete nothing?!
     if(empty($value)) {
       return;
     }
-    
+
     // get path/field-related config
     // and do some checks to ensure that we are acting on a
     // well configured field
@@ -1874,7 +1874,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // triple store than just an entity id
     // this might have sideeffects... we will see :)
     if($target_type == "file" && $mainprop == 'target_id') {
-      if( is_numeric($value)) 
+      if( is_numeric($value))
         $value = $this->getUriForDrupalId($value, FALSE);
     }
 
@@ -1887,7 +1887,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       // delete a reference
       // this differs from normal field values as there is no literal
       // and the entity has to be matched to the uri
-      
+
       $subject_uri = $this->getUriForDrupalId($entity_id, FALSE);
 #      dpm($subject_uri, "subj");
       if (empty($subject_uri)) {
@@ -1896,7 +1896,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         return;
       }
       $subject_uris = array($subject_uri);
-      
+
       // value is the Drupal id of the referenced entity
       $object_uri = $this->getUriForDrupalId($value, FALSE);
 #      dpm($object_uri, "obj");
@@ -1917,13 +1917,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       elseif (count($path_array) == 3) {
         // we have the spacial case where subject and object uri are directly
         // linked in a triple <subj> <prop> <obj> / <obj> <inverse> <subj>.
-        // So we know which triples to delete and can skip costly search for 
+        // So we know which triples to delete and can skip costly search for
         // the right triple.
 
         // nothing to do!
       }
       else {
-        // in all other cases we need to readjust the subject uri to cut the 
+        // in all other cases we need to readjust the subject uri to cut the
         // right triples.
 
         $pathcnt = 0;
@@ -1932,13 +1932,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           // lonesome path!?
         }
         else {
-          // we cannot use clearPathArray() here as path is a group and 
+          // we cannot use clearPathArray() here as path is a group and
           // the function would chop off too much
           // TODO: check if we can use the new *relative* methods
           $parent_path_array = $parent->getPathArray();
           $pathcnt = (count($parent_path_array) + 1) / 2;
 
-          // we need to take the start, too.          
+          // we need to take the start, too.
           $pathcnt = $pathcnt -1;
         }
 
@@ -1947,25 +1947,25 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         // By Mark:
         // In modern d9 drupal systems entity reference is a common thing to do
         // so don't queue up like that.
-        
+
 //        if($path->isGroup()) { // only do this for groups - for fields we have to handle this otherwise.
         if(!empty($path->getDisamb()))
           $disamb = (count($path_array) + 1) / 2;
         else
           $disamb = $path->getDisamb();
-        
+
         // the var that interests us is the one before disamb.
         // substract 2 as the disamb count starts from 1 whereas vars start from 0!
         // in W8, the x increases by 2!
         $subject_var = "x" . (($disamb - 2) * 2);
 
-        // build up a select query that get us 
+        // build up a select query that get us
         $select  = "SELECT DISTINCT ?$subject_var WHERE {";
         $select .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $object_uri, $disamb, $pathcnt, FALSE, NULL, 'entity_reference');
         $select .= "}";
 
 #        dpm($select, "select");
-          
+
         $result = $this->directQuery($select);
 
         if ($result->numRows() == 0) {
@@ -1984,11 +1984,11 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 //        }
 
       }
-            
+
 #      $deltriples = $this->generateTriplesForPath($pb, $path, $object_uri, $subject_uri, NULL, $path->getDisamb(), $pathcnt-1, FALSE, NULL, 'normal');
-      
+
       // if it is a entity reference we take that before the disamb!
-      if(!$path->isGroup() && $is_reference && $path->getDisamb())     
+      if(!$path->isGroup() && $is_reference && $path->getDisamb())
         $prop = $path_array[(($path->getDisamb()-1) * 2) - 1];
       else #if($path->isGroup())
         $prop = $path_array[count($path_array) - 2];
@@ -2002,25 +2002,25 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       $delete .= ' }';
 #      dpm($delete, "sparql");
 
-      $result = $this->directUpdate($delete);    
+      $result = $this->directUpdate($delete);
 
     } // end reference branch
     else {  // no reference
-    
+
       $subject_uri = $this->getUriForDrupalId($entity_id, FALSE);
       $starting_position = $pb->getRelativeStartingPosition($path, TRUE);
       $clearPathArray = $pb->getRelativePath($path, TRUE);
-          
+
       // delete normal field value
       $sparql = "SELECT DISTINCT ";
-      
+
       for($i=($starting_position*2); $i <= count($path->getPathArray()); $i+=2) {
         $sparql .= "?x" . $i . " ";
       }
-      
+
       // I am unsure about this.
       $sparql .= "?out ";
-            
+
       $sparql .= "WHERE { ";
 
       // I am unsure if this is correct
@@ -2030,12 +2030,12 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       // because we have to think of the weight.
       //$triples = $this->generateTriplesForPath($pb, $path, '', $subject_uri, NULL, 0, $starting_position, FALSE);
       $triples = $this->generateTriplesForPath($pb, $path, '', $subject_uri, NULL, 0, $starting_position, FALSE, '=', 'field', TRUE, array(), 0, $language);
-      
+
       $sparql .= $triples;
-      
+
       $sparql .= " }";
 #      dpm($sparql, "sparql");
-      
+
       $result = $this->directQuery($sparql);
 
       $outarray = array();
@@ -2044,14 +2044,14 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
       $loc_count = 0;
       $break = FALSE;
-      
+
       $position = NULL;
       $the_thing = NULL;
-      
+
       foreach($result as $key => $thing) {
-        
+
         $image_value = NULL;
-        
+
 #        dpm($target_type, "tt");
 #        dpm($mainprop, "mp");
         // special hack for images which might be received via uri.
@@ -2063,22 +2063,22 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           $fid = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->getFileId($thing->out, $loc);
 #          dpm($fid, "fid");
           $public = \Drupal::service('entity_type.manager')->getStorage('wisski_individual')->getPublicUrlFromFileId($fid);
-          
+
           $image_value = $public;
-          
+
         }
-        
+
 #        dpm($image_value, "img");
 #        dpm($value, "val");
-        
+
         // Easy case - it is at the "normal position"
         if($key === $count && ( $thing->out == $value || $image_value == $value)) {
           $the_thing = $thing;
           $position = $count;
           break;
         }
-        
-        // not so easy case - it is somewhere else 
+
+        // not so easy case - it is somewhere else
         if($thing->out == $value) {
           $position = $key;
           $the_thing = $thing;
@@ -2086,10 +2086,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             break;
         }
       }
-            
+
       if(is_null($position)) {
         $this->messenger()->addError($this->t(
-            "For path %name (%id): Could not find old value '@v' and thus could not delete it.", 
+            "For path %name (%id): Could not find old value '@v' and thus could not delete it.",
             array(
               '%name' => $path->getName(),
               '%id' => $path->id(),
@@ -2098,8 +2098,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           ));
         return;
       }
-      
-      
+
+
       /* We cannot use DELETE DATA as we do not know the graph(s) of the triple.
       * The code below would only delete the triple if it is in the default
       * graph. we cannot omit the graph as fuseki needs it.
@@ -2124,7 +2124,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       }
       else {
         $primitive = $path->getDatatypeProperty();
-        
+
         if(!empty($primitive)) {
           if(!empty($value)) {
             $value = $this->escapeSparqlLiteral($value);
@@ -2142,17 +2142,17 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               ),
               "error"
             );
-            return; 
+            return;
           }
         }
       }
-      
+
       $delete .= ' }}';
       */
 
       $delete_clause = "DELETE {\n  GRAPH ?g {\n";
       $where_clause = "WHERE {\n  GRAPH ?g {\n";
-      
+
       // we have to distinguish between whether to delete a datatype prop
       // or an object prop.
       // first object prop
@@ -2171,7 +2171,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       // now datatype prop
       else {
         $primitive = $path->getDatatypeProperty();
-        
+
         if(!empty($primitive)) {
           if(!empty($value)) {
             $escaped_value = $this->escapeSparqlLiteral($value);
@@ -2187,14 +2187,14 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
                   '%id' => $path->id()
                 )
               ));
-            return; 
+            return;
           }
         }
       }
-      
+
       // assemble the clauses
       $delete = "$delete_clause  }\n}\n$where_clause  }\n}";
-#      dpm(htmlentities($delete), "delete!");      
+#      dpm(htmlentities($delete), "delete!");
       $result = $this->directUpdate($delete);
 
     }
@@ -2209,44 +2209,44 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
   public function deleteEntity($entity) {
 #    dpm("yay?");
     $eid = $entity->id();
-    
+
     if(empty($eid)) {
       $this->messenger()->addError("This entity could not be deleted as it has no eid.");
       return;
     }
-    
+
     $pbs = WisskiPathbuilderEntity::loadMultiple();
-    
+
     //if there is an eid we try to get the entity URI form cache
     //if there is none $uri will be FALSE
     $uri = $this->getUriForDrupalId($eid, FALSE);
-    
-#    $sparql = "DELETE { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o } } " . 
+
+#    $sparql = "DELETE { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o } } " .
 #              "WHERE { { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o . FILTER ( <$uri> = ?s ) } } " .
 #              "UNION { GRAPH <" . $this->getDefaultDataGraphUri() . "> { ?s ?p ?o . FILTER ( <$uri> = ?o ) } } }";
     // we can't use the default graph here as the uri may also occur in other graphs
     // by mark: This is inefficient. We do an or in the filter!
-#    $sparql = "DELETE { GRAPH ?g { ?s ?p ?o } } " . 
+#    $sparql = "DELETE { GRAPH ?g { ?s ?p ?o } } " .
 #              "WHERE { { GRAPH ?g { ?s ?p ?o . FILTER ( <$uri> = ?s ) } } " .
 #              "UNION { GRAPH ?g { ?s ?p ?o . FILTER ( <$uri> = ?o ) } } }";
     // this does not work either:
 #    $sparql = "DELETE { GRAPH ?g { ?s ?p ?o } } " .
 #              "WHERE { { GRAPH ?g { ?s ?p ?o . FILTER ( <$uri> = ?s || <$uri> = ?o) } } }";
-    
+
     #\Drupal::logger('WissKIsaveProcess')->debug('sparql deleting: ' . htmlentities($sparql));
 
     $sparql = "DELETE { GRAPH ?g { <$uri> ?p ?o } } " .
               "WHERE { { GRAPH ?g { <$uri> ?p ?o } } }";
-           
+
     $result = $this->directUpdate($sparql);
-                  
+
     $sparql = "DELETE { GRAPH ?g { ?s ?p <$uri> } } " .
               "WHERE { { GRAPH ?g { ?s ?p <$uri> } } }";
-    
+
     $result = $this->directUpdate($sparql);
 
     return $result;
-  
+
   }
 
   /**
@@ -2260,13 +2260,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     #$uri = $this->getUri($this->getDefaultDataGraphUri());
 #    dpm(func_get_args(),__FUNCTION__);
 #    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()));
-        
+
     $bundleid = $entity->bundle();
 
     $pbs = WisskiPathbuilderEntity::loadMultiple();
-    
+
     $out = array();
-    
+
     //might be empty, but we can use it later
     $eid = $entity->id() ? : $entity_id;
     $uri = NULL;
@@ -2280,48 +2280,48 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     //$adapterid = $this->getConfiguration()['id'];
 
 #    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()) . " gets id: " . $eid . " and uri: " . $uri);
-        
+
     foreach($pbs as $pb) {
       //drupal_set_message("a2: " . microtime());
       // if we have no adapter for this pb it may go home.
       if(empty($pb->getAdapterId()))
         continue;
-        
+
       $adapter = Adapter::load($pb->getAdapterId());
 
       // if we have not adapter, we may go home, too
       if(empty($adapter))
         continue;
-      
-      // if he didn't ask for us...    
+
+      // if he didn't ask for us...
       if($this->adapterId() !== $adapter->id())
         continue;
-      
+
       //dpm('I can create',$adapter->id());
       $groups = $pb->getGroupsForBundle($bundleid);
 
-      // for now simply take the first one.    
+      // for now simply take the first one.
       if ($groups = current($groups)) {
-        
+
         $triples = $this->generateTriplesForPath($pb, $groups, '', $uri, NULL, 0, ((count($groups->getPathArray())-1)/2), TRUE, NULL, 'group_creation');
         //dpm(array('eid'=>$eid,'uri'=>$uri,'group'=>$groups->getPathArray()[0],'result'=>$triples),'generateTriplesForPath');
-        
+
         $sparql = "INSERT DATA { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " . $triples . " } } ";
 #        \Drupal::logger('WissKIsaveProcess')->debug('sparql writing in create: ' . htmlentities($sparql));
-#        dpm($sparql, "group creation");  
+#        dpm($sparql, "group creation");
         $result = $this->directUpdate($sparql);
-    
+
         if (empty($uri)) {
-        
+
           // first adapter to write will create a uri for an unknown entity
           $uri = explode(" ", $triples, 2);
-      
-          $uri = substr($uri[0], 1, -1);  
+
+          $uri = substr($uri[0], 1, -1);
         }
-      }     
+      }
     }
 #    dpm($groups, "bundle");
-        
+
 #    $entity->set('id',$uri);
 
     if (empty($eid)) {
@@ -2329,26 +2329,26 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     }
 #    dpm($eid,$adapter->id().' made ID');
     $entity->set('eid',$eid);
-#    "INSERT INTO { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " 
+#    "INSERT INTO { GRAPH <" . $this->getDefaultDataGraphUri() . "> { "
     return $eid;
   }
 
   public function getUri($prefix) {
     return uniqid($prefix);
   }
-  
+
   /**
    * Generate the triple part for the statements (excluding any Select/Insert or
    * whatever). This should be used for any pattern generation. Everything else
    * is evil.
    *
    * @param $pb	a pathbuilder instance
-   * @param $path the path as a path object of which the triple parts should be 
+   * @param $path the path as a path object of which the triple parts should be
    *              generated. May also be a group.
    * @param $primitiveValue The primitive data value that should be stored or
    *              asked for in the query.
-   * @param $subject_in If there should be any subject on a certain position 
-   *              this could be encoded by using $subject_in and the 
+   * @param $subject_in If there should be any subject on a certain position
+   *              this could be encoded by using $subject_in and the
    *              $startingposition parameter.
    * @param $object_in If there should be any object. The position of the object
    *              may be encoded in the disambposition.
@@ -2388,31 +2388,31 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $clearPathArray = array();
     if($relative) {
       // in case of group creations we just need the " bla1 a type " triple
-      if($mode == 'group_creation') 
+      if($mode == 'group_creation')
         $clearPathArray = $pb->getRelativePath($path, FALSE);
       else // in any other case we need the relative path
         $clearPathArray = $pb->getRelativePath($path);
     } else { // except some special cases.
       $clearPathArray = $path->getPathArray();
     }
-     
+
     // the RelativePath will be keyed like the normal path array
     // meaning that it will not necessarily start at 0
-        
+
  #   \Drupal::logger('WissKIsaveProcess')->debug('countdiff ' . $countdiff . ' cpa ' . serialize($clearPathArray) . ' generate ' . serialize(func_get_args()));
-    
+
     // old uri pointer
     $olduri = NULL;
     $oldvar = NULL;
-    
+
     // if the old uri is empty we assume there is no uri and we have to
     // generate one in write mode. In ask mode we make variable-questions
-    
-    // get the default datagraphuri    
+
+    // get the default datagraphuri
     $datagraphuri = $this->getDefaultDataGraphUri();
-    
+
     $first = TRUE;
-    
+
     // iterate through the given path array
     $localkey = 0;
     foreach($clearPathArray as $key => $value) {
@@ -2427,7 +2427,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           if (WISSKI_DEVEL) \Drupal::logger('WissKIsaveProcess')->debug('ERROR: ' . serialize($clearPathArray) . ' generate ' . serialize(func_get_args()));
           if (WISSKI_DEVEL) \Drupal::logger('WissKIsaveProcess')->debug('ERROR: ' . serialize(debug_backtrace()[1]['function']) . ' and ' . serialize(debug_backtrace()[2]['function']));
         }
-        
+
 
 
         if($disambposition > 0 && !empty($object_in)) {
@@ -2438,16 +2438,16 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           }
         }
       }
-      
+
       $first = false;
-            
+
       // skip anything that is smaller than $startingposition.
-      if($key < ($startingposition*2)) 
+      if($key < ($startingposition*2))
         continue;
-      
+
       // basic initialisation
       $uri = NULL;
-            
+
       // basic initialisation for all queries
       $localvar = "?" . (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "x" . ($numbering + $key));
       if (empty($oldvar)) {
@@ -2457,14 +2457,14 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         $oldvar = "?" . (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "x" . ($numbering + $key));
       }
       $graphvar = "?g_" . (isset($variable_prefixes[$key]) ? $variable_prefixes[$key] : "x" . ($numbering + $key));
-      
+
       if($key % 2 == 0) {
         // if it is the first element and we have a subject_in
         // then we have to replace the first element with subject_in
         // and typically we don't do a type triple. So we skip the rest.
         if($key == ($startingposition*2) && !empty($subject_in)) {
           $olduri = $subject_in;
-          
+
           if(!$write)
             $query .= "GRAPH $graphvar { <$olduri> a <$value> } . ";
           else
@@ -2472,7 +2472,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
           continue;
         }
-        
+
         // if the key is the disambpos
         // and we have an object
         if($key == (($disambposition-1)*2) && !empty($object_in)) {
@@ -2487,8 +2487,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             $query .= "<$uri> a <$value> . ";
           }
         } else {
-                  
-          // if it is not the disamb-case we add type-triples        
+
+          // if it is not the disamb-case we add type-triples
           if($write) {
             // generate a new uri
             $uri = $this->getUri($datagraphuri);
@@ -2505,9 +2505,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         // for $prop we recognize a leading '^' for inverting the property
         // direction, see '^' as sparql property chain operator
         if($key > 0 && !empty($prop)) {
-        
+
           if($write) {
-            
+
             if ($prop[0] == '^') {
               // we cannot use the '^' for sparql update
               $prop = substr($prop, 1);
@@ -2518,7 +2518,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             }
 
           } else {
-            
+
             $inv_sign = '';
             if ($prop[0] == '^') {
               $inv_sign = '^';
@@ -2534,9 +2534,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
                 $query .= "<$olduri> ";
               else
                 $query .= "$oldvar ";
-          
+
               $query .= "$inv_sign<$prop>$transitive_modificator ";
-                    
+
               if(!empty($uri))
                 $query .= "<$uri> . ";
               else
@@ -2548,43 +2548,43 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
                 $query .= "<$olduri> ";
               else
                 $query .= "$oldvar ";
-          
+
               $query .= "$inv_sign<$prop>$transitive_modificator ";
-                    
+
               if(!empty($uri))
                 $query .= "<$uri> . ";
               else
                 $query .= "$localvar . ";
-              
+
               $query .= " } UNION { ";
 
               // backward query part
-          
+
               if(!empty($uri))
                 $query .= "<$uri> ";
               else
-                $query .= "$localvar "; 
-          
+                $query .= "$localvar ";
+
               $query .= "$inv_sign<$inverse>$transitive_modificator ";
 
               if(!empty($olduri))
                 $query .= "<$olduri> . ";
               else
                 $query .= "$oldvar . ";
-              
- 
-              $query .= " } } . "; 
+
+
+              $query .= " } } . ";
             }
-            
+
             $query .= " } . ";
           }
         }
-         
+
         // if this is the disamb, we may break.
         if($key == (($disambposition-1)*2) && !empty($object_in)) {
           break;
         }
-          
+
         $olduri = $uri;
         $oldvar = $localvar;
       } else {
@@ -2593,19 +2593,19 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     }
 #    drupal_set_message("gt2: " . microtime());
 #\Drupal::logger('testung')->debug($path->getID() . ":".htmlentities($query));
-    // get the primitive for this path if any    
+    // get the primitive for this path if any
     $primitive = $path->getDatatypeProperty();
-    
+
     $pb_path_info = $pb->getPbPath($path->id());
     $has_primitive = !empty($primitive) && $primitive != "empty";
-    // all paths should have a primitive. only this cases usually have no 
+    // all paths should have a primitive. only this cases usually have no
     // primitive:
     // - a group
     // - a path belonging to an entity reference field
-    // - a path that has no corresp field (depending on use it may or may not 
+    // - a path that has no corresp field (depending on use it may or may not
     //   have a primitive)
-    $should_have_primitive = 
-         !$path->isGroup() 
+    $should_have_primitive =
+         !$path->isGroup()
       && $pb_path_info['fieldtype'] != 'entity_reference'
       && $pb_path_info['field'] != $pb::CONNECT_NO_FIELD;
 
@@ -2625,7 +2625,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         $query .= "GRAPH $outgraph { ";
       else
         $query .= "";
-        
+
       if(!empty($olduri)) {
         $query .= "<$olduri> ";
       } else {
@@ -2636,19 +2636,19 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         else
           $query .= "$oldvar ";
       }
-      
+
       $query .= "<$primitive> ";
 
 #      dpm($query, "before?");
-      
+
       if(!empty($primitiveValue)) {
 #        dpm($primitiveValue, "prim");
-        
+
         if ($write) {
           // we have to escape it otherwise the sparql query may break
           $primitiveValue = $this->escapeSparqlLiteral($primitiveValue);
-          
-          // by mark: here we add the language tag for translatability 
+
+          // by mark: here we add the language tag for translatability
           //$query .= "\"$primitiveValue\"";
           if($language != "und")
             $query .= "\"$primitiveValue\"@$language";
@@ -2656,12 +2656,12 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             $query .= "\"$primitiveValue\"";
         } else {
 
-/* putting there the literal directly is not a good idea as 
+/* putting there the literal directly is not a good idea as
   there may be problems with matching lang and datatype
-        if($op == '=') 
+        if($op == '=')
           $query .= "'" . $primitiveValue . "' . ";
         else {
-  Instead we compare it to the STR()-value 
+  Instead we compare it to the STR()-value
 
 */
 
@@ -2669,13 +2669,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           $negate = FALSE;
           $safe = FALSE;
           $cast_outvar = "STR($outvar)";
-          
+
           if($op == "STARTS")
             $op = "STARTS_WITH";
-          
+
           if($op == "ENDS")
             $op = "ENDS_WITH";
-          
+
           if($op == '<>') {
             $op = '!=';
           }
@@ -2717,7 +2717,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
             if($op == "NOT") {
               $negate = TRUE;
-              $op = "CONTAINS";  
+              $op = "CONTAINS";
             }
 
 #            dpm($primitiveValue, "prim");
@@ -2736,9 +2736,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           } else if(strtoupper($op) == "LONGERTHAN" || strtoupper($op) == "SHORTERTHAN") {
             $regex = FALSE;
             $safe = TRUE;
-          } 
+          }
 #          dpm($primitiveValue, "prim");
-          
+
           if (!$safe) {
             if (is_numeric($primitiveValue)) {
 #              dpm("yo!");
@@ -2774,11 +2774,11 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               else
                 $escapedValue = '"' . $primitiveValue . '"';
               #$query .= "\"$primitiveValue\"";
-            }              
+            }
           }
 
 #          dpm($query, "in between");
-          
+
 #          dpm($escapedValue, "esc");
 
           if ($op == 'BETWEEN' || $op == 'between') {
@@ -2822,7 +2822,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
 //          if ($negate && $op != "CONTAINS") {
 //            $filter = "NOT( $filter )";
-//          } else 
+//          } else
           if($negate ) {//&& $op == "CONTAINS") {
             $filter = "!" . $filter;
           }
@@ -2832,9 +2832,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             if(is_numeric($primitiveValue))
               $escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $escapedValue . '" )'; //"'" . $escapedValue . "'";
             $query .= " " . $escapedValue . " . ";
-          } elseif( $op == "EMPTY" || $op == "NOT EMPTY") { 
+          } elseif( $op == "EMPTY" || $op == "NOT EMPTY") {
             $query .= " $outvar . ";
-          } else {         
+          } else {
             $query .= " $outvar . FILTER( $filter ) . ";
           }
         }
@@ -2844,15 +2844,15 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       if(!$write)
         $query .= " } . ";
     }
-    
+
 #    dpm($query, "after?");
 #    \Drupal::logger('WissKIsaveProcess')->debug('erg generate: ' . htmlentities($query));
 #    if($mode == 'entity_reference')
 #      \Drupal::logger('WissKIsaveProcess')->debug('erg generate: ' . htmlentities($query));
 
-#    dpm($query, "query"); 
+#    dpm($query, "query");
 #\Drupal::logger('Sparql Adapter gtfp')->debug(str_replace("\n", '<br/>', htmlentities($path->id().":\n".\Drupal\Core\Serialization\Yaml::encode($tsa))));
-    
+
     // in case of empty it must be optional or we never will get something, because the path may not be there and be not there at the same time.
     if($op == "EMPTY") {
       if(empty($outvar)) // this is the case if it is an entity reference for example
@@ -2864,14 +2864,14 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       // we also dont get back ?x0 - which is probably bad
       // we have to give the triplestore SOME anchorpoint
       // so lets ask for x0!
-      $query = substr($query, 0, strpos($query, "} . ") + 3) . " OPTIONAL { " . substr($query, strpos($query, "} . ") + 3) . " } . FILTER(!bound($outvar)) . "; 
+      $query = substr($query, 0, strpos($query, "} . ") + 3) . " OPTIONAL { " . substr($query, strpos($query, "} . ") + 3) . " } . FILTER(!bound($outvar)) . ";
     }
 #    dpm($query, "query");
 #    dpm($query, "gt3: " . microtime());
-    
+
     return $query;
   }
-  
+
   public function addNewFieldValue($entity_id, $fieldid, $value, $pb, $mainprop = FALSE, $language = "und") {
 
 #    dpm($language, "I get?");
@@ -2882,14 +2882,14 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #    dpm(serialize($entity), "yay?");
 #    dpm(serialize($value), "value?");
 #    dpm(serialize($fieldid), "fieldid?");
-    
+
 #    drupal_set_message(" addNewFieldValue I get: " . $entity_id.  " with fid " . $fieldid . " and value " . $value . ' for pb ' . $pb->id() . ' er ' . serialize($value_is_entity_ref));
 #    drupal_set_message(serialize($this->getUri("smthg")));
     $datagraphuri = $this->getDefaultDataGraphUri();
 
     $pbarray = $pb->getPbEntriesForFid($fieldid);
 
-#    drupal_set_message("I fetched path: " . serialize($pbarray));    
+#    drupal_set_message("I fetched path: " . serialize($pbarray));
 
     $path = WisskiPathEntity::load($pbarray['id']);
 
@@ -2900,17 +2900,17 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
     $target_type = NULL;
 
-    if(!empty($field_storage_config)) 
+    if(!empty($field_storage_config))
       $target_type = $field_storage_config->getSetting("target_type");
 
-    // we distinguish two modes of how to interpret the value: 
-    // entity ref: the value is an entity id that shall be linked to 
+    // we distinguish two modes of how to interpret the value:
+    // entity ref: the value is an entity id that shall be linked to
     // normal: the value is a literal and may be disambiguated
     $is_entity_ref = ($mainprop == 'target_id' && ($path->isGroup() || $pb->getPbEntriesForFid($fieldid)['fieldtype'] == 'entity_reference'));
 
     // special case for files:
     if($target_type == "file" && $mainprop == 'target_id') {
-      if( is_numeric($value)) 
+      if( is_numeric($value))
         $value = $this->getUriForDrupalId($value, TRUE);
 #      else { // it might be that there are spaces in file uris. These are bad for TS-queries.
 #        $strrpos = strrpos($value, '/');
@@ -2940,9 +2940,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         $disambresult = $disambresult[0];
         // this fails due to some bug?
         //$disambresult = current($disambresult);
-        
+
      } else {
-       // it might be that we have some lagacy data and the language is not 
+       // it might be that we have some lagacy data and the language is not
        // set in the ts... so we have to do a search without language tag, too.
        $sparql = "SELECT ?x" . (($path->getDisamb()-1)*2) . " WHERE { ";
        $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE, '=', 'field', TRUE, array(), 0);
@@ -2952,8 +2952,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
          $disambresult = $disambresult[0];
        }
 #       dpm(array($sparql, $disambresult), __METHOD__ . " disamb query2");
-     }      
-    } 
+     }
+    }
 
     // rename to uri
     $subject_uri = $this->getUriForDrupalId($entity_id, TRUE);
@@ -2969,9 +2969,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       // if it is a group - we take the whole group path as disamb pos
       if($path->isGroup())
 //        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), (count($path->getPathArray())+1)/2, $start, TRUE, '', 'entity_reference' );
-        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), (count($path->getPathArray())+1)/2, $start, TRUE, '', 'entity_reference', TRUE, array(), 0, $language );        
+        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), (count($path->getPathArray())+1)/2, $start, TRUE, '', 'entity_reference', TRUE, array(), 0, $language );
       else // if it is a field it has a disamb pos!
-//        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), $path->getDisamb(), $start, TRUE, '', 'entity_reference');        
+//        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), $path->getDisamb(), $start, TRUE, '', 'entity_reference');
         $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), $path->getDisamb(), $start, TRUE, '', 'entity_reference', TRUE, array(), 0, $language);
     } else {
       if(empty($path->getDisamb()))
@@ -2996,7 +2996,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
 #    drupal_set_message("I add field $field from entity $entity_id that currently has the value $value");
   }
-  
+
   public function writeFieldValues($entity, array $field_values, $pathbuilder, $bundle_id=NULL,$old_values=array(),$force_new=FALSE, $initial_write = FALSE, $language = "und") {
 
     // get back the entity id for compatibility purpose.
@@ -3006,34 +3006,34 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #    dpm(serialize($entity->getTranslationLanguages()), "trans`?");
 #
 #    dpm(serialize($entity), "se ente?");
-    
+
 #    dpm($language, "I save for language");
 
 #    dpm($field_values, "I get values?");
-    
+
 
 #    dpm($old_values, "ov");
 #    dpm($entity_id, "I am saving entity_id");
 #    drupal_set_message(serialize("Hallo welt!") . serialize($entity_id) . " " . serialize($field_values) . ' ' . serialize($bundle));
-#    dpm(func_get_args(), __METHOD__);    
+#    dpm(func_get_args(), __METHOD__);
 #    \Drupal::logger('WissKIsaveProcess')->debug(__METHOD__ . " with values: " . serialize(func_get_args()));
     // tricky thing here is that the entity_ids that are coming in typically
     // are somewhere from a store. In case of rdf it is easy - they are uris.
-    // In case of csv or something it is more tricky. So I don't wan't to 
+    // In case of csv or something it is more tricky. So I don't wan't to
     // simply go to the store and tell it "give me the bundle of this".
     // The field ids come in handy here - fields are typically attached
     // to a bundle anyway. so I just get the bundle from there. I think it is
-    // rather stupid that this function does not load the field values per 
+    // rather stupid that this function does not load the field values per
     // bundle - it is implicitely anyway like that.
-    // 
+    //
     // so I ignore everything and just target the field_ids that are mapped to
     // paths in the pathbuilder.
-#$tmpt = microtime(TRUE); 
-    
+#$tmpt = microtime(TRUE);
+
     $out = array();
-    
-#    return $out;                    
-      
+
+#    return $out;
+
     // here we should check if we really know the entity by asking the TS for it.
     // this would speed everything up largely, I think.
     // by mark: additionally the below code always is true.
@@ -3045,12 +3045,12 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     //dpm(serialize($init_entity->getTranslationLanguages()), "trans2?");
     #$init_entity = $this->hasEntity($entity_id);
 #\Drupal::logger('WissKI Import tmpc')->debug("l:".(microtime(TRUE)-$tmpt));
-    
+
 #    dpm(serialize($init_entity), "init");
 #    dpm($force_new, "force!");
 
 #    dpm($init_entity->getTranslationLanguages(), "langs?");
-    
+
     // if there is nothing, continue.
     // by mark: currently the storage calls the createEntity. So this never may be used.
     // simply don't worry about it.
@@ -3062,7 +3062,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       } else return;
     }
 #\Drupal::logger('WissKI Import tmpc')->debug("c:".(microtime(TRUE)-$tmpt));
-    
+
     if(empty($entity) && !empty($init_entity))
       $entity = $init_entity;
 
@@ -3070,7 +3070,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
 #    dpm(serialize($entity), "ente?");
 #    dpm(serialize($entity->getOriginalValues()), "ori?");
-    
+
     if (!isset($old_values) && !empty($init_entity)) {
       // it would be better to gather this information from the form and not from the ts
       // there might have been somebody saving in between...
@@ -3083,7 +3083,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       // as there might be several, load all
       $settings = \Drupal::entityTypeManager()->getStorage('entity_form_display')->loadMultiple($view_ids);
 
-      // we dont really know which one to take -.- 
+      // we dont really know which one to take -.-
       // By Mark: We need to do more research on this!
       if(!empty($settings))
         $settings = current($settings);
@@ -3095,7 +3095,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         // load the components
         $components = $settings->getComponents();
 
-        // and throw away these that are not in there. 
+        // and throw away these that are not in there.
         // these fields are disabled and such should not be saved etc.
         // otherwise we might overwrite something we do not want to overwrite.
         foreach($ofv as $key => $field_defi) {
@@ -3103,24 +3103,24 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             unset($ofv[$key]);
 #            dpm(serialize($components), "set?");
           }
-        }    
+        }
       }
       #dpm(serialize(), "old field values");
 #      dpm(\Drupal::entityManager()->
 #      $view_ids = \Drupal::entityQuery('entity_view_display')
 #                    ->condition('id', 'wisski_individual.' . $bundle_id . '.', 'STARTS_WITH')
 #                    ->execute();
-#      
+#
 #                  // is there a view display for it?
 #                  $entity_view_displays = \Drupal::entityManager()->getStorage('entity_view_display')->loadMultiple($view_ids);
-#      
+#
 #                  // did we get something?
 #                  if(!empty($entity_view_displays))
 #                    $entity_view_display = current($entity_view_displays);
 #                  else
 #                    $entity_view_display = NULL;
 ##                  dpm($entity_view_displays->getComponent('field_name'), "miau");
-#      
+#
 #      foreach($ofv as $key => $field_defi) {
 #        dpm(serialize($entity_view_display->getComponent($key)), "settings or $key");
 #      }
@@ -3134,7 +3134,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       // we have one big problem: if there are fields that are for display purpose only
       // like coordinates for a place that get filled automatically
       // so we just delete what we see and nothing more!
-      
+
 
     } else {
       // we are in edit mode and unfortunatelly old_values is not filled accordingly with language-tags.
@@ -3143,10 +3143,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       foreach($old_values as $old_key => $old_value) {
         $new_structure[$old_key][$language] = $old_value;
       }
-      
+
       $old_values = $new_structure;
     }
-    
+
     $old_languages = array();
     foreach($old_values as $old_entityid => $old_language_values) {
 //      dpm($old_field_values, "??");
@@ -3154,7 +3154,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       if(!empty($lang_keys))
         $old_languages = array_merge($old_languages, $lang_keys);
     }
-    
+
     $curr_languages = array_keys($entity->getTranslationLanguages());
 #    dpm($curr_languages, "curr?");
 #    dpm($old_languages, "old?");
@@ -3167,48 +3167,48 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         unset($deleted_languages[$del_lang_key]);
       }
     }
-    
+
     // if we have something here we have to delete that language
     // unfortunatelly this is a non trivial thing on a triple store
     // and you will burn in hell if you try to ;D
-    
+
     foreach($old_values as $old_key => $old_value) {
       // this is just copy pasted from below. I guess you can do it better
       // but I wait until the selphie does change this here ;D
       foreach($deleted_languages as $del_lang) {
-      
+
         $entity->removeTranslation($del_lang);
-      
+
 #        dpm($entity->label(), "label");
 #        dpm(serialize($entity), "ser?");
 
         if(!isset($old_value[$del_lang]) || empty($old_value[$del_lang]))
           continue;
-      
+
         $old_value = $old_value[$del_lang];
 
         // in case there is no main prop it is typically value
         if(isset($old_value['main_property']))
           $mainprop = $old_value['main_property'];
         else
-          $mainprop = "value";        
+          $mainprop = "value";
 
 #        dpm("we have to delete " . serialize($old_value));
         foreach($old_value as $key => $val) {
-        
+
           // main prop?
           if(!is_array($val))
             continue;
-          
+
           // empty value?
           if(empty($val[$mainprop]))
             continue;
-        
+
           $this->deleteOldFieldValue($entity_id, $old_key, $val[$mainprop], $pathbuilder, $key, $mainprop, $del_lang);
         }
       }
     }
-    
+
 #    dpm(serialize($deleted_languages), "del?");
     if(!empty($deleted_languages)) {
 #      dpm("Im here!");
@@ -3224,12 +3224,12 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 //      dpm(serialize($cached_field_values), "cache?");
       }
     }
-    
-    
+
+
 #    dpm($deleted_languages, "was deleted");
-    
-    
-    
+
+
+
 #\Drupal::logger('WissKI Import tmpc')->debug("lf:".(microtime(TRUE)-$tmpt));
 
     //drupal_set_message("the old values were: " . serialize($old_values));
@@ -3249,35 +3249,35 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // that the key is not set in the new values anymore.
 
     // check if we have to delete some values
-    // we go thru the old values and search for an equal value in the new 
+    // we go thru the old values and search for an equal value in the new
     // values array
     // as we do this we also keep track of values that haven't changed so that we
     // do not have to write them again.
     foreach($old_values as $old_key => $old_value) {
-      
+
       if(!isset($old_value[$language]))
         continue;
-        
+
       $old_value = $old_value[$language];
 #      dpm("deleting key $old_key with value " . serialize($old_value) . " from values " . serialize($field_values));
       if(!isset($field_values[$old_key])) {
-        
+
         // in case there is no main prop it is typically value
         if(isset($old_value['main_property']))
           $mainprop = $old_value['main_property'];
         else
-          $mainprop = "value";        
+          $mainprop = "value";
 
         foreach($old_value as $key => $val) {
-        
+
           // main prop?
           if(!is_array($val))
             continue;
-          
+
           // empty value?
           if(empty($val[$mainprop]))
             continue;
-          
+
           // if not its a value...
 //        drupal_set_message("I delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
           $this->deleteOldFieldValue($entity_id, $old_key, $val[$mainprop], $pathbuilder, $key, $mainprop, $language);
@@ -3288,14 +3288,14 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
 #    dpm($old_values, "old values");
 
-    // combined go through the new fields    
+    // combined go through the new fields
     foreach($field_values as $field_id => $field_items) {
 
       // By Mark:
       // If this field is not enabled in the edit form
       // then we probably dont want to write any data to it
       // --!! THIS IS A GUESS !!--
-      // example is posse: viewfield for coordinates in 
+      // example is posse: viewfield for coordinates in
       // places sub form without grouping -> it is for display
       // purpose only. If we enable this here regularly data
       // gets stored that should not be stored.
@@ -3306,32 +3306,32 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #      drupal_set_message("I try to add data to field $field_id with items: " . serialize($field_items));
       $path = $pathbuilder->getPbEntriesForFid($field_id);
 #      drupal_set_message("found path: " . serialize($path). " " . microtime());
-      
+
       $old_value = isset($old_values[$field_id][$language]) ? $old_values[$field_id][$language] : array();
 
       if(empty($path)) {
 #        drupal_set_message("I leave here: $field_id " . microtime());
         continue;
       }
-        
+
 #      drupal_set_message("I am still here: $field_id");
 
       $mainprop = $field_items['main_property'];
-      
+
       unset($field_items['main_property']);
-      
+
       $write_values = $field_items;
-      
+
 #      dpm("write values still is: " . serialize($write_values));
-      
+
       // TODO $val is not set: iterate over fieldvalue!
       // if there are old values
       if (!empty($old_value)) {
         // we might want to delete some
         $delete_values = $old_value;
-        
+
 #        drupal_set_message("del: " . serialize($delete_values));
-        
+
         // if it is not an array there are no values, so we can savely stop
         if (!is_array($old_value)) {
           $delete_values = array($mainprop => $old_value);
@@ -3356,11 +3356,11 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #          dpm($old_value, "old value is:");
 #          dpm($write_values, "new are?");
           foreach ($old_value as $old_key => $old_item) {
-            
+
             if (!is_array($old_item) || empty($old_item)) {
-              // this may be the case if 
+              // this may be the case if
               // - it contains key "main_property"... (not an array)
-              // - it is an empty field that is there because of the 
+              // - it is an empty field that is there because of the
               // field's cardinality (empty)
               unset($delete_values[$old_key]);
               continue;
@@ -3373,10 +3373,10 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               unset($delete_values[$old_key]);
               continue;
             }
-            
-            
+
+
             $maincont = FALSE;
-            
+
             foreach ($write_values as $key => $new_item) {
               if (empty($new_item)) {
                 unset($write_values[$key]);
@@ -3387,12 +3387,12 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
                 unset($write_values[$key]);
                 // and we don't have to delete it
                 unset($delete_values[$old_key]);
-                
+
                 $maincont = TRUE;
                 break;
               }
             }
-            
+
             // if we found something we continue in the old values
             if($maincont)
               continue;
@@ -3401,13 +3401,13 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
 #        dpm($delete_values, "we have to delete");
         if (!empty($delete_values)) {
-          foreach ($delete_values as $key => $val) {            
+          foreach ($delete_values as $key => $val) {
 #            dpm("I1 delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
             $this->deleteOldFieldValue($entity_id, $field_id, $val[$mainprop], $pathbuilder, $key, $mainprop, $language);
           }
         }
       }
-      
+
 #      dpm($write_values, "we have to write");
       // now we write all the new values
       // TODO: it seems like there is a duplicate write in case of image files..
@@ -3416,9 +3416,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       foreach ($write_values as $new_item) {
 #        dpm($mainprop, "mainprop");
 #        dpm($language, "I give it to add New Field Value");
-        $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder, $mainprop, $language); 
+        $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder, $mainprop, $language);
       }
-  
+
     }
 #\Drupal::logger('WissKI Import tmpc')->debug("da:".(microtime(TRUE)-$tmpt));
 
@@ -3429,11 +3429,11 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     return $out;
 
   }
-  
+
   // -------------------------------- Ontologie thingies ----------------------
 
-  public function addOntologies($iri = NULL) { 
-    
+  public function addOntologies($iri = NULL) {
+
     if (empty($iri)) {
       //load all ontologies
       $query = "SELECT ?ont WHERE { GRAPH ?g { ?ont a owl:Ontology} }";
@@ -3460,21 +3460,21 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         'iri' => $iri,
       )
     );
-  
+
     // look for imported ontologies
     $query = "SELECT DISTINCT ?ont FROM <$iri> WHERE { ?s a owl:Ontology . ?s owl:imports ?ont . }";
     $results = $this->directQuery($query);
- 
+
     foreach ($results as $to_load) {
       $this->addOntologies(strval($to_load->ont));
     }
-                
+
     // add namespaces to table
     // TODO: curently all namespaces from all adapters are stored in a single
     // table and adapters may override existing ones from themselves or from
     // other adapters!
     // We add the namespaces AFTER we loaded the imported ontologies so that
-    // the importing ontology's namespaces win over the ones in the imported 
+    // the importing ontology's namespaces win over the ones in the imported
     // ontologies
     list($default, $namespaces) = $this->getNamespacesFromDocument($iri);
     if (!empty($namespaces)) {
@@ -3489,8 +3489,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           'b' => empty($base) ? 'not set' : "<$base>",
         )
       );
-      // TODO: default is currently not stored. Do we need to store it? 
-      // it is no proper namespace prefix. 
+      // TODO: default is currently not stored. Do we need to store it?
+      // it is no proper namespace prefix.
       // @TODO: check if it is already in the ontology.
       // TODO: why declare these here? we never use them!
       #global $base_url;
@@ -3499,27 +3499,27 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     } else {
       \Drupal::logger('WissKI Ontology')->info('Adapter {a}: no namespaces registered', array('a' => $this->adapterId()));
     }
-    
+
     // return the result of the loading of this ontology
-    return $result;   
+    return $result;
 
   }
 
-  
+
   /** Tries to parse RDF namespace declarations in a given document.
    *
    * @param iri the IRI of the document
    *
    * @return an array where the first element is the default prefix URI and the
-   *         second is an array of prefix-namespace pairs. If the document 
+   *         second is an array of prefix-namespace pairs. If the document
    *         cannot be parsed, an array(FALSE, FALSE) is returned.
    */
   public function getNamespacesFromDocument($iri) {
     $file = file_get_contents($iri);
-    $format = EasyRdf_Format::guessFormat($file, $iri); 
+    $format = EasyRdf_Format::guessFormat($file, $iri);
     // unfortunately EasyRdf does not provide any API to get the declared
     // namespaces although in general its Parsers do handle them.
-    // Therefore we have to provide our own namespace parsers. 
+    // Therefore we have to provide our own namespace parsers.
     // atm, we only supprt rdfxml
     if(stripos($format->getName(), 'xml') !== FALSE) {
       // this is a quick and dirty parse of an rdfxml file.
@@ -3541,9 +3541,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             // a named prefix must start with a :
             $prefix = substr($front, 1); // chop the leading :
             $namespaces[$prefix] = $value;
-          } 
+          }
           // else:
-          // it's not a namespace declaration but an attribute that starts 
+          // it's not a namespace declaration but an attribute that starts
           // with xmlns. we must ignore it.
         }
         return array($default, $namespaces);
@@ -3569,28 +3569,28 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
              . "  OPTIONAL { ?ont owl:ontologyIRI ?niri. } OPTIONAL { ?ont owl:versionIRI ?nver . }\n"
              . "}";
     }
-    $results = $this->directQuery($query);                      
+    $results = $this->directQuery($query);
     return $results;
   }
-     
+
   public function deleteOntology($graph, $type = "graph") {
- 
+
     // get ontology and version uri
     if($type == "graph") {
       $query = "WITH <$graph> DELETE { ?s ?p ?o } WHERE { ?s ?p ?o }";
     } else
       $query = "DELETE { ?s ?p ?o } WHERE { ?s ?p ?o . FILTER ( STRSTARTS(STR(?s), '$graph')) }";
-                         
+
     $results = $this->directUpdate($query);
-                             
+
    /* if (!$ok) {
     // some useful error message :P~
       drupal_set_message('some error encountered:' . serialize($results), 'error');
     }
-   */                                              
+   */
     return $results;
   }
-  
+
   private function putNamespace($short_name,$long_name) {
     // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
     // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
@@ -3609,7 +3609,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
      //      drupal_set_message('Namespace '.$short_name.' already exists in DB');
     }
   }
-                                                                                                           
+
   /*
   * This should be made global as it actually stores the namespaces globally
   */
@@ -3668,7 +3668,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       $always_reason = $always_reason[$this->adapterId()];
     else
       $always_reason = TRUE;
-    
+
     $form['allow_inverse_property_pattern'] = array(
       '#type' => 'checkbox',
       '#title' => 'Inverse property selection',
@@ -3676,7 +3676,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       '#return_value' => TRUE,
       '#description' => 'Allows selecting properties in inverse direction in pathbuilder. These properties are marked with a leading "^". E.g. for "^ex:prop1", the triple x2 ex:prop x1 must hold instead of x1 ex:prop1 x2.',
     );
-    
+
     $form['reasoner'] = array(
       '#type' => 'details',
       '#title' => $this->t('Compute Type and Property Hierarchy and Domains and Ranges'),
@@ -3760,7 +3760,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         'check_results' => array(
           '#type' => 'textarea',
           '#prefix' => '<div id="wisski-reasoner-check">',
-          '#suffix' => '</div>',      
+          '#suffix' => '</div>',
         ),
       );
     }
@@ -3772,24 +3772,24 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     parent::submitConfigurationForm($form, $form_state);
-    
+
     $val = $form_state->getValue('always_reason_this_store');
-        
+
     $always_reason = \Drupal::state()->get('wisski_always_reason');
     $always_reason[$this->adapterId()] = $val;
-    
+
     \Drupal::state()->set('wisski_always_reason', $always_reason);
 
-    $this->allow_inverse_property_pattern = $form_state->getValue('allow_inverse_property_pattern');  
-  }  
-  
+    $this->allow_inverse_property_pattern = $form_state->getValue('allow_inverse_property_pattern');
+  }
+
 
   public function checkboxAjax(array $form, FormStateInterface $form_state) {
     return $form['reasoner']['start_button'];
   }
-  
+
   public function checkTheReasoner(array $form, FormStateInterface $form_state) {
-  
+
     $candidate = $form_state->getValue($form_state->getTriggeringElement()['#name']);
     if ($this->isAProperty($candidate)) {
       $stored = $this->getClassesFromStore($candidate);
@@ -3822,12 +3822,12 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
 
   public function startReasoning(array $form,FormStateInterface $form_state) {
-    
+
     $this->doTheReasoning();
     $form_state->setRedirect('<current>');
     return $form['reasoner'];
   }
-  
+
   public function doTheReasoning() {
 
     $properties = array();
@@ -3877,7 +3877,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     //now lets find inverses
     $insert = $this->prepareInsert('inverses');
     $inverses = array();
-    
+
 //    $results = $this->directQuery("SELECT ?prop ?inverse WHERE { GRAPH ?g {{?prop owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf ?prop.}} }");
     $results = $this->directQuery("SELECT ?prop ?inverse WHERE { {{?prop owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf ?prop.}} }");
     foreach ($results as $row) {
@@ -3894,7 +3894,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     //find all classes
     $insert = $this->prepareInsert('classes');
     $classes = array();
-    
+
     $results = $this->directQuery("SELECT ?class WHERE { {{?class a owl:Class.} UNION {?class a rdfs:Class}} }");
     //$results = $this->directQuery("SELECT ?class WHERE { GRAPH ?g {{?class a owl:Class.} UNION {?class a rdfs:Class}} }");
     foreach ($results as $row) {
@@ -3909,7 +3909,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     //find full class hierarchy
     $super_classes = array();
     $sub_classes = array();
-    
+
     $results = $this->directQuery("SELECT ?class ?super WHERE { {"
     //$results = $this->directQuery("SELECT ?class ?super WHERE { GRAPH ?g {"
       ."?class rdfs:subClassOf+ ?super. "
@@ -3960,8 +3960,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     }
 
     //clear up, avoid DatatypeProperties
-    $ranges = array_intersect_key($ranges,$properties); 
-    
+    $ranges = array_intersect_key($ranges,$properties);
+
     //explicit top level datatypes
     $primitives = array();
 
@@ -3977,7 +3977,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     }
 
     //clear up, avoid DatatypeProperties
-    #$domains = array_intersect_key($domains,$properties);   
+    #$domains = array_intersect_key($domains,$properties);
 
     //take all properties with no super property
     $top_properties = array_diff_key($properties,$super_properties);
@@ -4002,7 +4002,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       //  $ranges[$rng] = ['TOPCLASS'=>'TOPCLASS'];
       //}
     }
-    
+
 #    $prim_check = array_diff_key($top_properties,$primitives);
 #    if (!empty($prim_check)) {
 #      $this->messenger()->addError('No Domain for top-level primitive datatype property: '.implode(', ',$prim_check));;
@@ -4114,7 +4114,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         $ranges[$property] = array_merge($ranges[$property],$add_up);
       }
     }
-    
+
     foreach($primitives as $property => $values) {
       if (isset($primitives[$property])) {
         $add_up = array();
@@ -4138,7 +4138,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       foreach ($classes as $class) $insert->values(array('property'=>$prop,'class'=>$class));
     }
     $insert->execute();
-    
+
     $insert = $this->prepareInsert('primitives');
     foreach ($primitives as $prop => $classes) {
       foreach ($classes as $class) $insert->values(array('property'=>$prop,'class'=>$class));
@@ -4174,7 +4174,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       if (isset($properties[$property_uri])) return $inverses[$property_uri];
     }
     */
-    
+
     //DB version
     $inverse = $this->retrieve('inverses','inverse','property',$property_uri);
 #    dpm($inverse, "got from cache?");
@@ -4207,7 +4207,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 //    \Drupal::cache()->set($cid,$inverses);
     return $inverse;
   }
-  
+
   protected function isPrepared() {
     try {
       $result = !empty(\Drupal::service('database')->select($this->adapterId().'_classes','c')->fields('c')->range(0,1)->execute());
@@ -4216,9 +4216,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       return FALSE;
     }
   }
-  
+
   protected function prepareTables($drop = FALSE) {
-    
+
     try {
       $database = \Drupal::service('database');
       $schema = $database->schema();
@@ -4226,7 +4226,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       foreach (self::getReasonerTableSchema() as $type => $table_schema) {
         $table_name = $adapter_id.'_'.$type;
         if ($schema->tableExists($table_name)) {
-          if($drop) 
+          if($drop)
             $database->schema()->dropTable($table_name);
           else
             $database->truncate($table_name)->execute();
@@ -4238,9 +4238,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     } catch (\Exception $ex) {}
     return FALSE;
   }
-  
+
   private function prepareInsert($type) {
-    
+
     $fieldS = array();
     foreach (self::getReasonerTableSchema()[$type]['fields'] as $field_name => $field) {
       if ($field['type'] !== 'serial') $fields[] = $field_name;
@@ -4248,9 +4248,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $table_name = $this->adapterId().'_'.$type;
     return \Drupal::service('database')->insert($table_name)->fields($fields);
   }
-  
+
   public function retrieve($type,$return_field=NULL,$condition_field=NULL,$condition_value=NULL) {
-    
+
     $table_name = $this->adapterId().'_'.$type;
     $query = \Drupal::service('database')
               ->select($table_name,'t')
@@ -4270,7 +4270,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       return FALSE;
     }
   }
-  
+
   /**
    * implements hook_schema()
    */
@@ -4294,7 +4294,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       ),
       'primary key' => array('num'),
     );
-    
+
     $schema['properties'] = array(
       'description' => 'hold information about triple store properties',
       'fields' => array(
@@ -4312,8 +4312,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         ),
       ),
       'primary key' => array('num'),
-    );    
-    
+    );
+
     $schema['domains'] = array(
       'description' => 'hold information about domains of triple store properties',
       'fields' => array(
@@ -4338,7 +4338,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       ),
       'primary key' => array('num'),
     );
-    
+
     $schema['primitives'] = array(
       'description' => 'hold information about domains of primitive triple store properties',
       'fields' => array(
@@ -4363,7 +4363,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       ),
       'primary key' => array('num'),
     );
-    
+
     $schema['ranges'] = array(
       'description' => 'hold information about ranges of triple store properties',
       'fields' => array(
@@ -4388,7 +4388,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       ),
       'primary key' => array('num'),
     );
-    
+
     $schema['inverses'] = array(
       'description' => 'hold information about ranges of triple store properties',
       'fields' => array(
@@ -4416,5 +4416,5 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
     return $schema;
   }
-  
+
 }
