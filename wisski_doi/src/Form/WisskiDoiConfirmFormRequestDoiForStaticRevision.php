@@ -4,7 +4,6 @@ namespace Drupal\wisski_doi\Form;
 
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\ReplaceCommand;
-use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\user\Entity\User;
 use Drupal\wisski_core\WisskiStorageInterface;
 use Drupal\wisski_core\WisskiEntityInterface;
@@ -91,7 +90,10 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
   }
 
   /**
-   * {@inheritdoc}
+   * Populate the reachable variables from services.
+   *
+   * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
+   *   The class container.
    */
   public static function create(ContainerInterface $container) {
     return new static(
@@ -103,6 +105,9 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
 
   /**
    * The machine name of the form.
+   *
+   * @return string
+   *   The form id.
    */
   public function getFormId() {
     return 'wisski_doi_request_form_for_static_revision';
@@ -110,6 +115,9 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
 
   /**
    * Storage of the contributor names.
+   *
+   * @return array
+   *   The list of storage items.
    */
   protected function getEditableConfigNames() {
     return [
@@ -119,27 +127,39 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
 
   /**
    * The question of the confirm form.
+   *
+   * @return \Drupal\Core\StringTranslation\TranslatableMarkup
+   *   The confirmation questions.
    */
-  public function getQuestion(): TranslatableMarkup {
+  public function getQuestion() {
     return $this->t('Are you sure you want to request a findable DOI for this revision?');
   }
 
   /**
    * Route, if you hit chancel.
+   *
+   * @return \Drupal\Core\Url
+   *   The Chancel URL.
    */
-  public function getCancelUrl(): Url {
+  public function getCancelUrl() {
     return new Url('wisski_individual.doi.administration', ['wisski_individual' => $this->wisski_individual->id()]);
   }
 
   /**
    * Text on the submit button.
+   *
+   * @return \Drupal\Core\StringTranslation\TranslatableMarkup
+   *   The submit button text.
    */
-  public function getConfirmText(): TranslatableMarkup {
+  public function getConfirmText() {
     return $this->t('Request DOI for this revision');
   }
 
   /**
    * Details between title and body.
+   *
+   * @return \Drupal\Core\StringTranslation\TranslatableMarkup
+   *   The description texts.
    */
   public function getDescription() {
     return $this->t('This saves this revision and assigns a DOI to it.
@@ -150,8 +170,16 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
 
   /**
    * Add a contributor name to the storage.
+   *
+   * @param array $form
+   *   The form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   The contributor list in form of the contributor-list twig template.
    */
-  public static function addContributor(array &$form, FormStateInterface $form_state): AjaxResponse {
+  public static function addContributor(array &$form, FormStateInterface $form_state) {
     $contributor = $form_state->getValue('contributors')['contributorGroup']['contributor'];
     $contributorItems = \Drupal::configFactory()
       ->getEditable('contributor.items');
@@ -159,8 +187,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
     $error = NULL;
 
     try {
-      /* Validate for duplicates.
-       */
+      // Validate for duplicates or empty list.
       if (!empty($contributor)) {
         if (is_null($contributors)) {
           $contributors = [];
@@ -180,23 +207,35 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
       $error = t('Wrong text format. Enter a valid text format.');
     }
     $contributorItems->set('contributors', $contributors)->save();
+    // Invoke AJAX.
     $response = new AjaxResponse();
+    // Render template with params.
     $response->addCommand(new ReplaceCommand('#contributor-list', WisskiDoiConfirmFormRequestDoiForStaticRevision::renderContributors($contributors, $error)));
     return $response;
   }
 
   /**
    * Delete the specified contributor.
+   *
+   * @param string $contributor
+   *   Contributor person.
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   What is this and why do we use it?
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   The contributor list in form of the contributor-list twig template.
    */
-  public function removeContributor(string $contributor, Request $request): AjaxResponse {
+  public function removeContributor(string $contributor, Request $request) {
+    // Load contributors from storage.
     $contributorItems = \Drupal::configFactory()
       ->getEditable('contributor.items');
     $contributors = $contributorItems->get('contributors');
+    // Remove contributor from list and save.
     if (!is_null($contributors) && ($ind = array_search($contributor, array_column($contributors, 'name'))) !== FALSE) {
       unset($contributors[$ind]);
       $contributorItems->set('contributors', $contributors)->save();
     }
-
+    // Render template with params.
     $response = new AjaxResponse();
     $response->addCommand(new ReplaceCommand('#contributor-list', WisskiDoiConfirmFormRequestDoiForStaticRevision::renderContributors($contributors)));
 
@@ -204,21 +243,35 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
   }
 
   /**
-   * Delete all dates.
+   * Delete all contributors.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   What is this and why do we use it?
+   *
+   * @return \Drupal\Core\Ajax\AjaxResponse
+   *   The contributor list in form of the contributor-list twig template.
    */
-  public function clearContributors(Request $request): AjaxResponse {
+  public function clearContributors(Request $request) {
+    // Load contributors.
     $contributorItems = \Drupal::configFactory()
       ->getEditable('contributor.items');
+    // Reset list.
     $contributorItems->set('contributors', NULL)->save();
+    // Render template with params.
     $response = new AjaxResponse();
     $response->addCommand(new ReplaceCommand('#contributor-list', WisskiDoiConfirmFormRequestDoiForStaticRevision::renderContributors(NULL)));
     return $response;
   }
 
   /**
-   * Render Contributors template.
+   * Renders Contributors template.
+   *
+   * @param array $contributors
+   *   The contributors only with name key.
+   * @param string|null $error
+   *   The error message if any.
    */
-  public static function renderContributors($contributors, $error = NULL) {
+  public static function renderContributors(array $contributors, string $error = NULL) {
     $theme = [
       '#theme' => 'contributor-list',
       '#contributors' => $contributors,
@@ -234,8 +287,15 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
    *
    * Load DOI settings from Manage->Configuration->WissKI:WissKI DOI Settings.
    * Store it in a table.
+   *
+   * @param array $form
+   *   The form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   * @param int|null $eid
+   *   The WissKI entity id.
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual = NULL): array {
+  public function buildForm(array $form, FormStateInterface $form_state, int $wisski_individual = NULL): array {
     /* #tree will ensure the HTML elements get named distinctively.
      * Not just name=[name] but name=[container][123][name].
      */
@@ -410,11 +470,15 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
    * request a DOI for that revision,then save a second
    * time to store the revision and DOI in Drupal DB.
    *
+   * @param array $form
+   *   The form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   *
    * @throws \Drupal\Core\Entity\EntityStorageException
    * @throws \Exception
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-
 
     // Get new values from form state.
     $newVals = $form_state->cleanValues()->getValues();
