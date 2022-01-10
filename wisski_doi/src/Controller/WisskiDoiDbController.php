@@ -29,15 +29,15 @@ class WisskiDoiDbController extends ControllerBase {
    *
    * @param array $dbData
    *   Contains:
-   *   The DOI from the response of the DOI provider. Implemented at
-   *   WisskiDoiRestController::getDraftDoi, invoked from
-   *   WisskiDoiConfirmFormRequestDoiForStaticRevision.
-   *   The revision ID as vid.
-   *   The entity ID as eid.
-   *   The state of the DOI (draft, registered, findable).
+   *   eid: The entity ID as eid.
+   *   doi: DOI string with prefix and suffix.
+   *   vid: The revision ID as vid.
+   *   state: The state of the DOI (draft, registered, findable).
+   *   revisionUrl: Full external URL of the revision.
+   *   isCurrent: 0|1.
    *
    * @return Null
-   *   Query execution return nothing.
+   *   Query execution returns nothing.
    *
    * @throws \Exception
    */
@@ -63,6 +63,8 @@ class WisskiDoiDbController extends ControllerBase {
    *
    * @param int $eid
    *   The entity id.
+   * @param int|null $did
+   *   The internal DOI identifier from the wisski_doi table.
    *
    * @return array
    *   Dataset of corresponding DOIs to an entity.
@@ -85,6 +87,8 @@ class WisskiDoiDbController extends ControllerBase {
       $query = $query->condition('did', $did, '=');
     }
     $result = $query->orderBy('did', 'DESC')->execute()->fetchAll();
+
+    // $result is stdClass Object, this returns an array of the results.
     return array_map(function ($record) {
       return json_decode(json_encode($record), TRUE);
     }, $result);
@@ -92,10 +96,6 @@ class WisskiDoiDbController extends ControllerBase {
 
   /**
    * Delete the DOI record.
-   *
-   * We parse the strClass $records to an array with the
-   * json_decode/json_encode() functions. More transitions in
-   * WisskiDoiAdministration::rowBuilder().
    *
    * @param int|null $did
    *   The internal DOI id.
