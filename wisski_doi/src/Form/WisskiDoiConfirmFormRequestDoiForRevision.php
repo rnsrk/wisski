@@ -21,6 +21,9 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
    *   The form.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state.
+   *
+   * @return bool
+   *   Can we continue?
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
@@ -33,6 +36,7 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
         break;
       }
     }
+    return $continue;
   }
 
   /**
