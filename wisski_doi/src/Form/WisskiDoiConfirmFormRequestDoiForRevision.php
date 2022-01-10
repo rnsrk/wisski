@@ -69,7 +69,7 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
    * Details between title and body.
    *
    * @return \Drupal\Core\StringTranslation\TranslatableMarkup
-   *   The description text.
+   *   The description texts.
    */
   public function getDescription() {
     return $this->t('This assigns a DOI to the current and possibly changing state of the dataset.
