@@ -1,7 +1,7 @@
 Installation guide:
 
 You have to install Mirador 3 Integration for this package to work. It should typically be installed 
-at libraries/mirador-integration in the drupal root directory. For this you can take (09.12.2021)
+at libraries/mirador-integration in the drupal root directory. For this you can take (10.01.2022)
 the following steps:
 
 1. Change to your libraries directory
