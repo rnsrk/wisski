@@ -34,7 +34,7 @@ class WisskiDoiRestController extends ControllerBase {
   /**
    * Construct instance with DOI settings and check them.
    *
-   * Create a GuzzleClient localy (may a service injection is better?)
+   * Create a GuzzleClient locally (may a service injection is better?)
    * Take settings from wisski_doi_settings form
    * (Configuration->[WISSKI]->WissKI DOI Settings)
    * Checks if settings are missing.
@@ -62,7 +62,7 @@ class WisskiDoiRestController extends ControllerBase {
   }
 
   /**
-   * Receive DOIs from repo or update existing
+   * Receive DOIs from repo or update existing.
    *
    * @param array $doiInfo
    *   The DOI Schema for the provider.
@@ -71,12 +71,20 @@ class WisskiDoiRestController extends ControllerBase {
    *
    * @return array
    *   Data to write to DB.
+   *   Contains dbData:
+   *     eid: The entity ID as eid.
+   *     doi: DOI string with prefix and suffix.
+   *     vid: The revision ID as vid.
+   *     state: The state of the DOI (draft, registered, findable).
+   *     revisionUrl: Full external URL of the revision.
+   *   and responseStatus with responseCode.
    *
    * @throws \GuzzleHttp\Exception\RequestException|\Exception|
    *   Throws exception when response status 40x.
    */
   public function createOrUpdateDoi(array $doiInfo, bool $update = FALSE) {
 
+    // Future request body as array.
     $body = [
       "data" => [
         "attributes" => [
@@ -110,29 +118,37 @@ class WisskiDoiRestController extends ControllerBase {
         ],
       ],
     ];
+    // Encode to json.
     $json_body = json_encode($body);
     // dpm(base64_encode($this->doiRepositoryId.":".$this->doiRepositoryPassword));.
     try {
       if ($update) {
+        // If it is an update, use PUT method.
         $method = 'PUT';
         $uri = $this->doiSettings['baseUri'] . '/' . $doiInfo['doi'];
       }
       else {
+        // Else POST.
         $method = 'POST';
         $uri = $this->doiSettings['baseUri'];
       }
+      // Sending request.
       $response = $this->httpClient->request($method, $uri, [
         'body' => $json_body,
         'headers' => [
           'Authorization' => 'Basic ' . base64_encode($this->doiSettings['doiRepositoryId'] . ":" . $this->doiSettings['doiRepositoryPassword']),
           'Content-Type' => 'application/vnd.api+json',
         ],
+        // Error handling on.
         'http_errors' => TRUE,
       ]);
+      // Decode response to array.
       $responseContent = json_decode($response->getBody()->getContents(), TRUE);
+      // Messaging.
       $action = $update ? 'updated' : 'requested';
       $this->messenger()
         ->addStatus($this->t('DOI has been %action', ['%action' => $action]));
+
       return [
         'dbData' => [
           "doi" => $responseContent['data']['id'],
@@ -150,7 +166,7 @@ class WisskiDoiRestController extends ControllerBase {
     catch (RequestException $error) {
       \Drupal::logger('wisski_doi')
         ->error($this->t('Request error: @error', ['@error' => $error->getMessage()]));
-      #$errorCode = $this->errorResponse($error)->getStatusCode() ?? '500';
+      // $errorCode = $this->errorResponse($error)->getStatusCode() ?? '500';
       return [
         'dbDate' => NULL,
         'responseStatus' => $this->errorResponse($error),
@@ -185,6 +201,9 @@ class WisskiDoiRestController extends ControllerBase {
    * @param string $doi
    *   The DOI, like 10.82102/rhwt-d19.
    *
+   * @return string
+   *   The response status code.
+   *
    * @throws \GuzzleHttp\Exception\GuzzleException
    */
   public function readMetadata(string $doi) {
@@ -213,6 +232,11 @@ class WisskiDoiRestController extends ControllerBase {
    *
    * @param string $doi
    *   The DOI.
+   *
+   * @return string
+   *   The response status code.
+   *
+   * @throws \GuzzleHttp\Exception\RequestException
    */
   public function deleteDoi(string $doi) {
     try {
@@ -232,7 +256,7 @@ class WisskiDoiRestController extends ControllerBase {
      * response from the remote API.
      */
     catch (RequestException $error) {
-      $this->errorResponse($error);
+      return $this->errorResponse($error);
     }
   }
 
@@ -241,6 +265,9 @@ class WisskiDoiRestController extends ControllerBase {
    *
    * @param \GuzzleHttp\Exception\RequestException $error
    *   The GuzzleHttp error response.
+   *
+   * @return string
+   *   Error status code.
    */
   private function errorResponse(RequestException $error) {
     // Get the original response.
