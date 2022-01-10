@@ -10,15 +10,21 @@ use Drupal\wisski_salz\AdapterHelper;
 
 /**
  * Provides a form for reverting a wisski_individual revision.
- *
- * @internal
  */
 class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiForStaticRevision {
 
+  /**
+   * The DOI record from wisski_doi table.
+   *
+   * @var array
+   */
   private array $dbRecord;
 
   /**
    * The machine name of the form.
+   *
+   * @return string
+   *   The form id.
    */
   public function getFormId() {
     return 'wisski_doi_edit_form_for_doi_metadata';
@@ -26,6 +32,9 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
 
   /**
    * The question of the confirm form.
+   *
+   * @return \Drupal\Core\StringTranslation\TranslatableMarkup
+   *   The confirmation questions.
    */
   public function getQuestion(): TranslatableMarkup {
     return $this->t('Make your changes!');
@@ -33,6 +42,9 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
 
   /**
    * Text on the submit button.
+   *
+   * @return \Drupal\Core\StringTranslation\TranslatableMarkup
+   *   The submit button text.
    */
   public function getConfirmText(): TranslatableMarkup {
     return $this->t('Update DOI metadata');
@@ -40,6 +52,9 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
 
   /**
    * Details between title and body.
+   *
+   * @return \Drupal\Core\StringTranslation\TranslatableMarkup
+   *   The description texts.
    */
   public function getDescription() {
     return $this->t('This updates the DOI metadata at your provider.
@@ -48,17 +63,27 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
 
   /**
    * Validate if event is suitable.
+   *
+   * @param array $form
+   *   The form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   *
+   * @return bool
+   *   Can we continue?
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
     $continue = TRUE;
     if ($form_state->getValue('event') == 'draft' && in_array($this->dbRecord['state'], [
+      // A registered or findable DOI can not go back to draft.
       'registered', 'findable',
     ])) {
       $form_state->setErrorByName('entityId', $this->t('You can not change a registered or findable DOI back to draft, sorry. Pick a suitable state'));
       $continue = FALSE;
     }
     elseif ($form_state->getValue('event') == 'hide' && $this->dbRecord['state'] != 'findable') {
+      // Only findable can be hided.
       $form_state->setErrorByName('entityId', $this->t('You can not hide a draft or a registered DOI, sorry. Pick a suitable state'));
       $continue = FALSE;
     }
@@ -72,11 +97,22 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
    * request a DOI for that revision,then save a second
    * time to store the revision and DOI in Drupal DB.
    *
-   * @throws \Exception
+   * @param array $form
+   *   The form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   * @param int|null $wisski_individual
+   *   The WissKI entity id.
+   * @param int|null $did
+   *   The internal DOI id in wisski_doi table.
+   *
+   * @return array
+   *   The return form.
+   *
    * @throws \GuzzleHttp\Exception\GuzzleException
    *   Error if WissKI entity URI could not be loaded (?).
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual = NULL, $did = NULL): array {
+  public function buildForm(array $form, FormStateInterface $form_state, int $wisski_individual = NULL, int $did = NULL): array {
     $this->dbRecord = (new WisskiDoiDbController())->readDoiRecords($wisski_individual, $did)[0];
     if ($this->dbRecord['state'] == 'findable') {
       $doiInfo = (new WisskiDoiRestController())->readMetadata($this->dbRecord['doi']);
@@ -97,10 +133,16 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
   }
 
   /**
+   * The submit action.
+   *
+   * @param array $form
+   *   The form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
    *
    * @throws \Exception
    */
-  public function submitForm(array &$form, $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
 
     // Get new values from form state.
     $doiInfo = $form_state->cleanValues()->getValues();
