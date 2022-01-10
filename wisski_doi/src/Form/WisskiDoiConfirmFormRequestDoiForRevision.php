@@ -3,7 +3,6 @@
 namespace Drupal\wisski_doi\Form;
 
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\wisski_doi\Controller\WisskiDoiDbController;
 use Drupal\wisski_doi\Controller\WisskiDoiRestController;
 use Drupal\wisski_salz\AdapterHelper;
@@ -16,7 +15,12 @@ use Drupal\wisski_salz\AdapterHelper;
 class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequestDoiForStaticRevision {
 
   /**
+   * Validate if a DOI for a current revision exists.
    *
+   * @param array $form
+   *   The form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
@@ -33,6 +37,9 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
 
   /**
    * The machine name of the form.
+   *
+   * @return string
+   *   The form id.
    */
   public function getFormId() {
     return 'wisski_doi_request_form_for_current_revision';
@@ -40,20 +47,29 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
 
   /**
    * The question of the confirm form.
+   *
+   * @return \Drupal\Core\StringTranslation\TranslatableMarkup
+   *   The confirmation questions.
    */
-  public function getQuestion(): TranslatableMarkup {
+  public function getQuestion() {
     return $this->t('Are you sure you want to request a findable DOI for the current and changeable state of the dataset?');
   }
 
   /**
    * Text on the submit button.
+   *
+   * @return \Drupal\Core\StringTranslation\TranslatableMarkup
+   *   The submit button text.
    */
-  public function getConfirmText(): TranslatableMarkup {
+  public function getConfirmText() {
     return $this->t('Request DOI for current state');
   }
 
   /**
    * Details between title and body.
+   *
+   * @return \Drupal\Core\StringTranslation\TranslatableMarkup
+   *   The description text.
    */
   public function getDescription() {
     return $this->t('This assigns a DOI to the current and possibly changing state of the dataset.
@@ -69,10 +85,15 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
    * request a DOI for that revision,then save a second
    * time to store the revision and DOI in Drupal DB.
    *
+   * @param array $form
+   *   The form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   *
    * @throws \Exception
    *   Error if WissKI entity URI could not be loaded (?).
    */
-  public function submitForm(array &$form, $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
 
     // Get new values from form state.
     $doiInfo = $form_state->cleanValues()->getValues();
@@ -108,7 +129,6 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
     $response = (new WisskiDoiRestController())->createOrUpdateDoi($doiInfo);
     $response['responseStatus'] == 201 ? (new WisskiDoiDBController())->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
       ->error($this->t('Something went wrong Updating the DOI. Leave the database untouched'));
-    // Redirect to DOI administration.
     // Redirect to DOI administration.
     $form_state->setRedirect(
       'wisski_individual.doi.administration', ['wisski_individual' => $this->wisski_individual->id()]
