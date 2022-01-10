@@ -25,7 +25,7 @@
   {% endif %}
   {% if contributors is not empty %}
     <section class="wisski-doi-settings-contributor--list">
-      <div class="wisski-doi-settings-holiday--item">
+      <div class="wisski-doi-settings--item">
         <h3 class="label">{% trans %}Contributor list{% endtrans %}</h3>
         <div>
           <a href="{{ path('wisski_individual.doi.contributors.clear_contributors') }}"
@@ -33,7 +33,7 @@
         </div>
       </div>
       {% for contributor in contributors %}
-        <div class="wisski-doi-settings-holiday--item">
+        <div class="wisski-doi-settings--item">
           <div class="wisski-doi-settings-contributors--contributor">{{ contributor['name'] }}</div>
           <div>
             <a href="{{ path('wisski_individual.doi.contributors.remove_contributor', {'contributor': contributor['name']}) }}"

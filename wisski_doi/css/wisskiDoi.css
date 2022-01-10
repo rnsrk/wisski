@@ -1,15 +1,23 @@
+/**
+ * @file
+ * Layouts for the DOI Module.
+ */
+
+/**
+ * Styling the contributor table in the update form.
+ */
 .wisski-doi-settings-contributor--list {
   padding: 0;
   margin: 12px 0;
   width: 55%;
 }
 
-.wisski-doi-settings-holiday--item {
+.wisski-doi-settings--item {
   display: flex;
   justify-content: space-between;
 }
 
-.wisski-doi-settings-holiday--item + .wisski-doi-settings-holiday--item {
+.wisski-doi-settings--item + .wisski-doi-settings--item {
   margin-top: 8px;
 }
 
