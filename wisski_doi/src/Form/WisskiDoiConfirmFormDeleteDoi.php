@@ -77,12 +77,23 @@ class WisskiDoiConfirmFormDeleteDoi extends ConfirmFormBase {
   /**
    * Delete the DOI from provider's and local DB.
    *
+   * @param array $form
+   *   The form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   * @param int|null $wisski_individual
+   *   The entity id of the wisski individual.
+   * @param int|null $did
+   *   The internal DOI id in wisski_doi table.
+   *
    * @throws \Exception
    *   Error if WissKI entity URI could not be loaded (?).
    */
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual = NULL, $did = NULL): array {
     $this->wisski_individual = $wisski_individual;
     $this->did = $did;
+
+    // Read the DOI record.
     $dbRecord = (new WisskiDoiDbController())->readDoiRecords($wisski_individual, $did)[0];
     $this->doi = $dbRecord['doi'];
 
@@ -93,15 +104,20 @@ class WisskiDoiConfirmFormDeleteDoi extends ConfirmFormBase {
    * Deletes DOI record from local and remote DB.
    */
   public function submitForm(array &$form, $form_state) {
+    // Invoke delete request.
     $response = (new WisskiDoiRestController())->deleteDoi($this->doi);
+
     if ($response == 204) {
+      // If it was successfully, delete local database record.
       (new WisskiDoiDbController())->deleteDoiRecord($this->did);
     }
     else {
+      // If not, log the error.
       $this->messenger()
         ->addError($this->t('Something went wrong while deleting the DOI from provider database.
         Leave the database record untouched.'));
     }
+    // Redirect.
     $form_state->setRedirect(
       'wisski_individual.doi.administration', ['wisski_individual' => $this->wisski_individual]
     );
