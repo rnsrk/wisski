@@ -20,8 +20,9 @@ class WisskiDoiAdministration extends ControllerBase {
    *   The render array of the connected DOIs from the DB table
    *   wisski_doi as a table.
    */
-  public function overview($wisski_individual) {
+  public function overview(string $wisski_individual) {
     $wisski_individual = intval($wisski_individual);
+    // Read data from wisski_doi.
     $dbRows = (new WisskiDoiDbController)->readDoiRecords($wisski_individual) ?? NULL;
 
     if ($dbRows) {
@@ -32,7 +33,13 @@ class WisskiDoiAdministration extends ControllerBase {
       // Build table.
       $build['table'] = [
         '#type' => 'table',
-        '#header' => ['ID', 'DOI', 'State', 'RevisionURL', 'State', 'Operations'],
+        '#header' => ['ID',
+          'DOI',
+          'State',
+          'RevisionURL',
+          'State',
+          'Operations',
+        ],
         '#rows' => $rows,
         '#description' => $this->t('DOI information'),
         '#weight' => 1,
@@ -40,6 +47,7 @@ class WisskiDoiAdministration extends ControllerBase {
       ];
     }
     else {
+      // Found no DOIs in database table wisski_doi.
       $build = [
         '#markup' => '<p>' . $this->t('No DOIs associated with the entity.') . '</p>',
         '#cache' => ['max-age' => 0],
@@ -56,12 +64,18 @@ class WisskiDoiAdministration extends ControllerBase {
    * @param string $wisski_individual
    *   The wisski_individual (it's an integer actually)
    */
-  public function rowBuilder($row, $wisski_individual) {
+  public function rowBuilder(array $row, string $wisski_individual) {
+    // Assemble DOI Link.
     $doiLink = 'https://doi.org/' . $row['doi'];
     $row['doi'] = ['data' => $this->t('<a href=":doiLink" class="wisski-doi-link">:doiLink</a>', [':doiLink' => $doiLink])];
+    // Revision Link.
     $row['revisionUrl'] = ['data' => $this->t('<a href=":revisionLink">:revisionLink</a>', [':revisionLink' => $row['revisionUrl']])];
-    $links = [];
 
+    // IsCurrent column.
+    $row['isCurrent'] ? $row['isCurrent'] = 'current' : $row['isCurrent'] = 'static';
+
+    // Populate Options Menu.
+    $links = [];
     $links['edit'] = [
       'title' => $this->t('Edit'),
       'url' => Url::fromRoute('wisski_individual.doi.edit_metadata', [
@@ -79,7 +93,7 @@ class WisskiDoiAdministration extends ControllerBase {
       ];
     }
 
-    $row['isCurrent'] ? $row['isCurrent'] = 'current' : $row['isCurrent'] = 'static';
+    // Operations column.
     $row['Operations'] =
       [
         'data' => [
@@ -87,6 +101,8 @@ class WisskiDoiAdministration extends ControllerBase {
           '#links' => $links,
         ],
       ];
+
+    // Remove unnecessary columns.
     unset($row['eid']);
     unset($row['vid']);
     return $row;
