@@ -5,6 +5,7 @@
  * Implement hooks for the WissKI individual revision table.
  */
 
+use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
@@ -36,4 +37,14 @@ function wisski_doi_theme() {
       ]
     ]
   ];
+}
+
+/**
+ * Implements hook_help().
+ */
+function wisski_doi_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.wisski_doi':
+      return '<p>' . t('This module provides the possibility to request DOIs for single WissKI entities. More information and tutorial at <a href="https://wiss-ki.eu/documentation/DOIs">wiss-ki.eu</a>.</p>');
+  }
 }
