@@ -1,6 +1,6 @@
 mirador:
   js:
-    /libraries/mirador-integration/webpack/dist/main.js: { }
+    /libraries/wisski-mirador-integration/mirador-integration.js: { minified: true }
     js/wisski_mirador.js: { }
   css:
     theme:
