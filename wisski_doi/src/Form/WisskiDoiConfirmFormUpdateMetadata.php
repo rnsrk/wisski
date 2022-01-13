@@ -56,7 +56,7 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
    */
   public function getDescription() {
     return $this->t('This updates the DOI metadata at your provider.
-    It will NOT changes the dataset in WissKI.');
+    It will NOT change the dataset in WissKI.</br> <em>Field values from drafts and registered DOIs cannot be retrieved online and are populated with local values. Therefore, they may differ from the online data!</em>');
   }
 
   /**
