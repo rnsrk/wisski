@@ -3,13 +3,15 @@
 namespace Drupal\wisski_doi;
 
 use Drupal\Core\Database\Connection;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\StringTranslation\TranslationInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Controller for DB CRUD actions.
  */
 class WisskiDoiDbActions {
-
+  use StringTranslationTrait;
   /**
    * The query builder object.
    *
@@ -18,20 +20,28 @@ class WisskiDoiDbActions {
   private Connection $connection;
 
   /**
+   * The Drupal messenger service.
+   *
+   * @var mixed
+   */
+  private mixed $messenger;
+
+  /**
    * Get services through dependency injection.
    */
   public static function create(ContainerInterface $container) {
-    $connection = $container->get('database');
     return new static(
-      $connection
+      $container->get('database')
     );
   }
 
   /**
    * Establish database connection with query builder.
    */
-  public function __construct(Connection $connection) {
+  public function __construct(Connection $connection, TranslationInterface $stringTranslation) {
     $this->connection = $connection;
+    $this->messenger = \Drupal::service('messenger');
+    $this->stringTranslation = $stringTranslation;
   }
 
   /**
@@ -110,13 +120,12 @@ class WisskiDoiDbActions {
    * @param int|null $did
    *   The internal DOI id.
    *
-   * @return array
+   * @return int
    *   Dataset of corresponding DOIs to an entity.
    */
   public function deleteDoiRecord(int $did = NULL) {
     $result = $this->connection->delete('wisski_doi')->condition('did', $did)->execute();
-    $this->messenger()
-      ->addStatus($this->t('Deleted DOI record from DB.'));
+    $this->messenger->addStatus($this->t('Deleted DOI record from DB.'));
     return $result;
   }
 
@@ -133,16 +142,14 @@ class WisskiDoiDbActions {
    */
   public function updateDbRecord(string $state, int $did = NULL) {
     if (!$did) {
-      $this->messenger()
-        ->addError($this->t('There is no did.'));
+      $this->messenger->addError($this->t('There is no did.'));
       return NULL;
     }
     $result = $this->connection->update('wisski_doi')
       ->fields([
         'state' => $state,
       ])->condition('did', $did)->execute();
-    $this->messenger()
-      ->addStatus($this->t('Updated DOI record from DB.'));
+    $this->messenger->addStatus($this->t('Updated DOI record from DB.'));
     return $result;
   }
 

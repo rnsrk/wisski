@@ -6,8 +6,9 @@ use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Url;
-use Drupal\wisski_doi\Controller\WisskiDoiDbActions;
-use Drupal\wisski_doi\Controller\WisskiDoiRestActions;
+use Drupal\wisski_doi\WisskiDoiDbActions;
+use Drupal\wisski_doi\WisskiDoiRestActions;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a form for reverting a wisski_individual revision.
@@ -15,6 +16,46 @@ use Drupal\wisski_doi\Controller\WisskiDoiRestActions;
  * @internal
  */
 class WisskiDoiConfirmFormDeleteDoi extends ConfirmFormBase {
+
+  /**
+   * The service to interact with the REST API .
+   *
+   * @var \Drupal\wisski_doi\WisskiDoiRestActions
+   */
+  protected WisskiDoiRestActions $wisskiDoiRestActions;
+
+  /**
+   * The service to interact with the database.
+   *
+   * @var \Drupal\wisski_doi\WisskiDoiDbActions
+   */
+  protected WisskiDoiDbActions $wisskiDoiDbActions;
+
+  /**
+   * Form for removing a draft DOI from the provider and the local database.
+   *
+   * @param \Drupal\wisski_doi\WisskiDoiRestActions $wisskiDoiRestActions
+   *   The WissKi DOI Rest Service.
+   * @param \Drupal\wisski_doi\WisskiDoiDbActions $wisskiDoiDbActions
+   *   The WissKI DOI database Service.
+   */
+  public function __construct(WisskiDoiRestActions $wisskiDoiRestActions, WisskiDoiDbActions $wisskiDoiDbActions) {
+    $this->wisskiDoiRestActions = $wisskiDoiRestActions;
+    $this->wisskiDoiDbActions = $wisskiDoiDbActions;
+  }
+
+  /**
+   * Populate the reachable variables from services.
+   *
+   * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
+   *   The class container.
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('wisski_doi.wisski_doi_rest_actions'),
+      $container->get('wisski_doi.wisski_doi_db_actions'),
+    );
+  }
 
   /**
    * The WissKI individual.
@@ -94,7 +135,7 @@ class WisskiDoiConfirmFormDeleteDoi extends ConfirmFormBase {
     $this->did = $did;
 
     // Read the DOI record.
-    $dbRecord = (new WisskiDoiDbActions())->readDoiRecords($wisski_individual, $did)[0];
+    $dbRecord = $this->wisskiDoiDbActions->readDoiRecords($wisski_individual, $did)[0];
     $this->doi = $dbRecord['doi'];
 
     return parent::buildForm($form, $form_state);
@@ -105,11 +146,11 @@ class WisskiDoiConfirmFormDeleteDoi extends ConfirmFormBase {
    */
   public function submitForm(array &$form, $form_state) {
     // Invoke delete request.
-    $response = (new WisskiDoiRestActions())->deleteDoi($this->doi);
+    $response = $this->wisskiDoiRestActions->deleteDoi($this->doi);
 
     if ($response == 204) {
       // If it was successfully, delete local database record.
-      (new WisskiDoiDbActions())->deleteDoiRecord($this->did);
+      $this->wisskiDoiDbActions->deleteDoiRecord($this->did);
     }
     else {
       // If not, log the error.

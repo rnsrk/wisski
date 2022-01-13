@@ -4,8 +4,6 @@ namespace Drupal\wisski_doi\Form;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
-use Drupal\wisski_doi\Controller\WisskiDoiDbActions;
-use Drupal\wisski_doi\Controller\WisskiDoiRestActions;
 use Drupal\wisski_salz\AdapterHelper;
 
 /**
@@ -113,9 +111,10 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
    *   Error if WissKI entity URI could not be loaded (?).
    */
   public function buildForm(array $form, FormStateInterface $form_state, int $wisski_individual = NULL, int $did = NULL): array {
-    $this->dbRecord = (new WisskiDoiDbActions())->readDoiRecords($wisski_individual, $did)[0];
+    $this->dbRecord = $this->wisskiDoiDbActions->readDoiRecords($wisski_individual, $did)[0];
+    dpm($this->dbRecord);
     if ($this->dbRecord['state'] == 'findable') {
-      $doiInfo = (new WisskiDoiRestActions())->readMetadata($this->dbRecord['doi']);
+      $doiInfo = $this->wisskiDoiRestActions->readMetadata($this->dbRecord['doi']);
       $form_state->set('doiInfo', [
         "entityId" => $wisski_individual,
         "creationDate" => $doiInfo['data']['attributes']['dates'][0]['dateInformation'],
@@ -178,8 +177,9 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
       "revisionUrl" => $doiCurrentRevisionURL,
     ];
     // Request DOI.
-    $response = (new WisskiDoiRestActions())->createOrUpdateDoi($doiInfo, TRUE);
-    $response['responseStatus'] == 200 ? (new WisskiDoiDbActions())->updateDbRecord($response['dbData']['state'], intval($this->dbRecord['did'])) : \Drupal::logger('wisski_doi')
+    $response = $this->wisskiDoiRestActions->createOrUpdateDoi($doiInfo, TRUE);
+    // Write response to database.
+    $response['responseStatus'] == 200 ? $this->wisskiDoiDbActions->updateDbRecord($response['dbData']['state'], intval($this->dbRecord['did'])) : \Drupal::logger('wisski_doi')
       ->error($this->t('Something went wrong Updating the DOI. Leave the database untouched'));
     // Redirect to DOI administration.
     $form_state->setRedirect(

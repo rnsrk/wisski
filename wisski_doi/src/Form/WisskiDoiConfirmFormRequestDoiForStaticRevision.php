@@ -71,17 +71,17 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
    *
    * @var \Drupal\wisski_doi\WisskiDoiRestActions
    */
-  private WisskiDoiRestActions $wisskiDoiRestActions;
+  protected WisskiDoiRestActions $wisskiDoiRestActions;
 
   /**
    * The service to interact with the database.
    *
    * @var \Drupal\wisski_doi\WisskiDoiDbActions
    */
-  private WisskiDoiDbActions $wisskiDoiDbActions;
+  protected WisskiDoiDbActions $wisskiDoiDbActions;
 
   /**
-   * Constructs a new NodeRevisionRevertForm.
+   * Constructs a new form to request a DOI for a static revision.
    *
    * @param \Drupal\wisski_core\WisskiStorageInterface $wisski_storage
    *   The WissKI Storage service.
@@ -285,12 +285,12 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
   /**
    * Renders Contributors template.
    *
-   * @param array $contributors
+   * @param array|null $contributors
    *   The contributors only with name key.
    * @param string|null $error
    *   The error message if any.
    */
-  public static function renderContributors(array $contributors, string $error = NULL) {
+  public static function renderContributors(array|NULL $contributors, string $error = NULL) {
     $theme = [
       '#theme' => 'contributor-list',
       '#contributors' => $contributors,
@@ -451,6 +451,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
       ],
       '#value' => $this->t('Add'),
     ];
+
     $form['contributors']['contributorTable'] = [
       '#type' => 'item',
       '#markup' => WisskiDoiConfirmFormRequestDoiForStaticRevision::renderContributors($contributorItems->get('contributors')),
@@ -534,7 +535,9 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
     ];
 
     // Request DOI.
+    dpm($this->doiInfo);
     $response = $this->wisskiDoiRestActions->createOrUpdateDoi($this->doiInfo);
+    dpm($response);
     // Safe to db if successfully.
     $response['responseStatus'] == 201 ? $this->wisskiDoiDbActions->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
       ->error($this->t('Something went wrong creating the DOI. Leave the database untouched'));

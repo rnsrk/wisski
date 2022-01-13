@@ -5,6 +5,8 @@ entity.wisski_individual.actions.add_doi_for_static:
     - wisski_individual.doi.administration
   permission:
     - 'administer dois'
+  parameters:
+    - '@wisski_doi.wisski_doi_rest_actions'
 
 entity.wisski_individual.actions.add_doi_for_current:
   route_name: 'wisski_individual.doi.for_current_revision'
@@ -13,3 +15,5 @@ entity.wisski_individual.actions.add_doi_for_current:
     - wisski_individual.doi.administration
   permission:
     - 'administer dois'
+  parameters:
+    - '@wisski_doi.wisski_doi_rest_actions'

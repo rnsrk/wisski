@@ -3,8 +3,6 @@
 namespace Drupal\wisski_doi\Form;
 
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\wisski_doi\Controller\WisskiDoiDbActions;
-use Drupal\wisski_doi\Controller\WisskiDoiRestActions;
 use Drupal\wisski_salz\AdapterHelper;
 
 /**
@@ -13,6 +11,12 @@ use Drupal\wisski_salz\AdapterHelper;
  * @internal
  */
 class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequestDoiForStaticRevision {
+
+  /**
+   * The DOI data.
+   *
+   * @var array $doiInfo
+   */
 
   /**
    * Validate if a DOI for a current revision exists.
@@ -27,7 +31,7 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
-    $rows = (new WisskiDoiDbActions)->readDoiRecords($form_state->getValue('entityId'));
+    $rows = $this->wisskiDoiDbActions->readDoiRecords($form_state->getValue('entityId'));
     $continue = TRUE;
     foreach ($rows as $row => $key) {
       if ($key['isCurrent']) {
@@ -100,12 +104,12 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
     // Get new values from form state.
-    $doiInfo = $form_state->cleanValues()->getValues();
+    $this->doiInfo = $form_state->cleanValues()->getValues();
 
     // Get WissKI entity URI.
     $target_uri = AdapterHelper::getOnlyOneUriPerAdapterForDrupalId($this->wisski_individual->id());
     $target_uri = current($target_uri);
-    $doiInfo += [
+    $this->doiInfo += [
       "entityUri" => $target_uri,
     ];
 
@@ -123,15 +127,18 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
 
     // Assemble revision URL and store it in form.
     $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
-    $doiCurrentRevisionURL = $http . $_SERVER['HTTP_HOST'] . '/wisski/get?uri=' . $doiInfo["entityUri"];
+    $doiCurrentRevisionURL = $http . $_SERVER['HTTP_HOST'] . '/wisski/get?uri=' . $this->doiInfo["entityUri"];
 
     // Append revision info to doiInfo.
-    $doiInfo += [
+    $this->doiInfo += [
       "revisionUrl" => $doiCurrentRevisionURL,
     ];
     // Request DOI.
-    $response = (new WisskiDoiRestActions())->createOrUpdateDoi($doiInfo);
-    $response['responseStatus'] == 201 ? (new WisskiDoiDbActions())->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
+    dpm($this->doiInfo);
+    $response = $this->wisskiDoiRestActions->createOrUpdateDoi($this->doiInfo);
+    dpm($response);
+    // Write response to database.
+    $response['responseStatus'] == 201 ? $this->wisskiDoiDbActions->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
       ->error($this->t('Something went wrong Updating the DOI. Leave the database untouched'));
     // Redirect to DOI administration.
     $form_state->setRedirect(

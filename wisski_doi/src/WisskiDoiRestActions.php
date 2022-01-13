@@ -66,8 +66,7 @@ class WisskiDoiRestActions {
       (new WisskiDoiSettingsNotFoundException)->checkDoiSetting($this->doiSettings);
     }
     catch (WisskiDoiSettingsNotFoundException $error) {
-      \Drupal::messenger()
-        ->addError($error->getMessage());
+      $this->messenger->addError($error->getMessage());
     }
 
   }
@@ -129,6 +128,7 @@ class WisskiDoiRestActions {
         ],
       ],
     ];
+    dpm($body);
     // Encode to json.
     $json_body = json_encode($body);
     // dpm(base64_encode($this->doiRepositoryId.":".$this->doiRepositoryPassword));.
@@ -194,7 +194,7 @@ class WisskiDoiRestActions {
         'responseStatus' => $this->errorResponse($error),
       ];
     }
-    catch (GuzzleException $e) {
+    catch (GuzzleException $error) {
     }
     // Log the error.
     \Drupal::logger('wisski_doi')
@@ -225,8 +225,7 @@ class WisskiDoiRestActions {
         ],
       ]);
 
-      $this->messenger()
-        ->addStatus($this->t('Reached DOI provider, got data.'));
+      $this->messenger->addStatus($this->t('Reached DOI provider, got data.'));
       return json_decode($response->getBody()->getContents(), TRUE);
     }
     /* Try to catch the GuzzleException. This indicates a failed
@@ -258,8 +257,7 @@ class WisskiDoiRestActions {
         ],
       ]);
 
-      $this->messenger()
-        ->addStatus($this->t('Deleted DOI from provider.'));
+      $this->messenger->addStatus($this->t('Deleted DOI from provider.'));
       return $response->getStatusCode();
     }
     /* Try to catch the GuzzleException. This indicates a failed
@@ -320,7 +318,7 @@ class WisskiDoiRestActions {
         break;
 
       case "500":
-        $error_tip = 'There was no response at all, have you defined the base uri?';
+        $error_tip = 'There was no response at all, have you defined the base uri? Or maybe it is a timeout';
         break;
 
       default:
@@ -330,11 +328,10 @@ class WisskiDoiRestActions {
     // Error Code and Message.
     $message = $this->t('API connection error. Error code: %error_code. Error message: %error_message %error_tip', [
       '%error_code' => $error_content['errors'][0]['status'],
-      '%error_message' => $error_content['errors'][0]['title'],
+      '%error_message' => $error_content['errors'][0]['title'] ?? 'no message',
       '%error_tip' => $error_tip,
     ]);
-    $this->messenger()
-      ->addError($message);
+    $this->messenger->addError($message);
     // Log the error.
     \Drupal::logger('wisski_doi')->error($message);
     return $error_content['errors'][0]['status'];

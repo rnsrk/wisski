@@ -3,6 +3,7 @@ services:
     class: Drupal\wisski_doi\WisskiDoiDbActions
     arguments:
       - '@database'
+      - '@string_translation'
   wisski_doi.wisski_doi_rest_actions:
     class: Drupal\wisski_doi\WisskiDoiRestActions
     arguments:
