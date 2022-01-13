@@ -285,15 +285,15 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
   /**
    * Renders Contributors template.
    *
-   * @param array|null $contributors
+   * @param array $contributors
    *   The contributors only with name key.
-   * @param string|null $error
+   * @param string $error
    *   The error message if any.
    *
    * @return mixed
    *   The render array for the contributors.
    */
-  public static function renderContributors(array|NULL $contributors, string $error = NULL) {
+  public static function renderContributors(array $contributors, string $error = NULL) {
     $theme = [
       '#theme' => 'contributor-list',
       '#contributors' => $contributors,
@@ -314,7 +314,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
    *   The form.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state.
-   * @param int|null $wisski_individual
+   * @param int $wisski_individual
    *   The WissKI Entity ID.
    *
    * @return array
