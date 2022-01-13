@@ -12,8 +12,8 @@ use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-use Drupal\wisski_doi\Controller\WisskiDoiDbController;
-use Drupal\wisski_doi\Controller\WisskiDoiRestController;
+use Drupal\wisski_doi\WisskiDoiDbActions;
+use Drupal\wisski_doi\WisskiDoiRestActions;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -67,26 +67,43 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
   protected array $doiInfo;
 
   /**
-   * The logging text of the revision.
+   * The service to interact with the REST API .
    *
-   * @var string
+   * @var \Drupal\wisski_doi\WisskiDoiRestActions
    */
-  protected string $revision_log;
+  private WisskiDoiRestActions $wisskiDoiRestActions;
+
+  /**
+   * The service to interact with the database.
+   *
+   * @var \Drupal\wisski_doi\WisskiDoiDbActions
+   */
+  private WisskiDoiDbActions $wisskiDoiDbActions;
 
   /**
    * Constructs a new NodeRevisionRevertForm.
    *
    * @param \Drupal\wisski_core\WisskiStorageInterface $wisski_storage
-   *   The WissKI Storage.
+   *   The WissKI Storage service.
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date formatter service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
+   * @param \Drupal\wisski_doi\WisskiDoiRestActions $wisskiDoiRestActions
+   *   The WissKi DOI Rest Service.
+   * @param \Drupal\wisski_doi\WisskiDoiDbActions $wisskiDoiDbActions
+   *   The WissKI DOI database Service.
    */
-  public function __construct(WisskiStorageInterface $wisski_storage, DateFormatterInterface $date_formatter, TimeInterface $time) {
+  public function __construct(WisskiStorageInterface $wisski_storage,
+                              DateFormatterInterface $date_formatter,
+                              TimeInterface $time,
+                              WisskiDoiRestActions $wisskiDoiRestActions,
+                              WisskiDoiDbActions $wisskiDoiDbActions) {
     $this->wisskiStorage = $wisski_storage;
     $this->dateFormatter = $date_formatter;
     $this->time = $time;
+    $this->wisskiDoiRestActions = $wisskiDoiRestActions;
+    $this->wisskiDoiDbActions = $wisskiDoiDbActions;
   }
 
   /**
@@ -99,7 +116,9 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
     return new static(
       $container->get('entity_type.manager')->getStorage('wisski_individual'),
       $container->get('date.formatter'),
-      $container->get('datetime.time')
+      $container->get('datetime.time'),
+      $container->get('wisski_doi.wisski_doi_rest_actions'),
+      $container->get('wisski_doi.wisski_doi_db_actions'),
     );
   }
 
@@ -292,8 +311,11 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
    *   The form.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state.
-   * @param int|null $eid
-   *   The WissKI entity id.
+   * @param int|null $wisski_individual
+   *   The WissKI Entity ID.
+   *
+   * @return array
+   *   The form.
    */
   public function buildForm(array $form, FormStateInterface $form_state, int $wisski_individual = NULL): array {
     /* #tree will ensure the HTML elements get named distinctively.
@@ -302,6 +324,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
     $form['#tree'] = TRUE;
 
     // Load WissKI entity.
+    // @todo Do not use storage load, but parameters or service instead.
     $this->wisski_individual = $this->wisskiStorage->load($wisski_individual);
 
     // Load existing form data.
@@ -511,9 +534,9 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
     ];
 
     // Request DOI.
-    $response = (new WisskiDoiRestController())->createOrUpdateDoi($this->doiInfo);
+    $response = $this->wisskiDoiRestActions->createOrUpdateDoi($this->doiInfo);
     // Safe to db if successfully.
-    $response['responseStatus'] == 201 ? (new WisskiDoiDBController())->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
+    $response['responseStatus'] == 201 ? $this->wisskiDoiDbActions->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
       ->error($this->t('Something went wrong creating the DOI. Leave the database untouched'));
 
     // Start second save process. This is the current revision now.

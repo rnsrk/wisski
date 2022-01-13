@@ -4,11 +4,36 @@ namespace Drupal\wisski_doi\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
+use Drupal\wisski_doi\WisskiDoiDbActions;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Controller to render DOI Administration.
  */
 class WisskiDoiAdministration extends ControllerBase {
+
+  /**
+   * The service to interact with the database.
+   *
+   * @var \Drupal\wisski_doi\WisskiDoiDbActions
+   */
+  private WisskiDoiDbActions $wisskiDOiDbActions;
+
+  /**
+   * Construct the WisskiDoiAdministration class.
+   */
+  public function __construct(WisskiDoiDbActions $wisskiDOiDbActions) {
+    $this->wisskiDOiDbActions = $wisskiDOiDbActions;
+  }
+
+  /**
+   * Get the services from the container.
+   */
+  public static function create(ContainerInterface $container) {
+    $wisskiDOiDbActions = $container->get('wisski_doi.wisski_doi_db_actions');
+
+    return new static($wisskiDOiDbActions);
+  }
 
   /**
    * Returns a render-able array for the DOI administration page.
@@ -23,7 +48,7 @@ class WisskiDoiAdministration extends ControllerBase {
   public function overview(string $wisski_individual) {
     $wisski_individual = intval($wisski_individual);
     // Read data from wisski_doi.
-    $dbRows = (new WisskiDoiDbController)->readDoiRecords($wisski_individual) ?? NULL;
+    $dbRows = $this->wisskiDOiDbActions->readDoiRecords($wisski_individual) ?? NULL;
 
     if ($dbRows) {
       // Populate raw database values to more readable thinks.

@@ -1,14 +1,14 @@
 <?php
 
-namespace Drupal\wisski_doi\Controller;
+namespace Drupal\wisski_doi;
 
 use Drupal\Core\Database\Connection;
-use Drupal\Core\Controller\ControllerBase;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Controller for DB CRUD actions.
  */
-class WisskiDoiDbController extends ControllerBase {
+class WisskiDoiDbActions {
 
   /**
    * The query builder object.
@@ -18,10 +18,20 @@ class WisskiDoiDbController extends ControllerBase {
   private Connection $connection;
 
   /**
+   * Get services through dependency injection.
+   */
+  public static function create(ContainerInterface $container) {
+    $connection = $container->get('database');
+    return new static(
+      $connection
+    );
+  }
+
+  /**
    * Establish database connection with query builder.
    */
-  public function __construct() {
-    $this->connection = \Drupal::service('database');
+  public function __construct(Connection $connection) {
+    $this->connection = $connection;
   }
 
   /**

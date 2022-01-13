@@ -3,8 +3,8 @@
 namespace Drupal\wisski_doi\Form;
 
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\wisski_doi\Controller\WisskiDoiDbController;
-use Drupal\wisski_doi\Controller\WisskiDoiRestController;
+use Drupal\wisski_doi\Controller\WisskiDoiDbActions;
+use Drupal\wisski_doi\Controller\WisskiDoiRestActions;
 use Drupal\wisski_salz\AdapterHelper;
 
 /**
@@ -27,7 +27,7 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
-    $rows = (new WisskiDoiDbController)->readDoiRecords($form_state->getValue('entityId'));
+    $rows = (new WisskiDoiDbActions)->readDoiRecords($form_state->getValue('entityId'));
     $continue = TRUE;
     foreach ($rows as $row => $key) {
       if ($key['isCurrent']) {
@@ -130,8 +130,8 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
       "revisionUrl" => $doiCurrentRevisionURL,
     ];
     // Request DOI.
-    $response = (new WisskiDoiRestController())->createOrUpdateDoi($doiInfo);
-    $response['responseStatus'] == 201 ? (new WisskiDoiDBController())->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
+    $response = (new WisskiDoiRestActions())->createOrUpdateDoi($doiInfo);
+    $response['responseStatus'] == 201 ? (new WisskiDoiDbActions())->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
       ->error($this->t('Something went wrong Updating the DOI. Leave the database untouched'));
     // Redirect to DOI administration.
     $form_state->setRedirect(

@@ -1,8 +1,9 @@
 <?php
 
-namespace Drupal\wisski_doi\Controller;
+namespace Drupal\wisski_doi;
 
-use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\wisski_doi\Exception\WisskiDoiSettingsNotFoundException;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
@@ -14,7 +15,8 @@ use GuzzleHttp\Exception\RequestException;
  *
  * @package Drupal\wisski_doi\Controller
  */
-class WisskiDoiRestController extends ControllerBase {
+class WisskiDoiRestActions {
+  use StringTranslationTrait;
 
   /**
    * Guzzle\Client instance.
@@ -32,6 +34,13 @@ class WisskiDoiRestController extends ControllerBase {
   private array $doiSettings;
 
   /**
+   * The messenger service.
+   *
+   * @var mixed
+   */
+  private mixed $messenger;
+
+  /**
    * Construct instance with DOI settings and check them.
    *
    * Create a GuzzleClient locally (may a service injection is better?)
@@ -39,7 +48,9 @@ class WisskiDoiRestController extends ControllerBase {
    * (Configuration->[WISSKI]->WissKI DOI Settings)
    * Checks if settings are missing.
    */
-  public function __construct() {
+  public function __construct(TranslationInterface $stringTranslation) {
+    $this->stringTranslation = $stringTranslation;
+    $this->messenger = \Drupal::service("messenger");
     $this->httpClient = \Drupal::httpClient();
     $settings = \Drupal::configFactory()
       ->getEditable('wisski_doi.wisski_doi_settings');
@@ -55,7 +66,7 @@ class WisskiDoiRestController extends ControllerBase {
       (new WisskiDoiSettingsNotFoundException)->checkDoiSetting($this->doiSettings);
     }
     catch (WisskiDoiSettingsNotFoundException $error) {
-      $this->messenger()
+      \Drupal::messenger()
         ->addError($error->getMessage());
     }
 
@@ -146,8 +157,7 @@ class WisskiDoiRestController extends ControllerBase {
       $responseContent = json_decode($response->getBody()->getContents(), TRUE);
       // Messaging.
       $action = $update ? 'updated' : 'requested';
-      $this->messenger()
-        ->addStatus($this->t('DOI has been %action', ['%action' => $action]));
+      $this->messenger->addStatus($this->t('DOI has been %action', ['%action' => $action]));
 
       return [
         'dbData' => [

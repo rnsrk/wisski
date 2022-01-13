@@ -6,8 +6,8 @@ use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Url;
-use Drupal\wisski_doi\Controller\WisskiDoiDbController;
-use Drupal\wisski_doi\Controller\WisskiDoiRestController;
+use Drupal\wisski_doi\Controller\WisskiDoiDbActions;
+use Drupal\wisski_doi\Controller\WisskiDoiRestActions;
 
 /**
  * Provides a form for reverting a wisski_individual revision.
@@ -94,7 +94,7 @@ class WisskiDoiConfirmFormDeleteDoi extends ConfirmFormBase {
     $this->did = $did;
 
     // Read the DOI record.
-    $dbRecord = (new WisskiDoiDbController())->readDoiRecords($wisski_individual, $did)[0];
+    $dbRecord = (new WisskiDoiDbActions())->readDoiRecords($wisski_individual, $did)[0];
     $this->doi = $dbRecord['doi'];
 
     return parent::buildForm($form, $form_state);
@@ -105,11 +105,11 @@ class WisskiDoiConfirmFormDeleteDoi extends ConfirmFormBase {
    */
   public function submitForm(array &$form, $form_state) {
     // Invoke delete request.
-    $response = (new WisskiDoiRestController())->deleteDoi($this->doi);
+    $response = (new WisskiDoiRestActions())->deleteDoi($this->doi);
 
     if ($response == 204) {
       // If it was successfully, delete local database record.
-      (new WisskiDoiDbController())->deleteDoiRecord($this->did);
+      (new WisskiDoiDbActions())->deleteDoiRecord($this->did);
     }
     else {
       // If not, log the error.
