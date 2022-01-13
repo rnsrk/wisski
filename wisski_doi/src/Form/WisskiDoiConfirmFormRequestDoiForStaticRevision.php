@@ -222,7 +222,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
         $error = t('Contributor is empty!');
       }
     }
-    catch (\Exception) {
+    catch (\Exception $e) {
       $error = t('Wrong text format. Enter a valid text format.');
     }
     $contributorItems->set('contributors', $contributors)->save();
