@@ -380,6 +380,8 @@ class WisskiIndividualQuery extends QueryPluginBase
 */
         $eid_to_uri_per_aid = [];
 
+#        dpm("yay?");
+
         // store here only fields that may be attached to the entity.
         // typically our "wisski-path-special-fields" for the view may
         // not be attached.
@@ -714,6 +716,11 @@ class WisskiIndividualQuery extends QueryPluginBase
                 #                dpm(serialize($result), "res?");
                 #dpm([$select, $result], 'select' . $path->getID());
 
+                // early opt out in case of empty result set
+                #if(empty($result)) {
+                #
+                #}
+
                 #                dpm(microtime(), "after");
                 foreach ($result as $sparql_row) {
                     if (isset($uris_to_eids[$sparql_row->x0->getUri()])) {
@@ -767,6 +774,11 @@ class WisskiIndividualQuery extends QueryPluginBase
                             // this was probably wrong. Lets try the current language...
                             if(empty($lang))
                               $lang = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+
+                            // if the lang is the current lang we set it to xdefault because this is probably what we really want to do.
+                            if($lang == \Drupal::service('language_manager')->getCurrentLanguage()->getId())
+                              $lang = "x-default";
+
                               //$lang = "x-default";
                             if (!empty($disamb)) {
                                 if (!empty($is_file)) {
@@ -858,6 +870,7 @@ class WisskiIndividualQuery extends QueryPluginBase
                 #        }
                 #        dpm(serialize($entities), "ent");
                 $row['_entity'] = $entities[$eid];#\Drupal::entityManager()->getStorage('wisski_individual')->addCacheValues(array($values_per_row[$eid]), $values_per_row);
+#                $row['_object'] = $entities[$eid];
                 #        $row['_entity'] = entity_load('wisski_individual', $row['eid']);
                 #        $row['_entity'] = entity_create('wisski_individual', $row);
                 #        dpm($row, "row");
