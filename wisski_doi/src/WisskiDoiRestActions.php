@@ -128,7 +128,6 @@ class WisskiDoiRestActions {
         ],
       ],
     ];
-    dpm($body);
     // Encode to json.
     $json_body = json_encode($body);
     // dpm(base64_encode($this->doiRepositoryId.":".$this->doiRepositoryPassword));.

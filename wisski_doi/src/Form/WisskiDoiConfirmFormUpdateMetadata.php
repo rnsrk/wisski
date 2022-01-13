@@ -112,7 +112,6 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
    */
   public function buildForm(array $form, FormStateInterface $form_state, int $wisski_individual = NULL, int $did = NULL): array {
     $this->dbRecord = $this->wisskiDoiDbActions->readDoiRecords($wisski_individual, $did)[0];
-    dpm($this->dbRecord);
     if ($this->dbRecord['state'] == 'findable') {
       $doiInfo = $this->wisskiDoiRestActions->readMetadata($this->dbRecord['doi']);
       $form_state->set('doiInfo', [

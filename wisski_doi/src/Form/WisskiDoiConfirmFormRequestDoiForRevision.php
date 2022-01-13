@@ -134,9 +134,7 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
       "revisionUrl" => $doiCurrentRevisionURL,
     ];
     // Request DOI.
-    dpm($this->doiInfo);
     $response = $this->wisskiDoiRestActions->createOrUpdateDoi($this->doiInfo);
-    dpm($response);
     // Write response to database.
     $response['responseStatus'] == 201 ? $this->wisskiDoiDbActions->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
       ->error($this->t('Something went wrong Updating the DOI. Leave the database untouched'));

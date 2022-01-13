@@ -222,7 +222,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
         $error = t('Contributor is empty!');
       }
     }
-    catch (\Exception $e) {
+    catch (\Exception) {
       $error = t('Wrong text format. Enter a valid text format.');
     }
     $contributorItems->set('contributors', $contributors)->save();
@@ -289,6 +289,9 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
    *   The contributors only with name key.
    * @param string|null $error
    *   The error message if any.
+   *
+   * @return mixed
+   *   The render array for the contributors.
    */
   public static function renderContributors(array|NULL $contributors, string $error = NULL) {
     $theme = [
@@ -535,9 +538,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
     ];
 
     // Request DOI.
-    dpm($this->doiInfo);
     $response = $this->wisskiDoiRestActions->createOrUpdateDoi($this->doiInfo);
-    dpm($response);
     // Safe to db if successfully.
     $response['responseStatus'] == 201 ? $this->wisskiDoiDbActions->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
       ->error($this->t('Something went wrong creating the DOI. Leave the database untouched'));
