@@ -252,8 +252,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
     // Remove contributor from list and save.
     if (!is_null($contributors) && ($ind = array_search($contributor, array_column($contributors, 'name'))) !== FALSE) {
       unset($contributors[$ind]);
-      $contributorItems->set('contributors', $contributors)->save();
-    }
+      $contributorItems->set('contributors', $contributors)->save();    }
     // Render template with params.
     $response = new AjaxResponse();
     $response->addCommand(new ReplaceCommand('#contributor-list', WisskiDoiConfirmFormRequestDoiForStaticRevision::renderContributors($contributors)));
@@ -285,7 +284,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
   /**
    * Renders Contributors template.
    *
-   * @param array $contributors
+   * @param mixed $contributors
    *   The contributors only with name key.
    * @param string $error
    *   The error message if any.
@@ -293,7 +292,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
    * @return mixed
    *   The render array for the contributors.
    */
-  public static function renderContributors(array $contributors, string $error = NULL) {
+  public static function renderContributors(mixed $contributors, string $error = NULL) {
     $theme = [
       '#theme' => 'contributor-list',
       '#contributors' => $contributors,
