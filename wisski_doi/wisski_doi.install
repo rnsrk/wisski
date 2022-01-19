@@ -51,7 +51,6 @@ function wisski_doi_schema() {
         'type' => 'int',
         'size' => 'tiny',
         'default' => 0,
-        'not null' => TRUE,
       ],
     ],
     'primary key' => ['did'],
