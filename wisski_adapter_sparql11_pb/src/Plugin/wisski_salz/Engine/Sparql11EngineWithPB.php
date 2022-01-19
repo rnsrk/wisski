@@ -1953,31 +1953,44 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           $disamb = (count($path_array) + 1) / 2;
         else
           $disamb = $path->getDisamb();
-
+        
         // the var that interests us is the one before disamb.
         // substract 2 as the disamb count starts from 1 whereas vars start from 0!
         // in W8, the x increases by 2!
         $subject_var = "x" . (($disamb - 2) * 2);
+        
+        // in this case the start of the path is the disamb and the relevant 
+        // information is already in $subject_uri... so we dont have to query!
+        if($pathcnt == ($disamb-2) ) {
+          $subject_uris = array($subject_uri);
+        } 
+        
+        else {
 
-        // build up a select query that get us
-        $select  = "SELECT DISTINCT ?$subject_var WHERE {";
-        $select .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $object_uri, $disamb, $pathcnt, FALSE, NULL, 'entity_reference');
-        $select .= "}";
+          // build up a select query that get us
+          $select  = "SELECT DISTINCT ?$subject_var WHERE {";
+          $select .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $object_uri, $disamb, $pathcnt, FALSE, NULL, 'entity_reference');
+          $select .= "}";
 
-#        dpm($select, "select");
+          //dpm($pathcnt, "pathcnt?");
+          //dpm($disamb, "disamb?");
+          //dpm($subject_var, "subvar?");
+        
+          //dpm($select, "select");
 
-        $result = $this->directQuery($select);
+          $result = $this->directQuery($select);
 
-        if ($result->numRows() == 0) {
-          // there is no relation any more. has been deleted before!?
-          return;
-        }
+          if ($result->numRows() == 0) {
+            // there is no relation any more. has been deleted before!?
+            return;
+            }
 #ddl(array($disamb, $subject_var, $select,$result, $result->numRows()), 'delete disamb select');
 
-        // reset subjects
-        $subject_uris = array();
-        foreach ($result as $row) {
-          $subject_uris[] = $row->{$subject_var}->getUri();
+          // reset subjects
+          $subject_uris = array();
+          foreach ($result as $row) {
+            $subject_uris[] = $row->{$subject_var}->getUri();
+          }
         }
 //        } else { // this is the case for the entity-reference fields that are not made by wisski
 //          $subject_uris = array($subject_uri);
@@ -3253,12 +3266,22 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // values array
     // as we do this we also keep track of values that haven't changed so that we
     // do not have to write them again.
+    
+    // this case only fires if field_values[$old_key] is not set anymore
+    // at all - so just if the field is deleted completely!
     foreach($old_values as $old_key => $old_value) {
 
-      if(!isset($old_value[$language]))
+      // By Mark: unfortunatelly entity reference is in x-default
+      // so we have to see what language we have here...
+      $this_language = $language;
+      if( !isset($old_value[$language]) && isset($old_value[LanguageInterface::LANGCODE_DEFAULT]) ) {
+        $this_language = LanguageInterface::LANGCODE_DEFAULT;
+      }
+
+      if(!isset($old_value[$this_language]))
         continue;
 
-      $old_value = $old_value[$language];
+      $old_value = $old_value[$this_language];
 #      dpm("deleting key $old_key with value " . serialize($old_value) . " from values " . serialize($field_values));
       if(!isset($field_values[$old_key])) {
 
@@ -3279,8 +3302,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             continue;
 
           // if not its a value...
-//        drupal_set_message("I delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
-          $this->deleteOldFieldValue($entity_id, $old_key, $val[$mainprop], $pathbuilder, $key, $mainprop, $language);
+#          dpm("I delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
+          $this->deleteOldFieldValue($entity_id, $old_key, $val[$mainprop], $pathbuilder, $key, $mainprop, $this_language);
         }
       }
     }
@@ -3303,12 +3326,26 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         continue;
       }
 
-#      drupal_set_message("I try to add data to field $field_id with items: " . serialize($field_items));
+#      dpm("I try to add data to field $field_id with items: " . serialize($field_items));
       $path = $pathbuilder->getPbEntriesForFid($field_id);
 #      drupal_set_message("found path: " . serialize($path). " " . microtime());
 
-      $old_value = isset($old_values[$field_id][$language]) ? $old_values[$field_id][$language] : array();
+//      dpm(LanguageInterface::LANGCODE_DEFAULT, "lang?");
 
+      $old_language = $language;
+
+      $old_value = array();
+      if(isset($old_values[$field_id][$language])) {
+        $old_value = $old_values[$field_id][$language];
+        $old_language = $language;
+      }
+      else if(isset($old_values[$field_id][LanguageInterface::LANGCODE_DEFAULT]) ) {
+        $old_value = $old_values[$field_id][LanguageInterface::LANGCODE_DEFAULT];
+        $old_language = LanguageInterface::LANGCODE_DEFAULT;
+      }
+      
+//      dpm($old_values[$field_id][LanguageInterface::LANGCODE_DEFAULT], "ould be?");
+      
       if(empty($path)) {
 #        drupal_set_message("I leave here: $field_id " . microtime());
         continue;
@@ -3403,7 +3440,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         if (!empty($delete_values)) {
           foreach ($delete_values as $key => $val) {
 #            dpm("I1 delete from " . $entity_id . " field " . $old_key . " value " . $val[$mainprop] . " key " . $key);
-            $this->deleteOldFieldValue($entity_id, $field_id, $val[$mainprop], $pathbuilder, $key, $mainprop, $language);
+            $this->deleteOldFieldValue($entity_id, $field_id, $val[$mainprop], $pathbuilder, $key, $mainprop, $old_language);
           }
         }
       }
