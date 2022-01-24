@@ -5,8 +5,10 @@
  * Implement hooks for the WissKI individual revision table.
  */
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\Core\Url;
 
 /**
  * Alter the header in revisions table at wisski individuals.
@@ -46,5 +48,63 @@ function wisski_doi_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'help.page.wisski_doi':
       return '<p>' . t('This module provides the possibility to request DOIs for single WissKI entities. More information and tutorial at <a href="https://wiss-ki.eu/documentation/DOIs">wiss-ki.eu</a>.</p>');
+  }
+}
+
+/**
+ * Implements hook_entity_operation_alter().
+ * Add menu entry "DOI Scheme" at "WissKI Groups and Bundles" in Structure.
+ */
+function wisski_doi_entity_operation_alter(array &$operations, EntityInterface $entity) {
+  $entityTypeId = $entity->getEntityTypeId();
+  if ($entityTypeId !== 'wisski_bundle') {
+    return;
+  }
+  $bundleId = $entity->id();
+  $editUrl = Url::fromRoute('entity.wisski_bundle.doi_batch', ['wisski_bundle' => $bundleId]);
+  $operations['doi_batch'] = [
+    'title' => t('Get DOIs'),
+    'weight' => 100,
+    'url' => $editUrl,
+  ];
+}
+
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ *
+ * Adds a
+ * @param $data
+ * @param $route_name
+ * @param \Drupal\Core\Cache\RefinableCacheableDependencyInterface $cacheability
+ *
+ * @return void
+ */
+function wisski_doi_menu_local_tasks_alter(&$data, $route_name, \Drupal\Core\Cache\RefinableCacheableDependencyInterface &$cacheability)
+{
+  if ($route_name == 'entity.wisski_bundle.edit_form') {
+    $path = \Drupal::service("path.current")->getPath();
+    $url = explode('/', $path);
+    $bundleId = $url[4];
+    dpm($data);
+    $editUrl = Url::fromRoute('entity.wisski_bundle.doi_batch', ['wisski_bundle' => $bundleId]);
+    $data['tabs'][0]['entity.wisski_bundle.doi_batch'] = [
+      '#theme' => 'menu_local_task',
+      '#link' => [
+        'title' => t('Get DOIs'),
+        'url' => $editUrl,
+        'localized_options' => [
+          'attributes' => [
+            'title' => t('Get DOIs'),
+          ],
+        ],
+      ],
+      '#weight' => 10,
+    ];
+
+    $cacheability
+      ->addCacheContexts([
+        'user.permissions',
+      ]);
   }
 }

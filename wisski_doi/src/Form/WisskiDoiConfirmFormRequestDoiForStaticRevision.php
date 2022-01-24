@@ -252,7 +252,8 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
     // Remove contributor from list and save.
     if (!is_null($contributors) && ($ind = array_search($contributor, array_column($contributors, 'name'))) !== FALSE) {
       unset($contributors[$ind]);
-      $contributorItems->set('contributors', $contributors)->save();    }
+      $contributorItems->set('contributors', $contributors)->save();
+    }
     // Render template with params.
     $response = new AjaxResponse();
     $response->addCommand(new ReplaceCommand('#contributor-list', WisskiDoiConfirmFormRequestDoiForStaticRevision::renderContributors($contributors)));

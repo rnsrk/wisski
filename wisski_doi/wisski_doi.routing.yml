@@ -1,3 +1,11 @@
+entity.wisski_bundle.doi_batch:
+  path: 'admin/structure/wisski_core/{wisski_bundle}/doi_batch'
+  defaults:
+    _form: '\Drupal\wisski_doi\Form\WisskiDoiBatchForm'
+    _title: 'Get DOIs'
+  requirements:
+    _permission: 'administer wisski dois'
+
 wisski.wisski_doi_settings.tabs.default:
   path: '/admin/config/wisski/wisski_doi_settings'
   defaults:
@@ -71,6 +79,8 @@ wisski_individual.doi.contributors.clear_contributors:
     _title: 'Clear contributors'
   requirements:
     _permission: 'administer wisski dois'
+
+
 
 
 

@@ -3,6 +3,7 @@
 namespace Drupal\wisski_doi\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\Datetime\Element\Datetime;
 use Drupal\Core\Url;
 use Drupal\wisski_doi\WisskiDoiDbActions;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -63,6 +64,7 @@ class WisskiDoiAdministration extends ControllerBase {
           'State',
           'RevisionURL',
           'State',
+          'Created',
           'Operations',
         ],
         '#rows' => $rows,
@@ -91,6 +93,7 @@ class WisskiDoiAdministration extends ControllerBase {
    */
   public function rowBuilder(array $row, string $wisski_individual) {
     // Assemble DOI Link.
+    //$row['created'] = (new DateTime($row['created']))->format('Y-m-d H:i:s');
     $doiLink = 'https://doi.org/' . $row['doi'];
     $row['doi'] = ['data' => $this->t('<a href=":doiLink" class="wisski-doi-link">:doiLink</a>', [':doiLink' => $doiLink])];
     // Revision Link.

@@ -52,6 +52,12 @@ function wisski_doi_schema() {
         'size' => 'tiny',
         'default' => 0,
       ],
+      'created' => [
+        'description' => 'Creation time of the DOI.',
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+      ],
     ],
     'primary key' => ['did'],
   ];

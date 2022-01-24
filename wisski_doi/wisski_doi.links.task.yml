@@ -9,3 +9,9 @@ entity.wisski_individual.tabs.doi:
   base_route: entity.wisski_individual.canonical
   weight: 20
 
+entity.wisski_bundle.doi_batch.tabs:
+  route_name: entity.wisski_bundle.doi_batch
+  title: Get DOIs
+  base_route: entity.wisski_bundle.edit_form
+  weight: 20
+

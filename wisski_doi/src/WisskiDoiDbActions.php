@@ -11,7 +11,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Controller for DB CRUD actions.
  */
 class WisskiDoiDbActions {
+
   use StringTranslationTrait;
+
   /**
    * The query builder object.
    *
@@ -70,6 +72,7 @@ class WisskiDoiDbActions {
         'state' => $dbData['state'],
         'revisionUrl' => $dbData['revisionUrl'],
         'isCurrent' => empty($dbData['vid']) ? 1 : 0,
+        'created' => $dbData['created'],
       ])
       ->execute();
   }
@@ -100,6 +103,7 @@ class WisskiDoiDbActions {
         'state',
         'revisionUrl',
         'isCurrent',
+        'created',
       ])
       ->condition('eid', $eid, '=');
 
@@ -124,7 +128,9 @@ class WisskiDoiDbActions {
    *   Dataset of corresponding DOIs to an entity.
    */
   public function deleteDoiRecord(int $did = NULL) {
-    $result = $this->connection->delete('wisski_doi')->condition('did', $did)->execute();
+    $result = $this->connection->delete('wisski_doi')
+      ->condition('did', $did)
+      ->execute();
     $this->messenger->addStatus($this->t('Deleted DOI record from DB.'));
     return $result;
   }
@@ -136,21 +142,68 @@ class WisskiDoiDbActions {
    *   The internal DOI id.
    * @param int|null $did
    *   The internal DOI id.
-   *
-   * @return array
-   *   Dataset of corresponding DOIs to an entity.
    */
   public function updateDbRecord(string $state, int $did = NULL) {
     if (!$did) {
       $this->messenger->addError($this->t('There is no did.'));
       return NULL;
     }
-    $result = $this->connection->update('wisski_doi')
+    $this->messenger->addStatus($this->t('Updated DOI record from DB.'));
+    return $this->connection->update('wisski_doi')
       ->fields([
         'state' => $state,
       ])->condition('did', $did)->execute();
-    $this->messenger->addStatus($this->t('Updated DOI record from DB.'));
-    return $result;
+  }
+
+  /**
+   * Select the individuals corresponding to a bundle.
+   *
+   * We parse the strClass $records to an array with the
+   * json_decode/json_encode() functions.
+   *
+   * @param string $bundle_id
+   *   The bundle id.
+   *
+   * @return array
+   *   Dataset of corresponding DOIs to an entity.
+   */
+  public function readBundleRecords(string $bundle_id) {
+    $individualsPerBundle = [];
+    // Query all individuals.
+    $wisskiIndividualQuery = \Drupal::entityQuery('wisski_individual')
+      ->condition('bundle', [$bundle_id]);
+    $wisskiIndividualResults = $wisskiIndividualQuery->execute();
+    foreach ($wisskiIndividualResults as $result => $eid) {
+      $wisskiIndividualDataQuery = $this->connection
+        ->select('wisski_title_n_grams', 'wt')
+        ->fields('wt', [
+          'ngram',
+        ])
+        ->condition('ent_num', $eid, '=');
+      $wisskiIndividualDataResult = $wisskiIndividualDataQuery->execute()
+        ->fetch();
+      $wisskiIndividualDataResult = json_decode(json_encode($wisskiIndividualDataResult), TRUE);
+      $entityLink = \Drupal::request()->getSchemeAndHttpHost() . '/wisski/navigate/' . $eid . '/view';
+      $individualsPerBundle[$eid] = [
+        'label' => $wisskiIndividualDataResult['ngram'],
+        'link' => ['data' => $this->t('<a href=":entityLink" class="wisski-entity-link">:entityLink</a>', [':entityLink' => $entityLink])],
+      ];
+      /*
+      $wisskiIndividualDOIQuery = $this->connection
+        ->select('wisski_doi', 'wdoi')
+        ->fields('wdoi', [
+          'doi',
+          'state',
+          'isCurrent',
+          'created',
+        ])
+        ->condition('eid', $eid, '=');
+      $wisskiIndividualDoiResult = $wisskiIndividualDOIQuery->execute()
+        ->fetchAll();
+      $wisskiIndividualDoiResult = json_decode(json_encode($wisskiIndividualDoiResult), TRUE);
+      */
+    }
+  return $individualsPerBundle;
   }
 
 }

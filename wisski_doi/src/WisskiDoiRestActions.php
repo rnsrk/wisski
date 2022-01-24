@@ -157,7 +157,6 @@ class WisskiDoiRestActions {
       // Messaging.
       $action = $update ? 'updated' : 'requested';
       $this->messenger->addStatus($this->t('DOI has been %action', ['%action' => $action]));
-
       return [
         'dbData' => [
           "doi" => $responseContent['data']['id'],
@@ -165,6 +164,7 @@ class WisskiDoiRestActions {
           "eid" => $doiInfo['entityId'],
           "state" => $responseContent['data']['attributes']['state'],
           "revisionUrl" => $doiInfo['revisionUrl'],
+          "created" => $responseContent['data']['attributes']['created'],
         ],
         'responseStatus' => $response->getStatusCode(),
       ];
