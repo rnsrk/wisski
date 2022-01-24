@@ -119,6 +119,38 @@ class WisskiDoiDbActions {
   }
 
   /**
+   * Select the latest DOI corresponding to an entity.
+   *
+   * We parse the strClass $records to an array with the
+   * json_decode/json_encode() functions.
+   *
+   * @param int $eid
+   *   The entity id.
+   * @param int $isCurrent
+   *   If the DOI is for current revision.
+   *
+   * @return array
+   *   Dataset of corresponding DOIs to an entity.
+   */
+  public function readLatestDoiRecords(int $eid, int $isCurrent) {
+    $query = $this->connection
+      ->select('wisski_doi')
+      ->fields('wisski_doi', [
+        'eid',
+        'doi',
+        'state',
+        'isCurrent',
+        'created',
+      ])
+      ->condition('eid', $eid, '=')
+      ->condition('isCurrent', $isCurrent, '=');
+    $result = $query->orderBy('created', 'DESC')->execute()->fetch();
+
+    // $result is stdClass Object, this returns an array of the results.
+    return json_decode(json_encode($result), TRUE);
+  }
+
+  /**
    * Delete the DOI record.
    *
    * @param int|null $did
@@ -183,27 +215,14 @@ class WisskiDoiDbActions {
       $wisskiIndividualDataResult = $wisskiIndividualDataQuery->execute()
         ->fetch();
       $wisskiIndividualDataResult = json_decode(json_encode($wisskiIndividualDataResult), TRUE);
-      $entityLink = \Drupal::request()->getSchemeAndHttpHost() . '/wisski/navigate/' . $eid . '/view';
+      $entityLink = \Drupal::request()->getSchemeAndHttpHost() . '/wisski/navigate/' . $eid . '/doi';
       $individualsPerBundle[$eid] = [
+        'eid' => $eid,
         'label' => $wisskiIndividualDataResult['ngram'],
         'link' => ['data' => $this->t('<a href=":entityLink" class="wisski-entity-link">:entityLink</a>', [':entityLink' => $entityLink])],
       ];
-      /*
-      $wisskiIndividualDOIQuery = $this->connection
-        ->select('wisski_doi', 'wdoi')
-        ->fields('wdoi', [
-          'doi',
-          'state',
-          'isCurrent',
-          'created',
-        ])
-        ->condition('eid', $eid, '=');
-      $wisskiIndividualDoiResult = $wisskiIndividualDOIQuery->execute()
-        ->fetchAll();
-      $wisskiIndividualDoiResult = json_decode(json_encode($wisskiIndividualDoiResult), TRUE);
-      */
     }
-  return $individualsPerBundle;
+    return $individualsPerBundle;
   }
 
 }
