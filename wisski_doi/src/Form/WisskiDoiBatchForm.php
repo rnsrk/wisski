@@ -69,8 +69,10 @@ class WisskiDoiBatchForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, string $wisski_bundle = NULL) {
     $records = $this->wisskiDOiDbActions->readBundleRecords($wisski_bundle);
-    $chunk = $this->pagerArray($records, 10);
-    $this->doiAnnotation($chunk);
+    $chunk = $this->pagerArray($records, 25);
+    foreach ([0, 1] as $isCurrent) {
+      $this->doiAnnotation($chunk, $isCurrent);
+    }
     // Build form.
     $form['table'] = [
       '#type' => 'tableselect',
@@ -151,38 +153,28 @@ class WisskiDoiBatchForm extends ConfigFormBase {
    *
    * @param array $chunk
    *   The chunk REFERENCE to render.
+   * @param int $isCurrent
+   *   Flag, if we are looking for DOIs for static (0) or current (1) revision.
    */
-  public function doiAnnotation(array &$chunk) {
+  public function doiAnnotation(array &$chunk, int $isCurrent) {
     foreach ($chunk as $record) {
-      $isCurrentDoiRecord = $this->wisskiDOiDbActions->readLatestDoiRecords($record['eid'], 1);
-      if ($isCurrentDoiRecord) {
-        dpm($isCurrentDoiRecord);
-        $currentDoiLink = 'https://doi.org/' . $isCurrentDoiRecord['doi'];
-        $chunk[$record['eid']]['currentDoi'] = [
-          'data' => $this->t('<span><a href=":currentDoi" class="wisski-current-doi-link">:currentDoi</a>, (:state) from :created</span>', [
-            ':currentDoi' => $currentDoiLink,
-            ':state' => $isCurrentDoiRecord['state'],
-            ':created' => $isCurrentDoiRecord['created'],
+      $cssClass = $isCurrent ? 'current' : 'latest-static';
+      $key = $isCurrent ? 'currentDoi' : 'latestStaticDoi';
+      $doiRecords = $this->wisskiDOiDbActions->readLatestDoiRecords($record['eid'], $isCurrent);
+      if ($doiRecords) {
+        $doiLink = 'https://doi.org/' . $doiRecords['doi'];
+        dpm(date('d.M.Y h:i:s', strtotime($doiRecords['created'])));
+        $chunk[$record['eid']][$key] = [
+          'data' => $this->t('<span><a href=":doiLink" class="wisski-:currentFlag-doi-link">:doiLink</a> (:state) from %created</span>', [
+            ':doiLink' => $doiLink,
+            ':currentFlag' => $cssClass,
+            ':state' => $doiRecords['state'],
+            '%created' => date('d.M.Y h:i:s', strtotime($doiRecords['created'])),
           ]),
         ];
       }
       else {
-        $chunk[$record['eid']]['currentDoi'] = 'No DOI assigned';
-      }
-      $isLatestStaticDoiRecord = $this->wisskiDOiDbActions->readLatestDoiRecords($record['eid'], 0);
-      if ($isLatestStaticDoiRecord) {
-        dpm($isLatestStaticDoiRecord['created']);
-        $latestStaticDoiLink = 'https://doi.org/' . $isLatestStaticDoiRecord['doi'];
-        $chunk[$record['eid']]['latestStaticDoi'] = [
-          'data' => $this->t('<span><a href=":latestStaticDoiLink" class="wisski-latest-static-doi-link">:latestStaticDoiLink</a>, (:state) from %created</span>', [
-            ':latestStaticDoiLink' => $latestStaticDoiLink,
-            ':state' => $isLatestStaticDoiRecord['state'],
-            '%created' => $isLatestStaticDoiRecord['created'],
-          ]),
-        ];
-      }
-      else {
-        $chunk[$record['eid']]['latestStaticDoi'] = 'No DOI assigned';
+        $chunk[$record['eid']][$key] = 'No DOI assigned';
       }
     }
   }
