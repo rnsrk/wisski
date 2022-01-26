@@ -4,7 +4,6 @@ namespace Drupal\wisski_doi\Form;
 
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\ReplaceCommand;
-use Drupal\user\Entity\User;
 use Drupal\wisski_core\WisskiStorageInterface;
 use Drupal\wisski_core\WisskiEntityInterface;
 use Drupal\Component\Datetime\TimeInterface;
@@ -88,8 +87,6 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
    */
   protected WisskiDoiDbActions $wisskiDoiDbActions;
 
-
-
   /**
    * Constructs a new form to request a DOI for a static revision.
    *
@@ -99,6 +96,8 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
    *   The date formatter service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
+   * @param \Drupal\wisski_doi\WisskiDoiActions $wisskiDoiActions
+   *   The WissKi DOI Service.
    * @param \Drupal\wisski_doi\WisskiDoiRestActions $wisskiDoiRestActions
    *   The WissKi DOI Rest Service.
    * @param \Drupal\wisski_doi\WisskiDoiDbActions $wisskiDoiDbActions
@@ -349,7 +348,9 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
       ->getEditable('wisski_doi.wisski_doi_settings');
     $contributorItems = $this->config('wisski_doi.contributor.items');
 
+    // Get metadata from individual.
     $this->doiInfo = $this->wisskiDoiActions->getWisskiIndividualMetadata($this->wisski_individual);
+
     // Assemble parts of DOI information for request.
     $this->doiInfo += [
       "event" => 'draft',
@@ -358,10 +359,12 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
       "language" => $this->wisski_individual->language()->getId(),
       "resourceType" => 'Dataset',
     ];
+
     /* Check if there is data from an update,
      * see WisskiDoiUpdateMeta::buildForm().
      */
     $this->doiInfo = !empty($form_state->get('doiInfo')) ? $form_state->get('doiInfo') : $this->doiInfo;
+
     // Resource type option from DataCite schema.
     $resourceTypeOptions = [
       'Audiovisual' => 'Audiovisual',

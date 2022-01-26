@@ -4,7 +4,6 @@ namespace Drupal\wisski_doi;
 
 use Drupal\user\Entity\User;
 use Drupal\wisski_core\WisskiEntityInterface;
-use JetBrains\PhpStorm\ArrayShape;
 
 /**
  * Controller for DOI actions.

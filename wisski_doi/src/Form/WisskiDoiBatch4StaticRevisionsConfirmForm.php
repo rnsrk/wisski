@@ -9,6 +9,7 @@ use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
+use Drupal\wisski_doi\WisskiDoiActions;
 use Drupal\wisski_doi\WisskiDoiDbActions;
 use Drupal\wisski_doi\WisskiDoiRestActions;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -50,11 +51,11 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
 
 
   /**
-   * All information for the DOI request and write process to wisski_doi table.
+   * The service to management DOI metadata.
    *
-   * @var array
+   * @var \Drupal\wisski_doi\WisskiDoiActions
    */
-  protected array $doiInfo;
+  private WisskiDoiActions $wisskiDoiActions;
 
   /**
    * The service to interact with the REST API .
@@ -100,6 +101,8 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
    *   The date formatter service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
+   * @param \Drupal\wisski_doi\WisskiDoiActions $wisskiDoiActions
+   *   The WissKi DOI Service.
    * @param \Drupal\wisski_doi\WisskiDoiRestActions $wisskiDoiRestActions
    *   The WissKi DOI Rest Service.
    * @param \Drupal\wisski_doi\WisskiDoiDbActions $wisskiDoiDbActions
@@ -108,11 +111,13 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
   public function __construct(WisskiStorageInterface $wisski_storage,
                               DateFormatterInterface $date_formatter,
                               TimeInterface $time,
+                              WisskiDoiActions $wisskiDoiActions,
                               WisskiDoiRestActions $wisskiDoiRestActions,
                               WisskiDoiDbActions $wisskiDoiDbActions) {
     $this->wisskiStorage = $wisski_storage;
     $this->dateFormatter = $date_formatter;
     $this->time = $time;
+    $this->wisskiDoiActions = $wisskiDoiActions;
     $this->wisskiDoiRestActions = $wisskiDoiRestActions;
     $this->wisskiDoiDbActions = $wisskiDoiDbActions;
   }
@@ -128,6 +133,7 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
       $container->get('entity_type.manager')->getStorage('wisski_individual'),
       $container->get('date.formatter'),
       $container->get('datetime.time'),
+      $container->get('wisski_doi.wisski_doi_actions'),
       $container->get('wisski_doi.wisski_doi_rest_actions'),
       $container->get('wisski_doi.wisski_doi_db_actions'),
     );
@@ -232,14 +238,26 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
      */
     $form['#tree'] = TRUE;
 
-    // Load existing form data.
+    /*
+     * Load existing form data.
+     */
+
+    // General form.
     $form = parent::buildForm($form, $form_state);
+
+    // DOI Settings from config page.
     $doiSettings = \Drupal::configFactory()
       ->getEditable('wisski_doi.wisski_doi_settings');
-    $this->wisskiIndividualIds = \Drupal::configFactory()
-      ->getEditable('wisski_doi_batch_form.storage')->get('wisskiIndividuals');
+
+    // Contributors from form.
     $contributorItems = $this->config('contributor.items');
 
+    // Selected WissKI individuals.
+    $this->wisskiIndividualIds = \Drupal::configFactory()
+      ->getEditable('wisski_doi_batch_form.storage')->get('wisskiIndividuals');
+
+    // Remove keys with empty values.
+    $this->wisskiIndividualIds = array_filter($this->wisskiIndividualIds);
     // Batch metadata.
     $this->batchMetadata = [
       "event" => 'draft',
@@ -247,32 +265,6 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
       "publisher" => $doiSettings->get('data_publisher'),
       "resourceType" => 'Dataset',
     ];
-
-    /*
-    // Get author of dataset.
-    $revisionUser = $this->wisski_individual->getRevisionUser();
-    if (!empty($revisionUser)) {
-    $author = $revisionUser->getDisplayName();
-    }
-    else {
-    $uid = $this->wisski_individual->get('uid')->getValue()[0]['target_id'];
-    $author = User::load($uid)->getDisplayName();
-    }
-
-    // Assemble parts of DOI information for request.
-    $this->doiInfo = [
-    "bundleId" => $this->wisski_individual->bundle(),
-    "entityId" => $this->wisski_individual->id(),
-    "creationDate" => $this->dateFormatter->format($this->wisski_individual->getRevisionCreationTime(), 'custom', 'd.m.Y H:i:s'),
-    "event" => $this->batchMetadata['event'],
-    "author" => $author,
-    "contributors" => $this->batchMetadata['contributors'],
-    "title" => $this->wisski_individual->label(),
-    "publisher" => $this->batchMetadata['publisher'],
-    "language" => $this->wisski_individual->language()->getId(),
-    "resourceType" => $this->batchMetadata['resourceType'],
-    ];
-     */
 
     // Resource type option from DataCite schema.
     $resourceTypeOptions = [
@@ -395,33 +387,43 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
     // Get AJAX info.
     $contributorItems = \Drupal::configFactory()
       ->getEditable('contributor.items');
+
     // Have to overwrite contributors cause AJAX mess up the form_state.
     $doiMetaData['contributors'] = $contributorItems->get('contributors');
-    dpm($doiMetaData);
 
-    $this->wisskiIndividualIds = array_filter($this->wisskiIndividualIds);
-    dpm($this->wisskiIndividualIds);
-    if ($this->wisskiIndividualIds) {
-      foreach ($this->wisskiIndividualIds as $wisskiIndividualId) {
+    $batchStateStaticRevisions = \Drupal::state()->get('wisski_doi_batch_array_for_static_revisions');
+
+    $wisskiIndividualsBatch = $batchStateStaticRevisions ?: $this->wisskiIndividualIds;
+    //\Drupal::state()->set('wisski_doi_batch_array_for_static_revisions', $this->wisskiIndividualIds);
+    // Iterate over selected WissKI individuals.
+    if ($wisskiIndividualsBatch) {
+      foreach ($wisskiIndividualsBatch as $wisskiIndividualId) {
+        unset($wisskiIndividualsBatch[$wisskiIndividualId]);
+        dpm($wisskiIndividualsBatch);
         $wisskiIndividual = $this->wisskiStorage->load($wisskiIndividualId);
-
-        $this->batchDoiStatic($wisskiIndividual, $doiMetaData);
+        //$this->getStaticDoi($wisskiIndividual, $doiMetaData);
+        \Drupal::state()->set('wisski_doi_batch_array_for_static_revisions',$wisskiIndividualsBatch);
       }
+      \Drupal::state()->delete('wisski_doi_batch_array_for_static_revisions');
     }
 
 
-    // Redirect to version history.
-    //$form_state->setRedirect(
-    //  'entity.wisski_bundle.doi_batch', ['wisski_bundle' => $this->wisskiBundle]
-    //);
-
-
+    // Redirect to batch overview.
+    $form_state->setRedirect(
+      'entity.wisski_bundle.doi_batch', ['wisski_bundle' => $this->wisskiBundleId]
+     );
   }
 
   /**
    *
    */
-  public function batchDoiStatic(WisskiEntityInterface $wisskiIndividual, array $doiMetaData) {
+  public function getStaticDoi(WisskiEntityInterface $wisskiIndividual, array $doiMetadata) {
+
+    // Load metadata of WissKI individual.
+    $wisskiIndividualMetaData = $this->wisskiDoiActions->getWisskiIndividualMetadata($wisskiIndividual);
+
+    // Assemble DOI metadata with WissKI individual metadata.
+    $doiMetadata += $wisskiIndividualMetaData;
     /*
      * Save two revisions, because current revision has no
      * revision URI. Start with first save process.
@@ -431,20 +433,20 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
     $doiRevision->revision_log = $this->t('DOI revision requested at %request_date.', [
       '%request_date' => $this->dateFormatter->format($this->time->getCurrentTime(), 'custom', 'd.m.Y H:i:s'),
     ]);
-    #$doiRevision->save();
+    $doiRevision->save();
+
     // Assemble revision URL and store it in form.
     $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
     $doiRevisionId = $doiRevision->getRevisionId();
     $doiRevisionURL = $http . $_SERVER['HTTP_HOST'] . '/wisski/navigate/' . $wisskiIndividual->id() . '/revisions/' . $doiRevisionId . '/view';
 
     // Append revision info to doiInfo.
-    $doiInfo = $doiMetaData + [
+    $doiMetadata += [
       "revisionId" => $doiRevisionId,
       "revisionUrl" => $doiRevisionURL,
     ];
-    dpm($doiInfo);
     // Request DOI.
-    $response = $this->wisskiDoiRestActions->createOrUpdateDoi($doiInfo);
+    $response = $this->wisskiDoiRestActions->createOrUpdateDoi($doiMetadata);
     // Safe to db if successfully.
     $response['responseStatus'] == 201 ? $this->wisskiDoiDbActions->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
       ->error($this->t('Something went wrong creating the DOI. Leave the database untouched'));
@@ -455,7 +457,7 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
       '%request_date' => $this->dateFormatter->format($this->time->getCurrentTime(), 'custom', 'd.m.Y H:i:s'),
     ],
       );
-    #$doiRevision->save();
+    $doiRevision->save();
   }
 
 }

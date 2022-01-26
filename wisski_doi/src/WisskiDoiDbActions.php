@@ -200,25 +200,18 @@ class WisskiDoiDbActions {
    *   Dataset of corresponding DOIs to an entity.
    */
   public function readBundleRecords(string $bundle_id) {
+    $language = \Drupal::languageManager()->getCurrentLanguage()->getId();
     $individualsPerBundle = [];
     // Query all individuals.
     $wisskiIndividualQuery = \Drupal::entityQuery('wisski_individual')
       ->condition('bundle', [$bundle_id]);
     $wisskiIndividualResults = $wisskiIndividualQuery->execute();
     foreach ($wisskiIndividualResults as $result => $eid) {
-      $wisskiIndividualDataQuery = $this->connection
-        ->select('wisski_title_n_grams', 'wt')
-        ->fields('wt', [
-          'ngram',
-        ])
-        ->condition('ent_num', $eid, '=');
-      $wisskiIndividualDataResult = $wisskiIndividualDataQuery->execute()
-        ->fetch();
-      $wisskiIndividualDataResult = json_decode(json_encode($wisskiIndividualDataResult), TRUE);
+      $title = wisski_core_generate_title($eid);
       $entityLink = \Drupal::request()->getSchemeAndHttpHost() . '/wisski/navigate/' . $eid . '/doi';
       $individualsPerBundle[$eid] = [
         'eid' => $eid,
-        'label' => $wisskiIndividualDataResult['ngram'],
+        'label' => $title[$language][0]['value'],
         'link' => ['data' => $this->t('<a href=":entityLink" class="wisski-entity-link">:entityLink</a>', [':entityLink' => $entityLink])],
       ];
     }
