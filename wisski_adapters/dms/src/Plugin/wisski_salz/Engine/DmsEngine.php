@@ -346,7 +346,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     }
 
 #    dpm(microtime(), "microtime: ");
-    $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password) );
+    $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password, "MultipleActiveResultSets" => false) );
 #    dpm(microtime(), "microtime: ");
 #    dpm(serialize(sqlsrv_errors()), "error");
     #    
@@ -899,8 +899,9 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
 
 #    dpm(microtime(), "mic");
-    $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password) );
-
+    $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password, "MultipleActiveResultSets" => false) );
+#    $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password) );
+  
 #    dpm(serialize(sqlsrv_errors()), "error?");
 
 #    dpm(microtime(), "mic2");
@@ -986,7 +987,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     else
       $where .= " AND StatusId = 5";
 
-    
+#    dpm($where, "where?");
 
     if($count) {
       $query = "SELECT DISTINCT docid FROM " . $this->table . " $where";
@@ -995,7 +996,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       
 #      $query = "select sum (spart.rows) from sys.partitions spart where spart.object_id = object_id(" . $this->table . ") and spart.index_id < 2";
 #      dpm($query, "query");
-#    dpm(microtime(), "micin?");
+#      dpm(microtime(), "micin?");
       $stmt = sqlsrv_prepare( $con, $query, array(), array("Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED, "ClientBufferMaxKBSize" => 51200));
       sqlsrv_execute( $stmt);
 #      $ret = sqlsrv_query($con, $query);
@@ -1020,7 +1021,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       
 #      dpm($fromnumber, "from");
 #      dpm($tonumber, "to");
-#  dpm(microtime(), "micbef");      
+#       dpm(microtime(), "micbef");      
 
       if($tonumber > 0)
         $query = "SELECT * FROM " . $this->table . " $where ORDER BY docid OFFSET " . $offset . " ROWS FETCH NEXT " . $limit . " ROWS ONLY"; 
@@ -1058,7 +1059,8 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         $outarr[$uriname] = array('eid' => $uriname, 'bundle' => $bundleid, 'name' => $uri);
 #        dpm(microtime(), "end");
       }
-#      dpm($outarr, "out?");
+#      dpm(serialize(sqlsrv_errors()), "error?");
+#      dpm(serialize($outarr), "out?");
 #      dpm(microtime(), "micend");
       return $outarr;
     }

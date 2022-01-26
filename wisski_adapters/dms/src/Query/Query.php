@@ -80,6 +80,8 @@ class Query extends WisskiQueryBase {
 #      dpm(serialize($this->condition->conditions()), "condi?");
 
       $num_conds = 0;
+      
+      $eidcondition = array();
 
       foreach ($this->condition->conditions() as $condition) {
         $field = $condition['field'];
@@ -124,6 +126,7 @@ class Query extends WisskiQueryBase {
 
 #          dpm($eidquery, "thing");
 
+
         if($bundlequery === NULL) {
           if(!is_array($eidquery)) {
             if(is_numeric($eidquery))
@@ -131,6 +134,25 @@ class Query extends WisskiQueryBase {
           } else {
             $giveback = array_values($eidquery); // array($thing['eid']);
           }
+          
+          $eidcondition['field'] = $pb->id() . ".inventarnummer";
+          $eidcondition['operator'] = "=";
+          
+          $uris = AdapterHelper::getUrisForDrupalId($condition['value'], $adapterid);
+          $invnr = substr($uris, strlen("http://objektkatalog.gnm.de/objekt/"));
+
+          $invnr = urldecode($invnr);
+          
+          $eidcondition['value'] = $invnr;
+          
+#          dpm($invnr);
+          #$invnr = urlencode($invnr);
+
+#          $uri = 
+
+          #$uri = "http://objektkatalog.gnm.de/objekt/" . $invnr;
+#          $invnr = substr($strlen("http://objektkatalog.gnm.de/objekt/"), 
+#          $condition['value'] = 
         } else {
 
           foreach($eidquery as $key => $eid) {
@@ -158,29 +180,38 @@ class Query extends WisskiQueryBase {
 #          return $giveback;
 
         }
+        
+#        dpm($giveback);
+        
 #        return $giveback;
       }
-#      dpm("half");    
-      //wisski_tick("field query half");
-
-      // only early opt out if there is only one cond like only bundle
-      // or only eid... then we can go out savely.
+      
       if($num_conds == 1 && !empty($giveback)) {
         return $giveback;
       }
-
+      
+#      dpm("half");    
+      //wisski_tick("field query half");
+      
+#      dpm($eidcondition, "eid?");
 
       foreach($this->condition->conditions() as $condition) {
+        
+        $conditions = $this->condition->conditions();
+        
         if(!is_string($condition['field'])) {
           // might be one deeper
+          $conditions = $condition['field']->conditions();
           $condition = current($condition['field']->conditions());
-#          dpm($condition, "cond?");
+#          dpm("cond!", "cond?");
           $field = $condition['field'];
           $value = $condition['value'];
         }
         
         $field = $condition['field'];
         $value = $condition['value'];
+        
+#        dpm($conditions);
         
         // if there is an array in value but it has only one value (comes from delegator!)
         // then we take the value!
@@ -195,12 +226,14 @@ class Query extends WisskiQueryBase {
 
         // just return something if it is a bundle-condition
         if($field == 'bundle' ) {
+#          dpm("bundle");
+#          dpm($conditions);
 #  	        drupal_set_message("I go and look for : " . serialize($value) . " and " . serialize($limit) . " and " . serialize($offset) . " and " . $this->count);
 #          dpm(serialize($this->count), "count?");
           if($this->count) {
 #   	         drupal_set_message("I give back to you: " . serialize($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE)));
             //wisski_tick('Field query out 2');
-            return $engine->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE, $this->condition->conditions());
+            return $engine->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE, $conditions);
           }
 
 #            dpm($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()), 'out!');
@@ -215,7 +248,7 @@ class Query extends WisskiQueryBase {
 #          dpm($engine, "engine");
 
 #dpm(microtime(), "start query");
-          $ret = $engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions());
+          $ret = $engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $conditions);
 #dpm(microtime(), "end query");
 #          dpm($ret, "ret?");
 
@@ -223,6 +256,7 @@ class Query extends WisskiQueryBase {
         }
 
         if($field == 'label' ) {
+#          dpm("label");
           // This here has to be replaced  by the current bundle id for the object...
           // this should be dynamic!
           if($this->count) {
@@ -235,7 +269,7 @@ class Query extends WisskiQueryBase {
 
 #        dpm($field, "fi");
         if($field instanceof Condition) {
-          #dpm($field, "field");
+#          dpm($field, "field");
           #dpm($field->conditions(), "cond");
 
           foreach($field->conditions() as $subcondition) {
@@ -253,6 +287,7 @@ class Query extends WisskiQueryBase {
             $bundle = $pbp['bundle'];
             if($this->count) {
               $ret = $engine->loadIndividualsForBundle($bundle, $pb, NULL, NULL, TRUE, $field->conditions());
+#              dpm($ret);
               return $ret;
             } else {
               $ret = $engine->loadIndividualsForBundle($bundle, $pb, NULL, NULL, FALSE, $field->conditions());
@@ -261,6 +296,17 @@ class Query extends WisskiQueryBase {
             }
 
           }
+        } else {
+#          dpm("default!");
+          if(!empty($eidcondition))
+            $conditions[] = $eidcondition;
+#          dpm($conditions);
+          // default handling
+          if($this->count) {
+            return $engine->loadIndividualsForBundle(array('b34869d99be8c4f788285d14caa31c05'), $pb, NULL, NULL, TRUE, $conditions);
+          }
+
+          return array_keys($engine->loadIndividualsForBundle(array('b34869d99be8c4f788285d14caa31c05'), $pb, $limit, $offset, FALSE, $conditions));
         }
       }
 
