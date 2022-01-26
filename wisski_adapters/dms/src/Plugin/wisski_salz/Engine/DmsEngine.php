@@ -356,9 +356,11 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #    $ret = sqlsrv_query($con, $query);
 #
 
-    $stmt = sqlsrv_prepare( $con, $query, array(), array("Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED, "ClientBufferMaxKBSize" => 51200));
-    sqlsrv_execute( $stmt);
-      
+#    dpm(microtime(), "microtime1: ");
+#    $stmt = sqlsrv_prepare( $con, $query, array(), array("Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED, "ClientBufferMaxKBSize" => 51200));
+#    sqlsrv_execute( $stmt);
+    $stmt = sqlsrv_query($con, $query, array(), array("Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED, "ClientBufferMaxKBSize" => 51200));
+#    dpm(microtime(), "microtime2: ");
             
 #  $result = array();
 #               
@@ -997,8 +999,9 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #      $query = "select sum (spart.rows) from sys.partitions spart where spart.object_id = object_id(" . $this->table . ") and spart.index_id < 2";
 #      dpm($query, "query");
 #      dpm(microtime(), "micin?");
-      $stmt = sqlsrv_prepare( $con, $query, array(), array("Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED, "ClientBufferMaxKBSize" => 51200));
-      sqlsrv_execute( $stmt);
+#      $stmt = sqlsrv_prepare( $con, $query, array(), array("Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED, "ClientBufferMaxKBSize" => 51200));
+#      sqlsrv_execute( $stmt);
+      $stmt = sqlsrv_query( $con, $query, array(), array("Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED, "ClientBufferMaxKBSize" => 51200));
 #      $ret = sqlsrv_query($con, $query);
 #      dpm(serialize($ret), "ret?");
       
@@ -1032,13 +1035,13 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #      $query .= " COLLATE SQL_Latin1_General_CP1_CI_AS";
 #      return array();
 #        
-      $stmt = sqlsrv_prepare( $con, $query, array(), array("Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED, "ClientBufferMaxKBSize" => 51200));
-      
+#      $stmt = sqlsrv_prepare( $con, $query, array(), array("Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED, "ClientBufferMaxKBSize" => 51200));
+      $stmt = sqlsrv_query( $con, $query, array(), array("Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED, "ClientBufferMaxKBSize" => 51200));      
       #$ret = sqlsrv_query($con, $query);
 
 #      dpm(microtime(), "bef ex");
 
-      sqlsrv_execute( $stmt); 
+#      sqlsrv_execute( $stmt); 
 
 #      dpm($ret, "ret?");
 #            
