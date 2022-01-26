@@ -79,9 +79,13 @@ class Query extends WisskiQueryBase {
 
 #      dpm(serialize($this->condition->conditions()), "condi?");
 
+      $num_conds = 0;
+
       foreach ($this->condition->conditions() as $condition) {
         $field = $condition['field'];
         $value = $condition['value'];
+
+        $num_conds++;
 
         if(!is_string($condition['field'])) {
           // might be one deeper
@@ -154,10 +158,17 @@ class Query extends WisskiQueryBase {
 #          return $giveback;
 
         }
-        return $giveback;
+#        return $giveback;
       }
 #      dpm("half");    
       //wisski_tick("field query half");
+
+      // only early opt out if there is only one cond like only bundle
+      // or only eid... then we can go out savely.
+      if($num_conds == 1 && !empty($giveback)) {
+        return $giveback;
+      }
+
 
       foreach($this->condition->conditions() as $condition) {
         if(!is_string($condition['field'])) {
