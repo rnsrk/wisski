@@ -1,4 +1,8 @@
 services:
+  wisski_doi.wisski_doi_actions:
+    class: Drupal\wisski_doi\WisskiDoiActions
+    arguments:
+      - '@string_translation'
   wisski_doi.wisski_doi_db_actions:
     class: Drupal\wisski_doi\WisskiDoiDbActions
     arguments:

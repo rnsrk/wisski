@@ -32,8 +32,16 @@ wisski_individual.doi.for_static_revision:
     _form: '\Drupal\wisski_doi\Form\WisskiDoiConfirmFormRequestDoiForStaticRevision'
     _title: 'Do you want to request a new DOI for a static revision?'
   requirements:
-    _permission: 'administer wisski'
+    _permission: 'administer wisski dois'
     wisski_individual: \d+
+
+wisski_individual.doi.batch_for_static_revisions:
+  path: '/admin/structure/wisski_doi/{wisskiBundleId}/batch-dois-for-static'
+  defaults:
+    _form: '\Drupal\wisski_doi\Form\WisskiDoiBatch4StaticRevisionsConfirmForm'
+    _title: 'Do you want to request DOIs for static revisions of all selected individuals?'
+  requirements:
+    _permission: 'administer wisski dois'
 
 wisski_individual.doi.for_current_revision:
   path: '/wisski/navigate/{wisski_individual}/revision/get-doi-for-current'

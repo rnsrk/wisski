@@ -3,7 +3,6 @@
 namespace Drupal\wisski_doi\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Datetime\Element\Datetime;
 use Drupal\Core\Url;
 use Drupal\wisski_doi\WisskiDoiDbActions;
 use Symfony\Component\DependencyInjection\ContainerInterface;

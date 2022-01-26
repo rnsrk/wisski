@@ -87,7 +87,7 @@ class WisskiDoiRepositorySettings extends FormBase {
   }
 
   /**
-   *
+   * The submit action.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $settings = $form['#wisski_doi_settings'];

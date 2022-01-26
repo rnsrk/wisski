@@ -13,6 +13,14 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class WisskiDoiBatchForm extends ConfigFormBase {
 
+
+  /**
+   * Batch metadata config name.
+   *
+   * @var string
+   */
+  const SETTINGS = 'wisski_doi_batch_form.storage';
+
   /**
    * The service to interact with the database.
    *
@@ -26,6 +34,13 @@ class WisskiDoiBatchForm extends ConfigFormBase {
    * @var \Drupal\Core\Pager\PagerManager
    */
   private PagerManager $pagerManager;
+
+  /**
+   * The WissKI bundle id.
+   *
+   * @var string
+   */
+  private string $wisskiBundleId;
 
   /**
    * Construct the WisskiDoiAdministration class.
@@ -60,7 +75,7 @@ class WisskiDoiBatchForm extends ConfigFormBase {
    */
   protected function getEditableConfigNames() {
     return [
-      'wisski_doi_batch_form_api.settings',
+      static::SETTINGS,
     ];
   }
 
@@ -68,6 +83,8 @@ class WisskiDoiBatchForm extends ConfigFormBase {
    * The machine name of the form.
    */
   public function buildForm(array $form, FormStateInterface $form_state, string $wisski_bundle = NULL) {
+    $this->wisskiBundleId = $wisski_bundle;
+    $this->config(static::SETTINGS);
     $records = $this->wisskiDOiDbActions->readBundleRecords($wisski_bundle);
     $chunk = $this->pagerArray($records, 25);
     foreach ([0, 1] as $isCurrent) {
@@ -92,35 +109,41 @@ class WisskiDoiBatchForm extends ConfigFormBase {
       '#attributes' => ['class' => 'wisski-doi-pager'],
     ];
 
-    $form['actions']['submitToGetDois4Current'] = [
+    $form['actions']['submitFormToGetDois4Current'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Get DOIs for current revision'),
-      "#weight" => 1,
+      '#value' => $this->t('Get DOIs for current revisions'),
+      '#button_type' => 'primary',
       '#submit' => [[$this, 'submitFormToGetDois4Current']],
-      '#limit_validation_errors' => [],
     ];
-    $form['actions']['submitToGetDois4Static'] = [
+
+    $form['actions']['submitFormToGetDois4Static'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Get DOIs for static revision'),
-      "#weight" => 1,
+      '#value' => $this->t('Get DOIs for static revisions'),
+      '#button_type' => 'primary',
       '#submit' => [[$this, 'submitFormToGetDois4Static']],
-      '#limit_validation_errors' => [],
     ];
     return $form;
   }
 
   /**
-   *
+   * Redirect to batch service to get DOIs for static revisions.
    */
-  public function submitFormToGetDois4Current(array &$form, FormStateInterface $form_state) {
-    // @todo Implement submitForm() method.
+  public function submitFormToGetDois4Static(array &$form, FormStateInterface $form_state) {
+    $this->configFactory->getEditable(static::SETTINGS)
+      // Set the submitted configuration setting.
+      ->set('wisskiIndividuals', $form_state->getValue('table'))
+      ->save();
+
+    $form_state->setRedirect(
+      'wisski_individual.doi.batch_for_static_revisions', ['wisskiBundleId' => $this->wisskiBundleId]
+     );
     parent::submitForm($form, $form_state);
   }
 
   /**
-   *
+   * Redirect to batch service to get DOIs for current revisions.
    */
-  public function submitFormToGetDois4Static(array &$form, FormStateInterface $form_state) {
+  public function submitFormToGetDois4Current(array &$form, FormStateInterface $form_state) {
     // @todo Implement submitForm() method.
     parent::submitForm($form, $form_state);
   }
@@ -163,7 +186,6 @@ class WisskiDoiBatchForm extends ConfigFormBase {
       $doiRecords = $this->wisskiDOiDbActions->readLatestDoiRecords($record['eid'], $isCurrent);
       if ($doiRecords) {
         $doiLink = 'https://doi.org/' . $doiRecords['doi'];
-        dpm(date('d.M.Y h:i:s', strtotime($doiRecords['created'])));
         $chunk[$record['eid']][$key] = [
           'data' => $this->t('<span><a href=":doiLink" class="wisski-:currentFlag-doi-link">:doiLink</a> (:state) from %created</span>', [
             ':doiLink' => $doiLink,
