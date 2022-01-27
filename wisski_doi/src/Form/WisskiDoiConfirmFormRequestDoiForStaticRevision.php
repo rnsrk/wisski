@@ -69,9 +69,9 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
   /**
    * The service to management DOI metadata.
    *
-   * @var \Drupal\wisski_doi\WisskiDoiActions
+   * @var \Drupal\wisski_doi\WisskiDoiActions|null
    */
-  private WisskiDoiActions $wisskiDoiActions;
+  private ?WisskiDoiActions $wisskiDoiActions;
 
   /**
    * The service to interact with the REST API .
@@ -106,13 +106,11 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
   public function __construct(WisskiStorageInterface $wisski_storage,
                               DateFormatterInterface $date_formatter,
                               TimeInterface $time,
-                              WisskiDoiActions $wisskiDoiActions,
                               WisskiDoiRestActions $wisskiDoiRestActions,
                               WisskiDoiDbActions $wisskiDoiDbActions) {
     $this->wisskiStorage = $wisski_storage;
     $this->dateFormatter = $date_formatter;
     $this->time = $time;
-    $this->wisskiDoiActions = $wisskiDoiActions;
     $this->wisskiDoiRestActions = $wisskiDoiRestActions;
     $this->wisskiDoiDbActions = $wisskiDoiDbActions;
   }
@@ -128,7 +126,6 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
       $container->get('entity_type.manager')->getStorage('wisski_individual'),
       $container->get('date.formatter'),
       $container->get('datetime.time'),
-      $container->get('wisski_doi.wisski_doi_actions'),
       $container->get('wisski_doi.wisski_doi_rest_actions'),
       $container->get('wisski_doi.wisski_doi_db_actions'),
     );
@@ -349,7 +346,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
     $contributorItems = $this->config('wisski_doi.contributor.items');
 
     // Get metadata from individual.
-    $this->doiInfo = $this->wisskiDoiActions->getWisskiIndividualMetadata($this->wisski_individual);
+    $this->doiInfo = \Drupal::service('wisski_doi.wisski_doi_actions')->getWisskiIndividualMetadata($this->wisski_individual);
 
     // Assemble parts of DOI information for request.
     $this->doiInfo += [

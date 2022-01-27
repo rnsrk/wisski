@@ -19,7 +19,14 @@ class WisskiDoiBatchForm extends ConfigFormBase {
    *
    * @var string
    */
-  const SETTINGS = 'wisski_doi_batch_form.storage';
+  const SELECTED_INDIVIDUALS = 'wisski_doi_batch_form.storage';
+
+  /**
+   * Config name of WissKI individuals to batch.
+   *
+   * @var string
+   */
+  const INDIVIDUALS_IN_BATCH = 'wisski_doi_batch.array_for_static_revisions';
 
   /**
    * The service to interact with the database.
@@ -42,12 +49,15 @@ class WisskiDoiBatchForm extends ConfigFormBase {
    */
   private string $wisskiBundleId;
 
+  private $batchStateStaticRevisions;
+
   /**
    * Construct the WisskiDoiAdministration class.
    */
   public function __construct(WisskiDoiDbActions $wisskiDOiDbActions, PagerManager $pagerManager) {
     $this->wisskiDOiDbActions = $wisskiDOiDbActions;
     $this->pagerManager = $pagerManager;
+    parent::__construct($this->configFactory());
   }
 
   /**
@@ -75,7 +85,7 @@ class WisskiDoiBatchForm extends ConfigFormBase {
    */
   protected function getEditableConfigNames() {
     return [
-      static::SETTINGS,
+      static::SELECTED_INDIVIDUALS,
     ];
   }
 
@@ -84,12 +94,22 @@ class WisskiDoiBatchForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, string $wisski_bundle = NULL) {
     $this->wisskiBundleId = $wisski_bundle;
-    $this->config(static::SETTINGS);
+    $this->config(static::SELECTED_INDIVIDUALS);
     $records = $this->wisskiDOiDbActions->readBundleRecords($wisski_bundle);
     $chunk = $this->pagerArray($records, 25);
     foreach ([0, 1] as $isCurrent) {
       $this->doiAnnotation($chunk, $isCurrent);
     }
+
+    // Read state of batch process.
+    $this->batchStateStaticRevisions = $this->configFactory->getEditable(static::INDIVIDUALS_IN_BATCH)
+      ->get('wisskiInvidualsToProcess');
+
+    empty($this->batchStateStaticRevisions) ?: $this->messenger()
+      ->addWarning($this->t('There are %count unpocessed WissKI individuals,
+      if you want to finish you batch process, click "Get remaining DOIs",
+      otherwise click "Reset batch state"', ['%count' => count($this->batchStateStaticRevisions)]));
+
     // Build form.
     $form['table'] = [
       '#type' => 'tableselect',
@@ -109,6 +129,21 @@ class WisskiDoiBatchForm extends ConfigFormBase {
       '#attributes' => ['class' => 'wisski-doi-pager'],
     ];
 
+    if ($this->batchStateStaticRevisions) {
+      $form['actions']['eraseBatch'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Reset batch state'),
+        '#button_type' => 'danger',
+        '#submit' => [[$this->configFactory->getEditable(static::INDIVIDUALS_IN_BATCH),
+          'delete',
+        ],
+        ],
+      ];
+      $submitFormToGetDois4StaticText = $this->t('Get remaining DOIs');
+    }
+    else {
+      $submitFormToGetDois4StaticText = $this->t('Get DOIs for static revisions');
+    }
     $form['actions']['submitFormToGetDois4Current'] = [
       '#type' => 'submit',
       '#value' => $this->t('Get DOIs for current revisions'),
@@ -118,10 +153,11 @@ class WisskiDoiBatchForm extends ConfigFormBase {
 
     $form['actions']['submitFormToGetDois4Static'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Get DOIs for static revisions'),
+      '#value' => $submitFormToGetDois4StaticText,
       '#button_type' => 'primary',
       '#submit' => [[$this, 'submitFormToGetDois4Static']],
     ];
+
     return $form;
   }
 
@@ -129,14 +165,14 @@ class WisskiDoiBatchForm extends ConfigFormBase {
    * Redirect to batch service to get DOIs for static revisions.
    */
   public function submitFormToGetDois4Static(array &$form, FormStateInterface $form_state) {
-    $this->configFactory->getEditable(static::SETTINGS)
+    $this->configFactory->getEditable(static::SELECTED_INDIVIDUALS)
       // Set the submitted configuration setting.
       ->set('wisskiIndividuals', $form_state->getValue('table'))
       ->save();
 
     $form_state->setRedirect(
       'wisski_individual.doi.batch_for_static_revisions', ['wisskiBundleId' => $this->wisskiBundleId]
-     );
+    );
     parent::submitForm($form, $form_state);
   }
 
@@ -187,11 +223,11 @@ class WisskiDoiBatchForm extends ConfigFormBase {
       if ($doiRecords) {
         $doiLink = 'https://doi.org/' . $doiRecords['doi'];
         $chunk[$record['eid']][$key] = [
-          'data' => $this->t('<span><a href=":doiLink" class="wisski-:currentFlag-doi-link">:doiLink</a> (:state) from %created</span>', [
+          'data' => $this->t('<span><a href=":doiLink" class="wisski-:currentFlag-doi-link">:doiLink</a> (:state) created %created</span>', [
             ':doiLink' => $doiLink,
             ':currentFlag' => $cssClass,
             ':state' => $doiRecords['state'],
-            '%created' => date('d.M.Y h:i:s', strtotime($doiRecords['created'])),
+            '%created' => date('d.M.Y H:i:s', strtotime($doiRecords['created'])),
           ]),
         ];
       }

@@ -22,6 +22,20 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
 
   /**
+   * Batch metadata config name.
+   *
+   * @var string
+   */
+  const SELECTED_INDIVIDUALS = 'wisski_doi_batch_form.storage';
+
+  /**
+   * Config name of WissKI individuals to batch.
+   *
+   * @var string
+   */
+  const INDIVIDUALS_IN_BATCH = 'wisski_doi_batch.array_for_static_revisions';
+
+  /**
    * The WisskiEntity revision.
    *
    * @var \Drupal\wisski_core\WisskiEntityInterface
@@ -86,11 +100,11 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
   private string $wisskiBundleId;
 
   /**
-   * The selected WissKI individuals.
+   * The set of WissKI individuals, which have to processed.
    *
-   * @var array|null
+   * @var array
    */
-  private ?array $wisskiIndividualIds;
+  private array $wisskiIndividualsBatch;
 
   /**
    * Constructs a new form to request a DOI for a static revision.
@@ -157,7 +171,8 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
    */
   protected function getEditableConfigNames() {
     return [
-      'contributor.items',
+      'wisski_doi.contributor.items',
+      static::INDIVIDUALS_IN_BATCH,
     ];
   }
 
@@ -222,8 +237,8 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
    *   The form.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state.
-   * @param int $wisski_individual
-   *   The WissKI Entity ID.
+   * @param string|null $wisskiBundleId
+   *   The WissKI bundle ID.
    *
    * @return array
    *   The form.
@@ -250,14 +265,21 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
       ->getEditable('wisski_doi.wisski_doi_settings');
 
     // Contributors from form.
-    $contributorItems = $this->config('contributor.items');
+    $contributorItems = $this->config('wisski_doi.contributor.items');
 
-    // Selected WissKI individuals.
-    $this->wisskiIndividualIds = \Drupal::configFactory()
-      ->getEditable('wisski_doi_batch_form.storage')->get('wisskiIndividuals');
-
+    // Load selected WissKI individuals.
+    $wisskiIndividualIds = $this->configFactory
+      ->getEditable(static::SELECTED_INDIVIDUALS)->get('wisskiIndividuals');
     // Remove keys with empty values.
-    $this->wisskiIndividualIds = array_filter($this->wisskiIndividualIds);
+    $wisskiIndividualIds = array_filter($wisskiIndividualIds);
+
+    // Load processed batch data.
+    $batchStateStaticRevisions = $this
+      ->configFactory
+      ->getEditable(static::INDIVIDUALS_IN_BATCH)
+      ->get('wisskiInvidualsToProcess');
+
+    $this->wisskiIndividualsBatch = $batchStateStaticRevisions ?: $wisskiIndividualIds;
     // Batch metadata.
     $this->batchMetadata = [
       "event" => 'draft',
@@ -300,8 +322,8 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
 
     $form['count'] = [
       '#type' => 'item',
-      '#value' => count($this->wisskiIndividualIds),
-      '#markup' => count($this->wisskiIndividualIds),
+      '#value' => count($this->wisskiIndividualsBatch),
+      '#markup' => count($this->wisskiIndividualsBatch),
       '#title' => $this->t('Count of selected WissKI individuals'),
     ];
 
@@ -377,6 +399,8 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
    *   The form.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
@@ -385,79 +409,29 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
     $doiMetaData = $newValues;
 
     // Get AJAX info.
-    $contributorItems = \Drupal::configFactory()
-      ->getEditable('contributor.items');
+    $contributorItems = $this->configFactory
+      ->getEditable('wisski_doi.contributor.items');
 
     // Have to overwrite contributors cause AJAX mess up the form_state.
     $doiMetaData['contributors'] = $contributorItems->get('contributors');
 
-    $batchStateStaticRevisions = \Drupal::state()->get('wisski_doi_batch_array_for_static_revisions');
-
-    $wisskiIndividualsBatch = $batchStateStaticRevisions ?: $this->wisskiIndividualIds;
-    //\Drupal::state()->set('wisski_doi_batch_array_for_static_revisions', $this->wisskiIndividualIds);
     // Iterate over selected WissKI individuals.
-    if ($wisskiIndividualsBatch) {
-      foreach ($wisskiIndividualsBatch as $wisskiIndividualId) {
-        unset($wisskiIndividualsBatch[$wisskiIndividualId]);
-        dpm($wisskiIndividualsBatch);
+    if ($this->wisskiIndividualsBatch) {
+      foreach ($this->wisskiIndividualsBatch as $wisskiIndividualId) {
+        unset($this->wisskiIndividualsBatch[$wisskiIndividualId]);
         $wisskiIndividual = $this->wisskiStorage->load($wisskiIndividualId);
-        //$this->getStaticDoi($wisskiIndividual, $doiMetaData);
-        \Drupal::state()->set('wisski_doi_batch_array_for_static_revisions',$wisskiIndividualsBatch);
+        $this->wisskiDoiActions->getStaticDoi($wisskiIndividual, $doiMetaData);
+        $this->configFactory->getEditable(static::INDIVIDUALS_IN_BATCH)
+          ->set('wisskiInvidualsToProcess', $this->wisskiIndividualsBatch)
+          ->save();
       }
-      \Drupal::state()->delete('wisski_doi_batch_array_for_static_revisions');
+      $this->configFactory->getEditable(static::INDIVIDUALS_IN_BATCH)->delete();
     }
-
 
     // Redirect to batch overview.
     $form_state->setRedirect(
       'entity.wisski_bundle.doi_batch', ['wisski_bundle' => $this->wisskiBundleId]
      );
-  }
-
-  /**
-   *
-   */
-  public function getStaticDoi(WisskiEntityInterface $wisskiIndividual, array $doiMetadata) {
-
-    // Load metadata of WissKI individual.
-    $wisskiIndividualMetaData = $this->wisskiDoiActions->getWisskiIndividualMetadata($wisskiIndividual);
-
-    // Assemble DOI metadata with WissKI individual metadata.
-    $doiMetadata += $wisskiIndividualMetaData;
-    /*
-     * Save two revisions, because current revision has no
-     * revision URI. Start with first save process.
-     */
-    $doiRevision = $this->wisskiStorage->createRevision($wisskiIndividual);
-    $doiRevision->setNewRevision(TRUE);
-    $doiRevision->revision_log = $this->t('DOI revision requested at %request_date.', [
-      '%request_date' => $this->dateFormatter->format($this->time->getCurrentTime(), 'custom', 'd.m.Y H:i:s'),
-    ]);
-    $doiRevision->save();
-
-    // Assemble revision URL and store it in form.
-    $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
-    $doiRevisionId = $doiRevision->getRevisionId();
-    $doiRevisionURL = $http . $_SERVER['HTTP_HOST'] . '/wisski/navigate/' . $wisskiIndividual->id() . '/revisions/' . $doiRevisionId . '/view';
-
-    // Append revision info to doiInfo.
-    $doiMetadata += [
-      "revisionId" => $doiRevisionId,
-      "revisionUrl" => $doiRevisionURL,
-    ];
-    // Request DOI.
-    $response = $this->wisskiDoiRestActions->createOrUpdateDoi($doiMetadata);
-    // Safe to db if successfully.
-    $response['responseStatus'] == 201 ? $this->wisskiDoiDbActions->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
-      ->error($this->t('Something went wrong creating the DOI. Leave the database untouched'));
-
-    // Start second save process. This is the current revision now.
-    $doiRevision = $this->wisskiStorage->createRevision($wisskiIndividual);
-    $doiRevision->revision_log = $this->t('Revision copy, because of DOI request from %request_date.', [
-      '%request_date' => $this->dateFormatter->format($this->time->getCurrentTime(), 'custom', 'd.m.Y H:i:s'),
-    ],
-      );
-    $doiRevision->save();
   }
 
 }
