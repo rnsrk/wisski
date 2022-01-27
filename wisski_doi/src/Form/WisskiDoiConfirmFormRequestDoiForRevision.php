@@ -104,44 +104,16 @@ class WisskiDoiConfirmFormRequestDoiForRevision extends WisskiDoiConfirmFormRequ
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
     // Get new values from form state.
-    $this->doiInfo = $form_state->cleanValues()->getValues();
+    $doiMetaData = $form_state->cleanValues()->getValues();
 
-    // Get WissKI entity URI.
-    $target_uri = AdapterHelper::getOnlyOneUriPerAdapterForDrupalId($this->wisski_individual->id());
-    $target_uri = current($target_uri);
-    $this->doiInfo += [
-      "entityUri" => $target_uri,
-    ];
+    // Request DOI for current revision.
+    \Drupal::service('wisski_doi.wisski_doi_actions')->getCurrentDoi($this->wisski_individual, $doiMetaData);
 
-    // Get AJAX info.
-    $contributorItems = \Drupal::configFactory()
-      ->getEditable('contributor.items');
-    // Have to overwrite contributors cause AJAX mess up the form_state.
-    $this->doiInfo['contributors'] = $contributorItems->get('contributors');
-
-    /*
-     * No need to save a revision, because the revisionUrl points to the
-     * resolver with the entity URI and not to a "real" revision URL, like
-     * http://{domain}/wisski/navigate/{entity_id}/revisions/{revision_id}/view
-     */
-
-    // Assemble revision URL and store it in form.
-    $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
-    $doiCurrentRevisionURL = $http . $_SERVER['HTTP_HOST'] . '/wisski/get?uri=' . $this->doiInfo["entityUri"];
-
-    // Append revision info to doiInfo.
-    $this->doiInfo += [
-      "revisionUrl" => $doiCurrentRevisionURL,
-    ];
-    // Request DOI.
-    $response = $this->wisskiDoiRestActions->createOrUpdateDoi($this->doiInfo);
-    // Write response to database.
-    $response['responseStatus'] == 201 ? $this->wisskiDoiDbActions->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
-      ->error($this->t('Something went wrong Updating the DOI. Leave the database untouched'));
     // Redirect to DOI administration.
     $form_state->setRedirect(
       'wisski_individual.doi.administration', ['wisski_individual' => $this->wisski_individual->id()]
     );
   }
+
 
 }

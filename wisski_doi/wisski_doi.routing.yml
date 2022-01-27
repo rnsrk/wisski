@@ -52,6 +52,14 @@ wisski_individual.doi.for_current_revision:
     _permission: 'administer wisski dois'
     wisski_individual: '\d+'
 
+wisski_individual.doi.batch_for_current_revisions:
+  path: '/admin/structure/wisski_doi/{wisskiBundleId}/batch-dois-for-current'
+  defaults:
+    _form: '\Drupal\wisski_doi\Form\WisskiDoiBatch4CurrentRevisionsConfirmForm'
+    _title: 'Do you want to request DOIs for current revisions of all selected individuals?'
+  requirements:
+    _permission: 'administer wisski dois'
+
 wisski_individual.doi.edit_metadata:
   path: '/wisski/navigate/{wisski_individual}/{did}/edit-metadata'
   defaults:

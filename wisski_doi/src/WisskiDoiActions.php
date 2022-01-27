@@ -10,6 +10,7 @@ use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\user\Entity\User;
 use Drupal\wisski_core\WisskiEntityInterface;
 use Drupal\wisski_core\WisskiStorage;
+use Drupal\wisski_salz\AdapterHelper;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -201,6 +202,89 @@ class WisskiDoiActions {
       '%request_date' => $this->dateFormatter->format($this->time->getCurrentTime(), 'custom', 'd.m.Y H:i:s'),
     ]);
     $doiRevision->save();
+  }
+
+  /**
+   * Requests a DOI for a Current revision.
+   *
+   * Just requests a DOI for the current revision and saves DOI data
+   * to local database.
+   *
+   * @param \Drupal\wisski_core\WisskiEntityInterface $wisskiIndividual
+   *   The WissKI individual.
+   * @param array $doiMetadata
+   *   The DOI metadata.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   * @throws \Exception
+   */
+  public function getCurrentDoi(WisskiEntityInterface $wisskiIndividual, array $doiMetadata) {
+    // Load metadata of WissKI individual.
+    $wisskiIndividualMetaData = $this->getWisskiIndividualMetadata($wisskiIndividual);
+
+    // Assemble DOI metadata with WissKI individual metadata.
+    $doiMetadata += $wisskiIndividualMetaData;
+
+    // Get WissKI entity URI.
+    $target_uri = AdapterHelper::getOnlyOneUriPerAdapterForDrupalId($wisskiIndividual->id());
+    $target_uri = current($target_uri);
+    $doiMetadata += [
+      "entityUri" => $target_uri,
+    ];
+
+    // Get AJAX info.
+    $contributorItems = \Drupal::configFactory()
+      ->getEditable('contributor.items');
+    // Have to overwrite contributors cause AJAX mess up the form_state.
+    $doiMetadata['contributors'] = $contributorItems->get('contributors');
+
+    /*
+     * No need to save a revision, because the revisionUrl points to the
+     * resolver with the entity URI and not to a "real" revision URL, like
+     * http://{domain}/wisski/navigate/{entity_id}/revisions/{revision_id}/view
+     */
+
+    // Assemble revision URL and store it in form.
+    $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
+    $doiCurrentRevisionURL = $http . $_SERVER['HTTP_HOST'] . '/wisski/get?uri=' . $doiMetadata["entityUri"];
+
+    // Append revision info to doiInfo.
+    $doiMetadata += [
+      "revisionUrl" => $doiCurrentRevisionURL,
+    ];
+    // Request DOI.
+    $response = $this->wisskiDoiRestActions->createOrUpdateDoi($doiMetadata);
+    // Write response to database.
+    $response['responseStatus'] == 201 ? $this->wisskiDoiDbActions->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
+      ->error($this->t('Something went wrong Updating the DOI. Leave the database untouched'));
+  }
+
+  /**
+   * Loops over all selected WissKI and requests DOIs.
+   *
+   * @param bool $current
+   *   DOI for current or static revision.
+   * @param array $wisskiIndividualsBatch
+   *   The batch set with individuals that should get a DOI.
+   * @param array $doiMetaData
+   *   The metadata for the DOI.
+   * @param string $individualsInBatchStateName
+   *   The name of the config store.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   */
+  public function batchLoop(bool $current, array $wisskiIndividualsBatch, array $doiMetaData, string $individualsInBatchStateName) {
+    if ($wisskiIndividualsBatch) {
+      foreach ($wisskiIndividualsBatch as $wisskiIndividualId) {
+        unset($wisskiIndividualsBatch[$wisskiIndividualId]);
+        $wisskiIndividual = $this->wisskiStorage->load($wisskiIndividualId);
+        $current ? $this->getCurrentDoi($wisskiIndividual, $doiMetaData) : $this->getStaticDoi($wisskiIndividual, $doiMetaData);
+        \Drupal::configFactory()->getEditable($individualsInBatchStateName)
+          ->set('wisskiIndividualsToProcess', $wisskiIndividualsBatch)
+          ->save();
+      }
+      \Drupal::configFactory()->getEditable($individualsInBatchStateName)->delete();
+    }
   }
 
 }

@@ -93,6 +93,11 @@ class WisskiDoiBatchForm extends ConfigFormBase {
    * The machine name of the form.
    */
   public function buildForm(array $form, FormStateInterface $form_state, string $wisski_bundle = NULL) {
+    $this->messenger()->addStatus($this
+        ->t('To receive DOIs for all Entities just click
+        "Get DOIs for current revisions" or
+        "Get DOIs for static revisions"
+        without check any individual.'));
     $this->wisskiBundleId = $wisski_bundle;
     $this->config(static::SELECTED_INDIVIDUALS);
     $records = $this->wisskiDOiDbActions->readBundleRecords($wisski_bundle);
@@ -103,7 +108,7 @@ class WisskiDoiBatchForm extends ConfigFormBase {
 
     // Read state of batch process.
     $this->batchStateStaticRevisions = $this->configFactory->getEditable(static::INDIVIDUALS_IN_BATCH)
-      ->get('wisskiInvidualsToProcess');
+      ->get('wisskiIndividualsToProcess');
 
     empty($this->batchStateStaticRevisions) ?: $this->messenger()
       ->addWarning($this->t('There are %count unpocessed WissKI individuals,
@@ -139,14 +144,15 @@ class WisskiDoiBatchForm extends ConfigFormBase {
         ],
         ],
       ];
-      $submitFormToGetDois4StaticText = $this->t('Get remaining DOIs');
+      $submitFormToGetDois4StaticText = $submitFormToGetDois4CurrentText = $this->t('Get remaining DOIs');
     }
     else {
       $submitFormToGetDois4StaticText = $this->t('Get DOIs for static revisions');
+      $submitFormToGetDois4CurrentText = $this->t('Get DOIs for current revisions');
     }
     $form['actions']['submitFormToGetDois4Current'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Get DOIs for current revisions'),
+      '#value' => $submitFormToGetDois4CurrentText,
       '#button_type' => 'primary',
       '#submit' => [[$this, 'submitFormToGetDois4Current']],
     ];
@@ -173,15 +179,20 @@ class WisskiDoiBatchForm extends ConfigFormBase {
     $form_state->setRedirect(
       'wisski_individual.doi.batch_for_static_revisions', ['wisskiBundleId' => $this->wisskiBundleId]
     );
-    parent::submitForm($form, $form_state);
   }
 
   /**
    * Redirect to batch service to get DOIs for current revisions.
    */
   public function submitFormToGetDois4Current(array &$form, FormStateInterface $form_state) {
-    // @todo Implement submitForm() method.
-    parent::submitForm($form, $form_state);
+    $this->configFactory->getEditable(static::SELECTED_INDIVIDUALS)
+      // Set the submitted configuration setting.
+      ->set('wisskiIndividuals', $form_state->getValue('table'))
+      ->save();
+
+    $form_state->setRedirect(
+      'wisski_individual.doi.batch_for_current_revisions', ['wisskiBundleId' => $this->wisskiBundleId]
+    );
   }
 
   /**

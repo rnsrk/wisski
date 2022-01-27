@@ -69,7 +69,7 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
    *
    * @var \Drupal\wisski_doi\WisskiDoiActions
    */
-  private WisskiDoiActions $wisskiDoiActions;
+  protected WisskiDoiActions $wisskiDoiActions;
 
   /**
    * The service to interact with the REST API .
@@ -97,14 +97,14 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
    *
    * @var string
    */
-  private string $wisskiBundleId;
+  protected string $wisskiBundleId;
 
   /**
    * The set of WissKI individuals, which have to processed.
    *
    * @var array
    */
-  private array $wisskiIndividualsBatch;
+  protected array $wisskiIndividualsBatch;
 
   /**
    * Constructs a new form to request a DOI for a static revision.
@@ -244,7 +244,7 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
    *   The form.
    */
   public function buildForm(array $form, FormStateInterface $form_state, string $wisskiBundleId = NULL) {
-
+    \Drupal::messenger()->deleteAll();
     // Assign WissKI bundle to class property.
     $this->wisskiBundleId = $wisskiBundleId;
 
@@ -272,12 +272,13 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
       ->getEditable(static::SELECTED_INDIVIDUALS)->get('wisskiIndividuals');
     // Remove keys with empty values.
     $wisskiIndividualIds = array_filter($wisskiIndividualIds);
+    $wisskiIndividualIds = empty($wisskiIndividualIds) ? $this->wisskiDoiDbActions->readBundleRecords($wisskiBundleId) : $wisskiIndividualIds;
 
     // Load processed batch data.
     $batchStateStaticRevisions = $this
       ->configFactory
       ->getEditable(static::INDIVIDUALS_IN_BATCH)
-      ->get('wisskiInvidualsToProcess');
+      ->get('wisskiIndividualsToProcess');
 
     $this->wisskiIndividualsBatch = $batchStateStaticRevisions ?: $wisskiIndividualIds;
     // Batch metadata.
@@ -389,7 +390,7 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
   }
 
   /**
-   * Save to revisions and request a DOI for one.
+   * Start the DOI batches for static revisions.
    *
    * First save a DOI revision to receive a revision id,
    * request a DOI for that revision,then save a second
@@ -405,8 +406,7 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
     // Get new values from form state.
-    $newValues = $form_state->cleanValues()->getValues();
-    $doiMetaData = $newValues;
+    $doiMetaData = $form_state->cleanValues()->getValues();
 
     // Get AJAX info.
     $contributorItems = $this->configFactory
@@ -422,7 +422,7 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
         $wisskiIndividual = $this->wisskiStorage->load($wisskiIndividualId);
         $this->wisskiDoiActions->getStaticDoi($wisskiIndividual, $doiMetaData);
         $this->configFactory->getEditable(static::INDIVIDUALS_IN_BATCH)
-          ->set('wisskiInvidualsToProcess', $this->wisskiIndividualsBatch)
+          ->set('wisskiIndividualsToProcess', $this->wisskiIndividualsBatch)
           ->save();
       }
       $this->configFactory->getEditable(static::INDIVIDUALS_IN_BATCH)->delete();
