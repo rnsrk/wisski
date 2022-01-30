@@ -1297,13 +1297,15 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                         foreach($cached_field_values as $key => $cached_field_value) {
 #                          dpm($nfv[$main_property], "comparing to " . $cached_field_value->ident);
                           if(isset($nfv[$main_property])) {
-                            if((string)$cached_field_value->ident === (string)$nfv[$main_property] ) {
+//                            if((string)$cached_field_value->ident === (string)$nfv[$main_property] ) {
+                              if((string)$cached_field_value->ident === (string)mb_substr($nfv[$main_property], 0, 1000) ) {
                               unset($cached_field_values[$key]);
                               $found_cached_field_value = $cached_field_value;
                               break;
                             }
                           } else if(is_string($nfv)) {
-                            if((string)$cached_field_value->ident === (string)$nfv ) {
+                            if((string)$cached_field_value->ident === (string)mb_substr($nfv, 0, 1000) ) {
+//                            if((string)$cached_field_value->ident === (string)$nfv ) {
                               unset($cached_field_values[$key]);
                               $found_cached_field_value = $cached_field_value;
                               break;
