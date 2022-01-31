@@ -272,8 +272,8 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
       ->getEditable(static::SELECTED_INDIVIDUALS)->get('wisskiIndividuals');
     // Remove keys with empty values.
     $wisskiIndividualIds = array_filter($wisskiIndividualIds);
-    $wisskiIndividualIds = empty($wisskiIndividualIds) ? $this->wisskiDoiDbActions->readBundleRecords($wisskiBundleId) : $wisskiIndividualIds;
-
+    $wisskiIndividualIds = empty($wisskiIndividualIds) ? array_column($this->wisskiDoiDbActions->readBundleRecords($wisskiBundleId), 'eid') : $wisskiIndividualIds;
+    count($wisskiIndividualIds) <= 15 ?: \Drupal::messenger()->addWarning($this->t('There are a lot DOIs to request, this may take a while (ca. 1 seconds per DOI)'));
     // Load processed batch data.
     $batchStateStaticRevisions = $this
       ->configFactory
@@ -281,6 +281,7 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
       ->get('wisskiIndividualsToProcess');
 
     $this->wisskiIndividualsBatch = $batchStateStaticRevisions ?: $wisskiIndividualIds;
+
     // Batch metadata.
     $this->batchMetadata = [
       "event" => 'draft',
@@ -414,7 +415,6 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
 
     // Have to overwrite contributors cause AJAX mess up the form_state.
     $doiMetaData['contributors'] = $contributorItems->get('contributors');
-
     // Iterate over selected WissKI individuals.
     if ($this->wisskiIndividualsBatch) {
       foreach ($this->wisskiIndividualsBatch as $wisskiIndividualId) {
