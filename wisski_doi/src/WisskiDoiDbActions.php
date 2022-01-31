@@ -92,7 +92,7 @@ class WisskiDoiDbActions {
    * @return array
    *   Dataset of corresponding DOIs to an entity.
    */
-  public function readDoiRecords(int $eid, int $did = NULL) {
+  public function readDoiRecords(int $eid, int $did = NULL, int $isCurrent = NULL) {
     $query = $this->connection
       ->select('wisski_doi')
       ->fields('wisski_doi', [
@@ -110,6 +110,11 @@ class WisskiDoiDbActions {
     if ($did) {
       $query = $query->condition('did', $did, '=');
     }
+
+    if ($isCurrent) {
+      $query = $query->condition('isCurrent', $isCurrent, '=');
+    }
+
     $result = $query->orderBy('did', 'DESC')->execute()->fetchAll();
 
     // $result is stdClass Object, this returns an array of the results.

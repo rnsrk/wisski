@@ -275,15 +275,23 @@ class WisskiDoiActions {
    */
   public function batchLoop(bool $current, array $wisskiIndividualsBatch, array $doiMetaData, string $individualsInBatchStateName) {
     if ($wisskiIndividualsBatch) {
+      $skipper = 0;
       foreach ($wisskiIndividualsBatch as $wisskiIndividualId) {
-        unset($wisskiIndividualsBatch[$wisskiIndividualId]);
+        // Leave if there is a DOI pointing to current revision.
+        $currentDoi = $this->wisskiDoiDbActions->readDoiRecords($wisskiIndividualId, NULL, 1);
+        if (!empty($currentDoi)) {
+          $skipper += 1;
+          continue;
+        }
         $wisskiIndividual = $this->wisskiStorage->load($wisskiIndividualId);
         $current ? $this->getCurrentDoi($wisskiIndividual, $doiMetaData) : $this->getStaticDoi($wisskiIndividual, $doiMetaData);
+        unset($wisskiIndividualsBatch[$wisskiIndividualId]);
         \Drupal::configFactory()->getEditable($individualsInBatchStateName)
           ->set('wisskiIndividualsToProcess', $wisskiIndividualsBatch)
           ->save();
       }
       \Drupal::configFactory()->getEditable($individualsInBatchStateName)->delete();
+      \Drupal::messenger()->addWarning($this->t('%skipper DOI request skipped, DOI(s) for current revision exist(s) already.', ['%skipper' => $skipper]));
     }
   }
 
