@@ -106,7 +106,7 @@ class WisskiDoiActions {
                               TimeInterface $time,
                               WisskiDoiRestActions $wisskiDoiRestActions,
                               WisskiDoiDbActions $wisskiDoiDbActions,
-                              EntityTypeManager $entityTypeManager,
+                              EntityTypeManager $entityTypeManager
                               ) {
     $this->stringTranslation = $stringTranslation;
     $this->dateFormatter = $date_formatter;
