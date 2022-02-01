@@ -16,7 +16,7 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
    *
    * @var array
    */
-  private array $dbRecord;
+  protected array $dbRecord;
 
   /**
    * The machine name of the form.

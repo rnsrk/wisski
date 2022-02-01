@@ -222,7 +222,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
           $contributors[] = ['name' => $contributor];
         }
         else {
-          $error = t('Contributor %contributor already exists in this list', ['%contributor' => $contributor]);
+          $error = t('Contributor :contributor already exists in this list', [':contributor' => $contributor]);
         }
       }
       else {
@@ -294,13 +294,13 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
    *
    * @param ?array $contributors
    *   The contributors only with name key.
-   * @param string $error
+   * @param ?string $error
    *   The error message if any.
    *
    * @return array
    *   The render array for the contributors.
    */
-  public static function renderContributors(?array $contributors, string $error = NULL) {
+  public static function renderContributors(?array $contributors, ?string $error = NULL) {
     $theme = [
       '#theme' => 'contributor-list',
       '#contributors' => $contributors,
