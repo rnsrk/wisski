@@ -99,9 +99,9 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
    *   The form.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state.
-   * @param int|null $wisski_individual
+   * @param ?int $wisski_individual
    *   The WissKI entity id.
-   * @param int|null $did
+   * @param ?int $did
    *   The internal DOI id in wisski_doi table.
    *
    * @return array
@@ -110,7 +110,7 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
    * @throws \GuzzleHttp\Exception\GuzzleException
    *   Error if WissKI entity URI could not be loaded (?).
    */
-  public function buildForm(array $form, FormStateInterface $form_state, int $wisski_individual = NULL, int $did = NULL): array {
+  public function buildForm(array $form, FormStateInterface $form_state, ?int $wisski_individual = NULL, ?int $did = NULL): array {
     $this->dbRecord = $this->wisskiDoiDbActions->readDoiRecords($wisski_individual, $did)[0];
     if ($this->dbRecord['state'] == 'findable') {
       $doiInfo = $this->wisskiDoiRestActions->readMetadata($this->dbRecord['doi']);

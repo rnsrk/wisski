@@ -62,7 +62,7 @@ class WisskiDoiConfirmFormDeleteDoi extends ConfirmFormBase {
    *
    * @var int
    */
-  private mixed $wisski_individual;
+  private int $wisski_individual;
 
   /**
    * The internal DOI ID.
@@ -122,15 +122,15 @@ class WisskiDoiConfirmFormDeleteDoi extends ConfirmFormBase {
    *   The form.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state.
-   * @param int|null $wisski_individual
+   * @param ?int $wisski_individual
    *   The entity id of the wisski individual.
-   * @param int|null $did
+   * @param ?int $did
    *   The internal DOI id in wisski_doi table.
    *
    * @throws \Exception
    *   Error if WissKI entity URI could not be loaded (?).
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $wisski_individual = NULL, $did = NULL): array {
+  public function buildForm(array $form, FormStateInterface $form_state, ?int $wisski_individual = NULL, ?int $did = NULL): array {
     $this->wisski_individual = $wisski_individual;
     $this->did = $did;
 

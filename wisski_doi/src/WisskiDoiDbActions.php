@@ -3,6 +3,7 @@
 namespace Drupal\wisski_doi;
 
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -24,9 +25,9 @@ class WisskiDoiDbActions {
   /**
    * The Drupal messenger service.
    *
-   * @var mixed
+   * @var \Drupal\Core\Messenger\Messenger
    */
-  private mixed $messenger;
+  private Messenger $messenger;
 
   /**
    * Get services through dependency injection.
@@ -84,15 +85,15 @@ class WisskiDoiDbActions {
    * json_decode/json_encode() functions. More transitions in
    * WisskiDoiAdministration::rowBuilder().
    *
-   * @param int $eid
+   * @param ?int $eid
    *   The entity id.
-   * @param int|null $did
+   * @param ?int $did
    *   The internal DOI identifier from the wisski_doi table.
    *
    * @return array
    *   Dataset of corresponding DOIs to an entity.
    */
-  public function readDoiRecords(int $eid, int $did = NULL, int $isCurrent = NULL) {
+  public function readDoiRecords(int $eid, ?int $did = NULL, ?int $isCurrent = NULL) {
     $query = $this->connection
       ->select('wisski_doi')
       ->fields('wisski_doi', [
@@ -158,13 +159,13 @@ class WisskiDoiDbActions {
   /**
    * Delete the DOI record.
    *
-   * @param int|null $did
+   * @param ?int $did
    *   The internal DOI id.
    *
    * @return int
    *   Dataset of corresponding DOIs to an entity.
    */
-  public function deleteDoiRecord(int $did = NULL) {
+  public function deleteDoiRecord(?int $did = NULL) {
     $result = $this->connection->delete('wisski_doi')
       ->condition('did', $did)
       ->execute();
@@ -177,10 +178,10 @@ class WisskiDoiDbActions {
    *
    * @param string $state
    *   The internal DOI id.
-   * @param int|null $did
+   * @param ?int $did
    *   The internal DOI id.
    */
-  public function updateDbRecord(string $state, int $did = NULL) {
+  public function updateDbRecord(string $state, ?int $did = NULL) {
     if (!$did) {
       $this->messenger->addError($this->t('There is no did.'));
       return NULL;

@@ -2,6 +2,7 @@
 
 namespace Drupal\wisski_doi;
 
+use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\wisski_doi\Exception\WisskiDoiSettingsNotFoundException;
@@ -36,9 +37,9 @@ class WisskiDoiRestActions {
   /**
    * The messenger service.
    *
-   * @var mixed
+   * @var \Drupal\Core\Messenger\Messenger
    */
-  private mixed $messenger;
+  private Messenger $messenger;
 
   /**
    * Construct instance with DOI settings and check them.
@@ -89,7 +90,7 @@ class WisskiDoiRestActions {
    *     revisionUrl: Full external URL of the revision.
    *   and responseStatus with responseCode.
    *
-   * @throws \GuzzleHttp\Exception\RequestException|\Exception|
+   * @throws \GuzzleHttp\Exception\RequestException
    *   Throws exception when response status 40x.
    */
   public function createOrUpdateDoi(array $doiInfo, bool $update = FALSE) {

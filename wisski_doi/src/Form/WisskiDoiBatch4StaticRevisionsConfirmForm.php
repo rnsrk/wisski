@@ -237,13 +237,13 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
    *   The form.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The form state.
-   * @param string|null $wisskiBundleId
+   * @param string $wisskiBundleId
    *   The WissKI bundle ID.
    *
    * @return array
    *   The form.
    */
-  public function buildForm(array $form, FormStateInterface $form_state, string $wisskiBundleId = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, ?string $wisskiBundleId = NULL) {
     \Drupal::messenger()->deleteAll();
     // Assign WissKI bundle to class property.
     $this->wisskiBundleId = $wisskiBundleId;

@@ -69,7 +69,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
   /**
    * The service to management DOI metadata.
    *
-   * @var \Drupal\wisski_doi\WisskiDoiActions|null
+   * @var \Drupal\wisski_doi\WisskiDoiActions
    */
   private ?WisskiDoiActions $wisskiDoiActions;
 
@@ -96,8 +96,6 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
    *   The date formatter service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
-   * @param \Drupal\wisski_doi\WisskiDoiActions $wisskiDoiActions
-   *   The WissKi DOI Service.
    * @param \Drupal\wisski_doi\WisskiDoiRestActions $wisskiDoiRestActions
    *   The WissKi DOI Rest Service.
    * @param \Drupal\wisski_doi\WisskiDoiDbActions $wisskiDoiDbActions
@@ -294,15 +292,15 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
   /**
    * Renders Contributors template.
    *
-   * @param mixed $contributors
+   * @param ?array $contributors
    *   The contributors only with name key.
    * @param string $error
    *   The error message if any.
    *
-   * @return mixed
+   * @return array
    *   The render array for the contributors.
    */
-  public static function renderContributors(mixed $contributors, string $error = NULL) {
+  public static function renderContributors(?array $contributors, string $error = NULL) {
     $theme = [
       '#theme' => 'contributor-list',
       '#contributors' => $contributors,
