@@ -94,7 +94,6 @@ class WisskiDoiRestActions {
    *   Throws exception when response status 40x.
    */
   public function createOrUpdateDoi(array $doiInfo, bool $update = FALSE) {
-    dpm($doiInfo);
     // Future request body as array.
     $body = [
       "data" => [
