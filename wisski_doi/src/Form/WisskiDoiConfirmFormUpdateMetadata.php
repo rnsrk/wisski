@@ -151,7 +151,7 @@ class WisskiDoiConfirmFormUpdateMetadata extends WisskiDoiConfirmFormRequestDoiF
 
     // Contributors have to be received extra.
     $contributorItems = \Drupal::configFactory()
-      ->getEditable('contributor.items');
+      ->getEditable('wisski_doi.contributor.items');
     $doiInfo['contributors'] = $contributorItems->get('contributors');
 
     // Get WissKI entity URI.

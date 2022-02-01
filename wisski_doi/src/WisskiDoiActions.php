@@ -234,7 +234,7 @@ class WisskiDoiActions {
 
     // Get AJAX info.
     $contributorItems = \Drupal::configFactory()
-      ->getEditable('contributor.items');
+      ->getEditable('wisski_doi.contributor.items');
     // Have to overwrite contributors cause AJAX mess up the form_state.
     $doiMetadata['contributors'] = $contributorItems->get('contributors');
 
