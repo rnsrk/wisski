@@ -4,6 +4,7 @@ namespace Drupal\wisski_doi\Form;
 
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\ReplaceCommand;
+use Drupal\Core\Link;
 use Drupal\wisski_core\WisskiStorageInterface;
 use Drupal\wisski_core\WisskiEntityInterface;
 use Drupal\Component\Datetime\TimeInterface;
@@ -527,7 +528,11 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
     // Assemble revision URL and store it in form.
     $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
     $doiRevisionId = $doiRevision->getRevisionId();
-    $doiRevisionURL = $http . $_SERVER['HTTP_HOST'] . '/wisski/navigate/' . $this->wisski_individual->id() . '/revisions/' . $doiRevisionId . '/view';
+    $link = new Url('entity.wisski_individual.revision', [
+      'wisski_individual' => $this->doiInfo['entityId'],
+      'wisski_individual_revision' => $doiRevisionId,
+    ]);
+    $doiRevisionURL = $http . $_SERVER['HTTP_HOST'] . $link->toString();
 
     // Append revision info to doiInfo.
     $this->doiInfo += [

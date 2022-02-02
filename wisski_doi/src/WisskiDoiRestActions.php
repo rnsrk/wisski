@@ -289,39 +289,44 @@ class WisskiDoiRestActions {
      *  default => 'Sorry, no tip for this error code.',
      * };
      */
+    if (!isset($error_content['errors'][0]['status'])) {
+      $error_content['errors'][0]['status'] = '500';
+      $error_tip = 'Sorry, no tip for this error code.';
+    }
+    else {
+      switch ($error_content['errors'][0]['status']) {
+        case "400":
+          $error_tip = 'Provider can not read your request. Your content data or scheme may be faulty.';
+          break;
 
-    switch ($error_content['errors'][0]['status']) {
-      case "400":
-        $error_tip = 'Provider can not read your request. Your content data or scheme may be faulty.';
-        break;
+        case "401":
+          $error_tip = 'Check your username and password.';
+          break;
 
-      case "401":
-        $error_tip = 'Check your username and password.';
-        break;
+        case "403":
+          $error_tip = 'Have you the full permissions to delete something? Check the Username!';
+          break;
 
-      case "403":
-        $error_tip = 'Have you the full permissions to delete something? Check the Username!';
-        break;
-
-      case "404":
-        $error_tip = 'Seems you have a typo in your DOI credentials,
+        case "404":
+          $error_tip = 'Seems you have a typo in your DOI credentials,
           watch out for leading or trailing whitespaces.';
-        break;
+          break;
 
-      case "405":
-        $error_tip = 'Are you trying to delete a registered or findable DOI?';
-        break;
+        case "405":
+          $error_tip = 'Are you trying to delete a registered or findable DOI?';
+          break;
 
-      case "422":
-        $error_tip = 'Your JSON values are not accepted, check your schema version!';
-        break;
+        case "422":
+          $error_tip = 'Your JSON values are not accepted, check your schema version!';
+          break;
 
-      case "500":
-        $error_tip = 'There was no response at all, have you defined the base uri? Or maybe it is a timeout';
-        break;
+        case "500":
+          $error_tip = 'There was no response at all, have you defined the base uri? Or maybe it is a timeout';
+          break;
 
-      default:
-        $error_tip = 'Sorry, no tip for this error code.';
+        default:
+          $error_tip = 'Sorry, no tip for this error code.';
+      }
     }
 
     // Error Code and Message.
