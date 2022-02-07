@@ -4,21 +4,26 @@ namespace Drupal\wisski_pathbuilder;
 
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
+
+/**
+ *
+ */
 class PathbuilderManager {
-   
+
   private static $pbsForAdapter = NULL;
-  
+
   private static $pbsUsingBundle = NULL;
 
   private static $bundlesWithStartingConcept = NULL;
 
   private static $imagePaths = NULL;
- 
+
   private static $pbs = NULL;
-  
+
   private static $paths = NULL;
-  
-  /** Reset the cached mappings.
+
+  /**
+   * Reset the cached mappings.
    */
   public function reset() {
     self::$pbsForAdapter = NULL;
@@ -30,284 +35,329 @@ class PathbuilderManager {
     \Drupal::cache()->delete('wisski_pathbuilder_manager_pbs_using_bundle');
     \Drupal::cache()->delete('wisski_pathbuilder_manager_image_paths');
   }
-  
-  
-  /** Get the pathbuilders that make use of a given adapter.
-   *  
+
+  /**
+   * Get the pathbuilders that make use of a given adapter.
+   *
    * @param adapter_id the ID of the adapter
+   *
    * @return if adapter_id is empty, returns an array where the keys are
-   *          adapter IDs and the values are arrays of corresponding 
-   *          pathbuilders. If adapter_id is given returns an array of 
+   *   adapter IDs and the values are arrays of corresponding
+   *          pathbuilders. If adapter_id is given returns an array of
    *          corresponding pathbuilders.
    */
   public function getPbsForAdapter($adapter_id = NULL) {
-    if (self::$pbsForAdapter === NULL) {  // not yet fetched from cache?
+    // Not yet fetched from cache?
+    if (self::$pbsForAdapter === NULL) {
       if ($cache = \Drupal::cache()->get('wisski_pathbuilder_manager_pbs_for_adapter')) {
         self::$pbsForAdapter = $cache->data;
       }
     }
-    if (self::$pbsForAdapter === NULL) {  // was reset
-      self::$pbsForAdapter = array();
-#      $pbs = entity_load_multiple('wisski_pathbuilder');
+    // Was reset.
+    if (self::$pbsForAdapter === NULL) {
+      self::$pbsForAdapter = [];
+      // $pbs = entity_load_multiple('wisski_pathbuilder');
       $pbs = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->loadMultiple();
-
 
       foreach ($pbs as $pbid => $pb) {
         $aid = $pb->getAdapterId();
         $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($aid);
         if ($adapter) {
           if (!isset(self::$pbsForAdapter[$aid])) {
-            self::$pbsForAdapter[$aid] = array();
+            self::$pbsForAdapter[$aid] = [];
           }
           self::$pbsForAdapter[$aid][$pbid] = $pbid;
         }
         else {
-          \Drupal::messenger()->addError(t('Pathbuilder %pb refers to non-existing adapter with ID %aid.', array(
+          \Drupal::messenger()->addError(t('Pathbuilder %pb refers to non-existing adapter with ID %aid.', [
             '%pb' => $pb->getName(),
             '%aid' => $pb->getAdapterId(),
-          )));
+          ]));
         }
       }
       \Drupal::cache()->set('wisski_pathbuilder_manager_pbs_for_adapter', self::$pbsForAdapter);
     }
     return empty($adapter_id)
            ? self::$pbsForAdapter
-           : (isset(self::$pbsForAdapter[$adapter_id])  // if there is no pb for this adapter there is no array key
-             ? self::$pbsForAdapter[$adapter_id] 
-             : array());                                // ... thus we return an empty array
+    // If there is no pb for this adapter there is no array key.
+           : (isset(self::$pbsForAdapter[$adapter_id])
+             ? self::$pbsForAdapter[$adapter_id]
+    // ... thus we return an empty array
+             : []);
   }
 
-  
+  /**
+   *
+   */
   public function getPbsUsingBundle($bundle_id = NULL) {
-    if (self::$pbsUsingBundle === NULL) {  // not yet fetched from cache?
+    // Not yet fetched from cache?
+    if (self::$pbsUsingBundle === NULL) {
       if ($cache = \Drupal::cache()->get('wisski_pathbuilder_manager_pbs_using_bundle')) {
         self::$pbsUsingBundle = $cache->data;
       }
     }
-    if (self::$pbsUsingBundle === NULL) {  // was reset, recalculate
+    // Was reset, recalculate.
+    if (self::$pbsUsingBundle === NULL) {
       $this->calculateBundlesAndStartingConcepts();
     }
-    return empty($bundle_id) 
-           ? self::$pbsUsingBundle // if no bundle given, return all
-           : (isset(self::$pbsUsingBundle[$bundle_id]) 
-             ? self::$pbsUsingBundle[$bundle_id] // if bundle given and we know it, return only for this
-             : array());  // if bundle is unknown, return empty array
+    return empty($bundle_id)
+    // If no bundle given, return all.
+           ? self::$pbsUsingBundle
+           : (isset(self::$pbsUsingBundle[$bundle_id])
+    // If bundle given and we know it, return only for this.
+             ? self::$pbsUsingBundle[$bundle_id]
+    // If bundle is unknown, return empty array.
+             : []);
 
   }
 
+  /**
+   *
+   */
   public function getPreviewImage($entity_id, $bundle_id, $adapter) {
     $pbs_and_paths = $this->getImagePathsAndPbsForBundle($bundle_id);
-    
-#    dpm($pbs_and_paths, "yay!");
-    
-    foreach($pbs_and_paths as $pb_id => $paths) {
-      
-      if(empty(self::$pbs)) {
-        $pbs = WisskiPathbuilderEntity::loadMultiple();
-        self::$pbs = $pbs; 
-      } else
-        $pbs = self::$pbs;
 
-      $pb = $pbs[$pb_id];      
+    // dpm($pbs_and_paths, "yay!");.
+    foreach ($pbs_and_paths as $pb_id => $paths) {
+
+      if (empty(self::$pbs)) {
+        $pbs = WisskiPathbuilderEntity::loadMultiple();
+        self::$pbs = $pbs;
+      }
+      else {
+        $pbs = self::$pbs;
+      }
+
+      $pb = $pbs[$pb_id];
 
       /* Get the correct adapter so we dont do wrong queries... */
-      if($pb->getAdapterId() != $adapter->id()) {
-#        dpm("wrong adapter");
-#        dpm($adapter, "adap?");
+      if ($pb->getAdapterId() != $adapter->id()) {
+        // dpm("wrong adapter");
+        // dpm($adapter, "adap?");.
         continue;
       }
 
-
       $the_pathid = NULL;
-      $weight = 99999999999; // beat this ...
+      // Beat this ...
+      $weight = 99999999999;
 
-      // go through all paths and look for the lowest weight
-      foreach($paths as $key => $pathid) {
+      // Go through all paths and look for the lowest weight.
+      foreach ($paths as $key => $pathid) {
         $pbp = $pb->getPbPath($pathid);
 
-        if(empty($pbp['enabled']))
+        if (empty($pbp['enabled'])) {
           continue;
-        
-        if(isset($pbp['weight'])) {
-          if($pbp['weight'] < $weight) {
-            // only take this if the weight is better or the same.
+        }
+
+        if (isset($pbp['weight'])) {
+          if ($pbp['weight'] < $weight) {
+            // Only take this if the weight is better or the same.
             $the_pathid = $pathid;
             $weight = $pbp['weight'];
-//            $or_paths[$key] = $pathid;
+            // $or_paths[$key] = $pathid;
           }
-        } else if(empty($the_pathid)) {
-          // if there was nothing before, something is better at least.
+        }
+        elseif (empty($the_pathid)) {
+          // If there was nothing before, something is better at least.
           $the_pathid = $pathid;
-        }        
+        }
       }
-      
-#        dpm($pathid, "assa");
 
-      // nothing found?
-      if(empty($the_pathid)) {
-        return array();
+      // dpm($pathid, "assa");.
+      // Nothing found?
+      if (empty($the_pathid)) {
+        return [];
       }
-                        
-      if(empty(self::$paths)) {
+
+      if (empty(self::$paths)) {
         $paths = WisskiPathEntity::loadMultiple();
         self::$paths = $paths;
-      } else
-        $paths = self::$paths;
-        
-      $path = $paths[$the_pathid];
-#      dpm(microtime(), "ptr?");
-      $values = $adapter->getEngine()->pathToReturnValue($path, $pb, $entity_id, 0, NULL, FALSE);
-#      dpm(microtime(), "ptr!");
-
-      // check for empty strings...
-      if(!empty($values) && !empty(current($values)))
-        return $values;
+      }
       else {
-        // if we did not find anything in the "primary" path we will have to look at others...
+        $paths = self::$paths;
+      }
+
+      $path = $paths[$the_pathid];
+      // dpm(microtime(), "ptr?");.
+      $values = $adapter->getEngine()->pathToReturnValue($path, $pb, $entity_id, 0, NULL, FALSE);
+      // dpm(microtime(), "ptr!");.
+      // Check for empty strings...
+      if (!empty($values) && !empty(current($values))) {
+        return $values;
+      }
+      else {
+        // If we did not find anything in the "primary" path we will have to look at others...
         /*
         foreach($paths as $key => $pathid) {
-          if($pathid == $the_pathid)
-            continue; // we already had that
+        if($pathid == $the_pathid)
+        continue; // we already had that
 
-          $path = $paths[$key];
+        $path = $paths[$key];
 
 
-#          dpm($pathid, "looking at id ");
-#          dpm(serialize($path), "path is");
-          if(!empty($path))
-            $values = $adapter->getEngine()->pathToReturnValue($path, $pb, $entity_id, 0, NULL, FALSE);
+        #          dpm($pathid, "looking at id ");
+        #          dpm(serialize($path), "path is");
+        if(!empty($path))
+        $values = $adapter->getEngine()->pathToReturnValue($path, $pb, $entity_id, 0, NULL, FALSE);
 
-          if(!empty($values) && !empty(current($values)))
-            return $values;
+        if(!empty($values) && !empty(current($values)))
+        return $values;
         }
-        */
+         */
       }
 
     }
-    return array();
+    return [];
   }
 
+  /**
+   *
+   */
   public function getImagePathsAndPbsForBundle($bundle_id) {
- 
-    if (self::$imagePaths === NULL) {  // not yet fetched from cache?
+
+    // Not yet fetched from cache?
+    if (self::$imagePaths === NULL) {
       if ($cache = \Drupal::cache()->get('wisski_pathbuilder_manager_image_paths')) {
         self::$imagePaths = $cache->data;
       }
     }
-    if (self::$imagePaths === NULL) {  // was reset, recalculate
+    // Was reset, recalculate.
+    if (self::$imagePaths === NULL) {
       $this->calculateImagePaths();
     }
-     
-    if(isset(self::$imagePaths[$bundle_id]))
+
+    if (isset(self::$imagePaths[$bundle_id])) {
       return self::$imagePaths[$bundle_id];
-    
-    return array();
- 
+    }
+
+    return [];
+
   }
-  
+
+  /**
+   *
+   */
   public function calculateImagePaths() {
-    $info = array();
+    $info = [];
 
-#    $pbs = entity_load_multiple('wisski_pathbuilder');
-
-    if(empty(self::$pbs)) {
+    // $pbs = entity_load_multiple('wisski_pathbuilder');
+    if (empty(self::$pbs)) {
       $pbs = WisskiPathbuilderEntity::loadMultiple();
       self::$pbs = $pbs;
-    } else
+    }
+    else {
       $pbs = self::$pbs;
+    }
 
     foreach ($pbs as $pbid => $pb) {
       $groups = $pb->getMainGroups();
 
-      foreach($groups as $group) {
+      foreach ($groups as $group) {
         $bundleid = $pb->getPbPath($group->id())['bundle'];
         $paths = $pb->getImagePathIDsForGroup($group->id());
 
-        if(!empty($paths))
+        if (!empty($paths)) {
           self::$imagePaths[$bundleid][$pbid] = $paths;
+        }
 
-#        foreach($paths as $pathid) {
-#          $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
-#          $info[$bundleid][$pbid][$pathid] = $pathid;
-#        }
+        // foreach($paths as $pathid) {
+        // $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($pathid);
+        // $info[$bundleid][$pbid][$pathid] = $pathid;
+        // }.
       }
     }
-    
+
     \Drupal::cache()->set('wisski_pathbuilder_manager_image_paths', self::$imagePaths);
   }
 
+  /**
+   *
+   */
   public function getBundlesWithStartingConcept($concept_uri = NULL) {
-    if (self::$bundlesWithStartingConcept === NULL) {  // not yet fetched from cache?
+    // Not yet fetched from cache?
+    if (self::$bundlesWithStartingConcept === NULL) {
       if ($cache = \Drupal::cache()->get('wisski_pathbuilder_manager_bundles_with_starting_concept')) {
         self::$bundlesWithStartingConcept = $cache->data;
       }
     }
-    if (self::$bundlesWithStartingConcept === NULL) {  // was reset, recalculate
+    // Was reset, recalculate.
+    if (self::$bundlesWithStartingConcept === NULL) {
       $this->calculateBundlesAndStartingConcepts();
     }
-    return empty($concept_uri) 
-           ? self::$bundlesWithStartingConcept // if no concept given, return all
-           : (isset(self::$bundlesWithStartingConcept[$concept_uri]) 
-             ? self::$bundlesWithStartingConcept[$concept_uri] // if concept given and we know it, return only for this
-             : array());  // if concept is unknown, return empty array
+    return empty($concept_uri)
+    // If no concept given, return all.
+           ? self::$bundlesWithStartingConcept
+           : (isset(self::$bundlesWithStartingConcept[$concept_uri])
+    // If concept given and we know it, return only for this.
+             ? self::$bundlesWithStartingConcept[$concept_uri]
+    // If concept is unknown, return empty array.
+             : []);
 
   }
 
-
+  /**
+   *
+   */
   private function calculateBundlesAndStartingConcepts() {
-    self::$pbsUsingBundle = array();
-    self::$bundlesWithStartingConcept = array();
-    
-    if(empty(self::$pbs)) {
+    self::$pbsUsingBundle = [];
+    self::$bundlesWithStartingConcept = [];
+
+    if (empty(self::$pbs)) {
       $pbs = WisskiPathbuilderEntity::loadMultiple();
       self::$pbs = $pbs;
-    } else
+    }
+    else {
       $pbs = self::$pbs;
-    
+    }
+
     foreach ($pbs as $pbid => $pb) {
       foreach ($pb->getAllGroups() as $group) {
         $pbpath = $pb->getPbPath($group->getID());
         $bid = $pbpath['bundle'];
         if (!empty($bid)) {
           if (!isset(self::$pbsUsingBundle[$bid])) {
-            self::$pbsUsingBundle[$bid] = array();
+            self::$pbsUsingBundle[$bid] = [];
           }
           $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($pb->getAdapterId());
           if ($adapter) {
-            // struct for pbsUsingBundle
+            // Struct for pbsUsingBundle.
             if (!isset(self::$pbsUsingBundle[$bid][$pbid])) {
               $engine = $adapter->getEngine();
-              $info = array(
+              $info = [
                 'pb_id' => $pbid,
                 'adapter_id' => $adapter->id(),
                 'writable' => $engine->isWritable(),
                 'preferred_local' => $engine->isPreferredLocalStore(),
                 'engine_plugin_id' => $engine->getPluginId(),
-                'main_concept' => array(), // filled below
-                'is_top_concept' => array(), // filled below
-                'groups' => array(), // filled below
-              );
+              // Filled below.
+                'main_concept' => [],
+              // Filled below.
+                'is_top_concept' => [],
+              // Filled below.
+                'groups' => [],
+              ];
               self::$pbsUsingBundle[$bid][$pbid] = $info;
             }
             $path_array = $group->getPathArray();
-            $main_concept = end($path_array); // the last concept is the main concept  
+            // The last concept is the main concept.
+            $main_concept = end($path_array);
             self::$pbsUsingBundle[$bid][$pbid]['main_concept'][$main_concept] = $main_concept;
             if (empty($pbpath['parent'])) {
               self::$pbsUsingBundle[$bid][$pbid]['is_top_concept'][$main_concept] = $main_concept;
             }
             self::$pbsUsingBundle[$bid][$pbid]['groups'][$group->getID()] = $main_concept;
-            
-            // struct for bundlesWithStartingConcept
+
+            // Struct for bundlesWithStartingConcept.
             if (!isset(self::$bundlesWithStartingConcept[$main_concept])) {
-              self::$bundlesWithStartingConcept[$main_concept] = array();
+              self::$bundlesWithStartingConcept[$main_concept] = [];
             }
             if (!isset(self::$bundlesWithStartingConcept[$main_concept][$bid])) {
-              self::$bundlesWithStartingConcept[$main_concept][$bid] = array(
+              self::$bundlesWithStartingConcept[$main_concept][$bid] = [
                 'bundle_id' => $bid,
                 'is_top_bundle' => FALSE,
-                'pb_ids' => array(),
-                'adapter_ids' => array(),
-              );
+                'pb_ids' => [],
+                'adapter_ids' => [],
+              ];
             }
             self::$bundlesWithStartingConcept[$main_concept][$bid]['pb_ids'][$pbid] = $pbid;
             self::$bundlesWithStartingConcept[$main_concept][$bid]['adapter_ids'][$adapter->id()] = $adapter->id();
@@ -317,10 +367,10 @@ class PathbuilderManager {
 
           }
           else {
-            \Drupal::messenger()->addError(t('Pathbuilder %pb refers to non-existing adapter with ID %aid.', array(
+            \Drupal::messenger()->addError(t('Pathbuilder %pb refers to non-existing adapter with ID %aid.', [
               '%pb' => $pb->getName(),
               '%aid' => $pb->getAdapterId(),
-            )));
+            ]));
           }
         }
       }
@@ -329,21 +379,26 @@ class PathbuilderManager {
     \Drupal::cache()->set('wisski_pathbuilder_manager_bundles_with_starting_concept', self::$bundlesWithStartingConcept);
   }
 
-  
+  /**
+   *
+   */
   public function getOrphanedPaths() {
 
-#    $pba = entity_load_multiple('wisski_pathbuilder');
-#    $pa = entity_load_multiple('wisski_path');
-
+    // $pba = entity_load_multiple('wisski_pathbuilder');
+    // $pa = entity_load_multiple('wisski_path');
     $pba = \Drupal::entityTypeManager()->getStorage('wisski_pathbuilder')->loadMultiple();
     $pa = \Drupal::entityTypeManager()->getStorage('wisski_path')->loadMultiple();
 
-    $tree_path_ids = array(); // filled in big loop
-    
-    $home = array(); // here go regular paths, ie. that are in a pb's path tree
-    $semiorphaned = array(); // here go paths that are listed in a pb but not in its path tree (are "hidden")
-    $orphaned = array(); // here go paths that aren't mentioned in any pb
-    
+    // Filled in big loop.
+    $tree_path_ids = [];
+
+    // Here go regular paths, ie. that are in a pb's path tree.
+    $home = [];
+    // Here go paths that are listed in a pb but not in its path tree (are "hidden")
+    $semiorphaned = [];
+    // Here go paths that aren't mentioned in any pb.
+    $orphaned = [];
+
     foreach ($pa as $pid => $p) {
       $is_orphaned = TRUE;
       foreach ($pba as $pbid => $pb) {
@@ -364,17 +419,19 @@ class PathbuilderManager {
         $orphaned[$pid] = $pid;
       }
     }
-    return array(
+    return [
       'home' => $home,
       'semiorphaned' => $semiorphaned,
       'orphaned' => $orphaned,
-    );
+    ];
 
-  } 
+  }
 
-
+  /**
+   *
+   */
   public function getPathIdsInPathTree($pb) {
-    $ids = array();
+    $ids = [];
     $agenda = $pb->getPathTree();
     while ($node = array_shift($agenda)) {
       $ids[$node['id']] = $node['id'];
@@ -383,7 +440,11 @@ class PathbuilderManager {
     return $ids;
   }
 
+  /**
+   * Exports all pathbuildes and ontologies.
+   */
+  public function exportPathbuildersAndOntology() {
 
-
+  }
 
 }
