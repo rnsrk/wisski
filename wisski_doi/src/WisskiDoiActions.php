@@ -89,7 +89,7 @@ class WisskiDoiActions {
    * Constructs a new form to request a DOI for a static revision.
    *
    * @param \Drupal\Core\StringTranslation\TranslationInterface $stringTranslation
-   *   The WissKI Storage service.
+   *   The translations service.
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date formatter service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
