@@ -10,6 +10,12 @@ entity.wisski_path.usage:
   appears_on:
     - entity.wisski_pathbuilder.collection
 
+entity.wisski_pathbuilder.export_all:
+  route_name: 'entity.wisski_pathbuilder.export_all'
+  title: 'Export Pathbuilder and Ontologies'
+  appears_on:
+    - entity.wisski_pathbuilder.collection
+
 entity.wisski_path.add:
   route_name: 'entity.wisski_path.add_form'
   title: 'Add Path'
