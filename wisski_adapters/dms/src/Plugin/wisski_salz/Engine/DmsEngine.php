@@ -364,6 +364,11 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
             
 #  $result = array();
 #               
+
+    if(empty($stmt))
+      return array();
+
+
     $outarr = array();
     
     $keys = array_keys($this->possibleSteps['Object']);
