@@ -258,7 +258,7 @@ class WisskiDoiRestActions {
      * response from the remote API.
      */
     catch (RequestException $error) {
-      return $this->errorResponse($error);
+      return '404';
     }
   }
 
