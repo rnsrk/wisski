@@ -4,6 +4,7 @@ namespace Drupal\wisski_pathbuilder;
 
 require __DIR__ . '/../../vendor/autoload.php';
 
+use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
@@ -17,6 +18,7 @@ use Drupal\wisski_salz\RdfSparqlUtil;
  *
  */
 class PathbuilderManager {
+
   use StringTranslationTrait;
 
   private static $pbsForAdapter = NULL;
@@ -39,17 +41,25 @@ class PathbuilderManager {
   protected FileRepositoryInterface $file;
 
   /**
+   *
+   */
+  private $wisskiPathbuilderStorage;
+
+  /**
    * Constructs form variables.
    *
    * @param \Drupal\Core\StringTranslation\TranslationInterface $stringTranslation
    *   The translations service.
    * @param \Drupal\file\FileRepositoryInterface $file
-   *   Performs file system operations and updates database records accordingly.
+   *   Performs file system operations and updates database records
+   *   accordingly.
    */
   public function __construct(TranslationInterface $stringTranslation,
-                              FileRepositoryInterface $file) {
+                              FileRepositoryInterface $file,
+                              EntityTypeManager $entityTypeManager) {
     $this->stringTranslation = $stringTranslation;
     $this->file = $file;
+    $this->wisskiPathbuilderStorage = $entityTypeManager->getStorage('wisski_pathbuilder');
   }
 
   /**
@@ -492,35 +502,51 @@ class PathbuilderManager {
   }
 
   /**
-   * Exports all pathbuildes and ontologies.
+   * Prepare export directory structure.
+   *
+   * @param string $exportRootDir
+   *   The directory path, where to store the export files,
+   *   i.e. defined as a const in ExportAllConfirmForm.
+   *
+   * @return string
+   *   The relative path to the current export directory.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
    */
-  public function exportPathbuildersAndOntology() {
-    /*
-     * Get and save ontologies.
-     */
+  public function prepareExportDirectories(string $exportRootDir) {
+    // Prepare file structure.
+    $relativeExportDirectory = $exportRootDir . date('Ymd') . '/';
+    $preparedExportDirectory = \Drupal::service('file_system')
+      ->prepareDirectory($relativeExportDirectory, FileSystemInterface::CREATE_DIRECTORY);
+
+    // If folder is not writable, escape.
+    if (!$preparedExportDirectory) {
+      \Drupal::service('messenger')
+        ->addError($this->t('Could not create archive at %relativeExportDirectory. Do you have the right permissions?', ['%relativeExportDirectory' => $relativeExportDirectory]));
+      return FALSE;
+    }
+    return $relativeExportDirectory;
+  }
+
+  /**
+   * Saves all ontologies.
+   *
+   * @param string $relativeExportDirectory
+   *   The directory path, where to store the export files,
+   *   i.e. defined as a const in ExportAllConfirmForm.
+   *
+   * @return bool
+   *   Sucess of the export.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   */
+  public function exportAllOntologies(string $relativeExportDirectory) {
+
+    // Counter for existing ontologies.
+    $count = 0;
 
     // Load adapters.
     $adapters = Adapter::loadMultiple();
-
-    // Counter for exisiting ontologies.
-    $count = 0;
-
-    // Create a zip file.
-    $relativeDirectory = 'public://wisski_pathbuilder/' . date('Ymd') . '/';
-    $absolutePath = \Drupal::service('file_system')->realpath($relativeDirectory);
-    $prepareDirectory = \Drupal::service('file_system')
-      ->prepareDirectory($relativeDirectory, FileSystemInterface::CREATE_DIRECTORY);
-
-    // If folder is not writable, escape.
-    if (!$prepareDirectory) {
-      \Drupal::service('messenger')->addError($this->t('Could not create archive at %relativeDirectory. Do you have the right permissions?', ['%relativeDirectory' => $relativeDirectory]));
-      return;
-    }
-
-    // Open zip file.
-    $zipPath = $absolutePath . '.zip';
-    $zip = new \ZipArchive();
-    $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
     // Iterate over adapters and find the ontologies.
     foreach ($adapters as $adapter) {
@@ -551,35 +577,64 @@ class PathbuilderManager {
         $quadStatement[] = implode(" ", array_map('self::sparqlEntityStringlifier', $sparqlEntityArray));
       }
       if (empty($quadStatement)) {
-        \Drupal::service('messenger')->addWarning($this->t('Found no statements, do you have an ontology?'));
-        return;
+        \Drupal::service('messenger')
+          ->addWarning($this->t('Found no statements, do you have an ontology?'));
+        return FALSE;
       }
       // Parse statement array to string.
       $nQuads = implode(" . \n", $quadStatement) . ' .';
 
       // Write file to disk.
       $fileName = 'ontology_' . $count . '.nq';
-      $export_path = $relativeDirectory . $fileName;
+      $export_path = $relativeExportDirectory . $fileName;
       $this->file->writeData($nQuads, $export_path, FileSystemInterface::EXISTS_REPLACE);
+    }
+    \Drupal::service('messenger')
+      ->addMessage($this->t('Exported all ontologies.'));
+    return TRUE;
+  }
 
-      // Add ontologies to zip archive.
-      $filesInFolder = array_diff(scandir($absolutePath), ['..', '.']);
-      foreach ($filesInFolder as $file) {
-        $zip->addFile(\Drupal::service('file_system')
-          ->realpath($absolutePath . '/' . $file), basename($file));
-      }
-      \Drupal::service('messenger')->addMessage($this->t('Saved files in archive %zipPath.', ['%zipPath' => $zipPath]));
+  /**
+   * Zips all ontologies and pathbuilders.
+   *
+   * Searches the ontology and pathbuilder folders for
+   * files and add them to a zip archive with the current date.
+   *
+   * @param string $relativeExportDirectory
+   *   A folder with the current date inside the EXPORT_ROOT_DIR
+   *   containing ontologies and pathbuilders.
+   */
+  public function zipPathbuildersAndOntologies(string $relativeExportDirectory) {
+    // If there is no export dir escape.
+    if (!$relativeExportDirectory) {
+      return FALSE;
+    }
+    $absoluteExportDirectory = \Drupal::service('file_system')
+      ->realpath($relativeExportDirectory);
+    // Open zip file.
+    $zipPath = $absoluteExportDirectory . '.zip';
+    $zip = new \ZipArchive();
+    $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+    // Add ontologies to zip archive.
+    $filesInFolder = array_diff(scandir($absoluteExportDirectory), ['..', '.']);
+    foreach ($filesInFolder as $file) {
+      $zip->addFile(\Drupal::service('file_system')
+        ->realpath($absoluteExportDirectory . '/' . $file), basename($file));
+      \Drupal::service('messenger')
+        ->addMessage($this->t('Zipped files in archive %zipPath.', ['%zipPath' => $zipPath]));
     }
     $zip->close();
+    return TRUE;
   }
 
   /**
    * Convert EasyRdf objects to strings.
    *
-   * @param $sparqlEntity
+   * @param object $sparqlEntity
    *   Ether EasyRdf\Resource or EasyRdf\Literal.
    */
-  public function sparqlEntityStringlifier($sparqlEntity) {
+  public function sparqlEntityStringlifier(object $sparqlEntity) {
     // If it is a ressource bracket it in angle brackets.
     if (get_class($sparqlEntity) == "EasyRdf\Resource") {
       return "<" . $sparqlEntity->getUri() . ">";
@@ -589,6 +644,120 @@ class PathbuilderManager {
       $literal = $sparqlEntity->getValue();
       $escapedLiteral = (new RdfSparqlUtil)->escapeSparqlLiteral($literal);
       return '"' . $escapedLiteral . '"' . (empty($sparqlEntity->getLang()) ? '' : "@" . $sparqlEntity->getLang());
+    }
+  }
+
+  /**
+   * Exports pathbuilder structure.
+   *
+   * @param \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity $pathbuilderEntity
+   *   The pathbuilder entity.
+   * @param string $relativeExportDirectory
+   *   A folder with the current date inside the EXPORT_ROOT_DIR
+   *   containing ontologies and pathbuilders.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   */
+  public function exportPathbuilder(WisskiPathbuilderEntity $pathbuilderEntity, $relativeExportDirectory) {
+    // Create initial XML tree.
+    $xmlTree = new \SimpleXMLElement("<pathbuilderinterface></pathbuilderinterface>");
+
+    // Get the paths.
+    $paths = $pathbuilderEntity->getPbPaths();
+
+    // Iterate over every path.
+    foreach ($paths as $key => $path) {
+      $pathbuilder = $pathbuilderEntity->getPbPath($path['id']);
+      $pathChild = $xmlTree->addChild("path");
+      $pathObject = WisskiPathEntity::load($path['id']);
+
+      foreach ($pathbuilder as $subkey => $value) {
+        if (in_array($subkey, ['relativepath'])) {
+          continue;
+        }
+
+        if ($subkey == "parent") {
+          $subkey = "group_id";
+        }
+
+        $pathChild->addChild($subkey, htmlspecialchars($value));
+      }
+
+      $pathArray = $pathChild->addChild('path_array');
+      foreach ($pathObject->getPathArray() as $subkey => $value) {
+        $pathArray->addChild($subkey % 2 == 0 ? 'x' : 'y', $value);
+      }
+
+      $pathChild->addChild('datatype_property', htmlspecialchars($pathObject->getDatatypeProperty()));
+      $pathChild->addChild('short_name', htmlspecialchars($pathObject->getShortName()));
+      $pathChild->addChild('disamb', htmlspecialchars($pathObject->getDisamb()));
+      $pathChild->addChild('description', htmlspecialchars($pathObject->getDescription()));
+      $pathChild->addChild('uuid', htmlspecialchars($pathObject->uuid()));
+      if ($pathObject->getType() == "Group" || $pathObject->getType() == "Smartgroup") {
+        $pathChild->addChild('is_group', "1");
+      }
+      else {
+        $pathChild->addChild('is_group', "0");
+      }
+      $pathChild->addChild('name', htmlspecialchars($pathObject->getName()));
+
+    }
+
+    // Create XML DOM.
+    $dom = dom_import_simplexml($xmlTree)->ownerDocument;
+    $dom->formatOutput = TRUE;
+
+    // Save the files.
+    $export_path = $relativeExportDirectory . 'pathbuilder_' . $pathbuilderEntity->id();
+    $this->file->writeData($dom->saveXML(), $export_path, FileSystemInterface::EXISTS_RENAME);
+  }
+
+  /**
+   * Exports all pathbuilders.
+   *
+   * @param string $relativeExportDirectory
+   *   The directory path, where to store the export files,
+   *   i.e. defined as a const in ExportAllConfirmForm.
+   *
+   * @return bool
+   *   Sucess of the export.
+   *
+   * @throws \Exception
+   */
+  public function exportAllPathbuilders(string $relativeExportDirectory) {
+    $wisskiPathbuilderIds = \Drupal::entityQuery('wisski_pathbuilder')
+      ->execute();
+    foreach ($wisskiPathbuilderIds as $pathbuilderId) {
+      $pathbuilderEntity = ($this->wisskiPathbuilderStorage->load($pathbuilderId));
+      $this->exportPathbuilder($pathbuilderEntity, $relativeExportDirectory);
+    }
+    \Drupal::service('messenger')
+      ->addMessage($this->t('Exported all pathbuilders.'));
+    return TRUE;
+  }
+
+  /**
+   * Removes Directories recursively.
+   *
+   * @param string $dir
+   *   The directory to remove.
+   */
+  public function rRmDir(string $dir) {
+    if (is_dir($dir)) {
+      $objects = scandir($dir);
+      foreach ($objects as $object) {
+        if ($object != "." && $object != "..") {
+          if (is_dir($dir . DIRECTORY_SEPARATOR . $object) && !is_link($dir . "/" . $object)) {
+            $this->rRmDir($dir . DIRECTORY_SEPARATOR . $object);
+          }
+          else {
+            unlink($dir . DIRECTORY_SEPARATOR . $object);
+          }
+        }
+      }
+      rmdir($dir);
+      \Drupal::service('messenger')
+        ->addMessage($this->t('Removed temporary files and folders.'));
     }
   }
 

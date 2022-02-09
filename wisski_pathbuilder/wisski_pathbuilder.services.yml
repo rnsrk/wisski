@@ -10,4 +10,5 @@ services:
     arguments:
       - '@string_translation'
       - '@file.repository'
+      - '@entity_type.manager'
 

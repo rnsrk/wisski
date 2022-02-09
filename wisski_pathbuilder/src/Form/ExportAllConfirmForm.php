@@ -6,7 +6,7 @@ use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use \Drupal\wisski_pathbuilder\PathbuilderManager;
+use Drupal\wisski_pathbuilder\PathbuilderManager;
 
 /**
  * Exports the pathbuilders and ontologies.
@@ -17,6 +17,15 @@ use \Drupal\wisski_pathbuilder\PathbuilderManager;
 class ExportAllConfirmForm extends ConfirmFormBase {
 
   /**
+   * The Directory to save the ontologies and pathbuilders.
+   *
+   * @var string
+   */
+  const EXPORT_ROOT_DIR = 'public://wisski_exports/';
+
+  /**
+   * The variable for the pathbuilder manager service.
+   *
    * @var \Drupal\wisski_pathbuilder\PathbuilderManager
    */
   private PathbuilderManager $pathbuilderManager;
@@ -68,7 +77,7 @@ class ExportAllConfirmForm extends ConfirmFormBase {
    * The description.
    */
   public function getDescription() {
-    return 'This creates a zip file containing every pathbuilder and every ontology.';
+    return 'This creates a zip file with current, date containing every pathbuilder and every ontology.';
   }
 
   /**
@@ -81,9 +90,19 @@ class ExportAllConfirmForm extends ConfirmFormBase {
 
   /**
    * Loads all pathbuilders and all ontologies and saves them.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   * @throws \Exception
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->pathbuilderManager->exportPathbuildersAndOntology();
+    $relativeExportDirectory = $this->pathbuilderManager->prepareExportDirectories(static::EXPORT_ROOT_DIR);
+    if ($relativeExportDirectory) {
+      $this->pathbuilderManager->exportAllOntologies($relativeExportDirectory);
+      $this->pathbuilderManager->exportAllPathbuilders($relativeExportDirectory);
+      $this->pathbuilderManager->zipPathbuildersAndOntologies($relativeExportDirectory);
+      $this->pathbuilderManager->rRmDir($relativeExportDirectory);
+    }
+
     $form_state->setRedirect(
       'entity.wisski_pathbuilder.collection');
   }

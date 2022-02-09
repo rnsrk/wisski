@@ -178,7 +178,7 @@ class WisskiPathbuilderForm extends EntityForm {
       }
 
       $pbpaths = $pathbuilder->getPbPaths();
-      dpm($pbpaths);
+
       // Iterate through all the pathforms and bring the forms in a tree together.
       foreach ($pathforms as $pathform) {
 
@@ -542,7 +542,7 @@ class WisskiPathbuilderForm extends EntityForm {
    *
    * @throws \Exception
    */
-  public function export(array &$form, FormStateInterface $form_state) {
+  public function export(array &$form, FormStateInterface $form_state, ?array $paths = NULL) {
     // Create initial XML tree.
     $xmlTree = new \SimpleXMLElement("<pathbuilderinterface></pathbuilderinterface>");
 
@@ -550,8 +550,7 @@ class WisskiPathbuilderForm extends EntityForm {
     $pathbuilderEntity = $this->entity;
 
     // Fetch the paths.
-    $paths = $form_state->getValue('pathbuilder_table');
-    dpm($paths);
+    !$paths ? $paths = $form_state->getValue('pathbuilder_table') : $paths;
     // Iterate over every path.
     foreach ($paths as $key => $path) {
       $pathbuilder = $pathbuilderEntity->getPbPath($path['id']);
