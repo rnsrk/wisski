@@ -33,7 +33,7 @@ class WisskiDoiBatchForm extends ConfigFormBase {
    *
    * @var \Drupal\wisski_doi\WisskiDoiDbActions
    */
-  private WisskiDoiDbActions $wisskiDOiDbActions;
+  private WisskiDoiDbActions $wisskiDoiDbActions;
 
   /**
    * The service to interact with the database.
@@ -55,7 +55,7 @@ class WisskiDoiBatchForm extends ConfigFormBase {
    * Construct the WisskiDoiAdministration class.
    */
   public function __construct(WisskiDoiDbActions $wisskiDOiDbActions, PagerManager $pagerManager) {
-    $this->wisskiDOiDbActions = $wisskiDOiDbActions;
+    $this->wisskiDoiDbActions = $wisskiDOiDbActions;
     $this->pagerManager = $pagerManager;
     parent::__construct($this->configFactory());
   }
@@ -100,7 +100,7 @@ class WisskiDoiBatchForm extends ConfigFormBase {
         without check any individual.'));
     $this->wisskiBundleId = $wisski_bundle;
     $this->config(static::SELECTED_INDIVIDUALS);
-    $records = $this->wisskiDOiDbActions->readBundleRecords($wisski_bundle);
+    $records = $this->wisskiDoiDbActions->readBundleRecords($wisski_bundle);
     $chunk = $this->pagerArray($records, 25);
     foreach ([0, 1] as $isCurrent) {
       $this->doiAnnotation($chunk, $isCurrent);
@@ -230,7 +230,7 @@ class WisskiDoiBatchForm extends ConfigFormBase {
     foreach ($chunk as $record) {
       $cssClass = $isCurrent ? 'current' : 'latest-static';
       $key = $isCurrent ? 'currentDoi' : 'latestStaticDoi';
-      $doiRecords = $this->wisskiDOiDbActions->readLatestDoiRecords($record['eid'], $isCurrent);
+      $doiRecords = $this->wisskiDoiDbActions->readLatestDoiRecords($record['eid'], $isCurrent);
       if ($doiRecords) {
         $doiLink = 'https://doi.org/' . $doiRecords['doi'];
         $chunk[$record['eid']][$key] = [
