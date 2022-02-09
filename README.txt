@@ -90,14 +90,14 @@ CONFIGURATION
 Configuration depends on your use case. We provide a full guide on our
 website https://wiss-ki.eu and in the projects documentation.
  
- * A complete guide can be found here: http://wiss-ki.eu/installation_guide
+ * Please [visit our complete guide](https://wiss-ki.eu/documentation) for more information. 
 
 
 TROUBLESHOOTING
 ---------------
 
  * If nothing happens, the typical strategy is: clear cache
- * For further help you can find our forum at http://wiss-ki.eu/forum
+ * For further help you can join the [slack channel](https://join.slack.com/t/wisski/shared_invite/zt-pvn8kumb-LQtezANcVmn47r_bY4FH9w).
 
 MAINTAINERS
 -----------
