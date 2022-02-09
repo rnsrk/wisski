@@ -373,7 +373,8 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #        dpm($data);
       foreach($keys as $step) {
         if(isset($a_ret[$step])) {
-          $a_ret[$step] = htmlspecialchars_decode($a_ret[$step]);
+          if(!is_object($a_ret[$step]))
+            $a_ret[$step] = htmlspecialchars_decode($a_ret[$step]);
           $data['Object'][$step] = array($a_ret[$step]);
         } else {
           $data['Object'][$step] = array();
