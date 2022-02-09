@@ -35,9 +35,9 @@ function wisski_doi_theme() {
     'contributor-list' => [
       'variables' => [
         'contributors' => NULL,
-        'error' => NULL
-      ]
-    ]
+        'error' => NULL,
+      ],
+    ],
   ];
 }
 
@@ -67,44 +67,4 @@ function wisski_doi_entity_operation_alter(array &$operations, EntityInterface $
     'weight' => 100,
     'url' => $editUrl,
   ];
-}
-
-
-/**
- * Implements hook_menu_local_tasks_alter().
- *
- * Adds a
- * @param $data
- * @param $route_name
- * @param \Drupal\Core\Cache\RefinableCacheableDependencyInterface $cacheability
- *
- * @return void
- */
-function wisski_doi_menu_local_tasks_alter(&$data, $route_name, \Drupal\Core\Cache\RefinableCacheableDependencyInterface &$cacheability)
-{
-  if ($route_name == 'entity.wisski_bundle.edit_form') {
-    $path = \Drupal::service("path.current")->getPath();
-    $url = explode('/', $path);
-    $bundleId = $url[4];
-    dpm($data);
-    $editUrl = Url::fromRoute('entity.wisski_bundle.doi_batch', ['wisski_bundle' => $bundleId]);
-    $data['tabs'][0]['entity.wisski_bundle.doi_batch'] = [
-      '#theme' => 'menu_local_task',
-      '#link' => [
-        'title' => t('Get DOIs'),
-        'url' => $editUrl,
-        'localized_options' => [
-          'attributes' => [
-            'title' => t('Get DOIs'),
-          ],
-        ],
-      ],
-      '#weight' => 10,
-    ];
-
-    $cacheability
-      ->addCacheContexts([
-        'user.permissions',
-      ]);
-  }
 }
