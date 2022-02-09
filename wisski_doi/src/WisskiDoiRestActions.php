@@ -61,6 +61,7 @@ class WisskiDoiRestActions {
       "doiRepositoryId" => $settings->get('doi_repository_id'),
       "doiSchemaVersion" => $settings->get('doi_schema_version'),
       "doiPrefix" => $settings->get('doi_prefix'),
+      "doiShoulder" => $settings->get('doi_shoulder'),
       "doiRepositoryPassword" => $settings->get('doi_repository_password'),
     ];
     try {
@@ -94,10 +95,37 @@ class WisskiDoiRestActions {
    *   Throws exception when response status 40x.
    */
   public function createOrUpdateDoi(array $doiInfo, bool $update = FALSE) {
+
+    // Create a new DOI ID and check if the ID is already taken.
+    $response = FALSE;
+    $counter = 0;
+    while ($response != '404') {
+      $prefix = $this->doiSettings['doiPrefix'] . '/';
+      $shoulder = empty($this->doiSettings['doiShoulder']) ?: $this->doiSettings['doiShoulder'] . '/';
+      $suffix = uniqid();
+      $doi = $prefix . $shoulder . $suffix;
+      $response = $this->readMetadata($doi);
+      $counter++;
+      if ($counter == 4) {
+        return [
+          'dbDate' => NULL,
+          'responseStatus' => 'Can not create unique suffix, please try again',
+        ];
+      }
+    }
+    // Escape if there is no doi.
+    if (!isset($doi)) {
+      return [
+        'dbDate' => NULL,
+        'responseStatus' => 'Could not create DOI ID. Maybe there are missing DOI settings.',
+      ];
+    }
+
     // Future request body as array.
     $body = [
       "data" => [
         "attributes" => [
+          "doi" => $doi,
           "event" => $doiInfo['event'],
           "creators" => [
             [
@@ -116,7 +144,6 @@ class WisskiDoiRestActions {
               "dateInformation" => $doiInfo['creationDate'],
             ],
           ],
-          "prefix" => $this->doiSettings['doiPrefix'],
           "publisher" => $doiInfo['publisher'],
           "publicationYear" => substr($doiInfo['creationDate'], 6, 4),
           "language" => $doiInfo['language'],

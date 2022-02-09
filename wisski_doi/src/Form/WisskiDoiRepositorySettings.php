@@ -71,6 +71,13 @@ class WisskiDoiRepositorySettings extends FormBase {
       '#description' => $this->t('The DOI prefix, respectively your repository ID, like "10.3435".'),
     ];
 
+    $form['doi_shoulder'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('DOI Shoulder'),
+      '#default_value' => $settings->get('doi_shoulder'),
+      '#description' => $this->t('The DOI shoulder, the part between prefix and suffix, i.e. "my_project".'),
+    ];
+
     $form['doi_repository_password'] = [
       '#type' => 'password',
       '#title' => $this->t('Password'),
@@ -97,6 +104,7 @@ class WisskiDoiRepositorySettings extends FormBase {
     $settings->set('doi_repository_id', $newVals['doi_repository_id']);
     $settings->set('doi_schema_version', $newVals['doi_schema_version']);
     $settings->set('doi_prefix', $newVals['doi_prefix']);
+    $settings->set('doi_shoulder', $newVals['doi_shoulder']);
     $settings->set('doi_base_uri', $newVals['doi_base_uri']);
     $settings->set('doi_repository_password', $newVals['doi_repository_password']);
     $settings->set('data_publisher', $newVals['data_publisher']);

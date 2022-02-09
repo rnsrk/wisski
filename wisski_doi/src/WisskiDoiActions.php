@@ -193,9 +193,7 @@ class WisskiDoiActions {
     $response = $this->wisskiDoiRestActions->createOrUpdateDoi($doiMetadata);
 
     // Safe to db if successfully.
-    $response['responseStatus'] == 201 ? $this->wisskiDoiDbActions->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
-      ->error($this->t('Something went wrong creating the DOI. Leave the database untouched'));
-
+    $response['responseStatus'] == 201 ? $this->wisskiDoiDbActions->writeToDb($response['dbData']) : \Drupal::service('messenger')->addError($this->t('%responseStatus', ['%responseStatus' => $response['responseStatus']]));
     // Start second save process. This is the current revision now.
     $doiRevision = $this->wisskiStorage->createRevision($wisskiIndividual);
     $doiRevision->revision_log = $this->t('Revision copy, because of DOI request from %request_date.', [
@@ -255,8 +253,7 @@ class WisskiDoiActions {
     // Request DOI.
     $response = $this->wisskiDoiRestActions->createOrUpdateDoi($doiMetadata);
     // Write response to database.
-    $response['responseStatus'] == 201 ? $this->wisskiDoiDbActions->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
-      ->error($this->t('Something went wrong Updating the DOI. Leave the database untouched'));
+    $response['responseStatus'] == 201 ? $this->wisskiDoiDbActions->writeToDb($response['dbData']) : \Drupal::service('messenger')->addError($this->t('%responseStatus', ['%responseStatus' => $response['responseStatus']]));
   }
 
   /**

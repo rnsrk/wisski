@@ -543,8 +543,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
     // Request DOI.
     $response = $this->wisskiDoiRestActions->createOrUpdateDoi($this->doiInfo);
     // Safe to db if successfully.
-    $response['responseStatus'] == 201 ? $this->wisskiDoiDbActions->writeToDb($response['dbData']) : \Drupal::logger('wisski_doi')
-      ->error($this->t('Something went wrong creating the DOI. Leave the database untouched'));
+    $response['responseStatus'] == 201 ? $this->wisskiDoiDbActions->writeToDb($response['dbData']) : \Drupal::service('messenger')->addError($this->t('%responseStatus', ['%responseStatus' => $response['responseStatus']]));
 
     // Start second save process. This is the current revision now.
     $doiRevision = $this->wisskiStorage->createRevision($this->wisski_individual);
