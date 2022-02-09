@@ -1011,6 +1011,10 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       $stmt = sqlsrv_query( $con, $query, array(), array("Scrollable" => SQLSRV_CURSOR_CLIENT_BUFFERED, "ClientBufferMaxKBSize" => 51200));
 #      $ret = sqlsrv_query($con, $query);
 #      dpm(serialize($ret), "ret?");
+      if(empty($stmt))
+        return array();
+
+
       
       $cnt = sqlsrv_num_rows( $stmt );
       
@@ -1049,6 +1053,8 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #      dpm(microtime(), "bef ex");
 
 #      sqlsrv_execute( $stmt); 
+      if(empty($stmt))
+        return array();
 
 #      dpm($ret, "ret?");
 #            
