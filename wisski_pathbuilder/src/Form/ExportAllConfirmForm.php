@@ -48,7 +48,7 @@ class ExportAllConfirmForm extends ConfirmFormBase {
    * @param \Drupal\wisski_pathbuilder\PathbuilderManager $pathbuilderManager
    *   Performs file system operations and updates database records accordingly.
    */
-  public function __construct(PathbuilderManager $pathbuilderManager,) {
+  public function __construct(PathbuilderManager $pathbuilderManager) {
     $this->pathbuilderManager = $pathbuilderManager;
   }
 
