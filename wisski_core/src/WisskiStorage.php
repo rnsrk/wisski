@@ -664,6 +664,28 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
     
 #          dpm($this->entityClass, "??");
 #          return;
+          // Debug from Node:
+          // default_langcode always contains "x-default" with string-value "1"
+          // and all other languages with string-value "0"
+          // 
+          // langcode always contains the original language in "x-default"
+          // and all other languages with e.g. "ar"=>"ar"
+#          dpm($orig_lang);
+          $test['langcode'] = $set_languages;
+          // set all x-default values in an extra step
+          $test['langcode']['x-default'] = $orig_lang;
+          $test['default_langcode']= array('x-default' => '1');
+          $test['published']['x-default'] = array(0 => array('value' => True));
+
+          if(!isset($test['published'])){
+            $test['published'] = array();
+          }  
+          foreach($set_languages as $sl){
+            // a:1:{i:0;a:1:{s:5:"value";b:1;}
+            $test['published'][$sl] = array(0 => array('value' => True));
+            if($sl == $orig_lang) continue;
+            $test['default_langcode'][$sl]= '0';
+          }
 
           $entity = new $this->entityClass($test,$this->entityTypeId, $bundle, $translations[$id]);
 
