@@ -91,7 +91,7 @@ class WisskiIndividualQuery extends QueryPluginBase
         // - finally add this group to the query object
         foreach ($this->where as $gid => $group) {
             //dpm($this->where, "this->where");
-[B            //dpm($gid, "gid");
+            //dpm($gid, "gid");
             //dpm($group, "group");
             //$sub_group = $group['type'] == 'OR' ? new Condition('OR') : new Condition('AND');
             $conjunction = strtolower($group["type"]);
