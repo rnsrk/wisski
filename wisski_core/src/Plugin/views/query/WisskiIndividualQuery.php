@@ -91,7 +91,7 @@ class WisskiIndividualQuery extends QueryPluginBase
         // - finally add this group to the query object
         foreach ($this->where as $gid => $group) {
             //dpm($this->where, "this->where");
-            //dpm($gid, "gid");
+[B            //dpm($gid, "gid");
             //dpm($group, "group");
             //$sub_group = $group['type'] == 'OR' ? new Condition('OR') : new Condition('AND');
             $conjunction = strtolower($group["type"]);
@@ -124,6 +124,49 @@ class WisskiIndividualQuery extends QueryPluginBase
                         $condFieldKey = substr($condFieldKey, 1);
                     }
                     $valueGroup = explode(" ", $condFieldKey);
+                    
+                    // if this is the case the field is something like
+                    // wisski_path_local_store__objekte and it should be something like
+                    // local_store.objekte.
+                    // so we have to change this here.
+
+                    if(strpos($valueGroup[0], ".") === FALSE) {
+                      $viewsdata = \Drupal\views\Views::viewsData()->get('wisski_individual');
+
+                      // see if we have something in there
+                      if(isset($viewsdata[$valueGroup[0]])) {
+                        $fieldviewsdata = $viewsdata[$valueGroup[0]];
+
+                        // and if so if it is a wisski field
+                        if(isset($fieldviewsdata['field']['wisski_field'])) {
+                          // and if it is we fetch it.
+                          $valueGroup[0] = $fieldviewsdata['field']['wisski_field'];
+                        }
+                      }
+                    }
+
+                    // if we now have wisski-field that might
+                    // be entity reference we might have to
+                    // change the operation...                    
+                    if(strpos($valueGroup[0], ".") !== FALSE) {
+                      // load the relevant path from the cache
+                      // populate the cache if it doesn't exist
+                      $pb_and_path = explode(".", $valueGroup[0], 2);
+
+                      if (isset($path_cache[$pb_and_path[1]]))
+                        $path = $path_cache[$pb_and_path[1]];
+                      else {
+                        $path = \Drupal::service('entity_type.manager')->getStorage('wisski_path')->load($pb_and_path[1]);
+                        $path_cache[$pb_and_path[1]] = $path;
+                      }
+
+                      // if the path has no datatype_property then
+                      // it is an entity reference and we change that accordingly
+#                      dpm(serialize($path->getDatatypeProperty()));
+                      if($path->getDatatypeProperty() == "empty")
+                        $valueGroup[1] = "HAS_EID";
+                    }
+                    
                     $qgroup = $qgroup->condition($valueGroup[0], $valueGroup[2], $valueGroup[1]);
                 } else {
                     $qgroup = $qgroup->condition($cond["field"], $cond["value"], $cond["operator"]);
