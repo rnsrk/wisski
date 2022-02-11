@@ -106,7 +106,6 @@ class WisskiDoiRestActions {
       $shoulder = empty($this->doiSettings['doiShoulder']) ?: $this->doiSettings['doiShoulder'] . $this->doiSettings['doiShoulderSuffixDelimiter'];
       $suffix = uniqid();
       $doi = $prefix . $shoulder . $suffix;
-      dpm($this->doiSettings['doiShoulderSuffixDelimiter']);
       $response = $this->readMetadata($doi);
       $counter++;
       if ($counter == 4) {
