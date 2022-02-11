@@ -4,7 +4,6 @@ namespace Drupal\wisski_doi\Form;
 
 use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Ajax\ReplaceCommand;
-use Drupal\Core\Link;
 use Drupal\wisski_core\WisskiStorageInterface;
 use Drupal\wisski_core\WisskiEntityInterface;
 use Drupal\Component\Datetime\TimeInterface;
