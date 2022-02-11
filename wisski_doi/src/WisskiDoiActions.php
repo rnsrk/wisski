@@ -10,6 +10,7 @@ use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\user\Entity\User;
 use Drupal\wisski_core\WisskiEntityInterface;
 use Drupal\wisski_core\WisskiStorage;
+use Drupal\wisski_doi\Form\WisskiDoiConfirmFormRequestDoiForStaticRevision;
 use Drupal\wisski_salz\AdapterHelper;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -232,7 +233,7 @@ class WisskiDoiActions {
 
     // Get AJAX info.
     $contributorItems = \Drupal::configFactory()
-      ->getEditable('wisski_doi.contributor.items');
+      ->getEditable(WisskiDoiConfirmFormRequestDoiForStaticRevision::CONTRIBUTOR_ITEMS_CONFIG);
     // Have to overwrite contributors cause AJAX mess up the form_state.
     $doiMetadata['contributors'] = $contributorItems->get('contributors');
 

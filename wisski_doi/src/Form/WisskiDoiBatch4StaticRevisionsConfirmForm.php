@@ -171,7 +171,7 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
    */
   protected function getEditableConfigNames() {
     return [
-      'wisski_doi.contributor.items',
+      WisskiDoiConfirmFormRequestDoiForStaticRevision::CONTRIBUTOR_ITEMS_CONFIG,
       static::INDIVIDUALS_IN_BATCH,
     ];
   }
@@ -262,10 +262,10 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
 
     // DOI Settings from config page.
     $doiSettings = \Drupal::configFactory()
-      ->getEditable('wisski_doi.wisski_doi_settings');
+      ->getEditable(WisskiDoiRepositorySettings::DOI_SETTINGS);
 
     // Contributors from form.
-    $contributorItems = $this->config('wisski_doi.contributor.items');
+    $contributorItems = $this->config(WisskiDoiConfirmFormRequestDoiForStaticRevision::CONTRIBUTOR_ITEMS_CONFIG);
 
     // Load selected WissKI individuals.
     $wisskiIndividualIds = $this->configFactory
@@ -286,7 +286,7 @@ class WisskiDoiBatch4StaticRevisionsConfirmForm extends ConfirmFormBase {
     $this->batchMetadata = [
       "event" => 'draft',
       "contributors" => $contributorItems->get('contributors'),
-      "publisher" => $doiSettings->get('data_publisher'),
+      "publisher" => $doiSettings->get('doiSettings.data_publisher'),
       "resourceType" => 'Dataset',
     ];
 

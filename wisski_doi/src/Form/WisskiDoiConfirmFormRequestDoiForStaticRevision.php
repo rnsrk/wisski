@@ -25,6 +25,13 @@ use Symfony\Component\HttpFoundation\Request;
 class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
 
   /**
+   * The storage name of the contributor items.
+   *
+   * @var string
+   */
+  const CONTRIBUTOR_ITEMS_CONFIG = 'wisski_doi.contributor.items';
+
+  /**
    * The WisskiEntity revision.
    *
    * @var \Drupal\wisski_core\WisskiEntityInterface
@@ -208,7 +215,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
   public static function addContributor(array &$form, FormStateInterface $form_state) {
     $contributor = $form_state->getValue('contributors')['contributorGroup']['contributor'];
     $contributorItems = \Drupal::configFactory()
-      ->getEditable('wisski_doi.contributor.items');
+      ->getEditable(static::CONTRIBUTOR_ITEMS_CONFIG);
     $contributors = $contributorItems->get('contributors');
     $error = NULL;
 
@@ -340,8 +347,8 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
     // Load existing form data.
     $form = parent::buildForm($form, $form_state);
     $doiSettings = \Drupal::configFactory()
-      ->getEditable('wisski_doi.wisski_doi_settings');
-    $contributorItems = $this->config('wisski_doi.contributor.items');
+      ->getEditable(WisskiDoiRepositorySettings::DOI_SETTINGS);
+    $contributorItems = $this->config(static::CONTRIBUTOR_ITEMS_CONFIG);
 
     // Get metadata from individual.
     $this->doiInfo = \Drupal::service('wisski_doi.wisski_doi_actions')->getWisskiIndividualMetadata($this->wisski_individual);
@@ -350,7 +357,7 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
     $this->doiInfo += [
       "event" => 'draft',
       "contributors" => $contributorItems->get('contributors'),
-      "publisher" => $doiSettings->get('data_publisher'),
+      "publisher" => $doiSettings->get('doiSettings.data_publisher'),
       "language" => $this->wisski_individual->language()->getId(),
       "resourceType" => 'Dataset',
     ];

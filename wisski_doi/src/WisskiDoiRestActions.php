@@ -6,6 +6,7 @@ use Drupal\Core\Messenger\Messenger;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\wisski_doi\Exception\WisskiDoiSettingsNotFoundException;
+use Drupal\wisski_doi\Form\WisskiDoiRepositorySettings;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 
@@ -54,15 +55,16 @@ class WisskiDoiRestActions {
     $this->messenger = \Drupal::service("messenger");
     $this->httpClient = \Drupal::httpClient();
     $settings = \Drupal::configFactory()
-      ->getEditable('wisski_doi.wisski_doi_settings');
+      ->getEditable(WisskiDoiRepositorySettings::DOI_SETTINGS);
 
     $this->doiSettings = [
-      "baseUri" => $settings->get('doi_base_uri'),
-      "doiRepositoryId" => $settings->get('doi_repository_id'),
-      "doiSchemaVersion" => $settings->get('doi_schema_version'),
-      "doiPrefix" => $settings->get('doi_prefix'),
-      "doiShoulder" => $settings->get('doi_shoulder'),
-      "doiRepositoryPassword" => $settings->get('doi_repository_password'),
+      "baseUri" => $settings->get('doiSettings.doi_base_uri'),
+      "doiRepositoryId" => $settings->get('doiSettings.doi_repository_id'),
+      "doiSchemaVersion" => $settings->get('doiSettings.doi_schema_version'),
+      "doiPrefix" => $settings->get('doiSettings.doi_prefix'),
+      "doiShoulder" => $settings->get('doiSettings.doi_shoulder'),
+      "doiShoulderSuffixDelimiter" => $settings->get('doiSettings.doi_shoulder_suffix_delimiter'),
+      "doiRepositoryPassword" => $settings->get('doiSettings.doi_repository_password'),
     ];
     try {
       (new WisskiDoiSettingsNotFoundException)->checkDoiSetting($this->doiSettings);
@@ -101,9 +103,10 @@ class WisskiDoiRestActions {
     $counter = 0;
     while ($response != '404') {
       $prefix = $this->doiSettings['doiPrefix'] . '/';
-      $shoulder = empty($this->doiSettings['doiShoulder']) ?: $this->doiSettings['doiShoulder'] . '/';
+      $shoulder = empty($this->doiSettings['doiShoulder']) ?: $this->doiSettings['doiShoulder'] . $this->doiSettings['doiShoulderSuffixDelimiter'];
       $suffix = uniqid();
       $doi = $prefix . $shoulder . $suffix;
+      dpm($this->doiSettings['doiShoulderSuffixDelimiter']);
       $response = $this->readMetadata($doi);
       $counter++;
       if ($counter == 4) {
