@@ -112,14 +112,14 @@ class WisskiDoiRepositorySettings extends ConfigFormBase {
 
     $form['doi_prefix'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('DOI prefix'),
+      '#title' => $this->t('Prefix'),
       '#default_value' => $config->get('doiSettings.doi_prefix'),
       '#description' => $this->t('The DOI prefix, respectively your repository ID, like "10.3435".'),
     ];
 
     $form['doi_shoulder'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('DOI shoulder'),
+      '#title' => $this->t('Shoulder'),
       '#default_value' => $config->get('doiSettings.doi_shoulder'),
       '#description' => $this->t('The DOI shoulder, the part between prefix and suffix, i.e. "my_project".
       Allowed are only alphanumeric characters and underscores (_).'),
@@ -127,7 +127,7 @@ class WisskiDoiRepositorySettings extends ConfigFormBase {
 
     $form['doi_shoulder_suffix_delimiter'] = [
       '#type' => 'select',
-      '#title' => $this->t('DOI shoulder-prefix delimiter'),
+      '#title' => $this->t('Delimiter between shoulder and suffix'),
       '#options' => static::SHOULDER_SUFFIX_DELIMITERS,
       '#default_value' => $config->get('doiSettings.doi_shoulder_suffix_delimiter'),
       '#description' => $this->t('With a shoulder like "my_project", a delimiter like "-", and a suffix like "620661ed7d752"
