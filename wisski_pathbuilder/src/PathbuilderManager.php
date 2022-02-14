@@ -515,23 +515,34 @@ class PathbuilderManager {
    */
   public function prepareExportDirectories(string $exportRootDir) {
     // Prepare file structure.
-    $relativeExportDirectory = $exportRootDir . date('Ymd') . '/';
-    $preparedExportDirectory = \Drupal::service('file_system')
-      ->prepareDirectory($relativeExportDirectory, FileSystemInterface::CREATE_DIRECTORY);
-
-    // If folder is not writable, escape.
-    if (!$preparedExportDirectory) {
-      \Drupal::service('messenger')
-        ->addError($this->t('Could not create archive at %relativeExportDirectory. Do you have the right permissions?', ['%relativeExportDirectory' => $relativeExportDirectory]));
-      return FALSE;
+    $relativeExportDir = $exportRootDir . date('Ymd') . '/';
+    $instanceDir = $relativeExportDir . \Drupal::request()->getHost();
+    $ontologiesDir = $instanceDir . '/ontologies/';
+    $pathbuildersDir = $instanceDir . '/pathbuilders/';
+    $directoryTree = [
+      'relativeExportDir' => $relativeExportDir,
+      'instanceDir' => $instanceDir,
+      'ontologiesDir' => $ontologiesDir,
+      'pathbuilderDir' => $pathbuildersDir,
+    ];
+    foreach ($directoryTree as $key => $value) {
+      $preparedExportDirectory = \Drupal::service('file_system')
+        ->prepareDirectory($value, FileSystemInterface::CREATE_DIRECTORY);
+      // If folder is not writable, escape.
+      if (!$preparedExportDirectory) {
+        \Drupal::service('messenger')
+          ->addError($this->t('Could not create archive at %relativeExportDirectory. Do you have the right permissions?', ['%relativeExportDirectory' => $relativeExportDir]));
+        return FALSE;
+      }
     }
-    return $relativeExportDirectory;
+
+    return $directoryTree;
   }
 
   /**
    * Saves all ontologies.
    *
-   * @param string $relativeExportDirectory
+   * @param string $ontologiesDir
    *   The directory path, where to store the export files,
    *   i.e. defined as a const in ExportAllConfirmForm.
    *
@@ -540,7 +551,7 @@ class PathbuilderManager {
    *
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
-  public function exportAllOntologies(string $relativeExportDirectory) {
+  public function exportAllOntologies(string $ontologiesDir) {
 
     // Counter for existing ontologies.
     $count = 0;
@@ -586,7 +597,7 @@ class PathbuilderManager {
 
       // Write file to disk.
       $fileName = 'ontology_' . $count . '.nq';
-      $export_path = $relativeExportDirectory . $fileName;
+      $export_path = $ontologiesDir . $fileName;
       $this->file->writeData($nQuads, $export_path, FileSystemInterface::EXISTS_REPLACE);
     }
     \Drupal::service('messenger')
@@ -597,32 +608,35 @@ class PathbuilderManager {
   /**
    * Zips all ontologies and pathbuilders.
    *
-   * Searches the ontology and pathbuilder folders for
-   * files and add them to a zip archive with the current date.
+   * Takes a list of files and add them to a zip archive.
    *
-   * @param string $relativeExportDirectory
-   *   A folder with the current date inside the EXPORT_ROOT_DIR
-   *   containing ontologies and pathbuilders.
+   * @param string $relativeExportDir
+   *   The relative export Dir.
+   * @param array $zipFiles
+   *   List of files to zip.
    */
-  public function zipPathbuildersAndOntologies(string $relativeExportDirectory) {
-    // If there is no export dir escape.
-    if (!$relativeExportDirectory) {
+  public function zipPathbuildersAndOntologies(string $relativeExportDir, array $zipFiles) {
+    // If there is no export dir or zip files escape.
+    if (!$relativeExportDir || !$zipFiles) {
       return FALSE;
     }
-    $absoluteExportDirectory = \Drupal::service('file_system')
-      ->realpath($relativeExportDirectory);
+    $absoluteZipDirPath = \Drupal::service('file_system')
+      ->realpath($relativeExportDir);
+
     // Open zip file.
-    $zipPath = $absoluteExportDirectory . '.zip';
+    $zipPath = $absoluteZipDirPath . '.zip';
     $zip = new \ZipArchive();
     $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
-    // Add ontologies to zip archive.
-    $filesInFolder = array_diff(scandir($absoluteExportDirectory), ['..', '.']);
-    foreach ($filesInFolder as $file) {
+    foreach ($zipFiles as $zipFile) {
+      $internalZipPath = explode('/', $zipFile, 5)[4];
+      $absoluteZipFilePath = \Drupal::service('file_system')
+        ->realpath($zipFile);
       $zip->addFile(\Drupal::service('file_system')
-        ->realpath($absoluteExportDirectory . '/' . $file), basename($file));
+        ->realpath($absoluteZipFilePath), $internalZipPath);
       \Drupal::service('messenger')
         ->addMessage($this->t('Zipped files in archive %zipPath.', ['%zipPath' => $zipPath]));
+
     }
     $zip->close();
     return TRUE;
@@ -652,13 +666,13 @@ class PathbuilderManager {
    *
    * @param \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity $pathbuilderEntity
    *   The pathbuilder entity.
-   * @param string $relativeExportDirectory
+   * @param string $pathbuildersDir
    *   A folder with the current date inside the EXPORT_ROOT_DIR
    *   containing ontologies and pathbuilders.
    *
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
-  public function exportPathbuilder(WisskiPathbuilderEntity $pathbuilderEntity, $relativeExportDirectory) {
+  public function exportPathbuilder(WisskiPathbuilderEntity $pathbuilderEntity, string $pathbuildersDir) {
     // Create initial XML tree.
     $xmlTree = new \SimpleXMLElement("<pathbuilderinterface></pathbuilderinterface>");
 
@@ -708,8 +722,8 @@ class PathbuilderManager {
     $dom->formatOutput = TRUE;
 
     // Save the files.
-    $export_path = $relativeExportDirectory . 'pathbuilder_' . $pathbuilderEntity->id();
-    $this->file->writeData($dom->saveXML(), $export_path, FileSystemInterface::EXISTS_RENAME);
+    $export_path = $pathbuildersDir . 'pathbuilder_' . $pathbuilderEntity->id();
+    $this->file->writeData($dom->saveXML(), $export_path, FileSystemInterface::EXISTS_REPLACE);
   }
 
   /**
@@ -758,6 +772,28 @@ class PathbuilderManager {
       rmdir($dir);
       \Drupal::service('messenger')
         ->addMessage($this->t('Removed temporary files and folders.'));
+    }
+  }
+
+  /**
+   * Collect files for Zip archive.
+   *
+   * @param string $dir
+   *   The directory to search for files to zip.
+   * @param array $zipFiles
+   *   The files to add to the zip archive.
+   */
+  public function collectZipDirs(string $dir, array &$zipFiles) {
+    if (is_dir($dir)) {
+      $objects = scandir($dir);
+      foreach ($objects as $object) {
+        if ($object != "." && $object != "..") {
+          $this->collectZipDirs($dir . DIRECTORY_SEPARATOR . $object, $zipFiles);
+          if (is_file($dir . DIRECTORY_SEPARATOR . $object) && !is_link($dir . "/" . $object)) {
+            $zipFiles[] = $dir . DIRECTORY_SEPARATOR . $object;
+          }
+        }
+      }
     }
   }
 

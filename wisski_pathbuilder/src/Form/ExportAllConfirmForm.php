@@ -95,12 +95,14 @@ class ExportAllConfirmForm extends ConfirmFormBase {
    * @throws \Exception
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $relativeExportDirectory = $this->pathbuilderManager->prepareExportDirectories(static::EXPORT_ROOT_DIR);
-    if ($relativeExportDirectory) {
-      $this->pathbuilderManager->exportAllOntologies($relativeExportDirectory);
-      $this->pathbuilderManager->exportAllPathbuilders($relativeExportDirectory);
-      $this->pathbuilderManager->zipPathbuildersAndOntologies($relativeExportDirectory);
-      $this->pathbuilderManager->rRmDir($relativeExportDirectory);
+    $directoryTree = $this->pathbuilderManager->prepareExportDirectories(static::EXPORT_ROOT_DIR);
+    if ($directoryTree) {
+      $this->pathbuilderManager->exportAllOntologies($directoryTree['ontologiesDir']);
+      $this->pathbuilderManager->exportAllPathbuilders($directoryTree['pathbuilderDir']);
+      $zipFiles = [];
+      $this->pathbuilderManager->collectZipDirs($directoryTree['instanceDir'], $zipFiles);
+      $this->pathbuilderManager->zipPathbuildersAndOntologies($directoryTree['relativeExportDir'], $zipFiles);
+      $this->pathbuilderManager->rRmDir($directoryTree['relativeExportDir']);
     }
 
     $form_state->setRedirect(
