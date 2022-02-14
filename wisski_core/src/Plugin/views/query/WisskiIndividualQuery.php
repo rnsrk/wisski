@@ -1095,8 +1095,27 @@ class WisskiIndividualQuery extends QueryPluginBase
             
           // in this case we also have to check if the operator
           // is correct in case of entity reference thingies
-          if(is_numeric($value) && $operator == "=") {
-              $operator = "has_eid";
+          //if(is_numeric($value) && $operator == "=") {
+          //    $operator = "has_eid";
+          //}
+          
+          if(strpos($field, ".") !== FALSE) {
+            // load the relevant path from the cache
+            // populate the cache if it doesn't exist
+            $pb_and_path = explode(".", $field, 2);
+
+            if (isset($path_cache[$pb_and_path[1]]))
+              $path = $path_cache[$pb_and_path[1]];
+            else {
+              $path = \Drupal::service('entity_type.manager')->getStorage('wisski_path')->load($pb_and_path[1]);
+              $path_cache[$pb_and_path[1]] = $path;
+            }
+
+            // if the path has no datatype_property then
+            // it is an entity reference and we change that accordingly
+#                      dpm(serialize($path->getDatatypeProperty()));
+            if($path->getDatatypeProperty() == "empty")
+              $operator = "HAS_EID";
           }
 
           #dpm($wisski_field, "ws?");
