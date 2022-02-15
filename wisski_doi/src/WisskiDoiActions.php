@@ -131,9 +131,11 @@ class WisskiDoiActions {
     if (!empty($revisionUser)) {
       $author = $revisionUser->getDisplayName();
     }
-    else {
+    elseif (isset($wisskiIndividual->get('uid')->getValue()[0]['target_id'])) {
       $uid = $wisskiIndividual->get('uid')->getValue()[0]['target_id'];
       $author = User::load($uid)->getDisplayName();
+    } else {
+      $author = 'unknown';
     }
     return [
       "bundleId" => $wisskiIndividual->bundle(),
