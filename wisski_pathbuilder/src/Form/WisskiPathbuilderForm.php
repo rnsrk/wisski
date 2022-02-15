@@ -47,7 +47,7 @@ class WisskiPathbuilderForm extends EntityForm {
    * @param \Drupal\file\FileRepositoryInterface $file
    *   Performs file system operations and updates database records accordingly.
    */
-  public function __construct(FileRepositoryInterface $file,) {
+  public function __construct(FileRepositoryInterface $file) {
     $this->file = $file;
   }
 
