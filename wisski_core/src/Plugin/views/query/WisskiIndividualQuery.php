@@ -450,6 +450,10 @@ class WisskiIndividualQuery extends QueryPluginBase
         if ($rendering_language == "***LANGUAGE_language_interface***") {
             $rendering_language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
         }
+        // MyFi: Drupal does strange things! For this reason we redefine the language here
+        if ($rendering_language == "***LANGUAGE_entity_translation***"){
+            $rendering_language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+        }
 
         // iterate over all the fields
         // depending on the field we have, add the right data to the result
