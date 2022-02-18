@@ -11,6 +11,8 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\Component\Plugin\PluginBase;
+use Drupal\Core\Database\Connection;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 
 /**
@@ -21,6 +23,21 @@ use Drupal\Component\Plugin\PluginBase;
  * @author Mark Fichtner
  */
 class WisskiOntologyForm extends FormBase {
+
+  public Connection $connection;
+
+  public function __construct(Connection $connection) {
+    $this->connection = $connection;
+  }
+
+  // the order of the containers here has to be the same as for __construct
+  public static function create(ContainerInterface $container) {
+    // Instantiates this form class.
+    return new static(
+    // Load the service required to construct this class.
+      $container->get('database')
+    );
+  }
 
   /**
    * {@inheritdoc}.
@@ -124,26 +141,47 @@ class WisskiOntologyForm extends FormBase {
 
           $form['stores']['delete_ont'] = array(
             '#type' => 'submit',
-            '#name' => 'Delete Ontology',
-            '#value' => 'Delete Ontology',
-            '#submit' => array('::deleteOntology'),
+            '#button_type' => 'primary',
+            '#name' => 'Ontology',
+            '#value' => ' Delete Ontology',
+            '#submit' => [[$this, 'deleteOntology']],
           );
 
           $ns = "";
           $ns = $engine->getNamespaces();
+          if (count($ns) > 0) {
+            $tablens = "<table><tr><th>Short Name</th><th>URI</th></tr>";
+            foreach($ns as $key => $value) {
+              $tablens .= "<tr><td>" . $key . "</td><td>" . $value . "</td></tr>";
+              /*
+              TODO: we want to use a real table form element here and add a column with a button to delete a single namespace for each row
+              <th>Options</th>
+              <td><button type='button'>TEST</button></td>
+              $form['stores']['delete_single_ns'] = array(
+                '#type' => 'submit',
+                '#button_type' => 'primary',
+                '#name' => 'Namespace',
+                '#value' => 'Delete '.$key,
+                '#submit' => [[$this, 'deleteSingleNamespace']],
+              );
+              */
+            }
+            $tablens .= "</table>";
 
-          $tablens = "<table><tr><th>Short Name</th><th>URI</th></tr>";
-          foreach($ns as $key => $value) {
-            $tablens .= "<tr><td>" . $key . "</td><td>" . $value . "</td></tr>";
+            $form['stores']['ns_table'] = array(
+              '#type' => 'item',
+              '#markup' => $tablens,
+            );
+
+            // Button for deleting the namespaces from the corresponding table
+            $form['stores']['delete_all_ns'] = array(
+              '#type' => 'submit',
+              '#button_type' => 'primary',
+              '#name' => 'Namespaces',
+              '#value' => 'Delete Namespaces',
+              '#submit' => [[$this, 'deleteAllNamespaces']],
+            );
           }
-          $tablens .= "</table>";
-
-          $form['stores']['ns_table'] = array(
-            '#type' => 'item',
-            '#markup' => $tablens,
-          );
-
-
         } else {
           // No ontology was found
           $form['stores']['load_onto'] = array(
@@ -156,22 +194,19 @@ class WisskiOntologyForm extends FormBase {
             '#type' => 'submit',
             '#name' => 'Load Ontology',
             '#value' => 'Load Ontology',
-           # '#submit' => array('wisski_core_load_ontology'),
+            # '#submit' => array('wisski_core_load_ontology'),
           );
         }
-
-
-
       }
     }
 
-   return $form;
+    return $form;
 
   }
 
 
   public static function ajaxStores(array $form, FormStateInterface $form_state) {
- #   dpm("yay!");
+    #   dpm("yay!");
     return $form['stores'];
   }
 
@@ -194,14 +229,25 @@ class WisskiOntologyForm extends FormBase {
       $infos = $engine->getOntologies();
       #drupal_set_message('infos in submit' . serialize($infos));
       // redirect to the wisski config ontology page
-#      $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
+      #      $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
       // rebuild the form to display the information regarding the selected store
       $form_state->setRebuild();
       #$form_state->setUserInput($form_state->getValue('select_store'));
       $engine->addOntologies($form_state->getValue('load_onto'));
     }
-   return;
+    return;
 
+  }
+
+  // This function deletes all namespaces stored within the corresponding table ("wisski_core_ontology_namespaces").
+  public function deleteAllNamespaces(array &$form, FormStateInterface $form_state) {
+    $query = $this->connection->truncate("wisski_core_ontology_namespaces")->execute();
+    return $query;
+  }
+
+  public function deleteSingleNamespace(array &$form, FormStateInterface $form_state) {
+    #$query = $this->connection->truncate("wisski_core_ontology_namespaces")->execute();
+    #return $query;
   }
 
   public function deleteOntology(array &$form, FormStateInterface $form_state) {
@@ -217,21 +263,21 @@ class WisskiOntologyForm extends FormBase {
       $infos = $engine->getOntologies();
 
       // there already is an ontology and we want to delete it
-       if(!empty($infos)) {
-         foreach($infos as $ont) {
-           if(strval($ont->graph) != "default"){
-             $engine->deleteOntology(strval($ont->graph));
-             $this->messenger()->addStatus('Successfully deleted ontology ' . $ont->graph);
-           } else {
-             $engine->deleteOntology(strval($ont->ont), 'no-graph');
-             $this->messenger()->addStatus('Successfully deleted ontology ' . $ont->ont);
-           }
-           // redirect to the wisski config ontology page
-#           $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
-           // rebuild the form to display the information regarding the selected store
-           $form_state->setRebuild();
-         }
-       }
+      if(!empty($infos)) {
+        foreach($infos as $ont) {
+          if(strval($ont->graph) != "default"){
+            $engine->deleteOntology(strval($ont->graph));
+            $this->messenger()->addStatus('Successfully deleted ontology ' . $ont->graph);
+          } else {
+            $engine->deleteOntology(strval($ont->ont), 'no-graph');
+            $this->messenger()->addStatus('Successfully deleted ontology ' . $ont->ont);
+          }
+          // redirect to the wisski config ontology page
+          #           $form_state->setRedirectUrl('/dev/admin/config/wisski/ontology');
+          // rebuild the form to display the information regarding the selected store
+          $form_state->setRebuild();
+        }
+      }
 
 
     }
