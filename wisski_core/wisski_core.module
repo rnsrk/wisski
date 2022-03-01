@@ -130,6 +130,10 @@ function wisski_core_excel_export($ob) {
 		foreach($values as $vk => $value) {
 		  $d_eid = AdapterHelper::getDrupalIdForUri($value);
 	          $title = wisski_core_generate_title($d_eid);
+                  if(is_array($title)) {
+		    $clanguage = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+                    $title = $title[$clanguage][0]['value']; 
+                  }
 		  $values[$vk] = $title;
                 }
 #	        $bundle = \Drupal\wisski_core\Entity\WisskiBundle::load($pb_bundle);
@@ -140,7 +144,7 @@ function wisski_core_excel_export($ob) {
 	  }
 	}
 
-	if(count($values) == 1 && ( is_numeric(current($values)) || preg_match('/^((\d+)(\.)*)+$/', current($values), $m) != FALSE) )  
+	if(count($values) == 1 && ( is_numeric(current($values)) || ( !is_array(current($values)) && preg_match('/^((\d+)(\.)*)+$/', current($values), $m) != FALSE) ) )  
 	  fwrite($fh, "=\"");
 	else
 	  fwrite($fh, "\"");	
