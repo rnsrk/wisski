@@ -249,3 +249,21 @@ wisski_individual.revision_delete_confirm:
     wisski_individual: \d+
 #  options:
 #    _wisski_individual_operation_route: TRUE
+
+wisski.wisski_ontology.namespace.delete_confirm:
+  path: '/admin/config/wisski/ontology/namespace/{namespace}/delete'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\WisskiNamespaceDeleteConfirmForm'
+    _title: 'Delete single namespace'
+  requirements:
+    _permission: 'administer wisski'
+    namespace: '\w+'
+
+wisski.wisski_ontology.namespace.edit_confirm:
+  path: '/admin/config/wisski/ontology/namespace/{namespace}/edit'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\WisskiNamespaceEditConfirmForm'
+    _title: 'Edit single namespace'
+  requirements:
+    _permission: 'administer wisski'
+    namespace: '\w+'

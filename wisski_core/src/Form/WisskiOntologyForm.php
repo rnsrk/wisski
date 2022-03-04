@@ -125,21 +125,25 @@ class WisskiOntologyForm extends FormBase {
             '#markup' => '<b>Currently loaded Ontology:</b><br/>',
           );
 
-          $table = "<table><tr><th>Name</th><th>Iri</th><th>Version</th><th>Graph</th></tr>";
+          // MyFi: we remodel the table structure to generate a more dynamica one
           foreach($infos as $ont) {
-            // $table .= "<tr><td>" . $ont->ont . "</td><td>" . $ont->iri . "</td><td>" . $ont->ver . "</td><td>" . $ont->graph . "</td></tr>";
-            $table .= "<tr><td>" . $ont->ont . "</td><td>" . $ont->iri . "</td><td>" . $ont->ver . "</td><td>" . $ont->graph . "</td></tr>";
+            $tableOntInfo[] = [$ont->ont, $ont->iri, $ont->ver, $ont->graph];
           }
-
-          $table .= "</table>";
-
-
-          $form['stores']['table'] = array(
-            '#type' => 'item',
-            '#markup' => $table,
+            $form['stores']['newTable'] = array(
+            '#type' => 'table',
+            '#header' => ['Name', 'Iri', 'Version', 'Graph'],
+            '#rows' => $tableOntInfo,
           );
 
-          $form['stores']['delete_ont'] = array(
+          // MyFi: add some whitespace underneath the "Delete Ontology" button to
+          // make the table more beautiful
+          $form['stores']['wrapper'] = [
+            '#type' => 'container',
+            '#attributes' => array('style' => "padding-bottom:10px"),   
+            // '#attributes' => array('class' => "pb-4"),      
+          ];
+
+          $form['stores']['wrapper']['delete_ont'] = array(
             '#type' => 'submit',
             '#button_type' => 'primary',
             '#name' => 'Ontology',
@@ -149,28 +153,17 @@ class WisskiOntologyForm extends FormBase {
 
           $ns = "";
           $ns = $engine->getNamespaces();
+          
           if (count($ns) > 0) {
-            $tablens = "<table><tr><th>Short Name</th><th>URI</th></tr>";
             foreach($ns as $key => $value) {
-              $tablens .= "<tr><td>" . $key . "</td><td>" . $value . "</td></tr>";
-              /*
-              TODO: we want to use a real table form element here and add a column with a button to delete a single namespace for each row
-              <th>Options</th>
-              <td><button type='button'>TEST</button></td>
-              $form['stores']['delete_single_ns'] = array(
-                '#type' => 'submit',
-                '#button_type' => 'primary',
-                '#name' => 'Namespace',
-                '#value' => 'Delete '.$key,
-                '#submit' => [[$this, 'deleteSingleNamespace']],
-              );
-              */
+              $tablens[] = [$key,$value, $this->forwardNamespace($key)];
             }
-            $tablens .= "</table>";
 
             $form['stores']['ns_table'] = array(
-              '#type' => 'item',
-              '#markup' => $tablens,
+              '#type' => 'table',
+              '#header' => ['short name (prefix label)', 'long name (IRI)', 'options'],
+              '#rows' => $tablens,
+              '#cache' => ['max-age' => 0],
             );
 
             // Button for deleting the namespaces from the corresponding table
@@ -204,6 +197,27 @@ class WisskiOntologyForm extends FormBase {
 
   }
 
+  public function forwardNamespace($namespace){
+    // MyFi: define a button to delete and edit namespaces
+    // later this button will added to each row of the namespace list
+    $links['edit'] = [
+      'title' => $this->t('Edit'),
+      'url' => Url::fromRoute('wisski.wisski_ontology.namespace.edit_confirm', ['namespace' => $namespace])
+    ];
+    $links['delete'] = [
+      'title' => $this->t('Delete'),
+      'url' => Url::fromRoute('wisski.wisski_ontology.namespace.delete_confirm', ['namespace' => $namespace])
+    ];
+
+    $ns_operations = [
+      'data' => [
+        '#type' => 'operations',
+        '#links' => $links,
+        ]
+      ];
+
+    return $ns_operations;
+  }
 
   public static function ajaxStores(array $form, FormStateInterface $form_state) {
     #   dpm("yay!");

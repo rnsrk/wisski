@@ -17,3 +17,6 @@ services:
     arguments: ['@current_route_match']
     tags:
       - { name: 'context_provider' }
+  wisski.wisski_core.namespace:
+    class: Drupal\wisski_core\WisskiNameSpaceOperator
+    arguments: ['@database']
