@@ -1595,6 +1595,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
    */
   public function ensureSchemedPublicFileUri($file_uri) {
     if (strpos($file_uri,'public:/') === 0) return $file_uri;
+    if (strpos($file_uri,'private:/') === 0) return $file_uri;
 
 #    dpm($file_uri, "fi");
 #    dpm(\Drupal::service('stream_wrapper.public')->baseUrl(), "fo");
