@@ -23,6 +23,22 @@ class WisskiNamespaceEditConfirmForm extends ConfirmFormBase {
     return $this->t('Are you sure you want to edit the namespace %namespace?', ['%namespace' => $this->namespace]);
    }
 
+     /**
+   * {@inheritdoc}
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    parent::validateForm($form, $form_state);
+    $continue = TRUE;
+
+    // $hasNoWhitespace    = false === strpos($form_state->getValue('edit_namespace'), ' ');
+    // dpm($hasNoWhitespace);
+    if(!preg_match('/^\w+$/', $form_state->getValue('edit_namespace'))){
+        $continue = FALSE;
+        $form_state->setErrorByName('edit_namespace', $this->t('Namespace may not contain non-alphanumeric characters (spaces, special characters,...).'));
+    }
+  }
+
+
   /**
    * {@inheritdoc}
    */
