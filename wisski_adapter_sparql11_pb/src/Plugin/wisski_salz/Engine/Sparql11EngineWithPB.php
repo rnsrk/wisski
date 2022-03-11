@@ -3628,24 +3628,108 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     return $results;
   }
 
+  /**
+   * Insert a namespace mapping into the database.
+   * If the mapping already exists, attempt to be smart by renaming existing abbreviations.
+   * 
+   * @param string $short_name
+   *   The prefix abbreviation.
+   * @param string $long_name
+   *   The namespace IRI.
+   * 
+   * @return void
+   */
   private function putNamespace($short_name,$long_name) {
-    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
-    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+    
+    // first check if a mapping for short_name already exists.
+    // consider three cases (3. with two sub cases):
+    // 1. no mapping exists => insert the new one
+    // 2. exactly one mapping exists in the database
+    //   2a. mapping exists AND has an identical long_name => do nothing
+    //   2b. mapping exists AND has a different long_name => "smart" rename of the short_name
+    // 3. more than one mapping exists in the database (SHOULD NOT HAPPEN, but MIGHT)
+    //   treat the same way as 2b (shouldn't happen!)
+
     $result = \Drupal::database()->select('wisski_core_ontology_namespaces', 'ns')
-              ->fields('ns')
-              ->condition('short_name',$short_name,'=')
+              ->fields('ns', ['short_name', 'long_name'])
+              ->condition('ns.short_name',$short_name,'=')
               ->execute()
-              ->fetchAssoc();
-    if (empty($result)) {
-      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
-      // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+              ->fetchAll();
+    
+    // Case 1: no mapping exists => insert a new one!
+    if (empty($result)) { 
       \Drupal::database()->insert('wisski_core_ontology_namespaces')
               ->fields(array('short_name' => $short_name,'long_name' => $long_name))
               ->execute();
-    } else {
-     //      drupal_set_message('Namespace '.$short_name.' already exists in DB');
+      return;
     }
-  }
+
+    // Case 2a: Exactly one mapping exists AND has an identical long_name.$_COOKIE
+    // For example:
+    //
+    // Database contains ecrm:http://erlangen-crm.org/200717/
+    // $this->putNamespace("ecrm", "http://erlangen-crm.org/200717/");
+    
+    if (count($result) == 1 && ($result[0]->long_name == $long_name)){
+      return;
+    }
+
+    if (count($result) > 1) {
+      // TODO: tell the user about case 3, but don't do anything
+      // Info "Danger Zone: More than one instance of $short_name detected in namespace list"
+    }
+
+    // Case 2b: smart rename
+    // For example:
+    //
+    // Database contains ecrm:http://erlangen-crm.org/200717/
+    // $this->putNamespace("ecrm", "http://erlangen-crm.org/211015/");
+
+    // search the database for all names that start with "${short_name}_"
+    // then generate a new name that is different from the existing ones.
+
+    $short_name_prefix = str_replace(['\\', '_', '%'], ['\\\\', '\\_', '\\%'], $short_name);
+    $results = \Drupal::database()->select('wisski_core_ontology_namespaces', 'ns')
+            ->condition('ns.short_name', $short_name_prefix . '%','LIKE')
+            ->fields('ns', ['short_name','long_name'])
+            ->orderBy('ns.long_name', 'DESC')
+            ->execute()
+            ->fetchAll();
+
+    $results = json_decode(json_encode($results), true);
+    
+    // get all long names and sort only by them
+    // smaller numbers will be at the beginning of the array
+    $all_longnames = [];
+    foreach($results as $tmp){
+      $all_longnames[] = $tmp['long_name'];
+    }
+    $all_longnames[] = $long_name;
+
+    sort($all_longnames, SORT_STRING);
+ 
+    // delete all entries from the data table which refer to the long names in 
+    // $all_longnames (= sorted long name array)
+    // and insert them again with the appropriate name+index
+    // the first entry in the sorted array gets the short name without an index
+    // the others are enumerated beginning with 1
+
+    $counter = 0;
+    $new_name = $short_name;
+    foreach($all_longnames as $tmp_longname){     
+        \Drupal::database()->delete('wisski_core_ontology_namespaces')     
+        ->condition('long_name', $tmp_longname)
+        ->execute();
+        if($counter > 0){
+          $new_name = $short_name . "_" . $counter;
+        }
+        \Drupal::database()->insert('wisski_core_ontology_namespaces')
+        ->fields(array('short_name' => $new_name, 'long_name' => $tmp_longname))
+        ->execute();
+        $counter++;
+        }
+    }
+
 
   /*
   * This should be made global as it actually stores the namespaces globally
