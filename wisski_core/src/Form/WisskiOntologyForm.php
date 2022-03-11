@@ -151,30 +151,6 @@ class WisskiOntologyForm extends FormBase {
             '#submit' => [[$this, 'deleteOntology']],
           );
 
-          $ns = "";
-          $ns = $engine->getNamespaces();
-          
-          if (count($ns) > 0) {
-            foreach($ns as $key => $value) {
-              $tablens[] = [$key,$value, $this->forwardNamespace($key)];
-            }
-
-            $form['stores']['ns_table'] = array(
-              '#type' => 'table',
-              '#header' => ['short name (prefix label)', 'long name (IRI)', 'options'],
-              '#rows' => $tablens,
-              '#cache' => ['max-age' => 0],
-            );
-
-            // Button for deleting the namespaces from the corresponding table
-            $form['stores']['delete_all_ns'] = array(
-              '#type' => 'submit',
-              '#button_type' => 'primary',
-              '#name' => 'Namespaces',
-              '#value' => 'Delete Namespaces',
-              '#submit' => [[$this, 'deleteAllNamespaces']],
-            );
-          }
         } else {
           // No ontology was found
           $form['stores']['load_onto'] = array(
@@ -195,28 +171,6 @@ class WisskiOntologyForm extends FormBase {
 
     return $form;
 
-  }
-
-  public function forwardNamespace($namespace){
-    // MyFi: define a button to delete and edit namespaces
-    // later this button will added to each row of the namespace list
-    $links['edit'] = [
-      'title' => $this->t('Edit'),
-      'url' => Url::fromRoute('wisski.wisski_ontology.namespace.edit_confirm', ['namespace' => $namespace])
-    ];
-    $links['delete'] = [
-      'title' => $this->t('Delete'),
-      'url' => Url::fromRoute('wisski.wisski_ontology.namespace.delete_confirm', ['namespace' => $namespace])
-    ];
-
-    $ns_operations = [
-      'data' => [
-        '#type' => 'operations',
-        '#links' => $links,
-        ]
-      ];
-
-    return $ns_operations;
   }
 
   public static function ajaxStores(array $form, FormStateInterface $form_state) {

@@ -267,3 +267,10 @@ wisski.wisski_ontology.namespace.edit_confirm:
   requirements:
     _permission: 'administer wisski'
     namespace: '\w+'
+
+wisski.wisski_ontology.namespace.show_table:
+  path: '/admin/config/wisski/ontology/namespaces/table'
+  defaults:
+    _controller: '\Drupal\wisski_core\Controller\WisskiNamespaceController::loadNamespaceTable'
+  requirements:
+    _permission: 'administer wisski'

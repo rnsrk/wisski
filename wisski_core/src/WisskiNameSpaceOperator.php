@@ -2,22 +2,25 @@
 
 namespace Drupal\wisski_core;
 
-use Drupal\Core\Database\Connection;
+use Drupal\Core\Database\ConnectionInterface;
+use Drupal\wisski_core\Entity\WisskiBundle;
+use Drupal\wisski_pathbuilder\WisskiPathInterface;
+use Drupal\wisski_salz\Query\WisskiQueryBase;
 
 /**
  * This class manages single namespaces.
  *   The functions edit and delete of single namespaces are defined here.
  */
-class WisskiNameSpaceOperator{
+class WisskiNameSpaceOperator {
 
     /**
      * Database connection.
      *
-     * @var Drupal\Core\Database\Connection 
+     * @var Drupal\Core\Database\ConnectionInterface 
      */
-    private Connection $connection;
+    private ConnectionInterface $connection;
 
-    public function __construct(Connection $connection) {
+    public function __construct(ConnectionInterface $connection) {
         $this->connection = $connection;
     }
 
