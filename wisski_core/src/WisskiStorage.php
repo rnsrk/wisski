@@ -1126,7 +1126,11 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                       $preview_image_uri = str_replace("public:/", \Drupal::service('stream_wrapper.public')->baseUrl(), $preview_image_uri);
                     }
                     
-                    $new_field_values[$id][$field_name] = array($preview_image_uri);
+                    $preview_id = $this->getFileId($preview_image_uri);
+                    
+#                    dpm($preview_id);
+                    $new_field_values[$id][$field_name] = array(array("target_id" => intval($preview_id)));
+//                    $new_field_values[$id][$field_name] = array($preview_image_uri);
                   }
 #                  dpm($new_field_values, "nfv?");
                   
@@ -1522,6 +1526,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
         $mime_type = \Drupal::service('file.mime_type.guesser')->guess($local_file_uri);
 
         $file->setMimeType($mime_type);
+        $file->setPermanent();
 
         $file->save();
         $value = $file->id();
@@ -2318,6 +2323,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
     return TRUE;
   }
 
+
   /**
    * this gathers the URI i.e. some public:// or remote path to this entity's
    * preview image
@@ -2337,11 +2343,12 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
       return $preview;
     }
 #    dpm("4.2.3: " . microtime());
+#    dpm(serialize($this->preview_image_adapters), "pre?");
     //if the cache had nothing try the adapters
     //for this purpose we need the entity URIs, which are stored in the local
     //store, so if there is none, stop here
-    if (empty($this->preview_image_adapters)) return NULL;
-
+#    if (empty($this->preview_image_adapters)) return NULL;
+#dpm("alive");
     $found_preview = FALSE;
 
     // we iterate through all the selected adapters but we stop at the first
@@ -2509,6 +2516,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
       #$this->storage->getFileId($input_uri,$output_uri);
       // generalized this line for external use
       $this->getFileId($input_uri, $output_uri);
+
 #    dpm("4.2.4.2: " . microtime());
       //try to get the WissKI preview image style
       $image_style = $this->getPreviewStyle();
@@ -2545,6 +2553,28 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
       $output_uri = drupal_get_path('module', 'wisski_core') . "/images/img_nopic.png";
 #      dpm($output_uri, "out");
       $preview_uri = $image_style->buildUri($output_uri);
+      
+      $existing_files = \Drupal::entityTypeManager()
+        ->getStorage('file')
+        ->loadByProperties([
+        'uri' => $preview_uri,
+      ]);
+
+      if (!count($existing_files)) {
+        
+        $user = \Drupal::currentUser();
+        
+        $file = File::create([
+          'uri' => $preview_uri,
+          'uid' => $user
+            ->id(),
+        ]);
+      
+        $file->setPermanent();
+      
+        $file->save();
+      }
+      
       if ($out = $image_style->createDerivative($output_uri,$preview_uri)) {
         WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
         return $preview_uri;
