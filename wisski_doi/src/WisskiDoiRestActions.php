@@ -2,11 +2,13 @@
 
 namespace Drupal\wisski_doi;
 
-use Drupal\Core\Messenger\Messenger;
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\wisski_doi\Exception\WisskiDoiSettingsNotFoundException;
 use Drupal\wisski_doi\Form\WisskiDoiRepositorySettings;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 
@@ -21,11 +23,32 @@ class WisskiDoiRestActions {
   use StringTranslationTrait;
 
   /**
+   * The translation service.
+   *
+   * @var \Drupal\Core\StringTranslation\TranslationInterface
+   */
+  protected $stringTranslation;
+
+  /**
+   * The messenger service.
+   *
+   * @var \Drupal\Core\Messenger\Messenger
+   */
+  private MessengerInterface $messenger;
+
+  /**
    * Guzzle\Client instance.
    *
-   * @var \GuzzleHttp\Client
+   * @var \GuzzleHttp\ClientInterface
    */
-  protected $httpClient;
+  protected ClientInterface $httpClient;
+
+  /**
+   * The config service.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected ConfigFactoryInterface $configFactory;
 
   /**
    * Settings from DOI Configuration page.
@@ -36,13 +59,6 @@ class WisskiDoiRestActions {
   private array $doiSettings;
 
   /**
-   * The messenger service.
-   *
-   * @var \Drupal\Core\Messenger\Messenger
-   */
-  private Messenger $messenger;
-
-  /**
    * Construct instance with DOI settings and check them.
    *
    * Create a GuzzleClient locally (may a service injection is better?)
@@ -50,11 +66,11 @@ class WisskiDoiRestActions {
    * (Configuration->[WISSKI]->WissKI DOI Settings)
    * Checks if settings are missing.
    */
-  public function __construct(TranslationInterface $stringTranslation) {
+  public function __construct(TranslationInterface $stringTranslation, MessengerInterface $messenger, ClientInterface $httpClient, ConfigFactoryInterface $configFactory) {
     $this->stringTranslation = $stringTranslation;
-    $this->messenger = \Drupal::service("messenger");
-    $this->httpClient = \Drupal::httpClient();
-    $settings = \Drupal::configFactory()
+    $this->messenger = $messenger;
+    $this->httpClient = $httpClient;
+    $settings = $configFactory
       ->getEditable(WisskiDoiRepositorySettings::DOI_SETTINGS);
 
     $this->doiSettings = [

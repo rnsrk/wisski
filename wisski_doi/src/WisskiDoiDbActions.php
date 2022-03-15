@@ -3,7 +3,7 @@
 namespace Drupal\wisski_doi;
 
 use Drupal\Core\Database\Connection;
-use Drupal\Core\Messenger\Messenger;
+use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -25,9 +25,9 @@ class WisskiDoiDbActions {
   /**
    * The Drupal messenger service.
    *
-   * @var \Drupal\Core\Messenger\Messenger
+   * @var \Drupal\Core\Messenger\MessengerInterface
    */
-  private Messenger $messenger;
+  private MessengerInterface $messenger;
 
   /**
    * Get services through dependency injection.
@@ -41,9 +41,9 @@ class WisskiDoiDbActions {
   /**
    * Establish database connection with query builder.
    */
-  public function __construct(Connection $connection, TranslationInterface $stringTranslation) {
+  public function __construct(Connection $connection, MessengerInterface $messenger, TranslationInterface $stringTranslation) {
     $this->connection = $connection;
-    $this->messenger = \Drupal::service('messenger');
+    $this->messenger = $messenger;
     $this->stringTranslation = $stringTranslation;
   }
 
@@ -89,7 +89,8 @@ class WisskiDoiDbActions {
    *   The entity id.
    * @param ?int $did
    *   The internal DOI identifier from the wisski_doi table.
-   *
+   * @param ?int $isCurrent
+   *   If it is the current revision.
    * @return array
    *   Dataset of corresponding DOIs to an entity.
    */

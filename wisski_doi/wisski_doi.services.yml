@@ -13,8 +13,12 @@ services:
     class: Drupal\wisski_doi\WisskiDoiDbActions
     arguments:
       - '@database'
+      - '@messenger'
       - '@string_translation'
   wisski_doi.wisski_doi_rest_actions:
     class: Drupal\wisski_doi\WisskiDoiRestActions
     arguments:
       - '@string_translation'
+      - '@messenger'
+      - '@http_client'
+      - '@config.factory'

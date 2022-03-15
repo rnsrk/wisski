@@ -4,7 +4,7 @@ namespace Drupal\wisski_doi;
 
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Datetime\DateFormatterInterface;
-use Drupal\Core\Entity\EntityTypeManager;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\user\Entity\User;
@@ -99,7 +99,7 @@ class WisskiDoiActions {
    *   The WissKi DOI Rest service.
    * @param \Drupal\wisski_doi\WisskiDoiDbActions $wisskiDoiDbActions
    *   The WissKI DOI database service.
-   * @param \Drupal\Core\Entity\EntityTypeManager $entityTypeManager
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The Drupal entity type manager service.
    */
   public function __construct(TranslationInterface $stringTranslation,
@@ -107,7 +107,7 @@ class WisskiDoiActions {
                               TimeInterface $time,
                               WisskiDoiRestActions $wisskiDoiRestActions,
                               WisskiDoiDbActions $wisskiDoiDbActions,
-                              EntityTypeManager $entityTypeManager
+                              EntityTypeManagerInterface $entityTypeManager
                               ) {
     $this->stringTranslation = $stringTranslation;
     $this->dateFormatter = $date_formatter;
