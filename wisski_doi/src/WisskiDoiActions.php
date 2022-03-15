@@ -57,26 +57,26 @@ class WisskiDoiActions implements WisskiDoiActionsInterface {
   /**
    * The service to interact with the REST API .
    *
-   * @var \Drupal\wisski_doi\WisskiDoiDataciteRestActions
+   * @var \Drupal\wisski_doi\WisskiDoiRestActionsInterface
    */
-  protected WisskiDoiDataciteRestActions $wisskiDoiRestActions;
+  protected WisskiDoiRestActionsInterface $wisskiDoiRestActions;
 
   /**
    * The service to interact with the database.
    *
-   * @var \Drupal\wisski_doi\WisskiDoiDbActions
+   * @var \Drupal\wisski_doi\WisskiDoiDbActionsInterface
    */
-  protected WisskiDoiDbActions $wisskiDoiDbActions;
+  protected WisskiDoiDbActionsInterface $wisskiDoiDbActions;
 
   /**
    * {@inheritDoc}
    */
-  public function __construct(TranslationInterface         $stringTranslation,
-                              DateFormatterInterface       $date_formatter,
-                              TimeInterface                $time,
-                              WisskiDoiDataciteRestActions $wisskiDoiRestActions,
-                              WisskiDoiDbActions           $wisskiDoiDbActions,
-                              EntityTypeManagerInterface   $entityTypeManager
+  public function __construct(TranslationInterface $stringTranslation,
+                              DateFormatterInterface $date_formatter,
+                              TimeInterface $time,
+                              WisskiDoiRestActionsInterface $wisskiDoiRestActions,
+                              WisskiDoiDbActionsInterface $wisskiDoiDbActions,
+                              EntityTypeManagerInterface $entityTypeManager
                               ) {
     $this->stringTranslation = $stringTranslation;
     $this->dateFormatter = $date_formatter;
