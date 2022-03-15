@@ -4,7 +4,6 @@ namespace Drupal\wisski_pathbuilder;
 
 require __DIR__ . '/../../vendor/autoload.php';
 
-use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
