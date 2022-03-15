@@ -7,7 +7,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Url;
 use Drupal\wisski_doi\WisskiDoiDbActions;
-use Drupal\wisski_doi\WisskiDoiRestActions;
+use Drupal\wisski_doi\WisskiDoiDataciteRestActions;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -20,9 +20,9 @@ class WisskiDoiConfirmFormDeleteDoi extends ConfirmFormBase {
   /**
    * The service to interact with the REST API .
    *
-   * @var \Drupal\wisski_doi\WisskiDoiRestActions
+   * @var \Drupal\wisski_doi\WisskiDoiDataciteRestActions
    */
-  protected WisskiDoiRestActions $wisskiDoiRestActions;
+  protected WisskiDoiDataciteRestActions $wisskiDoiRestActions;
 
   /**
    * The service to interact with the database.
@@ -34,12 +34,12 @@ class WisskiDoiConfirmFormDeleteDoi extends ConfirmFormBase {
   /**
    * Form for removing a draft DOI from the provider and the local database.
    *
-   * @param \Drupal\wisski_doi\WisskiDoiRestActions $wisskiDoiRestActions
+   * @param \Drupal\wisski_doi\WisskiDoiDataciteRestActions $wisskiDoiRestActions
    *   The WissKi DOI Rest Service.
    * @param \Drupal\wisski_doi\WisskiDoiDbActions $wisskiDoiDbActions
    *   The WissKI DOI database Service.
    */
-  public function __construct(WisskiDoiRestActions $wisskiDoiRestActions, WisskiDoiDbActions $wisskiDoiDbActions) {
+  public function __construct(WisskiDoiDataciteRestActions $wisskiDoiRestActions, WisskiDoiDbActions $wisskiDoiDbActions) {
     $this->wisskiDoiRestActions = $wisskiDoiRestActions;
     $this->wisskiDoiDbActions = $wisskiDoiDbActions;
   }

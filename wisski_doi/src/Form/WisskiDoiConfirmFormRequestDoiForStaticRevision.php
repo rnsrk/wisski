@@ -13,7 +13,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\wisski_doi\WisskiDoiActions;
 use Drupal\wisski_doi\WisskiDoiDbActions;
-use Drupal\wisski_doi\WisskiDoiRestActions;
+use Drupal\wisski_doi\WisskiDoiDataciteRestActions;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -83,9 +83,9 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
   /**
    * The service to interact with the REST API .
    *
-   * @var \Drupal\wisski_doi\WisskiDoiRestActions
+   * @var \Drupal\wisski_doi\WisskiDoiDataciteRestActions
    */
-  protected WisskiDoiRestActions $wisskiDoiRestActions;
+  protected WisskiDoiDataciteRestActions $wisskiDoiRestActions;
 
   /**
    * The service to interact with the database.
@@ -103,16 +103,16 @@ class WisskiDoiConfirmFormRequestDoiForStaticRevision extends ConfirmFormBase {
    *   The date formatter service.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
-   * @param \Drupal\wisski_doi\WisskiDoiRestActions $wisskiDoiRestActions
+   * @param \Drupal\wisski_doi\WisskiDoiDataciteRestActions $wisskiDoiRestActions
    *   The WissKi DOI Rest Service.
    * @param \Drupal\wisski_doi\WisskiDoiDbActions $wisskiDoiDbActions
    *   The WissKI DOI database Service.
    */
-  public function __construct(WisskiStorageInterface $wisski_storage,
-                              DateFormatterInterface $date_formatter,
-                              TimeInterface $time,
-                              WisskiDoiRestActions $wisskiDoiRestActions,
-                              WisskiDoiDbActions $wisskiDoiDbActions) {
+  public function __construct(WisskiStorageInterface       $wisski_storage,
+                              DateFormatterInterface       $date_formatter,
+                              TimeInterface                $time,
+                              WisskiDoiDataciteRestActions $wisskiDoiRestActions,
+                              WisskiDoiDbActions           $wisskiDoiDbActions) {
     $this->wisskiStorage = $wisski_storage;
     $this->dateFormatter = $date_formatter;
     $this->time = $time;

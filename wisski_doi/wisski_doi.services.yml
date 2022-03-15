@@ -16,7 +16,7 @@ services:
       - '@messenger'
       - '@string_translation'
   wisski_doi.wisski_doi_rest_actions:
-    class: Drupal\wisski_doi\WisskiDoiRestActions
+    class: Drupal\wisski_doi\WisskiDoiDataciteRestActions
     arguments:
       - '@string_translation'
       - '@messenger'

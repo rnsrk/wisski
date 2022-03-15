@@ -12,12 +12,11 @@ use Drupal\wisski_core\WisskiEntityInterface;
 use Drupal\wisski_core\WisskiStorage;
 use Drupal\wisski_doi\Form\WisskiDoiConfirmFormRequestDoiForStaticRevision;
 use Drupal\wisski_salz\AdapterHelper;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Controller for DOI actions.
  */
-class WisskiDoiActions {
+class WisskiDoiActions implements WisskiDoiActionsInterface {
   use StringTranslationTrait;
   /**
    * The WisskiEntity revision.
@@ -58,9 +57,9 @@ class WisskiDoiActions {
   /**
    * The service to interact with the REST API .
    *
-   * @var \Drupal\wisski_doi\WisskiDoiRestActions
+   * @var \Drupal\wisski_doi\WisskiDoiDataciteRestActions
    */
-  protected WisskiDoiRestActions $wisskiDoiRestActions;
+  protected WisskiDoiDataciteRestActions $wisskiDoiRestActions;
 
   /**
    * The service to interact with the database.
@@ -70,44 +69,14 @@ class WisskiDoiActions {
   protected WisskiDoiDbActions $wisskiDoiDbActions;
 
   /**
-   * Populate the reachable variables from services.
-   *
-   * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
-   *   The class container.
+   * {@inheritDoc}
    */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('string_translation'),
-      $container->get('date.formatter'),
-      $container->get('datetime.time'),
-      $container->get('wisski_doi.wisski_doi_rest_actions'),
-      $container->get('wisski_doi.wisski_doi_db_actions'),
-      $container->get('entity_type.manager'),
-    );
-  }
-
-  /**
-   * Constructs a new form to request a DOI for a static revision.
-   *
-   * @param \Drupal\Core\StringTranslation\TranslationInterface $stringTranslation
-   *   The translations service.
-   * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
-   *   The date formatter service.
-   * @param \Drupal\Component\Datetime\TimeInterface $time
-   *   The time service.
-   * @param \Drupal\wisski_doi\WisskiDoiRestActions $wisskiDoiRestActions
-   *   The WissKi DOI Rest service.
-   * @param \Drupal\wisski_doi\WisskiDoiDbActions $wisskiDoiDbActions
-   *   The WissKI DOI database service.
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
-   *   The Drupal entity type manager service.
-   */
-  public function __construct(TranslationInterface $stringTranslation,
-                              DateFormatterInterface $date_formatter,
-                              TimeInterface $time,
-                              WisskiDoiRestActions $wisskiDoiRestActions,
-                              WisskiDoiDbActions $wisskiDoiDbActions,
-                              EntityTypeManagerInterface $entityTypeManager
+  public function __construct(TranslationInterface         $stringTranslation,
+                              DateFormatterInterface       $date_formatter,
+                              TimeInterface                $time,
+                              WisskiDoiDataciteRestActions $wisskiDoiRestActions,
+                              WisskiDoiDbActions           $wisskiDoiDbActions,
+                              EntityTypeManagerInterface   $entityTypeManager
                               ) {
     $this->stringTranslation = $stringTranslation;
     $this->dateFormatter = $date_formatter;
@@ -118,13 +87,7 @@ class WisskiDoiActions {
   }
 
   /**
-   * Assembles metadata from WissKI individual.
-   *
-   * @param \Drupal\wisski_core\WisskiEntityInterface $wisskiIndividual
-   *   The WissKI Individual.
-   *
-   * @return array
-   *   The metadata of the WissKI individual.
+   * {@inheritDoc}
    */
   public function getWisskiIndividualMetadata(WisskiEntityInterface $wisskiIndividual) {
     $revisionUser = $wisskiIndividual->getRevisionUser();
@@ -134,7 +97,8 @@ class WisskiDoiActions {
     elseif (isset($wisskiIndividual->get('uid')->getValue()[0]['target_id'])) {
       $uid = $wisskiIndividual->get('uid')->getValue()[0]['target_id'];
       $author = User::load($uid)->getDisplayName();
-    } else {
+    }
+    else {
       $author = ':unkn';
     }
     return [

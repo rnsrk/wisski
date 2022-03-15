@@ -6,17 +6,15 @@ use Drupal\Core\Database\Connection;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Controller for DB CRUD actions.
+ * Service for database CRUD actions.
  */
-class WisskiDoiDbActions {
-
+class WisskiDoiDbActions implements WisskiDoiDbActionsInterface {
   use StringTranslationTrait;
 
   /**
-   * The query builder object.
+   * The database connection service.
    *
    * @var \Drupal\Core\Database\Connection
    */
@@ -30,16 +28,7 @@ class WisskiDoiDbActions {
   private MessengerInterface $messenger;
 
   /**
-   * Get services through dependency injection.
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('database')
-    );
-  }
-
-  /**
-   * Establish database connection with query builder.
+   * {@inheritDoc}
    */
   public function __construct(Connection $connection, MessengerInterface $messenger, TranslationInterface $stringTranslation) {
     $this->connection = $connection;
@@ -48,21 +37,7 @@ class WisskiDoiDbActions {
   }
 
   /**
-   * Write DOI data to DB.
-   *
-   * @param array $dbData
-   *   Contains:
-   *   eid: The entity ID as eid.
-   *   doi: DOI string with prefix and suffix.
-   *   vid: The revision ID as vid.
-   *   state: The state of the DOI (draft, registered, findable).
-   *   revisionUrl: Full external URL of the revision.
-   *   isCurrent: 0|1.
-   *
-   * @return Null
-   *   Query execution returns nothing.
-   *
-   * @throws \Exception
+   * {@inheritDoc}
    */
   public function writeToDb(array $dbData) {
     return $this->connection->insert('wisski_doi')
@@ -79,20 +54,7 @@ class WisskiDoiDbActions {
   }
 
   /**
-   * Select the records corresponding to an entity.
-   *
-   * We parse the strClass $records to an array with the
-   * json_decode/json_encode() functions. More transitions in
-   * WisskiDoiAdministration::rowBuilder().
-   *
-   * @param ?int $eid
-   *   The entity id.
-   * @param ?int $did
-   *   The internal DOI identifier from the wisski_doi table.
-   * @param ?int $isCurrent
-   *   If it is the current revision.
-   * @return array
-   *   Dataset of corresponding DOIs to an entity.
+   * {@inheritDoc}
    */
   public function readDoiRecords(int $eid, ?int $did = NULL, ?int $isCurrent = NULL) {
     $query = $this->connection
@@ -126,18 +88,7 @@ class WisskiDoiDbActions {
   }
 
   /**
-   * Select the latest DOI corresponding to an entity.
-   *
-   * We parse the strClass $records to an array with the
-   * json_decode/json_encode() functions.
-   *
-   * @param int $eid
-   *   The entity id.
-   * @param int $isCurrent
-   *   If the DOI is for current revision.
-   *
-   * @return array
-   *   Dataset of corresponding DOIs to an entity.
+   * {@inheritDoc}
    */
   public function readLatestDoiRecords(int $eid, int $isCurrent) {
     $query = $this->connection
@@ -158,13 +109,7 @@ class WisskiDoiDbActions {
   }
 
   /**
-   * Delete the DOI record.
-   *
-   * @param ?int $did
-   *   The internal DOI id.
-   *
-   * @return int
-   *   Dataset of corresponding DOIs to an entity.
+   * {@inheritDoc}
    */
   public function deleteDoiRecord(?int $did = NULL) {
     $result = $this->connection->delete('wisski_doi')
@@ -175,12 +120,7 @@ class WisskiDoiDbActions {
   }
 
   /**
-   * Update the DOI record.
-   *
-   * @param string $state
-   *   The internal DOI id.
-   * @param ?int $did
-   *   The internal DOI id.
+   * {@inheritDoc}
    */
   public function updateDbRecord(string $state, ?int $did = NULL) {
     if (!$did) {
@@ -195,16 +135,7 @@ class WisskiDoiDbActions {
   }
 
   /**
-   * Select the individuals corresponding to a bundle.
-   *
-   * We parse the strClass $records to an array with the
-   * json_decode/json_encode() functions.
-   *
-   * @param string $bundle_id
-   *   The bundle id.
-   *
-   * @return array
-   *   Dataset of corresponding DOIs to an entity.
+   * {@inheritDoc}
    */
   public function readBundleRecords(string $bundle_id) {
     $language = \Drupal::languageManager()->getCurrentLanguage()->getId();
