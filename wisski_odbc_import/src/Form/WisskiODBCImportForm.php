@@ -152,7 +152,7 @@ class WisskiODBCImportForm extends FormBase {
 #dpm(microtime(), "simplexml after");
     // parse the db parameters 
     $db_params = $this->getConnectionParams($import_script_xml);
-#    dpm(microtime(), "params?");
+#    dpm($db_params, "params?");
 #    return;
     // we have two operation modes: batch and non-batch
     // if limit is 0 we are in non-batch mode, else batch
@@ -202,6 +202,7 @@ class WisskiODBCImportForm extends FormBase {
     if (isset($import_script_xml->connection)) {
       $connection_xml = $import_script_xml->connection;
     }
+#    dpm($connection_xml, "con?");
     if (isset($connection_xml['use_drupal_db']) && $connection_xml['use_drupal_db']) {
       $params['is_drupal_db'] = TRUE;
     }
@@ -376,7 +377,7 @@ class WisskiODBCImportForm extends FormBase {
       // build the count query
       $tablename = isset($table->name) ? (string) $table->name : '';
       $append = isset($table->append) ? (string) $table->append : '';
-      $sql = "SELECT COUNT(*) FROM `$tablename` $append";
+      $sql = "SELECT COUNT(*) FROM $tablename $append";
     }
 
     // do the db query; distinguish if local connection or not
@@ -424,7 +425,7 @@ class WisskiODBCImportForm extends FormBase {
       $select = isset($table->select) ? (string) $table->select : '';
       if(empty($append))
         $append = "";
-      $sql = "SELECT $select FROM `$tablename` $append";
+      $sql = "SELECT $select FROM $tablename $append";
     }
     if ($limit) {
       $sql .= " LIMIT $limit";
