@@ -26,5 +26,8 @@ configuration.ontology.display_ontologies:
   route_name: wisski.wisski_ontology
   base_route: wisski.wisski_ontology
   title: Display Ontologies
-  
+configuration.ontology.display_namespaces:
+  route_name: wisski.wisski_ontology.namespace.show_table
+  base_route: wisski.wisski_ontology
+  title: Display Namespaces
 

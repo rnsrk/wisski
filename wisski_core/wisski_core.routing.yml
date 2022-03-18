@@ -150,6 +150,7 @@ entity.wisski_bundle.delete_title_form:
 wisski.menu:
   path: '/admin/config/wisski'
   defaults:
+    _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
     _title: 'WissKI'
   requirements:
     _permission: 'administer wisski'
@@ -272,5 +273,6 @@ wisski.wisski_ontology.namespace.show_table:
   path: '/admin/config/wisski/ontology/namespaces/table'
   defaults:
     _controller: '\Drupal\wisski_core\Controller\WisskiNamespaceController::loadNamespaceTable'
+    _title: 'Namespaces'
   requirements:
     _permission: 'administer wisski'
