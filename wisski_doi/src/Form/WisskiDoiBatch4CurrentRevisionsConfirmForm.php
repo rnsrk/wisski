@@ -8,7 +8,7 @@ use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\wisski_doi\WisskiDoiActions;
 use Drupal\wisski_doi\WisskiDoiDbActions;
-use Drupal\wisski_doi\WisskiDoiRestActions;
+use Drupal\wisski_doi\WisskiDoiDataciteRestActions;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -36,17 +36,17 @@ class WisskiDoiBatch4CurrentRevisionsConfirmForm extends WisskiDoiBatch4StaticRe
    *   The time service.
    * @param \Drupal\wisski_doi\WisskiDoiActions $wisskiDoiActions
    *   The WissKi DOI Service.
-   * @param \Drupal\wisski_doi\WisskiDoiRestActions $wisskiDoiRestActions
+   * @param \Drupal\wisski_doi\WisskiDoiDataciteRestActions $wisskiDoiRestActions
    *   The WissKi DOI Rest Service.
    * @param \Drupal\wisski_doi\WisskiDoiDbActions $wisskiDoiDbActions
    *   The WissKI DOI database Service.
    */
-  public function __construct(WisskiStorageInterface $wisski_storage,
-                              DateFormatterInterface $date_formatter,
-                              TimeInterface $time,
-                              WisskiDoiActions $wisskiDoiActions,
-                              WisskiDoiRestActions $wisskiDoiRestActions,
-                              WisskiDoiDbActions $wisskiDoiDbActions) {
+  public function __construct(WisskiStorageInterface       $wisski_storage,
+                              DateFormatterInterface       $date_formatter,
+                              TimeInterface                $time,
+                              WisskiDoiActions             $wisskiDoiActions,
+                              WisskiDoiDataciteRestActions $wisskiDoiRestActions,
+                              WisskiDoiDbActions           $wisskiDoiDbActions) {
     $this->wisskiStorage = $wisski_storage;
     $this->dateFormatter = $date_formatter;
     $this->time = $time;

@@ -5,6 +5,7 @@ namespace Drupal\wisski_doi\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
 use Drupal\wisski_doi\WisskiDoiDbActions;
+use Drupal\wisski_doi\WisskiDoiDbActionsInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -15,14 +16,14 @@ class WisskiDoiAdministration extends ControllerBase {
   /**
    * The service to interact with the database.
    *
-   * @var \Drupal\wisski_doi\WisskiDoiDbActions
+   * @var \Drupal\wisski_doi\WisskiDoiDbActionsInterface
    */
-  private WisskiDoiDbActions $wisskiDOiDbActions;
+  private WisskiDoiDbActionsInterface $wisskiDOiDbActions;
 
   /**
    * Construct the WisskiDoiAdministration class.
    */
-  public function __construct(WisskiDoiDbActions $wisskiDOiDbActions) {
+  public function __construct(WisskiDoiDbActionsInterface $wisskiDOiDbActions) {
     $this->wisskiDOiDbActions = $wisskiDOiDbActions;
   }
 

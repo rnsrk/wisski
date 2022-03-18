@@ -78,7 +78,8 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $header = array('preview_image'=>$this->t('Entity'),'title'=>'','operations'=>$this->t('Operations'));
     }
     if ($grid_type === 'grid') {
-      $header = NULL;
+      $header = array();
+//      $header = NULL;
     }
 
     //the 'table' element will be used in both types
@@ -254,18 +255,22 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       $query->pager($this->limit);
       $query->range($this->page*$this->limit,$this->limit);
     }
+    
+    $qgroup = $query->andConditionGroup();
     //dpm($query);
     if (!empty($this->bundle)) {
       if ($pattern = $this->bundle->getTitlePattern()) {
         //add the title parts to the query, non-optional parts must not be empty
         foreach ($pattern as $key => $attributes) {
           if ($attributes['type'] === 'path' && !$attributes['optional']) {
-            $query->condition($attributes['name']);
+            $qgroup->condition($attributes['name']);
           }
         }
       }
       //add the bunlde condition
-      $query->condition('bundle',$this->bundle->id());
+      $qgroup->condition('bundle',array($this->bundle->id() => $this->bundle->id()));
+
+      $query->condition($qgroup);
 
       //execute the query
 #wisski_tick();
@@ -279,6 +284,7 @@ class WisskiEntityListBuilder extends EntityListBuilder {
       }
 
       $return = $entity_ids;
+#      dpm(serialize($return), "ret?");
     } else $return = $query->execute();
     $this->num_entities = count($return);
     /*
@@ -437,7 +443,7 @@ $timethis = microtime(TRUE);
     $row['operations'] = $this->getOperationLinks($entity_id);
 $timethis = microtime(TRUE) - $timethis;
 $timeall += $timethis;
-
+#    dpm($row);
     return $row;
   } 
 

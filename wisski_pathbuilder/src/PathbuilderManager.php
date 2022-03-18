@@ -4,7 +4,7 @@ namespace Drupal\wisski_pathbuilder;
 
 require __DIR__ . '/../../vendor/autoload.php';
 
-use Drupal\Core\Entity\EntityTypeManager;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\StringTranslation\TranslationInterface;
@@ -56,7 +56,7 @@ class PathbuilderManager {
    */
   public function __construct(TranslationInterface $stringTranslation,
                               FileRepositoryInterface $file,
-                              EntityTypeManager $entityTypeManager) {
+                              EntityTypeManagerInterface $entityTypeManager) {
     $this->stringTranslation = $stringTranslation;
     $this->file = $file;
     $this->wisskiPathbuilderStorage = $entityTypeManager->getStorage('wisski_pathbuilder');
