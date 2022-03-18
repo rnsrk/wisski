@@ -1064,12 +1064,12 @@ class WisskiIndividualQuery extends QueryPluginBase
         // add %% in front and so on - I don't know why they do it like that and
         // probably there is a better way to do this...
         // but for now we get rid of this here.
-        if($operator == "LIKE") {
+        if($operator == "LIKE" || $operator == "ILIKE") {
           $operator = "CONTAINS";
           $value = str_replace("%", "", $value);
         }
         
-        if($operator == "NOT LIKE") {
+        if($operator == "NOT LIKE" ||  || $operator == "NOT ILIKE") {
           $operator = "!=";
 //          $value = str_replace("%", "", $value);
         }
