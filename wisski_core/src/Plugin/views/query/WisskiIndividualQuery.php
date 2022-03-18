@@ -1069,7 +1069,7 @@ class WisskiIndividualQuery extends QueryPluginBase
           $value = str_replace("%", "", $value);
         }
         
-        if($operator == "NOT LIKE" ||  || $operator == "NOT ILIKE") {
+        if($operator == "NOT LIKE" || $operator == "NOT ILIKE") {
           $operator = "!=";
 //          $value = str_replace("%", "", $value);
         }
