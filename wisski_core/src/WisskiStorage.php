@@ -1016,7 +1016,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
           $known_entity_ids[$id] = TRUE;
           
           // if we have something in cache, take that first.
-          if (isset($cached_bundle)) {
+          if (isset($cached_bundle) && !empty($cached_bundle)) {
             $bundle_ids = array($cached_bundle);
           } else {
 
