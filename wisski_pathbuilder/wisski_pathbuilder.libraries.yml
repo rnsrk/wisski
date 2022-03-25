@@ -5,4 +5,7 @@ wisski_pathbuilder:
 wisski_pathbuilder_solr:
   js:
     js/wisski_pathbuilder_solr.js: {}
+wisski_pathbuilder_collapse:
+  js:
+    js/wisski_pathbuilder_collapse.js: {}
   

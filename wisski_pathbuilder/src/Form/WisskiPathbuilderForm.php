@@ -149,6 +149,12 @@ class WisskiPathbuilderForm extends EntityForm {
           'id' => 'wisski_pathbuilder_' . $pathbuilder->id(),
         ],
 
+        '#attached' => [
+          'library' => [
+            'wisski_pathbuilder/wisski_pathbuilder_collapse',
+          ],
+        ],
+
         '#tabledrag' => [
 
           [
@@ -855,7 +861,7 @@ class WisskiPathbuilderForm extends EntityForm {
       '#type' => 'label',
       '#title' =>
       $path->getName(),
-      '#attributes' => $path->isGroup() ? ['style' => 'font-weight: bold;'] : ['style' => 'font-weight: normal; font-style:italic;'],
+      '#attributes' => $path->isGroup() ? ['data-pathbuilder-group' => 'true', 'style' => 'font-weight: bold;'] : ['data-pathbuilder-group' => 'false', 'style' => 'font-weight: normal; font-style:italic;'],
     ];
 
     if (!$enabled) {
