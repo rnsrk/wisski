@@ -1949,7 +1949,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         // so don't queue up like that.
 
 //        if($path->isGroup()) { // only do this for groups - for fields we have to handle this otherwise.
-        if(!empty($path->getDisamb()))
+        if(empty($path->getDisamb()))
           $disamb = (count($path_array) + 1) / 2;
         else
           $disamb = $path->getDisamb();
