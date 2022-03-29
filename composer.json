@@ -18,10 +18,5 @@
     "minimum-stability": "dev",
     "require": {
         "easyrdf/easyrdf":"*"
-    },
-    "autoload": {
-        "psr-4": {
-            "Drupal\\wisski_core\\": "src/"
-        }
     }
 }
