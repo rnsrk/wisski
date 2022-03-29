@@ -7,8 +7,6 @@
 
 namespace Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine;
 
-require __DIR__ . '/../../../../../vendor/autoload.php';
-
 use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
 use Drupal\field\Entity\FieldStorageConfig;

@@ -7,9 +7,6 @@
 
 namespace Drupal\wisski_salz\Plugin\wisski_salz\Engine;
 
-require __DIR__ . '/../../../../..//vendor/autoload.php';
-
-
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 
