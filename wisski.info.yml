@@ -1,0 +1,12 @@
+name: WissKI
+description: Basis setup for WissKI
+core: 8.x
+package: WissKI
+version: 3.6
+type: module
+core_version_requirement: ^8 || ^9
+dependencies:
+  - wisski:wisski_core
+  - wisski:wisski_adapter_sparql11_pb
+  - wisski:wisski_pathbuilder
+  - wisski:wisski_salz

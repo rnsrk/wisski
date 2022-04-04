@@ -1,0 +1,13 @@
+<?php
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implementation of Hook_help
+ */
+function wisski_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.wisski':
+      return '<p>' . t('This module is just a wrapper for the basic setup of a WissKI environment. Please visit <a href=":wisski_url">wiss-ki.eu</a> for more information.', [':wisski_url' => 'https://wiss-ki.eu']) . '</p>';
+  }
+}
