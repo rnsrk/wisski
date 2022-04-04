@@ -2,8 +2,6 @@
 
 namespace Drupal\wisski_salz\Plugin\wisski_salz\Engine;
 
-require __DIR__ . '/../../../../..//vendor/autoload.php';
-
 use EasyRdf\Sparql\Client as EasyRdf_Sparql_Client;
 use EasyRdf\RdfNamespace as EasyRdf_Namespace;
 use EasyRdf\Http as EasyRdf_Http;
@@ -23,15 +21,15 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 
   /**
    * Create a new instance of the Sparql WissKI client
-   * 
+   *
    * The $queryURI and $updateURI parameters behave like the corresponding parameters
-   * of EasyRdf_Sparql_Client. 
-   * 
-   * The $extraHeaders parameter is optional, and should be either null or an associative array. 
+   * of EasyRdf_Sparql_Client.
+   *
+   * The $extraHeaders parameter is optional, and should be either null or an associative array.
    * When it is set, headers defined inside this parameter will be added to each request
    * made by this WissKI_Sparql_Client. It is the callers responsibility to ensure that it does
-   * not conflict with internal headers. This parameter is typically used for authenticastion. 
-   * 
+   * not conflict with internal headers. This parameter is typically used for authenticastion.
+   *
    * By Tom and Mark
    */
   function __construct($queryUri, $updateURI = null, $extraHeaders = null) {
@@ -55,14 +53,14 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 
     // Check for undefined prefixes
     $prefixes = '';
-    // @TODO: Check - this should not happen every time I query something, this is very 
+    // @TODO: Check - this should not happen every time I query something, this is very
     // inefficient. Just check it in case of updates!
     foreach (EasyRdf_Namespace::namespaces() as $prefix => $uri) {
       if (strpos($query, "$prefix:") !== false and strpos($query, "PREFIX $prefix:") === false) {
         $prefixes .=  "PREFIX $prefix: <$uri>\n";
       }
     }
-    
+
     $client = EasyRdf_Http::getDefaultHttpClient();
     $client->resetParameters();
     $client->setConfig(array(
@@ -76,7 +74,7 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
     if (!is_null($this->extraHeaders)) {
       call_user_func_array(array($client, "setHeaders"), $this->extraHeaders);
     }
-    
+
 
     // Tell the server which response formats we can parse
     $accept = EasyRdf_Format::getHttpAcceptHeader(
@@ -98,17 +96,17 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 			$encodedQuery = 'update='.urlencode($prefixes . $query);
 			$client->setRawData($encodedQuery);
 			$client->setHeaders('Content-Type', 'application/x-www-form-urlencoded;charset=utf-8');
-	
+
 		} elseif ($type == 'query') {
 				// Use GET if the query is less than 2kB
 				// 2046 = 2kB minus 1 for '?' and 1 for NULL-terminated string on server
 				$encodedQuery = 'query='.rawurlencode($prefixes . $query);
-#				drupal_set_message(json_encode($query, JSON_UNESCAPED_SLASHES));        
+#				drupal_set_message(json_encode($query, JSON_UNESCAPED_SLASHES));
         /*  we do not use GET as it leads to corrupted non-ASCII chars the way
             it is programmed atm.
             we just always use POST as an interim patch until we know the exact
             problem.
-            Obsolete: we found a the trick by applying json encoding first, 
+            Obsolete: we found a the trick by applying json encoding first,
             see below
             Obsolete: we encode non-ASCII chars in the escapeSparqlLiteral()
             function now. Such chars should only occur in the literals...
@@ -163,7 +161,7 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
 				"HTTP request for SPARQL query failed: ".$response->getBody()
 			);
 		}
-		
+
 	}
 
 

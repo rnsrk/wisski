@@ -7,9 +7,6 @@
 
 namespace Drupal\wisski_salz\Plugin\wisski_salz\Engine;
 
-require __DIR__ . '/../../../../..//vendor/autoload.php';
-
-
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 
@@ -27,7 +24,7 @@ abstract class Sparql11Engine extends EngineBase {
   protected $write_url;
 
   protected $is_federatable;
-  
+
   protected $graph_rewrite;
 
   protected $default_graph;
@@ -35,9 +32,9 @@ abstract class Sparql11Engine extends EngineBase {
   protected $ontology_graphs;
 
   protected $rdf_sparql_util = NULL;
-  
+
   protected $has_drupal_id;
-  
+
   protected $has_drupal_namespace;
 
   /**
@@ -47,7 +44,7 @@ abstract class Sparql11Engine extends EngineBase {
 #    dpm("s1et base field was called with $uri, $basefield and $value.");
 
     #    dpm(microtime(), "yay?");
-    
+
 //    $uris[AdapterHelper::getDrupalAdapterNameAlias()] = AdapterHelper::generateWisskiUriFromId($entity_id);
     //we use the originates property as name fot the graph for sameAs info
     $basefieldinfo = $this->getBaseFieldGraph();
@@ -59,34 +56,34 @@ abstract class Sparql11Engine extends EngineBase {
 
 #    $escvalue = $this->escapeSparqlLiteral($value);
 #    $basefieldurl = $this->getDefaultDataGraphUri() . $basefield;
-    
+
     try {
 #        drupal_set_message(htmlentities("INSERT DATA { GRAPH <$orig_prop> { $origin $same }}"), "yay!");
       $result = $this->directQuery("SELECT ?basefieldurl ?value { GRAPH <$basefieldinfo> { <$uri> ?basefieldurl ?value . ?basefieldurl a owl:AnnotationProperty . }}");
-      
+
       $out = FALSE;
 
-      // if we know nothing - stop it!      
+      // if we know nothing - stop it!
       if(!$result) {
         return FALSE;
       }
-      
+
       if(count($result) > 0) {
         foreach($result as $res) {
           $basefieldurl = $res->basefieldurl->getValue();
           $basefield = substr($basefieldurl, count($basefieldinfo));
-          
+
           $out[$basefield] = $res->value->getValue();
         }
       }
-            
+
       return $out;
-      
+
 #      return TRUE;
     } catch (\Exception $e) {
       \Drupal::logger(__METHOD__)->error($e->getMessage());
     }
-    
+
     return FALSE;
   }
 
@@ -97,7 +94,7 @@ abstract class Sparql11Engine extends EngineBase {
 #    dpm("s1et base field was called with $uri, $basefield and $value.");
 
     #    dpm(microtime(), "yay?");
-    
+
 //    $uris[AdapterHelper::getDrupalAdapterNameAlias()] = AdapterHelper::generateWisskiUriFromId($entity_id);
     //we use the originates property as name fot the graph for sameAs info
     $basefieldinfo = $this->getBaseFieldGraph();
@@ -109,34 +106,34 @@ abstract class Sparql11Engine extends EngineBase {
 
 #    $escvalue = $this->escapeSparqlLiteral($value);
     $basefieldurl = $this->getDefaultDataGraphUri() . $basefield;
-    
+
     try {
 #        drupal_set_message(htmlentities("INSERT DATA { GRAPH <$orig_prop> { $origin $same }}"), "yay!");
       $result = $this->directQuery("SELECT ?value { GRAPH <$basefieldinfo> { <$uri> <$basefieldurl> ?value . <$basefieldurl> a owl:AnnotationProperty . }}");
-      
+
       $out = FALSE;
 
-      // if we know nothing - stop it!      
+      // if we know nothing - stop it!
       if(!$result) {
         return FALSE;
       }
-      
+
       if(count($result) > 0) {
         foreach($result as $res) {
           $out[] = $res->value->getValue();
         }
       }
-            
+
       return $out;
-      
+
 #      return TRUE;
     } catch (\Exception $e) {
       \Drupal::logger(__METHOD__)->error($e->getMessage());
     }
-    
+
     return FALSE;
   }
-    
+
   /**
    * {@inheritdoc}
    */
@@ -144,7 +141,7 @@ abstract class Sparql11Engine extends EngineBase {
 #    dpm("s1et base field was called with $uri, $basefield and $value.");
 
     #    dpm(microtime(), "yay?");
-    
+
 //    $uris[AdapterHelper::getDrupalAdapterNameAlias()] = AdapterHelper::generateWisskiUriFromId($entity_id);
     //we use the originates property as name fot the graph for sameAs info
     $basefieldinfo = $this->getBaseFieldGraph();
@@ -153,14 +150,14 @@ abstract class Sparql11Engine extends EngineBase {
       $this->messenger()->addError("No Default Basefield Graph Uri was set in the store configuration. Please fix it!");
       return FALSE;
     }
-    
+
     if(is_array($value))
       $value = serialize($value);
 
     $escvalue = $this->escapeSparqlLiteral($value);
-    
+
     $basefieldurl = $this->getDefaultDataGraphUri() . $basefield;
-    
+
     try {
 #        drupal_set_message(htmlentities("INSERT DATA { GRAPH <$orig_prop> { $origin $same }}"), "yay!");
       // special case for int because we want to sort otherwise with that...
@@ -172,7 +169,7 @@ abstract class Sparql11Engine extends EngineBase {
     } catch (\Exception $e) {
       \Drupal::logger(__METHOD__)->error($e->getMessage());
     }
-    
+
     return FALSE;
   }
 
@@ -190,19 +187,19 @@ abstract class Sparql11Engine extends EngineBase {
   public function getFederationServiceUrl() {
     return $this->read_url;
   }
-  
+
   /** Holds the EasyRDF sparql client instance that is used to
    * query the endpoint.
    * It is not set on construction.
    * Use getEndpoint() for direct access to the API.
-   * 
+   *
    * However, the API should not be exposed outside this class, rather this
    * class provides directQuery() and directUpdate() for sending sparql queries
    * to the store.
-   */ 
+   */
   protected $endpoint = NULL;
-  
-  
+
+
   public function defaultConfiguration() {
     return parent::defaultConfiguration() + [
       'header' => '',
@@ -269,7 +266,7 @@ abstract class Sparql11Engine extends EngineBase {
       '#default_value' => $this->header,
       '#description' => $this->t('Provide credentials for HTTP Basic Authentication. Leave empty if there if you don\'t know what this is, otherwise generate using \'printf "%s:%s" "$username" "$password" | base64 -w 0\' on the command line. '),
     ];
-    
+
     $form['read_url'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Endpoint URI for reading'),
@@ -300,7 +297,7 @@ abstract class Sparql11Engine extends EngineBase {
       '#return_value' => TRUE,
       '#description' => 'rewrite queries, so that remote SPARQL storages with non-standard dataset handling do always answer right',
     );
-    
+
     */
     $form['default_graph'] = [
       '#type' => 'textfield',
@@ -316,7 +313,7 @@ abstract class Sparql11Engine extends EngineBase {
       '#description' => $this->t('Graphs that are considered to be containing ontology information. These are used to compute class and property information like hierarchies, domain/range, etc. Leave empty let system automatically detect the graphs.'),
     ];
 
-    
+
     $form['same_as_properties'] = array('#type'=>'container');
     $form['same_as_properties']['sameAsProperties'] = $form['sameAsProperties'];
     unset($form['sameAsProperties']);
@@ -330,20 +327,20 @@ abstract class Sparql11Engine extends EngineBase {
         'callback' => array($this,'sameAsCallback'),
       ),
     );
-    
+
     $selection = $form_state->getUserInput();
-    
+
     if (isset($selection['available_same_as_properties']) && $input = $selection['available_same_as_properties']) {
       $value = $selection['sameAsProperties'];
       $value = $value ? $value.",\n".$input : $input;
       $form['same_as_properties']['sameAsProperties']['#value'] = $value;
     }
-    
+
     return $form;
   }
 
   public function sameAsCallback(array $form, FormStateInterface $form_state) {
-    
+
     return $form['same_as_properties']['sameAsProperties'];
   }
 
@@ -358,15 +355,15 @@ abstract class Sparql11Engine extends EngineBase {
     $this->is_federatable = $form_state->getValue('is_federatable');
     $this->graph_rewrite = $form_state->getValue('graph_rewrite');
     $this->default_graph = $form_state->getValue('default_graph');
-    $this->ontology_graphs = preg_split('/[\s\n\r]+/u', $form_state->getValue('ontology_graphs'), PREG_SPLIT_NO_EMPTY); 
+    $this->ontology_graphs = preg_split('/[\s\n\r]+/u', $form_state->getValue('ontology_graphs'), PREG_SPLIT_NO_EMPTY);
   }
-  
+
   /**
    * returns a list of well-known RDF properties saying that two individuals are (mostly) the same
    * provides a selection for the user to choose from
    */
   public function standardSameAsProperties() {
-  
+
     return array(
       'http://www.w3.org/2002/07/owl#sameAs' => 'owl:sameAs',
       'http://www.w3.org/2004/02/skos/core#closeMatch' => 'skos:closeMatch',
@@ -376,19 +373,19 @@ abstract class Sparql11Engine extends EngineBase {
       'http://www.w3.org/2004/02/skos/core#relatedMatch' => 'skos:relatedMatch',
     );
   }
-  
+
   //*** Implementation of the EngineInterface methods ***//
-  
+
 
   public function hasEntity($entity_id) {
     return FALSE;
   }
-  
+
   public function createEntity($entity) {
     return FALSE;
   }
 
-  
+
   /**
    * @deprecated
    * {@inheritdoc}
@@ -396,7 +393,7 @@ abstract class Sparql11Engine extends EngineBase {
   public function loadMultiple($entity_ids = NULL) {
     return array("bla", "blubb");
   }
-  
+
 
   /**
    * {@inheritdoc}
@@ -411,9 +408,9 @@ abstract class Sparql11Engine extends EngineBase {
       )
     );
   }
-  
 
-  
+
+
 
   /**
    * {@inheritdoc}
@@ -437,37 +434,37 @@ abstract class Sparql11Engine extends EngineBase {
 
 
    /** Return the API to connect to the sparql endpoint
-  * 
+  *
   * This method should be called if you need an endpoint. It lazy loads the Easyrdf instance
   * which may save time.
-  * 
+  *
   * @return Returns a EasyRdf_Sparql_Client instance (or a subclass) that is inited to
   * connect to the givensparql 1.1 endpoint.
   */
   protected function getEndpoint() {
-    
+
     if ($this->endpoint === NULL) {
       include_once(__DIR__ . '/WissKI_Sparql_Client.php');
       $this->endpoint = new WissKI_Sparql_Client($this->read_url, $this->write_url, $this->header ? array('Authorization', "Basic " . $this->header) : null);
     }
     return $this->endpoint;
 
-  }  
-  
+  }
+
 
   // *** PUBLIC MEMBER FUNCTIONS *** //
 
-  // 
-  // Functions for direct access, firstly designed for test purposes  
   //
-  
+  // Functions for direct access, firstly designed for test purposes
+  //
+
   private function rewriteValues($query) {
     if(strpos($query, "VALUES") !== NULL) {
       preg_match_all ( "/VALUES \?(\S+) { <(.[^>]+)> }/", $query, $matches);
-      
+
       if(empty($matches))
         return $query;
-      
+
       foreach($matches[1] as $key => $match) {
         if(!empty($matches[2][$key])) {
 
@@ -486,14 +483,14 @@ abstract class Sparql11Engine extends EngineBase {
           // do not do any replacement if the variable is in the select statement!
           if(strpos($select, "?" . $match) !== FALSE) {
 #            dpm($query, "query was");
-            continue; 
+            continue;
           }
 
           // cut away the values-thingie
           $where = str_replace($matches[0][$key], "", $where);
 
           // replace $match with ? in front with some uri we matched before.
-          $where = str_replace("?" . $match, "<" . $matches[2][$key] . ">", $where); 
+          $where = str_replace("?" . $match, "<" . $matches[2][$key] . ">", $where);
 
 
           $query = $select . $where;
@@ -501,17 +498,17 @@ abstract class Sparql11Engine extends EngineBase {
           #dpm("replacing $match with " . $matches[2][$key]);
 #          dpm($query, "result");
         }
-      } 
-      
+      }
+
     }
-    
+
     return $query;
-  } 
-    
+  }
+
   /** Can be used to directly access the easyrdf sparql interface
   *
-  * If not necessary, don't use this interface. 
-  * 
+  * If not necessary, don't use this interface.
+  *
   * @return @see EasyRdf_Sparql_Client->query
   */
   public function directQuery($query) {
@@ -519,8 +516,8 @@ abstract class Sparql11Engine extends EngineBase {
 
     #$mic = microtime(true);
     if ($this->graph_rewrite) $query = $this->graphInsertionRewrite($query);
-    
-    
+
+
     // do some speeding?
     // here we replace values ?xsomething { <one_uri> }
     // with the direct replacement - this is much faster.
@@ -529,26 +526,26 @@ abstract class Sparql11Engine extends EngineBase {
 #    dpm($queryn, "tuned");
 
 #    $done1 = microtime(true);
-    
+
 #    dpm($done1 - $mic, "rewriting took: ");
-#  return;    
+#  return;
     $out = $this->doQuery($query);
-    
+
 #    if(strlen($query) != strlen($queryn)) {
 #      dpm($out, "out?");
 #      dpm($query, "old");
 #      dpm($queryn, "new");
 #    }
 #    $done = microtime(true);
-    
+
 #    if($done - $mic > 0.01) {
 #      dpm($done - $mic, "I took long!");
 #      dpm($query, "I do query!");
 #    }
-    
+
     return $out;
   }
-  
+
   private function doQuery($query) {
     if (WISSKI_DEVEL) \Drupal::logger('QUERY '.$this->adapterId())->debug('{q}',array('q'=>$query));
     try {
@@ -572,9 +569,9 @@ abstract class Sparql11Engine extends EngineBase {
       \Drupal::logger('QUERY '.$this->adapterId())->error('query "{query}" caused error: {e}',array('query' => $query, 'e'=> (string) $e));
     }
   }
-  
+
   public function graphInsertionRewrite($query) {
-    
+
     //dpm($query,'input');
     //first gather all variable names
     $vars = array();
@@ -586,14 +583,14 @@ abstract class Sparql11Engine extends EngineBase {
     $count = 0;
     $new_query = preg_replace('/(SELECT\s+(?:DISTINCT\s+)?)\*/i','$1'.implode(' ',$this->vars),$query,1,$count);
     //if ($count) dpm($new_query,'variable (*) replacement');
-    
-    $uri_regex = '(?:\<[^\s\<\>\?]+\>|\w+\:[^\:\s\<\>\?\{\}]+|a)';  
+
+    $uri_regex = '(?:\<[^\s\<\>\?]+\>|\w+\:[^\:\s\<\>\?\{\}]+|a)';
     $placeholder_regex = "(?:$uri_regex|$variable_regex)";
     $triple_regex = "$placeholder_regex\s+$placeholder_regex\s+$placeholder_regex\s*(?:\.|(?=\}))";
-    
+
     //if there already is a graph in the query, we must not rewrite that part
     $graph_detection_regex = "(GRAPH\s+\?\w+\s+((?:[^{}]+|\{(?2)\})*))";
-    //preg_split with PREG_SPLIT_DELIM_CAPTURE flag gives us a list of query parts where the GRAPH... parts are 
+    //preg_split with PREG_SPLIT_DELIM_CAPTURE flag gives us a list of query parts where the GRAPH... parts are
     //divided from the rest, pitily it is not possible to keep preg_split from including the recursive subpatter (?2)
     //in the result array
     $split = preg_split("/$graph_detection_regex/",$new_query,-1,PREG_SPLIT_DELIM_CAPTURE);
@@ -614,7 +611,7 @@ abstract class Sparql11Engine extends EngineBase {
     //dpm($new_query,'graph rewrite');
     return $new_query;
   }
-  
+
   public function graphReplacement($matches) {
     //dpm($matches);
     $triple = $matches[0];
@@ -629,24 +626,24 @@ abstract class Sparql11Engine extends EngineBase {
     return "{{ $triple } UNION {GRAPH $graph_name { $triple }}}";
   }
 
-  
+
   /**
    * returns TRUE if this engine provides a kind of datatype that shall be used for the end of pathbuilder paths
    * @TODO add this to the interface
    */
   public function providesDatatypeProperty() {
-  
+
     return TRUE;
   }
 
   /** Can be used to directly access the easyrdf sparql interface
   *
   * If not necessary, don't use this interface
-  * 
+  *
   * @return @see EasyRdf_Sparql_Client->update
   */
   public function directUpdate($query) {
-    #if (WISSKI_DEVEL)    
+    #if (WISSKI_DEVEL)
 #    \Drupal::logger('UPDATE IN '.$this->adapterId())->debug('{u}',array('u'=>$query));
 #    return;
     try {
@@ -662,23 +659,23 @@ abstract class Sparql11Engine extends EngineBase {
   }
 
   public function checkUriExists($uri) {
-    
+
     #dpm($this,__FUNCTION__);
     if ($this->isValidUri("<$uri>")) {
       $query = "ASK {{<$uri> ?p ?o.} UNION {?s ?p <$uri>.}}";
 #      dpm($query);
       $result = $this->directQuery($query);
-      
+
 #      dpm($result);
 #      dpm($result->isTrue());
-      
+
       $out = FALSE;
 
-      // if we know nothing - stop it!      
+      // if we know nothing - stop it!
       if(!$result) {
         return FALSE;
       }
-      
+
       if($result->getBoolean() == true) {
         $out = TRUE;
       } else if(count($result) > 0) {
@@ -687,7 +684,7 @@ abstract class Sparql11Engine extends EngineBase {
             $out = TRUE;
         }
       }
-            
+
       return $out;
     }
     return FALSE;
@@ -701,7 +698,7 @@ abstract class Sparql11Engine extends EngineBase {
    * in this case it just returns the input
    */
   public function getDrupalId($uri) {
-    
+
     if (empty($uri)) return FALSE;
     if (is_numeric($uri)) {
       //danger zone, we assume a numeric $uri to be an entity ID itself
@@ -717,41 +714,41 @@ abstract class Sparql11Engine extends EngineBase {
     // easy case - the uri has the id itself.
     if(strpos($uri, "/wisski/navigate/") !== FALSE)
       return AdapterHelper::extractIdFromWisskiUri($uri);
-    
+
 #    dpm(AdapterHelper::getDrupalAdapterNameAlias(), "calling getSameUris");
-    
+
     // if not, we have to search it.
     $entity_uris = $this->getSameUris($uri,AdapterHelper::getDrupalAdapterNameAlias());
-    
+
     if (empty($entity_uris)) return NULL;
 
     // our uri has to be something like /wisski/navigate/.../view
-#    dpm($entity_uris, "uris!");    
+#    dpm($entity_uris, "uris!");
     foreach($entity_uris as $entity_uri) {
       if(strpos($entity_uri, "/wisski/navigate/") !== FALSE)
         return AdapterHelper::extractIdFromWisskiUri($entity_uri);
     }
-    
+
     $this->messenger()->addError("No entity id could be extracted for uri $uri - sorry. Got: " . serialize($entity_uris));
     return NULL;
   }
-  
+
   public function getUrisForDrupalId($id) {
-    
+
     $entity_uri = AdapterHelper::generateWisskiUriFromId($id);
     return $this->getSameUris($entity_uri);
   }
-  
+
   /**
    * {@inheritdoc}
    */
   public function getSameUris($uri) {
-    
+
     $orig_prop = $this->getOriginatesProperty();
-    
+
     $same_props = $this->getSameAsProperties();
     $prop = NULL;
-    
+
     if ($prop = current($same_props)) {
       $prop = $this->ensurePointyBrackets($prop);
 
@@ -767,21 +764,21 @@ abstract class Sparql11Engine extends EngineBase {
 #    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> {<$uri> ?same_as ?uri. ?uri <$orig_prop> ?adapter. }}";
 #    $query = "SELECT DISTINCT ?uri ?adapter WHERE { $values GRAPH <$orig_prop> { { <$uri> ?same_as ?uri } UNION { <$uri> ?same_as ?tmp1 . ?tmp1 ?same_as ?uri } . ?uri <$orig_prop> ?adapter .}} ORDER BY DESC(?uri)";
 
-    // this is the old structure: in graph $orig_prop we had <$uri> same-as-prop ?uri 
+    // this is the old structure: in graph $orig_prop we had <$uri> same-as-prop ?uri
     // unioned with <$uri> same-as-prop something tmp and that has the ?uri
     // and the ?uri has $orig-prop to some adapter.
     // this is heavily usage of stupid things... so we don't do that anymore in future...
     $query = "SELECT DISTINCT ?uri ?adapter WHERE { GRAPH <$orig_prop> { { <$uri> $prop ?uri } UNION { <$uri> $prop ?tmp1 . ?tmp1 $prop ?uri } . OPTIONAL { ?uri <$orig_prop> ?adapter .}  } } ORDER BY DESC(?uri)";
 
     // what we want to have is:
-    // we have a graph $orig_prop and in this we have a set per website and 
+    // we have a graph $orig_prop and in this we have a set per website and
     // in this set we have <drupal_id_property> drupalid (numeric)
     //                 and <drupal_namespace> the base url of the system (string)
-    
+
 #    dpm($query, "query");
     $results = $this->directQuery($query);
 #    dpm(serialize($results), "res");
-    
+
     $out = array();
     if (empty($results)) return array();
     foreach ($results as $obj) {
@@ -791,9 +788,9 @@ abstract class Sparql11Engine extends EngineBase {
 #       $out[$obj->adapter->dumpValue('text')] = $obj->uri->getUri();
       $out[$obj->adapter->getValue()] = $obj->uri->getUri();
     }
-    
+
 #    dpm($out, "aout");
-    
+
     return $out;
   }
 
@@ -822,14 +819,14 @@ abstract class Sparql11Engine extends EngineBase {
     return NULL;
   }
 
-  
+
   /**
    * {@inheritdoc}
    */
   public function setSameUris($uris, $entity_id) {
-    
+
 #    dpm(microtime(), "yay?");
-    
+
     $uris[AdapterHelper::getDrupalAdapterNameAlias()] = AdapterHelper::generateWisskiUriFromId($entity_id);
     //we use the originates property as name fot the graph for sameAs info
     $orig_prop = $this->getOriginatesProperty();
@@ -838,7 +835,7 @@ abstract class Sparql11Engine extends EngineBase {
       $this->messenger()->addError("No Default Graph Uri was set in the store configuration. Please fix it!");
       return FALSE;
     }
-    
+
     $origin = "<$orig_prop> a owl:AnnotationProperty. ";
     $same = '';
     foreach ($uris as $adapter_id => $first) {
@@ -852,7 +849,7 @@ abstract class Sparql11Engine extends EngineBase {
         }
       }
     }
-    if (!empty($same)) {  
+    if (!empty($same)) {
       try {
 #        drupal_set_message(htmlentities("INSERT DATA { GRAPH <$orig_prop> { $origin $same }}"), "yay!");
         $this->directUpdate("INSERT DATA { GRAPH <$orig_prop> { $origin $same }}");
@@ -868,15 +865,15 @@ abstract class Sparql11Engine extends EngineBase {
   public function deleteSameUris($uris, $other_uris = [], $delete_adapter_ref = TRUE) {
     if (empty($uris)) return;
     if (!is_array($uris)) $uris = array($uris);
-    
+
     $orig_prop = $this->getOriginatesProperty();
-    
+
     $values = 'VALUES ?uri { <' . join('> <', $uris) . '> }';
     if (!empty($other_uris)) {
       if (!is_array($other_uris)) $other_uris = array($other_uris);
       $values .= ' VALUES ?other { <' . join('> <', $uris) . '> }';
     }
-    
+
     $qa = array();
     if ($delete_adapter_ref) {
       $qa[] = "DELETE { GRAPH <$orig_prop> { ?uri <$orig_prop> ?aid } } WHERE { $values GRAPH <$orig_prop> { ?uri <$orig_prop> ?aid } }";
@@ -895,14 +892,14 @@ abstract class Sparql11Engine extends EngineBase {
     }
 
   }
-  
-   
+
+
   public function generateFreshIndividualUri() {
     return uniqid($this->getDefaultDataGraphUri());
   }
-  
+
   public function ensurePointyBrackets($uri) {
-    
+
     if (strpos($uri,'/') !== FALSE) {
       //ensure we have a full uri in < >
       $uri = '<'.trim($uri,'<>').'>';
@@ -911,17 +908,17 @@ abstract class Sparql11Engine extends EngineBase {
   }
 
   public function defaultSameAsProperties() {
-    
+
     return array('http://www.w3.org/2002/07/owl#sameAs');
   }
-  
+
   public function getOriginatesProperty() {
-    
+
     return $this->getDefaultDataGraphUri()."originatesFrom";
   }
-  
+
   public function getBaseFieldGraph() {
-    
+
     return $this->getDefaultDataGraphUri()."baseFields";
   }
 
@@ -930,11 +927,11 @@ abstract class Sparql11Engine extends EngineBase {
     return $this->default_graph;
     return "graf://dr.acula/";
   }
-  
-  public function getPathArray($path) {    
-    
+
+  public function getPathArray($path) {
+
   }
-  
+
   /** Builds a sparql query from a given path and execute it.
   *
   * !This is thought to be a convenience function!
@@ -945,11 +942,11 @@ abstract class Sparql11Engine extends EngineBase {
   *  EasyRdfSparqlResult though as the query verb is always SELECT)
   */
   public function execQuerySinglePath(array $path, array $options = array()) {
-    
+
     if (empty($path)) {
       throw new InvalidArgumentException("Empty path given");
     }
-    
+
     if (is_numeric($path)) {
       $path = $this->getPathArray($path);
     }
@@ -957,25 +954,25 @@ abstract class Sparql11Engine extends EngineBase {
     if (!is_array($path) || empty($path)) {
       throw new InvalidArgumentException("Bad path given: " . serialize($path));
     }
-    
+
     // prepare query
     $options['fields'] = FALSE;
-    
+
     // build it
     $sparql = $this->buildQuerySinglePath($path, $options);
-    
+
     // exec
     $result = $this->directQuery($sparql);
-    
-    // postprocess result?
-    
-    
-    return $result;
-      
-  }
-  
 
-  
+    // postprocess result?
+
+
+    return $result;
+
+  }
+
+
+
   /** This function returns a SPARQL 1.1 query for a given path.
   *
   * !This is thought to be a convenience function!
@@ -984,14 +981,14 @@ abstract class Sparql11Engine extends EngineBase {
    * the following entries:
    * $key    | $value
    * ------------------------------------------------------------
-   * 'path_array'   | array of strings representing owl:ObjectProperties 
+   * 'path_array'   | array of strings representing owl:ObjectProperties
    *                    | and owl:Classes in alternating order
    * 'datatype_property'| string representing an owl:DatatypeProperty
    *
-   * For the path_array, instead of strings, also arrays with more 
+   * For the path_array, instead of strings, also arrays with more
    * sophisticated options are supported. See code comments below for details.
    *
-   * @param options is an associative array that may contain the following 
+   * @param options is an associative array that may contain the following
    * entries:
    * $key     | $value
    * ------------------------------------------------------------
@@ -1020,12 +1017,12 @@ abstract class Sparql11Engine extends EngineBase {
    *          is TRUE
    */
   public function buildQuerySinglePath(array $path, array $options = []) {
-    
+
     // variable naming
     $varInstPrefix = isset($options['var_inst_prefix']) ? $options['var_inst_prefix'] : 'x';
     $varOffset = isset($options['var_offset']) ? $options['var_offset'] : 0;
     $varDt = '?' . (isset($options['var_dt']) ? $options['var_dt'] : 'out');
-        
+
     // vars for the query parts
     $head = "SELECT DISTINCT ";
     $vars = [];
@@ -1033,7 +1030,7 @@ abstract class Sparql11Engine extends EngineBase {
     $constraints = '';
     $order = '';
     $limit = '';
-    
+
     $pathArray = $path['path_array'];
     if (empty($pathArray)) {
       throw new InvalidArgumentException('Path of length zero given.');
@@ -1042,9 +1039,9 @@ abstract class Sparql11Engine extends EngineBase {
     $uris = isset($options['uris']) ? $options['uris'] : [];
 
     $var = '';
-    
+
     while (!empty($pathArray)) {
-      
+
       // an individual
       //
       // currently supported values:
@@ -1066,12 +1063,12 @@ abstract class Sparql11Engine extends EngineBase {
           ],
         ];
       }
-      
+
       // constrain possible uris
       if (isset($uris[$var])) {
         $constraints .= "VALUES $var {<" . implode('> <', $uris[$var]) . ">} .\n";
       }
-      
+
       // further triplewise constraints
       foreach ($indiv['constraints'] as $prop => $vals) {
         foreach ($vals as $val) {
@@ -1093,17 +1090,17 @@ abstract class Sparql11Engine extends EngineBase {
         //   - expand inverses: if TRUE, expand the given uris to all inverses, too
 
         $prop = array_shift($pathArray);
-        
+
         if (!is_array($elem)) {
           $prop = [
             'uris' => [$prop => 1],  // normal direction
             'expand inverses' => TRUE,
           ];
         }
-        
+
         if (empty($prop['uris'])) {
           throw new InvalidArgumentException('No URIs given for property.');
-        } 
+        }
 
         // compute the inverse(s) if not given
         // TODO: magic numbers to constants
@@ -1123,12 +1120,12 @@ abstract class Sparql11Engine extends EngineBase {
             }
           }
         }
-        
-        // variable for next indiv        
+
+        // variable for next indiv
         $varPlus = "?$varInstPrefix" . ($varOffset + 1);
         $vars[$varPlus] = $varPlus;
-  
-        
+
+
         // generate triples for inverse and normal
         $tr = [];
         foreach ($prop['uris'] as $uri => $direction) {
@@ -1145,24 +1142,24 @@ abstract class Sparql11Engine extends EngineBase {
           $triples .= '{ { ' . join(' } UNION { ', $tr) . ' } }';
         }
         $triples .= "\n";
-        
+
         // we update the last var here
         $var = $varPlus;
 
       }
-      
+
       // we always increment the counter, even if a step defines its own name
       // this helps for more opacity
-      $varOffset++;  
+      $varOffset++;
 
     } // end path while loop
-    
+
     // add datatype property/ies if there
     if (isset($path['datatype_property'])) {
-      
+
       $vars[$varDt] = $varDt;
       $props = $path['datatype_property'];
-      
+
       if (!is_array($props)) {
         $props = [
           'uris' => [$props],
@@ -1186,8 +1183,8 @@ abstract class Sparql11Engine extends EngineBase {
       }
 
     } // end datatype prop
-  
-    // set order: we either order by 
+
+    // set order: we either order by
     // - the variable set in order_var (and it exists)
     // - or the datatype variable (if it exists)
     // otherwise we ignore order option
@@ -1204,7 +1201,7 @@ abstract class Sparql11Engine extends EngineBase {
       }
       $order .= ')';
     }
-    
+
     // set limit and offset
     if (!empty($options['limit'])) $limit .= 'LIMIT ' . $options['limit'];
     if (!empty($options['offset'])) $limit .= 'OFFSET ' . $options['offset'];
@@ -1213,9 +1210,9 @@ abstract class Sparql11Engine extends EngineBase {
     if (isset($options['vars'])) {
       $vars = array_intersect($vars, $options['vars']);
     }
-    
+
     // return either a complete query as string or its parts as an array
-    return empty($options['fields']) ? 
+    return empty($options['fields']) ?
       $head . join(' ', $vars) . ' WHERE { ' . $triples . $constraints . '} ' . $order . $limit
       : [
         'head' => $head,
@@ -1228,7 +1225,7 @@ abstract class Sparql11Engine extends EngineBase {
 
   }
 
-  
+
   /** Helper function that parses a search struct and builds a sparql filter
   * from it.
   *
@@ -1263,9 +1260,9 @@ abstract class Sparql11Engine extends EngineBase {
       return '';
 
     } elseif ($depth == 0 && isset($search['mode'])) {
-      
+
       return "FILTER " . $this->_buildSearchFilter($search, $dtVar, 1);
-        
+
     } elseif ($depth == 0 && !empty($search)) {
 
       // an easy case: we just search for a list of literals
@@ -1278,7 +1275,7 @@ abstract class Sparql11Engine extends EngineBase {
       return $res;
 
     } elseif (isset($search['mode'])) {
-      
+
       $mode = strtoupper($search['mode']);
       switch ($mode) {
         case 'AND':
@@ -1293,7 +1290,7 @@ abstract class Sparql11Engine extends EngineBase {
         case 'NOT':
           $res = $this->_buildSearchFilter($search['term'], $dtVar, $depth + 1);
           return "( NOT $res )";
-        
+
         // comparison of strings and numbers
         case '=':
         case '!=':
@@ -1316,7 +1313,7 @@ abstract class Sparql11Engine extends EngineBase {
           $term = $search['term'];
           return "(REGEX(STR($dtVar), '" . $this->escapeSparqlLiteral($term) . "'))";
 
-        default:  
+        default:
           throw new InvalidArgumentException("Unknown search operator: $mode");
       }
 
@@ -1325,11 +1322,11 @@ abstract class Sparql11Engine extends EngineBase {
     return '';
 
   }
-  
-  
+
+
   /** Computes the inverse of a property
   *  @param prop the property
-  * @return the inverse or NULL if there is none. 
+  * @return the inverse or NULL if there is none.
   *   In case of a symmetric property the property itself is returned
   * @author Martin Scholz
   */
@@ -1337,7 +1334,7 @@ abstract class Sparql11Engine extends EngineBase {
     // TODO
     return NULL;
   }
-    
+
 
   /**
    * Lazy-instantiates a util rdf+sparql utility object
@@ -1364,13 +1361,13 @@ abstract class Sparql11Engine extends EngineBase {
   public function escapeSparqlRegex($regex, $also_literal = FALSE) {
     return $this->rdfSparqlUtil()->escapeSparqlRegex($regex, $also_literal);
   }
-  
-  
+
+
 
   /** Gathers the quads that contain the given URIs in the given positions.
    *
    * @param uris an array containing the URIs. The value may also be a string
-   *             containing a single URI. 
+   *             containing a single URI.
    * @param variables a string containing the triple/quad positions that shall
    *                  be considered for replacement. Possible values are a
    *                  concatenation of these four: g s p o.
@@ -1378,10 +1375,10 @@ abstract class Sparql11Engine extends EngineBase {
    * @param format a string specifying the return value.
    *               Possible values are:
    *               'count': Only the number of quads is returned.
-   *               'quads':  an array of quads is returned where each quad is 
-   *                         encoded as specified in the nquads format but 
+   *               'quads':  an array of quads is returned where each quad is
+   *                         encoded as specified in the nquads format but
    *                         without the trailing dot.
-   *               'triples': an array of arrays is returned where the inner 
+   *               'triples': an array of arrays is returned where the inner
    *                          arrays contain triples encoded as in the ntriples
    *                          format but without a dot and the triples are
    *                          grouped by their graphs.
@@ -1389,13 +1386,13 @@ abstract class Sparql11Engine extends EngineBase {
    * @return array|int according to format parameter
    */
   public function getQuadsContainingUris($uris, $variables = NULL, $format = 'quads') {
-    
+
     // make from_uris unique and delete to_uri from it
-    $uris = (array) $uris; // make it an array 
+    $uris = (array) $uris; // make it an array
     $uris = array_unique($uris);
 #    dpm($uris, "uris");
     $variables = array_unique(str_split($variables));
-    
+
     if (empty($uris) || empty($variables)) {
       return $format == 'count' ? 0 : array();
     }
@@ -1405,58 +1402,58 @@ abstract class Sparql11Engine extends EngineBase {
     // the where clause is the same
     $where_clauses = array();
     foreach ($variables as $v) {
-      $where_clauses[$v] = 
+      $where_clauses[$v] =
         "  {\n" .
         "    VALUES ?$v { $uri_values }\n" .
         "    OPTIONAL { GRAPH ?g { ?s ?p ?o } }\n" . // without optional it returns nothing in case of one part in the union not returning anything
         "  }\n";
     }
-    
+
     // filter if spo is bound - as it must not be in case of optional
     $where_clause = "WHERE {\n" . join("  UNION\n", $where_clauses) . ' FILTER ( bound(?s) ) . FILTER( bound(?p) ) . FILTER( bound(?o) ) }';
-    
+
     if ($format == 'count') {
       $query = "SELECT (count(*) as ?c) $where_clause";
-    } 
+    }
     else {
       $query = "SELECT ?g ?s ?p ?o $where_clause";
     }
 #    dpm($query, "query");
     $result = $this->directQuery($query);
-    
+
     // return value depends on $format
     if ($format == 'count') {
       return $result->current()->c->getValue();
     }
     elseif ($format == 'triples') {
       return $this->rdfSparqlUtil()->sparqlResultToNTriplesByGraph($result);
-    } 
+    }
     else {
       return $this->rdfSparqlUtil()->sparqlResultToNQuads($result);
-    } 
+    }
 
   }
 
-  
-  
+
+
   /** Updates URIs in all quads.
    *
    * @param from_uris an array of the original URIs. The value may also be a
-   *                  string containing a single URI. 
+   *                  string containing a single URI.
    * @param to_uri a string containing the new URI
    * @param variables a string containing the triple/quad positions that shall
    *                  be considered for replacement. Possible values are a
    *                  concatenation of these four: g s p o.
    *                  The default is 'so'.
-   * @param copy a boolean whether to copy or move the original quads, ie. 
+   * @param copy a boolean whether to copy or move the original quads, ie.
    *             whether to perform a DELETE on the original quads
-   *                  
+   *
    * @return TRUE on success, otherwise FALSE.
    */
   public function replaceUris(array $from_uris, $to_uri, $variables = 'so', $copy = FALSE) {
-     
+
     // make from_uris unique and delete to_uri from it
-    $from_uris = (array) $from_uris; // make it an array 
+    $from_uris = (array) $from_uris; // make it an array
     $from_uris = array_flip($from_uris);
     if (isset($from_uris[$to_uri])) {
       unset($from_uris[$to_uri]);
@@ -1464,7 +1461,7 @@ abstract class Sparql11Engine extends EngineBase {
     $from_uris = array_flip($from_uris);
 
     $variables = array_unique(str_split($variables));
-    
+
     if (empty($from_uris) || empty($variables)) {
       return TRUE;
     }
@@ -1472,7 +1469,7 @@ abstract class Sparql11Engine extends EngineBase {
       return FALSE;
     }
     $from_uri_values = '<' . join('> <', $from_uris) . '>';
-    
+
     // for each URI position we do a separate SPARQL update
     // TODO: make a separate update for g using ADD(+DROP)
     $updates = array();
@@ -1506,7 +1503,7 @@ abstract class Sparql11Engine extends EngineBase {
    *                  The default is 'gspo'.
    * @param operator the Sparql matching operator. Currently supported ops are
                      CONTAINS (default), STRSTARTS, and REGEX.
-   *                  
+   *
    * @return array with keys and values being the matched URIs.
    */
   public function getMatchingUris($pattern, $variables = 'gspo', $operator = 'CONTAINS') {
@@ -1542,7 +1539,7 @@ abstract class Sparql11Engine extends EngineBase {
     foreach ($result as $row) {
       $uri = $row->x->getUri();
       $uris[$uri] = $uri;
-    }  
+    }
     return $uris;
   }
 

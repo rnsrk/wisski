@@ -7,8 +7,6 @@
 
 namespace Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine;
 
-require __DIR__ . '/../../../../../vendor/autoload.php';
-
 use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -1953,18 +1951,18 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           $disamb = (count($path_array) + 1) / 2;
         else
           $disamb = $path->getDisamb();
-        
+
         // the var that interests us is the one before disamb.
         // substract 2 as the disamb count starts from 1 whereas vars start from 0!
         // in W8, the x increases by 2!
         $subject_var = "x" . (($disamb - 2) * 2);
-        
-        // in this case the start of the path is the disamb and the relevant 
+
+        // in this case the start of the path is the disamb and the relevant
         // information is already in $subject_uri... so we dont have to query!
         if($pathcnt == ($disamb-2) ) {
           $subject_uris = array($subject_uri);
-        } 
-        
+        }
+
         else {
 
           // build up a select query that get us
@@ -1975,7 +1973,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           //dpm($pathcnt, "pathcnt?");
           //dpm($disamb, "disamb?");
           //dpm($subject_var, "subvar?");
-        
+
           //dpm($select, "select");
 
           $result = $this->directQuery($select);
@@ -3266,7 +3264,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // values array
     // as we do this we also keep track of values that haven't changed so that we
     // do not have to write them again.
-    
+
     // this case only fires if field_values[$old_key] is not set anymore
     // at all - so just if the field is deleted completely!
     foreach($old_values as $old_key => $old_value) {
@@ -3343,9 +3341,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         $old_value = $old_values[$field_id][LanguageInterface::LANGCODE_DEFAULT];
         $old_language = LanguageInterface::LANGCODE_DEFAULT;
       }
-      
+
 //      dpm($old_values[$field_id][LanguageInterface::LANGCODE_DEFAULT], "ould be?");
-      
+
       if(empty($path)) {
 #        drupal_set_message("I leave here: $field_id " . microtime());
         continue;
@@ -3631,16 +3629,16 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
   /**
    * Insert a namespace mapping into the database.
    * If the mapping already exists, attempt to be smart by renaming existing abbreviations.
-   * 
+   *
    * @param string $short_name
    *   The prefix abbreviation.
    * @param string $long_name
    *   The namespace IRI.
-   * 
+   *
    * @return void
    */
   private function putNamespace($short_name,$long_name) {
-    
+
     // first check if a mapping for short_name already exists.
     // consider three cases (3. with two sub cases):
     // 1. no mapping exists => insert the new one
@@ -3655,9 +3653,9 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               ->condition('ns.short_name',$short_name,'=')
               ->execute()
               ->fetchAll();
-    
+
     // Case 1: no mapping exists => insert a new one!
-    if (empty($result)) { 
+    if (empty($result)) {
       \Drupal::database()->insert('wisski_core_ontology_namespaces')
               ->fields(array('short_name' => $short_name,'long_name' => $long_name))
               ->execute();
@@ -3669,7 +3667,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     //
     // Database contains ecrm:http://erlangen-crm.org/200717/
     // $this->putNamespace("ecrm", "http://erlangen-crm.org/200717/");
-    
+
     if (count($result) == 1 && ($result[0]->long_name == $long_name)){
       return;
     }
@@ -3697,7 +3695,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
             ->fetchAll();
 
     $results = json_decode(json_encode($results), true);
-    
+
     // get all long names and sort only by them
     // smaller numbers will be at the beginning of the array
     $all_longnames = [];
@@ -3707,8 +3705,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $all_longnames[] = $long_name;
 
     sort($all_longnames, SORT_STRING);
- 
-    // delete all entries from the data table which refer to the long names in 
+
+    // delete all entries from the data table which refer to the long names in
     // $all_longnames (= sorted long name array)
     // and insert them again with the appropriate name+index
     // the first entry in the sorted array gets the short name without an index
@@ -3716,8 +3714,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
     $counter = 0;
     $new_name = $short_name;
-    foreach($all_longnames as $tmp_longname){     
-        \Drupal::database()->delete('wisski_core_ontology_namespaces')     
+    foreach($all_longnames as $tmp_longname){
+        \Drupal::database()->delete('wisski_core_ontology_namespaces')
         ->condition('long_name', $tmp_longname)
         ->execute();
         if($counter > 0){
