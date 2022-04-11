@@ -276,3 +276,19 @@ wisski.wisski_ontology.namespace.show_table:
     _title: 'Namespaces'
   requirements:
     _permission: 'administer wisski'
+
+entity.wisski_bundle.individual_list:
+  path: '/admin/structure/wisski_core/{wisski_bundle}/individual_list'
+  defaults:
+    _form : '\Drupal\wisski_core\Form\WisskiIndListForm'
+    _title: 'Individual list'
+  requirements:
+    _permission: 'administer wisski'
+
+entity.wisski_bundle.individual_list.delete:
+  path: '/admin/structure/wisski_core/{wisski_bundle}/individual_list_delete'
+  defaults:
+    _form : '\Drupal\wisski_core\Form\WisskiIndividualListConfirmFormDelete'
+    _title: 'Delete selected individuals'
+  requirements:
+    _permission: 'administer wisski'
