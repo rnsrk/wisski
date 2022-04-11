@@ -102,6 +102,10 @@ class WisskiDoiBatchForm extends ConfigFormBase {
     $this->config(static::SELECTED_INDIVIDUALS);
     $records = $this->wisskiDoiDbActions->readBundleRecords($wisski_bundle);
     $chunk = $this->pagerArray($records, 25);
+    if(empty($chunk)){
+      $chunk = [];
+    }
+    #$chunk = $chunk ?? [];
     foreach ([0, 1] as $isCurrent) {
       $this->doiAnnotation($chunk, $isCurrent);
     }
@@ -207,6 +211,7 @@ class WisskiDoiBatchForm extends ConfigFormBase {
    *   The chunk to render.
    */
   public function pagerArray(array $items, int $itemsPerPage) {
+    if ($items) {
     // Get total items count.
     $total = count($items);
     // Get the number of the current page.
@@ -216,6 +221,10 @@ class WisskiDoiBatchForm extends ConfigFormBase {
     $chunk = array_chunk($items, $itemsPerPage, TRUE);
     // Return current group item.
     return $chunk[$currentPage];
+  }
+  else {
+    return [];
+  }
   }
 
   /**
