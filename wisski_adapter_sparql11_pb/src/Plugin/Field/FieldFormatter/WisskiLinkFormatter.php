@@ -339,10 +339,23 @@ class WisskiLinkFormatter extends FormatterBase implements ContainerFactoryPlugi
 
         if($settings['use_title_pattern'] && !empty($buns) ) {
 
-        #  dpm("I generate title for $entity_id");
+          #  dpm("I generate title for $entity_id");
           $generated_title = wisski_core_generate_title($entity_id);
-          $generated_title = $generated_title[$langcode][0]["value"];
-        #  dpm($generated_title, "yay!");
+          # this line:
+          #$generated_title = $generated_title[$langcode][0]["value"];
+          #dpm(serialize($generated_title), "yay!");
+          # doesn't work if there's more than one language used
+
+          // check if there is a title for the current language
+          if (isset($generated_title[$langcode])){
+            $generated_title = $generated_title[$langcode][0]["value"];
+          }
+          else {
+            $generated_title = current($generated_title);
+            $generated_title = $generated_title[0]["value"];
+            #dpm(serialize($generated_title), "else, I generate");
+          }
+          #dpm(serialize($generated_title), "yay!");
         }
 
         if($generated_title != "") {
