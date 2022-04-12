@@ -391,7 +391,6 @@ class WisskiLinkblock extends BlockBase {
           }
         }
         else {
-          dpm($data);
           $out[] = [
             '#type' => 'container',
             '#markup' => $data['target_id'],
