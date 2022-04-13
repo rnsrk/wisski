@@ -814,6 +814,11 @@ class Query extends WisskiQueryBase {
 
         if(!$first) {
           $select .= " UNION ";
+        } else {
+          if(count($this->dependent_parts) > 1) {
+            $select .= " { ";
+            $part .= " } ";
+          }
         }
 
         $select .= $part;
