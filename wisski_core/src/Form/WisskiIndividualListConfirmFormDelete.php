@@ -18,6 +18,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class WisskiIndividualListConfirmFormDelete extends ConfirmFormBase {
 
   private string $wisskiBundleId;
+  private int $numberOfIndividuals;
 
   /**
    * Form for removing a draft DOI from the provider and the local database.
@@ -32,8 +33,7 @@ class WisskiIndividualListConfirmFormDelete extends ConfirmFormBase {
   }
 
   private function countIndividuals() {
-    //TODO
-    return 1;
+    return $this->numberOfIndividuals;
   }
 
 
@@ -89,6 +89,14 @@ class WisskiIndividualListConfirmFormDelete extends ConfirmFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, ?string $wisski_bundle = NULL): array {
     $this->wisskiBundleId = $wisski_bundle;
+
+    $individualList = \Drupal::configFactory()
+      ->getEditable(WisskiIndListForm::SELECTED_INDIVIDUALS)->get('wisskiIndividuals');
+    $individualListAsMap = array_map(function($a){
+      return $a;
+    },array_filter($individualList));
+    
+    $this->numberOfIndividuals = count($individualListAsMap);
 
     return parent::buildForm($form, $form_state);
   }

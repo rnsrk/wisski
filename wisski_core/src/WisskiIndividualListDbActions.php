@@ -63,8 +63,17 @@ class WisskiIndividualListDbActions implements WisskiIndividualListDbActionsInte
   public function deleteBundleRecords() {
     $individualList = \Drupal::configFactory()
       ->getEditable(WisskiIndListForm::SELECTED_INDIVIDUALS)->get('wisskiIndividuals');
-      dpm($individualList, 'deletelist');
-      // TODO: iterate over the entries in individual list and delete the corresponding entities from the database
+      // dpm($individualList, 'deletelist');
+
+      // create a map that contains only the selected items, i.e., the eids that 
+      // should be deleted and all not selected eids are filtered
+      $individualListAsMap = array_map(function($a){
+           return $a;
+        },array_filter($individualList));
+     
+      $entity_storage = \Drupal::entityTypeManager()->getStorage('wisski_individual');
+      $entities = $entity_storage->loadMultiple($individualListAsMap);
+      $entity_storage->delete($entities);
     }
   
 }

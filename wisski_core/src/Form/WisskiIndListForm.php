@@ -147,6 +147,10 @@ const SELECTED_INDIVIDUALS = 'wisski_core.individual_list';
     // Split an array into chunks.
     $chunk = array_chunk($items, $itemsPerPage, TRUE);
     // Return current group item.
+
+    if(count($items) == 0){
+      return [];
+    }
     return $chunk[$currentPage];
   }
 
