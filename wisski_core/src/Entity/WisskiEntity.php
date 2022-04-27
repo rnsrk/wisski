@@ -280,7 +280,17 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
   
     if($this->label === NULL) { 
       $title = wisski_core_generate_title($this);
-      $title = $title[0]["value"] . t(" (new)");
+      // old: $title = $title[0]["value"] . t(" (new)");
+      if (isset($title[0])){
+        $title = $title[0]["value"] . t(" (new)");
+      }
+      else {
+        // we probably got a language 
+        if (is_array($title)){
+          $title = current($title);
+          $title = $title[0]["value"] . t(" (new)");
+        }
+      }
       $this->label = $title;
     }
 #    dpm($title, "tit?");
