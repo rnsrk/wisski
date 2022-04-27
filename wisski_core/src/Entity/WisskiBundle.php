@@ -678,8 +678,16 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               // generate the title of that
               $mytitle = $bundle->generateEntityTitle($item_eid);
  #             dpm($mytitle, "mytitle is: ");
-              $grptitles[] = $mytitle[$language][0]['value'];
-#              dpm("my grphtitle is " . serialize($mytitle));
+              # war: $grptitles[] = $mytitle[$language][0]['value'];
+               if (isset($mytitle[$language])){
+                 $grptitles[] = $mytitle[$language][0]["value"];
+               }
+               else {
+                 $mytitle = current($mytitle);
+                 $grptitles[] = $mytitle[0]["value"];
+                 #dpm(serialize($mytitle), "else, ich generiere");
+               }
+#              dpm("my grptitle is " . serialize($grptitles));
             }
 
             $new_values[] = implode(", ", $grptitles);
