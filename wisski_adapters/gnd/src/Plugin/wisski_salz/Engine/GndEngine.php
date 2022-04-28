@@ -7,14 +7,12 @@
 
 namespace Drupal\wisski_adapter_gnd\Plugin\wisski_salz\Engine;
 
-require __DIR__ . '/../../../../../..//vendor/autoload.php';
-
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\wisski_adapter_gnd\Query\Query;
-use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity; 
-use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity; 
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
 use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
 use Drupal\wisski_salz\NonWritableEngineBase;
 use Drupal\wisski_salz\AdapterHelper;
@@ -33,10 +31,10 @@ use EasyRdf\Literal as EasyRdf_Literal;
  * )
  */
 class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterface {
-  
+
   protected $uriPattern  = "!^http[s]*://d-nb.info/gnd/(.+)$!u";
   protected $fetchTemplate = "http://d-nb.info/gnd/{id}/about/lds";
-  
+
   /**
    * Workaround for super-annoying easyrdf buggy behavior:
    * it will only work on prefixed properties
@@ -44,9 +42,9 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
   protected $rdfNamespaces = array(
     'gndo' => 'https://d-nb.info/standards/elementset/gnd#',
     'geo' => 'http://www.opengis.net/ont/geosparql#',
-    'sf' => 'http://www.opengis.net/ont/sf#',    
+    'sf' => 'http://www.opengis.net/ont/sf#',
   );
-  
+
 
 
   protected $possibleSteps = array(
@@ -73,7 +71,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       'TerritorialCorporateBodyOrAdministrativeUnit' => array(
         'gndo:preferredNameForThePlaceOrGeographicName' => NULL,
         'gndo:variantNameForThePlaceOrGeographicName' => NULL,
-        'geo:hasGeometry geo:asWKT' => NULL, 
+        'geo:hasGeometry geo:asWKT' => NULL,
         ),
       'SubjectHeading' => array(
         'gndo:preferredNameForTheSubjectHeading' => NULL,
@@ -87,11 +85,11 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
 
   /**
-   * {@inheritdoc} 
+   * {@inheritdoc}
    */
   public function hasEntity($entity_id) {
     // use the new function
-    // By Mark: This fetches all uris to later throw them away. 
+    // By Mark: This fetches all uris to later throw them away.
     // why should we do this? I change that... hopefully
     // it will work later on.
     //$uris = AdapterHelper::doGetUrisForDrupalIdAsArray($entity_id);
@@ -117,7 +115,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
   public function fetchData($uri = NULL, $id = NULL) {
 
 #    dpm("yay?");
-    
+
     if (!$id) {
       if (!$uri) {
         return FALSE;
@@ -128,8 +126,8 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         return FALSE;
       }
     }
-    
-    // 
+
+    //
     $cache = \Drupal::cache('wisski_adapter_gnd');
     $data = $cache->get($id);
 
@@ -156,7 +154,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
 #    dpm($fetchUrl, "fu?");
     $graph = new EasyRdf_Graph($fetchUrl, $data, 'turtle');
-#    dpm($graph, "graph?");    
+#    dpm($graph, "graph?");
     if ($graph->countTriples() == 0) {
       return FALSE;
     }
@@ -179,8 +177,8 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
           // last property is a datatype property
           $dtProp = array_pop($pChain);
         }
-        
-        
+
+
 #        dpm($dtProp, "yay!");
 //        $resources = array($uri => $uri);
 //	By Mark: GND seems to change itself to use https
@@ -194,13 +192,13 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
         if(!in_array($uri, array_keys($res))) {
           $newuri = str_replace("http://", "https://", $uri);
-        
+
           $resources = array($newuri => $newuri);
         } else {
           $resources = array($uri => $uri);
         }
-        
-        
+
+
 
         foreach ($pChain as $prop) {
           $newResources = array();
@@ -221,11 +219,11 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #          dpm($resources, "my res?");
           foreach ($resources as $resource) {
 #            dpm($graph, "dtprop!");
-            
+
             foreach ($graph->all($resource, $dtProp) as $thing) {
 #              dpm($thing->getDatatype(), "thing");
 #              dpm($dtProp, "dtprop!");
-              
+
               if($thing->getDatatype() == "geo:wktLiteral") {
                 // unluckily GND is not very WKT-conforming...
                 $value = $thing->getValue();
@@ -235,8 +233,8 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
                 $value = str_replace(" ) ", ")", $value);
 
 #                $value = "POINT ( 011 011 )";
- 
-                
+
+
                 $data[$concept][$propChain][] = $value;
               } else if ($thing instanceof EasyRdf_Literal) {
                 $data[$concept][$propChain][] = $thing->getValue();
@@ -245,7 +243,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
               }
             }
           }
-        }      
+        }
       }
     }
 
@@ -265,23 +263,23 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
 
   /**
-   * {@inheritdoc} 
+   * {@inheritdoc}
    */
   public function createEntity($entity) {
     return;
   }
-  
+
 
   public function getBundleIdsForEntityId($id) {
     $uri = $this->getUriForDrupalId($id);
     $data = $this->fetchData($uri);
-    
+
     $pbs = $this->getPbsForThis();
     $bundle_ids = array();
     foreach($pbs as $key => $pb) {
       $groups = $pb->getMainGroups();
       foreach ($groups as $group) {
-        $path = $group->getPathArray(); 
+        $path = $group->getPathArray();
 #dpm(array($path,$group, $pb->getPbPath($group->getID())),'bundlep');
         if (isset($data[$path[0]])) {
           $bid = $pb->getPbPath($group->getID())['bundle'];
@@ -290,7 +288,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         }
       }
     }
-    
+
 #dpm($bundle_ids,'bundles');
 
     return $bundle_ids;
@@ -299,23 +297,23 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
 
   /**
-   * {@inheritdoc} 
+   * {@inheritdoc}
    */
   public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundle = NULL,$language = LanguageInterface::LANGCODE_DEFAULT) {
-    
+
     if (!$entity_ids) {
       // TODO: get all entities
       $entity_ids = array(
         "http://d-nb.info/gnd/11852786X"
       );
     }
-    
+
     $out = array();
 
     foreach ($entity_ids as $eid) {
 
-      foreach($field_ids as $fkey => $fieldid) {  
-        
+      foreach($field_ids as $fkey => $fieldid) {
+
         $got = $this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in);
 
         if (empty($out)) {
@@ -331,16 +329,16 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         }
 
       }
- 
+
     }
 
     return $out;
 
   }
-  
-  
+
+
   /**
-   * {@inheritdoc} 
+   * {@inheritdoc}
    */
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL) {
 #dpm(func_get_args(), 'lpvff');
@@ -349,7 +347,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     if(!empty($main_property)) {
       $main_property = $main_property->getMainPropertyName();
     }
-    
+
 #     drupal_set_message("mp: " . serialize($main_property) . "for field " . serialize($field_id));
 #    if (in_array($main_property,$property_ids)) {
 #      return $this->loadFieldValues($entity_ids,array($field_id),$language);
@@ -361,7 +359,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #      dpm(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
       return;
     }
-    
+
 
     $pbs = array($this->getPbForThis());
     $paths = array();
@@ -373,11 +371,11 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         $paths[] = WisskiPathEntity::load($field["id"]);
       }
     }
-      
+
     $out = array();
 
     foreach ($entity_ids as $eid) {
-      
+
       if($field_id == "eid") {
         $out[$eid][$field_id] = array($eid);
       } elseif($field_id == "name") {
@@ -385,11 +383,11 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         $out[$eid][$field_id] = array($eid);
         continue;
       } elseif ($field_id == "bundle") {
-      
+
       // Bundle is a special case.
       // If we are asked for a bundle, we first look in the pb cache for the bundle
-      // because it could have been set by 
-      // measures like navigate or something - so the entity is always displayed in 
+      // because it could have been set by
+      // measures like navigate or something - so the entity is always displayed in
       // a correct manor.
       // If this is not set we just select the first bundle that might be appropriate.
       // We select this with the first field that is there. @TODO:
@@ -397,7 +395,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       // e.g. knowing what bundle was used for this id etc...
       // however this would need more tables with mappings that will be slow in case
       // of a lot of data...
-        
+
         if(!empty($bundleid_in)) {
           $out[$eid]['bundle'] = array($bundleid_in);
           continue;
@@ -407,11 +405,11 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
           continue;
         }
       } else {
-        
+
         if (empty($paths)) {
-#          $out[$eid][$field_id] = NULL;              
+#          $out[$eid][$field_id] = NULL;
         } else {
-          
+
           foreach ($paths as $key => $path) {
             $values = $this->pathToReturnValue($path, $pbs[$key], $eid, 0, $main_property);
             if (!empty($values)) {
@@ -423,8 +421,8 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         }
       }
     }
-   
-#dpm($out, 'lfp');   
+
+#dpm($out, 'lfp');
     return $out;
 
   }
@@ -451,9 +449,9 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         $data_walk = $data_walk[$step];
       } else {
         // this is oversimplified in case there is another path in question but this
-        // one had no data. E.g. a preferred name exists, but no variant name and 
+        // one had no data. E.g. a preferred name exists, but no variant name and
         // the variant name is questioned. Then it will resolve most of the array
-        // up to the property and then stop here. 
+        // up to the property and then stop here.
         //
         // in this case nothing should stay in $data_walk because
         // the foreach below would generate empty data if there is something
@@ -482,7 +480,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
 
   /**
-   * {@inheritdoc} 
+   * {@inheritdoc}
    */
   public function getPathAlternatives($history = [], $future = []) {
 #    dpm($history);
@@ -492,12 +490,12 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     } else {
 #      dpm($history, "hist");
       $steps = $this->possibleSteps;
-      
+
 #      dpm($steps, "keys");
       // go through the history deeper and deeper!
       foreach($history as $hist) {
 #        $keys = array_keys($this->possibleSteps);
-        
+
         // if this is not set, we can not go in there.
         if(!isset($steps[$hist])) {
           return array();
@@ -505,29 +503,29 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
           $steps = $steps[$hist];
         }
       }
-      
+
       // see if there is something
       $keys = array_keys($steps);
-      
+
       if(!empty($keys))
         return array_combine($keys, $keys);
-      
+
       return array();
     }
   }
-  
-  
+
+
   /**
-   * {@inheritdoc} 
+   * {@inheritdoc}
    */
   public function getPrimitiveMapping($step) {
     $keys = array_keys($this->possibleSteps[$step]);
     return array_combine($keys, $keys);
   }
-  
-  
+
+
   /**
-   * {@inheritdoc} 
+   * {@inheritdoc}
    */
   public function getStepInfo($step, $history = [], $future = []) {
     return array($step, '');
@@ -543,4 +541,4 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
   }
 
 
-} 
+}
