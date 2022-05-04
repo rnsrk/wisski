@@ -62,7 +62,7 @@ class WisskiEntityViewsData extends EntityViewsData {
     $use_status = $set->get('enable_published_status_everwhere');
 
     $data[$base_table] = $parentdata['wisski_basetable'];
-    dpm($parentdata, "par?");
+#    dpm($parentdata, "par?");
     
 #    dpm($this->entityType->id(), "id!");
     
