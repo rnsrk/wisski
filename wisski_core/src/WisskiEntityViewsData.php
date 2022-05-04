@@ -53,12 +53,16 @@ class WisskiEntityViewsData extends EntityViewsData {
 
   public function getViewsData() {
 
+    $parentdata = parent::getViewsData();
     $data = [];
     $base_table = 'wisski_individual';
 
     $set = \Drupal::configFactory()->getEditable('wisski_core.settings');
 
     $use_status = $set->get('enable_published_status_everwhere');
+
+    $data[$base_table] = $parentdata['wisski_basetable'];
+    dpm($parentdata, "par?");
     
 #    dpm($this->entityType->id(), "id!");
     
@@ -189,6 +193,19 @@ class WisskiEntityViewsData extends EntityViewsData {
       'entity type' => $this->entityType->id(),
       'entity_type' => $this->entityType->id(),
     ];
+
+
+    if ($this->entityType->hasViewBuilderClass()) {
+      $data[$base_table]['rendered_entity'] = [
+        'field' => [
+          'title' => $this->t('Rendered entity'),
+          'help' => $this->t('Renders an entity in a view mode.'),
+          'id' => 'rendered_entity',
+        ],
+      ];
+    }
+
+#dpm(serialize($this->entityType->hasViewBuilderClass()), "??");
 
     // TODO: here should come a section where we read the paths from the pbs
     // and the fields from the bundles and add them here as views fields.

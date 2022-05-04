@@ -90,7 +90,7 @@ class WisskiIndividualQuery extends QueryPluginBase
         // - create a new Condition Group Object for each of them
         // - finally add this group to the query object
         foreach ($this->where as $gid => $group) {
-            //dpm($this->where, "this->where");
+            #dpm($this->where, "this->where");
             //dpm($gid, "gid");
             //dpm($group, "group");
             //$sub_group = $group['type'] == 'OR' ? new Condition('OR') : new Condition('AND');
@@ -172,7 +172,7 @@ class WisskiIndividualQuery extends QueryPluginBase
                     $qgroup = $qgroup->condition($cond["field"], $cond["value"], $cond["operator"]);
                 }
             }
-
+#            dpm($qgroup, "q?");
             $query = $query->condition($qgroup);
         }
 
@@ -1108,25 +1108,41 @@ class WisskiIndividualQuery extends QueryPluginBase
             // populate the cache if it doesn't exist
             $pb_and_path = explode(".", $field, 2);
 
-            if (isset($path_cache[$pb_and_path[1]]))
-              $path = $path_cache[$pb_and_path[1]];
-            else {
-              $path = \Drupal::service('entity_type.manager')->getStorage('wisski_path')->load($pb_and_path[1]);
-              $path_cache[$pb_and_path[1]] = $path;
-            }
+            // only do this if there is a pathbuilder set
+            if(!empty($pb_and_path[0])) {
 
-            // if the path has no datatype_property then
-            // it is an entity reference and we change that accordingly
+              if (isset($path_cache[$pb_and_path[1]]))
+                $path = $path_cache[$pb_and_path[1]];
+              else {
+                $path = \Drupal::service('entity_type.manager')->getStorage('wisski_path')->load($pb_and_path[1]);
+                $path_cache[$pb_and_path[1]] = $path;
+              }
+
+              // if the path has no datatype_property then
+              // it is an entity reference and we change that accordingly
 #                      dpm(serialize($path->getDatatypeProperty()));
-            if($path->getDatatypeProperty() == "empty")
-              $operator = "HAS_EID";
+              if($path->getDatatypeProperty() == "empty")
+                $operator = "HAS_EID";
+            } else {
+              // else it is no wisski field
+              // by mark:
+              // this case did not work when selecting 
+              // that the view should display a certain language.
+              // so in this case we make .langcode to langcode and hopefully it works.
+              #dpm($field, "found field!");
+              if(strpos($field, ".") === 0) {
+                // this is hopefully a base field like .langcode?
+                $field = $pb_and_path[1]; 
+              }
+            
+            }
           }
 
           #dpm($wisski_field, "ws?");
         }            
             
             
-        
+#        dpm($field, "field?");
 #        dpm($value, "value");
 #        dpm($operator, "op");
         // Ensure all variants of 0 are actually 0. Thus '', 0 and NULL are all
