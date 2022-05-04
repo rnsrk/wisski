@@ -325,8 +325,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         $name = $attributes['name'];
         
         //$part = array();
-        
-        unset($values);
+        $values = array();
+//        unset($values);
         switch ($name) {
           case 'eid':
             $values = array($entity_id);
@@ -608,16 +608,21 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       $this->adapter_cache = Adapter::loadMultiple();
     }
     
+    $field_is_translatable = TRUE;
+    
     $adapters = $this->adapter_cache;
     //we ask all pathbuilders if they know the path
     foreach ($pbs as $pb_id => $pb) {
       if ($pb->hasPbPath($path_id)) {
         // if the PB knows the path we try to load it
         $path = WisskiPathEntity::load($path_id);
+        
         if (empty($path)) {
           //dpm('can\'t load path '.$path_id,$pb_id);
           continue;
         }
+        
+        
         #dpm($path,$path_id);
         // then we try to load the path's adapter
         $adapter = $adapters[$pb->getAdapterId()];
@@ -630,6 +635,29 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         if (AdapterHelper::getUrisForDrupalId($eid, $adapter->id(), FALSE)) {
           //finally, having a valid path and adapter, we can ask the adapter for the path's value
           $pbpath = $pb->getPbPath($path_id);
+
+          // fetch field and bundle
+          $pbfield = $pbpath['field'];
+          $pbbundle = $pbpath['bundle'];
+
+          // load field def so we can see if the translation
+          // is enabled or not. If it is not, we don't return everything here.
+          $field_defs = \Drupal::service('entity_field.manager')->getFieldDefinitions("wisski_individual", $pbbundle);
+          
+          
+          if(isset($field_defs) && isset($field_defs[$pbfield])) {
+            $fielddef = $field_defs[$pbfield];
+          
+            // if it is not translatable take only the first one.
+            // this might backfire in case there are several fields
+            // and only one is not translatable...
+            // but don't worry about that for now.
+            if(!$fielddef->isTranslatable()) {
+#              dpm("it is not translatable!");
+              $field_is_translatable = FALSE;
+            }  
+            
+          }
 
 #          dpm($pbpath, "pbp");
 
@@ -729,6 +757,11 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #            dpm(microtime(), "new values");
             if (WISSKI_DEVEL) \Drupal::logger($pb_id.' '.$path_id.' '.__FUNCTION__)->debug('Entity '.$eid."{out}",array('out'=>serialize($new_values)));
           }
+          
+          // if it is not translatable take only the first one
+#          if(!$field_is_translatable) {
+#            $new_values = array(current($new_values));
+#          }
 #          dpm("I've got new values: " . serialize($new_values) . " for lang " . $language);
         }  
         if (empty($new_values)) {
@@ -742,6 +775,13 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             else
               $values[] = $new_value;
           }
+          
+          // if the field is not translatable take the first one
+          if(!$field_is_translatable) {
+            
+            $values = array($language => current($values));
+          }
+#          dpm($values, "val?");
           //$values += $new_values;
         }
       } //else dpm('don\'t know path '.$path_id,$pb_id);
