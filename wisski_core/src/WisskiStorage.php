@@ -343,7 +343,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             // the language "en" is added to this variable although there is no english translation for the entity name
             // to avoid this, we have to continue here, so only languages are added which do not come from entity references
             $field_def = $field_defs[$key];
-
+            
+            #dpm(serialize($field_def->isTranslatable()), "is it?" . $field_def->getLabel());
             // by MyF: this part does not work as expected; we comment this out since we prefer empty and translated fields
             // instead of only original languages fields
             /*
@@ -367,7 +368,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             foreach($available_languages as $alang) {
 #            dpm("checking $alang in $key with " . serialize($val));
 #            dpm("my array key: " . array_key_exists($alang, $val));
-            if(is_array($val) && array_key_exists($alang, $val)) {
+              if(is_array($val) && array_key_exists($alang, $val)) {
                 $set_languages[$alang] = $alang;
               } else {
                 // we add it to the not setted languages
@@ -584,13 +585,24 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 		
 		#dpm(serialize($field_lang));
 		#dpm(serialize($orig_lang));
-		if($field_lang == $orig_lang) {
-                  $test[$key][LanguageInterface::LANGCODE_DEFAULT] = $field_vals;
-                  $test[$key][$orig_lang] = $field_vals;
-                } else {
+		if($field_def->isTranslatable()) {
+		  if($field_lang == $orig_lang) {
+                    $test[$key][LanguageInterface::LANGCODE_DEFAULT] = $field_vals;
+                    $test[$key][$orig_lang] = $field_vals;
+                  } else {
                                   
-                  // we just trust it for now...                 
-                  $test[$key][$field_lang] = $field_vals;
+                    // we just trust it for now...                 
+                    $test[$key][$field_lang] = $field_vals;
+                  }
+                } else {
+                  // by Mark:
+                  // if it is not translatable
+                  // we do nothing for now and just use the first value.
+                  // This is not so nice in case there are several values.
+                  // so this should be chooseable somehow.
+                  #dpm($field_vals, "not translatable!!!");
+                  $test[$key][LanguageInterface::LANGCODE_DEFAULT] = $field_vals;
+                  break;
                 }
               }
             }
