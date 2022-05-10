@@ -323,7 +323,11 @@ class WisskiLinkblock extends BlockBase {
           // Hack if really no bundle was supplied... should never be called!
           if (empty($bundle)) {
             $entity = WisskiEntity::load($entity_id);
+
             $bundle = $entity->bundle;
+            if (empty($bundle)) {
+              $this->messenger()->addWarning($this->t('Your bundle is empty, you may disamb to just a field insteas a bundle.'));
+            }
           }
           // dpm($entity);
           $url = 'wisski/navigate/' . $entity_id . '/view';
