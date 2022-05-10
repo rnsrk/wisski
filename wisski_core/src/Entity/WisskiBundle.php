@@ -64,9 +64,9 @@ use Drupal\Core\Entity\EntityStorageInterface;
  * )
  */
 class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterface {
-  
+
   use StringTranslationTrait;
-  
+
   /** constants to identify empty title reaction types */
   const DONT_SHOW = 1;
   const FALLBACK_TITLE = 2;
@@ -79,35 +79,35 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    * A pb cache because loading is pain
    */
   protected $pb_cache = array();
-  
+
   /**
    * An adapter cache because loading is pain!
-   */ 
+   */
   protected $adapter_cache = array();
-  
+
   /**
    * The field based pattern for the entity title generation.
    * A serialized array.
    * @var string
    */
   protected $title_pattern = '';
-  
+
   /**
    * The way in which to react on the detection of an invalid title
    * defaults to fallback title
    */
   protected $on_empty = self::DEFAULT_PATTERN;
-  
+
   /**
    * The fallback title that may be shown when an entity title cannot be resolved
    */
   protected $fallback_title = 'WissKI Entity';
-  
+
   /**
    * The pager limit for the bundle based entity list
    */
   protected $pager_limit = 10;
-  
+
   /**
    * The options array for this bundle's title pattern
    */
@@ -115,7 +115,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
 
   protected $menu_items = array();
-  
+
   /**
    * Where should this be listed?
    * @return array with key = menu name
@@ -125,12 +125,12 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     return array('navigate' => 'entity.wisski_bundle.entity_list',
                  'create' => 'entity.wisski_individual.add');
   }
-  
+
   public static function postDelete(EntityStorageInterface $storage, array $entities) {
     parent::postDelete($storage, $entities);
 
 #    $menus = array("navigate" => 'entity.wisski_bundle.entity_list', "create" => 'entity.wisski_individual_create.list');
-    
+
     foreach($entities as $entity) {
       $menus = $entity->getWissKIMenus();
       foreach($menus as $menu_name => $route) {
@@ -138,7 +138,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       }
     }
   }
-  
+
   public function getTitlePattern() {
 
     if(empty($this->title_pattern)) {
@@ -151,26 +151,26 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       if(!empty($title))
         return $title;
     }
-    
+
     return unserialize($this->title_pattern);
 
   }
-  
+
   public function removeTitlePattern() {
 
     if ('' !== $this->title_pattern) {
       $this->title_pattern = '';
-      $this->flushTitleCache(); 
+      $this->flushTitleCache();
     }
   }
-  
+
   public function getDefaultPattern() {
-    
+
     return \Drupal::config('wisski_core.settings')->get('wisski_default_title_pattern');
   }
-  
+
   protected $cached_titles;
-  
+
   public function generateEntityTitle($entity,$include_bundle=FALSE,$force_new=FALSE) {
 #    dpm(serialize($entity), "what?");
 #    dpm(microtime(), "begin title");
@@ -212,18 +212,18 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         return $title;
       }
     }
-    
+
 #    dpm([$pattern, $entity_id], "eid!");
-    
+
     $pattern = $this->getTitlePattern();
-    
+
     //now do the work
     $title = $this->applyTitlePattern($pattern,$entity);
 #    return "yay?";
 #   dpm($title);
 
      // TODO: repair this after translation update...
-     // this needs to be serialized    
+     // this needs to be serialized
     if(!empty($entity_id))
       $this->setCachedTitle($entity_id, $title);
 
@@ -231,24 +231,24 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       \Drupal::messenger()->addStatus('Enhance Title '.$title);
       $title = $this->label().': '.$title;
       # TODO: here we have to include the language
-    }   
-    
+    }
+
 #    dpm(microtime(), "generated title $title");
-    
+
 #    dpm(microtime(), "end title");
     if(is_object($entity)) {
       return $title[$language];
     }
-    
+
 #    foreach($title as $lang => $aTitle) {
 #      if($lang == $language) {
 #        unset($title[$lang]);
 #        $title["x-default"] = $aTitle;
 #      }
 #    }
-    
+
 #    return array("x-default" => "mien", "ar" => "ara");
-         
+
 #      unset($title[$language]);
 #      $title[LanguageInterface::LANGCODE_DEFAULT] = $the_real_title;
 #    }
@@ -256,7 +256,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #    return "yay?";
     return $title;
   }
-  
+
   /**
    * Applies the title pattern to generate the entity title,
    * this is a seperate function since we want to be able to apply it again in case we end up with an empty title
@@ -277,15 +277,15 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       $entity_id = $entity->id();
     else
       $entity_id = $entity;
-    
+
 #    dpm($pattern,__FUNCTION__);
     if(isset($pattern['max_id']))
       unset($pattern['max_id']);
-    
-#    dpm($entity_id, "eid?");    
+
+#    dpm($entity_id, "eid?");
     // just in case...
     if (empty($pattern)) return $this->createFallbackTitle($entity_id);;
-    
+
     $parts = array();
     $pattern_order = array_keys($pattern);
     //just to avoid infinite loops we introduce an upper bound,
@@ -294,13 +294,13 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $count = count($pattern);
     $max = ($count * ($count+1)) / 2;
     $count = 0;
-  
+
     while ($count < $max && current($pattern) ) { //&& list($key,$attributes) = each($pattern)) {
-      
+
       $key = key($pattern);
       $attributes = current($pattern);
       $part = array();
-      
+
       $count++;
       unset($pattern[$key]);
       reset($pattern);
@@ -323,7 +323,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
  #     dpm($parts,'partagain??'.$parent.' '.($positive ? 'pos' : 'neg'));
       if ($attributes['type'] === 'path') {
         $name = $attributes['name'];
-        
+
         //$part = array();
         $values = array();
 //        unset($values);
@@ -383,9 +383,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           $i = 0;
           if(is_int($language)) {
             $value = $per_lang_values;
-            // 
+            //
             // fix for empty values, we ignore these for now.
-            // a numeric 0 oder the string "0" also is empty, but we want to 
+            // a numeric 0 oder the string "0" also is empty, but we want to
             // print them as is
             if(empty($value) && $value !== 0 && $value !== "0")
               continue;
@@ -400,7 +400,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               if(empty($part[$alanguage]))
                 $part[$alanguage] = "";
               $part[$alanguage] .= "$value";
-              
+
               // we found something for this language!
               $has_any_path_part_per_language[$alanguage] = TRUE;
             }
@@ -429,7 +429,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               $part[$language] .= "$value";
               // we found something for this language!
               $has_any_path_part_per_language[$language] = TRUE;
-              // }      
+              // }
               if (++$i < $cardinality) $part[$language] .= $delimiter;
             }
           }
@@ -460,12 +460,12 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #        dpm($part, "part?");
       }
       //if (!empty($attributes['children'])){dpm($part,'Part');dpm($parts,'Parts '.$key);}
-      
+
       $parts[$key] = $part;
     }
-  
+
 #    dpm(array('parts'=>$parts),'after');
-#    return "yay?";    
+#    return "yay?";
     //reorder the parts according original pattern
     $title = array();
     foreach($available_languages as $alanguage) {
@@ -480,16 +480,16 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       // there seems to be no translation!
       // this is an assumption and might prove wrong.
       if (empty(trim($title[$alanguage][0]["value"]))) unset($title[$alanguage]);
- 
-      
+
+
       // here we should kill titles consisting only of static elements, too, because that
       // usually is an error in multi-lingual-settings.
       if(!isset($has_any_path_part_per_language[$alanguage])) unset($title[$alanguage]);
-      
+
  #     dpm($title);
 #      if (empty(trim($title[$alanguage]))) $title[$alanguage] = $this->createFallbackTitle($entity_id);
     }
-    
+
     if(empty($title)) {
       return $this->createFallbackTitle($entity_id);
     }
@@ -500,9 +500,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     #dpm(func_get_args()+array('result'=>$title),__METHOD__);
     return $title;
   }
-  
+
   public function createFallbackTitle($entity_id) {
-    
+
     // we have to add the languages, otherwise it will become ugly.
     // here we have to iterate the languages
     $available_languages = \Drupal::languageManager()->getLanguages();
@@ -512,9 +512,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
     foreach($available_languages as $lang) {
       $title[$lang][0] = array("value" => $this->fallback_title . " " . $entity_id);
-    }    
-    
-    
+    }
+
+
     switch ($this->onEmpty()) {
       case self::FALLBACK_TITLE: return $title; # TODO: The below case has to be rewritten...
       case self::DEFAULT_PATTERN: return $title;#return $this->applyTitlePattern($this->getDefaultPattern(),$entity_id);
@@ -522,7 +522,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       default: return FALSE;
     }
   }
-  
+
   public function gatherTitleValues($eid, $path_id, $pb_id = NULL) {
     #dpm("yay!");
     $values = array();
@@ -531,19 +531,19 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
       return NULL;
     }
-    
+
     $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
 #    dpm(serialize($eid), "eid!!");
-    
+
     // this is the case for create-dialog-thingies where the id is still empty
     if(is_object($eid) ) {
       if(empty($eid->id())) {
-      
+
         // early opt out if it is not a new entity but we dont have the entity id - which probably is bad!
         if(!$eid->isNew()) {
           return;
         }
-      
+
         // try to build it with the values at hand...
 #        dpm(serialize($eid), "eid!!");
         if(!empty($pb_id)) {
@@ -554,24 +554,24 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             $this->pb_cache = WisskiPathbuilderEntity::loadMultiple();
             $pb = $this->pb_cache[$pb_id];
           }
-           
+
           $path = $pb->getPbPath($path_id);
-          
+
           if(isset($path['field'])) {
-                        
+
             if(!$eid->hasField($path['field'])) {
               return;
             }
-            
+
             // get all the values from the current entity
             $values = $eid->get($path['field'])->getValue();
 
             if(empty($values)) {
               return;
             }
-            
+
             $out_values = array();
-            
+
             // go in there and gather these
             foreach($values as $value) {
                 // what is the main prop
@@ -582,9 +582,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               else {
                 // ??
               }
-                
+
             }
-            
+
             // return what we've got
             return $out_values;
           }
@@ -594,35 +594,35 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       } else {
         $eid = $eid->id();
       }
-    }                  
+    }
 
     if(empty($this->pb_cache)) {
 #      dpm(microtime(), "pb cache was not set!");
       $this->pb_cache = WisskiPathbuilderEntity::loadMultiple();
 #      dpm(microtime(), "pb cache was not set2!");
     }
-    
+
     $pbs = $this->pb_cache;
 
-    if(empty($this->adapter_cache)) {      
+    if(empty($this->adapter_cache)) {
       $this->adapter_cache = Adapter::loadMultiple();
     }
-    
+
     $field_is_translatable = TRUE;
-    
+
     $adapters = $this->adapter_cache;
     //we ask all pathbuilders if they know the path
     foreach ($pbs as $pb_id => $pb) {
       if ($pb->hasPbPath($path_id)) {
         // if the PB knows the path we try to load it
         $path = WisskiPathEntity::load($path_id);
-        
+
         if (empty($path)) {
           //dpm('can\'t load path '.$path_id,$pb_id);
           continue;
         }
-        
-        
+
+
         #dpm($path,$path_id);
         // then we try to load the path's adapter
         $adapter = $adapters[$pb->getAdapterId()];
@@ -643,11 +643,11 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           // load field def so we can see if the translation
           // is enabled or not. If it is not, we don't return everything here.
           $field_defs = \Drupal::service('entity_field.manager')->getFieldDefinitions("wisski_individual", $pbbundle);
-          
-          
+
+
           if(isset($field_defs) && isset($field_defs[$pbfield])) {
             $fielddef = $field_defs[$pbfield];
-          
+
             // if it is not translatable take only the first one.
             // this might backfire in case there are several fields
             // and only one is not translatable...
@@ -655,8 +655,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             if(!$fielddef->isTranslatable()) {
 #              dpm("it is not translatable!");
               $field_is_translatable = FALSE;
-            }  
-            
+            }
+
           }
 
 #          dpm($pbpath, "pbp");
@@ -671,7 +671,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             // in case of entity_reference which is not a group, be absolute!
             if($pbpath['fieldtype'] == "entity_reference" && $pbpath['bundle'] != $pbpath['field']) {
               // in case of entity reference this may not be absolute... I don't know why it was
-              // use case: Edit form with some sub-value field and there is an entity reference in it. 
+              // use case: Edit form with some sub-value field and there is an entity reference in it.
               // Then we may not do this here. Example is divination historische einordnung
               $tmp = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "target_id", TRUE);
 #              dpm("(in WisskiBundle.php, line 584) my val is (if): " . serialize($tmp));
@@ -721,11 +721,11 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             $new_values[] = implode(", ", $grptitles);
 
           } else { // normal field handling
-      #      dpm("normal handling1");                  
+      #      dpm("normal handling1");
             $bundle_of_path = $pbpath['bundle'];
 
             // if this is empty, then we get the parent and take this.
-            if(empty($bundle_of_path) || $path->getType() == "Path") {
+            if((empty($bundle_of_path) || $path->getType() == "Path") && !empty($pbpath['parent'])) {
               $group = $pb->getPbPath($pbpath['parent']);
               $bundle_of_path = $group['bundle'];
             }
@@ -741,15 +741,15 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               //drupal_set_message(t("Bundle %b is associated with no groups", array('%b' => $this->id)));
               continue;
             }
-#            dpm(microtime(), "normal handling");          
+#            dpm(microtime(), "normal handling");
             // if the bundle and this object are not the same, the eid is the one of the
             // main bundle and the paths have to be absolute. In this case
-            // we have to call it with false. 
+            // we have to call it with false.
             if($bundle_of_path != $this->id()) {
               // if this bundle is not the bundle where the path is in, we go to
-              // absolute mode and give the length of the group because we find 
+              // absolute mode and give the length of the group because we find
               // $eid there.
-              $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, count($group->getPathArray())-1, "value", FALSE); 
+              $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, count($group->getPathArray())-1, "value", FALSE);
 #              dpm("(in WisskiBundle.php, line 650) my val is (if): " . serialize($new_values));
             } else // if not they are relative.
               $new_values = $adapter->getEngine()->pathToReturnValue($path, $pb, $eid, 0, "value", TRUE);
@@ -757,28 +757,28 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #            dpm(microtime(), "new values");
             if (WISSKI_DEVEL) \Drupal::logger($pb_id.' '.$path_id.' '.__FUNCTION__)->debug('Entity '.$eid."{out}",array('out'=>serialize($new_values)));
           }
-          
+
           // if it is not translatable take only the first one
 #          if(!$field_is_translatable) {
 #            $new_values = array(current($new_values));
 #          }
 #          dpm("I've got new values: " . serialize($new_values) . " for lang " . $language);
-        }  
+        }
         if (empty($new_values)) {
           //dpm('don\'t have values for '.$path_id.' in '.$pb_id,$adapter->id());
         } else {
           // add the values to the array
-          
+
           foreach($new_values as $new_value) {
             if(isset($new_value["wisski_language"]))
               $values[$new_value["wisski_language"]][] = $new_value;
             else
               $values[] = $new_value;
           }
-          
+
           // if the field is not translatable take the first one
           if(!$field_is_translatable) {
-            
+
             $values = array($language => current($values));
           }
 #          dpm($values, "val?");
@@ -787,34 +787,34 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       } //else dpm('don\'t know path '.$path_id,$pb_id);
     }
  #   dpm($values, "wäh?");
-    
+
     return $values;
   }
-  
+
   public static function defaultPathOptions() {
-    
+
     return array(
       'eid' => t('Entity\'s Drupal ID'),
       'uri.long' => t('Full URI'),
       'uri.short' => t('Short URI'),
       'bundle_label' => t('The bundle\'s label'),
       'bid' => t('The bundle\'s ID'),
-    );    
+    );
   }
-  
+
   public function getPathOptions() {
-    
+
     $options = &$this->path_options;
     //if we already gathered the data, we can stop here
     if (empty($options)) {
       $options = self::defaultPathOptions();
-      
+
       $moduleHandler = \Drupal::service('module_handler');
       if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
         return NULL;
       }
-                        
-      
+
+
       //find all paths from all active pathbuilders
       $pbs = \Drupal::service('entity_type.manager')->getStorage('wisski_pathbuilder')->loadMultiple();
 #      $paths = array();
@@ -853,7 +853,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           $path_id = $path->getID();
           if ($this->id() === $pb->getBundle($path_id)) {
             $options[$pb_id][$pb_id.'.'.$path_id] = $path->getName();
-          } 
+          }
         }
 */
       }
@@ -862,7 +862,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   }
 
   public function getUriString($entity_id,$type) {
-    
+
     $uris = AdapterHelper::getUrisForDrupalId($entity_id);
     if (empty($uris)) return '';
     $uri = current($uris);
@@ -891,14 +891,14 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       foreach ((array) $entity_ids as $entity_id) {
         unset($this->cached_titles[$entity_id]);
         WisskiCacheHelper::flushEntityTitle($entity_id,$this->id());
-      } 
+      }
     }
   }
 
   private function setCachedTitle($entity_id,$title) {
 #    dpm("I am called");
     $this->cached_titles[$entity_id] = $title;
-    
+
     // if so it is probably a language-array with titles.
     if(is_array($title)) {
       foreach($title as $language => $title) {
@@ -914,22 +914,22 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
   public function getCachedTitle($entity_id) {
 #    dpm(microtime(), "got cached title!");
-    if (!isset($this->cached_titles[$entity_id])) {  
+    if (!isset($this->cached_titles[$entity_id])) {
 #      dpm("fetch fresh");
 // we have to iterate this due to language thingies.
 //      if ($title = WisskiCacheHelper::getEntityTitle($entity_id,$this->id())) $this->cached_titles[$entity_id] = $title;
       $available_languages = \Drupal::languageManager()->getLanguages();
       $available_languages = array_keys($available_languages);
-      
+
       $title = array();
-      
+
       foreach($available_languages as $lang) {
         $titleperlang = WisskiCacheHelper::getEntityTitle($entity_id,$this->id(),$lang);
         if(!empty($titleperlang))
           $title[$lang][0] = array("value" => $titleperlang, "wisski_language" => $lang);
         $this->cached_titles[$entity_id] = $title;
       }
-      
+
       if(empty($title))
         return NULL;
       //else return NULL;
@@ -937,14 +937,14 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #    dpm(microtime(), "delivered.");
     return $this->cached_titles[$entity_id];
   }
-  
+
   public function setTitlePattern($title_pattern) {
     $input = serialize($title_pattern);
     if ($input !== $this->title_pattern) {
       $this->title_pattern = $input;
-      $this->flushTitleCache(); 
+      $this->flushTitleCache();
     }
-    
+
 #    $config = \Drupal::configFactory()->getEditable('wisski_core.wisski_bundle_title');
 #    $config->set($this->id, $title_pattern)->save();
     $state = \Drupal::state()->get('wisski_core_title_patterns') ?: serialize(array());
@@ -955,25 +955,25 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   }
 
   public function onEmpty() {
-    
+
     return $this->on_empty;
   }
-  
+
   public function setOnEmpty($type) {
-    
+
     $type = intval($type);
     if ($type == self::DEFAULT_PATTERN || $type == self::FALLBACK_TITLE || $type == self::DONT_SHOW) {
       $this->on_empty = $type;
     } else \Drupal::messenger()->addStatus('Invalid fallback type for title pattern');
   }
-  
+
   public function getFallbackTitle() {
-    
+
     return $this->fallback_title;
   }
-  
+
   public function setFallbackTitle($fallback_title) {
-    
+
     if (is_string($fallback_title) && !empty($fallback_title))
       $this->fallback_title = $fallback_title;
   }
@@ -981,19 +981,19 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   public function getPagerLimit() {
     return $this->pager_limit;
   }
-  
+
   public function setPagerLimit($limit) {
     $this->pager_limit = $limit;
   }
-  
+
   public function getParentBundleIds($get_labels=TRUE) {
-    
+
     $moduleHandler = \Drupal::service('module_handler');
     if (!$moduleHandler->moduleExists('wisski_pathbuilder')){
       return NULL;
     }
-                      
-    
+
+
     $pbs = \Drupal::service('entity_type.manager')->getStorage('wisski_pathbuilder')->loadMultiple();
     $parents = array();
     foreach ($pbs as $pb_id => $pb) {
@@ -1014,9 +1014,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
     if(empty($parameters))
       $parameters = array("wisski_bundle" => $this->id());
-  
+
     $link = Link::createFromRoute($this->label(), $destination_route, $parameters);
-    
+
     // generate the parameter-string for the menu_link_content table
     $params = "";
     foreach($parameters as $key => $parameter) {
@@ -1028,27 +1028,27 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
 #    dpm('route:' . $destination_route . ';' . $params);
 
-    // get the matching entities     
+    // get the matching entities
     $entities = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => $menu_name, 'title' => $this->label(), 'link__uri' => 'route:' . $destination_route . ';' . $params ]);
 
     // typically there should be only one.
     $entity = current($entities);
-    
+
     if(!empty($entity))
       $entity->delete();
-    
+
     return $entity;
-  
+
   }
 
   /**
    * Creates a view for navigation
    *
-   */   
+   */
   public function addViewForBundle($menu_name, $weight, $enabled) {
     $bundleid = $this->id();
     $bundle_name = $this->label();
-    
+
     $options = array();
     $options['base_table'] = "wisski_individual";
     $options['id'] = $bundleid;
@@ -1121,7 +1121,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
            'admin_label' => '',
            'label' => '',
            'exclude' => true,
-           'alter' => 
+           'alter' =>
           array(
              'alter_text' => false,
              'text' => '',
@@ -1165,7 +1165,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
            'entity_type' => 'wisski_individual',
            'plugin_id' => 'standard',
         ),
-         'preview_image' => 
+         'preview_image' =>
         array(
            'id' => 'preview_image',
            'table' => 'wisski_individual',
@@ -1175,7 +1175,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
            'admin_label' => '',
            'label' => '',
            'exclude' => false,
-           'alter' => 
+           'alter' =>
           array(
              'alter_text' => false,
              'text' => '',
@@ -1218,12 +1218,12 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
            'hide_alter_empty' => true,
            'click_sort_column' => 'target_id',
            'type' => 'image_url',
-           'settings' => 
+           'settings' =>
           array(
              'image_style' => 'medium',
           ),
            'group_column' => '',
-           'group_columns' => 
+           'group_columns' =>
           array(
           ),
            'group_rows' => true,
@@ -1237,7 +1237,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
            'entity_type' => 'wisski_individual',
            'plugin_id' => 'field',
         ),
-         'title' => 
+         'title' =>
         array(
            'id' => 'title',
            'table' => 'wisski_individual',
@@ -1247,7 +1247,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
            'admin_label' => '',
            'label' => '',
            'exclude' => false,
-           'alter' => 
+           'alter' =>
           array(
              'alter_text' => false,
              'text' => '',
@@ -1292,9 +1292,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
            'plugin_id' => 'standard',
         ),
       ),
-       'filters' => 
+       'filters' =>
       array(
-         'bundle' => 
+         'bundle' =>
         array(
            'id' => 'bundle',
            'table' => 'wisski_individual',
@@ -1303,13 +1303,13 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
            'group_type' => 'group',
            'admin_label' => '',
            'operator' => 'IN',
-           'value' => 
+           'value' =>
           array(
              $bundleid => $bundleid,
           ),
            'group' => 1,
            'exposed' => false,
-           'expose' => 
+           'expose' =>
           array(
              'operator_id' => '',
              'label' => '',
@@ -1320,14 +1320,14 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
              'required' => false,
              'remember' => false,
              'multiple' => false,
-             'remember_roles' => 
+             'remember_roles' =>
             array(
                'authenticated' => 'authenticated',
             ),
              'reduce' => false,
           ),
            'is_grouped' => false,
-           'group_info' => 
+           'group_info' =>
           array(
              'label' => '',
              'description' => '',
@@ -1337,10 +1337,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
              'multiple' => false,
              'remember' => false,
              'default_group' => 'All',
-             'default_group_multiple' => 
+             'default_group_multiple' =>
             array(
             ),
-             'group_items' => 
+             'group_items' =>
             array(
             ),
           ),
@@ -1370,15 +1370,15 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
        'display_extenders' => array(),
        'use_ajax' => FALSE,
     ),
-     'cache_metadata' => 
+     'cache_metadata' =>
     array(
        'max-age' => -1,
-       'contexts' => 
+       'contexts' =>
       array (
         0 => 'languages:language_interface',
         1 => 'url.query_args',
       ),
-       'tags' => 
+       'tags' =>
       array(
       ),
     ),
@@ -1412,17 +1412,17 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         'tags' => array(),
       ),
     );
-   
+
     $view = new View($options, 'view');
-    
+
     $view->enable();
-      
+
     $view->save();
   }
-  
+
   public function addMenuItem($menu_name, $weight, $enabled, $destination_route, $parameters) {
     $link = Link::createFromRoute($this->label(), $destination_route, $parameters);
-    
+
     $entity = MenuLinkContent::create(array(
       'link' => ['uri' => $link->getUrl()->toUriString()],
        #        'langcode' => $node->language()->getId(),
@@ -1446,7 +1446,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
    * e.g. to navigate, find or create
    */
   public function addBundleToMenu($menu_name, $destination_route = "entity.wisski_bundle.entity_list", $parameters = array() ) {
-#    drupal_set_message("I should add " . $this->id() . " to $menu_name");    
+#    drupal_set_message("I should add " . $this->id() . " to $menu_name");
     $menu_mode = $this->getCreateMenuItems($menu_name, self::MENU_CREATE);
 
     $weight = 0;
@@ -1481,7 +1481,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     // kill the last ; in the end
     $params = substr($params, 0, -1);
 
-    // get the matching entities     
+    // get the matching entities
     $entities = \Drupal::entityTypeManager()->getStorage('menu_link_content')->loadByProperties(['menu_name' => $menu_name, 'title' => $this->label(), 'link__uri' => 'route:' . $destination_route . ';' . $params ]);
 
     if(!empty($entities)) {
@@ -1494,7 +1494,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
         if(isset($entity->weight->value))
           $weight = $entity->weight->value;
         if(isset($entity->enabled->value))
-          $enabled = $entity->enabled->value;      
+          $enabled = $entity->enabled->value;
       }
     }
 
@@ -1541,7 +1541,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
           $pbp = $pb->getPbPath($group->id());
           $weight = $pbp['weight'];
           break;
-        }    
+        }
       }
     }
 
@@ -1580,20 +1580,20 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
       }
     }
     */
-    
+
   }
 
-  
-  /** For each of the menus associated with this bundle, returns information 
-   * whether to create a menu item for this bundle and whether it should be 
+
+  /** For each of the menus associated with this bundle, returns information
+   * whether to create a menu item for this bundle and whether it should be
    * enabled by default.
    *
    * @param menu_name restrict the return value to the info for this menu
    * @param filter filter the menus' info. Can be MENU_CREATE, MENU_ENABLE or a
             combination thereof
-   * @return an array where the keys are menu ids and the values are 
+   * @return an array where the keys are menu ids and the values are
    *         MENU_CREATE, MENU_ENABLE or a combination thereof. If menu_name is
-   *         given, only the menu's info is returned; if the menu does not 
+   *         given, only the menu's info is returned; if the menu does not
    *         exist or was filtered out, FALSE is returned.
    */
   public function getCreateMenuItems($menu_name = NULL, $filter = NULL) {
