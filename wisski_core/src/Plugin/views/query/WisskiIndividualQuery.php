@@ -166,8 +166,12 @@ class WisskiIndividualQuery extends QueryPluginBase
                       if($path->getDatatypeProperty() == "empty")
                         $valueGroup[1] = "HAS_EID";
                     }
-                    
-                    $qgroup = $qgroup->condition($valueGroup[0], $valueGroup[2], $valueGroup[1]);
+
+                    if($valueGroup[1] == "HAS_EID" && !is_numeric($valueGroup[2]))
+                      // in this case we do nothing because it is wrongly defined.
+                      // if we want to query an entity id we also want a numeric parameter!
+                    else
+                      $qgroup = $qgroup->condition($valueGroup[0], $valueGroup[2], $valueGroup[1]);
                 } else {
                     $qgroup = $qgroup->condition($cond["field"], $cond["value"], $cond["operator"]);
                 }
