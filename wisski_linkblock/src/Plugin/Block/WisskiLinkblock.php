@@ -278,7 +278,6 @@ class WisskiLinkblock extends BlockBase {
     }
 
     $out[] = ['#markup' => '<div class="linkblock__content">'];
-
     foreach ($dataout as $pathid => $dataarray) {
       $path = $dataarray['path'];
       $adapter = $dataarray['adapter'];
@@ -335,7 +334,7 @@ class WisskiLinkblock extends BlockBase {
           // Special handling for paths with datatypes - use the value from there for reference
           // if you don't want this - use disamb directly!
           if ($path->getDatatypeProperty() != "empty") {
-
+            $out[] = ['#markup' => '<div>'];
             $out[] = [
               '#type' => 'link',
             // '#title' => $data['target_id'],
@@ -378,7 +377,7 @@ class WisskiLinkblock extends BlockBase {
                 $title = $title['value'];
               }
             }
-
+            $out[] = ['#markup' => '<div>'];
             $out[] = [
               '#type' => 'link',
             // '#title' => $data['target_id'],
@@ -395,6 +394,7 @@ class WisskiLinkblock extends BlockBase {
           }
         }
         else {
+          $out[] = ['#markup' => '<div>'];
           $out[] = [
             '#type' => 'container',
             '#markup' => $data['target_id'],
@@ -409,8 +409,9 @@ class WisskiLinkblock extends BlockBase {
         }
 
       }
+      $out[] = ['#markup' => '</div>']; // <div class="linkblock__content__item">
     }
-    $out[] = ['#markup' => '</div>'];
+    $out[] = ['#markup' => '</div>']; //<div class="linkblock__content">
     // dpm($out, "out?");.
     return $out;
   }
