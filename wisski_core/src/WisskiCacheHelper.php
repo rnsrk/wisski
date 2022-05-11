@@ -54,18 +54,30 @@ class WisskiCacheHelper {
       $entity_title = mb_substr($entity_title, 0, 128);
     }
 #    dpm("I delete: $entity_id for $language");
-    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
-    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
-    \Drupal::database()->delete('wisski_title_n_grams')->condition('ent_num', $entity_id)->condition('lang', $language)->condition('bundle', empty($bundle_id) ? "default" : $bundle_id)->execute();
-    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
-    // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
-    \Drupal::database()->insert('wisski_title_n_grams')->fields(array(
-        'ent_num' => $entity_id,
-        'bundle' => empty($bundle_id) ? "default" : $bundle_id,
-        'ngram' => $entity_title,
-        'n' => mb_strlen($entity_title),
-        'lang' => $language,
-      ))->execute();
+
+    $lock = \Drupal::lock();
+
+    if ($lock->acquire('WisskiCacheHelper')) {
+      try {
+
+        // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+        // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+        \Drupal::database()->delete('wisski_title_n_grams')->condition('ent_num', $entity_id)->condition('lang', $language)->condition('bundle', empty($bundle_id) ? "default" : $bundle_id)->execute();
+        // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+        // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+        \Drupal::database()->insert('wisski_title_n_grams')->fields(array(
+          'ent_num' => $entity_id,
+          'bundle' => empty($bundle_id) ? "default" : $bundle_id,
+          'ngram' => $entity_title,
+          'n' => mb_strlen($entity_title),
+          'lang' => $language,
+        ))->execute();
+      } catch (\Exception $e) {
+        \Drupal::messenger()->addError("An error occured: " . $e->getMessage());
+      }
+      $lock->release('WisskiCacheHelper');
+    }
+
 
   }
   
