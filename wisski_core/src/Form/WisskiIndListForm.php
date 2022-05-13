@@ -21,6 +21,13 @@ class WisskiIndListForm extends ConfigFormBase {
  */
 const SELECTED_INDIVIDUALS = 'wisski_core.individual_list';
 
+/**
+ * Batch metadata config name.???
+ *
+ * @var string
+ */
+const ALL_RECORDS = 'wisski_core.all_records';
+
   protected WisskiIndividualListDbActions $wisskiIndividualListDbActions;
 
   /**
@@ -75,6 +82,7 @@ const SELECTED_INDIVIDUALS = 'wisski_core.individual_list';
   protected function getEditableConfigNames() {
     return [
       static::SELECTED_INDIVIDUALS,
+      static::ALL_RECORDS,
     ];
   }
 
@@ -88,6 +96,10 @@ const SELECTED_INDIVIDUALS = 'wisski_core.individual_list';
     $this->wisskiBundleId = $wisski_bundle;
     $this->config(static::SELECTED_INDIVIDUALS);
     $records = \Drupal::service('wisski.wisski_core.database_actions')->readBundleRecords($wisski_bundle);
+    $this->configFactory->getEditable(static::ALL_RECORDS)
+    // Set the submitted configuration setting.
+    ->set('allRecords', $records)
+    ->save();
     $chunk = $this->pagerArray($records, 25);
     if(empty($chunk)){
       $chunk = [];

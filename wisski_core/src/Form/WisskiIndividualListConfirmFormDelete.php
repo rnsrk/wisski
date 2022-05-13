@@ -19,6 +19,7 @@ class WisskiIndividualListConfirmFormDelete extends ConfirmFormBase {
 
   private string $wisskiBundleId;
   private int $numberOfIndividuals;
+  private array $deleteIndividualsWithLabel;
 
   /**
    * Form for removing a draft DOI from the provider and the local database.
@@ -34,6 +35,14 @@ class WisskiIndividualListConfirmFormDelete extends ConfirmFormBase {
 
   private function countIndividuals() {
     return $this->numberOfIndividuals;
+  }
+
+  private function listDeleteIndividualsWithLabel() {
+    foreach ($this->deleteIndividualsWithLabel as $key => $element) {
+      unset($element['link']);
+      $this->deleteIndividualsWithLabel[$key] = $element;
+    }
+    return $this->deleteIndividualsWithLabel;
   }
 
 
@@ -63,7 +72,7 @@ class WisskiIndividualListConfirmFormDelete extends ConfirmFormBase {
    * Details between title and body.
    */
   public function getDescription() {
-    return $this->t('This deletes all the selected individuals from the local database.');
+    return $this->t('This deletes all the selected individuals from the local database which are shown in the table above.');
   }
 
   /**
@@ -89,14 +98,27 @@ class WisskiIndividualListConfirmFormDelete extends ConfirmFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, ?string $wisski_bundle = NULL): array {
     $this->wisskiBundleId = $wisski_bundle;
-
     $individualList = \Drupal::configFactory()
       ->getEditable(WisskiIndListForm::SELECTED_INDIVIDUALS)->get('wisskiIndividuals');
     $individualListAsMap = array_map(function($a){
       return $a;
     },array_filter($individualList));
-    
+
+    $allRecords = \Drupal::configFactory()
+      ->getEditable(WisskiIndListForm::ALL_RECORDS)->get('allRecords');
+    $this->deleteIndividualsWithLabel = array_intersect_key($allRecords, $individualListAsMap);
     $this->numberOfIndividuals = count($individualListAsMap);
+
+    $form['table'] = [
+      '#type' => 'table',
+      '#header' => [
+        'eid' => $this->t('EID'),
+        'label' => $this->t('Label'),
+      ],
+      '#rows' => $this->listDeleteIndividualsWithLabel(),
+      '#empty' => $this
+        ->t('No entities found.'),
+    ];
 
     return parent::buildForm($form, $form_state);
   }
@@ -105,8 +127,6 @@ class WisskiIndividualListConfirmFormDelete extends ConfirmFormBase {
    * Deletes DOI record from local and remote DB.
    */
   public function submitForm(array &$form, $form_state) {
-    #dpm($form);
-    #dpm($form_state);
     \Drupal::service('wisski.wisski_core.database_actions')->deleteBundleRecords();
     // Redirect.
     $form_state->setRedirect(
