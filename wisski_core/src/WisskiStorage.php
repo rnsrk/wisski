@@ -1821,14 +1821,43 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 
 #    $entity->updateOriginalValues();
 
+    // instead of this own programmed function we will try to use the core from
+    // now on.
+    // this is accessed the following way:
+    //
+    // $moderation_state = $entity->get('moderation_state')->getString();
+
+    // //code to get the original entity moderation state
+    // $moderation_state_original = $entity->original->get('moderation_state')->getString();
+    //
+    // And if this is not available we can do:
+    // $entityOriginal = \Drupal::entityTypeManager()->getStorage('my_entity')->loadUnchanged($entity->id());
+    //
+    
     list($values,$original_values) = $entity->getValues($this,FALSE);
+#    dpm($original_values, "orig old?");
+#    dpm(serialize($entity->original), "orig new?");
     
 #    dpm($values, "yay?");
 #    dpm($original_values, "ori?");
 #    dpm(serialize($entity->bundle()), "ente?");
 #    dpm(serialize($values['bundle'][0]['target_id']), "is sis shiit?");
 #    return;
-    $bundle_id = $values['bundle'][0]['target_id'];
+
+#    $bundle_id = $entity->get('bundle')[0]['target_id'];
+#    dpm(serialize($entity->get('bundle')), "`??");
+#    dpm(serialize($entity->get('bundle')->target_id), "bunbun?");
+    
+    $bundle = $entity->get('bundle');
+    
+    if(!empty($bundle)) {
+      $bundle_id = $bundle->target_id;
+    } else {
+      // old behaviour - this hopefully will never fire!
+      $bundle_id = $values['bundle'][0]['target_id'];
+    }
+    
+    
 #    dpm("saving ". $entity->id() . " with bundle " . serialize($values['bundle']) . " or " . serialize($entity->bundle()));   
     if (empty($bundle_id)) $bundle_id = $entity->bundle();
     // TODO: What shall we do if bundle_id is still empty. Can this happen?
