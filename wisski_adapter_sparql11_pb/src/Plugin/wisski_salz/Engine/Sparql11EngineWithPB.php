@@ -3052,7 +3052,15 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // another parameter ($initial_write) for that which simply
     // ignores the old field values and forces a write.
     // @TODO: by mark: This should be checked inside of the entity itself.
-    $init_entity = $this->loadEntity($entity_id);
+
+    // By Mark:
+    // I rewrite this code here as the entity interface has severely changed
+    // and this logic does not follow the new procedures.
+    // Nowadays we can check everything from the entity directly as it is a
+    // regular content entity.
+    //
+    // I think this code never got used. So we can remove it anyway. 
+    // $init_entity = $this->loadEntity($entity_id);
     //dpm(serialize($init_entity->getTranslationLanguages()), "trans2?");
     #$init_entity = $this->hasEntity($entity_id);
 #\Drupal::logger('WissKI Import tmpc')->debug("l:".(microtime(TRUE)-$tmpt));
@@ -3065,24 +3073,34 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // if there is nothing, continue.
     // by mark: currently the storage calls the createEntity. So this never may be used.
     // simply don't worry about it.
-    if (empty($init_entity)) {
-#      dpm('empty entity',__FUNCTION__);
-      if ($force_new) {
-        $entity = new WisskiEntity(array('eid' => $entity_id,'bundle' => $bundle_id),'wisski_individual',$bundle_id);
-        $this->createEntity($entity,$entity_id);
-      } else return;
-    }
+    
+    // By Mark on code-rewrite:
+    // this never happens.
+    // so we get rid of it.
+    
+    //if (empty($init_entity)) {
+#   //   dpm('empty entity',__FUNCTION__);
+    //  if ($force_new) {
+    //    $entity = new WisskiEntity(array('eid' => $entity_id,'bundle' => $bundle_id),'wisski_individual',$bundle_id);
+    //    $this->createEntity($entity,$entity_id);
+    //  } else return;
+    //}
 #\Drupal::logger('WissKI Import tmpc')->debug("c:".(microtime(TRUE)-$tmpt));
 
-    if(empty($entity) && !empty($init_entity))
-      $entity = $init_entity;
+    // by Mark on code-rewrite:
+    // this never happens either...
+    //if(empty($entity) && !empty($init_entity))
+    //  $entity = $init_entity;
 
     $components = array();
 
 #    dpm(serialize($entity), "ente?");
 #    dpm(serialize($entity->getOriginalValues()), "ori?");
 
-    if (!isset($old_values) && !empty($init_entity)) {
+    // by mark on code-rewrite
+    // throw out the init_entity as it always was initialized...
+    //if (!isset($old_values) && !empty($init_entity)) {
+    if (!isset($old_values)) {
       // it would be better to gather this information from the form and not from the ts
       // there might have been somebody saving in between...
       // @TODO !!!
