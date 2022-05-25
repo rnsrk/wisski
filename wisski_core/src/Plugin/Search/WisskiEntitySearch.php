@@ -120,8 +120,8 @@ class WisskiEntitySearch extends SearchPluginBase {
 
         // if we get a title array, go in there.
         if(is_array($title)) {
-          if(isset($title['curr_lang'])) {
-            $title = $title['curr_lang'];
+          if(isset($title[$curr_lang])) {
+            $title = $title[$curr_lang];
             
             // take the first one
             if(isset($title[0]))
