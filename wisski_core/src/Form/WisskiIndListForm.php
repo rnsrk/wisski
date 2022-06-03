@@ -82,7 +82,6 @@ const ALL_RECORDS = 'wisski_core.all_records';
   protected function getEditableConfigNames() {
     return [
       static::SELECTED_INDIVIDUALS,
-      static::ALL_RECORDS,
     ];
   }
 
@@ -90,16 +89,14 @@ const ALL_RECORDS = 'wisski_core.all_records';
    * TODO
    */
   public function buildForm(array $form, FormStateInterface $form_state, string $wisski_bundle = NULL) {
-    $this->messenger()->addStatus($this
-        ->t('To delete all individuals from this list just click
-        "Delete Individuals".'));
     $this->wisskiBundleId = $wisski_bundle;
     $this->config(static::SELECTED_INDIVIDUALS);
     $records = \Drupal::service('wisski.wisski_core.database_actions')->readBundleRecords($wisski_bundle);
-    $this->configFactory->getEditable(static::ALL_RECORDS)
+    $this->configFactory->getEditable(static::SELECTED_INDIVIDUALS)
     // Set the submitted configuration setting.
     ->set('allRecords', $records)
     ->save();
+
     $chunk = $this->pagerArray($records, 25);
     if(empty($chunk)){
       $chunk = [];
@@ -109,8 +106,10 @@ const ALL_RECORDS = 'wisski_core.all_records';
       '#type' => 'tableselect',
       '#header' => [
         'eid' => $this->t('EID'),
-        'label' => $this->t('Label'),
-        'link' => $this->t('Link'),
+        // we prefer the term "Title" for display but however title is a reserved
+        // variable, why we have to name it "label" in 
+        // WisskiIndividualListDbActions.php where the information is built up
+        'label' => $this->t('Title'),
       ],
       '#options' => $chunk,
       '#empty' => $this

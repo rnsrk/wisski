@@ -292,3 +292,11 @@ entity.wisski_bundle.individual_list.delete:
     _title: 'Delete selected individuals'
   requirements:
     _permission: 'administer wisski'
+
+entity.wisski_bundle.individual_list.delete_all:
+  path: '/admin/structure/wisski_core/{wisski_bundle}/individual_list/delete_all'
+  defaults:
+    _form : '\Drupal\wisski_core\Form\WisskiIndividualListConfirmFormDeleteAll'
+    _title: 'Delete all individuals'
+  requirements:
+    _permission: 'administer wisski'

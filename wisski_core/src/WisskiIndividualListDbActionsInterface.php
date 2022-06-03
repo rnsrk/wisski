@@ -30,6 +30,6 @@ interface WisskiIndividualListDbActionsInterface {
    */
   public function readBundleRecords(string $bundle_id);
 
-  public function deleteBundleRecords();
+  public function deleteBundleRecords(string $individual);
 
 }

@@ -9,6 +9,7 @@ use Drupal\Core\Url;
 use Drupal\wisski_doi\WisskiDoiDbActions;
 use Drupal\wisski_doi\WisskiDoiDataciteRestActions;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Pager\PagerManager;
 
 /**
 * Provides a form for deleting the individual list.
@@ -22,29 +23,24 @@ class WisskiIndividualListConfirmFormDelete extends ConfirmFormBase {
   private array $deleteIndividualsWithLabel;
 
   /**
-   * Form for removing a draft DOI from the provider and the local database.
+   * 
    *
-   * @param \Drupal\wisski_doi\WisskiDoiDataciteRestActions $wisskiDoiRestActions
-   *   The WissKi DOI Rest Service.
-   * @param \Drupal\wisski_doi\WisskiDoiDbActions $wisskiDoiDbActions
-   *   The WissKI DOI database Service.
    */
-  public function __construct() {
+  public function __construct(PagerManager $pagerManager) {
+    $this->pagerManager = $pagerManager;
+  }
 
+    /**
+   * Get the services from the container.
+   */
+  public static function create(ContainerInterface $container) {
+    $pagerManager = $container->get('pager.manager');
+    return new static($pagerManager);
   }
 
   private function countIndividuals() {
     return $this->numberOfIndividuals;
   }
-
-  private function listDeleteIndividualsWithLabel() {
-    foreach ($this->deleteIndividualsWithLabel as $key => $element) {
-      unset($element['link']);
-      $this->deleteIndividualsWithLabel[$key] = $element;
-    }
-    return $this->deleteIndividualsWithLabel;
-  }
-
 
   /**
    * The machine name of the form.
@@ -104,18 +100,39 @@ class WisskiIndividualListConfirmFormDelete extends ConfirmFormBase {
       return $a;
     },array_filter($individualList));
 
+    // since in $individualList only the id is present, we have to do an array_intersect_key 
+    // with the full list containing all entities to get the eid, label and link of
+    // the selected entities
+    // then we can show we table with all this information again to let the users
+    // double-check if they really wants to delete these entities
     $allRecords = \Drupal::configFactory()
-      ->getEditable(WisskiIndListForm::ALL_RECORDS)->get('allRecords');
-    $this->deleteIndividualsWithLabel = array_intersect_key($allRecords, $individualListAsMap);
+      ->getEditable(WisskiIndListForm::SELECTED_INDIVIDUALS)->get('allRecords');
+    $allRecordsNew = [];
+    foreach($allRecords as $record){
+      $allRecordsNew[$record['eid']] = [
+        'eid' => $record['eid'], 
+        'label' => [
+          'data' => $this->t('<a href=":entityLink" class="wisski-entity-link">:entityTitle</a>', 
+            [':entityLink' => $record['entityLink'], ':entityTitle' => $record['entityTitle']]
+          )
+        ]]; 
+    }
+
+    $this->deleteIndividualsWithLabel = array_intersect_key($allRecordsNew, $individualListAsMap);
     $this->numberOfIndividuals = count($individualListAsMap);
+
+    $chunk = $this->pagerArray($this->deleteIndividualsWithLabel, 25);
+    if(empty($chunk)){
+      $chunk = [];
+    }
 
     $form['table'] = [
       '#type' => 'table',
       '#header' => [
         'eid' => $this->t('EID'),
-        'label' => $this->t('Label'),
+        'label' => $this->t('Title'),
       ],
-      '#rows' => $this->listDeleteIndividualsWithLabel(),
+      '#rows' => $chunk,
       '#empty' => $this
         ->t('No entities found.'),
     ];
@@ -123,11 +140,38 @@ class WisskiIndividualListConfirmFormDelete extends ConfirmFormBase {
     return parent::buildForm($form, $form_state);
   }
 
+    /**
+   * Returns pager array.
+   *
+   * @param array $items
+   *   All records to render.
+   * @param int $itemsPerPage
+   *   The page limits.
+   *
+   * @return array
+   *   The chunk to render.
+   */
+  public function pagerArray(array $items, int $itemsPerPage) {
+    // Get total items count.
+    $total = count($items);
+    // Get the number of the current page.
+    $currentPage = $this->pagerManager->createPager($total, $itemsPerPage)
+      ->getCurrentPage();
+    // Split an array into chunks.
+    $chunk = array_chunk($items, $itemsPerPage, TRUE);
+    // Return current group item.
+
+    if(count($items) == 0){
+      return [];
+    }
+    return $chunk[$currentPage];
+  }
+
   /**
    * Deletes DOI record from local and remote DB.
    */
   public function submitForm(array &$form, $form_state) {
-    \Drupal::service('wisski.wisski_core.database_actions')->deleteBundleRecords();
+    \Drupal::service('wisski.wisski_core.database_actions')->deleteBundleRecords('wisskiIndividuals');
     // Redirect.
     $form_state->setRedirect(
       'entity.wisski_bundle.individual_list', ['wisski_bundle' => $this->wisskiBundleId]

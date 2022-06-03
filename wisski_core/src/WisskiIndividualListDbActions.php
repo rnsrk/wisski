@@ -50,30 +50,44 @@ class WisskiIndividualListDbActions implements WisskiIndividualListDbActionsInte
     $wisskiIndividualResults = $wisskiIndividualQuery->execute();
     foreach ($wisskiIndividualResults as $result => $eid) {
       $title = wisski_core_generate_title($eid);
-      $entityLink = \Drupal::request()->getSchemeAndHttpHost() . '/wisski/navigate/' . $eid;
+      $entityTitle = $title[$language][0]['value'];
+      // At this point we load the view directly; since we load the bundle in
+      // wisski_core_generate_title(), we could think of loading the entities here,
+      // however we think that adding ".view" is better in terms of performance.
+      $entityLink = \Drupal::request()->getSchemeAndHttpHost() . '/wisski/navigate/' . $eid . '/view/?wisski_bundle=' . $bundle_id;
       $individualsPerBundle[$eid] = [
         'eid' => $eid,
-        'label' => $title[$language][0]['value'],
-        'link' => ['data' => $this->t('<a href=":entityLink" class="wisski-entity-link">:entityLink</a>', [':entityLink' => $entityLink])],
+        'label' => ['data' => $this->t('<a href=":entityLink" class="wisski-entity-link">:entityTitle</a>', [':entityLink' => $entityLink, ':entityTitle' => $entityTitle])],
+        'entityTitle' => $entityTitle,
+        'entityLink' => $entityLink,
       ];
     }
     return $individualsPerBundle;
   }
 
-  public function deleteBundleRecords() {
+  public function deleteBundleRecords($individuals) {
     $individualList = \Drupal::configFactory()
-      ->getEditable(WisskiIndListForm::SELECTED_INDIVIDUALS)->get('wisskiIndividuals');
-      // dpm($individualList, 'deletelist');
+      ->getEditable(WisskiIndListForm::SELECTED_INDIVIDUALS)->get($individuals);
 
       // create a map that contains only the selected items, i.e., the eids that 
       // should be deleted and all not selected eids are filtered
       $individualListAsMap = array_map(function($a){
            return $a;
         },array_filter($individualList));
-     
+
       $entity_storage = \Drupal::entityTypeManager()->getStorage('wisski_individual');
+
+      // in case of deleting all individuals, we have to bring the array to an 
+      // appropriate representation ($eid => $eid) to fit the requirement of
+      // the function loadMultiple
+      if($individuals == "allRecords"){
+        $tmp_list = [];
+        foreach($individualList as $item){
+          $tmp_list[$item['eid']] = (string) $item['eid'];
+        }
+        $individualListAsMap = $tmp_list;
+      }
       $entities = $entity_storage->loadMultiple($individualListAsMap);
       $entity_storage->delete($entities);
     }
-  
 }

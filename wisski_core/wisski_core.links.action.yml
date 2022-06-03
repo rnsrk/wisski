@@ -16,6 +16,12 @@ entity.wisski_bundle.title:
   appears_on:
     - entity.wisski_bundle.edit_form
 
+entity.wisski_bundle.individual_list.delete_all:
+  route_name: 'entity.wisski_bundle.individual_list.delete_all'
+  title: 'Delete all entities'
+  appears_on:
+    - entity.wisski_bundle.individual_list
+
 # WissKI menu actions
 wisski.menus.recreate_items:
   route_name: wisski.menus.recreate_items
