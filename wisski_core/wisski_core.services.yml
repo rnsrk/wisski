@@ -20,3 +20,9 @@ services:
   wisski.wisski_core.namespace:
     class: Drupal\wisski_core\WisskiNameSpaceOperator
     arguments: ['@database']
+  wisski.wisski_core.database_actions:
+    class: Drupal\wisski_core\WisskiIndividualListDbActions
+    arguments:
+      - '@database'
+      - '@messenger'
+      - '@string_translation'
