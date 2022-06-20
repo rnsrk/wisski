@@ -386,6 +386,13 @@ class AdapterHelper {
     
       // "eid" has to be dynamically here!
       $local_adapter->getEngine()->setBaseFieldFromStoreForUri($uri, "eid", $id);
+
+      if($local_adapter->id() != $adapter_id) {
+        $adapter = is_object($adapter_id) ? $adapter_id : Adapter::load($adapter_id);
+        $adapter->getEngine()->setBaseFieldFromStoreForUri($uri, "eid", $id);
+      }
+
+
     }
         
     // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
