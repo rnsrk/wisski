@@ -334,7 +334,7 @@ class WisskiLinkblock extends BlockBase {
           // Special handling for paths with datatypes - use the value from there for reference
           // if you don't want this - use disamb directly!
           if ($path->getDatatypeProperty() != "empty") {
-            $out[] = ['#markup' => '<div>'];
+            $out[] = ['#markup' => '<h4>'];
             $out[] = [
               '#type' => 'link',
             // '#title' => $data['target_id'],
@@ -348,7 +348,7 @@ class WisskiLinkblock extends BlockBase {
                 ],
               ],
             ];
-            $out[] = ['#markup' => '</div>'];
+            $out[] = ['#markup' => '</h4>'];
 
           }
           else {
