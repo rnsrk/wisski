@@ -406,16 +406,15 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             }
             if (++$i < $cardinality) $part[$alanguage] .= $delimiter;
           } else {
-            // iterate language ...
-            foreach($per_lang_values as $per_lang_value) {
-              $value = $per_lang_value['value'];
+            // this takes still place if the something just uses a group title 
+            // e.g. the fotoliste in horizonte just uses the object title for its
+            // entries and then suddenly there was "en" => "blablabla" instead of
+            // an array.
+            if(!is_array($per_lang_values)) {
+              $value = $per_lang_values;
               if(empty($value) && $value !== 0 && $value !== "0")
                 continue;
-#          dpm($i, "i");
-#	TODO: SEE ABOVE
-#          dpm($cardinality, "card");
-              // MyFi: commented this in again because this is important for the functionality of "Show#" in the title pattern setting of the bundle
-              // otherwise multiple values would be written one following another without the delimiter if the setting is: "Show#1"
+
               if ($i >= $cardinality) break;
 #          dpm($value, 'get');
 #              dpm($language, "language");
@@ -431,6 +430,34 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               $has_any_path_part_per_language[$language] = TRUE;
               // }
               if (++$i < $cardinality) $part[$language] .= $delimiter;
+            } else {
+            
+              // iterate language ...
+              foreach($per_lang_values as $per_lang_value) {
+                $value = $per_lang_value['value'];
+                if(empty($value) && $value !== 0 && $value !== "0")
+                  continue;
+#          dpm($i, "i");
+#	TODO: SEE ABOVE
+#          dpm($cardinality, "card");
+              // MyFi: commented this in again because this is important for the functionality of "Show#" in the title pattern setting of the bundle
+              // otherwise multiple values would be written one following another without the delimiter if the setting is: "Show#1"
+                if ($i >= $cardinality) break;
+#          dpm($value, 'get');
+#              dpm($language, "language");
+                if(empty($part[$language]))
+                  $part[$language] = "";
+              # before: if multiple entries were in $value, then they were concatenated to $part[$language]
+              # before:  $part[$language] .= "$value";
+              # this is wrong since this did not consider delimiters that were given in the title pattern
+              # we need an iteration here over all entries in $value so we deleted we "}" after this block to
+              # include this in the outer foreach loop
+                $part[$language] .= "$value";
+              // we found something for this language!
+                $has_any_path_part_per_language[$language] = TRUE;
+              // }
+                if (++$i < $cardinality) $part[$language] .= $delimiter;
+              }
             }
           }
         }
