@@ -36,7 +36,7 @@ class WisskiTitle extends Urlfield {
     }
 //   dpm(Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $eid]), "url");
 #    dpm(serialize($eid), "eid");
-//    dpm(serialize($values), "val");
+#    dpm(serialize($values), "val");
     if (is_array($value)) {
       $return = [];
 
@@ -44,16 +44,18 @@ class WisskiTitle extends Urlfield {
         
         // in case of a disamb-array, go to the value.
         if(is_array($v) && isset($v["value"]))
-          $return[] = $this->sanitizeValue($v["value"]);
+          $return[] = $v["value"]; //$this->sanitizeValue($v["value"]);
         else 	         
-          $return[] = $this->sanitizeValue($v);
+          $return[] = $v; //$this->sanitizeValue($v);
       }
       return join(', ', $return);
     }
     else {
       if (!empty($this->options['display_as_link']) && !empty($eid)) {
-        return Link::fromTextAndUrl($this->sanitizeValue($value), Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $eid]))->toString(); //"<a href='" . Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity]) . "'>" . $this->sanitizeValue($value) . "</a>";
+        //$this->sanitizeValue($value),
+        return Link::fromTextAndUrl($value, Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $eid]))->toString(); //"<a href='" . Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $entity]) . "'>" . $this->sanitizeValue($value) . "</a>";
       } else {
+//        return $value;
         return $this->sanitizeValue($value, 'url');
       }
     }
