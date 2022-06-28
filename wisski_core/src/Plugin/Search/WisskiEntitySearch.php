@@ -458,6 +458,7 @@ class WisskiEntitySearch extends SearchPluginBase {
   
     return array(
       'CONTAINS' => $this->t('contains'),
+      'NOT' => $this->t('contains not'),
       '=' => $this->t('exactly'),
       '<>' => $this->t('not equal'),
       '>' => '>',
