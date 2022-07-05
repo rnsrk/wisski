@@ -151,13 +151,19 @@ class StringArgument extends ViewsString {
         $cond = $cond->orConditionGroup();
       }
       foreach ($this->value as $value) {
-        $cond->condition($field, $value, $comparison_operator);
+        if(empty($oomparison_operator) && is_numeric($value)) 
+          $this->query->addWhere(0, $field, $value, "HAS_EID"); //$comparison_operator);
+        else
+          $this->query->addWhere(0, $field, $value, $comparison_operator);
+//        $cond->condition($field, $value, $comparison_operator);
       }
     }
     else {
+//      dpm($field);
       // we are in multi value mode with a special comparison operator.
       // we pass all the values as one single array to the operator
-      $this->query->query->condition($field, $this->value, $comparison_operator);
+//      $this->query->query->condition($field, $this->value, $comparison_operator);
+      $this->query->addWhere(0, $field, $this->value, $comparison_operator);
     }
   }
 
