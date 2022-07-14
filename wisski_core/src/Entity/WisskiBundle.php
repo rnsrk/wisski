@@ -375,13 +375,13 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
         foreach ($values as $language => $per_lang_values) {
           // we have to evaluate cardinality here because it is per language...
-          if(is_array($per_lang_values))
+          if (is_array($per_lang_values))
             if ($cardinality < 0 || $cardinality > count($per_lang_values)) $cardinality = count($per_lang_values);
           else
             if ($cardinality < 0 || $cardinality > count($values)) $cardinality = count($values);
 
           $i = 0;
-          if(is_int($language)) {
+          if (is_int($language) || !is_array($per_lang_values)) {
             $value = $per_lang_values;
             //
             // fix for empty values, we ignore these for now.
