@@ -207,6 +207,8 @@ class WisskiDataMergeForm extends FormBase {
 
     $path = \Drupal::entityTypeManager()->getStorage('wisski_path')->load($selected_path);
 
+    $language =  \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+
 #    dpm($table, "table?");
 
     // if it is selected it should be "1" in the value... or at least not 0
@@ -239,13 +241,13 @@ class WisskiDataMergeForm extends FormBase {
         
         $triples = $engine->generateTriplesForPath($pb, $path);
 
-        $query = "SELECT * WHERE { " . $triples . " FILTER( ?out = '" . $outvalue . "' ) . } LIMIT 1";
+        $query = "SELECT * WHERE { " . $triples . " FILTER( ?out = '" . $outvalue . "'@" . $language . " ) . } LIMIT 1";
         
 #        dpm($query, "query?");
         
         $result = $engine->directQuery($query);
         
-        $filters = " FILTER( ?out = '" . $outvalue . "' ) . ";
+        $filters = " FILTER( ?out = '" . $outvalue . "'@" . $language . " ) . ";
 
         $delfront = "DELETE { ";
 #        $wherefront = "WHERE { ";
@@ -272,7 +274,7 @@ class WisskiDataMergeForm extends FormBase {
               $delfront .= "?x" . $pos . " <" . $inverse . "> ?x" . ($pos-2) . " . ";
           }
           
-          $delfront .= "?x" . ($pos-2) . " <" . $path->getDatatypeProperty() . "> '" . $outvalue . "'";
+          $delfront .= "?x" . ($pos-2) . " <" . $path->getDatatypeProperty() . "> '" . $outvalue . "'@" . $language . "";
           
 #          dpm($filters, "fil");
 #          dpm($delfront, "del?");
@@ -282,6 +284,7 @@ class WisskiDataMergeForm extends FormBase {
         
         $delquery = $delfront . " } WHERE { " . $triples . $filters . " }";
         
+
 #        dpm($delquery, "query");
 
         $result = $engine->directUpdate($delquery);
