@@ -2,7 +2,7 @@
 
 namespace Drupal\wisski_salz;
 
-use EasyRdf_Resource;
+use EasyRdf\Resource as EasyRdf_Resource;
 
 
 /**
