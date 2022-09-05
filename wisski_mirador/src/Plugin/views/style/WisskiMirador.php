@@ -191,7 +191,7 @@ class WisskiMirador extends StylePluginBase {
     if (isset($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
       $base_url = $_SERVER["HTTP_X_FORWARDED_PROTO"] . '://' . $_SERVER['HTTP_HOST'];
     } else {
-      $base_url = 'http://' . $_SERVER['HTTP_HOST'];
+      $base_url = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
     }
 
     if(empty($to_print))
