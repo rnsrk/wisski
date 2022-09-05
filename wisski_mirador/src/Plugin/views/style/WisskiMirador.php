@@ -278,7 +278,7 @@ class WisskiMirador extends StylePluginBase {
           $entity_id = empty($res->eid) ? current($res->__get('entity:wisski_individual/eid')) : $res->eid;
           $ent_list[] = array("manifestId" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest");
 #          $ent_list[] = array("manifestId" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "manifestUri" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "location" => $to_print);
-          dpm($base_url);
+#          dpm($base_url);
           if ($subcount > 1) {
             $direct_load_list[] = array( "loadedManifest" => $base_url . "/wisski/navigate/" . $entity_id . "/iiif_manifest", "availableViews" => array( 'ImageView'), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false );
           }
