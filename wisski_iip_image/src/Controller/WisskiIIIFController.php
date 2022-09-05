@@ -48,7 +48,7 @@ class WisskiIIIFController {
     $logo = theme_get_setting('logo.url');
     
     // add base_url if it is not in the logo url
-    if(strpos($base_url, $logo) === FALSE)	
+    if(!empty($logo) && strpos($logo, $base_url) === FALSE)
       $logo = $base_url . $logo;
     
     if(empty($logo)) 
