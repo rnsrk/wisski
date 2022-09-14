@@ -28,7 +28,7 @@ class WisskiEntityReferenceEntityIdFormatter extends EntityReferenceLabelFormatt
    */
   public static function defaultSettings() {
     return [
-#      'link' => TRUE,
+      'hidden' => TRUE,
     ] + parent::defaultSettings();
   }
 
@@ -36,11 +36,11 @@ class WisskiEntityReferenceEntityIdFormatter extends EntityReferenceLabelFormatt
    * {@inheritdoc}
    */
   public function settingsForm(array $form, FormStateInterface $form_state) {
- #   $elements['link'] = [
- #     '#title' => t('Link label to the referenced entity'),
- #     '#type' => 'checkbox',
- #     '#default_value' => $this->getSetting('link'),
- #   ];
+    $elements['hidden'] = [
+      '#title' => t('hide values'),
+      '#type' => 'checkbox',
+      '#default_value' => $this->getSetting('hidden'),
+    ];
 
     return $elements;
   }
@@ -50,7 +50,7 @@ class WisskiEntityReferenceEntityIdFormatter extends EntityReferenceLabelFormatt
    */
   public function settingsSummary() {
     $summary = [];
-#    $summary[] = $this->getSetting('link') ? t('Link to the referenced entity') : t('No link');
+    $summary[] = $this->getSetting('hidden') ? t('Hidden') : t('Non-hidden');
     return $summary;
   }
 
@@ -62,7 +62,7 @@ class WisskiEntityReferenceEntityIdFormatter extends EntityReferenceLabelFormatt
 #    dpm(serialize($items), "items?");
 
 #    $elements = [];
-#    $output_as_link = $this->getSetting('link');
+    $hidden = $this->getSetting('hidden');
 
     foreach($items as $delta => $item) {
 #      dpm(serialize($item->target_id), "target?");
@@ -117,7 +117,10 @@ class WisskiEntityReferenceEntityIdFormatter extends EntityReferenceLabelFormatt
       else {
         $elements[$delta] = ['#plain_text' => $label];
       }*/
-      $elements[$delta] = ['#plain_text' => $item->target_id];
+      if($hidden == TRUE)
+        $elements[$delta] = ['#type' => "hidden", '#value' => $item->target_id];
+      else
+        $elements[$delta] = ['#plain_text' => $item->target_id];
  #     $elements[$delta]['#cache']['tags'] = $entity->getCacheTags();
     }
 
