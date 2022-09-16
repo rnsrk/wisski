@@ -1,0 +1,8 @@
+permalink:
+  version: 1.0
+  js:
+    js/permalink.js: {}
+  dependencies:
+    - core/drupal
+    - core/jquery
+    - core/drupalSettings
