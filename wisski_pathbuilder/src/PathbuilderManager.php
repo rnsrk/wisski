@@ -101,11 +101,9 @@ class PathbuilderManager {
         ->loadMultiple();
 
       foreach ($pbs as $pbid => $pb) {
-        $aid = $pb->getAdapterId();
-        $adapter = \Drupal::service('entity_type.manager')
-          ->getStorage('wisski_salz_adapter')
-          ->load($aid);
+        $adapter = $this->loadAdapterForPB($pb);
         if ($adapter) {
+          $aid = $pb->getAdapterID();
           if (!isset(self::$pbsForAdapter[$aid])) {
             self::$pbsForAdapter[$aid] = [];
           }
@@ -345,6 +343,17 @@ class PathbuilderManager {
 
   }
 
+  /** loads the adapter for the given pathbuilder, or NULL if it does not exist */
+  private function loadAdapterForPB($pb) {
+    if (is_null($pb)) return NULL;
+    
+    $id = $pb->getAdapterId();
+    if (!is_string($id)) return NULL; // some linkblocks are horribly broken, and have a NULL here.
+
+    $storage = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter');
+    return $storage->load($id);
+  }
+
   /**
    *
    */
@@ -368,9 +377,7 @@ class PathbuilderManager {
           if (!isset(self::$pbsUsingBundle[$bid])) {
             self::$pbsUsingBundle[$bid] = [];
           }
-          $adapter = \Drupal::service('entity_type.manager')
-            ->getStorage('wisski_salz_adapter')
-            ->load($pb->getAdapterId());
+          $adapter = $this->loadAdapterForPB($pb);
           if ($adapter) {
             // Struct for pbsUsingBundle.
             if (!isset(self::$pbsUsingBundle[$bid][$pbid])) {
