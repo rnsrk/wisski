@@ -10,7 +10,7 @@ use Drupal\Core\Field\Plugin\Field\FieldFormatter\EntityReferenceLabelFormatter;
 use Drupal\Core\Url;
 
 /**
- * Plugin implementation of the 'entity reference label' formatter.
+ * Plugin implementation of the 'entity reference id' formatter.
  *
  * @FieldFormatter(
  *   id = "wisski_entity_reference_eid",
@@ -58,70 +58,15 @@ class WisskiEntityReferenceEntityIdFormatter extends EntityReferenceLabelFormatt
    * {@inheritdoc}
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
-#    dpm("yay, wisski enhanced!");
-#    dpm(serialize($items), "items?");
 
-#    $elements = [];
+    $elements = [];
     $hidden = $this->getSetting('hidden');
 
     foreach($items as $delta => $item) {
-#      dpm(serialize($item->target_id), "target?");
-#      dpm(wisski_core_generate_title($item->target_id), "title?");
-/*
-      $label = wisski_core_generate_title($item->target_id);
-
-      // for now we take the interface language
-      $langcode = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
-      
-      if(isset($label[$langcode][0]["value"]))
-        $label = $label[$langcode][0]["value"];
-      else {
-        $cur_label = current($label);
-        if(isset($cur_label[0]["value"]))
-          $label = $cur_label[0]["value"];
-      }
-        
-      
-      // If the link is to be displayed and the entity has a uri, display a
-      // link.
-      if ($output_as_link ) {
-        try {
-          $uri = Url::fromRoute('entity.wisski_individual.canonical', ['wisski_individual' => $item->target_id]);
-//          $uri = //$entity->toUrl();
-        }
-        catch (UndefinedLinkTemplateException $e) {
-          // This exception is thrown by \Drupal\Core\Entity\Entity::urlInfo()
-          // and it means that the entity type doesn't have a link template nor
-          // a valid "uri_callback", so don't bother trying to output a link for
-          // the rest of the referenced entities.
-          $output_as_link = FALSE;
-        }
-      }
-
-      if ($output_as_link && isset($uri)) {
-        $elements[$delta] = [
-          '#type' => 'link',
-          '#title' => $label,
-          '#url' => $uri,
-          '#options' => $uri->getOptions(),
-        ];
-
-        if (!empty($items[$delta]->_attributes)) {
-          $elements[$delta]['#options'] += ['attributes' => []];
-          $elements[$delta]['#options']['attributes'] += $items[$delta]->_attributes;
-          // Unset field item attributes since they have been included in the
-          // formatter output and shouldn't be rendered in the field template.
-          unset($items[$delta]->_attributes);
-        }
-      }
-      else {
-        $elements[$delta] = ['#plain_text' => $label];
-      }*/
       if($hidden == TRUE)
         $elements[$delta] = ['#type' => "hidden", '#value' => $item->target_id];
       else
         $elements[$delta] = ['#plain_text' => $item->target_id];
- #     $elements[$delta]['#cache']['tags'] = $entity->getCacheTags();
     }
 
 
@@ -142,7 +87,6 @@ class WisskiEntityReferenceEntityIdFormatter extends EntityReferenceLabelFormatt
    * viewed.
    */
   public function prepareView(array $entities_items) {
- #   dpm("I did not load anything!");
   }
 
 }
