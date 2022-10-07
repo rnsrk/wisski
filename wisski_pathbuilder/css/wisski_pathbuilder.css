@@ -6,14 +6,40 @@
   display: none;
 }
 
-.wisski-pathbuilder-caret-expanded > label::before,
-.wisski-pathbuilder-caret-collapsed > label::before {
+
+/* seven implementation */
+
+#block-seven-content .wisski-pathbuilder-caret-expanded > label::before,
+#block-seven-content .wisski-pathbuilder-caret-collapsed > label::before
+{
   margin-right: 1em;
 }
 
-.wisski-pathbuilder-caret-expanded > label::before {
+#block-seven-content .wisski-pathbuilder-caret-expanded > label::before {
   content: "\25bc";
 }
-.wisski-pathbuilder-caret-collapsed > label::before {
+#block-seven-content .wisski-pathbuilder-caret-collapsed > label::before {
+  content: "\25b6 ";
+}
+
+/* claro implementation */
+
+#block-claro-content .tabledrag-cell-content {
+  margin-left: 1em;
+}
+
+#block-claro-content .wisski-pathbuilder-caret-expanded .tabledrag-handle::before,
+#block-claro-content .wisski-pathbuilder-caret-collapsed .tabledrag-handle::before {
+  color: black;
+  text-decoration: none !important;
+
+  margin-right: 1em;
+  margin-left: -1em;
+}
+
+#block-claro-content .wisski-pathbuilder-caret-expanded .tabledrag-handle::before   {
+  content: "\25bc";
+}
+#block-claro-content .wisski-pathbuilder-caret-collapsed .tabledrag-handle::before {
   content: "\25b6 ";
 }

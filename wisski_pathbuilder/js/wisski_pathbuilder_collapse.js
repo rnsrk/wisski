@@ -6,6 +6,15 @@
   Drupal.behaviors.pathbuilderCollapse = {
     attach: function (context, settings) {
       once('pathbuilderCollapse', '#wisski-pathbuilder-edit-form', context).forEach(function (form) {
+        // hack to detect active theme by checking if a '#block-' + theme + '-content' element exists
+        const supportedThemes = ['seven', 'claro'];
+        const activeTheme = supportedThemes.find(function(theme){
+          return $('#block-' + theme + '-content').length > 0;
+        });
+
+        // don't do anything on unsupported themes!
+        if (typeof activeTheme === 'undefined') return;
+
         const collapsedClass = 'wisski-pathbuilder-caret-collapsed';
         const expandedClass = 'wisski-pathbuilder-caret-expanded';
         $(form)
@@ -32,7 +41,8 @@
               }
               return true;
             })
-          });
+          })
+          .click();
       });
     }
   };
