@@ -1,0 +1,7 @@
+wisski.wisski_autocomplete.autocomplete:
+  path: 'wisski/wisski_autocomplete/autocomplete'
+  defaults: 
+    _controller: '\Drupal\wisski_autocomplete\Controller\WissKIAutocompleteController::autocompleteMatch'
+    _format: json
+  requirements:
+    _permission: 'access content'
