@@ -353,16 +353,19 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         ."} ";
     $result = $this->directQuery($query);
 
-    if (count($result) > 0) {
-      $out = array();
-      foreach ($result as $obj) {
-        $class = $obj->class->getUri();
-        $out[$class] = $class;
+    if ($result) {
+      if (count($result) > 0) {
+        $out = [];
+        foreach ($result as $obj) {
+          $class = $obj->class->getUri();
+          $out[$class] = $class;
+        }
+        uksort($out, 'strnatcasecmp');
+        return $out;
       }
-      uksort($out,'strnatcasecmp');
-      return $out;
+    } else {
+      return FALSE;
     }
-    return FALSE;
   }
 
   public function getProperties() {
@@ -378,16 +381,20 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     ."} ";
     $result = $this->directQuery($query);
 
-    if (count($result) > 0) {
-      $out = array();
-      foreach ($result as $obj) {
-        $class = $obj->property->getUri();
-        $out[$class] = $class;
+    if ($result) {
+      if (count($result) > 0) {
+        $out = [];
+        foreach ($result as $obj) {
+          $class = $obj->property->getUri();
+          $out[$class] = $class;
+        }
+        uksort($out, 'strnatcasecmp');
+        return $out;
       }
-      uksort($out,'strnatcasecmp');
-      return $out;
     }
-    return FALSE;
+    else {
+      return FALSE;
+    }
   }
 
   public function nextProperties($class=NULL,$class_after = NULL,$fast_mode=FALSE) {
@@ -892,7 +899,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         if(empty($bundles))
           continue;
 
-        list($tmptopbundles, $tmpnontopbundles) = $bundles;
+        [$tmptopbundles, $tmpnontopbundles] = $bundles;
 
         $topbundles = array_merge($topbundles, $tmptopbundles);
         $nontopbundles = array_merge($nontopbundles, $tmpnontopbundles);
@@ -2793,7 +2800,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 #          dpm($escapedValue, "esc");
 
           if ($op == 'BETWEEN' || $op == 'between') {
-            list($val_min, $val_max) = is_array($primitiveValue) ? $primitiveValue : explode(";", $primitiveValue, 2);
+            [$val_min, $val_max] = is_array($primitiveValue) ? $primitiveValue : explode(";", $primitiveValue, 2);
             if (is_numeric($val_min) && is_numeric($val_max)) {
               $val_min = intval($val_min);
               $val_max = intval($val_max);
@@ -3059,7 +3066,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // Nowadays we can check everything from the entity directly as it is a
     // regular content entity.
     //
-    // I think this code never got used. So we can remove it anyway. 
+    // I think this code never got used. So we can remove it anyway.
     // $init_entity = $this->loadEntity($entity_id);
     //dpm(serialize($init_entity->getTranslationLanguages()), "trans2?");
     #$init_entity = $this->hasEntity($entity_id);
@@ -3073,11 +3080,11 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // if there is nothing, continue.
     // by mark: currently the storage calls the createEntity. So this never may be used.
     // simply don't worry about it.
-    
+
     // By Mark on code-rewrite:
     // this never happens.
     // so we get rid of it.
-    
+
     //if (empty($init_entity)) {
 #   //   dpm('empty entity',__FUNCTION__);
     //  if ($force_new) {
@@ -3529,7 +3536,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // We add the namespaces AFTER we loaded the imported ontologies so that
     // the importing ontology's namespaces win over the ones in the imported
     // ontologies
-    list($default, $namespaces) = $this->getNamespacesFromDocument($iri);
+    [$default, $namespaces] = $this->getNamespacesFromDocument($iri);
     if (!empty($namespaces)) {
       foreach($namespaces as $key => $value) {
         $this->putNamespace($key, $value);
@@ -3583,7 +3590,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
         $namespaces = array();
         $default = NULL;
         foreach($nsarray[0] as $ns_decl) {
-          list($front, $back) = explode("=", substr($ns_decl, 5));  // remove the leading xmlns
+          [$front, $back] = explode("=", substr($ns_decl, 5));  // remove the leading xmlns
           $front = trim($front);
           $value = substr($back, 1, -1);  // chop the "/'
           if (empty($front)) {
