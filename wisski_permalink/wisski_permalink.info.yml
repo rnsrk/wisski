@@ -1,8 +1,7 @@
 name: WissKI Permalink 
-descriptiom: Format Entity URIs as permalinks and display it in the browser URL bar.
-core: 8.x
+description: Format entity URIs as permalinks and display them in the browser URL bar.
 package: WissKI
-# version: 0.1-dev
+
 type: module
 core_version_requirement: ^8 || ^9
 dependencies:

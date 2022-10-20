@@ -15,6 +15,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
 
+use Drupal\wisski_salz\AdapterHelper;
+
 /**
  * Plugin implementation of the 'string' formatter.
  *
@@ -91,6 +93,8 @@ class WissKIPermalinkURIFormatter extends FormatterBase implements ContainerFact
     $plugin_id,
     $plugin_definition
   ) {
+    // set the label for the URI field
+    $configuration['field_definition']->setLabel("Permalink");
     return new static(
       $plugin_id,
       $plugin_definition,
@@ -123,7 +127,7 @@ class WissKIPermalinkURIFormatter extends FormatterBase implements ContainerFact
     $entity_type = $this->entityTypeManager->getDefinition($this->fieldDefinition->getTargetEntityTypeId());
     $form['resolver'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Hostname or URL prefix'),
+      '#title' => $this->t('URI Resolver (Hostname or URL prefix)'),
       '#default_value' => $this->getSetting('resolver')
     ];
     $form['permalink'] = [
@@ -159,13 +163,21 @@ class WissKIPermalinkURIFormatter extends FormatterBase implements ContainerFact
   public function viewElements(FieldItemListInterface $items, $langcode)
   {
     $elements = [];
+    // get the entity id from the route
+    // TODO: see if this works or if it is necessary to dig 
+    // for the eid in the query parameters
+    $routeEid = \Drupal::routeMatch()->getParameter('wisski_individual')->id();
+
     foreach ($items as $delta => $item) {
+      $currentEid = AdapterHelper::getDrupalIdForUri($item->value);
+
       $url = $this->buildUrl($item->value);
       $link = Link::fromTextAndUrl($url->toString(), $url);
       $elements[$delta] = $link->toRenderable();
 
       // attach JS Library to write URL to browser URL bar
-      if ($this->getSetting('permalink')) {
+      // only attach if this is actually the requested entity
+      if($this->getSetting('permalink') && $routeEid == $currentEid) {
         $elements[$delta]['#attached']['library'][] = 'wisski_permalink/permalink';
         $elements[$delta]['#attached']['drupalSettings']['wisski_permalink']['permalink']['url'] = $url->toString();
       }
