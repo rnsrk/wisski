@@ -16,12 +16,17 @@ drush pm:uninstall wisski_permalink
 ## Usage
 You can enable the formatter by navigating to `Manage` &rarr; `Structure` &rarr; `WissKI Entities and Bundles`. Now `Edit` the bundle in which you want to activate permalinks. Switch to the `Manage Display` tab, enable the `WissKI URI` field and select `WissKI Permalink` in the `Format` column.
 
-By default the module generates links by prefixing the URI with the local URI resolver `/wisski/get?uri=` and also writes this link into the browser's URL bar.
+By default the module generates permalinks by prefixing the URI with the local URI resolver `/wisski/get?uri=` and also writes this link into the browser's URL bar. In case the entity is rendered into another entity the permalink field will be hidden.
 
 ### Configuration
 The configuration can be accessed by clicking on the small gear symbol on the right.
 
-In case you do not want to display the link in the browser's URL bar, just disable the corresponding checkbox.
+In case you do not want to display the link in the browser's URL bar, just disable the `Display permalink in URL bar` checkbox.
+
+Additionally you can configure when the permalink field should be displayed by selecting one of the `Display options`:
+- `Always display`: The permalink field will always be displayed.
+- `Hide in sub-entity`: The field will not be displayed if this entity is rendered into another entity. The field will still be displayed when the entity is viewed directly. Enabled by default.
+- `Always hide`: The permalink field will not be displayed. The link will still be set in the URL bar when the corresponding checkbox is set.
 
 The module also allows redirecting to another (external) URI resolver by setting it in the `URI Resolver (Hostname or URL prefix)` textfield.
 Here you can specify any URI resolver by supplying either the resolvers full URI (e.g. `https://example.wisski.data.fau.de/wisski/get?uri=`) or just the hostname of the resolvers WissKI (e.g. `example.wisski.data.fau.de`).

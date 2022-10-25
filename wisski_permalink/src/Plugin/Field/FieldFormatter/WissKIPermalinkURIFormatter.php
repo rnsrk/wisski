@@ -63,24 +63,24 @@ class WissKIPermalinkURIFormatter extends FormatterBase implements ContainerFact
    *   The entity type manager.
    */
   public function __construct(
-    $plugin_id,
-    $plugin_definition,
-    FieldDefinitionInterface $field_definition,
-    array $settings,
-    $label,
-    $view_mode,
-    array $third_party_settings,
-    EntityTypeManagerInterface $entity_type_manager,
-  ) {
-    parent::__construct(
       $plugin_id,
       $plugin_definition,
-      $field_definition,
-      $settings,
+      FieldDefinitionInterface $field_definition,
+      array $settings,
       $label,
       $view_mode,
-      $third_party_settings
-    );
+      array $third_party_settings,
+      EntityTypeManagerInterface $entity_type_manager,
+      ) {
+    parent::__construct(
+        $plugin_id,
+        $plugin_definition,
+        $field_definition,
+        $settings,
+        $label,
+        $view_mode,
+        $third_party_settings
+        );
     $this->entityTypeManager = $entity_type_manager;
   }
 
@@ -88,23 +88,24 @@ class WissKIPermalinkURIFormatter extends FormatterBase implements ContainerFact
    * {@inheritdoc}
    */
   public static function create(
-    ContainerInterface $container,
-    array $configuration,
-    $plugin_id,
-    $plugin_definition
-  ) {
+      ContainerInterface $container,
+      array $configuration,
+      $plugin_id,
+      $plugin_definition
+      ) {
     // set the label for the URI field
     $configuration['field_definition']->setLabel("Permalink");
+    $configuration['field_definition']->setLabel("");
     return new static(
-      $plugin_id,
-      $plugin_definition,
-      $configuration['field_definition'],
-      $configuration['settings'],
-      $configuration['label'],
-      $configuration['view_mode'],
-      $configuration['third_party_settings'],
-      $container->get('entity_type.manager')
-    );
+        $plugin_id,
+        $plugin_definition,
+        $configuration['field_definition'],
+        $configuration['settings'],
+        $configuration['label'],
+        $configuration['view_mode'],
+        $configuration['third_party_settings'],
+        $container->get('entity_type.manager')
+        );
   }
 
   /**
@@ -114,6 +115,7 @@ class WissKIPermalinkURIFormatter extends FormatterBase implements ContainerFact
   {
     $options = parent::defaultSettings();
     $options['permalink'] = true;
+    $options['display'] = "hide_sub";
     $options['resolver'] = "";
     return $options;
   }
@@ -125,18 +127,31 @@ class WissKIPermalinkURIFormatter extends FormatterBase implements ContainerFact
   {
     $form = parent::settingsForm($form, $form_state);
     $entity_type = $this->entityTypeManager->getDefinition($this->fieldDefinition->getTargetEntityTypeId());
-    $form['resolver'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('URI Resolver (Hostname or URL prefix)'),
-      '#default_value' => $this->getSetting('resolver')
-    ];
-    $form['permalink'] = [
+      $form['permalink'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Display permalink in URL bar'),
       '#default_value' => $this->getSetting('permalink')
     ];
 
-    return $form;
+    $form['display'] = [
+      '#type' => 'radios',
+      '#title' => "Display options",
+      '#options' => array(
+        "display" => t("Always display"),
+        "hide_sub" => t("Hide in sub-entity"),
+        "hide" => t("Always hide")
+        ),
+      '#default_value' => $this->getSetting("display"),
+    ];
+
+    $form['resolver'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('URI Resolver (Hostname or URL prefix)'),
+      '#default_value' => $this->getSetting('resolver')
+    ];
+
+
+    return $form;                  
   }
 
   /**
@@ -145,15 +160,24 @@ class WissKIPermalinkURIFormatter extends FormatterBase implements ContainerFact
   public function settingsSummary()
   {
     $summary = [];
-    if ($this->getSetting('resolver')) {
+    if($this->getSetting('permalink')){
+      $summary[] = $this->t('Diplay permalink in URL bar');
+    }
+
+    if($this->getSetting('display') == "hide"){
+      $summary[] = $this->t('Hidden');
+    }
+
+    if($this->getSetting('display') == "hide_sub"){
+      $summary[] = $this->t('Hidden in sub-entites');
+    }
+    if($this->getSetting('resolver')){
       $resolver = $this->getSetting('resolver');
       $summary[] = $this->t('Forward to @resolver', [
-        '@resolver' => $resolver,
+          '@resolver' => $resolver,
       ]);
     }
-    if ($this->getSetting('permalink')) {
-      $summary[] = $this->t('Diplaying Permalink');
-    }
+
     return $summary;
   }
 
@@ -163,6 +187,10 @@ class WissKIPermalinkURIFormatter extends FormatterBase implements ContainerFact
   public function viewElements(FieldItemListInterface $items, $langcode)
   {
     $elements = [];
+
+    // set field label
+    $items->getFieldDefinition()->setLabel("Permalink");
+
     // get the entity id from the route
     // TODO: see if this works or if it is necessary to dig 
     // for the eid in the query parameters
@@ -175,11 +203,18 @@ class WissKIPermalinkURIFormatter extends FormatterBase implements ContainerFact
       $link = Link::fromTextAndUrl($url->toString(), $url);
       $elements[$delta] = $link->toRenderable();
 
-      // attach JS Library to write URL to browser URL bar
-      // only attach if this is actually the requested entity
-      if($this->getSetting('permalink') && $routeEid == $currentEid) {
-        $elements[$delta]['#attached']['library'][] = 'wisski_permalink/permalink';
-        $elements[$delta]['#attached']['drupalSettings']['wisski_permalink']['permalink']['url'] = $url->toString();
+      // hide field
+      if($this->getSetting('display') == "hide" || ($this->getSetting('display') == "hide_sub" && $routeEid != $currentEid)){
+        $elements = [];
+        $items->getFieldDefinition()->setLabel("");
+      }
+
+      // current entity is requested entity
+      if($this->getSetting('permalink') && $routeEid == $currentEid){
+        // attach JS Library to write URL to browser URL bar
+        // only attach if this is actually the requested entity
+        $elements['#attached']['library'][] = 'wisski_permalink/permalink';
+        $elements['#attached']['drupalSettings']['wisski_permalink']['permalink']['url'] = $url->toString();
       }
     }
     return $elements;
