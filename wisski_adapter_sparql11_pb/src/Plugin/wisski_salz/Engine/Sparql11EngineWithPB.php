@@ -2920,11 +2920,19 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
 
     if(!empty($field_storage_config))
       $target_type = $field_storage_config->getSetting("target_type");
+      // $autocomplete_title_pattern_enabled = $field_storage_config->getSetting("switch_value");
+    
+    // autocomplete_title_pattern_enabled is a per-field setting that enables rendering title patterns in the autocomplete widget.
+    // This setting changes the default behavior for saving from taking the direct value of the field to the entity_reference mode which includes parsing of value
+    // for brackets and extracting the value of the entity in brackets.
+    //
+    // e.g. extracting the value 64 from the string "Archeological Collection (64)"
+    $autocomplete_title_pattern_enabled = $pbarray['autocomplete_title_pattern_enabled'] == TRUE; // the "== TRUE" casts it into a boolean!
 
     // we distinguish two modes of how to interpret the value:
     // entity ref: the value is an entity id that shall be linked to
     // normal: the value is a literal and may be disambiguated
-    $is_entity_ref = ($mainprop == 'target_id' && ($path->isGroup() || $pb->getPbEntriesForFid($fieldid)['fieldtype'] == 'entity_reference'));
+    $is_entity_ref = (($mainprop == 'target_id' && ($path->isGroup() || $pb->getPbEntriesForFid($fieldid)['fieldtype'] == 'entity_reference')) || $autocomplete_title_pattern_enabled === True);
 
     // special case for files:
     if($target_type == "file" && $mainprop == 'target_id') {
@@ -2946,10 +2954,12 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
       // starting position one before disamb because disamb counts the number of concepts, startin position however starts from zero
       $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE, '=', 'field', TRUE, array(), 0, $language);
 
+      
       $sparql .= " }";
 #      dpm($sparql, "disamb?");
 #      drupal_set_message("spq: " . ($sparql));
 #      dpm($path, "path");
+     
       $disambresult = $this->directQuery($sparql);
 #      dpm("disamb query one: " . serialize($disambresult));
 #dpm(array($sparql, $disambresult), __METHOD__ . " disamb query1");
@@ -2965,6 +2975,8 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
        $sparql = "SELECT ?x" . (($path->getDisamb()-1)*2) . " WHERE { ";
        $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb()-1, FALSE, '=', 'field', TRUE, array(), 0);
        $sparql .= " }";
+      
+       
        $disambresult = $this->directQuery($sparql);
        if(!empty($disambresult) && isset($disambresult[0]) && !empty($disambresult[0]) ) {
          $disambresult = $disambresult[0];
@@ -2984,27 +2996,43 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     $start = ((count($path->getPathArray()) - (count($pb->getRelativePath($path))))/2);
 
     if($is_entity_ref) {
+
+      if($autocomplete_title_pattern_enabled){
+      
+        $value = substr($value, strrpos($value, '(', -1)+1, (strrpos($value, ')', -1) - strrpos($value, '(', -0)-1));
+      }
+     
       // if it is a group - we take the whole group path as disamb pos
-      if($path->isGroup())
+      if($path->isGroup()){
 //        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), (count($path->getPathArray())+1)/2, $start, TRUE, '', 'entity_reference' );
         $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), (count($path->getPathArray())+1)/2, $start, TRUE, '', 'entity_reference', TRUE, array(), 0, $language );
-      else // if it is a field it has a disamb pos!
+      }
+      else{// if it is a field it has a disamb pos!
 //        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), $path->getDisamb(), $start, TRUE, '', 'entity_reference');
-        $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), $path->getDisamb(), $start, TRUE, '', 'entity_reference', TRUE, array(), 0, $language);
-    } else {
+          $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), $path->getDisamb(), $start, TRUE, '', 'entity_reference', TRUE, array(), 0, $language);    
+          }
+      } else {
       if(empty($path->getDisamb()))
 //        $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE);
         $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE, '=', 'field', TRUE, array(), 0, $language);
       else {
 #        drupal_set_message("disamb: " . serialize($disambresult) . " miau " . $path->getDisamb());
-        if(empty($disambresult) || empty($disambresult->{"x" . ($path->getDisamb()-1)*2}) )
+        if(empty($disambresult) || empty($disambresult->{"x" . ($path->getDisamb()-1)*2}) ){
+          
+        // hier rein
+            $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE, '=', 'field', TRUE, array(), 0, $language);
+
+        }
+
 //          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE);
-          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE, '=', 'field', TRUE, array(), 0, $language);
-        else
+
+        else {
           // we may not set a value here - because we have a disamb result!
 //          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . ($path->getDisamb()-1)*2}->dumpValue("text"), $path->getDisamb(), $start, TRUE);
-          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . ($path->getDisamb()-1)*2}->dumpValue("text"), $path->getDisamb(), $start, TRUE, '=', 'field', TRUE, array(), 0, $language);
-      }
+            $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . ($path->getDisamb()-1)*2}->dumpValue("text"), $path->getDisamb(), $start, TRUE, '=', 'field', TRUE, array(), 0, $language);
+    
+          }
+    }
     }
     $sparql .= " } } ";
 #     \Drupal::logger('WissKIsaveProcess')->debug('sparql writing in add: ' . htmlentities($sparql));
@@ -3020,6 +3048,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
     // get back the entity id for compatibility purpose.
     $entity_id = $entity->id();
 
+#    dpm($field_values);
 #    dpm(serialize($entity->langcode->getValue()), "le langue dü entitü");
 #    dpm(serialize($entity->getTranslationLanguages()), "trans`?");
 #

@@ -28,7 +28,6 @@ class WissKIAutocompleteWidget extends WidgetBase {
         'placeholder' => '',
         'autocompletelimit' => 10,
         'autocompletesorted' => FALSE,
-        'useautocomplete' => FALSE,
       ] + parent::defaultSettings();
   }
 
@@ -61,12 +60,6 @@ class WissKIAutocompleteWidget extends WidgetBase {
         '#default_value' => $this->getSetting('autocompletesorted'),
         '#description' => t('If expected value doesn\'t show up in autocomplete values sorting the results may be helpful.'),
       ];
-      $element['useautocomplete'] = [
-        '#type' => 'checkbox',
-        '#title' => t('Use autocomplete?'),
-        '#default_value' => $this->getSetting('autocompletesorted'),
-        '#description' => t('If checked the autocomplete uses title patterns.'),
-      ];
       return $element;
   }
 
@@ -89,10 +82,6 @@ class WissKIAutocompleteWidget extends WidgetBase {
     if (!empty($autocompletesorted)) {
       $summary[] = t('Sort autocomplete suggestions?: @autocompletesorted', ['@autocompletesorted' => $autocompletesorted]);
     }
-    $useautocomplete = $this->getSetting('useautocomplete');
-    if (!empty($useautocomplete)) {
-      $summary[] = t('Use autocomplete?: @useautocomplete', ['@useautocomplete' => $useautocomplete]);
-    }
 
     return $summary;
   }
@@ -105,10 +94,8 @@ class WissKIAutocompleteWidget extends WidgetBase {
         '#type' => 'textfield',
         '#default_value' => isset($items[$delta]->value) ? $items[$delta]->value : NULL,
         '#size' => $this->getSetting('size'),
-        '#placeholder' => 'test',
         '#autocompletelimit' => $this->getSetting('autocompletelimit'),
         '#autocompletesorted' => $this->getSetting('autocompletesorted'),
-        '#useautocomplete' => $this->getSetting('useautocomplete'),
         '#maxlength' => $this->getFieldSetting('max_length'),
         '#attributes' => ['class' => ['js-text-full', 'text-full']],
         '#autocomplete_route_name' => 'wisski.wisski_autocomplete.autocomplete'
