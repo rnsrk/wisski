@@ -5,3 +5,9 @@ package: WissKI
 version: 0.1-dev
 type: module
 core_version_requirement: ^8 || ^9
+dependencies:
+  - inline_entity_form:inline_entity_form
+  - wisski:wisski_core
+  - wisski:wisski_adapter_sparql11_pb
+  - wisski:wisski_pathbuilder
+  - wisski:wisski_salz
