@@ -199,7 +199,7 @@ entity.wisski_individual.version_history:
     _title: 'Revisions'
     _controller: '\Drupal\wisski_core\Controller\WisskiEntityController::revisionOverview'
   requirements:
-    _permission: 'administer wisski'
+    _permission: 'view wisski revisions'
 #    _access_node_revision: 'view'
     wisski_individual: \d+
 #  options:
@@ -211,7 +211,7 @@ entity.wisski_individual.revision:
     _controller: '\Drupal\wisski_core\Controller\WisskiEntityController::revisionShow'
     _title_callback: '\Drupal\wisski_core\Controller\WisskiEntityController::revisionPageTitle'
   requirements:
-    _permission: 'administer wisski'
+    _permission: 'view wisski revisions'
 #    _access_node_revision: 'view'
     wisski_individual: \d+
 
