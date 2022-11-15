@@ -410,11 +410,14 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #          $out[$eid][$field_id] = NULL;
         } else {
 
+          // get current language
+          $language =  \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+
           foreach ($paths as $key => $path) {
             $values = $this->pathToReturnValue($path, $pbs[$key], $eid, 0, $main_property);
             if (!empty($values)) {
               foreach ($values as $v) {
-                $out[$eid][$field_id][] = $v;
+                $out[$eid][$field_id][$language][] = $v;
               }
             }
           }
