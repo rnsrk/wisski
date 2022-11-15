@@ -236,10 +236,14 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #    dpm(microtime(), "generated title $title");
 
 #    dpm(microtime(), "end title");
-    if(is_object($entity)) {
-      return $title[$language];
+    if (is_object($entity)) {
+	    if(isset($title[$language])) {
+		    return $title[$language];
+	    } else {
+		    return reset($title);
+	    }
     }
-
+  
 #    foreach($title as $lang => $aTitle) {
 #      if($lang == $language) {
 #        unset($title[$lang]);
