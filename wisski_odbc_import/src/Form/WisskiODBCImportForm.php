@@ -377,7 +377,10 @@ class WisskiODBCImportForm extends FormBase {
       // build the count query
       $tablename = isset($table->name) ? (string) $table->name : '';
       $append = isset($table->append) ? (string) $table->append : '';
-      $sql = "SELECT COUNT(*) FROM `$tablename` $append";
+      if($is_drupal_db)
+        $sql = "SELECT COUNT(*) FROM $tablename $append";
+      else
+        $sql = "SELECT COUNT(*) FROM `$tablename` $append";
     }
 
     // do the db query; distinguish if local connection or not
@@ -425,7 +428,10 @@ class WisskiODBCImportForm extends FormBase {
       $select = isset($table->select) ? (string) $table->select : '';
       if(empty($append))
         $append = "";
-      $sql = "SELECT $select FROM `$tablename` $append";
+      if($is_drupal_db)
+        $sql = "SELECT $select FROM $tablename $append";
+      else
+        $sql = "SELECT $select FROM `$tablename` $append";
     }
     if ($limit) {
       $sql .= " LIMIT $limit";
