@@ -566,8 +566,14 @@ class PathbuilderManager {
 
     // Iterate over adapters and find the ontologies.
     foreach ($adapters as $adapter) {
+
       // Load the engine of the adapter.
       $engine = $adapter->getEngine();
+
+      if (!method_exists($engine, 'directQuery')) {
+        \Drupal::messenger()  ->addWarning($this->t('Engine ' . get_class($engine) . ' (of adapter ' . $adapter->id() . ') does not support ontology export, skipping. ' ));
+        continue;
+      }
 
       $query = '
       PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
