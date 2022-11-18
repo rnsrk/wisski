@@ -678,57 +678,11 @@ class PathbuilderManager {
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function exportPathbuilder(WisskiPathbuilderEntity $pathbuilderEntity, string $pathbuildersDir) {
-    // Create initial XML tree.
-    $xmlTree = new \SimpleXMLElement("<pathbuilderinterface></pathbuilderinterface>");
-
-    // Get the paths.
-    $paths = $pathbuilderEntity->getPbPaths();
-
-    // Iterate over every path.
-    foreach ($paths as $key => $path) {
-      $pathbuilder = $pathbuilderEntity->getPbPath($path['id']);
-      $pathChild = $xmlTree->addChild("path");
-      $pathObject = WisskiPathEntity::load($path['id']);
-
-      foreach ($pathbuilder as $subkey => $value) {
-        if (in_array($subkey, ['relativepath'])) {
-          continue;
-        }
-
-        if ($subkey == "parent") {
-          $subkey = "group_id";
-        }
-
-        $pathChild->addChild($subkey, htmlspecialchars($value));
-      }
-
-      $pathArray = $pathChild->addChild('path_array');
-      foreach ($pathObject->getPathArray() as $subkey => $value) {
-        $pathArray->addChild($subkey % 2 == 0 ? 'x' : 'y', $value);
-      }
-
-      $pathChild->addChild('datatype_property', htmlspecialchars($pathObject->getDatatypeProperty()));
-      $pathChild->addChild('short_name', htmlspecialchars($pathObject->getShortName()));
-      $pathChild->addChild('disamb', htmlspecialchars($pathObject->getDisamb()));
-      $pathChild->addChild('description', htmlspecialchars($pathObject->getDescription()));
-      $pathChild->addChild('uuid', htmlspecialchars($pathObject->uuid()));
-      if ($pathObject->getType() == "Group" || $pathObject->getType() == "Smartgroup") {
-        $pathChild->addChild('is_group', "1");
-      }
-      else {
-        $pathChild->addChild('is_group', "0");
-      }
-      $pathChild->addChild('name', htmlspecialchars($pathObject->getName()));
-
-    }
-
-    // Create XML DOM.
-    $dom = dom_import_simplexml($xmlTree)->ownerDocument;
-    $dom->formatOutput = TRUE;
+    $xml = $pathbuilderEntity->toXML();
 
     // Save the files.
     $export_path = $pathbuildersDir . 'pathbuilder_' . $pathbuilderEntity->id();
-    $this->file->writeData($dom->saveXML(), $export_path, FileSystemInterface::EXISTS_REPLACE);
+    $this->file->writeData($xml, $export_path, FileSystemInterface::EXISTS_REPLACE);
   }
 
   /**

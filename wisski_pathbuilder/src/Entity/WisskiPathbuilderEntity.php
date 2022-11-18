@@ -14,6 +14,7 @@ use Drupal\Core\Config\Entity\ConfigEntityInterface;
 use Drupal\wisski_pathbuilder\WisskiPathbuilderInterface;
 use Drupal\wisski_core\WisskiCacheHelper;
 use Drupal\views\Entity\View;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
 
 /**
  * Defines a Pathbuilder configuration entity class
@@ -1627,6 +1628,56 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     return $starting_position;
   }
 
+  /** Exports this pathbuilder as an XML tree */
+  public function toXML() {
+    $xmlTree = new \SimpleXMLElement("<pathbuilderinterface></pathbuilderinterface>");
+
+    // Fetch the paths.
+    $paths = $this->getPbPaths();
+
+    // Iterate over every path.
+    foreach ($paths as $key => $path) {
+      $pathbuilder = $this->getPbPath($path['id']);
+      $pathChild = $xmlTree->addChild("path");
+      $pathObject = WisskiPathEntity::load($path['id']);
+
+      foreach ($pathbuilder as $subkey => $value) {
+
+        if (in_array($subkey, ['relativepath'])) {
+          continue;
+        }
+
+        if ($subkey == "parent") {
+          $subkey = "group_id";
+        }
+
+        $pathChild->addChild($subkey, htmlspecialchars($value));
+      }
+
+      $pathArray = $pathChild->addChild('path_array');
+      foreach ($pathObject->getPathArray() as $subkey => $value) {
+        $pathArray->addChild($subkey % 2 == 0 ? 'x' : 'y', $value);
+      }
+
+      $pathChild->addChild('datatype_property', htmlspecialchars($pathObject->getDatatypeProperty()));
+      $pathChild->addChild('short_name', htmlspecialchars($pathObject->getShortName()));
+      $pathChild->addChild('disamb', htmlspecialchars($pathObject->getDisamb()));
+      $pathChild->addChild('description', htmlspecialchars($pathObject->getDescription()));
+      $pathChild->addChild('uuid', htmlspecialchars($pathObject->uuid()));
+      if ($pathObject->getType() == "Group" || $pathObject->getType() == "Smartgroup") {
+        $pathChild->addChild('is_group', "1");
+      }
+      else {
+        $pathChild->addChild('is_group', "0");
+      }
+      $pathChild->addChild('name', htmlspecialchars($pathObject->getName()));
+
+    }
+
+    $dom = dom_import_simplexml($xmlTree)->ownerDocument;
+    $dom->formatOutput = TRUE;
+    return $dom->saveXML();
+  }
 
 } 
             
