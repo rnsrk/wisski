@@ -59,34 +59,41 @@ function wisski_date_field_extractor_wisski_individual_presave(Drupal\Core\Entit
       $field_id_earliest_end = $entity->$field_name->getFieldDefinition()->getSetting('field_id_earliest_end');
       $field_id_latest_end = $entity->$field_name->getFieldDefinition()->getSetting('field_id_latest_end');
 
-      // do not proceed if field ids are not set
-      if (!(isset($field_id_qualified_begin) and isset($field_id_earliest_begin) and isset($field_id_latest_begin) 
-	    and isset($field_id_qualified_end) and isset($field_id_earliest_end) and isset($field_id_latest_end))){
-        \Drupal::logger('WissKI Date Field')->warning("There are no target field IDs given for WissKI date field '@field'.", ['@field' => $field_label]);
-	continue;  // go to next field
-      }
-
-      // assertion: there are fields to be filled automatically
-
       if ($debug){
-        \Drupal::messenger()->addMessage("field_id_qualified_begin: '" . $field_id_qualified_begin . "' / " . microtime());
-        \Drupal::messenger()->addMessage("field_id_earliest_begin: '" . $field_id_earliest_begin . "' / " . microtime());
-        \Drupal::messenger()->addMessage("field_id_latest_begin: '" . $field_id_latest_begin . "' / " . microtime());
-        \Drupal::messenger()->addMessage("field_id_qualified_end: '" . $field_id_qualified_end . "' / " . microtime());
-        \Drupal::messenger()->addMessage("field_id_earliest_end: '" . $field_id_earliest_end . "' / " . microtime());
-        \Drupal::messenger()->addMessage("field_id_latest_end: '" . $field_id_latest_end . "' / " . microtime());
+        $fqb_type = $entity->get($field_id_qualified_begin)->getFieldDefinition()->getType();
+        \Drupal::messenger()->addMessage("field_id_qualified_begin: '" . $field_id_qualified_begin . "' ($fqb_type) / " . microtime());
+        $feb_type = $entity->get($field_id_earliest_begin)->getFieldDefinition()->getType();
+        \Drupal::messenger()->addMessage("field_id_earliest_begin: '" . $field_id_earliest_begin . "' ($feb_type) / " . microtime());
+        $flb_type = $entity->get($field_id_latest_begin)->getFieldDefinition()->getType();
+        \Drupal::messenger()->addMessage("field_id_latest_begin: '" . $field_id_latest_begin . "' ($flb_type) / " . microtime());
+
+        $fqe_type = $entity->get($field_id_qualified_end)->getFieldDefinition()->getType();
+        \Drupal::messenger()->addMessage("field_id_qualified_end: '" . $field_id_qualified_end . "' ($fqe_type) / " . microtime());
+        $fee_type = $entity->get($field_id_earliest_end)->getFieldDefinition()->getType();
+        \Drupal::messenger()->addMessage("field_id_earliest_end: '" . $field_id_earliest_end . "' ($fee_type) / " . microtime());
+        $fle_type = $entity->get($field_id_latest_end)->getFieldDefinition()->getType();
+        \Drupal::messenger()->addMessage("field_id_latest_end: '" . $field_id_latest_end . "' ($fle_type) / " . microtime());
       }
 
-      // always clear fields
-      // to do: unset rather than set the value "0"
-      $entity->$field_id_qualified_begin->value = 0;
-      $entity->$field_id_earliest_begin->value = 0;
-      $entity->$field_id_latest_begin->value = 0;
-      $entity->$field_id_qualified_end->value = 0;
-      $entity->$field_id_earliest_end->value = 0;
-      $entity->$field_id_latest_end->value = 0;
-
-      // assertion: value is set, fields are empty
+      // clear fields (remove old content)
+      if ($entity->hasField($field_id_qualified_begin)){
+        $entity->$field_id_qualified_begin->value = '';  // remove old value
+      }
+      if ($entity->hasField($field_id_earliest_begin)){
+        $entity->$field_id_earliest_begin->value = '';  // remove old value
+      }
+      if ($entity->hasField($field_id_latest_begin)){
+        $entity->$field_id_latest_begin->value = '';  // remove old value
+      }
+      if ($entity->hasField($field_id_qualified_end)){
+        $entity->$field_id_qualified_end->value = '';  // remove old value
+      }
+      if ($entity->hasField($field_id_earliest_end)){
+        $entity->$field_id_earliest_end->value = '';  // remove old value
+      }
+      if ($entity->hasField($field_id_latest_end)){
+        $entity->$field_id_latest_end->value = '';  // remove old value
+      }
 
       // start processing data
       $ret = [];
@@ -108,37 +115,37 @@ function wisski_date_field_extractor_wisski_individual_presave(Drupal\Core\Entit
       }
 
       // write calculated dates into the fields
-      if (isset($ret[0])){
+      if (isset($ret[0]) and $entity->hasField($field_id_qualified_begin)){
         $entity->$field_id_qualified_begin->value = $ret[0];
         if ($debug){
           \Drupal::messenger()->addMessage(".. $field_id_qualified_begin: '" . $ret[0] . "' / " . microtime());
         }
       }
-      if (isset($ret[1])){
+      if (isset($ret[1]) and $entity->hasField($field_id_earliest_begin)){
 	$entity->$field_id_earliest_begin->value = $ret[1];
         if ($debug){
           \Drupal::messenger()->addMessage(".. $field_id_earliest_begin: '" . $ret[1] . "' / " . microtime());
         }
       }
-      if (isset($ret[2])){
+      if (isset($ret[2]) and $entity->hasField($field_id_latest_begin)){
 	$entity->$field_id_latest_begin->value = $ret[2];
         if ($debug){
           \Drupal::messenger()->addMessage(".. $field_id_latest_begin: '" . $ret[2] . "' / " . microtime());
         }
       }
-      if (isset($ret[3])){
+      if (isset($ret[3]) and $entity->hasField($field_id_qualified_end)){
         $entity->$field_id_qualified_end->value = $ret[3];
         if ($debug){
           \Drupal::messenger()->addMessage(".. $field_id_qualified_end: '" . $ret[3] . "' / " . microtime());
         }
       }
-      if (isset($ret[4])){
+      if (isset($ret[4]) and $entity->hasField($field_id_earliest_end)){
 	$entity->$field_id_earliest_end->value = $ret[4];
         if ($debug){
           \Drupal::messenger()->addMessage(".. $field_id_earliest_end: '" . $ret[4] . "' / " . microtime());
         }
       }
-      if (isset($ret[5])){
+      if (isset($ret[5]) and $entity->hasField($field_id_latest_end)){
 	$entity->$field_id_latest_end->value = $ret[5];
         if ($debug){
           \Drupal::messenger()->addMessage(".. $field_id_latest_end: '" . $ret[5] . "' / " . microtime());
@@ -219,8 +226,8 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
   // date in between years, "year/year"
   if (preg_match($date_between_years_pattern, $value)) {
     $date_parts = explode('/', $value);
-    $from_year = (int) $date_parts[0];
-    $to_year = (int) $date_parts[1];
+    $from_year = $date_parts[0] . "-01-01";
+    $to_year = $date_parts[1] . "-12-31";
 
     $output_string = 'Muster "Jahr/Jahr", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
     $ret = [NULL, $from_year, NULL, NULL, NULL, $to_year];  // earliest/latest
@@ -229,9 +236,9 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
   // period, "year-year"
   elseif (preg_match($year_period_pattern, $value)) {
     $date_parts = explode('-', $value);
-    $from_year = (int) $date_parts[0];
-    $to_year = (int) $date_parts[1];
-
+    $from_year = $date_parts[0] . "-01-01";
+    $to_year = $date_parts[1] . "-12-31";
+    
     $output_string = 'Muster "Jahr/Jahr", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
     $ret = [$from_year, NULL, NULL, $to_year, NULL, NULL];  // qualified/qualified
   }
@@ -244,6 +251,8 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
     // set years
     $from_year = $year;
     $to_year = $year + 9;
+    $from_year = $from_year . "-01-01";
+    $to_year = $to_year . "-12-31";
 
     $output_string = 'Muster "...ies", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
     $ret = [$from_year, NULL, NULL, $to_year, NULL, NULL];  // qualified/qualified
@@ -252,23 +261,46 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
   // "simple" date, year, month.year, day.month.year
   elseif (preg_match($day_month_year_pattern, $value)) {
     $date_parts = explode('.', $value);
-    $year = (int) $date_parts[2];
+    $year = $date_parts[2] . "-" . $date_parts[1] . "-" . $date_parts[0];
 
     $output_string = 'Muster "Tag.Monat.Jahr", Jahr: "' . $year. '"';
     $ret = [$year, NULL, NULL, $year, NULL, NULL];  // qualified/qualified
   }
   elseif (preg_match($month_year_pattern, $value)) {
     $date_parts = explode('.', $value);
-    $year = (int) $date_parts[1];
+    $year = $date_parts[1];
+    $month = $date_parts[0];
+    switch ($month) {
+      case "01":
+      case "03":
+      case "05":
+      case "07":
+      case "08":
+      case "10":
+      case "12":
+        $day = "31";
+        break;
+      case "04":
+      case "06":
+      case "09":
+      case "11":
+        $day = "30";
+        break;
+      default:
+        $day = "28";
+    }
 
-    $output_string = 'Muster "Monat.Jahr", Jahr: "' . $year. '"';
-    $ret = [$year, NULL, NULL, $year, NULL, NULL];  // qualified/qualified
+    $from_year = $year . "-" . $month . "-01";
+    $to_year = $year . "-" . $month . "-" . $day;
+    $output_string = 'Muster "Monat.Jahr", Jahr: "' . $from_year. ' bis ' . $to_year . '"';
+    $ret = [$from_year, NULL, NULL, $to_year, NULL, NULL];  // qualified/qualified
   }
   elseif (preg_match($year_pattern, $value)) {
-    $year = (int) $value;
+    $from_year = $value . "-01-01";
+    $to_year = $value . "-12-31";
 
-    $output_string = 'Muster "Jahr": "' . $year. '"';
-    $ret = [$year, NULL, NULL, $year, NULL, NULL];  // qualified/qualified
+    $output_string = 'Muster "Jahr": "' . $from_year. ' bis ' . $to_year . '"';
+    $ret = [$from_year, NULL, NULL, $to_year, NULL, NULL];  // qualified/qualified
   }
 
   // "preposition type" verbal dates
@@ -292,7 +324,8 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
 	else {
 	  $from_year = $year - 9;
 	}
-	$to_year = $year;
+	$from_year = $from_year . "-01-01";
+        $to_year = $year . "-12-31";
         $ret = [NULL, NULL, $from_year, $to_year, NULL, NULL];  // latest/qualified
 	break;
       case "nach":
@@ -307,6 +340,8 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
           $to_year = $year + 10;
         }
         $from_year = $year + 1;
+        $from_year = $from_year . "-01-01";
+        $to_year = $to_year . "-12-31";
         $ret = [$from_year, NULL, NULL, NULL, $to_year, NULL];  // qualified/earliest
         break;
       case "um":
@@ -324,6 +359,8 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
           $from_year = $year - 4;
           $to_year = $year + 5;
         }
+        $from_year = $from_year . "-01-01";
+        $to_year = $to_year . "-12-31";
         $ret = [NULL, $from_year, NULL, NULL, NULL, $to_year];  // earliest/latest
         break;
       case "vor":
@@ -337,13 +374,15 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
 	else {
 	  $from_year = $year - 9;
 	}
-	$to_year = $year;
+	$from_year = $from_year . "-01-01";
+        $to_year = $year . "-12-31";
         $ret = [NULL, NULL, $from_year, $to_year, NULL, NULL];  // latest/qualified
 	break;
       case "ab":
       case "seit":
         // starting from the year given
         $from_year = $year;
+        $from_year = $from_year . "-01-01";
         $ret = [$from_year, NULL, NULL, NULL, NULL, NULL];  // qualified/-
         break;
       default:
@@ -367,6 +406,8 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
     $from_year = $year + 1;
     $to_year = $year + 100;
 
+    $from_year = $from_year . "-01-01";
+    $to_year = $to_year . "-12-31";
     $output_string = 'Muster "x. Jhd", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
     $ret = [NULL, $from_year, NULL, NULL, NULL, $to_year];  // earliest/latest
   }
@@ -415,6 +456,8 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
 	// in this case the default values (empty) will be used
     }
 
+    $from_year = $from_year . "-01-01";
+    $to_year = $to_year . "-12-31";
     $output_string = 'Muster "' . $century_type_prefix . ' x. Jhd", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
     $ret = [NULL, $from_year, NULL, NULL, NULL, $to_year];  // earliest/latest
   }
@@ -451,6 +494,8 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
 	// in this case the default values (empty) will be used
     }
 
+    $from_year = $from_year . "-01-01";
+    $to_year = $to_year . "-12-31";
     $output_string = 'Muster "' .  $half_century_prefix. ' y. Jhd", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
     $ret = [NULL, $from_year, NULL, NULL, NULL, $to_year];  // earliest/latest
   }
@@ -497,6 +542,8 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
 	// in this case the default values (empty) will be used
     }
 
+    $from_year = $from_year . "-01-01";
+    $to_year = $to_year . "-12-31";
     $output_string = 'Muster "' .  $quarter_century_prefix. ' y. Jhd", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
     $ret = [NULL, $from_year, NULL, NULL, NULL, $to_year];  // earliest/latest
   }
@@ -563,6 +610,8 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
         // in this case the default values (empty) will be used
     }
 
+    $from_year = $from_year . "-01-01";
+    $to_year = $to_year . "-12-31";
     $output_string = 'Muster "' .  $decade_prefix. ' y. Jhd", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
     $ret = [NULL, $from_year, NULL, NULL, NULL, $to_year];  // earliest/latest
   }
@@ -604,6 +653,8 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
         // in this case the default values (empty) will be used
     }
 
+    $from_year = $from_year . "-01-01";
+    $to_year = $to_year . "-12-31";
     $output_string = 'Muster "' .  $third_century_prefix. ' y. Jhd", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
     $ret = [NULL, $from_year, NULL, NULL, NULL, $to_year];  // earliest/latest
   }
