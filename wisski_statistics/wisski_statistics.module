@@ -1,0 +1,68 @@
+<?php
+
+use Drupal\Core\Block\BlockPluginInterface;
+use Drupal\Core\Url;
+use Drupal\Core\Routing\RouteMatchInterface;
+
+
+use Drupal\wisski_statistics\Controller\WisskiStatisticsController;
+
+/**
+ * Implement hook_block_view_BASE_BLOCK_ID_alter
+ *
+ * For displaying the statistics block title as link
+ */
+function wisski_statistics_block_view_statistics_block_alter(array &$build, BlockPluginInterface $block)
+{
+  $build['#configuration']['label'] = WisskiStatisticsController::linkToStatistics($build['#configuration']['label']);
+}
+
+/**
+ * Impement hook_cron
+ *
+ * Updates the statistics
+ */
+function wisski_statistics_cron(){
+  $statistics = \Drupal::service('wisski_statistics.statistics');
+  $statistics->update();
+}
+
+/**
+ * Implement hook_help
+ */
+function wisski_statistics_help($route_name, RouteMatchInterface $route_match){
+  switch($route_name){
+    case "help.page.wisski_statistics":
+      $help = "";
+      $help .= '<h3>' . t('About') . '</h3>';
+      $help .= '<p>' . t('The WissKI Statistics module provides users with various statistics about the WissKI system.') . '</p>';
+      $help .= '<h3>' . t('Usage') . '</h3>';
+      $help .= '<dl>';
+      $help .= '<dt>' . t('Full Statistics:') . '</dt>';
+      $help .= '<dd>';
+      $help .= t('The full statistics can be accessed <a href=":statistics">here</a>. ', [':statistics' => Url::fromRoute('wisski.wisski_statistics')->toString()]);
+      $help .= t('The statistics shown on this page can be customized on the <a href=:configuration>Configuration Page</a>".', [':configuration' => Url::fromRoute('wisski.wisski_statistics.config')->toString()]);
+      $help .= '</dd>';
+      $help .= '<dt>' . t('Statistics Block:') . '</dt>';
+      $help .= '<dd>';
+      $help .= t('A subset of statistics can be displayed in a customizable block. Which also provides access to the main statistics page, as well as the activated statistics groups, like E.g. triplestore statistics. ');
+      $help .= '</dd>';
+      $help .= '</dl>';
+
+      return $help;
+  }
+}
+
+/**
+ * Converts a string to valid machine name.
+ */
+function toMachineName(string $string) : string {
+  return preg_replace('@[^a-z0-9-]+@', '_', strtolower($string));
+}
+
+/**
+ * Converts a CamelCase string to a human readable form.
+ */
+function toLabel(string $string) : string {
+  return ucwords(preg_replace('/(?=[A-Z])/',' $0',$string));
+}

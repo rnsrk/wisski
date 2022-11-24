@@ -1,0 +1,34 @@
+services:
+  wisski_statistics.statistics:
+    class: Drupal\wisski_statistics\Statistics\WisskiStatistics
+    arguments: 
+      - '@entity_type.manager'
+      - '@entity_type.bundle.info'
+      - '@database'
+      - '@datetime.time' 
+      - '@state'
+
+  wisski_statistics.renderer:
+    class: Drupal\wisski_statistics\Render\WisskiStatisticsRenderer
+    arguments: 
+      - '@date.formatter'
+      - '@state'
+      - '@messenger'
+
+  wisski_statistics.config:
+    class: Drupal\wisski_statistics\Form\WisskiStatisticsConfigurationForm
+    arguments:
+      - '@messenger'
+      - '@state'
+      - '@wisski_statistics.statistics'
+
+           
+  wisski_statistics.terminate:
+    class: Drupal\wisski_statistics\EventSubscriber\KernelTerminateSubscriber
+    arguments: 
+      - '@current_user'
+      - '@config.factory'
+      - '@database'
+      - '@current_route_match'
+    tags:
+      - { name: event_subscriber }

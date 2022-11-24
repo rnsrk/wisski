@@ -1,0 +1,24 @@
+wisski.wisski_statistics:
+ path: '/wisski/statistics'
+ defaults:
+  _controller: '\Drupal\wisski_statistics\Controller\WisskiStatisticsController::statistics'
+  _title_callback: '\Drupal\wisski_statistics\Controller\WisskiStatisticsController::linkToStatistics'
+ requirements:
+  _permission: 'administer wisski'
+
+wisski.wisski_statistics.groups:
+  path: '/wisski/statistics/{groupName}'
+  defaults:
+    _controller: '\Drupal\wisski_statistics\Controller\WisskiStatisticsController::statisticsGroup'
+    _title_callback: '\Drupal\wisski_statistics\Controller\WisskiStatisticsController::linkToStatistics'
+  requirements:
+    _permission: 'administer wisski'
+
+wisski.wisski_statistics.config:
+ path: 'admin/config/wisski/statistics/config'
+ defaults:
+  _form: '\Drupal\wisski_statistics\Form\WisskiStatisticsConfigurationForm'
+  _title: "Statistics"
+ requirements:
+  _permission: 'administer wisski'
+

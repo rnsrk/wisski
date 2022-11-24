@@ -1,0 +1,7 @@
+wisski.wisski_statistics.config:
+  title: 'WissKI Statistics'
+  description: 'Configure WissKI Statistics' 
+  parent: wisski.content
+  route_name: wisski.wisski_statistics.config
+  weight: 100
+

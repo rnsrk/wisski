@@ -1,0 +1,55 @@
+<?php
+
+/**
+ * @file
+ * Install/uninstall visitors module.
+ */
+
+use Drupal\block\Entity\Block;
+use Drupal\Core\Database\Database;
+
+/**
+ * Implements hook_schema().
+ */
+function wisski_statistics_schema() {
+  $schema['wisski_statistics_page_visits'] = [
+    'fields' => [
+      'url' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+      'visits' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+    ],
+    'primary key' => ['url'],
+  ];
+
+  $schema['wisski_statistics_requests'] = [
+    'fields' => [
+      'id' => [
+        'type' => 'serial',
+        'not null' => TRUE,
+      ],
+      'url' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+      'timestamp' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+    ],
+    'primary key' => ['id'],
+  ];
+
+  return $schema;
+}
+

@@ -1,0 +1,12 @@
+# wisski_statistics library.
+wisski_statistics:
+  version: 1.0
+  js:
+    js/wisski_statistics.js: {}
+  css:
+    theme:
+      css/wisski_statistics.css: {}
+  dependencies:
+    - core/drupalSettings
+
+
