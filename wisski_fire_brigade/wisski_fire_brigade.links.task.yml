@@ -1,0 +1,21 @@
+configuration.wisski_fire_brigade:
+  route_name: wisski.wisski_fire_brigade
+  base_route: wisski.wisski_fire_brigade
+  title: Migrate URIs
+
+configuration.wisski_fire_brigade.cleanup.graphs:
+  route_name: wisski.wisski_fire_brigade.cleanup.graphs
+  base_route: wisski.wisski_fire_brigade
+  title: Cleanup Graphs
+
+configuration.wisski_fire_brigade.cleanup.eids:
+  route_name: wisski.wisski_fire_brigade.cleanup.eids
+  base_route: wisski.wisski_fire_brigade
+  title: Cleanup multiple EIDs
+
+configuration.wisski_fire_brigade.move_eids:
+  route_name: wisski.wisski_fire_brigade.move_eids
+  base_route: wisski.wisski_fire_brigade
+  title: Move EIDs to Triplestore
+
+

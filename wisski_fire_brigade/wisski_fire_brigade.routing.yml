@@ -1,0 +1,33 @@
+wisski.wisski_fire_brigade:
+  path: '/admin/config/wisski/fire_brigade'
+  defaults:
+    _form: '\Drupal\wisski_fire_brigade\Form\UriMigrationForm'
+    _title: 'Fire Brigade'
+  requirements:
+    _permission: 'administer wisski'
+
+wisski.wisski_fire_brigade.cleanup.graphs:
+  path: '/admin/config/wisski/fire_brigade/cleanup/graphs'
+  defaults:
+    _form: '\Drupal\wisski_fire_brigade\Form\GraphCleanupForm'
+    _title: 'Fire Brigade'
+  requirements:
+    _permission: 'administer wisski'
+
+wisski.wisski_fire_brigade.cleanup.eids:
+  path: '/admin/config/wisski/fire_brigade/cleanup/eids'
+  defaults:
+    _form: '\Drupal\wisski_fire_brigade\Form\EidCleanupForm'
+    _title: 'Fire Brigade'
+  requirements:
+    _permission: 'administer wisski'
+
+wisski.wisski_fire_brigade.move_eids:
+  path: '/admin/config/wisski/fire_brigade/move_eids'
+  defaults:
+    _form: '\Drupal\wisski_fire_brigade\Form\MoveEidsForm'
+    _title: 'Fire Brigade'
+  requirements:
+    _permission: 'administer wisski'
+
+

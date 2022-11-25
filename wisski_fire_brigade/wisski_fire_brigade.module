@@ -1,0 +1,37 @@
+<?php
+
+use Drupal\Core\Url;
+use Drupal\Core\Link;
+use Drupal\Core\Routing\RouteMatchInterface;
+
+function wisski_fire_brigade_theme($existing, $type, $theme, $path){
+   return [
+    'help' => [
+      'variables' => ['test_var' => NULL],
+    ],
+  ];
+}
+
+function wisski_fire_brigade_help($route_name, RouteMatchInterface $route_match){
+  switch($route_name){
+    case 'help.page.wisski_fire_brigade':
+      $help = '<h2>' . t('About') . '</h3>';
+      $help .= '<p>' . t('This module provides vairous migration and cleanup functionalities for WissKI systems regarding the management of URIs and EIDs in both triplestore and SQL database.') .'</p>';
+      $help .= '<h2>' . t('Usage') . '</h3>';
+      $help .= '<p>' . t('The module can be accessed ') . Link::createFromRoute(t('here'), 'wisski.wisski_fire_brigade')->toString() . '. ' . t('For the specific functionalities of the module\'s tabs refer to their respective sections') . '</p>';
+      $help .= '<h6>' . t('Uri Migration') . '</h4>';
+      $help .= '<p>' . t('This tab provides the main migration functionality and migrates all Uris of a prticular adapter to a new base Uri.') . '</p>';
+      $help .= '<h6>' . t('Clean up graphs') . '</h4>';
+      $help .= '<p>' . t('This tab can be used to rename URIs that differ from the base URI of their graph. E.g. the URI http://example.agfd.fau.de/example is contained in the Graph http://example.data.fau.de. The module will then allow renaming it to fit its graphs name, namely: http://example.data.fau.de/example. If there are no differing URIs this tab will show nothing.') . '</p>';
+      $help .= '<h6>' . t('Clean up multiple EIDs') . '</h4>';
+      $help .= '<p>' . t('Here you can resolve conflicts in which a single URI has multiple EIDs. Here both the SQL databas and the triplestore are checked. You can then either choose to keep the lowest or the highes EIDs.') . '</p>';
+      $help .= '<h6>' . t('Move EIDs to Triplestore') . '</h4>';
+      $help .= '<p>' . t('This tab is used to move the EID-URI mappings form the \'wisski_salz_id2uri\' table from the SQL database into the \'baseFields\' graph of the triplestore.') . '</p>';
+      
+      return $help;
+    
+    case 'wisski.wisski_fire_brigade.move_eids':
+      $help = '<p>' . t('Move the \'wisski_salz_id2uri\' table to the \'baseFields\' graph in the triplestore.') . '</p>';
+      return $help;
+  }
+}

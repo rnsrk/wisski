@@ -1,0 +1,7 @@
+wisski.wisski_fire_brigade:
+  title: 'WissKI Fire Brigade'
+  description: 'Call the fire brigade to move everyone to new URIs' 
+  parent: wisski.content
+  route_name: wisski.wisski_fire_brigade
+  weight: 100 
+

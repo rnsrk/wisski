@@ -1,0 +1,16 @@
+name: WissKI Fire Brigade 
+description: A module attempting to extinguish the ever burning WissKI fire.  
+core: 8.x 
+package: WissKI
+# version: 0.1-dev
+type: module
+core_version_requirement: ^8 || ^9
+configure: wisski_fire_brigade.wisski_fire_brigade
+dependencies:
+  - wisski:wisski_core
+# Information added by Drupal.org packaging script on 2022-03-03
+version: '8.x-3.5'
+project: 'wisski'
+datestamp: 1646317031
+
+                                                                                                                                                                                                                 
