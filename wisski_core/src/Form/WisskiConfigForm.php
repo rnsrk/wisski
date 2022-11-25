@@ -94,6 +94,12 @@ class WisskiConfigForm extends FormBase {
       '#default_value' => $settings->get('enable_published_status_everwhere'),
       '#title' => $this->t('Do you want to enable published status everywhere? You need to clear cache after enabling!'),
     );
+
+    $subform['use_get_canonical'] = array(
+      '#type' => 'checkbox',
+      '#default_value' => $settings->get('use_get_canonical'),
+      '#title' => $this->t('Use /wisski/get?uri= links instead of /wisski/navigate where possible. (E.g. preview images, titles, LinkIt suggestions)'),
+    );
     
     $subform['pager_max'] = array(
       '#type' => 'number',
@@ -160,6 +166,7 @@ class WisskiConfigForm extends FormBase {
     $settings->set('wisski_preview_image_max_height_pixel',$new_vals['preview_image']['max_height']);
     $settings->set('preview_image_adapters',$new_vals['preview_image']['adapters']);
     $settings->set('enable_published_status_everwhere',$new_vals['enable_published_status_everwhere']);
+    $settings->set('use_get_canonical',$new_vals['use_get_canonical']);
     $settings->save();
     $this->messenger()->addStatus($this->t('Changed global WissKI display settings'));
     $form_state->setRedirect('system.admin_config');
