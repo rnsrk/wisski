@@ -1,7 +1,7 @@
 name: WissKI Autocomplete
 type: module
 package: WissKI
-core_version_requirement: ^8 || ^9
+core_version_requirement: ^8 || ^9 || ^10
 php: '8.0'
 dependencies: 
     - 'drupal:wisski'

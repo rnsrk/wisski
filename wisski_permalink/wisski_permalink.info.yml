@@ -3,7 +3,7 @@ description: Format entity URIs as permalinks and display them in the browser UR
 package: WissKI
 
 type: module
-core_version_requirement: ^8 || ^9
+core_version_requirement: ^8 || ^9 || ^10
 dependencies:
   - wisski:wisski_core
 libraries:
