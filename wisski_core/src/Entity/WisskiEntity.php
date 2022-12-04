@@ -12,9 +12,13 @@ use Drupal\Core\Language\LanguageInterface;
 
 use Drupal\wisski_core\WisskiEntityInterface;
 
+use Drupal\wisski_salz\AdapterHelper;
+
 use Drupal\user\EntityOwnerTrait;
 
 use Drupal\Core\Entity\EditorialContentEntityBase;
+
+use Drupal\Core\Url;
 
 //keep for later use
 // *		 "views_data" = "Drupal\wisski_core\WisskiEntityViewsData",
@@ -296,6 +300,30 @@ class WisskiEntity extends EditorialContentEntityBase implements WisskiEntityInt
 #    dpm($title, "tit?");
       
     return $title;
+  }
+
+  /**
+   * { @inheritdoc }
+   */
+  public function toUrl($rel = "canonical", array $options = []){
+    $url = parent::toUrl($rel, $options);
+    $use_permalink = \Drupal::service('config.factory')->getEditable('wisski_core.settings')->get('use_get_canonical');
+    if(!$use_permalink){
+      return $url;
+    }
+    // catch the canonical route links
+    if($url->getRouteName() == "entity.wisski_individual.canonical"){
+      // TODO: Sometimes the wisski_uri is not loaded into the entity.
+      // Not sure why, but we manually lookup the uri from the adapter in that case.
+      $uri = $this->get("wisski_uri")->value;
+      if(empty($uri)) { 
+        // take the first URI, hopefully that's the correct one
+        $uri = current(AdapterHelper::getUrisForDrupalId($this->id(), NULL, FALSE));
+      }
+      // replace canonical route by /wisski/get route
+      $url = Url::fromRoute("entity.wisski_individual.lod_get", ['uri' => $uri], $options);
+    }
+    return $url;
   }
 
 
