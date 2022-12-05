@@ -18,9 +18,9 @@ class WisskiNameSpaceOperator {
      *
      * @var Drupal\Core\Database\ConnectionInterface 
      */
-    private ConnectionInterface $connection;
+    private $connection;
 
-    public function __construct(ConnectionInterface $connection) {
+    public function __construct($connection) {
         $this->connection = $connection;
     }
 
