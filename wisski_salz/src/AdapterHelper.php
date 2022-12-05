@@ -374,6 +374,10 @@ class AdapterHelper {
     
 #    dpm($adapter_id, "case three");
     //eid creation works by inserting data and retrieving the newly set line number as eid
+
+    $lock = \Drupal::lock();
+    if ($lock->acquire('eidGeneration')) {
+
     // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
     // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
     $id = \Drupal::database()->insert('wisski_salz_id2uri')
@@ -401,7 +405,10 @@ class AdapterHelper {
       ->fields(array('eid'=>$id))
       ->condition('rid',$id)
       ->execute();
-        
+    
+    $lock->release("eidGeneration");
+    }
+    
     if (WISSKI_DEVEL) {
       \Drupal::logger("AH:difu")->debug("$id and $uri and $input_adapter_id: {bt}", ["bt"=>join('//', array_map(function ($a) { return $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 8)))]);
     } 
