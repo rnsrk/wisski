@@ -44,17 +44,23 @@ class WisskiTitle extends Urlfield
     }
 
 
-    // handle single values
-    if(!is_array($value)) {
-      return $this->handleRoute($value, $route, $parameters);
+    // handle multiple values
+    if(is_array($value)) {
+      $return = [];
+      foreach ($value as $v) {
+        // in case of a disamb-array, go to the value.
+        if(is_array($v) && isset($v["value"])){
+          $v = $v["value"];
+        }
+        $return[] = $this->handleRoute($v, $route, $parameters);
+      }
+      return $return;
     }
 
-    // handle multiple values
-    $return = [];
-    foreach ($value as $v) {
-      $return[] = $this->handleRoute($v, $route, $parameters);
-    }
-    return $return;
+
+    // handle single values
+    return $this->handleRoute($value, $route, $parameters);
+
   }
 
   /**
@@ -70,7 +76,10 @@ class WisskiTitle extends Urlfield
    */
   private function handleRoute($value, $route, $parameters){
     if(empty($this->options['display_as_link']) || empty($route) || empty($parameters)){
-      return $this->sanitizeValue($value, 'url');
+      return [
+        '#type' => 'item',
+        '#markup' => $value,
+      ];
     }
 
     $url = Url::fromRoute($route, $parameters);
