@@ -2774,7 +2774,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
                 #$query .= "\"$primitiveValue\"";
                 //$escapedValue = '"' . $this->escapeSparqlLiteral($primitiveValue) . '"';
                 if($op == "=")
-                  $escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $this->escapeSparqlLiteral($primitiveValue) . '" )';
+                  $escapedValue = '?primtemp' . ($numbering + $key) . ' . FILTER ( STR(?primtemp' . ($numbering + $key) . ') = "' . $this->escapeSparqlLiteral($primitiveValue) . '" )';
                 else
                   $escapedValue = '"' . $this->escapeSparqlLiteral($primitiveValue) . '"';
 #                $escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $this->escapeSparqlLiteral($primitiveValue) . '" )';
@@ -2788,7 +2788,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
               #$query .= "\"$primitiveValue\"@$language";
             else {
               if($op == "EQUALS" || $op == "equals" || $op == "LIKE" || $op == "=")
-                $escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $primitiveValue . '" )';
+                $escapedValue = '?primtemp' . ($numbering + $key) . ' . FILTER ( STR(?primtemp' . ($numbering + $key) . ') = "' . $primitiveValue . '" )';
               else
                 $escapedValue = '"' . $primitiveValue . '"';
               #$query .= "\"$primitiveValue\"";
@@ -2848,7 +2848,7 @@ $tsa['ende'] = microtime(TRUE)-$tsa['start'];
           // speed up in case of equivalence
           if($op == "=" ) {
             if(is_numeric($primitiveValue))
-              $escapedValue = '?primtemp . FILTER ( STR(?primtemp) = "' . $escapedValue . '" )'; //"'" . $escapedValue . "'";
+              $escapedValue = '?primtemp' . ($numbering + $key) . ' . FILTER ( STR(?primtemp' . ($numbering + $key) . ') = "' . $escapedValue . '" )'; //"'" . $escapedValue . "'";
             $query .= " " . $escapedValue . " . ";
           } elseif( $op == "EMPTY" || $op == "NOT EMPTY") {
             $query .= " $outvar . ";
