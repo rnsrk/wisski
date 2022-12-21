@@ -123,11 +123,14 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
             ),
           ),
         ),
-        'XML_Measurements' => array(
-          'results' => array(
-            'lido:displayObjectMeasurements' => NULL,
+        'XML_Measurements' => NULL,
+
+/*          'results' => array(
+            'lido:ObjectMeasurementsSet' => array(
+              'lido:displayObjectMeasurements' => NULL,
+            ),
           ),
-        ),
+        ),*/
         'XML_Inscriptions' => NULL,
 /*        'XML_Inscriptions' => array(
           'results' => array(

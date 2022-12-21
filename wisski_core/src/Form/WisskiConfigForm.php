@@ -8,6 +8,9 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Database\Database;
 
+use Drupal\wisski_salz\RdfSparqlUtil;
+
+
 class WisskiConfigForm extends FormBase {
 
   public function getFormId() {
@@ -15,15 +18,90 @@ class WisskiConfigForm extends FormBase {
     return 'wisski_core_display_settings_form';
   }
   
+    public function sparqlEntityStringlifier(object $sparqlEntity) {
+    // If it is a ressource bracket it in angle brackets.
+    if (get_class($sparqlEntity) == "EasyRdf\Resource") {
+      return "<" . $sparqlEntity->getUri() . ">";
+    }
+    else {
+      // Quote it and add language flag.
+      $literal = $sparqlEntity->getValue();
+      $escapedLiteral = (new RdfSparqlUtil)->escapeSparqlLiteral($literal);
+      return '"' . $escapedLiteral . '"' . (empty($sparqlEntity->getLang()) ? '' : "@" . $sparqlEntity->getLang());
+    }
+  }
+
+  
   public function buildForm(array $form, FormStateInterface $form_state) {
   
     $request_query = \Drupal::request()->query;
     //dpm($request_query,'HTTP GET');
-    if ($request_query->get('q') === 'flush') {
+    if ($request_query->get('q') === 'flush_salz') {
       //db_truncate('wisski_salz_id2uri');
       $options['target'] = 'default';
-      Database::getConnection($options['target'])->truncate('wisski_salz_id2uri', $options)->execute();
+      
+      // first check if the table exists and if so rename it with the date in front to
+      // have a backup!      
+      if (Database::getConnection($options['target'])->schema()->tableExists("wisski_salz_id2uri"))
+        Database::getConnection($options['target'])->schema()->renameTable("wisski_salz_id2uri", date("Y-m-d") . "wisski_salz_id2uri");
+      
+      // recreate the table from schema!
+      $schema = drupal_get_module_schema("wisski_salz");
+
+      Database::getConnection($options['target'])->schema()->createTable("wisski_salz_id2uri", $schema['wisski_salz_id2uri']);
+
+      // now we need to empty 
+      
+      
+//      Database::getConnection($options['target'])->truncate('wisski_salz_id2uri', $options)->execute();
       $this->messenger()->addStatus('Flushed the ID cache');
+    }
+    
+    if ($request_query->get('q') === 'flush_originates') {
+
+      $pref_local = \Drupal\wisski_salz\AdapterHelper::getPreferredLocalStore();
+      
+      $export_root = 'public://wisski_triple_backups/';
+      
+      $preparedExportDirectory = \Drupal::service('file_system')
+        ->prepareDirectory($export_root, \Drupal\Core\File\FileSystemInterface::CREATE_DIRECTORY);
+      // If folder is not writable, escape.
+      if (!$preparedExportDirectory) {
+        \Drupal::service('messenger')
+          ->addError($this->t('Could not create archive at %relativeExportDirectory. Do you have the right permissions?', ['%relativeExportDirectory' => $export_root]));
+        #return FALSE;
+      } else {
+        $engine = $pref_local->getEngine();
+        
+        $query = "SELECT ?s ?p ?o ?g WHERE { GRAPH ?g { ?s ?p ?o } . FILTER(?g = <" . $engine->getDefaultDataGraphUri()."originatesFrom" . ">) }";
+        
+        $results = $engine->directQuery($query);
+        
+
+        foreach ($results as $nquad) {
+          // Parse stdClass to php array.
+          $sparqlEntityArray = [];
+          foreach ($nquad as $sparqlEntity) {
+            $sparqlEntityArray[] = $sparqlEntity;
+          }
+          // Convert SPARQL entities to statement string and add to array.
+          $quadStatement[] = implode(" ", array_map('self::sparqlEntityStringlifier', $sparqlEntityArray));
+        }
+
+        // Parse statement array to string.
+        $nQuads = implode(" . \n", $quadStatement) . ' .';
+
+        $export_path = $export_root . date("Y-m-d") . "originatesFrom.nq";
+
+        \Drupal::service('file.repository')->writeData($nQuads, $export_path, \Drupal\Core\File\FileSystemInterface::EXISTS_REPLACE);
+
+        $query = "DROP GRAPH <" . $engine->getDefaultDataGraphUri()."originatesFrom>";    
+
+        $results = $engine->directUpdate($query);
+        
+      }
+      
+      $this->messenger()->addStatus('Flushed the OriginatesFrom');
     }
   
     $settings = $this->configFactory()->getEditable('wisski_core.settings');
@@ -64,12 +142,17 @@ class WisskiConfigForm extends FormBase {
     );
     $form['flush']['disclaimer'] = array(
       '#type' => 'item',
-      '#markup' => $this->t('This will flush the \'wisski_salz_id2uri\' database table but keep the local store info untouched'),
+      '#markup' => $this->t('This will flush the \'wisski_salz_id2uri\' database table but keep the local store info untouched. DANGER ZONE!!! Only do this if you know what you are doing!'),
     );
     $form['flush']['id2uri'] = array(
       '#type' => 'link',
-      '#title' => $this->t('Flush EntityID - URI matching table'),
-      '#url' => Url::fromRoute('<current>',array('q'=>'flush')),
+      '#title' => $this->t('Flush EntityID - URI matching table<br/>'),
+      '#url' => Url::fromRoute('<current>',array('q'=>'flush_salz')),
+    );
+    $form['flush']['originates'] = array(
+      '#type' => 'link',
+      '#title' => $this->t('Flush OriginatesFrom in TS<br/>'),
+      '#url' => Url::fromRoute('<current>',array('q'=>'flush_originates')),
     );
     
     $subform = array(

@@ -115,6 +115,8 @@ class WissKIPermalinkURIFormatter extends FormatterBase implements ContainerFact
   {
     $options = parent::defaultSettings();
     $options['permalink'] = true;
+    $options['httpreplace'] = false;
+    $options['resolverless'] = false;
     $options['display'] = "hide_sub";
     $options['resolver'] = "";
     return $options;
@@ -127,11 +129,35 @@ class WissKIPermalinkURIFormatter extends FormatterBase implements ContainerFact
   {
     $form = parent::settingsForm($form, $form_state);
     $entity_type = $this->entityTypeManager->getDefinition($this->fieldDefinition->getTargetEntityTypeId());
-      $form['permalink'] = [
+    
+    $form['permalink'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Display permalink in URL bar'),
       '#default_value' => $this->getSetting('permalink')
     ];
+
+    // This setting replaces http to https on demand. This is useful if 
+    // you have http links in your database but nowadays the system is on
+    // https and you have permanent rewriting to https. Usually you want to
+    // maintain the http link as a permalink.
+    // e.g. the object catalogue of the gnm has http links as
+    // permalinks that resolve to https websites.
+    $form['httpreplace'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Replace http with https in permalink (old compatibility mode)'),
+      '#default_value' => $this->getSetting('httpreplace')
+    ];
+
+    // This setting is used if you have a correctly set rewriting to the resolver
+    // via a fixed url. E.g. the object catalogue of the gnm rewrites all requests
+    // to /object/ to the resolver. In this case I don't need another rewriting from
+    // this module.
+    $form['resolverless'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('The Permalink works resolverless'),
+      '#default_value' => $this->getSetting('resolverless')
+    ];
+
 
     $form['display'] = [
       '#type' => 'radios',
@@ -162,6 +188,14 @@ class WissKIPermalinkURIFormatter extends FormatterBase implements ContainerFact
     $summary = [];
     if($this->getSetting('permalink')){
       $summary[] = $this->t('Diplay permalink in URL bar');
+    }
+    
+    if($this->getSetting('httpreplace')){
+      $summary[] = $this->t('Replace http with https in permalink');
+    }
+
+    if($this->getSetting('resolverless')){
+      $summary[] = $this->t('The Permalink works resolverless');
     }
 
     if($this->getSetting('display') == "hide"){
@@ -232,6 +266,18 @@ class WissKIPermalinkURIFormatter extends FormatterBase implements ContainerFact
   protected function buildUrl(string $uri)
   {
     $prefix = $this->getSetting('resolver');
+    
+    // if we want to replace http to https - do so!
+    if($this->getSetting('httpreplace')) {
+      $uri = str_replace("http://", "https://", $uri);
+    }
+    
+    // if the permalink redirects to the resolver already
+    // don't do another redirect below.
+    if($this->getSetting('resolverless')) {
+      return Url::fromUri($uri);
+    }
+    
     // default to local resolver
     if (!$prefix) {
       return Url::fromRoute('entity.wisski_individual.lod_get', ['uri' => $uri]);

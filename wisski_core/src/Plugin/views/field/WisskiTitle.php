@@ -76,12 +76,14 @@ class WisskiTitle extends Urlfield
    */
   private function handleRoute($value, $route, $parameters){
     if(empty($this->options['display_as_link']) || empty($route) || empty($parameters)){
-      return [
-        '#type' => 'item',
+      $ret = [
+        '#type' => 'value',
         '#markup' => $value,
       ];
+      
+      return $ret;
     }
-
+  
     $url = Url::fromRoute($route, $parameters);
     return Link::fromTextAndUrl($value, $url)->toRenderable();
   }
