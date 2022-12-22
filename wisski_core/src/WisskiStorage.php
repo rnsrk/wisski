@@ -1482,6 +1482,9 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
       if(file_exists($file_uri) && filesize($file_uri) > 0) {
         list($file_uri,$local_file_uri) = $cache->data;
         return $file_uri;
+      } else {
+        // file does not exist, invalide cache!
+        \Drupal::cache()->delete($cid);
       }
     }
     
@@ -1566,7 +1569,26 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
           $data = @file_get_contents($file_uri, false);
           
           if (empty($data)) { 
-            \Drupal::messenger()->addError($this->t('Could not fetch file with uri %uri.',array('%uri'=>$file_uri,)));
+            // if it is img_nopic.png - we might need to create it.
+            if(strpos($file_uri, "wisski_core/images/img_nopic.png") !== FALSE) {
+              $image_style = $this->getPreviewStyle();
+              $output_uri = drupal_get_path('module', 'wisski_core') . "/images/img_nopic.png";
+
+              $preview_uri = $image_style->buildUri($output_uri);
+
+              $out = $image_style->createDerivative($output_uri,$preview_uri);
+
+              $query = \Drupal::entityQuery('file')->condition('uri',$local_file_uri)->range(0,1);
+
+              $current_file_ids = $query->execute();
+
+              if(!empty($current_file_ids)) {
+                $value = current($current_file_ids);
+              }
+
+            } else {
+              \Drupal::messenger()->addError($this->t('Could not fetch file with uri %uri.',array('%uri'=>$file_uri,)));
+            }
           }
 
 #              dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
@@ -2601,6 +2623,9 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
         'uri' => $preview_uri,
       ]);
 
+      // any problems putting it?
+      $out = TRUE;
+
       if (!count($existing_files)) {
         
         $user = \Drupal::currentUser();
@@ -2614,9 +2639,12 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
         $file->setPermanent();
       
         $file->save();
+        
+        $out = $image_style->createDerivative($output_uri,$preview_uri);
       }
       
-      if ($out = $image_style->createDerivative($output_uri,$preview_uri)) {
+       // it did already exist or we generated it - so return it.
+      if ($out) {
         WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
         return $preview_uri;
       }
