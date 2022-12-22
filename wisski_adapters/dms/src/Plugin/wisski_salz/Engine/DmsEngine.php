@@ -613,6 +613,8 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #dpm(func_get_args(), 'lpvff');
 
     $main_property = FieldStorageConfig::loadByName('wisski_individual', $field_id);
+    $language = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+
     if(!empty($main_property)) {
       $main_property = $main_property->getMainPropertyName();
     }
@@ -649,15 +651,15 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         $out[$eid][$field_id] = array($eid);
       } elseif($field_id == "name") {
         // tempo hack
-        $out[$eid][$field_id] = array($eid);
+        $out[$eid][$field_id][$language] = array($eid);
         continue;
       } elseif($field_id == "field_permalink") {
         // tempo hack
-        $out[$eid][$field_id] = array("http://objektkatalog.gnm.de/objekt/");
+        $out[$eid][$field_id][$language] = array("http://objektkatalog.gnm.de/objekt/");
         continue;
       } elseif($field_id == "field_iiif_link") {
         // tempo hack
-        $out[$eid][$field_id] = array("Hallo welt!");
+        $out[$eid][$field_id][$language] = array("Hallo welt!");
         continue;
       } elseif ($field_id == "bundle") {
       
