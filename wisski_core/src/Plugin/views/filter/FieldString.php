@@ -106,6 +106,10 @@ class FieldString extends ViewsString {
     $value = explode(',', $this->value);
     $this->query->addWhere($this->options['group'], $field, $value, $this->operator);
   }
+
+  public function opEqual($field) {
+    $this->query->addWhere($this->options['group'], $field, $this->value, '=');
+  }
   
   protected function opStartsWith($field) {
     $operator = $this->getConditionOperator('STARTS_WITH');
