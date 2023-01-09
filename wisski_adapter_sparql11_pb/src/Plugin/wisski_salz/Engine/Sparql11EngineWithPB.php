@@ -3108,7 +3108,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // parsing of value for brackets and extracting the value of the entity in
     // brackets.
     //
-    // e.g. extracting the value 64 from the string "Archeological Collection (a64)".
+    // e.g. extracting the value 64 from the string "Archeological Collection (64)".
     $autocomplete_title_pattern_enabled = FALSE;
     if (array_key_exists('autocomplete_title_pattern_enabled', $pbarray)) {
       $autocomplete_title_pattern_enabled = $pbarray['autocomplete_title_pattern_enabled'] == TRUE;
