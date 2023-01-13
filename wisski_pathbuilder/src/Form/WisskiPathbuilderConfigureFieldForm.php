@@ -25,7 +25,6 @@ use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity as Pathbuilder;
  * 
  * Fom class for adding/editing WisskiPathbuilder config entities.
  */
- 
 class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 
   
@@ -35,7 +34,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
   /**
    * @{inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $wisski_pathbuilder = NULL, $wisski_path = NULL) { 
+  public function buildForm(array $form, FormStateInterface $form_state,$wisski_pathbuilder = NULL, $wisski_path = NULL) { 
     // the form() function will not accept additional args,
     // but this function does
     // so we have to override this one to get hold of the pb id
@@ -43,6 +42,15 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
 #    drupal_set_message(serialize($wisski_path));
     $this->path = $wisski_path;
     return parent::buildForm($form, $form_state, $wisski_pathbuilder, $wisski_path);
+  }
+
+  protected function actions(array $form, FormStateInterface $form_state) {
+    $actions = parent::actions($form, $form_state);
+    $actions['delete']['#url'] = Url::fromRoute('entity.wisski_path.delete_local_form', array(
+      'wisski_pathbuilder' => $this->pathbuilder->id(),
+      'wisski_path' => $this->path,
+    ));
+    return $actions;
   }
 
    /**
