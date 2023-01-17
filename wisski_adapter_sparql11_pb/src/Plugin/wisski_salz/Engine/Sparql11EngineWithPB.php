@@ -855,7 +855,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    * @return an array of values?
    */
-  public function getImagesForEntityId($entityid, $bundleid) {
+  public function getImagesForEntityId($entityid, $bundleid, $do_sorting_by_weight = FALSE) {
     $pbs = $this->getPbsForThis();
 
     $entityid = $this->getDrupalId($entityid);
@@ -879,7 +879,56 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           // This has to be an absulte path - otherwise subgroup images won't load.
           $new_ret = $this->pathToReturnValue($path, $pb, $entityid, 0, NULL, FALSE);
           // If (!empty($new_ret)) dpm($pb->id().' '.$pathid.' '.$entitid,'News');.
-          $ret = array_merge($ret, $new_ret);
+
+                    if($do_sorting_by_weight == TRUE) {
+
+            $allpbpaths = $pb->getPbPaths();
+            $pbarray = $allpbpaths[$pathid];
+
+#            dpm($pbarray);
+
+            $fid_to_look_for = $pbarray['field'];
+
+            $cached_field_values = \Drupal::database()->select('wisski_entity_field_properties', 'f')
+              ->fields('f',array('ident','delta'));
+
+            if(!empty($fid_to_look_for)) {
+              $cached_field_values = $cached_field_values->condition('fid', $fid_to_look_for);
+            }
+
+//            $cached_field_values = $cached_field_values->condition('ident', $to_look_for)
+            $cached_field_values = $cached_field_values->condition('eid', $entityid)
+              ->execute()
+              ->fetchAllAssoc('ident');
+
+#            dpm($cached_field_values);
+#            dpm($new_ret);
+
+            if(empty($cached_field_values))
+              $ret = array_merge($ret, $new_ret);
+
+            $ordered_ret = array();
+            foreach($new_ret as $one_ret) {
+              $ordered_ret[$cached_field_values[$one_ret]->delta] = $one_ret;
+
+
+//              if(isset($
+//              $ordered_ret[
+            }
+
+            // sort by keys
+            ksort($ordered_ret);
+
+#            dpm($ordered_ret);
+
+            $ret = array_merge($ret, $ordered_ret);
+
+          } else {
+            // easy case, no sorting
+#          if (!empty($new_ret)) dpm($pb->id().' '.$pathid.' '.$entitid,'News');
+            $ret = array_merge($ret, $new_ret);
+          }
+
 
         }
       }

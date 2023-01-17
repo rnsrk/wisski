@@ -87,7 +87,7 @@ class WisskiIIIFController {
     // go through all adapters and get all images for this.
     foreach($adapters as $adapter) {
       if($adapter->hasEntity($entity_id) && method_exists($adapter->getEngine(), "getImagesForEntityId")) {
-        $images = array_merge($images, $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id));
+        $images = array_merge($images, $adapter->getEngine()->getImagesForEntityId($entity_id,$bundle_id, TRUE));
       }
       
     }
