@@ -132,7 +132,7 @@ class GndEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     $data = $cache->get($id);
 
 #    dpm($data, "from cache?");
-    if ($data) {
+    if (isset($data) && !empty($data->data)) {
       return $data->data;
     }
 
