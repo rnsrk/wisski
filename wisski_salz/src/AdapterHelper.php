@@ -474,7 +474,7 @@ class AdapterHelper {
       
     $id = $eid . "-" . $real_adapter_id;
     $data = $cache->get($id);
-    if ($data) {
+    if (isset($data) && !empty($data->data)) {
 #      dpm($data->data);
       return $data->data;
     }
