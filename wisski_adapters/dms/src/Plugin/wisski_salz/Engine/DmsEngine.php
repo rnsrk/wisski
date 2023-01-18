@@ -181,6 +181,11 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         ),
         'imagepath' => NULL,
         'CurrentOwnership' => NULL,
+        'IADComposite' => NULL,
+        'IADSubpart' => NULL,
+        'IADQuantity' => NULL,
+        'IADParentInvNumber' => NULL,
+        'IADotherNumbers' => NULL,
               
       ),
   );
