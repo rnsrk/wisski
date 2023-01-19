@@ -376,6 +376,8 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     if(empty($stmt))
       return array();
 
+    $data = array();
+    $data['Object'] = array();
 
     $outarr = array();
     
