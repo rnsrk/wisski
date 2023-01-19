@@ -456,6 +456,10 @@ function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatch
     $request = \Drupal::request();
     $referer = $request->headers->get('referer');
 
+    if(empty($referer))
+      return;
+
+
     $query_array = array();
 
     global $base_url;
@@ -516,6 +520,10 @@ function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatch
     // where do we come from?
     $request = \Drupal::request();
     $referer = $request->headers->get('referer');
+
+    if(empty($referer))
+      return;
+
 
     $query_array = array();
 
