@@ -537,6 +537,10 @@ function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatch
     if(strpos($referer, $new_base_url) !== FALSE)
       $referer = substr($referer, $schemacount + strlen($new_base_url));
 
+    if(empty($referer))
+      return;
+
+
     // cut away everything after ? since it are parameters...
     if(strpos($referer, "?") !== FALSE) {
       // get the query part.
