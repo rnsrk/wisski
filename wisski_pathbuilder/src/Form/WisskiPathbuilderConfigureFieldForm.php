@@ -316,10 +316,11 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
       //if the FT itself was not triggered, we should look up in the field selection
       if (empty($ftvalue) && isset($selected_field_values))
         $ftvalue = $selected_field_values['field_type'];//$form_state->getValue('fieldtype');
+        
 
       //from the database if there is nothing in form_state?
       if(empty($ftvalue))
-        $ftvalue = empty($pbpath['fieldtype']) ? 'string' : $pbpath['fieldtype'];     
+        $ftvalue = empty($pbpath['fieldtype']) ? 'string' : $pbpath['fieldtype'];      
 
       // --- by now we should have found a value for the field type
 
@@ -389,14 +390,16 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
         '#description' => $this->t("Formatter for the field - If there is any."),
 #        '#required' => true,
       );
-      $display['field_display']['autocomplete_title_pattern_enabled'] = array(
-        '#type' => 'checkbox',
-        '#title' => $this->t('Autocomplete Title Pattern Enabled'),
-        '#default_value' => empty($pbpath['autocomplete_title_pattern_enabled']) ? FALSE : $pbpath['autocomplete_title_pattern_enabled'],
-#      '#disabled' => true,
-        '#description' => $this->t("Use Title Pattern during autocomplete. This only works with specific widgets and may decrease performance. "),
-#        '#required' => true,
-      );
+      if($ftvalue == 'string') {
+        $display['field_display']['autocomplete_title_pattern_enabled'] = array(
+          '#type' => 'checkbox',
+          '#title' => $this->t('Autocomplete Title Pattern Enabled'),
+          '#default_value' => empty($pbpath['autocomplete_title_pattern_enabled']) ? 0 : $pbpath['autocomplete_title_pattern_enabled'],
+  #      '#disabled' => true,
+          '#description' => $this->t("Use Title Pattern during autocomplete. This only works with specific widgets and may decrease performance. "),
+  #        '#required' => true,
+        );
+      }
       if (isset($selected_field_values['formatter'])) $display['formatterwidget']['#value'] = $selected_field_values['formatter'];
       
       $unlimited = FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
@@ -462,7 +465,7 @@ class WisskiPathbuilderConfigureFieldForm extends EntityForm {
     $pbpaths[$pathid]['fieldtype'] = $form_state->getValue('fieldtype');
     $pbpaths[$pathid]['displaywidget'] = $form_state->getValue('displaywidget');
     $pbpaths[$pathid]['formatterwidget'] = $form_state->getValue('formatterwidget');
-    $pbpaths[$pathid]['autocomplete_title_pattern_enabled'] = $form_state->getValue('autocomplete_title_pattern_enabled');
+    $pbpaths[$pathid]['autocomplete_title_pattern_enabled'] = $form_state->getValue('autocomplete_title_pattern_enabled', 0);
     $pbpaths[$pathid]['field'] = $form_state->getValue('select_field');
     $pbpaths[$pathid]['bundle'] = $form_state->getValue('bundle');
     $pbpaths[$pathid]['cardinality'] = $form_state->getValue('cardinality');
