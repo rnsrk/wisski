@@ -2943,14 +2943,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             // dpm($primitiveValue, "prim");.
           }
           elseif ($op == 'IN' || $op == 'NOT IN' || $op == 'in' || $op == 'not in' || $op == 'not_in') {
-            $regex = TRUE;
+            $regex = FALSE;
             $negate = ($op == 'NOT IN' || $op == 'not in');
             $safe = TRUE;
             $values = is_array($primitiveValue) ? $primitiveValue : explode(",", $primitiveValue);
-            foreach ($values as &$v) {
-              $v = $this->escapeSparqlRegex($v, TRUE);
-            }
-            $primitiveValue = join('|', $values);
+            $primitiveValue = '"' . join('","', $values) . '"';
           }
           else {
             if (strtoupper($op) == "LONGERTHAN" || strtoupper($op) == "SHORTERTHAN") {
@@ -3078,6 +3075,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           }
           elseif ($op == "EMPTY" || $op == "NOT EMPTY") {
             $query .= " $outvar . ";
+          }
+          elseif ($op == "IN" || $op == "NOT IN"){
+            $query .= " $outvar . FILTER (STR($outvar) $op ($primitiveValue) )";
           }
           else {
             $query .= " $outvar . FILTER( $filter ) . ";
