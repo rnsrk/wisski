@@ -17,7 +17,17 @@ use Drupal\wisski_salz\AdapterHelper;
  * Controller for DOI actions.
  */
 class WisskiDoiActions implements WisskiDoiActionsInterface {
+
   use StringTranslationTrait;
+
+  /**
+   * The sites base url.
+   *
+   * @var string
+   */
+  protected string $base_url;
+
+
   /**
    * The WisskiEntity revision.
    *
@@ -84,6 +94,9 @@ class WisskiDoiActions implements WisskiDoiActionsInterface {
     $this->wisskiDoiRestActions = $wisskiDoiRestActions;
     $this->wisskiDoiDbActions = $wisskiDoiDbActions;
     $this->wisskiStorage = $entityTypeManager->getStorage('wisski_individual');
+    global $base_secure_url;
+    global $base_url;
+    $this->base_url = $base_secure_url ?? $base_url;
   }
 
   /**
@@ -145,10 +158,8 @@ class WisskiDoiActions implements WisskiDoiActionsInterface {
     ]);
     $doiRevision->save();
 
-    // Assemble revision URL and store it in form.
-    $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
     $doiRevisionId = $doiRevision->getRevisionId();
-    $doiRevisionURL = $http . $_SERVER['HTTP_HOST'] . '/wisski/navigate/' . $wisskiIndividual->id() . '/revisions/' . $doiRevisionId . '/view';
+    $doiRevisionURL = $this->base_url . '/wisski/navigate/' . $wisskiIndividual->id() . '/revisions/' . $doiRevisionId . '/view';
 
     // Append revision info to doiInfo.
     $doiMetadata += [
@@ -210,8 +221,8 @@ class WisskiDoiActions implements WisskiDoiActionsInterface {
      */
 
     // Assemble revision URL and store it in form.
-    $http = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
-    $doiCurrentRevisionURL = $http . $_SERVER['HTTP_HOST'] . '/wisski/get?uri=' . $doiMetadata["entityUri"];
+    $doiCurrentRevisionURL = $this->base_url . '/wisski/get?uri=' . $doiMetadata["entityUri"];
+
 
     // Append revision info to doiInfo.
     $doiMetadata += [
