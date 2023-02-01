@@ -51,9 +51,13 @@ class WisskiIIIFController {
     if(!empty($logo) && strpos($logo, $base_url) === FALSE)
       $logo = $base_url . $logo;
     
-    if(empty($logo)) 
-      $logo = $base_url . '/' . drupal_get_path('module', 'wisski_core') . "/images/img_nopic.png";
-
+    if(empty($logo)) {
+      $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_core');
+      if(!empty($path))
+        $logo = $base_url . '/' . $core_path . "/images/img_nopic.png";
+    
+    }
+    
     // Basic example manifest information - this should be replaced with
     // specific details or a database call for dynamic details.
     $manifest = array (
