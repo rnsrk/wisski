@@ -33,11 +33,12 @@ function wisski_ckeditor_export() {
 
 
 function wisski_ckeditor_ckeditor_plugin() {
+  $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_ckeditor');
   return array(
     'wisski_apus_adapter' => array(
       'name' => 'wisski_apus_adapter',
       'desc' => t('WissKI Annotation Commons: Provides common features and buttons to annotate and link to instances'),
-      'path' => drupal_get_path('module', 'wisski_ckeditor') . '/js/wisski_apus_adapter/',
+      'path' => $core_path . '/js/wisski_apus_adapter/',
       'buttons' => array(
         'ToggleSubject' => array(
           'label' => 'Toggle Subject',
