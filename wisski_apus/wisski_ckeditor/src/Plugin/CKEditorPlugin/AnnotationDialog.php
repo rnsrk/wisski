@@ -50,7 +50,8 @@ class AnnotationDialog extends CKEditorPluginBase implements CKEditorPluginConfi
    * {@inheritdoc}
    */
   public function getFile() {
-    return drupal_get_path('module', 'wisski_ckeditor') . '/js/plugins/annotationDialog/plugin.js';
+    $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_ckeditor');
+    return $core_path . '/js/plugins/annotationDialog/plugin.js';
   }
 
   /**
@@ -79,10 +80,11 @@ class AnnotationDialog extends CKEditorPluginBase implements CKEditorPluginConfi
    */
   public function getButtons() {
 //    return array();
+    $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_ckeditor');
     return array(
       'ToggleWisskiAnnotationDialog' => array(
         'label' => t('Annotation Sidebar'),
-        'image' => drupal_get_path('module', 'wisski_ckeditor') . '/js/plugins/annotationDialog/annotationDialog.png',
+        'image' => $core_path . '/js/plugins/annotationDialog/annotationDialog.png',
       ),
     );
   }
