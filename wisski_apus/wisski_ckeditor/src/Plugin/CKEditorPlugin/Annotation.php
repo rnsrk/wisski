@@ -49,7 +49,10 @@ class Annotation extends CKEditorPluginBase implements CKEditorPluginConfigurabl
    * {@inheritdoc}
    */
   public function getFile() {
-    return drupal_get_path('module', 'wisski_ckeditor') . '/js/plugins/annotation/plugin.js';
+
+    $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_ckeditor');
+    return $core_path . '/js/plugins/annotation/plugin.js';
+
   }
 
   /**
