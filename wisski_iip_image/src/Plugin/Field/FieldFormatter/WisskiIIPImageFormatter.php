@@ -98,7 +98,7 @@ class WisskiIIPImageFormatter extends ColorboxFormatter {
           $elements[$delta] = array(
             '#type' => 'link',
             '#title' => $file->getFilename(),
-            '#url' => Url::fromUri(file_create_url($file->getFileUri())),
+            '#url' => \Drupal::service('file_url_generator')->generate($file->getFileUri()),
           );
         }
 
