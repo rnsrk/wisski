@@ -80,14 +80,15 @@ class Annotation extends CKEditorPluginBase implements CKEditorPluginConfigurabl
    */
   public function getButtons() {
 //    return array();
+    $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_ckeditor');
     return array(
       'wisskiAddAnnotation' => array(
         'label' => t('Add Annotation'),
-        'image' => drupal_get_path('module', 'wisski_ckeditor') . '/js/plugins/annotation/annotation.png',
+        'image' => $core_path . '/js/plugins/annotation/annotation.png',
       ),
       'wisskiDeleteAnnotation' => array(
         'label' => t('Delete Annotation'),
-        'image' => drupal_get_path('module', 'wisski_ckeditor') . '/js/plugins/annotation/delete.png',
+        'image' => $core_path . '/js/plugins/annotation/delete.png',
       ),
     );
   }
