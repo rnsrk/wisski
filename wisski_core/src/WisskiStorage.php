@@ -699,8 +699,11 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             $test['default_langcode'][$sl]= '0';
           }
 
-          $entity = new $this->entityClass($test,$this->entityTypeId, $bundle, $translations[$id]);
-
+          // By Mark: I don't know what the correct replacement here is...
+          // 
+          //$entity = new $this->entityClass($test,$this->entityTypeId, $bundle, $translations[$id]);
+          $entity = new \Drupal\wisski_core\Entity\WisskiEntity($test,$this->entityTypeId, $bundle, $translations[$id]);
+          
           $inter_lang = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
 
 #          $entity = $entity->getTranslation($inter_lang);
