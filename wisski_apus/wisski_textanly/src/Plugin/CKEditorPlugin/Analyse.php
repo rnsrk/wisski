@@ -49,7 +49,8 @@ class Analyse extends CKEditorPluginBase implements CKEditorPluginConfigurableIn
    * {@inheritdoc}
    */
   public function getFile() {
-    return drupal_get_path('module', 'wisski_textanly') . '/js/plugins/analyse/plugin.js';
+    $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_textanly');
+    return $core_path . '/js/plugins/analyse/plugin.js';
   }
 
   /**
@@ -73,15 +74,16 @@ class Analyse extends CKEditorPluginBase implements CKEditorPluginConfigurableIn
    * {@inheritdoc}
    */
   public function getButtons() {
+    $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_textanly');
 //    return array();
     return array(
       'wisskiAnalyse' => array(
         'label' => t('Analyse'),
-        'image' => drupal_get_path('module', 'wisski_textanly') . '/js/plugins/analyse/analyse.png',
+        'image' => $core_path . '/js/plugins/analyse/analyse.png',
       ),
       'wisskiAnalysisLog' => array(
         'label' => t('Show Analysis Log'),
-        'image' => drupal_get_path('module', 'wisski_textanly') . '/js/plugins/analyse/delete.png',
+        'image' => $core_path . '/js/plugins/analyse/delete.png',
       ),
     );
   }
