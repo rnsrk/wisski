@@ -3365,6 +3365,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
       // Load the view ids that are available for this.
       $view_ids = \Drupal::entityQuery('entity_view_display')
+        ->accessCheck(TRUE)
         ->condition('id', 'wisski_individual.' . $bundle_id . '.', 'STARTS_WITH')
         ->execute();
 

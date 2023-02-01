@@ -705,6 +705,7 @@ class PathbuilderManager {
    */
   public function exportAllPathbuilders(string $relativeExportDirectory) {
     $wisskiPathbuilderIds = \Drupal::entityQuery('wisski_pathbuilder')
+      ->accessCheck(TRUE)
       ->execute();
     foreach ($wisskiPathbuilderIds as $pathbuilderId) {
       $pathbuilderEntity = ($this->wisskiPathbuilderStorage->load($pathbuilderId));

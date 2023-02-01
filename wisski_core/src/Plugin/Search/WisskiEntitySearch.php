@@ -75,6 +75,7 @@ class WisskiEntitySearch extends SearchPluginBase {
           if (!isset($parameters[$bundle_id])) continue;
           
           $query = \Drupal::entityQuery('wisski_individual');
+          $query->accessCheck(TRUE);
           $query->setPathQuery();
           switch ($parameters[$bundle_id]['query_type']) {
             case 'AND': 
@@ -211,7 +212,7 @@ class WisskiEntitySearch extends SearchPluginBase {
       // don't load only bundle_limit amount of bundles
       #$bundle_ids = \Drupal::entityQuery('wisski_bundle')->range(0,$this->bundle_limit)->execute();
       // load all
-      $bundle_ids = \Drupal::entityQuery('wisski_bundle')->execute();
+      $bundle_ids = \Drupal::entityQuery('wisski_bundle')->accessCheck(TRUE)->execute();
 
       // now filter them again
       // get all top groups from pbs
@@ -234,7 +235,7 @@ class WisskiEntitySearch extends SearchPluginBase {
         else $selection[$bundle_id] = 0;
       }
     }
-    $bundle_count = \Drupal::entityQuery('wisski_bundle')->count()->execute();
+    $bundle_count = \Drupal::entityQuery('wisski_bundle')->accessCheck(TRUE)->count()->execute();
 
 #    dpm($selection, "sel!");
 

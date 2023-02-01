@@ -54,6 +54,7 @@ class TitleGenerationController extends ControllerBase {
   public static function processBatch($bundle_id, &$context) {
     $amount = 500; // 500 per turn.
     $query = \Drupal::entityQuery('wisski_individual');
+    $query->accessCheck(TRUE);
     $query->condition('bundle', $bundle_id);
     $offset = isset($context['sandbox']['progress']) ? $context['sandbox']['progress'] : 0;
     $query->range($offset, $amount);

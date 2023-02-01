@@ -47,6 +47,7 @@ class ActionController extends ControllerBase {
   public function processBatch($bundle_id, &$context) {
     $amount = 1000; // 1000 should be sufficient
     $query = \Drupal::entityQuery('wisski_individual');
+    $query->accessCheck(TRUE);
     $query->condition('bundle', $bundle_id);
     $offset = isset($context['sandbox']['progress']) ? $context['sandbox']['progress'] : 0;
     $query->range($offset, $amount);

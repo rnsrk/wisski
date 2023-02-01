@@ -1399,6 +1399,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
   protected function queryReferencedEntities($bundle_ids, $title_search_string, $operator) {
     // we start a new query
     $result = \Drupal::entityQuery('wisski_individual')
+      ->accessCheck(TRUE)
       ->condition('title', $title_search_string, $operator)
       ->condition('bundle', $bundle_ids, 'IN')
       ->execute();

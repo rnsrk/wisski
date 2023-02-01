@@ -1502,7 +1502,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
     // For sureness: old code below!
     //$query = \Drupal::entityQuery('file')->condition('uri',$file_uri);
 
-    $query = \Drupal::entityQuery('file')->condition('uri',$local_file_uri)->range(0,1);        
+    $query = \Drupal::entityQuery('file')->accessCheck(TRUE)->condition('uri',$local_file_uri)->range(0,1);        
 
     $file_ids = $query->execute();
     if (!empty($file_ids)) {
@@ -1580,7 +1580,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 
               $out = $image_style->createDerivative($output_uri,$preview_uri);
 
-              $query = \Drupal::entityQuery('file')->condition('uri',$local_file_uri)->range(0,1);
+              $query = \Drupal::entityQuery('file')->accessCheck(TRUE)->condition('uri',$local_file_uri)->range(0,1);
 
               $current_file_ids = $query->execute();
 

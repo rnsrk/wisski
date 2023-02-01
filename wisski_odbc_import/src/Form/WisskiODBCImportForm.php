@@ -613,6 +613,7 @@ class WisskiODBCImportForm extends FormBase {
         $ident_xml = $update_policy_xml->identification;
         // prepare an entity query with the given conditions
         $query = \Drupal::entityQuery('wisski_individual');
+        $query->accessCheck(TRUE);
         // set the bundle we search for
         $query->condition('bundle', $bundleid, '=');
         $condition_count = 0;

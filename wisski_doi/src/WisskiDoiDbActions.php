@@ -142,6 +142,7 @@ class WisskiDoiDbActions implements WisskiDoiDbActionsInterface {
     $individualsPerBundle = [];
     // Query all individuals.
     $wisskiIndividualQuery = \Drupal::entityQuery('wisski_individual')
+      ->accessCheck(TRUE)
       ->condition('bundle', [$bundle_id]);
     $wisskiIndividualResults = $wisskiIndividualQuery->execute();
     foreach ($wisskiIndividualResults as $result => $eid) {
