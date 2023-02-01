@@ -9,8 +9,9 @@ function wisski_textanly_install() {
   drupal_install_schema('wisski_textanly');
 
   // load person name info file into tables
-  _wisski_textanly_bulk_load(db_prefix_tables('{wisski_textanly_person}'), drupal_get_path('module', 'wisski_textanly') . '/default_personnames.csv');
-  _wisski_textanly_bulk_load(db_prefix_tables('{wisski_textanly_person}'), drupal_get_path('module', 'wisski_textanly') . '/default_persontypes.csv');
+  $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_textanly');
+  _wisski_textanly_bulk_load(db_prefix_tables('{wisski_textanly_person}'), $core_path . '/default_personnames.csv');
+  _wisski_textanly_bulk_load(db_prefix_tables('{wisski_textanly_person}'), $core_path . '/default_persontypes.csv');
 
   // set up a default vocab detection step
   $default_vocab = array(
