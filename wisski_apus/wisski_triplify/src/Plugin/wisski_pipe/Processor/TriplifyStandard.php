@@ -667,7 +667,7 @@ class TriplifyStandard extends ProcessorBase {
   */
   function _wisski_texttrip_triplify_standard_relation(&$group_sources, $rel, $target_uri = NULL, $target_class = NULL) {
 
-    $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_core');
+    $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_pathbuilder');
     include_once($core_path . '/wisski_pathbuilder.inc');
     $path_data = wisski_pathbuilder_getPathData($rel);
     $source = $group_sources[$path_data['group_id']];
