@@ -484,7 +484,7 @@ class WisskiPathbuilderForm extends EntityForm {
 
     foreach ($files as $file) {
       // $form['export']['export'][] = array('#type' => 'link', '#title' => $file->filename, '#url' => Url::fromUri(file_create_url($file->uri)));
-      $items[] = ['#type' => 'link', '#title' => $file->filename, '#url' => Url::fromUri(file_create_url($file->uri))];
+      $items[] = ['#type' => 'link', '#title' => $file->filename, '#url' => \Drupal::service('file_url_generator')->generate($file->uri)];
     }
 
     $form['export']['export'] = [
