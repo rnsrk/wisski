@@ -7,10 +7,10 @@
 function wisski_textanly_install() {
   
   drupal_install_schema('wisski_textanly');
-
+  $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_textanly');
   // load personnames file into table
-  _wisski_textanly_bulk_load('wisski_textanly_mw_automaton', drupal_get_path('module', 'wisski_textanly') . '/default_personnames.csv');
-  _wisski_textanly_bulk_load('wisski_textanly_mw_automaton', drupal_get_path('module', 'wisski_textanly') . '/default_persontypes.csv');
+  _wisski_textanly_bulk_load('wisski_textanly_mw_automaton', $core_path . '/default_personnames.csv');
+  _wisski_textanly_bulk_load('wisski_textanly_mw_automaton', $core_path . '/default_persontypes.csv');
 
   // set up a default vocab detection step
   $default_vocab = array(

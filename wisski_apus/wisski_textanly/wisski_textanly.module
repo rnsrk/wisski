@@ -418,13 +418,13 @@ function wisski_textanly_log($ticket, $msg = NULL, $level = 'info') {
 */
 function wisski_textanly_wysiwyg_plugin($editor, $version) {
   if ($editor != 'tinymce') return;
-
+  $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_textanly');
   global $base_root, $base_path;
 
   $plugins = array(
     // sends the text to server and retrieves automatically generated annotations 
     'wisskiTextAnly' => array(
-      'path' => drupal_get_path('module', 'wisski_textanly') . '/tinymce_plugin.js',
+      'path' => $core_path . '/tinymce_plugin.js',
       'buttons' => array(
         'wisskiTextAnlyAuto' => t('Wisski Toggle Periodic Analysis'),
         'wisskiTextAnlyManual' => t('Wisski Analyse (Manual trigger)'),
@@ -521,9 +521,9 @@ function wisski_textanly_test_page() {
   $form['logs']['value'] = array(
     '#value' => '<div><pre id="analyse_log" class="json_dump"></pre></div>',
   );
-
-  drupal_add_js(drupal_get_path('module', 'wisski_textanly') . '/test_page.js', 'module', 'footer');
-  drupal_add_css(drupal_get_path('module', 'wisski_textanly') . '/test_page.css', 'module');
+  $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_textanly');
+  drupal_add_js($core_path . '/test_page.js', 'module', 'footer');
+  drupal_add_css($core_path . '/test_page.css', 'module');
  
   return $form;
 }
@@ -629,9 +629,9 @@ function wisski_textanly_html_log($ticket) {
     drupal_set_header('HTTP/1.1 400 Bad Request');
     return "no ticket specified";
   }
-  
-  drupal_add_js(drupal_get_path('module', 'wisski_textanly') . '/test_page.js', 'module', 'footer');
-  drupal_add_css(drupal_get_path('module', 'wisski_textanly') . '/test_page.css', 'module');
+  $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_textanly');
+  drupal_add_js($core_path . '/test_page.js', 'module', 'footer');
+  drupal_add_css($core_path . '/test_page.css', 'module');
   
   $script = "WissKI.textanly.getLogs('$ticket');";
   drupal_add_js($script,  'inline', 'footer');
