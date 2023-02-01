@@ -128,6 +128,9 @@ function wisski_iip_image_field_widget_form_alter(&$element, FormStateInterface 
 function wisski_iip_image_theme_registry_alter(&$theme_registry) {
 #  dpm($theme_registry);
 #  $theme_registry['colorbox_formatter']['template'] = 'wisskiiip-colorbox-formatter';
-  $theme_registry['colorbox_formatter']['path'] = drupal_get_path('module', 'wisski_iip_image') . '/templates';
+  $path = \Drupal::service('extension.path.resolver')->getPath('module','wisski_iip_image');
+
+  if(!empty($path))
+    $theme_registry['colorbox_formatter']['path'] = $path . '/templates';
 }
 
