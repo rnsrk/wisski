@@ -1572,7 +1572,9 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             // if it is img_nopic.png - we might need to create it.
             if(strpos($file_uri, "wisski_core/images/img_nopic.png") !== FALSE) {
               $image_style = $this->getPreviewStyle();
-              $output_uri = drupal_get_path('module', 'wisski_core') . "/images/img_nopic.png";
+              
+              $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_core');
+              $output_uri = $core_path . "/images/img_nopic.png";
 
               $preview_uri = $image_style->buildUri($output_uri);
 
