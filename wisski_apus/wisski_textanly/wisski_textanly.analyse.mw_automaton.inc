@@ -16,7 +16,8 @@ function wisski_textanly_admin_analyse_mw_automaton($op, $ap) {
     case 'edit':
 
       drupal_load('module', 'wisski_pathbuilder');
-      include_once(drupal_get_path('module', 'wisski_pathbuilder') . '/wisski_pathbuilder.inc');
+      $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_pathbuilder');
+      include_once($core_path . '/wisski_pathbuilder.inc');
 
       //for pb_group: display every top group of the import PB section
       $pb_groups = array();
