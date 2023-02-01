@@ -65,7 +65,8 @@ class QuickEntityPicker extends CKEditorPluginBase implements CKEditorPluginConf
    * {@inheritdoc}
    */
   public function getFile() {
-    return drupal_get_path('module', 'wisski_ckeditor') . '/js/plugins/entityLinkDialog/plugin.js';
+    $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_ckeditor');
+    return $core_path . '/js/plugins/entityLinkDialog/plugin.js';
   }
 
   /**
@@ -93,10 +94,11 @@ class QuickEntityPicker extends CKEditorPluginBase implements CKEditorPluginConf
    */
   public function getButtons() {
 //    return array();
+    $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_ckeditor');
     return array(
       'EntityPicker' => array(
         'label' => t('WissKI Entity Picker'),
-        'image' => drupal_get_path('module', 'wisski_ckeditor') . '/js/plugins/entityLinkDialog/entityLinkDialog.png',
+        'image' => $core_path . '/js/plugins/entityLinkDialog/entityLinkDialog.png',
       ),
     );
   }
