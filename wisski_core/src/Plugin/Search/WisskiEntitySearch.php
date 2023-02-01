@@ -404,13 +404,15 @@ class WisskiEntitySearch extends SearchPluginBase {
 
     $form['actions']['#type'] = 'actions';
 
+    $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_core');
+
     // make a nice export button
     $form['actions']['export'] = array(
       '#name' => 'excel_export',
       '#type' => 'image_button',
       '#title' => 'Export to Excel',
 #      '#value' => $this->t('Export to Excel'),
-      '#src' => drupal_get_path('module', 'wisski_core') . "/images/export_excel.png",
+      '#src' => $core_path . "/images/export_excel.png",
       '#attributes' => [ 'alt' => t('Export to Excel'), ],
       '#op' => 'wisski_core_excel_export',
 #      '#ajax' => [
