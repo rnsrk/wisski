@@ -49,7 +49,7 @@ class WissKI_Sparql_Client extends EasyRdf_Sparql_Client {
   *
   * @ignore
   */
-  protected function request($type, $query) {
+  protected function request($type, $query, array $previousRedirections = []) {
 
     // Check for undefined prefixes
     $prefixes = '';
