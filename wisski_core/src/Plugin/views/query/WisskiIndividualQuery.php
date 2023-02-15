@@ -811,9 +811,9 @@ class WisskiIndividualQuery extends QueryPluginBase
                             #                      dpm($referenced_eid);
                             $referenced_title = wisski_core_generate_title($referenced_eid);
                             #                      dpm($referenced_title);
-                            $values_per_row[$eid][$field][] = array('value' => $referenced_title, 'target_id' => $referenced_eid, 'wisskiDisamb' => $referenced_uri);
+                            $values_per_row[$eid][$field]['x-default'][] = array('value' => $referenced_title, 'target_id' => $referenced_eid, 'wisskiDisamb' => $referenced_uri);
                             // duplicate the information to the field for the entity-management
-                            $values_per_row[$eid][$field_to_check][] = array('value' => $referenced_title, 'target_id' => $referenced_eid, 'wisskiDisamb' => $referenced_uri);
+                            $values_per_row[$eid][$field_to_check]['x-default'][] = array('value' => $referenced_title, 'target_id' => $referenced_eid, 'wisskiDisamb' => $referenced_uri);
                             #$values_per_row[$eid][$field][] = $referenced_eid;
                         } else {
                             // get the language
