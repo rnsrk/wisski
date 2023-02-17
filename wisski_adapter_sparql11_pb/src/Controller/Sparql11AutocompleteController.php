@@ -63,8 +63,8 @@
         }
 
         $pbpath = $pb->getPbPath($pathid);
-        if (isset($pbpath) && isset($pbpath['autocomplete_title_pattern_enabled'])){
-          $this->autocomplete_title_pattern_enabled = $pbpath['autocomplete_title_pattern_enabled'] == TRUE;
+        if (isset($pbpath) && isset($pbpath['displaywidget'])){
+          $this->autocomplete_title_pattern_enabled = $pbpath['displaywidget'] == "wisski_autocomplete_widget";
         }
 
         

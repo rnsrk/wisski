@@ -1,0 +1,13 @@
+<?php
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function wisski_autocomplete_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.wisski_autocomplete':
+      return '<p>' . t('This widget uses the title pattern of the referenced entity instead of a single field value of the selected field.') . '</p>';
+  }
+}
