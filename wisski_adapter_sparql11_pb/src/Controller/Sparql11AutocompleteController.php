@@ -122,6 +122,7 @@
 #      drupal_set_message("engine: " . serialize($sparql));
 #      dpm(microtime());        
       $result = $engine->directQuery($sparql);
+      dpm($result);
 #      dpm(microtime());
       $matches = array();
       $i=0;
@@ -149,10 +150,14 @@
           break;
         }
       }
+      
 
-#     dpm(serialize(new JsonResponse($matches)), "out");
-
-            
+      $autocomplete_sorted = TRUE;
+      if ($autocomplete_sorted) {
+        usort($matches, function($a, $b){ return strcmp($a["label"], $b["label"]); });
+      }
+      dpm($matches, "out");
       return new JsonResponse($matches);
     }
   }
+
