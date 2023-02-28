@@ -3164,7 +3164,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // We distinguish two modes of how to interpret the value:
     // entity ref: the value is an entity id that shall be linked to
     // normal: the value is a literal and may be disambiguated.
-    $is_entity_ref = (($mainprop == 'target_id' && ($path->isGroup() || $pb->getPbEntriesForFid($fieldid)['fieldtype'] == 'entity_reference')) || $autocomplete_title_pattern_enabled === TRUE);
+    $is_entity_ref = (($mainprop == 'target_id' && ($path->isGroup() || $pb->getPbEntriesForFid($fieldid)['fieldtype'] == 'entity_reference')));
 
     // Special case for files:
     if ($target_type == "file" && $mainprop == 'target_id') {
@@ -3218,18 +3218,26 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // Rename to uri.
     $subject_uri = $this->getUriForDrupalId($entity_id, TRUE);
 
+    // extract value in autocomplete_title_pattern_enabled case:
+    // - if user picks existing value in autocomplete, the entity id has to be removed
+    // - if user enters new value into the field, the value *must not* be changed
+    // (the pattern seems to be the only indicator for which case holds -- this means
+    //  that a new value ending in a space followed by a number in braces cannot be 
+    //  inserted when using the "autocomplete enabled" widget!)
+    $autocomplete_new_value = FALSE;
+    if ($autocomplete_title_pattern_enabled && preg_match("/ \(\d+\)$/", $value)) {
+      $value = substr($value, strrpos($value, '(', -1) + 1, (strrpos($value, ')', -1) - strrpos($value, '(', -0) - 1));
+      $autocomplete_new_value = TRUE;
+    }
+
     $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
 
     // 1.) A -> B -> C -> D -> E (l: 9) and 2.) C -> D -> E (l: 5) is the relative, then
     // 1 - 2 is 4 / 2 is 2 - which already is the starting point.
     $start = ((count($path->getPathArray()) - (count($pb->getRelativePath($path)))) / 2);
 
-    if ($is_entity_ref) {
-
-      if ($autocomplete_title_pattern_enabled) {
-
-        $value = substr($value, strrpos($value, '(', -1) + 1, (strrpos($value, ')', -1) - strrpos($value, '(', -0) - 1));
-      }
+    // if we have entity reference *or* {we use the autocomplete widget *and* the user has picked an existing value}
+    if ($is_entity_ref || $autocomplete_new_value === TRUE) {
 
       // If it is a group - we take the whole group path as disamb pos.
       if ($path->isGroup()) {
