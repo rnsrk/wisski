@@ -3224,10 +3224,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // (the pattern seems to be the only indicator for which case holds -- this means
     //  that a new value ending in a space followed by a number in braces cannot be 
     //  inserted when using the "autocomplete enabled" widget!)
-    $autocomplete_new_value = FALSE;
+    $autocomplete_use_existing_value = FALSE;
     if ($autocomplete_title_pattern_enabled && preg_match("/ \(\d+\)$/", $value)) {
       $value = substr($value, strrpos($value, '(', -1) + 1, (strrpos($value, ')', -1) - strrpos($value, '(', -0) - 1));
-      $autocomplete_new_value = TRUE;
+      $autocomplete_use_existing_value = TRUE;
     }
 
     $sparql = "INSERT DATA { GRAPH <" . $datagraphuri . "> { ";
@@ -3237,7 +3237,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $start = ((count($path->getPathArray()) - (count($pb->getRelativePath($path)))) / 2);
 
     // if we have entity reference *or* {we use the autocomplete widget *and* the user has picked an existing value}
-    if ($is_entity_ref || $autocomplete_new_value === TRUE) {
+    if ($is_entity_ref || $autocomplete_use_existing_value === TRUE) {
 
       // If it is a group - we take the whole group path as disamb pos.
       if ($path->isGroup()) {
