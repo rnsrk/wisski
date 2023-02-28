@@ -3201,7 +3201,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // $disambresult = current($disambresult);
       }
       else {
-        // It might be that we have some lagacy data and the language is not
+        // It might be that we have some legacy data and the language is not
         // set in the ts... so we have to do a search without language tag, too.
         $sparql = "SELECT ?x" . (($path->getDisamb() - 1) * 2) . " WHERE { ";
         $sparql .= $this->generateTriplesForPath($pb, $path, $value, NULL, NULL, NULL, $path->getDisamb() - 1, FALSE, '=', 'field', TRUE, [], 0);
