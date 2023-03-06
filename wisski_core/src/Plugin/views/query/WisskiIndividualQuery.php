@@ -538,6 +538,8 @@ class WisskiIndividualQuery extends QueryPluginBase
                     // fetch the preview image
                     # dpm(microtime(), "br");
                     $preview_image_uri = \Drupal::entityTypeManager()->getStorage('wisski_individual')->getPreviewImageUri($eid, $bid);
+#                    $preview_image_uri = utf8_decode($preview_image_uri);
+#                    dpm(serialize($preview_image_uri));
                     # dpm(microtime(), "brout");
 
                     // prefix with public path
@@ -547,7 +549,10 @@ class WisskiIndividualQuery extends QueryPluginBase
 
                     // make html from it!
                     global $base_path;
-                    $row['preview_image'] = '<a href="' . $base_path . 'wisski/navigate/' . $eid . '/view?wisski_bundle=' . $bid . '"><img src="' . $preview_image_uri . '" /></a>';
+                    // Thanks to Arne, by Mark:
+                    // Somehow drupal seems to encode these values, so we decode them here so they are right afterwards
+                    // this seems stupid and wrong...
+                    $row['preview_image'] = '<a href="' . $base_path . 'wisski/navigate/' . $eid . '/view?wisski_bundle=' . $bid . '"><img src="' . utf8_decode($preview_image_uri) . '" /></a>';
                     $pseudo_entity_fields[$eid]['preview_image'] = $row['preview_image'];
 
                 }
@@ -904,6 +909,12 @@ class WisskiIndividualQuery extends QueryPluginBase
                 // if we have a : or something like that in the characters.
                 if(isset($values_per_row[$eid]['title']) && !is_array($values_per_row[$eid]['title']))
                   $values_per_row[$eid]['title'] = array($values_per_row[$eid]['title']);
+                
+                // Thanks to Arne, by Mark:
+                // Somehow drupal seems to encode these values, so we decode them here so they are right afterwards
+                // this seems stupid and wrong...
+                //if(isset($values_per_row[$eid]['preview_image'])) 
+                //  $values_per_row[$eid]['preview_image'] = utf8_decode($values_per_row[$eid]['preview_image']);    
 
                 #        dpm($pseudo_entity_fields);
                 #        dpm($row);
