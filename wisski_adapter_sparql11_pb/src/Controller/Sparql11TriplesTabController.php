@@ -93,7 +93,6 @@ class Sparql11TriplesTabController extends ControllerBase {
     $parameters['target_uri'] = $target_uri;
 
     if($wisski_individual != -1){
-      dpm($wisski_individual);
       $route = self::ENTITY_ROUTE;
       $parameters['wisski_individual'] = $wisski_individual;
     }
