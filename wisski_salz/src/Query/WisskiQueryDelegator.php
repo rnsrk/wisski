@@ -156,7 +156,25 @@ class WisskiQueryDelegator extends WisskiQueryBase {
 
         // requested a specific bundle
         if ($field == "bundle") {
-          array_push($bundleIds, current($cond["value"]));
+          // used to be:
+          // array_push($bundleIds, current($cond["value"]));
+          // --> this doesn't work for conditions such as
+          // a:4:{s:5:"field";s:6:"bundle";s:5:"value";s:32:"b19fe15486898af2e4043eb61314f79f";s:8:"operator";N;s:8:"langcode";N;}
+          // use case: 
+          // - activate "Extend -> Layout builder"
+          // - go to "Structure -> WissKI Entities and Bundles -> Werk -> Manage display"
+          // - tic *both* "Use Layout Builder" *and* "Allow each wisski entity to have its layout customized."
+          // - click on "Save".
+          // Error message: 
+          // Call to a member function countQuery() on null in Drupal\wisski_salz\Query\WisskiQueryDelegator->executeCount() 
+          // (line 346 of wisski_salz/src/Query/WisskiQueryDelegator.php) 
+
+          if (is_array($cond["value"])) {
+            array_push($bundleIds, current($cond["value"]));
+          }
+          else {
+            array_push($bundleIds, $cond["value"]);
+          }
           continue;
         }
 
