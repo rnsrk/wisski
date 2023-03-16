@@ -695,7 +695,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }  */
     }
 
-    // dpm($query, "query?");.
+#    dpm($query, "query?");
     $result = $this->directQuery($query);
     $output = [];
     foreach ($result as $obj) {
@@ -792,7 +792,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getClassesFromStore($property = NULL, $property_after = NULL, $fast_mode = FALSE) {
 
     $query = "SELECT DISTINCT ?class WHERE {  {"
-      . "{ {?class a owl:Class. } UNION { ?class a rdfs:Class.} }";
+      . "{ {?class a owl:Class. } UNION { ?class a rdfs:Class.} } ";
     if ($fast_mode) {
       if (isset($property)) {
         $query .= "<$property> rdfs:range ?class. ";
@@ -804,7 +804,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     else {
       if (isset($property)) {
         $query .= "<$property> rdfs:subPropertyOf* ?r_super_prop. "
-          . "?r_super_prop rdfs:range ?r_super_class. "
+          . "{ { ?r_super_prop rdfs:range ?r_super_class. } UNION "
+          . "{ ?r_super_prop owl:inverseOf ?inv. ?inv rdfs:domain ?r_super_class. } } "
           . "FILTER NOT EXISTS { "
           . "?r_sub_prop rdfs:subPropertyOf+ ?r_super_prop. "
           . "<$property> rdfs:subPropertyOf* ?r_sub_prop. "
@@ -814,7 +815,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }
       if (isset($property_after)) {
         $query .= "<$property_after> rdfs:subPropertyOf* ?d_super_prop. "
-          . "?d_super_prop rdfs:domain ?d_super_class. "
+          . "{ { ?d_super_prop rdfs:domain ?d_super_class. } UNION "
+          . "{ ?d_super_prop owl:inverseOf ?inv. ?inv rdfs:domain ?d_super_class. } } "
           . "FILTER NOT EXISTS { "
           . "?d_sub_prop rdfs:subPropertyOf+ ?d_super_prop. "
           . "<$property_after> rdfs:subPropertyOf* ?d_sub_prop. "
@@ -826,6 +828,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $query .= "} }";
 
     // drupal_set_message(serialize($query));
+#    dpm($query, "query?");
     $result = $this->directQuery($query);
 
     if (count($result) == 0) {
