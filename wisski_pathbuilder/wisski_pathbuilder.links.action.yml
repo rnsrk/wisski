@@ -28,11 +28,11 @@ entity.wisski_pathbuilder.addExisting:
   appears_on:
     - entity.wisski_pathbuilder.edit_form
 
-entity.wisski_pathbuilder.edit:
-  route_name: 'entity.wisski_pathbuilder.edit_form'
-  title: 'Go Back'
-  appears_on:
-    - entity.wisski_pathbuilder.add_existing_form
+# entity.wisski_pathbuilder.edit:
+#  route_name: 'entity.wisski_pathbuilder.edit_form'
+#  title: 'Huhu'
+#  appears_on:
+#    - entity.wisski_pathbuilder.add_existing_form
 
 
 

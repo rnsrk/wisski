@@ -50,6 +50,24 @@ class WisskiPathbuilderAddExistingForm extends EntityForm {
     
     return $form;
   }
+
+  protected function actions(array $form, FormStateInterface $form_state) {
+    $actions = parent::actions($form, $form_state);
+    unset($actions['delete']);
+
+    $actions['cancel'] = array(
+      '#type' => 'link',
+      '#title' => $this->t('Cancel'),
+      '#attributes' => [
+        'class' => ['button', 'button--danger'],
+      ],
+      '#url' => Url::fromRoute('entity.wisski_pathbuilder.edit_form', array(
+        'wisski_pathbuilder' => $this->entity->id(),
+      )),
+    );
+
+    return $actions;
+  }
   
   /**
    * {@inheritdoc}
