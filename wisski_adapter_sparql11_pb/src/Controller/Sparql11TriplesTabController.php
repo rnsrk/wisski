@@ -13,46 +13,124 @@ use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
 use Drupal\Core\Link;
 
-use \EasyRdf\Resource as EasyRdf_Resource;
 
 class Sparql11TriplesTabController extends ControllerBase {
 
-  public function forward($wisski_individual) {
+  // handles the triple tab from an entity
+  const ENTITY_ROUTE = 'wisski_adapter_sparql11_pb.wisski_individual.triples';
 
+  // handles triple tab only provided with URI
+  const URI_ROUTE = 'wisski_adapter_sparql11_pb.triples';
 
+    
+  /**
+   * Routine for handling the WissKI Entity Triples Tab.
+   *
+   * @param  int $wisski_individual
+   *  The EID of the current entity
+   * 
+   * @return array
+   */
+  public function forward(int $wisski_individual) {
     $storage = \Drupal::service('entity_type.manager')->getStorage('wisski_individual');
 
     //let's see if the user provided us with a bundle, if not, the storage will try to guess the right one
     $match = \Drupal::request();
+
+    // TODO: check if this is evil
     $bundle_id = $match->query->get('wisski_bundle');
-    if ($bundle_id) $storage->writeToCache($wisski_individual,$bundle_id);
+    if ($bundle_id) $storage->writeToCache($wisski_individual, $bundle_id);
 
     // get the target uri from the parameters
     $target_uri = $match->query->get('target_uri');
 
-    $entity = $storage->load($wisski_individual);
-    
     // if it is empty, the entity is the starting point
-    if(empty($target_uri)) {
-
-#      $target_uri = AdapterHelper::getUrisForDrupalId($entity->id());
-      $target_uri = AdapterHelper::getOnlyOneUriPerAdapterForDrupalId($entity->id());      
+    if (empty($target_uri)) {
+      $target_uri = AdapterHelper::getOnlyOneUriPerAdapterForDrupalId($wisski_individual);
       $target_uri = current($target_uri);
-      
     } else // if not we want to view something else
       $target_uri = urldecode($target_uri);
+
+    return $this->generateTriplesForm($target_uri, $wisski_individual);
+  }
+
+    
+  /**
+   * Routine for handling the headless Triples tab.
+   *
+   * @return array
+   */
+  function forwardUri(){
+		$query = \Drupal::request();
+		// read URI from query
+		$target_uri = $query->get('target_uri', null);
+
+    if(empty($target_uri)){
+      // TODO: build a form that allows inputting a URI here
+      return array(
+        '#type' => 'item',
+        '#markup' => 'To pass a URI please use the URI parameter ?target_uri='
+      );
+    }
+    return $this->generateTriplesForm($target_uri);
+  }
+
+  
+  /**
+   * Generates the URL for the passed URI depending on the context
+   *
+   * @param  string $route
+   *  The route to be used for redirection
+   * @param  string $target_uri
+   *  The URI that should be linked to
+   * @param  int $wisski_individual_id
+   *  The EID that is used for context
+   * 
+   * @return Url
+   */
+  private function getURL(string $route, string $target_uri, int $wisski_individual=-1){
+    $parameters = [];
+    $parameters['target_uri'] = $target_uri;
+
+    if($wisski_individual != -1){
+      $route = self::ENTITY_ROUTE;
+      $parameters['wisski_individual'] = $wisski_individual;
+    }
+    return Url::fromRoute($route, $parameters);
+  }
       
+  /**
+   * Builds a triples form consisting of incoming and 
+   * outgoing triples for a particular URI
+   *
+   * @param  string $target_uri
+   *  The URI for which the tables 
+   * @param  int $wisski_individual
+   * 
+   * @return array
+   */
+  function generateTriplesForm(string $target_uri, int $wisski_individual=-1) {
+    $route = self::URI_ROUTE;
+    if($wisski_individual != -1){
+      $route = self::ENTITY_ROUTE;
+    }
+
+    if(empty($target_uri)){
+      return array(
+        '#type' => 'markup',
+        '#markup' => $this->t("Please provide a URI via the ?target_uri= query parameter.")
+      );
+    }
+
     // go through all adapters    
     $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
-
-    #$my_url = \Drupal\Core\Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', $entity->id()));
 
     $form['in_triples'] = array(
       '#type' => 'table',
       '#caption' => $this->t('In-coming triples'),
       '#header' => array('Subject', 'Predicate', 'Object', 'Graph', 'Adapter'),
     );
-    
+
     $form['out_triples'] = array(
       '#type' => 'table',
       '#caption' => $this->t('Out-going triples'),
@@ -65,28 +143,26 @@ class Sparql11TriplesTabController extends ControllerBase {
       if ($e instanceof Sparql11Engine) {
         $values = 'VALUES ?x { <' . $target_uri . '> } ';
         $q = "SELECT ?g ?s ?sp ?po ?o WHERE { $values { { GRAPH ?g { ?s ?sp ?x } } UNION { GRAPH ?g { ?x ?po ?o } } } }";
-#        dpm($q);
+        #        dpm($q);
         $results = $e->directQuery($q);
         foreach ($results as $result) {
-#var_dump($result);
+          #var_dump($result);
           if (isset($result->sp)) {
-            
-            $existing_bundles = $e->getBundleIdsForUri($result->s->getUri());
 
-            if(empty($existing_bundles))
-              $subjecturi = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->s->getUri() ) );
+            $existing_bundles = $e->getBundleIdsForUri($result->s->getUri());
+            if (empty($existing_bundles)){
+              $subjecturi = $this->getUrl($route, $target_uri, $wisski_individual);
+            }
             else {
               $remote_entity_id = $e->getDrupalId($result->s->getUri());
-              $subjecturi = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $remote_entity_id, 'target_uri' => $result->s->getUri() ) );
+              $subjecturi = $this->getURL($route, $result->s->getUri(), $remote_entity_id);
             }
 
-            $predicateuri = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->sp->getUri() ) );
+            $predicateuri = $this->getURL($route, $result->sp->getUri(), $wisski_individual);
+            $objecturi = $this->getUrl($route, $target_uri, $wisski_individual);
 
-            $objecturi = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $target_uri ) );
-
-#            dpm(\Drupal::l($this->t('sub'), $subjecturi));
             $form['in_triples'][] = array(
-#              "<" . $result->s->getUri() . ">",
+              #              "<" . $result->s->getUri() . ">",
               Link::fromTextAndUrl($this->t($result->s->getUri()), $subjecturi)->toRenderable(),
               Link::fromTextAndUrl($this->t($result->sp->getUri()), $predicateuri)->toRenderable(),
               Link::fromTextAndUrl($this->t($target_uri), $objecturi)->toRenderable(),
@@ -94,21 +170,19 @@ class Sparql11TriplesTabController extends ControllerBase {
               array('#type' => 'item', '#title' => $label),
             );
           } else {
-            
-            $subjecturi = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $target_uri ) );
 
-            $predicateuri = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->po->getUri() ) );
-            
-            if($result->o instanceof \EasyRdf_Resource or get_class($result->o) == "EasyRdf\Resource" ) {
+            $subjecturi = $this->getURL($route, $target_uri, $wisski_individual);
+            $predicateuri = $this->getURL($route, $result->po->getUri(), $wisski_individual);
+
+            if ($result->o instanceof \EasyRdf_Resource or get_class($result->o) == "EasyRdf\Resource") {
               try {
-              
+
                 $existing_bundles = $e->getBundleIdsForUri($result->o->getUri());
-                
-                if(empty($existing_bundles))
-                  $objecturi = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $entity->id(), 'target_uri' => $result->o->getUri() ) );
+                if (empty($existing_bundles))
+                  $objecturi = $this->getURL($route, $result->o->getUri(), $wisski_individual);
                 else {
-                  $remote_entity_id = $e->getDrupalId($result->o->getUri());              
-                  $objecturi = Url::fromRoute('wisski_adapter_sparql11_pb.wisski_individual.triples', array('wisski_individual' => $remote_entity_id, 'target_uri' => $result->o->getUri() ) );
+                  $remote_entity_id = $e->getDrupalId($result->o->getUri());
+                  $objecturi = $this->getUrl($route, $result->o->getUri(), $remote_entity_id);
                 }
                 $got_target_url = TRUE;
               } catch (InvalidParameterException $ex) {
@@ -131,11 +205,9 @@ class Sparql11TriplesTabController extends ControllerBase {
         }
       }
     }
-    
 
     $form['#title'] = $this->t('View Triples for ') . $target_uri;
 
     return $form;
-
   }
 }
