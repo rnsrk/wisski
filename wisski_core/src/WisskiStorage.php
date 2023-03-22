@@ -1480,11 +1480,14 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
     $cid = 'wisski_file_uri2id_'.md5($file_uri);
 #    dpm(microtime(), "in fid");
     if ($cache = \Drupal::cache()->get($cid)) {
-      // check if it really exists.
+      // what do we have in the cache?
 #      dpm(microtime(), "got fid");
-      if(file_exists($file_uri) && filesize($file_uri) > 0) {
-        list($file_uri,$local_file_uri) = $cache->data;
-        return $file_uri;
+      list($c_file_id,$c_local_file_uri) = $cache->data;
+      
+      // check if it really exists.
+      if(file_exists($c_local_file_uri) && filesize($c_local_file_uri) > 0) {
+        // return what we found in the cache.
+        return $c_file_id;
       } else {
         // file does not exist, invalide cache!
         \Drupal::cache()->delete($cid);
@@ -2592,6 +2595,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
       //process the image with the style
       $preview_uri = $image_style->buildUri($output_uri);
       #dpm(array('output_uri'=>$output_uri,'preview_uri'=>$preview_uri));
+
+#      dpm($preview_uri);
       
       // file already exists?
       if(file_exists($preview_uri)) {
@@ -2605,6 +2610,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 #      dpm($image_style->createDerivative($output_uri,$preview_uri), "create!");
       if ($out = $image_style->createDerivative($output_uri,$preview_uri)) {
         //drupal_set_message('Style did it - uri is ' . $preview_uri);
+#        dpm($preview_uri, "after?");
         WisskiCacheHelper::putPreviewImageUri($entity_id,$preview_uri);
         //we got the image resized and can output the derivates URI
         return $preview_uri;
