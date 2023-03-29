@@ -1301,7 +1301,13 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
         // only do that if we really ask for something
         if(empty($entity_ids)) {
           if (!empty($preferred_bundles)) {
-            $entity_ids = $this->queryReferencedEntities($preferred_bundles, $value, $operator);
+            if($operator == "NOT_EMPTY" || $operator == "EMPTY") {
+              // By Mark:
+              // in this case the lower part is doing the work, so we don't have to do anything here
+              // it would just slow everything.
+            } else {
+              $entity_ids = $this->queryReferencedEntities($preferred_bundles, $value, $operator);
+            }
 #          dpm($entity_ids, "ents?");
           }
         }
@@ -1313,7 +1319,7 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
           $entity_ids = $this->queryReferencedEntities(array_keys($bundles), $value, $operator);
         }
 
-        if (empty($entity_ids)) {
+        if (empty($entity_ids) && !($operator == "NOT_EMPTY" || $operator == "EMPTY")) {
           // there are no entities that match the title, therefore the whole
           // condition cannot be satisfied and we have to abort
           return NULL;
