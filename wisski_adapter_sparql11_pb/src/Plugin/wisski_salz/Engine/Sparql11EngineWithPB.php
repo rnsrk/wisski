@@ -2950,6 +2950,16 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             $values = is_array($primitiveValue) ? $primitiveValue : explode(",", $primitiveValue);
             $primitiveValue = '"' . join('","', $values) . '"';
           }
+          elseif ($op == 'IN_REGEX' || $op == 'NOT IN_REGEX') {
+            $regex = TRUE;
+            $negate = ($op == 'NOT IN' );
+            $safe = TRUE;
+            $values = is_array($primitiveValue) ? $primitiveValue : explode(",", $primitiveValue);
+            foreach ($values as &$v) {
+              $v = $this->escapeSparqlRegex($v, TRUE);
+            }
+            $primitiveValue = join('|', $values);
+          }
           else {
             if (strtoupper($op) == "LONGERTHAN" || strtoupper($op) == "SHORTERTHAN") {
               $regex = FALSE;

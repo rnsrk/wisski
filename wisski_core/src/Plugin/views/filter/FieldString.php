@@ -72,6 +72,12 @@ class FieldString extends ViewsString {
         'method' => 'opMulti',
         'values' => 1,
       ),
+      'IN_REGEX' => array(
+        'title' => t('One of Regex'),
+        'short' => t('in'),
+        'method' => 'opMulti',
+        'values' => 1,
+      ),
     );
 
 #    dpm($operators, "old");
@@ -108,6 +114,7 @@ class FieldString extends ViewsString {
   }
 
   public function opEqual($field) {
+#    dpm("Beware - op equal " . serialize($field));
     $this->query->addWhere($this->options['group'], $field, $this->value, '=');
   }
   
