@@ -228,7 +228,11 @@ class WissKIPermalinkURIFormatter extends FormatterBase implements ContainerFact
     // get the entity id from the route
     // TODO: see if this works or if it is necessary to dig 
     // for the eid in the query parameters
-    $routeEid = \Drupal::routeMatch()->getParameter('wisski_individual')->id();
+    $ent = \Drupal::routeMatch()->getParameter('wisski_individual');
+    $routeEid = null;
+    if($ent){
+      $routeEid = $ent->id();
+    }
 
     foreach ($items as $delta => $item) {
       $currentEid = AdapterHelper::getDrupalIdForUri($item->value);
