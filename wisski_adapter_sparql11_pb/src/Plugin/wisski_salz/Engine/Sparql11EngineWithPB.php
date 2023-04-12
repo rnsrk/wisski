@@ -911,10 +911,19 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
               $ret = array_merge($ret, $new_ret);
             } else {
               $ordered_ret = array();
+              
+              $not_ordered = array();
+              
               foreach($new_ret as $one_ret) {
-                $ordered_ret[$cached_field_values[$one_ret]->delta] = $one_ret;
-
+                if(isset($cached_field_values[$one_ret]) && isset($cached_field_values[$one_ret]->delta) ) {
+                  $ordered_ret[$cached_field_values[$one_ret]->delta] = $one_ret;
+                } else {
+                  $not_ordered[] = $one_ret;
+                }
               }
+
+              if(!empty($not_ordered))
+                $ordered_ret = array_push($ordered_ret, $not_ordered);
 
               // sort by keys
               ksort($ordered_ret);
