@@ -923,7 +923,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
               }
 
               if(!empty($not_ordered))
-                $ordered_ret = array_push($ordered_ret, $not_ordered);
+                array_push($ordered_ret, $not_ordered);
 
               // sort by keys
               ksort($ordered_ret);
