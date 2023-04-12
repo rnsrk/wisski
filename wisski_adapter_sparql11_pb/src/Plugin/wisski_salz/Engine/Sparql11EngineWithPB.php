@@ -922,8 +922,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
                 }
               }
 
-              if(!empty($not_ordered))
-                array_push($ordered_ret, $not_ordered);
+              // if we found things that don't have a delta we just append
+              // them in the order we got them.
+              if(!empty($not_ordered)) {
+                foreach($not_ordered as $one_thing) {
+                  $ordered_ret[] = $one_thing;
+                }
+              }
 
               // sort by keys
               ksort($ordered_ret);
