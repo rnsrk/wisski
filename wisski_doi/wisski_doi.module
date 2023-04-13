@@ -47,7 +47,7 @@ function wisski_doi_theme() {
 function wisski_doi_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'help.page.wisski_doi':
-      return '<p>' . t('This module provides the possibility to request DOIs for single WissKI entities. More information and tutorial at <a href="https://wiss-ki.eu/documentation/DOIs">wiss-ki.eu</a>.</p>');
+      return '<p>' . t('This module provides the possibility to request DOIs for single WissKI entities. More information and tutorial at <a href=":wisski_doi_url">wiss-ki.eu</a>', [':wisski_doi_url' => 'https://wiss-ki.eu/documentation/DOIs']) . '<p>';
   }
 }
 
