@@ -521,6 +521,7 @@ class WisskiPathbuilderForm extends EntityForm {
 
     $element = parent::actions($form, $form_state);
     $element['#type'] = '#dropbutton';
+    $element['#attributes'] = ['class' => array('wisski-pathbuilder__submit-region')];
 
     // Only add this to "normal" ones...
     if ($this->entity->getType() != "linkblock" && strpos($this->entity->getName(), "(Linkblock)") === FALSE && $this->entity->getName() != "WissKI Linkblock PB" && !is_null($this->entity->id())) {

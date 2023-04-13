@@ -52,3 +52,7 @@
   text-decoration: none;
 
 }
+
+.wisski-pathbuilder__submit-region li.dropbutton__item {
+  max-width: unset;
+}
