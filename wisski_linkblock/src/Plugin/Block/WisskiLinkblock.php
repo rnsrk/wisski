@@ -162,9 +162,14 @@ class WisskiLinkblock extends BlockBase {
     }
     // Else use just the given one.
     else {
-      $adapters = [Adapter::load($pb->getAdapterId())];
+      $aid = $pb->getAdapterId();
+      if ($aid == NULL) {
+        \Drupal::messenger()->addWarning("Danger Zone - This pathbuilder doesn't have an Adapter ID!");
+      } else {
+        $adapters = [Adapter::load($aid)];
+      }
     }
-
+    
     foreach ($pbs as $datapb) {
 
       // Skip the own one only in multimode.
