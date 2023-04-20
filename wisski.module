@@ -8,6 +8,6 @@ use Drupal\Core\Routing\RouteMatchInterface;
 function wisski_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'help.page.wisski':
-      return '<p>' . t('This module is just a wrapper for the basic setup of a WissKI environment. Please visit <a href=":wisski_url">wiss-ki.eu</a> for more information.', [':wisski_url' => 'https://wiss-ki.eu']) . '</p>';
+      return '<p>' . t('This module only forces the installation of the four basic WissKI components: The "WissKI Core" implements the WissKI entity, storage and all basic configuration pages. The "WissKI Abstraction Layer Zero" lets you add connections to data repositories of various kinds. To talk to repositories which offers a SPARQL 1.1 endpoint, the module "WissKI SPARQL 1.1 Adapter with Pathbuilder" provides configuration options and translate your queries and statements to SPARQL. When these three modules are activated, you can import an ontology that provides the vocabulary and constraints for a semantic data model. Finally, the "WissKI Pathbuilder" brings a grafical user interface that allows to annotate Drupals bundles and fields with semantics based on the imported ontology and let you define the field definitions - and thus offers a new place for semantic data modelling alongside Drupal\'s Content Types. Please visit <a href=":wisski_url">wiss-ki.eu</a> for more information.', [':wisski_url' => 'https://wiss-ki.eu']) . '</p>';
   }
 }
