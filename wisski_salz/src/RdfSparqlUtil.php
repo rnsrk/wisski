@@ -118,7 +118,7 @@ class RdfSparqlUtil {
     // cast it, all other types must fail
     if (!is_scalar($literal)) {
       $error = 'First parameter expected to be string, got ' . gettype($literal);
-      throw new \IllegalArgumentException($error);
+      throw new \InvalidArgumentException($error);
     }
     $literal = (string) $literal;
     // we use the json encoding function as json has the same escaping strategy
@@ -144,7 +144,7 @@ class RdfSparqlUtil {
     // cast it, all other types must fail
     if (!is_scalar($regex)) {
       $error = 'First parameter expected to be string, got ' . gettype($regex);
-      throw new \IllegalArgumentException($error);
+      throw new \InvalidArgumentException($error);
     }
     $regex = (string) $regex;
     // these are the special regex chars: \.*+?^$()[]{}|
