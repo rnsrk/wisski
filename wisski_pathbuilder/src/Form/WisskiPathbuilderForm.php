@@ -524,14 +524,22 @@ class WisskiPathbuilderForm extends EntityForm {
     $element['#attributes'] = ['class' => array('wisski-pathbuilder__submit-region')];
 
     // Only add this to "normal" ones...
-    if ($this->entity->getType() != "linkblock" && strpos($this->entity->getName(), "(Linkblock)") === FALSE && $this->entity->getName() != "WissKI Linkblock PB" && !is_null($this->entity->id())) {
-      $element['generate'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Save and generate bundles and fields'),
-        '#submit' => ['::submitForm', '::save_and_generate_forms'],
-        '#weight' => -10,
-        '#dropbutton' => 'save',
-      ];
+    $entityType = $this->entity->getType();
+    $entityName = $this->entity->getName();
+    $entityId = $this->entity->id();
+    
+    if ($entityType != "linkblock" && !is_null($entityId)) {
+      if (!empty($entityName)) {
+        if (strpos($entityName, "(Linkblock)") === FALSE && $entityName != "WissKI Linkblock PB" ) {
+          $element['generate'] = [
+            '#type' => 'submit',
+            '#value' => $this->t('Save and generate bundles and fields'),
+            '#submit' => ['::submitForm', '::save_and_generate_forms'],
+            '#weight' => -10,
+            '#dropbutton' => 'save',
+          ];
+        }
+      }
     }
 
     $element['submit']['#value'] = $this->t('Save without form generation');

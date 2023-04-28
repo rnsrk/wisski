@@ -21,6 +21,7 @@ abstract class Sparql11Engine extends EngineBase {
   protected $header;
 
   protected $read_url;
+
   protected $write_url;
 
   protected $is_federatable;
@@ -37,6 +38,8 @@ abstract class Sparql11Engine extends EngineBase {
 
   protected $has_drupal_namespace;
 
+  protected $store;
+  
   /**
    * {@inheritdoc}
    */
