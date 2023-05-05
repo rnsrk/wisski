@@ -16,8 +16,8 @@ class ASTBuilder {
   const TYPE_LOGICAL_AGGREGATE = "logical_aggregate";
 
    /*
-    An AST of a Query is represented as follows:   
-   
+    An AST of a Query is represented as follows:
+
     AST = LOGICAL_AGGREGATE | FILTER | "null"
 
     LOGICAL_AGGREGATE = {
@@ -34,7 +34,7 @@ class ASTBuilder {
       "langcode": ...
     }
 
-    A NULL AST indiciates that an empty condition was provided. 
+    A NULL AST indiciates that an empty condition was provided.
 
     */
 
@@ -53,7 +53,7 @@ class ASTBuilder {
     if (!($condition instanceOf ConditionParent)) {
       return NULL;
     }
-  
+
     // get the child conditions of this condition!
     $children = [];
     foreach ($condition->conditions() as $cond) {
@@ -63,11 +63,11 @@ class ASTBuilder {
         array_push($children, self::makeFilterAST($cond));
         continue;
       }
-    
+
       // it's an aggregate
       array_push($children, self::makeAggregateAST($field));
     }
-  
+
     // build the child array
     return array(
       "type" => self::TYPE_LOGICAL_AGGREGATE,
@@ -103,14 +103,14 @@ class ASTBuilder {
   public static function simplifyAST(?array $ast) {
 
     // TODO: This function is somewhat slow beecause we constantly re-create child arrays.
-    // For now this is ok, but we might want to change that in the future. 
+    // For now this is ok, but we might want to change that in the future.
 
     // if an AST is null, we're done!
     if ($ast == NULL) {
       return NULL;
     }
-    
-    // in the filter case, just check that we are a known filter. 
+
+    // in the filter case, just check that we are a known filter.
     // when not a known filter, return NULL.
     if ($ast['type'] == self::TYPE_FILTER) {
       if (!self::isKnownField($ast['field'])) {
@@ -119,8 +119,8 @@ class ASTBuilder {
       return $ast;
     }
 
-    // because we're not a filer, we must be a logical aggregate. 
-  
+    // because we're not a filer, we must be a logical aggregate.
+
     // Rebuild the children array.
     // This variable will eventually contain all the rebuilt children.
     $children = array();
@@ -134,7 +134,7 @@ class ASTBuilder {
     foreach($ast['children'] as $child) {
       // simplify recursively!
       $child = self::simplifyAST($child);
-     
+
       // child is NULL => skip
       if ($child == NULL) {
         continue;
@@ -160,7 +160,7 @@ class ASTBuilder {
     foreach ($aggregate_children as $operator => $group) {
       // $group is guaranteed not recursively contain any groups.
       // $group is also non-empty (otherwise $operator would not exist).
-      
+
       // if we have a single child, don't do anything expensive and just use it.
       if (count($group) == 1) {
         array_push($children, $group[0]);
@@ -191,7 +191,7 @@ class ASTBuilder {
     }
 
     // now that we have recreated the child array we're almost done.
-    // sort them and check for special cases. 
+    // sort them and check for special cases.
     $ast['children'] = self::dedupAndOrderASTs($children);
     $count = count($ast['children']);
 
@@ -202,7 +202,7 @@ class ASTBuilder {
       // Logically this is not the case for an empty 'OR'.
       //
       // We still do this because it makes the code simpler (don't need to inspect the operator)
-      // and no user would probably provide an empty OR group. 
+      // and no user would probably provide an empty OR group.
       if(Debuggable::debug_enabled()) {
         if ($ast['operator'] == 'OR') {
           Debuggable:debug("Dropping empty 'OR' " . self::TYPE_LOGICAL_AGGREGATE);
@@ -225,33 +225,33 @@ class ASTBuilder {
   /** checks if $filter is a known filter */
   private static function isKnownField(string $field) {
     if (
-      $field == 'eid' || 
-      $field == 'bundle' || 
-      $field == 'bundle_label' || 
+      $field == 'eid' ||
+      $field == 'bundle' ||
+      $field == 'bundle_label' ||
     //  $field == 'bundles' || // TODO: not sure where this can happen
-      $field == 'title' || 
-      $field == 'preferred_uri' || 
-      $field == 'status' || 
+      $field == 'title' ||
+      $field == 'preferred_uri' ||
+      $field == 'status' ||
       $field == 'preview_image'
     ) {
       return true;
     }
 
     // Field representing a path builder field!
-    // "${path}.${field}"
+    // "{$path}.{$field}"
     return str_contains($field, '.');
   }
 
   /** deduplicats and consistently orders a list of asts */
   private static function dedupAndOrderASTs(array $asts) {
-    
+
     // create an associative array of stringifcation => value
     // this removes duplicates.
     $assoc = array();
     foreach ($asts as $ast) {
       $assoc[self::stringifyAST($ast)] = $ast;
     }
-    
+
     // sort the associative array by the keys
     ksort($assoc);
 
@@ -259,9 +259,9 @@ class ASTBuilder {
     return array_values($assoc);
   }
 
-  /** 
+  /**
    * Turns an AST into a string.
-   * 
+   *
    * Callers may rely on the fact that two ASTs are (structurally) identical if their string representations are identical.
    */
   public static function stringifyAST(?array $ast) {

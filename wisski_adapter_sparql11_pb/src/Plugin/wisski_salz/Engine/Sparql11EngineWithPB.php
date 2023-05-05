@@ -559,7 +559,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if (!empty($ontology_graphs)) {
         $from_graphs = "\nFROM <" . join(">\nFROM <", $ontology_graphs) . ">\n";
       }
-      $query = "SELECT DISTINCT ?property${from_graphs}WHERE {\n";
+      $query = "SELECT DISTINCT ?property{$from_graphs}WHERE {\n";
 
       if (isset($class)) {
         $query .=
@@ -911,9 +911,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
               $ret = array_merge($ret, $new_ret);
             } else {
               $ordered_ret = array();
-              
+
               $not_ordered = array();
-              
+
               foreach($new_ret as $one_ret) {
                 if(isset($cached_field_values[$one_ret]) && isset($cached_field_values[$one_ret]->delta) ) {
                   $ordered_ret[$cached_field_values[$one_ret]->delta] = $one_ret;
@@ -2737,7 +2737,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
               $prop = substr($prop, 1);
             }
 
-            $query .= "GRAPH ${graphvar}_1 { ";
+            $query .= "GRAPH {$graphvar}_1 { ";
             $inverse = $this->getInverseProperty($prop);
             // drupal_set_message("inverse?: " . microtime());
             // If there is not an inverse, don't do any unions.
@@ -3249,7 +3249,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // - if user picks existing value in autocomplete, the entity id has to be removed
     // - if user enters new value into the field, the value *must not* be changed
     // (the pattern seems to be the only indicator for which case holds -- this means
-    //  that a new value ending in a space followed by a number in braces cannot be 
+    //  that a new value ending in a space followed by a number in braces cannot be
     //  inserted when using the "autocomplete enabled" widget!)
     $autocomplete_use_existing_value = FALSE;
     if ($autocomplete_title_pattern_enabled && preg_match("/ \(\d+\)$/", $value)) {
@@ -4011,7 +4011,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     //
     // Database contains ecrm:http://erlangen-crm.org/200717/
     // $this->putNamespace("ecrm", "http://erlangen-crm.org/211015/");
-    // Search the database for all names that start with "${short_name}_"
+    // Search the database for all names that start with "{$short_name}_"
     // then generate a new name that is different from the existing ones.
     $short_name_prefix = str_replace(['\\', '_', '%'], [
       '\\\\',

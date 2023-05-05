@@ -518,7 +518,7 @@ class Query extends WisskiQueryBase {
             continue; // with next condition
           }
 #          dpm($pb_and_path, "pbandp?");
-          
+
           $pbid = $pb_and_path[0];
           $pbs = $this->getPbs();
           if (!isset($pbs[$pbid])) {
@@ -659,9 +659,9 @@ class Query extends WisskiQueryBase {
             $vars[$starting_position] = "x0";
             $i = $this->varCounter++;
             for ($j = count($path->getPathArray()); $j > $starting_position; $j--) {
-              $vars[$j] = "c${i}_x$j";
+              $vars[$j] = "c{$i}_x$j";
             }
-            $vars['out'] = "c${i}_out";
+            $vars['out'] = "c{$i}_out";
 
             $sort_part = $this->getEngine()->generateTriplesForPath($pb, $path, "", NULL, NULL, 0, $starting_position, FALSE, '=', 'field', FALSE, $vars);
 
@@ -674,9 +674,9 @@ class Query extends WisskiQueryBase {
             $sort_query_parts = $sort_query_parts . $sort;
             #}
             if(!empty($path->id()) && !empty($pb->getPbPath($path->id())) && $pb->getPbPath($path->id())["fieldtype"] == "decimal" || $pb->getPbPath($path->id())["fieldtype"] == "number")
-              $sort_params = $elem['direction'] . "(xsd:integer(?c${i}_out)) ";
+              $sort_params = $elem['direction'] . "(xsd:integer(?c{$i}_out)) ";
             else
-              $sort_params = $elem['direction'] . "(STR(?c${i}_out)) ";
+              $sort_params = $elem['direction'] . "(STR(?c{$i}_out)) ";
 
             $this->orderby = $this->orderby . $sort_params;
 
@@ -1115,16 +1115,16 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
       return "";
 
     $basefieldinfo = $this->getEngine()->getBaseFieldGraph();
-    
+
     $basefield = "eid";
     $basefieldurl = $this->getEngine()->getDefaultDataGraphUri() . $basefield;
-    
-    if(is_array($value) && count($value) == 1) { 
+
+    if(is_array($value) && count($value) == 1) {
       $value = current($value);
-      if($operator == "IN") 
-        $operator = "=";  
+      if($operator == "IN")
+        $operator = "=";
     }
-    
+
     if(!is_array($value))
       $query_parts = "{ GRAPH <$basefieldinfo> { ?x0 <$basefieldurl> ?eid . <$basefieldurl> a owl:AnnotationProperty . FILTER( ?eid $operator $value ) . }} ";
     else {
@@ -1167,9 +1167,9 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
 
             $vars[$starting_position] = 'x0';
             for ($j = count($group->getPathArray()); $j > $starting_position; $j--) {
-              $vars[$j] = "c${i}_x$j";
+              $vars[$j] = "c{$i}_x$j";
             }
-            $vars['out'] = "c${i}_out";
+            $vars['out'] = "c{$i}_out";
 
             $sparql_part = $engine->generateTriplesForPath($pb, $group, '', NULL, NULL, 0, $starting_position, FALSE, '=', 'field', TRUE, $vars);
 
@@ -1365,9 +1365,9 @@ $timethis[] = "$timethat " . (microtime(TRUE) - $timethat) ." ".($timethis[1] - 
     $vars[$starting_position * 2] = "x0";
     $i = $this->varCounter++;
     for ($j = count($path->getPathArray()); $j > $starting_position * 2; $j--) {
-      $vars[$j] = "c${i}_x$j";
+      $vars[$j] = "c{$i}_x$j";
     }
-    $vars['out'] = "c${i}_out";
+    $vars['out'] = "c{$i}_out";
 
 
     // arg 11 ($relative) must be FALSE, otherwise fields of subgroups yield

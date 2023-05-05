@@ -157,7 +157,7 @@ function wisski_date_field_extractor_wisski_individual_presave(Drupal\Core\Entit
 
 /**
  *
- * Calculates begin date and end date for verbal input date and returns 
+ * Calculates begin date and end date for verbal input date and returns
  * them to be written into one out of three fields respectively
  *
  * @return an array of calculated dates for verbal input date
@@ -173,7 +173,7 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
   // "....er Jahre" (e.g. "the Twenties"): "1920er Jahre"
   // "ab/bis/vor/um/nach" ("from/to/before/around/after"): "um 1395"
   // "x. Jahrhundert" ("xth century"): "17. Jahrhundert"
-  // "Anfang/Mitte/Ende/frühes/spätes/Ausgang/Jahrhundertwende x. Jahrhundert" 
+  // "Anfang/Mitte/Ende/frühes/spätes/Ausgang/Jahrhundertwende x. Jahrhundert"
   //        ("start/middle/end/... of xth century"): "Ausgang 15. Jahrhundert"
   // "x. Hälfte/Viertel y. Jahrhundert" ("... quarter ..."): "2. Hälfte 5. Jahrhundert"
   // corresponds to MIDAS standard(??)
@@ -195,31 +195,31 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
   $one_or_two_digits = "\d?\d";
   $one_digit = "[1-9]";
 
-  $day_month_year_pattern = "/^${two_digits}\.${two_digits}\.${four_digits}$/";
-  $month_year_pattern = "/^${two_digits}\.${four_digits}$/";
-  $year_pattern = "/^${four_digits}$/";  // complete dates likely with 4 digits
+  $day_month_year_pattern = "/^{$two_digits}\.{$two_digits}\.{$four_digits}$/";
+  $month_year_pattern = "/^{$two_digits}\.{$four_digits}$/";
+  $year_pattern = "/^{$four_digits}$/";  // complete dates likely with 4 digits
   $threefour_year_pattern  = "/^$three_or_four_digits}$/";  // year ranges
 
   // regex patterns for date in between years, "year/year"
-  $date_between_years_pattern = "/^${three_or_four_digits}\/${three_or_four_digits}$/";
+  $date_between_years_pattern = "/^{$three_or_four_digits}\/{$three_or_four_digits}$/";
 
   // regex patterns for period, "year-year"
-  $year_period_pattern = "/^${three_or_four_digits}\-${three_or_four_digits}$/";
+  $year_period_pattern = "/^{$three_or_four_digits}\-{$three_or_four_digits}$/";
 
   // regex patterns for "...er Jahre", "...ies"
-  $years_ies_pattern = "/^${four_digits_decade}er Jahre$/";
+  $years_ies_pattern = "/^{$four_digits_decade}er Jahre$/";
 
   // regex patterns for "preposition type" verbal dates
-  $preposition_type_pattern = "/^${preposition_type} ${four_digits}$/";
+  $preposition_type_pattern = "/^{$preposition_type} {$four_digits}$/";
 
   // regex patterns for "century/millennium type" verbal dates
-  $century_type_pattern = "/^${one_or_two_digits}\. ${century}$/";
-  $x_century_type_pattern = "/^${century_type_prefix} ${one_or_two_digits}\. ${century}$/";
-  $half_century_type_pattern = "/^${half_century_prefix} ${one_or_two_digits}\. ${century}$/";
-  $quarter_century_type_pattern = "/^${quarter_century_prefix} ${one_or_two_digits}\. ${century}$/";
-  $third_century_type_pattern = "/^${third_century_prefix} ${one_or_two_digits}\. ${century}$/";
-  $decade_century_type_pattern = "/^${decade_prefix} ${one_or_two_digits}\. ${century}$/";
-  //$millennium_type_pattern = "/^${century_type_prefix} ${one_digit}\. ${millennium}$/";
+  $century_type_pattern = "/^{$one_or_two_digits}\. {$century}$/";
+  $x_century_type_pattern = "/^{$century_type_prefix} {$one_or_two_digits}\. {$century}$/";
+  $half_century_type_pattern = "/^{$half_century_prefix} {$one_or_two_digits}\. {$century}$/";
+  $quarter_century_type_pattern = "/^{$quarter_century_prefix} {$one_or_two_digits}\. {$century}$/";
+  $third_century_type_pattern = "/^{$third_century_prefix} {$one_or_two_digits}\. {$century}$/";
+  $decade_century_type_pattern = "/^{$decade_prefix} {$one_or_two_digits}\. {$century}$/";
+  //$millennium_type_pattern = "/^{$century_type_prefix} {$one_digit}\. {$millennium}$/";
 
   $date_parts = array();
 
@@ -238,7 +238,7 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
     $date_parts = explode('-', $value);
     $from_year = $date_parts[0] . "-01-01";
     $to_year = $date_parts[1] . "-12-31";
-    
+
     $output_string = 'Muster "Jahr/Jahr", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
     $ret = [$from_year, NULL, NULL, $to_year, NULL, NULL];  // qualified/qualified
   }
@@ -390,7 +390,7 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
 	// in this case the default values (empty) will be used
     }
     $output_string = 'Muster "' . $preposition_type . ' ...", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
-  } 
+  }
 
   // "x. century" type verbal dates
   elseif (preg_match($century_type_pattern, $value)) {
@@ -701,19 +701,19 @@ function _wisski_date_field_process_data($value, $debug) {
   $four_digits = "\d\d\d\d";
   $two_digits = "\d\d";
 
-  $year_month_day = "${four_digits}-${two_digits}-${two_digits}";
-  $year_month = "${four_digits}-${two_digits}";
-  $year = "${four_digits}";
+  $year_month_day = "{$four_digits}-{$two_digits}-{$two_digits}";
+  $year_month = "{$four_digits}-{$two_digits}";
+  $year = "{$four_digits}";
 
   // regex patterns for single dates: 1942-07-01 or 1942-07 or 1942
-  $year_month_day_pattern = "/^${year_month_day}$/";
-  $year_month_pattern = "/^${year_month}$/";
-  $year_pattern = "/^${year}$/";
+  $year_month_day_pattern = "/^{$year_month_day}$/";
+  $year_month_pattern = "/^{$year_month}$/";
+  $year_pattern = "/^{$year}$/";
 
   // regex patterns for date ranges:: 1942-07-01/1943-08-04 or 1942-07/1943-09 or 1942/1953
-  $year_month_day_range_pattern = "/^${year_month_day}\/${year_month_day}$/";
-  $year_month_range_pattern = "/^${year_month}\/${year_month}$/";
-  $year_range_pattern = "/^${year}\/${year}$/";
+  $year_month_day_range_pattern = "/^{$year_month_day}\/{$year_month_day}$/";
+  $year_month_range_pattern = "/^{$year_month}\/{$year_month}$/";
+  $year_range_pattern = "/^{$year}\/{$year}$/";
 
   // single dates
   $date_parts = array();

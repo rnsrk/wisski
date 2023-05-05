@@ -31,17 +31,17 @@ class Query extends WisskiQueryBase {
 #
 #    // get the adapter
 #    $engine = $this->getEngine();
-#    
+#
 #    if (empty($engine))
 #      return array();
-#    
+#
 #    // get the adapter id
 #    $adapterid = $engine->adapterId();
 #
 #    // if we have not adapter, we may go home, too
 #    if (empty($adapterid))
 #      continue;
-#    
+#
 #    // get all pbs
 #    $pbs = array();
 #    $ents = array();
@@ -51,7 +51,7 @@ class Query extends WisskiQueryBase {
 #        $pbs[$pb->id()] = $pb;
 #      }
 #    }
-#      
+#
 #    // init pager-things
 #    if (!empty($this->pager) || !empty($this->range)) {
 #      #dpm(array($this->pager, $this->range),'limits '.__CLASS__);
@@ -62,49 +62,49 @@ class Query extends WisskiQueryBase {
 #//wisski_tick('prepared '.$pb->id());
 #    // care about everything...
 #    if ($this->isFieldQuery()) {
-#      
+#
 #      // bad hack, but this is how it was...
 #      // TODO: handle correctly multiple pbs
 #      $pb = current($pbs);
 #      //wisski_tick("field query");
-#      
+#
 #      $eidquery = NULL;
 #      $bundlequery = NULL;
-#      
+#
 #      foreach ($this->condition->conditions() as $condition) {
 #        $field = $condition['field'];
 #        $value = $condition['value'];
-#        
+#
 #        if($field == "bundle")
 #          $bundlequery = $value;
 #        if($field == "eid")
 #          $eidquery = $value;
 #      }
-#      
+#
 ##        dpm($eidquery,"eidquery");
 ##        dpm($bundlequery, "bundlequery");
-#              
+#
 #      $giveback = array();
-#              
+#
 #      // eids are a special case
 #      if ($eidquery !== NULL) {
-#        
+#
 #        $eidquery = current($eidquery);
-#        
+#
 #        $bundlequery = current($bundlequery);
-#        
+#
 #        // load the id, this hopefully helps.
 #        $thing = $engine->load($eidquery);
-#      
+#
 ##          dpm($eidquery, "thing");
-#      
+#
 #        if($bundlequery === NULL)
 #          $giveback = array($thing['eid']);
-#          
+#
 #        else {
-#      
+#
 #          // load the bundles for this id
-#          $bundleids = $engine->getBundleIdsForEntityId($thing['eid']);        
+#          $bundleids = $engine->getBundleIdsForEntityId($thing['eid']);
 #
 #          if(in_array($bundlequery, $bundleids))
 #            $giveback =  array($thing['eid']);
@@ -113,9 +113,9 @@ class Query extends WisskiQueryBase {
 #          return $giveback;
 #        }
 #      }
-#      
+#
 #      //wisski_tick("field query half");
-#      
+#
 #      foreach($this->condition->conditions() as $condition) {
 #        $field = $condition['field'];
 #        $value = $condition['value'];
@@ -131,30 +131,30 @@ class Query extends WisskiQueryBase {
 #            //wisski_tick('Field query out 2');
 #            return $engine->loadIndividualsForBundle($value, $pb, NULL, NULL, TRUE, $this->condition->conditions());
 #          }
-#          
+#
 ##            dpm($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()), 'out!');
 ##            dpm(array_keys($pbadapter->getEngine()->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions())), "muhaha!");
-##            return;           
+##            return;
 #          //wisski_tick('Field query out 3');
 #          return array_keys($engine->loadIndividualsForBundle($value, $pb, $limit, $offset, FALSE, $this->condition->conditions()));
 #        }
 #      }
 #
 #    //wisski_tick("afterprocessing");
-#    
+#
 #    } elseif ($this->isPathQuery()) {
 #      // if this is a path query act upon it accordingly
-#      
+#
 #      //wisski_tick("path query");
 #
 #      // construct the query
 #      $query = "";
 #      // what bundle is it - for the bundle cache
 #      $bundle_id = "";
-#      
-#      // we count 
+#
+#      // we count
 #      $i = 0;
-#      
+#
 #      // TODO: this does not handle nested conditions, ie.
 #      // it does only handle OR/AND(cond1, cond2, ...) where
 #      // condn must be a path
@@ -163,7 +163,7 @@ class Query extends WisskiQueryBase {
 #      foreach($this->condition->conditions() as $condition) {
 #        $each_condition_group = $condition['field'];
 #        $conjunction = strtoupper($each_condition_group->getConjunction());
-#        
+#
 #        foreach($each_condition_group->conditions() as $cond) {
 #
 #          // condition groups may be and'ed or or'ed
@@ -171,12 +171,12 @@ class Query extends WisskiQueryBase {
 #          $value = $cond['value'];
 #          $op = $cond['operator'];
 #
-#          // save the bundle for the bundle cache    
+#          // save the bundle for the bundle cache
 #          if($cond['field'] == 'bundle') {
 #            $bundle_id = $value;
 #            continue;
 #          }
-#          
+#
 #          $pb_and_path = explode(".", $cond['field']);
 #          $pbid = $pb_and_path[0];
 #          if (!isset($pbs[$pbid])) {
@@ -187,22 +187,22 @@ class Query extends WisskiQueryBase {
 #          // get the path
 #          $path_id = $pb_and_path[1];
 #          $path = \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity::load($path_id);
-#          // if it is no valid path - skip    
+#          // if it is no valid path - skip
 #          if(empty($path)) {
 #            continue;
 #          }
-#          
-#          // build up an array for separating the variables of the sparql 
+#
+#          // build up an array for separating the variables of the sparql
 #          // subqueries.
 #          // only the first var x0 get to be the same so that everything maps
 #          // to the same entity
 #          $vars[0] = "";
 #          for ($j = count($path->getPathArray()); $j > 0; $j--) {
-#            $vars[$j] = "c${i}_";
+#            $vars[$j] = "c{$i}_";
 #          }
-#          $vars['out'] = "c${i}_";
-#          
-#          // 
+#          $vars['out'] = "c{$i}_";
+#
+#          //
 #          $querypart = $engine->generateTriplesForPath($pb, $path, $value, NULL, NULL, 0, 0, FALSE, $op, 'field', TRUE, $vars);
 #
 #          if ($conjunction == 'OR' && $i != 0) {
@@ -219,21 +219,21 @@ class Query extends WisskiQueryBase {
 #        }
 #
 #      }
-#        
-#      // if no query was constructed - there is nothing to search.    
+#
+#      // if no query was constructed - there is nothing to search.
 #      // this may be the case when all paths belong to other engines.
 #      if(empty($query))
 #        return array();
-#    
+#
 #      $query = "SELECT DISTINCT ?x0 WHERE { $query }";
 #      $result = $engine->directQuery($query);
-#    
+#
 #      foreach($result as $hit) {
 #        if (!isset($hit->x0)) continue;
 #        $entity_id = AdapterHelper::getDrupalIdForUri($hit->x0->getUri());
 #        $ents[$entity_id] = $entity_id;
 #      }
-#      //wisski_tick('path query out');                  
+#      //wisski_tick('path query out');
 #    }
 #
 #    return array_keys($ents);
@@ -241,7 +241,7 @@ class Query extends WisskiQueryBase {
 
 
   }
-  
+
   /**
    * {@inheritdoc}
    */

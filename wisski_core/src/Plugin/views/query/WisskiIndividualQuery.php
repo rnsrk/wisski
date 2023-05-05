@@ -57,7 +57,7 @@ class WisskiIndividualQuery extends QueryPluginBase
      * The variable counter for parameters
      */
     private $paramcount = 0;
-    
+
     public $groupOperator;
 
 #    public function render() {
@@ -124,7 +124,7 @@ class WisskiIndividualQuery extends QueryPluginBase
                         $condFieldKey = substr($condFieldKey, 1);
                     }
                     $valueGroup = explode(" ", $condFieldKey);
-                    
+
                     // if this is the case the field is something like
                     // wisski_path_local_store__objekte and it should be something like
                     // local_store.objekte.
@@ -147,7 +147,7 @@ class WisskiIndividualQuery extends QueryPluginBase
 
                     // if we now have wisski-field that might
                     // be entity reference we might have to
-                    // change the operation...                    
+                    // change the operation...
                     if(strpos($valueGroup[0], ".") !== FALSE) {
                       // load the relevant path from the cache
                       // populate the cache if it doesn't exist
@@ -552,7 +552,7 @@ class WisskiIndividualQuery extends QueryPluginBase
                     // Thanks to Arne, by Mark:
                     // Somehow drupal seems to encode these values, so we decode them here so they are right afterwards
                     // this seems stupid and wrong...
-                    $row['preview_image'] = '<a href="' . $base_path . 'wisski/navigate/' . $eid . '/view?wisski_bundle=' . $bid . '"><img src="' . utf8_decode($preview_image_uri) . '" /></a>';
+                    $row['preview_image'] = '<a href="' . $base_path . 'wisski/navigate/' . $eid . '/view?wisski_bundle=' . $bid . '"><img src="' . mb_convert_encoding($preview_image_uri, 'ISO-8859-1', 'UTF-8') . '" /></a>';
                     $pseudo_entity_fields[$eid]['preview_image'] = $row['preview_image'];
 
                 }
@@ -827,7 +827,7 @@ class WisskiIndividualQuery extends QueryPluginBase
                             // by Mark:
                             // if it is unspecified we just set it to x-default
                             // this is an assumption proofed to be true - might also be UND or EN
-                            // 
+                            //
                             // this was probably wrong. Lets try the current language...
                             if(empty($lang))
                               $lang = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
@@ -903,18 +903,18 @@ class WisskiIndividualQuery extends QueryPluginBase
                 // add the title values to the label so it can be rendered correctly...
                 if(isset($values_per_row[$eid]['title']))
                   $pseudo_entity_fields[$eid]['label'] = array($values_per_row[$eid]['title']);
-                
+
                 // By Mark:
                 // we need to wrap the title in array brackets, otherwise we loose some parts
                 // if we have a : or something like that in the characters.
                 if(isset($values_per_row[$eid]['title']) && !is_array($values_per_row[$eid]['title']))
                   $values_per_row[$eid]['title'] = array($values_per_row[$eid]['title']);
-                
+
                 // Thanks to Arne, by Mark:
                 // Somehow drupal seems to encode these values, so we decode them here so they are right afterwards
                 // this seems stupid and wrong...
-                //if(isset($values_per_row[$eid]['preview_image'])) 
-                //  $values_per_row[$eid]['preview_image'] = utf8_decode($values_per_row[$eid]['preview_image']);    
+                //if(isset($values_per_row[$eid]['preview_image']))
+                //  $values_per_row[$eid]['preview_image'] = utf8_decode($values_per_row[$eid]['preview_image']);
 
                 #        dpm($pseudo_entity_fields);
                 #        dpm($row);
@@ -1074,7 +1074,7 @@ class WisskiIndividualQuery extends QueryPluginBase
      */
     public function addWhere($group, $field, $value = NULL, $operator = NULL)
     {
-        // By Mark: Due to the new query engine 
+        // By Mark: Due to the new query engine
         // we have to fix some operators here.
         // we dislike "Like" for example as it is absolutely database-like... and the people
         // add %% in front and so on - I don't know why they do it like that and
@@ -1084,12 +1084,12 @@ class WisskiIndividualQuery extends QueryPluginBase
           $operator = "CONTAINS";
           $value = str_replace("%", "", $value);
         }
-        
+
         if($operator == "NOT LIKE" || $operator == "NOT ILIKE") {
           $operator = "!=";
 //          $value = str_replace("%", "", $value);
         }
-        
+
 #        dpm($group, "group");
 #        dpm($field, "field");
 #        dpm($value, "value");
@@ -1101,24 +1101,24 @@ class WisskiIndividualQuery extends QueryPluginBase
         // if it is a wisski field at all
         if(strpos($field, ".") === 0) {
           $viewsdata = \Drupal\views\Views::viewsData()->get('wisski_individual');
-            
+
           // cut away the dot and have a look.
           $viewsdata = $viewsdata[substr($field, 1)];
-          
-          if(isset($viewsdata['field']) && isset($viewsdata['field']['wisski_field']))  
+
+          if(isset($viewsdata['field']) && isset($viewsdata['field']['wisski_field']))
             $wisski_field = $viewsdata['field']['wisski_field'];
           else // no wisski field?
             $wisski_field = "";
-        
+
           if(!empty($wisski_field))
             $field = $wisski_field;
-            
+
           // in this case we also have to check if the operator
           // is correct in case of entity reference thingies
           //if(is_numeric($value) && $operator == "=") {
           //    $operator = "has_eid";
           //}
-          
+
           if(strpos($field, ".") !== FALSE) {
             // load the relevant path from the cache
             // populate the cache if it doesn't exist
@@ -1142,22 +1142,22 @@ class WisskiIndividualQuery extends QueryPluginBase
             } else {
               // else it is no wisski field
               // by mark:
-              // this case did not work when selecting 
+              // this case did not work when selecting
               // that the view should display a certain language.
               // so in this case we make .langcode to langcode and hopefully it works.
               #dpm($field, "found field!");
               if(strpos($field, ".") === 0) {
                 // this is hopefully a base field like .langcode?
-                $field = $pb_and_path[1]; 
+                $field = $pb_and_path[1];
               }
-            
+
             }
           }
 
           #dpm($wisski_field, "ws?");
-        }            
-            
-            
+        }
+
+
 #        dpm($field, "field?");
 #        dpm($value, "value");
 #        dpm($operator, "op");
