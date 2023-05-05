@@ -243,7 +243,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 		    return reset($title);
 	    }
     }
-  
+
 #    foreach($title as $lang => $aTitle) {
 #      if($lang == $language) {
 #        unset($title[$lang]);
@@ -410,7 +410,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
             }
             if (++$i < $cardinality) $part[$alanguage] .= $delimiter;
           } else {
-            // this takes still place if the something just uses a group title 
+            // this takes still place if the something just uses a group title
             // e.g. the fotoliste in horizonte just uses the object title for its
             // entries and then suddenly there was "en" => "blablabla" instead of
             // an array.
@@ -435,7 +435,7 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
               // }
               if (++$i < $cardinality) $part[$language] .= $delimiter;
             } else {
-            
+
               // iterate language ...
               foreach($per_lang_values as $per_lang_value) {
                 $value = $per_lang_value['value'];
@@ -1079,11 +1079,13 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
   public function addViewForBundle($menu_name, $weight, $enabled) {
     $bundleid = $this->id();
     $bundle_name = $this->label();
+    $bundle_uuid = $this->uuid();
 
     $options = array();
     $options['base_table'] = "wisski_individual";
     $options['id'] = $bundleid;
     $options['label'] = $bundle_name;
+    $options['uuid'] = $bundle_uuid;
     $options['module'] = "views";
     $options['core'] = "8.x";
     $options['base_field'] = "eid";
@@ -1447,8 +1449,8 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
     $view = new View($options, 'view');
 
     $view->enable();
-
     $view->save();
+
   }
 
   public function addMenuItem($menu_name, $weight, $enabled, $destination_route, $parameters) {
