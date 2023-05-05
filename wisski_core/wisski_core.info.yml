@@ -1,5 +1,5 @@
 name: WissKI Core
-description: The Core of the WissKI module set
+description: The Core of the WissKI module set - Required.
 core: 8.x
 package: WissKI
 type: module
