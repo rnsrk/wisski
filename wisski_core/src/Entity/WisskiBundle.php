@@ -749,7 +749,10 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 #              dpm("my grptitle is " . serialize($grptitles));
             }
 
-            $new_values[] = implode(", ", $grptitles);
+            // By Mark: This is wrong in tafelmalerei context
+            // it does not resolve recursive titles anymore.
+            // $new_values[] = implode(", ", $grptitles);
+            $new_values[] = array( "value" => implode(", ", $grptitles), "wisski_language" => $language);
 
           } else { // normal field handling
       #      dpm("normal handling1");
