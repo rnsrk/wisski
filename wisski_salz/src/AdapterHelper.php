@@ -311,20 +311,41 @@ class AdapterHelper {
       ->fields('m')
       ->condition('uri',$uri);
     if (isset($input_adapter_id)) $query->condition('adapter_id',$input_adapter_id);
-    $ids = $query->execute()->fetchAllAssoc('eid');
+    $exec = $query->execute();
+    //$ids = $query->execute()->fetchAllAssoc('eid');
     
-#    dpm($ids, "got from db for uri? $uri");
+    //dpm($exec->fetchAll(), "all?");
+    $fetched = $exec->fetchAll();
+    //$ids = $exec->fetchAllAssoc('eid');
+    //$rids = $exec->fetchAllAssoc('rid');
+    
+    //dpm($ids, "got from db for uri? $uri");
+    //dpm($rids, "rids?");
+    
     
     //if we have exactly one result for the eid return it
-    if (count($ids) === 1) {
+    if (count($fetched) === 1) {
       #dpm(key($ids),'from DB');
-      return key($ids);
+      
+      $fetched = current($fetched);
+      
+      if(!empty($fetched->eid))
+        return $fetched->eid;
+      else // if the eid is empty but we have only one hit, then we are in a special case. rid should be save.
+        return $fetched->rid;
     }
     
     //if we have multiple results, we don't know exactly what to do, for now we return the first
+    $ids = array();
+    // iterate them...
+    foreach($fetched as $one) {
+      if(!empty($one->eid))
+        $ids[] = $one->eid;
+    }
+    
     //@TODO try something more sophisticated
     // there may be duplicate entries...
-    $ids = array_unique(array_keys($ids));
+    //$ids = array_unique(array_keys($ids));
     if (count($ids) > 1) {
       //dpm($ids,'from DB, multiple');
       \Drupal::messenger()->addStatus("There are multiple entity IDs for a URI. See log reports for details.");
@@ -375,8 +396,10 @@ class AdapterHelper {
 #    dpm($adapter_id, "case three");
     //eid creation works by inserting data and retrieving the newly set line number as eid
 
-    $lock = \Drupal::lock();
-    if ($lock->acquire('eidGeneration')) {
+    // this was a nice thought, 
+    // but it does not work.
+    //$lock = \Drupal::lock();
+    //if ($lock->acquire('eidGeneration')) {
 
     // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
     // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
@@ -406,8 +429,8 @@ class AdapterHelper {
       ->condition('rid',$id)
       ->execute();
     
-    $lock->release("eidGeneration");
-    }
+    //$lock->release("eidGeneration");
+    //}
     
     if (WISSKI_DEVEL) {
       \Drupal::logger("AH:difu")->debug("$id and $uri and $input_adapter_id: {bt}", ["bt"=>join('//', array_map(function ($a) { return $a['function'];}, debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 8)))]);
