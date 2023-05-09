@@ -388,7 +388,12 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 #        dpm($data);
       foreach($keys as $step) {
         if(isset($a_ret[$step])) {
-          if(!is_object($a_ret[$step]))
+//          if(!is_object($a_ret[$step]))
+          // in case of xml we do not do decoding
+          // otherwise &gt; is made to > and it will break
+          // example is literature in behaim globe where urls are <http...>
+          // By Mark
+          if(!is_object($a_ret[$step]) && !(strpos($a_ret[$step], "<result>") < 10))
             $a_ret[$step] = htmlspecialchars_decode($a_ret[$step]);
           $data['Object'][$step] = array($a_ret[$step]);
         } else {
