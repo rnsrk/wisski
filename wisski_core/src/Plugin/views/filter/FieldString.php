@@ -114,8 +114,12 @@ class FieldString extends ViewsString {
   }
 
   public function opEqual($field) {
+    // check the op. This might be intrusive!
+    if($this->operator == "=" || $this->operator == "!=")
+      $this->query->addWhere($this->options['group'], $field, $this->value, $this->operator);
+    else
 #    dpm("Beware - op equal " . serialize($field));
-    $this->query->addWhere($this->options['group'], $field, $this->value, '=');
+      $this->query->addWhere($this->options['group'], $field, $this->value, '=');
   }
   
   protected function opStartsWith($field) {
