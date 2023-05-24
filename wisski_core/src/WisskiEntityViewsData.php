@@ -104,6 +104,9 @@ class WisskiEntityViewsData extends EntityViewsData {
       'filter' => [         // the handler for views filter section
         'id' => 'numeric',
       ],
+      'sort' => [
+        'id' => 'standard'
+      ],
       'argument' => [
         'id' => 'numeric',
       ],
@@ -419,7 +422,7 @@ class WisskiEntityViewsData extends EntityViewsData {
       // HERE we should add the fields per bundle
 
     }
-
+    dpm(serialize($data), "data?");
     return $data;
 
   }
