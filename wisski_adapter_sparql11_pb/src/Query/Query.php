@@ -692,7 +692,7 @@ class Query extends WisskiQueryBase {
         if($field == "eid") {
           global $base_url;
           $my_url = $base_url . "/wisski/navigate/";
-          $eid_sort = " . OPTIONAL { GRAPH ?g_xz { ?x0 owl:sameAs ?sort . FILTER(STRSTARTS(STR(?sort), '" . $my_url . "')) }} ";
+          $eid_sort = " OPTIONAL { GRAPH ?g_xz { ?x0 owl:sameAs ?sort . FILTER(STRSTARTS(STR(?sort), '" . $my_url . "')) }} ";
           $sort_params = $elem['direction'] . "(strlen(str(?sort))) " . $elem['direction'] . "(?sort) ";
 #          dpm($eid_sort, "yay!");
           $query_parts = $query_parts . $eid_sort;
