@@ -422,7 +422,7 @@ class WisskiEntityViewsData extends EntityViewsData {
       // HERE we should add the fields per bundle
 
     }
-    dpm(serialize($data), "data?");
+#    dpm(serialize($data), "data?");
     return $data;
 
   }
