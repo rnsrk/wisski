@@ -4378,7 +4378,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $insert = $this->prepareInsert('classes');
     $classes = [];
 
-    $results = $this->directQuery("SELECT ?class WHERE { {{?class a owl:Class.} UNION {?class a rdfs:Class}} }");
+    $results = $this->directQuery("SELECT ?class WHERE { {{?class a owl:Class.} UNION {?class a rdfs:Class}} FILTER (!isBlank(?class)) }");
     // $results = $this->directQuery("SELECT ?class WHERE { GRAPH ?g {{?class a owl:Class.} UNION {?class a rdfs:Class}} }");
     foreach ($results as $row) {
       $class = $row->class->getUri();
@@ -4415,9 +4415,18 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $results = $this->directQuery(
       "SELECT ?property ?domain WHERE { {"
       // "SELECT ?property ?domain WHERE { GRAPH ?g {"
-      . " ?property rdfs:domain ?domain ."
+      . " { "
+      . " ?property rdfs:domain ?domain . } "
+      . " UNION {"
+      . "   ?property rdfs:domain ?metaClass . "
+      . "   ?metaClass owl:unionOf ?collection . "
+      . "   ?collection rdf:rest*/rdf:first ?domain . "
+      . " }"
       // We only need top level domains, so no proper subClass of the domain shall be taken into account.
-      . " FILTER NOT EXISTS { ?domain rdfs:subClassOf+ ?super_domain. ?property rdfs:domain ?super_domain.}"
+      . " FILTER (NOT EXISTS { "
+      . "   ?domain rdfs:subClassOf+ ?super_domain . "
+      . "   ?property rdfs:domain ?super_domain . }  && "
+      . "   isIRI(?domain)) "
       . " } }");
     foreach ($results as $row) {
       $domains[$row->property->getUri()][$row->domain->getUri()] = $row->domain->getUri();
@@ -4430,12 +4439,21 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $ranges = [];
 
     $results = $this->directQuery(
-      "SELECT ?property ?range WHERE { {"
+      "SELECT ?property ?range WHERE { { "
       // "SELECT ?property ?range WHERE { GRAPH ?g {"
-      . " ?property rdfs:range ?range ."
+      . " { "
+      . " ?property rdfs:range ?range . } "
+      . " UNION {"
+      . "   ?property rdfs:range ?metaClass . "
+      . "   ?metaClass owl:unionOf ?collection . "
+      . "   ?collection rdf:rest*/rdf:first ?range . "
+      . " } "
       // We only need top level ranges, so no proper subClass of the range shall be taken into account.
-      . " FILTER NOT EXISTS { ?range rdfs:subClassOf+ ?super_range. ?property rdfs:range ?super_range.}"
-      . " } }");
+      . " FILTER (NOT EXISTS { "
+      . "   ?range rdfs:subClassOf+ ?super_range . "
+      . "   ?property rdfs:range ?super_range .}  && "
+      . "   isIRI(?range)) "
+      . " } } ");
     foreach ($results as $row) {
       $ranges[$row->property->getUri()][$row->range->getUri()] = $row->range->getUri();
     }
@@ -4447,12 +4465,19 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $primitives = [];
 
     $results = $this->directQuery(
-      "SELECT ?property ?domain WHERE { {"
+      "SELECT ?property ?domain WHERE { { "
       // "SELECT ?property ?domain WHERE { GRAPH ?g {"
-      . " ?property rdfs:domain ?domain . {{ ?property a owl:DatatypeProperty.} UNION {?property a rdf:Property }} ."
+      . " { ?property rdfs:domain ?domain . } "
+      . " UNION { "
+      . "   ?property rdfs:domain ?metaClass . "
+      . "   ?metaClass owl:unionOf ?collection . "
+      . "   ?collection rdf:rest*/rdf:first ?domain . "
+      . " } . "
+      . " {{ ?property a owl:DatatypeProperty.} UNION {?property a rdf:Property }} . "
       // We only need top level domains, so no proper subClass of the domain shall be taken into account.
-      . " FILTER NOT EXISTS { ?domain rdfs:subClassOf+ ?super_domain. ?property rdfs:domain ?super_domain.}"
-      . " } }");
+      . " FILTER (NOT EXISTS { ?domain rdfs:subClassOf+ ?super_domain. ?property rdfs:domain ?super_domain.} && "
+      . " isIRI(?domain)) "
+      . " } } ");
     foreach ($results as $row) {
       $primitives[$row->property->getUri()][$row->domain->getUri()] = $row->domain->getUri();
     }
