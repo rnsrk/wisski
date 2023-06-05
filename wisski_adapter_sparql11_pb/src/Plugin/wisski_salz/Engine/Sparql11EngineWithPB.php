@@ -571,6 +571,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           . "       ?d_def_prop owl:inverseOf ?inv.\n"
           . "       ?inv rdfs:range ?d_def_class.\n"
           . "    }\n"
+          . "    UNION\n"
+          . "    {\n"
+          . "       ?d_def_prop rdfs:domain ?metaClass .\n"
+          . "       ?metaClass owl:unionOf ?collection .\n"
+          . "       ?collection rdf:rest*/rdf:first ?d_def_class . \n"
+          . "    }\n"
           . "  }\n"
           . "  {\n"
           . "    { ?d_def_prop rdfs:subPropertyOf* ?property. }\n"
@@ -805,7 +811,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if (isset($property)) {
         $query .= "<$property> rdfs:subPropertyOf* ?r_super_prop. "
           . "{ { ?r_super_prop rdfs:range ?r_super_class. } UNION "
-          . "{ ?r_super_prop owl:inverseOf ?inv. ?inv rdfs:domain ?r_super_class. } } "
+          . "{ ?r_super_prop owl:inverseOf ?inv. ?inv rdfs:domain ?r_super_class. } UNION "
+          . "{ ?r_super_prop rdfs:range ?metaClass . "
+          . " ?metaClass owl:unionOf ?collection . "
+          . " ?collection rdf:rest*/rdf:first ?r_super_class . } "
+          . "} "
           . "FILTER NOT EXISTS { "
           . "?r_sub_prop rdfs:subPropertyOf+ ?r_super_prop. "
           . "<$property> rdfs:subPropertyOf* ?r_sub_prop. "
@@ -816,7 +826,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if (isset($property_after)) {
         $query .= "<$property_after> rdfs:subPropertyOf* ?d_super_prop. "
           . "{ { ?d_super_prop rdfs:domain ?d_super_class. } UNION "
-          . "{ ?d_super_prop owl:inverseOf ?inv. ?inv rdfs:domain ?d_super_class. } } "
+          . "{ ?d_super_prop owl:inverseOf ?inv. ?inv rdfs:domain ?d_super_class. } UNION "
+          . "{ ?d_super_prop rdfs:range ?metaClass . "
+          . " ?metaClass owl:unionOf ?collection . "
+          . " ?collection rdf:rest*/rdf:first ?d_super_class . } "
+          . "} "
           . "FILTER NOT EXISTS { "
           . "?d_sub_prop rdfs:subPropertyOf+ ?d_super_prop. "
           . "<$property_after> rdfs:subPropertyOf* ?d_sub_prop. "
@@ -4797,6 +4811,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           'length' => '2048',
           'not null' => TRUE,
         ],
+        'comment' => [
+          'description' => 'the comment of the class',
+          'type' => 'varchar',
+          'length' => '5000',
+        ],
       ],
       'primary key' => ['num'],
     ];
@@ -4815,6 +4834,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           'type' => 'varchar',
           'length' => '2048',
           'not null' => TRUE,
+        ],
+        'comment' => [
+          'description' => 'the comment of the class',
+          'type' => 'varchar',
+          'length' => '5000',
         ],
       ],
       'primary key' => ['num'],
