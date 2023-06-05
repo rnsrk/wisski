@@ -22,12 +22,13 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   protected $is_preferred_local_store;
   protected $same_as_properties;
 
+  protected $old_preferred_store;
   /**
    * {@inheritdoc}
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
-  
+
     $this->setConfiguration($configuration);
   }
 
@@ -78,8 +79,8 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   public function getDescription() {
     return $this->pluginDefinition['description'];
   }
-  
-  
+
+
   /**
    * {@inheritdoc}
    */
@@ -89,7 +90,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
 
 
   public function defaultConfiguration() {
-    #return parent::defaultConfiguration() + 
+    #return parent::defaultConfiguration() +
     return [
       'is_writable' => TRUE,
       'is_preferred_local_store' => FALSE,
@@ -108,7 +109,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
       $this->messenger()->addError(__METHOD__.' $configuration === NULL');
     }
     $this->configuration = $configuration + $this->defaultConfiguration();
-    
+
     $this->is_writable = $this->configuration['is_writable'];
     $this->is_preferred_local_store = $this->configuration['is_preferred_local_store'];
     $this->same_as_properties = $this->configuration['same_as_properties'];
@@ -142,21 +143,21 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
       '#default_value' => $this->isWritable(),
       '#description' => $this->t('Is this Adapter writable?'),
     ];
-    
+
 #    $form['isReadable'] = [
 #      '#type' => 'checkbox',
 #      '#title' => $this->t('Readable'),
 #      '#default_value' => $adapter->getEngine()->isReadable(),
 #      '#description' => $this->t('Is this Adapter readable?'),
 #    ];
-    
+
     $form['isPreferredLocalStore'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Preferred Local Store'),
       '#default_value' => $this->isPreferredLocalStore(),
       '#description' => $this->t('Is this Adapter the preferred local store?'),
     ];
-    
+
     $real_preferred = AdapterHelper::getPreferredLocalStore(FALSE,TRUE);
     if ($real_preferred instanceof AdapterInterface)  {
       if ($this->adapterId() !== $real_preferred->id()) {
@@ -174,7 +175,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
         $form_state->setStorage(array('old_preferred_store' => $real_preferred));
       }
     }
-        
+
     $form['sameAsProperties'] = array(
       '#type'=> 'textarea',
       '#title'=> $this->t('"Same As" properties'),
@@ -227,7 +228,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
 
     #return FALSE;
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -238,65 +239,65 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   public function providesCacheMode() {
     return FALSE;
   }
-  
+
   public function providesFastMode() {
     return FALSE;
   }
-  
+
   public function getQueryObject(EntityTypeInterface $entity_type,$condition, array $namespaces) {
     return new Query($entity_type,$condition,$namespaces);
   }
-  
+
   //@TODO overwrite
   public function writeFieldValues($entity_id,array $field_values,$pathbuilder,$bundle = NULL,$original_values=array(),$force_creation=FALSE,$initial_write=FALSE) {
     return EngineInterface::NULL_WRITE;
   }
-  
+
   public function isWritable() {
     return $this->is_writable;
   }
-  
+
   public function isReadOnly() {
     return !$this->is_writable;
   }
-  
+
   public function isPreferredLocalStore() {
     return $this->is_preferred_local_store;
   }
-  
+
   public function setReadOnly() {
     $this->is_writable = FALSE;
   }
-  
+
   public function setWritable() {
     $this->is_writable = TRUE;
   }
-  
+
   public function setPreferredLocalStore() {
     $this->is_preferred_local_store = TRUE;
     //dpm($this,$this->adapterId().' '.__FUNCTION__);
   }
-  
+
   public function unsetPreferredLocalStore() {
 
     $this->is_preferred_local_store = FALSE;
     //dpm($this,$this->adapterId().' '.__FUNCTION__);
   }
-  
-  
+
+
   /**
    * {@inheritdoc}
    */
   public function getSameAsProperties() {
     return $this->same_as_properties;
   }
-  
-  
+
+
   /**
    * {@inheritdoc}
    */
   public abstract function defaultSameAsProperties();
-  
+
 
   public function isValidUri($uri) {
 	  $short_uri = '[a-z]+\:[^\/]+';
@@ -320,57 +321,57 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
    */
   public function getPbForThis() {
     $pbs = WisskiPathbuilderEntity::loadMultiple();
-    
+
     foreach($pbs as $pb) {
-      // if there is no adapter set for this pb  
+      // if there is no adapter set for this pb
       if($adapter_id = $pb->getAdapterId()) {
         if ($this->adapterId() == $adapter_id) return $pb;
-      }      
+      }
     }
     return NULL;
   }
-  
+
   public function getPbsForThis() {
     $pbs = WisskiPathbuilderEntity::loadMultiple();
     $pb_array = array();
-    
+
     foreach($pbs as $pb) {
-      // if there is no adapter set for this pb  
+      // if there is no adapter set for this pb
       if($adapter_id = $pb->getAdapterId()) {
         if ($this->adapterId() == $adapter_id) $pb_array[] = $pb;
-      }      
+      }
     }
     return $pb_array;
   }
 
   public abstract function getDrupalIdForUri($uri,$adapter_id=NULL);
-  
+
   public function setDrupalId($uri,$eid) {
-    
+
     $this->setSameUris(array($this->adapterId()=>$uri),$eid);
   }
-      
+
   public function getUriForDrupalId($id, $create = TRUE) {
-    
+
     return AdapterHelper::getUrisForDrupalId($id, $this->adapterId(), $create);
   }
-  
+
   public function getBaseFieldFromStoreForUri($uri, $basefield) {
     return NULL;
   }
-  
+
   public function setBaseFieldFromStoreForUri($uri, $basefield, $value) {
 #    dpm("set base field was called with $uri, $basefield and $value.");
     return NULL;
   }
-  
+
   /**
    * here we have to avoid a name clash. getUriForDrupalId was already there and is heavily used.
    * Thus the somewhat strange name for this function here
    * essentailly does the same like getUriForDrupalId but initiates an internal query in the preferred local store
    */
   public function findUriForDrupalId($id,$adapter_id=NULL) {
-    
+
     if (!isset($adapter_id)) $adapter_id = $this->adapterId();
     $uris = $this->getUrisForDrupalId($id);
     if (empty($uris) || !isset($uris[$adapter_id])) {
@@ -381,7 +382,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
   }
 
   public abstract function getUrisForDrupalId($id);
-  
+
   /**
    * {@inheritdoc}
    */
@@ -396,7 +397,7 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
    * {@inheritdoc}
    */
   public abstract function setSameUris($uris, $entity_id);
-  
+
   /**
    * {@inheritdoc}
    */
@@ -409,5 +410,5 @@ abstract class EngineBase extends PluginBase implements EngineInterface {
     \Drupal::messenger()->addStatus("There is no sanity check for this adapter yet - We can't check it for functionality.");
   }
 
-  
+
 }
