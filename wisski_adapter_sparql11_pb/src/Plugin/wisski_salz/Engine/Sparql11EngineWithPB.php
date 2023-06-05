@@ -11,8 +11,6 @@ use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11Engine;
 use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Language\LanguageInterface;
-
-
 use Drupal\wisski_adapter_sparql11_pb\Query\Query;
 use EasyRdf\Format as EasyRdf_Format;
 
@@ -516,9 +514,19 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 
   /**
+   * Compute properties according to the ontological constraints.
    *
+   * @param string|null $class
+   *   Class for the current step.
+   * @param string|null $class_after
+   *   Class for the following step.
+   * @param bool $fast_mode
+   *   True if, fast mode is enabled.
+   *
+   * @return array
+   *   The properties for the corresponding class.
    */
-  public function getPropertiesFromStore($class = NULL, $class_after = NULL, $fast_mode = FALSE) {
+  public function getPropertiesFromStore(?string $class = NULL, ?string $class_after = NULL, bool $fast_mode = FALSE): array {
     if ($fast_mode) {
       // The fast mode will only gather properties that are declared as
       // domain/range directly. This will only return an incomplete set of
@@ -530,8 +538,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if (isset($class_after)) {
         $query .= "  GRAPH ?g4 { ?property rdfs:range <$class_after>. }\n";
       }
-      $query .= "  { { GRAPH ?g1 { ?property a owl:ObjectProperty. } } UNION { GRAPH ?g2 { ?property a rdf:Property. } } }\n";
-      $query .= "}";
+      $query .= "  { { GRAPH ?g1 { ?property a owl:ObjectProperty. } } UNION { GRAPH ?g2 { ?property a rdf:Property. } } } }";
     }
     else {
       // The complete mode makes more sophisticated queries that also return
@@ -548,151 +555,85 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $ontology_graphs = $this->getOntologyGraphs();
       $from_graphs = " ";
       if (!empty($ontology_graphs)) {
-        $from_graphs = "\nFROM <" . join(">\nFROM <", $ontology_graphs) . ">\n";
+        $from_graphs = "\nFROM <" . implode(">\nFROM <", $ontology_graphs) . ">\n";
       }
-      $query = "SELECT DISTINCT ?property{$from_graphs}WHERE {\n";
+      $query = "SELECT DISTINCT ?property {$from_graphs} WHERE {\n";
 
       if (isset($class)) {
         $query .=
-                  "  <$class> rdfs:subClassOf* ?d_def_class.\n"
-                  . "  {\n"
-                  . "    { ?d_def_prop rdfs:domain ?d_def_class. }\n"
-                  . "    UNION\n"
-                  . "    {\n"
-                  . "       ?d_def_prop owl:inverseOf ?inv.\n"
-                  . "       ?inv rdfs:range ?d_def_class.\n"
-                  . "    }\n"
-                  . "    UNION\n"
-                  . "    {\n"
-                  . "       ?d_def_prop rdfs:domain ?metaClass .\n"
-                  . "       ?metaClass owl:unionOf ?collection .\n"
-                  . "       ?collection rdf:rest*/rdf:first ?d_def_class . \n"
-                  . "    }\n"
-                  . "  }\n"
-                  . "  {\n"
-                  . "    { ?d_def_prop rdfs:subPropertyOf* ?property. }\n"
-                  . "    UNION\n"
-                  . "    {\n"
-                  . "      ?property rdfs:subPropertyOf+ ?d_def_prop.\n"
-                  . "      FILTER NOT EXISTS {\n"
-                  . "        ?mid_prop rdfs:subPropertyOf+ ?d_def_prop.\n"
-                  . "        ?property rdfs:subPropertyOf* ?mid_prop.\n"
-                  . "        {\n"
-                  . "          { ?mid_prop rdfs:domain ?any_domain. }\n"
-                  . "          UNION\n"
-                  . "          {\n"
-                  . "            ?mid_prop owl:inverseOf ?mid_inv.\n"
-                  . "            ?mid_inv rdfs:range ?any_range.\n"
-                  . "          }\n"
-                  . "        }\n"
-                  . "      }\n"
-                  . "    }\n"
-                  . "  }\n";
+          " <$class> rdfs:subClassOf* ?d_def_class.
+            {
+              {
+                ?d_def_prop rdfs:domain ?d_def_class.
+              }
+              UNION {
+                 ?d_def_prop owl:inverseOf ?inv.
+                 ?inv rdfs:range ?d_def_class.
+              }
+              UNION {
+                 ?d_def_prop rdfs:domain ?metaClass .
+                 ?metaClass owl:unionOf ?collection .
+                 ?collection rdf:rest*/rdf:first ?d_def_class .
+              }
+            }
+            {
+              { ?d_def_prop rdfs:subPropertyOf* ?property. }
+              UNION {
+                ?property rdfs:subPropertyOf+ ?d_def_prop.
+                FILTER NOT EXISTS {
+                  ?mid_prop rdfs:subPropertyOf+ ?d_def_prop.
+                  ?property rdfs:subPropertyOf* ?mid_prop.
+                  {
+                    {
+                    ?mid_prop rdfs:domain ?any_domain.
+                    }
+                    UNION {
+                      ?mid_prop owl:inverseOf ?mid_inv.
+                      ?mid_inv rdfs:range ?any_range.
+                    }
+                  }
+                }
+              }
+            }\n";
       }
       if (isset($class_after)) {
         $query .=
-                  "  <$class_after> rdfs:subClassOf* ?r_def_class.\n"
-                  . "  {\n"
-                  . "    { ?r_def_prop rdfs:range ?r_def_class. }\n"
-                  . "    UNION\n"
-                  . "    {\n"
-                  . "      ?r_def_prop owl:inverseOf ?inv.\n"
-                  . "      ?inv rdfs:domain ?inv.\n"
-                  . "    }\n"
-                  . "  }\n"
-                  . "  {\n"
-                  . "    { ?r_def_prop rdfs:subPropertyOf* ?property. }\n"
-                  . "    UNION\n"
-                  . "    {\n"
-                  . "      ?property rdfs:subPropertyOf+ ?r_def_prop.\n"
-                  . "      FILTER NOT EXISTS {\n"
-                  . "        ?mid_prop rdfs:subPropertyOf+ ?r_def_prop.\n"
-                  . "        ?property rdfs:subPropertyOf* ?mid_prop.\n"
-                  . "        {\n"
-                  . "          { ?mid_prop rdfs:range ?any_range. }\n"
-                  . "          UNION\n"
-                  . "          {\n"
-                  . "            ?mid_prop owl:inverseOf ?mid_inv.\n"
-                  . "            ?mid_inv rdfs:domain ?any_domain.\n"
-                  . "          }\n"
-                  . "        }\n"
-                  . "      }\n"
-                  . "    }\n"
-                  . "  }\n";
+          "  <$class_after> rdfs:subClassOf* ?r_def_class.
+            {
+              {
+                ?r_def_prop rdfs:range ?r_def_class.
+              }
+              UNION {
+                ?r_def_prop owl:inverseOf ?inv.
+                ?inv rdfs:domain ?inv.
+              }
+            }
+            {
+              {
+                ?r_def_prop rdfs:subPropertyOf* ?property.
+              }
+              UNION {
+                ?property rdfs:subPropertyOf+ ?r_def_prop.
+                FILTER NOT EXISTS {
+                  ?mid_prop rdfs:subPropertyOf+ ?r_def_prop.
+                  ?property rdfs:subPropertyOf* ?mid_prop.
+                  {
+                    {
+                      ?mid_prop rdfs:range ?any_range.
+                    }
+                    UNION {
+                      ?mid_prop owl:inverseOf ?mid_inv.
+                      ?mid_inv rdfs:domain ?any_domain.
+                    }
+                  }
+                }
+              }
+            }\n";
       }
       $query .= "  { { ?property a owl:ObjectProperty. } UNION { ?property a rdf:Property. } }\n";
       $query .= "}";
-      /*      if (isset($class)) {
-      $query .=
-      "  GRAPH ?g8 { <$class> rdfs:subClassOf* ?d_def_class. }\n"
-      ."  {\n"
-      ."    { GRAPH ?g5 { ?d_def_prop rdfs:domain ?d_def_class.}}\n"
-      ."    UNION\n"
-      ."    {\n"
-      ."       GRAPH ?g6 { ?d_def_prop owl:inverseOf ?inv. }\n"
-      ."       GRAPH ?g7 { ?inv rdfs:range ?d_def_class. }\n"
-      ."    }\n"
-      ."  }\n"
-      ."  {\n"
-      ."    { GRAPH ?g9 { ?d_def_prop rdfs:subPropertyOf* ?property.}}\n"
-      ."    UNION\n"
-      ."    {\n"
-      ."      GRAPH ?g10 { ?property rdfs:subPropertyOf+ ?d_def_prop. }\n"
-      ."      FILTER NOT EXISTS {\n"
-      ."        {\n"
-      ."          GRAPH ?g11 { ?mid_prop rdfs:subPropertyOf+ ?d_def_prop. }\n"
-      ."          GRAPH ?g12 { ?property rdfs:subPropertyOf* ?mid_prop. }\n"
-      ."        }\n"
-      ."        {\n"
-      ."          { GRAPH ?g13 { ?mid_prop rdfs:domain ?any_domain.}}\n"
-      ."          UNION\n"
-      ."          {\n"
-      ."            GRAPH ?g14 { ?mid_prop owl:inverseOf ?mid_inv. }\n"
-      ."            GRAPH ?g15 { ?mid_inv rdfs:range ?any_range. }\n"
-      ."          }\n"
-      ."        }\n"
-      ."      }\n"
-      ."    }\n"
-      ."  }\n";
-      }
-      if (isset($class_after)) {
-      $query .=
-      "  GRAPH ?g19 { <$class_after> rdfs:subClassOf* ?r_def_class.}\n"
-      ."  {\n"
-      ."    { GRAPH ?g16 { ?r_def_prop rdfs:range ?r_def_class.} }\n"
-      ."    UNION\n"
-      ."    {\n"
-      ."      GRAPH ?g17 { ?r_def_prop owl:inverseOf ?inv. }\n"
-      ."      GRAPH ?g18 { ?inv rdfs:domain ?inv. }\n"
-      ."    }\n"
-      ."  }\n"
-      ."  {\n"
-      ."    { GRAPH ?g20 { ?r_def_prop rdfs:subPropertyOf* ?property.} }\n"
-      ."    UNION\n"
-      ."    {\n"
-      ."      GRAPH ?g21 { ?property rdfs:subPropertyOf+ ?r_def_prop. }\n"
-      ."      FILTER NOT EXISTS {\n"
-      ."        {\n"
-      ."          GRAPH ?g22 { ?mid_prop rdfs:subPropertyOf+ ?r_def_prop. }\n"
-      ."          GRAPH ?g23 { ?property rdfs:subPropertyOf* ?mid_prop. }\n"
-      ."        }\n"
-      ."        {\n"
-      ."          { GRAPH ?g24 { ?mid_prop rdfs:range ?any_range. } }\n"
-      ."          UNION\n"
-      ."          {\n"
-      ."            GRAPH ?g25 { ?mid_prop owl:inverseOf ?mid_inv. }\n"
-      ."            GRAPH ?g26 { ?mid_inv rdfs:domain ?any_domain. }\n"
-      ."          }\n"
-      ."        }\n"
-      ."      }\n"
-      ."    }\n"
-      ."  }\n";
-      $query .= "  { { GRAPH ?g1 { ?property a owl:ObjectProperty. } } UNION { GRAPH ?g2 { ?property a rdf:Property. } } }\n";
-      $query .= "}";
-      }  */
     }
 
-    // dpm($query, "query?");.
     $result = $this->directQuery($query);
     $output = [];
     foreach ($result as $obj) {
