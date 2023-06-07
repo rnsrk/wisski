@@ -186,7 +186,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         'IADQuantity' => NULL,
         'IADParentInvNumber' => NULL,
         'IADotherNumbers' => NULL,
-              
+        'CurrentOwnership' => NULL,              
       ),
   );
 
@@ -1001,8 +1001,8 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         $where .= " " . $path->getDatatypeProperty() . " <> ''";
       else if($cond['operator'] == "EMPTY")
               $where .= " " . $path->getDatatypeProperty() . " IS NULL OR datalength(" . $path->getDatatypeProperty() .")=0 ";
-      else
-        $this->messenger()->addError("Operator " . $cond['operator'] . " not supported - sorry.");
+//      else
+//        $this->messenger()->addError("Operator " . $cond['operator'] . " not supported - sorry.");
       
     }
 

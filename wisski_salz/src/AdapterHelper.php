@@ -345,7 +345,13 @@ class AdapterHelper {
     
     //@TODO try something more sophisticated
     // there may be duplicate entries...
-    //$ids = array_unique(array_keys($ids));
+    
+    // By Mark: If there are several adapters it may fetch the same entity id
+    // several times. Clean that here. Here I got something like array( 0 => 8129, 1 => 8129)
+    if(empty($input_adapter_id))
+      $ids = array_unique($ids);
+//    dpm(serialize($ids), "ids?");
+//    dpm(serialize($input_adapter_id), "adap?");
     if (count($ids) > 1) {
       //dpm($ids,'from DB, multiple');
       \Drupal::messenger()->addStatus("There are multiple entity IDs for a URI. See log reports for details.");
