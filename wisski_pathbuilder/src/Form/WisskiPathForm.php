@@ -35,6 +35,15 @@ class WisskiPathForm extends EntityForm {
   protected array $pathArray;
 
   /**
+   * The path Entity.
+   *
+   * @var \Drupal\Core\Entity\EntityInterface
+   *
+   * @todo Should be \Drupal\wisski_pathbuilder\WisskiPathInterface
+   */
+  protected EntityInterface $path;
+
+  /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $wisski_pathbuilder = NULL) {
@@ -58,18 +67,18 @@ class WisskiPathForm extends EntityForm {
   }
 
   /**
-   *
+   * {@inheritdoc}
    */
-  public function form(array $form, FormStateInterface $form_state) {
+  public function form(array $form, FormStateInterface $form_state): array {
     // Return array();
-    $path = $this->entity;
+    $this->path = $this->entity;
     // dpm(microtime(), "in");
     // The name for this path.
     $form['name'] = [
       '#type' => 'textfield',
       '#maxlength' => 255,
       '#title' => $this->t('Name'),
-      '#default_value' => empty($path->getName()) ? NULL : $path->getName(),
+      '#default_value' => empty($this->path->getName()) ? NULL : $this->path->getName(),
       '#attributes' => ['placeholder' => $this->t('Name for the path')],
       // '#description' => $this->t("Name of the path."),
       '#required' => TRUE,
@@ -79,8 +88,8 @@ class WisskiPathForm extends EntityForm {
     $form['id'] = [
       '#type' => 'machine_name',
       '#maxlength' => EntityTypeInterface::BUNDLE_MAX_LENGTH,
-      '#default_value' => $path->getID(),
-      '#disabled' => !$path->isNew(),
+      '#default_value' => $this->path->getID(),
+      '#disabled' => !$this->path->isNew(),
       '#machine_name' => [
         'source' => ['name'],
         'exists' => 'wisski_pathbuilder_path_load',
@@ -93,7 +102,7 @@ class WisskiPathForm extends EntityForm {
       '#type' => 'select',
       '#title' => $this->t('Path Type'),
       '#options' => ["Path" => "Path", "Group" => "Group", "SmartGroup" => "SmartGroup"],
-      '#default_value' => $path->getType(),
+      '#default_value' => $this->path->getType(),
       '#description' => $this->t("Is this Path a group?"),
     ];
 
@@ -158,7 +167,7 @@ class WisskiPathForm extends EntityForm {
     // dpm(microtime(), "in3");
     // first, set the default values.
     if (!isset($this->pathArray)) {
-      $this->pathArray = $path->isNew() ? [] : $path->getPathArray();
+      $this->pathArray = $this->path->isNew() ? [] : $this->path->getPathArray();
     }
     $selected_row = 0;
     $fast_mode = FALSE;
@@ -233,35 +242,31 @@ class WisskiPathForm extends EntityForm {
     // dpm($this->path_array);
     // return $form;.
     for ($current_row = 0; $current_row <= count($this->pathArray); $current_row++) {
-
       if (isset($this->pathArray[$current_row]) && $this->pathArray[$current_row] != 'empty') {
         $path_element = $this->pathArray[$current_row];
-        $element_options = [$path_element => $path_element];
+        $stepOptions['options'] = [$path_element => $path_element];
       }
       else {
         $path_element = 'empty';
-        $element_options = [];
+        $stepOptions['options'] = [];
       }
 
       $is_current = $current_row === $selected_row;
       if ($is_current) {
         $history = array_slice($this->pathArray, 0, $current_row);
         $future = $consistent_change ? array_slice($this->pathArray, $current_row + 1) : [];
-        $element_options = $this->engine->getPathAlternatives($history, $future, $fast_mode);
-        // dpm($element_options,'options');
-        // dpm($future, "fm");.
+        $stepOptions = $this->engine->getPathAlternatives($history, $future, $fast_mode);
       }
-
       // If the engine has no ontology, it currently returns false which is evil as options.
-      if ($element_options === FALSE) {
-        $this->messenger()->addError($this->t("No path options for this path could be evaluated. Probably the ontology is missing in your store!"));
-        $element_options = [];
+      if ($stepOptions['options'] === FALSE) {
+        $this->logger('Wisski Path Form')->error($this->t("No path options for this path could be evaluated. Probably the ontology is missing in your store!"));
+        $stepOptions['options'] = [];
       }
-
       $form_path_elem['select_box'] = [
         '#type' => 'select',
         '#name' => 'select_box_' . $current_row,
-        '#options' => $element_options,
+        '#options' => $stepOptions['options'],
+        '#options_attributes' => $stepOptions['optionsAttributes'],
         '#empty_value' => 'empty',
         '#empty_option' => $this->t('please select'),
         '#disabled' => !$is_current,
@@ -319,17 +324,18 @@ class WisskiPathForm extends EntityForm {
     // dpm(microtime(), "in5");.
     if ($this->engine->providesDatatypeProperty() && !empty($this->pathArray[$last_row]) && $this->pathArray[$last_row] !== 'empty') {
       // dpm(microtime(), "in5.1");.
-      $options = $this->engine->getPrimitiveMapping($this->pathArray[$last_row]);
+      $datatypePropertyOptions = $this->engine->getPrimitiveMapping($this->pathArray[$last_row]);
       // dpm(microtime(), "in5.2");.
-      if (!empty($options)) {
+      if (!empty($datatypePropertyOptions['options'])) {
         $form['path_content']['datatype_property'] = [
           '#type' => 'select',
           '#title' => $this->t('Datatype Property'),
           '#name' => 'datatype_property',
-          '#options' => $options,
+          '#options' => $datatypePropertyOptions['options'],
+          '#options_attributes' => $datatypePropertyOptions['optionsAttributes'],
           '#empty_value' => 'empty',
           '#empty_option' => ' - ' . $this->t('select') . ' - ',
-          '#default_value' => $path->getDatatypeProperty() ?: 'empty',
+          '#default_value' => $this->path->getDatatypeProperty() ?: 'empty',
         ];
       }
     }
@@ -349,19 +355,19 @@ class WisskiPathForm extends EntityForm {
         '#options' => $disamb_options,
         '#empty_value' => 'empty',
         '#empty_option' => ' - ' . $this->t('select') . ' - ',
-        '#default_value' => $path->getDisamb() ?: 'empty',
+        '#default_value' => $this->path->getDisamb() ?: 'empty',
       ];
 
       $form['path_content']['transitive'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Transitive'),
-        '#default_value' => $path->getTransitive() ?: 0,
+        '#default_value' => $this->path->getTransitive() ?: 0,
       ];
 
       $form['path_content']['irreflexive'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Irreflexive'),
-        '#default_value' => $path->getIrreflexive() ?: 0,
+        '#default_value' => $this->path->getIrreflexive() ?: 0,
       ];
 
     }
@@ -374,7 +380,6 @@ class WisskiPathForm extends EntityForm {
    *
    */
   public function ajaxCallback(array $form, FormStateInterface $form_state) {
-
     return $form['path_content'];
   }
 
@@ -383,7 +388,6 @@ class WisskiPathForm extends EntityForm {
    * overridden to ensure the correct mapping of form values to entity properties
    */
   protected function copyFormValuesToEntity(EntityInterface $entity, array $form, FormStateInterface $form_state) {
-
     $values = $form_state->getValues();
 
     // From parent, not sure what this is necessary for.
@@ -421,24 +425,18 @@ class WisskiPathForm extends EntityForm {
    * {@inheritdoc}
    */
   public function save(array $form, FormStateInterface $form_state) {
-    // parent::save($form,$form_state);
-    // $pb = \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilder::load($this->pb);.
-    // dpm(array($this->entity,$this->pb),__METHOD__);.
-    // drupal_set_message("I saved!");
-    // return;.
-    $path = $this->entity;
-
-    $status = $path->save();
-    // dpm($path,'Saved path');.
+    $this->path = $this->entity;
+    $status = $this->path->save();
+    // dpm($this->path,'Saved path');.
     if ($status) {
       // Setting the success message.
       $this->messenger()->addStatus($this->t('Saved the path: @id.', [
-        '@id' => $path->getID(),
+        '@id' => $this->path->getID(),
       ]));
     }
     else {
       $this->messenger()->addError($this->t('The path @id could not be saved.', [
-        '@id' => $path->getID(),
+        '@id' => $this->path->getID(),
       ]));
     }
 
@@ -453,15 +451,15 @@ class WisskiPathForm extends EntityForm {
     $pb = WisskiPathbuilderEntity::load($pbid);
 
     // Add the path to its tree if it was not there already.
-    if (!$pb->hasPbPath($path->id())) {
-      $pb->addPathToPathTree($path->id(), 0, $path->isGroup());
+    if (!$pb->hasPbPath($this->path->id())) {
+      $pb->addPathToPathTree($this->path->id(), 0, $this->path->isGroup());
     }
 
     // Save the pb.
     $status = $pb->save();
     // dpm($pb,'after edit');.
     // $form_state->setRedirect('entity.wisski_pathbuilder.edit_form',array('wisski_pathbuilder' => $pbid));.
-    $form_state->setRedirect('entity.wisski_pathbuilder.configure_field_form', ['wisski_pathbuilder' => $pbid, 'wisski_path' => $path->id()]);
+    $form_state->setRedirect('entity.wisski_pathbuilder.configure_field_form', ['wisski_pathbuilder' => $pbid, 'wisski_path' => $this->path->id()]);
   }
 
 }
