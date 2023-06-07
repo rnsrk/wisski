@@ -4134,14 +4134,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function checkTheReasoner(array $form, FormStateInterface $form_state) {
     $candidate = $form_state->getValue($form_state->getTriggeringElement()['#name']);
     if ($this->isAProperty($candidate)) {
-      $stored = $this->getClassesFromStore($candidate)['options'];
-      $cached = $this->getClassesFromCache($candidate)['options'];
+      $stored = array_keys($this->getClassesFromStore($candidate)['options']);
+      $cached = array_keys($this->getClassesFromCache($candidate)['options']);
     }
     else {
-      $stored = $this->getPropertiesFromStore($candidate)['options'];
-      $cached = $this->getPropertiesFromCache($candidate)['options'];
+      $stored = array_keys($this->getPropertiesFromStore($candidate)['options']);
+      $cached = array_keys($this->getPropertiesFromCache($candidate)['options']);
     }
-
     $more_stored = array_diff($stored, $cached);
     $more_cached = array_diff($cached, $stored);
     if (empty($more_stored) && empty($more_cached)) {
