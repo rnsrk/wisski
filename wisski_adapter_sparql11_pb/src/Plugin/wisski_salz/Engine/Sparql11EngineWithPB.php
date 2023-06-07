@@ -4720,7 +4720,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $fetchedData = $result->fetchAll();
         foreach ($fetchedData as $row) {
           $uri = strval($row->$return_field);
-          $output['options'][$uri] = $uri;
+          $label = property_exists($row, "label") ? $row->label : $uri;
+          $output['options'][$uri] = $label;
           $output['optionsAttributes'][$row->$return_field] = ['title' => property_exists($row, "comment") ? $row->comment : $this->t('No comment.')];
         }
         $output['options'] = $output['options'] ?? [];
