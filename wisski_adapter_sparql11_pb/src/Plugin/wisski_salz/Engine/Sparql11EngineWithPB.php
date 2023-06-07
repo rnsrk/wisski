@@ -4550,7 +4550,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     // Prepare table schmema.
     $insert = $this->prepareInsert('info');
-    dpm($results, '$results');
     // Insert values in table.
     foreach ($results as $row) {
       $semanticUnit = $row->semanticUnit->getUri();
