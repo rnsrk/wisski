@@ -204,6 +204,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if (!empty($out)) {
       return $out;
     }
+   \Drupal::logger('WissKI path retrieve')->error('ERROR3');
 
     // In case of properties we can skip this.
     if ($step[0] == '^') {
@@ -364,21 +365,37 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $query =
       "SELECT DISTINCT ?class ?label ?comment WHERE {
         {
-          GRAPH ?g1 {?class a owl:Class}
+          GRAPH ?g1 {
+            ?class a owl:Class
+          }
         }
         UNION {
-          GRAPH ?g2 {?class a rdfs:Class} }
+          GRAPH ?g2 {
+            ?class a rdfs:Class
+          }
+        }
         UNION {
           GRAPH ?g3 {
             ?ind a ?class .
             ?class a ?type .
           }
         }
-         OPTIONAL { ?class rdfs:comment ?comment . }
-         OPTIONAL { ?class rdfs:label ?label . }
+        OPTIONAL {
+          ?class rdfs:comment ?comment .
+        }
+        OPTIONAL {
+          ?class rdfs:label ?label .
+        }
          FILTER(!isBlank(?class))
       } ";
-    $result = $this->directQuery($query);
+
+    try {
+      $result = $this->directQuery($query);
+    }
+    catch (\Exception $e) {
+      return [];
+    }
+
     if ($result) {
       if (count($result) > 0) {
         $output = [];
@@ -423,7 +440,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           GRAPH ?g2 {
             ?property a rdf:Property .
           }
-        } .
+        }
         OPTIONAL {
           ?class rdfs:comment ?comment .
         }
@@ -4076,12 +4093,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         ],
       ];
 
-      $classes_n_properties = array_merge_recursive($this->getClasses(), $this->getProperties());
-
-      if ($this->getClasses() === FALSE || $this->getProperties() === FALSE) {
+      if (empty($this->getClasses()) || empty($this->getProperties())) {
         $this->messenger()
-          ->addStatus($this->t('Bad class and property cache.'));
+          ->addStatus($this->t('Bad class and property cache. Try to delete reasoner tables and re-compute.'));
+        $classes_n_properties['options'] = [];
       }
+      else {
+        $classes_n_properties = array_merge_recursive($this->getClasses(), $this->getProperties());
+      }
+
       $form['reasoner']['tester'] = [
         '#type' => 'details',
         '#title' => $this->t('Check reasoning results'),
@@ -4685,7 +4705,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    */
   public function retrieve($type, $return_field = NULL, $condition_field = NULL, $condition_value = NULL) {
     $table_name = $this->adapterId() . '_' . $type;
-    $query = \Drupal::service('database')
+    $database = \Drupal::service('database');
+    $schema = $database->schema();
+    if (!$schema->tableExists($table_name)) {
+      \Drupal::logger('WissKI path retrieve')->error($this->t('Database table :table not found, please rerun reasoner!', [':table' => $table_name]));
+      return [];
+    }
+
+    $query = $database
       ->select($table_name, 't');
 
     switch ($type) {
@@ -4706,7 +4733,21 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         break;
     }
 
-    $query->leftjoin($this->adapterId() . '_info', 'i', 't.' . $return_field . '= i.semantic_unit');
+    $info_table = $this->adapterId() . '_info';
+
+    if (!$schema->tableExists($info_table)) {
+      \Drupal::logger('WissKI path retrieve')->error($this->t('Database table :table not found, please rerun reasoner!', [':table' => $info_table]));
+      return [];
+    }
+    try {
+      $query->leftjoin($info_table, 'i', 't.' . $return_field . '= i.semantic_unit');
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('WissKI path retrieve')->error($e);
+      $this->messenger()->addError($this->t('Database table :table not found, please rerun reasoner!', [':table' => $info_table]));
+      return [];
+    }
+
     $query->fields('i', ['label', 'comment']);
 
     if (!is_null($condition_field) && !is_null($condition_value)) {
@@ -4733,7 +4774,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
     catch (\Exception $e) {
       \Drupal::logger('WissKI path retrieve')->error($e);
-      return FALSE;
+      return [];
     }
   }
 
