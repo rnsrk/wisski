@@ -4551,6 +4551,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   /**
    * Insert semantic unit info to database.
    *
+   * @throws \Exception
    * @todo Find comment for the inverse properties.
    */
   public function insertInfoToDb(): void {
@@ -4568,9 +4569,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $results = $this->directQuery($query);
 
     // Prepare table schmema.
+
     $insert = $this->prepareInsert('info');
     // Insert values in table.
+    ;
     foreach ($results as $row) {
+      if (empty((array)$row)) {
+      $this->messenger()->addWarning($this->t('Reasoner not run, because there is nothing in the triplestore! Please import an ontology!'));
+        continue;
+      };
       $semanticUnit = $row->semanticUnit->getUri();
       $label = $row->label;
       $comment = property_exists($row, 'comment') ? $row->comment : $this->t('No comment');
