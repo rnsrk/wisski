@@ -272,7 +272,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $output = [];
     foreach ($result as $obj) {
       $prop['uri'] = $obj->property->getUri();
-      $prop['label'] = property_exists($obj, "label") ? $obj->label->getValue() : $prop['uri'];
+      $prop['label'] = (property_exists($obj, "label") && !is_null($obj->label)) ? $obj->label->getValue() : $prop['uri'];
       $prop['comment'] = property_exists($obj, "comment") ? $obj->comment->getValue() : $this->t('No comment.');
       $output['options'][$prop['uri']] = $prop['label'];
       $output['optionsAttributes'][$prop['uri']] = ['title' => $prop['comment']];
@@ -401,7 +401,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $output = [];
         foreach ($result as $obj) {
           $class['uri'] = $obj->class->getUri();
-          $class['label'] = property_exists($obj, "label") ? $obj->label->getValue() : $class['uri'];
+          $class['label'] = (property_exists($obj, "label") && !is_null($obj->label)) ? $obj->label->getValue() : $class['uri'];
           $class['comment'] = property_exists($obj, "comment") ? $obj->comment->getValue() : $this->t('No comment.');
           $output['options'][$class['uri']] = $class['label'];
           $output['optionsAttributes'][$class['uri']] = ['title' => $class['comment']];
@@ -455,7 +455,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       if (count($result) > 0) {
         foreach ($result as $obj) {
           $prop['uri'] = $obj->property->getUri();
-          $prop['label'] = property_exists($obj, "label") ? $obj->label->getValue() : $prop['uri'];
+          $prop['label'] = (property_exists($obj, "label") && !is_null($obj->label)) ? $obj->label->getValue() : $prop['uri'];
           $prop['comment'] = property_exists($obj, "comment") ? $obj->comment->getValue() : $this->t('No comment.');
           $output['options'][$prop['uri']] = $prop['label'];
           $output['optionsAttributes'][$prop['uri']] = ['title' => $prop['comment']];
@@ -708,7 +708,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     foreach ($result as $obj) {
       $prop['uri'] = $obj->property->getUri();
       $prop['comment'] = property_exists($obj, "comment") ? $obj->comment->getValue() : $this->t('No comment.');
-      $prop['label'] = property_exists($obj, "label") ? $obj->label->getValue() : $prop['uri'];
+      $prop['label'] = (property_exists($obj, "label") && !is_null($obj->label)) ? $obj->label->getValue() : $prop['uri'];
       $output['options'][$prop['uri']] = $prop['label'];
       $output['optionsAttributes'][$prop['uri']] = ['title' => $prop['comment']];
     }
@@ -862,7 +862,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     foreach ($result as $obj) {
       $class['uri'] = $obj->class->getUri();
       $class['comment'] = property_exists($obj, "comment") ? $obj->comment->getValue() : $this->t('No comment.');
-      $class['label'] = property_exists($obj, "label") ? $obj->label->getValue() : $class['uri'];
+      $class['label'] = (property_exists($obj, "label") && !is_null($obj->label)) ? $obj->label->getValue() : $class['uri'];
       $output['options'][$class['uri']] = $class['label'];
       $output['optionsAttributes'][$class['uri']] = ['title' => $class['comment']];
     }
@@ -4761,7 +4761,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $fetchedData = $result->fetchAll();
         foreach ($fetchedData as $row) {
           $uri = strval($row->$return_field);
-          $label = property_exists($row, "label") ? $row->label : $uri;
+          $label = (property_exists($row, "label") && !is_null($row->label)) ? $row->label : $uri;
           $output['options'][$uri] = $label;
           $output['optionsAttributes'][$row->$return_field] = ['title' => property_exists($row, "comment") ? $row->comment : $this->t('No comment.')];
         }
