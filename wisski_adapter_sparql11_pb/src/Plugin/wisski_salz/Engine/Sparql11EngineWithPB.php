@@ -2,17 +2,19 @@
 
 namespace Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine;
 
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Database\Query\Insert;
-use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
-use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
-use Drupal\field\Entity\FieldStorageConfig;
-use Drupal\wisski_salz\Entity\Adapter;
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11Engine;
-use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\wisski_adapter_sparql11_pb\Query\Query;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
+use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
+use Drupal\wisski_salz\Entity\Adapter;
+use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11Engine;
 use EasyRdf\Format as EasyRdf_Format;
 
 /**
@@ -34,11 +36,19 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   protected bool $allowInversePropertyPattern;
 
   /**
+   * Current Pathbuilder languages.
+   *
+   * @var string[]
+   */
+  protected $pathbuilderLanguage;
+
+  /**
    * {@inheritdoc}
    */
   public function defaultConfiguration(): array {
     return parent::defaultConfiguration() + [
       'allowInversePropertyPattern' => FALSE,
+      'pathbuilderLanguage' => NULL,
     ];
   }
 
@@ -63,6 +73,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // This does not exist.
     parent::setConfiguration($configuration);
     $this->allowInversePropertyPattern = $this->configuration['allowInversePropertyPattern'];
+    $this->pathbuilderLanguage = $this->configuration['pathbuilderLanguage'];
   }
 
   /**
@@ -71,6 +82,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   public function getConfiguration(): array {
     return [
       'allowInversePropertyPattern' => $this->allowInversePropertyPattern,
+      'pathbuilderLanguage' => $this->pathbuilderLanguage,
     ] + parent::getConfiguration();
   }
 
@@ -204,7 +216,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if (!empty($out)) {
       return $out;
     }
-   \Drupal::logger('WissKI path retrieve')->error('ERROR3');
 
     // In case of properties we can skip this.
     if ($step[0] == '^') {
@@ -355,10 +366,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 
   /**
+   * Retrieve the Classes from triplestore or cache.
    *
+   * @param string $language
+   *   The language of labels and comments.
    */
-  public function getClasses() {
-    $out = $this->retrieve('classes', 'class');
+  public function getClasses($language = NULL) {
+    $out = $this->retrieve('classes', 'class', NULL, NULL, $language);
     if (!empty($out)) {
       return $out;
     }
@@ -420,12 +434,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    * If there is no database table, triplestore is queried.
    *
+   * @param string $language
+   *   The language of the labels and comments.
+   *
    * @return array
    *   Consists of "options" as an assocArray of <uri> => <uri> and
    *   "optionsAttributes" as an assocArray 'title' => <comment>.
    */
-  public function getProperties(): array {
-    $out = $this->retrieve('properties', 'property');
+  public function getProperties($language = NULL): array {
+    $out = $this->retrieve('properties', 'property', NULL, NULL, $language);
     if (!empty($out)) {
       return $out;
     }
@@ -3978,34 +3995,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return $ns;
   }
 
-  private $super_properties = [];
-
-  private $clean_super_properties = [];
-
   /**
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    // $cids = array(
-    // 'properties',
-    // 'sub_properties',
-    // 'super_properties',
-    // 'inverse_properties',
-    // 'sub_classes',
-    // 'super_classes',
-    // 'domains',
-    // 'reverse_domains',
-    // 'ranges',
-    // 'reverse_ranges',
-    // );
-    // $results = array();
-    // foreach ($cids as $cid) {
-    // if ($cache = \Drupal::cache()->get('wisski_reasoner_'.$cid)) {
-    // $results[$cid] = $cache->data;
-    // }
-    // }
-    // dpm($results,'Results');
-    $in_cache = $this->isCacheSet();
 
     $form = parent::buildConfigurationForm($form, $form_state);
 
@@ -4080,8 +4073,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         '#default_value' => $always_reason,
       ],
     ];
-    if ($in_cache) {
-      $form['reasoner']['start_button']['#disabled'] = !$form_state->getValue('flush_button');
+    if ($this->isCacheSet()) {
+      $form['reasoner']['start_button']['#disabled'] = TRUE;
       $form['reasoner']['flush_button'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Re-Compute results'),
@@ -4093,36 +4086,83 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         ],
       ];
 
-      if (empty($this->getClasses()) || empty($this->getProperties())) {
-        $this->messenger()
-          ->addStatus($this->t('Bad class and property cache. Try to delete reasoner tables and re-compute.'));
-        $classes_n_properties['options'] = [];
-      }
-      else {
-        $classes_n_properties = array_merge_recursive($this->getClasses(), $this->getProperties());
-      }
+      $availableLanguages = $this->getLanguagesFromStore();
 
-      $form['reasoner']['tester'] = [
-        '#type' => 'details',
-        '#title' => $this->t('Check reasoning results'),
-        'selected_prop' => [
-          '#type' => 'select',
-          '#options' => $classes_n_properties['options'],
-          '#empty_value' => 'empty',
-          '#empty_option' => $this->t('select a class or property'),
-          '#ajax' => [
-            'wrapper' => 'wisski-reasoner-check',
-            'callback' => [$this, 'checkTheReasoner'],
-          ],
-        ],
-        'check_results' => [
-          '#type' => 'textarea',
-          '#prefix' => '<div id="wisski-reasoner-check">',
-          '#suffix' => '</div>',
+      $form['reasoner']['pathbuilderLanguage'] = [
+        '#type' => 'select',
+        '#title' => $this->t('Pathbuilder Language'),
+        '#default_value' => NULL,
+        '#empty_option' => ['und' => $this->t('Blank IRIs')],
+        '#description' => $this->t('Please select the language of your pathbuilder'),
+        '#options' => array_combine($availableLanguages, $availableLanguages),
+        '#ajax' => [
+          'wrapper' => 'wisski-reasoner-block',
+          'callback' => [$this, 'setPathbuilderLanguage'],
         ],
       ];
+
+      $form['reasoner']['tester'] = $this->computeTestingResults($form['reasoner']['pathbuilderLanguage']['#default_value']);
+    }
+    else {
+      $form['reasoner']['start_button']['#disabled'] = FALSE;
     }
     return $form;
+  }
+
+  /**
+   * Computes the form part for reasoning test results.
+   *
+   * @param string $language
+   *   The language of the class and property labels.
+   *
+   * @return array
+   *   The form element.
+   */
+  public function computeTestingResults($language = NULL): array {
+    $classes = $this->getClasses($language);
+    $properties = $this->getProperties($language);
+    if (empty($classes) || empty($properties)) {
+      $this->messenger()
+        ->addStatus($this->t('Bad class and property cache. Try to delete reasoner tables and re-compute.'));
+      $classes_n_properties['options'] = [];
+    }
+    else {
+      $classes_n_properties = array_merge_recursive($classes, $properties);
+      uasort($classes_n_properties['options'], 'strnatcasecmp');
+    }
+    return [
+      '#type' => 'details',
+      '#title' => $this->t('Check reasoning results'),
+      'selected_prop' => [
+        '#type' => 'select',
+        '#options' => $classes_n_properties['options'],
+        '#empty_value' => 'empty',
+        '#empty_option' => $this->t('select a class or property'),
+        '#ajax' => [
+          'wrapper' => 'wisski-reasoner-check',
+          'callback' => [$this, 'checkTheReasoner'],
+        ],
+      ],
+      'check_results' => [
+        '#type' => 'textarea',
+        '#prefix' => '<div id="wisski-reasoner-check">',
+        '#value' => '',
+        '#suffix' => '</div>',
+      ],
+      '#prefix' => '<div id="wisski-check-reasoning-wrapper">',
+      '#suffix' => '</div>',
+    ];
+  }
+
+  /**
+   * Set language and refresh reasoner results.
+   */
+  public function setPathbuilderLanguage(array $form, FormStateInterface $form_state) {
+    $language = $form_state->getValue('pathbuilderLanguage');
+    $this->pathbuilderLanguage = $language;
+    $response = new AjaxResponse();
+    $response->addCommand(new ReplaceCommand('#wisski-check-reasoning-wrapper', $this->computeTestingResults($language)));
+    return $response;
   }
 
   /**
@@ -4139,6 +4179,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     \Drupal::state()->set('wisski_always_reason', $always_reason);
 
     $this->allowInversePropertyPattern = $form_state->getValue('allowInversePropertyPattern');
+    $this->pathbuilderLanguage = $form_state->getValue('pathbuilderLanguage');
   }
 
   /**
@@ -4549,47 +4590,81 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 
   /**
+   *
+   */
+  public function getLanguagesFromStore() {
+    $query =
+    "SELECT DISTINCT (lang(?o) as ?lang) WHERE {
+      GRAPH ?g {
+        {
+          ?s ?p ?o .
+        }
+        FILTER (STRLEN(?lang) != 0)
+      }
+    }";
+
+    $results = $this->directQuery($query);
+    $languages = [];
+    foreach ($results as $row) {
+      $languages[] = $row->lang->getValue();
+    }
+
+    sort($languages);
+    return $languages;
+
+  }
+
+  /**
    * Insert semantic unit info to database.
    *
    * @throws \Exception
+   *
    * @todo Find comment for the inverse properties.
    */
   public function insertInfoToDb(): void {
-    $query =
-      "SELECT DISTINCT ?semanticUnit ?label ?comment ?commentOfInverse WHERE {
-      GRAPH ?g {
-        OPTIONAL {
-          ?semanticUnit <http://www.w3.org/2000/01/rdf-schema#label> ?label .
+
+    foreach (['label', 'comment'] as $type) {
+      $statement = $type === 'label' ? '?semanticUnit <http://www.w3.org/2000/01/rdf-schema#label> ?label .' : '?semanticUnit <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .';
+      $query =
+        "SELECT DISTINCT ?semanticUnit ?$type (lang(?$type) as ?lang) WHERE {
+        GRAPH ?g {
+          OPTIONAL {
+            $statement
+          }
         }
-        OPTIONAL {
-          ?semanticUnit <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .
-        }
+      }";
+
+      $results = $this->directQuery($query);
+
+      // Prepare table schmema.
+      // Insert values in table.
+      $insert = $this->prepareInsert($type);
+      ;
+      foreach ($results as $row) {
+        if (empty((array) $row)) {
+          $this->messenger()
+            ->addWarning($this->t('Reasoner not run, because there is nothing in the triplestore! Please import an ontology!'));
+          return;
+        };
+        $semanticUnit = $row->semanticUnit->getUri();
+
+        $info = property_exists($row, $type) ? [
+          $type => $row->$type->getValue(),
+          'lang' => $row->$type->getLang(),
+        ] : [
+          $type => NULL,
+          'lang' => NULL,
+        ];
+        $insert->values(
+          [
+            'semantic_unit' => $semanticUnit,
+            $type => $info[$type],
+            'lang' => $info['lang'],
+          ]
+        );
       }
-    }";
-    $results = $this->directQuery($query);
-
-    // Prepare table schmema.
-
-    $insert = $this->prepareInsert('info');
-    // Insert values in table.
-    ;
-    foreach ($results as $row) {
-      if (empty((array)$row)) {
-      $this->messenger()->addWarning($this->t('Reasoner not run, because there is nothing in the triplestore! Please import an ontology!'));
-        continue;
-      };
-      $semanticUnit = $row->semanticUnit->getUri();
-      $label = $row->label;
-      $comment = property_exists($row, 'comment') ? $row->comment : $this->t('No comment');
-      $insert->values(
-        [
-          'semantic_unit' => $semanticUnit,
-          'label' => $label,
-          'comment' => $comment,
-        ]
-      );
+      $insert->execute();
     }
-    $insert->execute();
   }
 
   /**
@@ -4635,12 +4710,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    */
   protected function isPrepared() {
     try {
-      $result = !empty(\Drupal::service('database')
+      $result = \Drupal::service('database')
         ->select($this->adapterId() . '_classes', 'c')
-        ->fields('c')
-        ->range(0, 1)
-        ->execute());
-      return $result;
+        ->fields('c', ['class'])
+        ->countQuery()
+        ->execute()
+        ->fetchField();
+      $prepared = ($result === 0) ? FALSE : TRUE;
+      return $prepared;
+
     }
     catch (\Exception $e) {
       return FALSE;
@@ -4710,7 +4788,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @param string $condition_value
    *   The condition value.
    */
-  public function retrieve($type, $return_field = NULL, $condition_field = NULL, $condition_value = NULL) {
+  public function retrieve($type, $return_field = NULL, $condition_field = NULL, $condition_value = NULL, $language = NULL) {
     $table_name = $this->adapterId() . '_' . $type;
     $database = \Drupal::service('database');
     $schema = $database->schema();
@@ -4740,22 +4818,28 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         break;
     }
 
-    $info_table = $this->adapterId() . '_info';
+    foreach (['label', 'comment'] as $infoType) {
 
-    if (!$schema->tableExists($info_table)) {
-      \Drupal::logger('WissKI path retrieve')->error($this->t('Database table :table not found, please rerun reasoner!', [':table' => $info_table]));
-      return [];
-    }
-    try {
-      $query->leftjoin($info_table, 'i', 't.' . $return_field . '= i.semantic_unit');
-    }
-    catch (\Exception $e) {
-      \Drupal::logger('WissKI path retrieve')->error($e);
-      $this->messenger()->addError($this->t('Database table :table not found, please rerun reasoner!', [':table' => $info_table]));
-      return [];
-    }
+      $shortName = $infoType === 'label' ? 'l' : 'c';
+      $infoTable = $this->adapterId() . '_' . $infoType;
+      $pathbuilderLanguage = is_null($language) ? $this->pathbuilderLanguage : $language;
 
-    $query->fields('i', ['label', 'comment']);
+      if (!$schema->tableExists($infoTable)) {
+        \Drupal::logger('WissKI path retrieve')->error($this->t('Database table :table not found, please rerun reasoner!', [':table' => $infoTable]));
+        return [];
+      }
+      try {
+        $query->leftjoin($infoTable, $shortName, 't.' . $return_field . '=' . $shortName . '.semantic_unit AND ' . $shortName . '.lang = :language', [':language' => $pathbuilderLanguage]);
+      }
+      catch (\Exception $e) {
+        \Drupal::logger('WissKI path retrieve')->error($e);
+        $this->messenger()->addError($this->t('Database table :table not found, please rerun reasoner!', [':table' => $infoTable]));
+        return [];
+      }
+
+      $query->fields($shortName, [$infoType]);
+
+    }
 
     if (!is_null($condition_field) && !is_null($condition_value)) {
       $query->condition($condition_field, $condition_value);
@@ -4789,8 +4873,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * Implements hook_schema()
    */
   public static function getReasonerTableSchema() {
-    $schema['info'] = [
-      'description' => 'Hold information about semantic units and corresponding comments.',
+    $schema['label'] = [
+      'description' => 'Hold information about semantic units and it\'s corresponding labels.',
       'fields' => [
         'num' => [
           'description' => 'The Serial Number for semantic unit.',
@@ -4810,10 +4894,41 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           'length' => '2048',
           'not null' => FALSE,
         ],
+        'lang' => [
+          'description' => 'The language tag of the label (max length 35 chars!)',
+          'type' => 'varchar',
+          'length' => '35',
+          'not null' => FALSE,
+        ],
+      ],
+      'primary key' => ['num'],
+    ];
+
+    $schema['comment'] = [
+      'description' => 'Hold information about semantic units and it\'s corresponding comments.',
+      'fields' => [
+        'num' => [
+          'description' => 'The Serial Number for semantic unit.',
+          'type' => 'serial',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ],
+        'semantic_unit' => [
+          'description' => 'The uri of the semantic unit',
+          'type' => 'varchar',
+          'length' => '2048',
+          'not null' => TRUE,
+        ],
         'comment' => [
           'description' => 'The comment of the semantic unit',
           'type' => 'varchar',
           'length' => '10000',
+          'not null' => FALSE,
+        ],
+        'lang' => [
+          'description' => 'The language tag of the comment (max length 35 chars!)',
+          'type' => 'varchar',
+          'length' => '35',
           'not null' => FALSE,
         ],
       ],
