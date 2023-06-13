@@ -2,19 +2,18 @@
 
 namespace Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine;
 
-use Drupal\Core\Ajax\AjaxResponse;
-use Drupal\Core\Ajax\ReplaceCommand;
-use Drupal\Core\Database\Query\Insert;
-use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Language\LanguageInterface;
-use Drupal\field\Entity\FieldStorageConfig;
-use Drupal\wisski_adapter_sparql11_pb\Query\Query;
-use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
-use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\wisski_salz\Entity\Adapter;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\wisski_salz\Plugin\wisski_salz\Engine\Sparql11Engine;
+use Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Language\LanguageInterface;
+
+
+use Drupal\wisski_adapter_sparql11_pb\Query\Query;
 use EasyRdf\Format as EasyRdf_Format;
 
 /**
@@ -28,122 +27,114 @@ use EasyRdf\Format as EasyRdf_Format;
  * )
  */
 class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineInterface {
-  /**
-   * True if inverse property patterns are allowed.
-   *
-   * @var bool
-   */
-  protected bool $allowInversePropertyPattern;
+
+  protected $allow_inverse_property_pattern;
 
   /**
-   * Current Pathbuilder languages.
    *
-   * @var string[]
    */
-  protected $pathbuilderLanguage;
-
-  /**
-   * {@inheritdoc}
-   */
-  public function defaultConfiguration(): array {
+  public function defaultConfiguration() {
     return parent::defaultConfiguration() + [
-      'allowInversePropertyPattern' => FALSE,
-      'pathbuilderLanguage' => NULL,
+      'allow_inverse_property_pattern' => FALSE,
     ];
   }
 
   /**
    * {@inheritdoc}
    */
-  public function supportsOntology(): bool {
+  // Public function setBaseFieldFromStoreForUri($uri, $basefield, $value) {
+  // dpm("s1et base field was called with $uri, $basefield and $value.");
+  //    Return NULL;
+  //  }.
+
+  /**
+   * {@inheritdoc}
+   */
+  public function supportsOntology() {
     return TRUE;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function supportsTriples(): bool {
+  public function supportsTriples() {
     return TRUE;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function setConfiguration(array $configuration): void {
+  public function setConfiguration(array $configuration) {
+
     // This does not exist.
     parent::setConfiguration($configuration);
-    $this->allowInversePropertyPattern = $this->configuration['allowInversePropertyPattern'];
-    $this->pathbuilderLanguage = $this->configuration['pathbuilderLanguage'];
+    $this->allow_inverse_property_pattern = $this->configuration['allow_inverse_property_pattern'];
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getConfiguration(): array {
+  public function getConfiguration() {
     return [
-      'allowInversePropertyPattern' => $this->allowInversePropertyPattern,
-      'pathbuilderLanguage' => $this->pathbuilderLanguage,
+      'allow_inverse_property_pattern' => $this->allow_inverse_property_pattern,
     ] + parent::getConfiguration();
   }
 
+  /*******************
+   * BASIC Pathbuilder Support .***********************/
+
   /**
-   * Dummy for fast mode.
+   * {@inheritdoc}
    */
-  public function providesFastMode(): bool {
+  public function providesFastMode() {
     return TRUE;
   }
 
   /**
-   * Dummy for cache mode.
+   * {@inheritdoc}
    */
-  public function providesCacheMode(): bool {
+  public function providesCacheMode() {
+
     return TRUE;
   }
 
   /**
-   * Check if cache is pre-computed.
-   *
-   * Returns TRUE if the cache is pre-computed and ready to use,
-   * FALSE otherwise.
-   * See $this->doTheReasoning()
-   * and $this->getPropertiesFromCache() / $this->getClassesFromCache
-   * the reasoner sets all reasoning based caches i.e. it is sufficient
-   * to check, that one of them is set
-   * if ($cache = \Drupal::cache()->get('wisski_reasoner_properties'))
-   * return TRUE;
-   * return FALSE;.
+   * Returns TRUE if the cache is pre-computed and ready to use, FALSE otherwise.
    */
-  public function isCacheSet(): bool {
+  public function isCacheSet() {
+    // See $this->doTheReasoning()
+    // and $this->getPropertiesFromCache() / $this->getClassesFromCache
+    // the rasoner sets all reasoning based caches i.e. it is sufficient to check, that one of them is set
+    // if ($cache = \Drupal::cache()->get('wisski_reasoner_properties')) return TRUE;
+    // return FALSE;.
     return $this->isPrepared();
   }
 
   /**
    * {@inheritdoc}
-   *
-   * Returns the possible next steps in path creation, if
+   * returns the possible next steps in path creation, if
    * $this->providesFastMode() returns TRUE then this MUST react fast i.e. in
-   * the blink of an eye if $fast_mode = TRUE, and it MUST return the complete
+   * the blink of an eye if $fast_mode = TRUE and it MUST return the complete
    * set of options if $fast_mode=FALSE otherwise it should ignore the
-   * $fast_mode parameter.
+   * $fast_mode parameter
    */
   public function getPathAlternatives($history = [], $future = [], $fast_mode = FALSE, $empty_uri = 'empty') {
+
+    // \Drupal::logger('WissKI path alternatives: '.($fast_mode ? 'fast mode' : "normal mode"))->debug('History: '.serialize($history)."\n".'Future: '.serialize($future));
     $search_properties = NULL;
 
     $last = NULL;
     if (!empty($history)) {
       $candidate = array_pop($history);
       $inv_sign = '';
-      if ($this->allowInversePropertyPattern && $candidate[0] == '^') {
+      if ($this->allow_inverse_property_pattern && $candidate[0] == '^') {
         $candidate = substr($candidate, 1);
         $inv_sign = '^';
       }
       if ($candidate === $empty_uri) {
-        // \Drupal::logger(
-        // 'WissKI path alternatives')->error(
-        // 'Not a valid URI: "'.$candidate.'"');
-        // As a fallback we assume that the full history is given so that every
-        // second step is a property we have already popped one element, so
-        // count($history) is even when we need a property.
+        // \Drupal::logger('WissKI path alternatives')->error('Not a valid URI: "'.$candidate.'"');
+        // as a fallback we assume that the full history is given so that every second step is a property
+        // we have already popped one element, so count($history) is even when we need a property
         $search_properties = (0 === count($history) % 2);
       }
       elseif ($this->isValidUri('<' . $candidate . '>')) {
@@ -165,7 +156,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     if (!empty($future)) {
       $candidate = array_shift($future);
       $inv_sign = '';
-      if ($this->allowInversePropertyPattern && $candidate[0] == '^') {
+      if ($this->allow_inverse_property_pattern && $candidate[0] == '^') {
         $candidate = substr($candidate, 1);
         $inv_sign = '^';
       }
@@ -190,11 +181,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
       }
     }
-    // \Drupal::logger(
-    // 'WissKI next '.($search_properties ? 'properties' : 'classes'))
-    // ->debug('Last: '.$last.', Next: '.$next);
-    // $search_properties is TRUE if and only if last and next are valid URIs
-    // and no owl:Class-es.
+    // dpm(serialize($search_properties), "sp");
+    // \Drupal::logger('WissKI next '.($search_properties ? 'properties' : 'classes'))->debug('Last: '.$last.', Next: '.$next);
+    // $search_properties is TRUE if and only if last and next are valid URIs and no owl:Class-es.
     if ($search_properties) {
       $return = $this->nextProperties($last, $next, $fast_mode);
     }
@@ -207,9 +196,43 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 
   /**
-   * {@inheritdoc}
+   * @{inheritdoc}
+   */
+  // Public function getPathAlternatives($history = [], $future = []) {
+  //
+  //  \Drupal::logger('WissKI SPARQL Client')->debug("normal mode");
+  //    if (empty($history) && empty($future)) {
+  //
+  //      return $this->getClasses();
+  //
+  //    } elseif (!empty($history)) {
+  //
+  //      $last = array_pop($history);
+  //      $next = empty($future) ? NULL : $future[0];
+  //
+  //      if ($this->isaProperty($last)) {
+  //        return $this->nextClasses($last, $next);
+  //      } else {
+  //        return $this->nextProperties($last, $next);
+  //      }
+  //    } elseif (!empty($future)) {
+  //      $next = $future[0];
+  //      if ($this->isaProperty($next))
+  //        return $this->getClasses();
+  //      else
+  //        return $this->getProperties();
+  //    } else {
+  //      return [];
+  //    }
+  //
+  //
+  //  }.
+
+  /**
+   * @{inheritdoc}
    */
   public function getPrimitiveMapping($step) {
+
     $out = $this->retrieve('primitives', 'property', 'class', $step);
     // dpm($step);
     // dpm($out);
@@ -222,110 +245,83 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       return [];
     }
 
+    $info = [];
+
     // This might need to be adjusted for other standards than rdf/owl.
     $query =
-      "SELECT DISTINCT ?property ?label ?comment WHERE {
-        {
-          ?property a owl:DatatypeProperty .
-          ?property rdfs:domain ?d_superclass. ";
-    // By Mark: @todo: Please check this. I have absolutely
+      "SELECT DISTINCT ?property "
+      . "WHERE { { "
+      . "?property a owl:DatatypeProperty . "
+      . "?property rdfs:domain ?d_superclass. ";
+    // ."<$step> rdfs:subClassOf* ?d_superclass. } }"
+    // ."{ GRAPH ?g3 { ?property rdfs:subPropertyOf* ?d_subprop } } . ";
+    // ."{ GRAPH ?g3 { ?property rdfs:subPropertyOf* ?d_subprop } } . { GRAPH ?g4 { ?d_subprop rdfs:domain ?d_superclass . } . } . "
+    // ."{ GRAPH ?g5 { <$step> rdfs:subClassOf* ?d_superclass. } . } . }"
+    // By Mark: TODO: Please check this. I have absolutely
     // no idea what this does, I just copied it from below
     // and I really really hope that Dorian did know what it
     // does and it will work forever.
     $query .=
-          "{
-            {
-              ?d_def_prop rdfs:domain ?d_def_class.
-            }
-            UNION {
-              ?d_def_prop owl:inverseOf ?inv.
-              ?inv rdfs:range ?d_def_class.
-            }
-          }
-          <$step> rdfs:subClassOf* ?d_def_class.
-          {
-            {
-              ?d_def_prop rdfs:subPropertyOf* ?property.
-            }
-            UNION {
-              ?property rdfs:subPropertyOf+ ?d_def_prop.
-              FILTER NOT EXISTS {
-                {
-                  ?mid_prop rdfs:subPropertyOf+ ?d_def_prop.
-                  ?property rdfs:subPropertyOf* ?mid_prop.
-                }
-                {
-                  {
-                    ?mid_prop rdfs:domain ?any_domain.
-                  }
-                  UNION {
-                    ?mid_prop owl:inverseOf ?mid_inv.
-                    ?mid_inv rdfs:range ?any_range.
-                  }
-                }
-              }
-            }
-          }
-        }
-        OPTIONAL {
-          ?property rdfs:comment ?comment .
-        }
-        OPTIONAL {
-          ?property rdfs:label ?label .
-        }
-      }";
+      "{"
+      . "{?d_def_prop rdfs:domain ?d_def_class.}"
+      . " UNION "
+      . "{"
+      . "?d_def_prop owl:inverseOf ?inv. "
+      . "?inv rdfs:range ?d_def_class. "
+      . "}"
+      . "} "
+      . "<$step> rdfs:subClassOf* ?d_def_class. "
+      . "{"
+      . "{?d_def_prop rdfs:subPropertyOf* ?property.}"
+      . " UNION "
+      . "{ "
+      . "?property rdfs:subPropertyOf+ ?d_def_prop. "
+      . " FILTER NOT EXISTS {"
+      . "{ "
+      . "?mid_prop rdfs:subPropertyOf+ ?d_def_prop. "
+      . "?property rdfs:subPropertyOf* ?mid_prop. "
+      . "}"
+      . "{"
+      . "{?mid_prop rdfs:domain ?any_domain.}"
+      . " UNION "
+      . "{ "
+      . "?mid_prop owl:inverseOf ?mid_inv. "
+      . "?mid_inv rdfs:range ?any_range. "
+      . "}"
+      . "}"
+      . "}"
+      . "}"
+      . "}}}";
 
     $result = $this->directQuery($query);
+    // dpm($query, 'res');.
     if (count($result) == 0) {
       return [];
     }
 
     $output = [];
     foreach ($result as $obj) {
-      $prop['uri'] = $obj->property->getUri();
-      $prop['label'] = (property_exists($obj, "label") && !is_null($obj->label)) ? $obj->label->getValue() : $prop['uri'];
-      $prop['comment'] = property_exists($obj, "comment") ? $obj->comment->getValue() : $this->t('No comment.');
-      $output['options'][$prop['uri']] = $prop['label'];
-      $output['optionsAttributes'][$prop['uri']] = ['title' => $prop['comment']];
+      $prop = $obj->property->getUri();
+      $output[$prop] = $prop;
     }
-    uksort($output['options'], 'strnatcasecmp');
+    uksort($output, 'strnatcasecmp');
     return $output;
   }
 
   /**
-   * Queries step label and comment.
    *
-   * @param string $step
-   *   Current step.
-   * @param array $history
-   *   Previous steps.
-   * @param array $future
-   *   Future steps.
-   *
-   * @return string[]
-   *   The step info.
    */
-  public function getStepInfo($step, $history = [], $future = []): array {
+  public function getStepInfo($step, $history = [], $future = []) {
+
     $info = [];
 
-    $query =
-      "SELECT DISTINCT ?label WHERE {
-        GRAPH ?g {
-          <$step> <http://www.w3.org/2000/01/rdf-schema#label> ?label .
-        }
-      }
-      LIMIT 1";
+    $query = "SELECT DISTINCT ?label WHERE { GRAPH ?g { <$step> <http://www.w3.org/2000/01/rdf-schema#label> ?label . } } LIMIT 1";
     $result = $this->directQuery($query);
     if (count($result) > 0) {
       $info['label'] = $result[0]->label->getValue();
     }
 
-    $query = "SELECT DISTINCT ?comment WHERE {
-      GRAPH ?g {
-        <$step> <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .
-        }
-      }
-      LIMIT 1";
+    $query = "SELECT DISTINCT ?comment WHERE { GRAPH ?g { <$step> <http://www.w3.org/2000/01/rdf-schema#comment> ?comment . } } LIMIT 1";
     $result = $this->directQuery($query);
     if (count($result) > 0) {
       $info['comment'] = $result[0]->comment->getValue();
@@ -335,93 +331,52 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 
   /**
-   * Checks if value is a property.
    *
-   * @param string $p
-   *   The property, which has to be checked.
-   *
-   * @return bool
-   *   True, if value is a property.
    */
-  public function isaProperty($p): bool {
+  public function isaProperty($p) {
+
     // You cannot use GRAPH in an ASK query
-    // return $this->directQuery(
-    // "ASK { GRAPH ?g { <$p> a owl:ObjectProperty . } }")
-    // ->isTrue();
+    // return $this->directQuery("ASK { GRAPH ?g { <$p> a owl:ObjectProperty . } }")->isTrue();
     // we obviously have to solve it via SELECT.
     $result = $this->directQuery(
-          "SELECT * WHERE {
-            VALUES ?x {<$p>}
-            GRAPH ?g {
-              {
-                ?x a owl:ObjectProperty .
-              }
-              UNION {
-                ?x a rdf:Property.
-              }
-            }
-          }"
-      );
+      "SELECT * WHERE {"
+      . "VALUES ?x {<$p>} "
+      . "GRAPH ?g { "
+      . "{ ?x a owl:ObjectProperty . } UNION { ?x a rdf:Property.}"
+      . "}"
+      . "}"
+    );
     return $result->numRows() > 0;
   }
 
   /**
-   * Retrieve the Classes from triplestore or cache.
    *
-   * @param string $language
-   *   The language of labels and comments.
    */
-  public function getClasses($language = NULL) {
-    $out = $this->retrieve('classes', 'class', NULL, NULL, $language);
+  public function getClasses() {
+
+    $out = $this->retrieve('classes', 'class');
     if (!empty($out)) {
       return $out;
     }
-    $query =
-      "SELECT DISTINCT ?class ?label ?comment WHERE {
-        {
-          GRAPH ?g1 {
-            ?class a owl:Class
-          }
-        }
-        UNION {
-          GRAPH ?g2 {
-            ?class a rdfs:Class
-          }
-        }
-        UNION {
-          GRAPH ?g3 {
-            ?ind a ?class .
-            ?class a ?type .
-          }
-        }
-        OPTIONAL {
-          ?class rdfs:comment ?comment .
-        }
-        OPTIONAL {
-          ?class rdfs:label ?label .
-        }
-         FILTER(!isBlank(?class))
-      } ";
-
-    try {
-      $result = $this->directQuery($query);
-    }
-    catch (\Exception $e) {
-      return [];
-    }
+    $query = "SELECT DISTINCT ?class WHERE { "
+      . "{ GRAPH ?g1 {?class a owl:Class} }"
+      . "UNION "
+      . "{ GRAPH ?g2 {?class a rdfs:Class} }"
+      . "UNION "
+      . "{ GRAPH ?g3 {?ind a ?class. ?class a ?type} }"
+      . " . FILTER(!isBlank(?class))"
+      . "} ";
+    $result = $this->directQuery($query);
 
     if ($result) {
       if (count($result) > 0) {
-        $output = [];
+        $out = [];
         foreach ($result as $obj) {
-          $class['uri'] = $obj->class->getUri();
-          $class['label'] = (property_exists($obj, "label") && !is_null($obj->label)) ? $obj->label->getValue() : $class['uri'];
-          $class['comment'] = property_exists($obj, "comment") ? $obj->comment->getValue() : $this->t('No comment.');
-          $output['options'][$class['uri']] = $class['label'];
-          $output['optionsAttributes'][$class['uri']] = ['title' => $class['comment']];
+          $class = $obj->class->getUri();
+          $out[$class] = $class;
         }
-        uksort($output['options'], 'strnatcasecmp');
-        return $output;
+        uksort($out, 'strnatcasecmp');
+        return $out;
       }
     }
     else {
@@ -430,93 +385,70 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 
   /**
-   * Retrieves properties from database or triplestore.
    *
-   * If there is no database table, triplestore is queried.
-   *
-   * @param string $language
-   *   The language of the labels and comments.
-   *
-   * @return array
-   *   Consists of "options" as an assocArray of <uri> => <uri> and
-   *   "optionsAttributes" as an assocArray 'title' => <comment>.
    */
-  public function getProperties($language = NULL): array {
-    $out = $this->retrieve('properties', 'property', NULL, NULL, $language);
+  public function getProperties() {
+
+    $out = $this->retrieve('properties', 'property');
     if (!empty($out)) {
       return $out;
     }
-    $query =
-      "SELECT DISTINCT ?property ?label ?comment WHERE {
-        {
-          GRAPH ?g1 {
-            ?property a owl:ObjectProperty .
-          }
-        }
-        UNION {
-          GRAPH ?g2 {
-            ?property a rdf:Property .
-          }
-        }
-        OPTIONAL {
-          ?class rdfs:comment ?comment .
-        }
-        OPTIONAL {
-          ?class rdfs:label ?label .
-        }
-        FILTER(!isBlank(?property))
-      } ";
+    $query = "SELECT DISTINCT ?property WHERE { "
+      . "{ GRAPH ?g1 {?property a owl:ObjectProperty .} } "
+      . "UNION "
+      . "{ GRAPH ?g2 {?property a rdf:Property .} } "
+      . " . "
+      . "FILTER(!isBlank(?property))"
+      . "} ";
     $result = $this->directQuery($query);
 
     if ($result) {
       if (count($result) > 0) {
+        $out = [];
         foreach ($result as $obj) {
-          $prop['uri'] = $obj->property->getUri();
-          $prop['label'] = (property_exists($obj, "label") && !is_null($obj->label)) ? $obj->label->getValue() : $prop['uri'];
-          $prop['comment'] = property_exists($obj, "comment") ? $obj->comment->getValue() : $this->t('No comment.');
-          $output['options'][$prop['uri']] = $prop['label'];
-          $output['optionsAttributes'][$prop['uri']] = ['title' => $prop['comment']];
+          $class = $obj->property->getUri();
+          $out[$class] = $class;
         }
-        uksort($output['options'], 'strnatcasecmp');
-        return $output;
+        uksort($out, 'strnatcasecmp');
+        return $out;
       }
     }
-    return [];
+    else {
+      return FALSE;
+    }
   }
 
   /**
-   * Compute following properties of a step.
    *
-   * @return array
-   *   Consists of "options" as an assocArray of <uri> => <uri> and
-   *   "optionsAttributes" as an assocArray 'title' => <comment>.
    */
   public function nextProperties($class = NULL, $class_after = NULL, $fast_mode = FALSE) {
+
     if (!isset($class) && !isset($class_after)) {
       return $this->getProperties();
     }
-
-    // Try to load properties from database.
+    // \Drupal::logger(__METHOD__)->debug('class: '.$class.', class_after: '.$class_after);
     $output = $this->getPropertiesFromCache($class, $class_after);
 
-    // If nothing is cached try to load from triplestore.
     if ($output === FALSE) {
+      // drupal_set_message('none in cache');.
       $output = $this->getPropertiesFromStore($class, $class_after, $fast_mode);
     }
 
-    // If inverse properties are allowed, compute inverses.
-    if ($this->allowInversePropertyPattern) {
+    if ($this->allow_inverse_property_pattern) {
       // We get all the inverse properties by reverting class before and class
       // after and adding a "^".
       $output2 = $this->getPropertiesFromCache($class_after, $class);
       if ($output2 === FALSE) {
+        // drupal_set_message('none in cache');.
         $output2 = $this->getPropertiesFromStore($class_after, $class, $fast_mode);
       }
       foreach ($output2 as $p) {
         $output["^$p"] = "^$p";
       }
     }
-    uksort($output['options'], 'strnatcasecmp');
+
+    uksort($output, 'strnatcasecmp');
+
     return $output;
   }
 
@@ -529,16 +461,30 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @return array of matching properties | FALSE if there was no cache data
    */
   protected function getPropertiesFromCache($class, $class_after = NULL) {
+
+    /* cache version
+    $dom_properties = array();
+    $cid = 'wisski_reasoner_reverse_domains';
+    if ($cache = \Drupal::cache()->get($cid)) {
+    $dom_properties = $cache->data[$class]?:array();
+    } else return FALSE;
+    $rng_properties = array();
+    if (isset($class_after)) {
+    $cid = 'wisski_reasoner_reverse_ranges';
+    if ($cache = \Drupal::cache()->get($cid)) {
+    $rng_properties = $cache->data[$class_after]?:array();
+    } else return FALSE;
+    } else return $dom_properties;
+    return array_intersect_key($dom_properties,$rng_properties);
+     */
+
     // DB version.
     $dom_properties = $this->retrieve('domains', 'property', 'class', $class);
-
     if (isset($class_after)) {
       $rng_properties = $this->retrieve('ranges', 'property', 'class', $class_after);
-
     }
     else {
       return $dom_properties;
-
     }
     return array_intersect_key($dom_properties, $rng_properties);
   }
@@ -577,31 +523,24 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 
   /**
-   * Compute properties according to the ontological constraints.
    *
-   * @param string|null $class
-   *   Class for the current step.
-   * @param string|null $class_after
-   *   Class for the following step.
-   * @param bool $fast_mode
-   *   True if, fast mode is enabled.
-   *
-   * @return array
-   *   The properties for the corresponding class.
    */
-  public function getPropertiesFromStore(?string $class = NULL, ?string $class_after = NULL, bool $fast_mode = FALSE): array {
+  public function getPropertiesFromStore($class = NULL, $class_after = NULL, $fast_mode = FALSE) {
+
     if ($fast_mode) {
       // The fast mode will only gather properties that are declared as
       // domain/range directly. This will only return an incomplete set of
       // properties unless we have resp. reasoning capabilities.
-      $query = "SELECT DISTINCT ?property ?label ?comment WHERE { \n";
+      $query = "SELECT DISTINCT ?property WHERE { \n";
       if (isset($class)) {
         $query .= "  GRAPH ?g3 { ?property rdfs:domain <$class>. }\n";
       }
       if (isset($class_after)) {
         $query .= "  GRAPH ?g4 { ?property rdfs:range <$class_after>. }\n";
       }
-      $query .= "  { { GRAPH ?g1 { ?property a owl:ObjectProperty. } } UNION { GRAPH ?g2 { ?property a rdf:Property. } } } }";
+      $query .= "  { { GRAPH ?g1 { ?property a owl:ObjectProperty. } } UNION { GRAPH ?g2 { ?property a rdf:Property. } } }\n";
+      $query .= "}";
+
     }
     else {
       // The complete mode makes more sophisticated queries that also return
@@ -618,117 +557,158 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $ontology_graphs = $this->getOntologyGraphs();
       $from_graphs = " ";
       if (!empty($ontology_graphs)) {
-        $from_graphs = "\nFROM <" . implode(">\nFROM <", $ontology_graphs) . ">\n";
+        $from_graphs = "\nFROM <" . join(">\nFROM <", $ontology_graphs) . ">\n";
       }
-      $query = "SELECT DISTINCT ?property ?label ?comment {$from_graphs} WHERE {\n";
+      $query = "SELECT DISTINCT ?property{$from_graphs}WHERE {\n";
 
       if (isset($class)) {
         $query .=
-          " <$class> rdfs:subClassOf* ?d_def_class.
-            {
-              {
-                ?d_def_prop rdfs:domain ?d_def_class.
-              }
-              UNION {
-                 ?d_def_prop owl:inverseOf ?inv.
-                 ?inv rdfs:range ?d_def_class.
-              }
-              UNION {
-                 ?d_def_prop rdfs:domain ?metaClass .
-                 ?metaClass owl:unionOf ?collection .
-                 ?collection rdf:rest*/rdf:first ?d_def_class .
-              }
-            }
-            {
-              { ?d_def_prop rdfs:subPropertyOf* ?property. }
-              UNION {
-                ?property rdfs:subPropertyOf+ ?d_def_prop.
-                FILTER NOT EXISTS {
-                  ?mid_prop rdfs:subPropertyOf+ ?d_def_prop.
-                  ?property rdfs:subPropertyOf* ?mid_prop.
-                  {
-                    {
-                    ?mid_prop rdfs:domain ?any_domain.
-                    }
-                    UNION {
-                      ?mid_prop owl:inverseOf ?mid_inv.
-                      ?mid_inv rdfs:range ?any_range.
-                    }
-                  }
-                }
-              }
-            }\n";
+          "  <$class> rdfs:subClassOf* ?d_def_class.\n"
+          . "  {\n"
+          . "    { ?d_def_prop rdfs:domain ?d_def_class. }\n"
+          . "    UNION\n"
+          . "    {\n"
+          . "       ?d_def_prop owl:inverseOf ?inv.\n"
+          . "       ?inv rdfs:range ?d_def_class.\n"
+          . "    }\n"
+          . "    UNION\n"
+          . "    {\n"
+          . "       ?d_def_prop rdfs:domain ?metaClass .\n"
+          . "       ?metaClass owl:unionOf ?collection .\n"
+          . "       ?collection rdf:rest*/rdf:first ?d_def_class . \n"
+          . "    }\n"
+          . "  }\n"
+          . "  {\n"
+          . "    { ?d_def_prop rdfs:subPropertyOf* ?property. }\n"
+          . "    UNION\n"
+          . "    {\n"
+          . "      ?property rdfs:subPropertyOf+ ?d_def_prop.\n"
+          . "      FILTER NOT EXISTS {\n"
+          . "        ?mid_prop rdfs:subPropertyOf+ ?d_def_prop.\n"
+          . "        ?property rdfs:subPropertyOf* ?mid_prop.\n"
+          . "        {\n"
+          . "          { ?mid_prop rdfs:domain ?any_domain. }\n"
+          . "          UNION\n"
+          . "          {\n"
+          . "            ?mid_prop owl:inverseOf ?mid_inv.\n"
+          . "            ?mid_inv rdfs:range ?any_range.\n"
+          . "          }\n"
+          . "        }\n"
+          . "      }\n"
+          . "    }\n"
+          . "  }\n";
       }
       if (isset($class_after)) {
         $query .=
-          "  <$class_after> rdfs:subClassOf* ?r_def_class.
-            {
-              {
-                ?r_def_prop rdfs:range ?r_def_class.
-              }
-              UNION {
-                ?r_def_prop owl:inverseOf ?inv.
-                ?inv rdfs:domain ?inv.
-              }
-            }
-            {
-              {
-                ?r_def_prop rdfs:subPropertyOf* ?property.
-              }
-              UNION {
-                ?property rdfs:subPropertyOf+ ?r_def_prop.
-                FILTER NOT EXISTS {
-                  ?mid_prop rdfs:subPropertyOf+ ?r_def_prop.
-                  ?property rdfs:subPropertyOf* ?mid_prop.
-                  {
-                    {
-                      ?mid_prop rdfs:range ?any_range.
-                    }
-                    UNION {
-                      ?mid_prop owl:inverseOf ?mid_inv.
-                      ?mid_inv rdfs:domain ?any_domain.
-                    }
-                  }
-                }
-              }
-            }
-            {
-              {
-                ?property a owl:ObjectProperty.
-              }
-              UNION {
-                ?property a rdf:Property.
-              }
-            }";
+          "  <$class_after> rdfs:subClassOf* ?r_def_class.\n"
+          . "  {\n"
+          . "    { ?r_def_prop rdfs:range ?r_def_class. }\n"
+          . "    UNION\n"
+          . "    {\n"
+          . "      ?r_def_prop owl:inverseOf ?inv.\n"
+          . "      ?inv rdfs:domain ?inv.\n"
+          . "    }\n"
+          . "  }\n"
+          . "  {\n"
+          . "    { ?r_def_prop rdfs:subPropertyOf* ?property. }\n"
+          . "    UNION\n"
+          . "    {\n"
+          . "      ?property rdfs:subPropertyOf+ ?r_def_prop.\n"
+          . "      FILTER NOT EXISTS {\n"
+          . "        ?mid_prop rdfs:subPropertyOf+ ?r_def_prop.\n"
+          . "        ?property rdfs:subPropertyOf* ?mid_prop.\n"
+          . "        {\n"
+          . "          { ?mid_prop rdfs:range ?any_range. }\n"
+          . "          UNION\n"
+          . "          {\n"
+          . "            ?mid_prop owl:inverseOf ?mid_inv.\n"
+          . "            ?mid_inv rdfs:domain ?any_domain.\n"
+          . "          }\n"
+          . "        }\n"
+          . "      }\n"
+          . "    }\n"
+          . "  }\n";
       }
-      $query .= "
-        {
-          {
-            ?property a owl:ObjectProperty .
-          }
-          UNION {
-            ?property a rdf:Property .
-          }
-        }
-        OPTIONAL {
-          ?property rdfs:comment ?comment .
-        }
-        OPTIONAL {
-          ?property rdfs:label ?label .
-        }
-      }";
+      $query .= "  { { ?property a owl:ObjectProperty. } UNION { ?property a rdf:Property. } }\n";
+      $query .= "}";
+      /*      if (isset($class)) {
+      $query .=
+      "  GRAPH ?g8 { <$class> rdfs:subClassOf* ?d_def_class. }\n"
+      ."  {\n"
+      ."    { GRAPH ?g5 { ?d_def_prop rdfs:domain ?d_def_class.}}\n"
+      ."    UNION\n"
+      ."    {\n"
+      ."       GRAPH ?g6 { ?d_def_prop owl:inverseOf ?inv. }\n"
+      ."       GRAPH ?g7 { ?inv rdfs:range ?d_def_class. }\n"
+      ."    }\n"
+      ."  }\n"
+      ."  {\n"
+      ."    { GRAPH ?g9 { ?d_def_prop rdfs:subPropertyOf* ?property.}}\n"
+      ."    UNION\n"
+      ."    {\n"
+      ."      GRAPH ?g10 { ?property rdfs:subPropertyOf+ ?d_def_prop. }\n"
+      ."      FILTER NOT EXISTS {\n"
+      ."        {\n"
+      ."          GRAPH ?g11 { ?mid_prop rdfs:subPropertyOf+ ?d_def_prop. }\n"
+      ."          GRAPH ?g12 { ?property rdfs:subPropertyOf* ?mid_prop. }\n"
+      ."        }\n"
+      ."        {\n"
+      ."          { GRAPH ?g13 { ?mid_prop rdfs:domain ?any_domain.}}\n"
+      ."          UNION\n"
+      ."          {\n"
+      ."            GRAPH ?g14 { ?mid_prop owl:inverseOf ?mid_inv. }\n"
+      ."            GRAPH ?g15 { ?mid_inv rdfs:range ?any_range. }\n"
+      ."          }\n"
+      ."        }\n"
+      ."      }\n"
+      ."    }\n"
+      ."  }\n";
+      }
+      if (isset($class_after)) {
+      $query .=
+      "  GRAPH ?g19 { <$class_after> rdfs:subClassOf* ?r_def_class.}\n"
+      ."  {\n"
+      ."    { GRAPH ?g16 { ?r_def_prop rdfs:range ?r_def_class.} }\n"
+      ."    UNION\n"
+      ."    {\n"
+      ."      GRAPH ?g17 { ?r_def_prop owl:inverseOf ?inv. }\n"
+      ."      GRAPH ?g18 { ?inv rdfs:domain ?inv. }\n"
+      ."    }\n"
+      ."  }\n"
+      ."  {\n"
+      ."    { GRAPH ?g20 { ?r_def_prop rdfs:subPropertyOf* ?property.} }\n"
+      ."    UNION\n"
+      ."    {\n"
+      ."      GRAPH ?g21 { ?property rdfs:subPropertyOf+ ?r_def_prop. }\n"
+      ."      FILTER NOT EXISTS {\n"
+      ."        {\n"
+      ."          GRAPH ?g22 { ?mid_prop rdfs:subPropertyOf+ ?r_def_prop. }\n"
+      ."          GRAPH ?g23 { ?property rdfs:subPropertyOf* ?mid_prop. }\n"
+      ."        }\n"
+      ."        {\n"
+      ."          { GRAPH ?g24 { ?mid_prop rdfs:range ?any_range. } }\n"
+      ."          UNION\n"
+      ."          {\n"
+      ."            GRAPH ?g25 { ?mid_prop owl:inverseOf ?mid_inv. }\n"
+      ."            GRAPH ?g26 { ?mid_inv rdfs:domain ?any_domain. }\n"
+      ."          }\n"
+      ."        }\n"
+      ."      }\n"
+      ."    }\n"
+      ."  }\n";
+      $query .= "  { { GRAPH ?g1 { ?property a owl:ObjectProperty. } } UNION { GRAPH ?g2 { ?property a rdf:Property. } } }\n";
+      $query .= "}";
+      }  */
     }
 
+#    dpm($query, "query?");
     $result = $this->directQuery($query);
     $output = [];
-
     foreach ($result as $obj) {
-      $prop['uri'] = $obj->property->getUri();
-      $prop['comment'] = property_exists($obj, "comment") ? $obj->comment->getValue() : $this->t('No comment.');
-      $prop['label'] = (property_exists($obj, "label") && !is_null($obj->label)) ? $obj->label->getValue() : $prop['uri'];
-      $output['options'][$prop['uri']] = $prop['label'];
-      $output['optionsAttributes'][$prop['uri']] = ['title' => $prop['comment']];
+      $prop = $obj->property->getUri();
+      $output[$prop] = $prop;
     }
+
     return $output;
   }
 
@@ -774,7 +754,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // drupal_set_message('none in cache');.
         $output = $this->getClassesFromStore($property, $property_after, $fast_mode);
       }
-      uksort($output['options'], 'strnatcasecmp');
+      uksort($output, 'strnatcasecmp');
       return $output;
     }
   }
@@ -783,6 +763,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    */
   protected function getClassesFromCache($property, $property_after = NULL) {
+
     /* cache version
     $dom_classes = array();
     $cid = 'wisski_reasoner_ranges';
@@ -815,8 +796,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    */
   public function getClassesFromStore($property = NULL, $property_after = NULL, $fast_mode = FALSE) {
-    $query = "SELECT DISTINCT ?class ?label ?comment WHERE {  {"
-          . "{ {?class a owl:Class. } UNION { ?class a rdfs:Class.} } ";
+
+    $query = "SELECT DISTINCT ?class WHERE {  {"
+      . "{ {?class a owl:Class. } UNION { ?class a rdfs:Class.} } ";
     if ($fast_mode) {
       if (isset($property)) {
         $query .= "<$property> rdfs:range ?class. ";
@@ -828,47 +810,39 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     else {
       if (isset($property)) {
         $query .= "<$property> rdfs:subPropertyOf* ?r_super_prop. "
-                  . "{ { ?r_super_prop rdfs:range ?r_super_class. } UNION "
-                  . "{ ?r_super_prop owl:inverseOf ?inv. ?inv rdfs:domain ?r_super_class. } UNION "
-                  . "{ ?r_super_prop rdfs:range ?metaClass . "
-                  . " ?metaClass owl:unionOf ?collection . "
-                  . " ?collection rdf:rest*/rdf:first ?r_super_class . } "
-                  . "} "
-                  . "FILTER NOT EXISTS { "
-                  . "?r_sub_prop rdfs:subPropertyOf+ ?r_super_prop. "
-                  . "<$property> rdfs:subPropertyOf* ?r_sub_prop. "
-                  . "?r_sub_prop rdfs:range ?r_any_class. "
-                  . "} "
-                  . "?class rdfs:subClassOf* ?r_super_class. ";
+          . "{ { ?r_super_prop rdfs:range ?r_super_class. } UNION "
+          . "{ ?r_super_prop owl:inverseOf ?inv. ?inv rdfs:domain ?r_super_class. } UNION "
+          . "{ ?r_super_prop rdfs:range ?metaClass . "
+          . " ?metaClass owl:unionOf ?collection . "
+          . " ?collection rdf:rest*/rdf:first ?r_super_class . } "
+          . "} "
+          . "FILTER NOT EXISTS { "
+          . "?r_sub_prop rdfs:subPropertyOf+ ?r_super_prop. "
+          . "<$property> rdfs:subPropertyOf* ?r_sub_prop. "
+          . "?r_sub_prop rdfs:range ?r_any_class. "
+          . "} "
+          . "?class rdfs:subClassOf* ?r_super_class. ";
       }
       if (isset($property_after)) {
         $query .= "<$property_after> rdfs:subPropertyOf* ?d_super_prop. "
-                  . "{ { ?d_super_prop rdfs:domain ?d_super_class. } UNION "
-                  . "{ ?d_super_prop owl:inverseOf ?inv. ?inv rdfs:domain ?d_super_class. } UNION "
-                  . "{ ?d_super_prop rdfs:range ?metaClass . "
-                  . " ?metaClass owl:unionOf ?collection . "
-                  . " ?collection rdf:rest*/rdf:first ?d_super_class . } "
-                  . "} "
-                  . "FILTER NOT EXISTS { "
-                  . "?d_sub_prop rdfs:subPropertyOf+ ?d_super_prop. "
-                  . "<$property_after> rdfs:subPropertyOf* ?d_sub_prop. "
-                  . "?d_sub_prop rdfs:domain ?d_any_class. "
-                  . "} "
-                  . "?class rdfs:subClassOf* ?d_super_class. ";
+          . "{ { ?d_super_prop rdfs:domain ?d_super_class. } UNION "
+          . "{ ?d_super_prop owl:inverseOf ?inv. ?inv rdfs:domain ?d_super_class. } UNION "
+          . "{ ?d_super_prop rdfs:range ?metaClass . "
+          . " ?metaClass owl:unionOf ?collection . "
+          . " ?collection rdf:rest*/rdf:first ?d_super_class . } "
+          . "} "
+          . "FILTER NOT EXISTS { "
+          . "?d_sub_prop rdfs:subPropertyOf+ ?d_super_prop. "
+          . "<$property_after> rdfs:subPropertyOf* ?d_sub_prop. "
+          . "?d_sub_prop rdfs:domain ?d_any_class. "
+          . "} "
+          . "?class rdfs:subClassOf* ?d_super_class. ";
       }
     }
-    $query .= "
-          OPTIONAL {
-            ?class rdfs:comment ?comment
-          }
-          OPTIONAL {
-            ?class rdfs:label ?label
-          }
-        }
-      }";
+    $query .= "} }";
 
     // drupal_set_message(serialize($query));
-    // dpm($query, "query?");.
+#    dpm($query, "query?");
     $result = $this->directQuery($query);
 
     if (count($result) == 0) {
@@ -877,14 +851,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     $output = [];
     foreach ($result as $obj) {
-      $class['uri'] = $obj->class->getUri();
-      $class['comment'] = property_exists($obj, "comment") ? $obj->comment->getValue() : $this->t('No comment.');
-      $class['label'] = (property_exists($obj, "label") && !is_null($obj->label)) ? $obj->label->getValue() : $class['uri'];
-      $output['options'][$class['uri']] = $class['label'];
-      $output['optionsAttributes'][$class['uri']] = ['title' => $class['comment']];
+      $class = $obj->class->getUri();
+      $output[$class] = $class;
     }
-    natsort($output['options']);
+    natsort($output);
     return $output;
+
   }
 
   /*******************
@@ -916,6 +888,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
         // drupal_set_message("paths: " . serialize($paths));
         foreach ($paths as $pathid) {
+
           $path = WisskiPathEntity::load($pathid);
 
           // drupal_set_message(serialize($path));
@@ -923,64 +896,69 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           // This has to be an absulte path - otherwise subgroup images won't load.
           $new_ret = $this->pathToReturnValue($path, $pb, $entityid, 0, NULL, FALSE);
           // If (!empty($new_ret)) dpm($pb->id().' '.$pathid.' '.$entitid,'News');.
-          if ($do_sorting_by_weight == TRUE) {
+
+                    if($do_sorting_by_weight == TRUE) {
+
             $allpbpaths = $pb->getPbPaths();
             $pbarray = $allpbpaths[$pathid];
 
-            // dpm($pbarray);
+#            dpm($pbarray);
+
             $fid_to_look_for = $pbarray['field'];
 
             $cached_field_values = \Drupal::database()->select('wisski_entity_field_properties', 'f')
-              ->fields('f', ['ident', 'delta']);
+              ->fields('f',array('ident','delta'));
 
-            if (!empty($fid_to_look_for)) {
+            if(!empty($fid_to_look_for)) {
               $cached_field_values = $cached_field_values->condition('fid', $fid_to_look_for);
             }
 
-            // $cached_field_values = $cached_field_values->condition('ident', $to_look_for)
+//            $cached_field_values = $cached_field_values->condition('ident', $to_look_for)
             $cached_field_values = $cached_field_values->condition('eid', $entityid)
               ->execute()
               ->fetchAllAssoc('ident');
 
-            // dpm($cached_field_values);
-            // dpm($new_ret);
-            if (empty($cached_field_values)) {
+#            dpm($cached_field_values);
+#            dpm($new_ret);
+
+            if(empty($cached_field_values)) {
               $ret = array_merge($ret, $new_ret);
-            }
-            else {
-              $ordered_ret = [];
+            } else {
+              $ordered_ret = array();
 
-              $not_ordered = [];
+              $not_ordered = array();
 
-              foreach ($new_ret as $one_ret) {
-                if (isset($cached_field_values[$one_ret]) && isset($cached_field_values[$one_ret]->delta)) {
+              foreach($new_ret as $one_ret) {
+                if(isset($cached_field_values[$one_ret]) && isset($cached_field_values[$one_ret]->delta) ) {
                   $ordered_ret[$cached_field_values[$one_ret]->delta] = $one_ret;
-                }
-                else {
+                } else {
                   $not_ordered[] = $one_ret;
                 }
               }
 
-              // If we found things that don't have a delta we just append
+              // if we found things that don't have a delta we just append
               // them in the order we got them.
-              if (!empty($not_ordered)) {
-                foreach ($not_ordered as $one_thing) {
+              if(!empty($not_ordered)) {
+                foreach($not_ordered as $one_thing) {
                   $ordered_ret[] = $one_thing;
                 }
               }
 
-              // Sort by keys.
+              // sort by keys
               ksort($ordered_ret);
 
-              // dpm($ordered_ret);
+#              dpm($ordered_ret);
+
               $ret = array_merge($ret, $ordered_ret);
             }
-          }
-          else {
-            // Easy case, no sorting.
-            // if (!empty($new_ret)) dpm($pb->id().' '.$pathid.' '.$entitid,'News');.
+
+          } else {
+            // easy case, no sorting
+#          if (!empty($new_ret)) dpm($pb->id().' '.$pathid.' '.$entitid,'News');
             $ret = array_merge($ret, $new_ret);
           }
+
+
         }
       }
     }
@@ -993,6 +971,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @see getBundleIdsForUri()
    */
   public function getBundleIdsForEntityId($entityid) {
+
     if (is_numeric($entityid)) {
       $uri = $this->getUriForDrupalId($entityid, FALSE);
     }
@@ -1016,6 +995,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // wsmlog(__METHOD__ . ": could not find URI for entityid '$entityid'", 'warning');.
     $this->messenger()->addError("Could not find URI for entityid '$entityid'");
     return [];
+
   }
 
   /**
@@ -1065,10 +1045,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       foreach ($topbundles as $key => $value) {
         $out = array_merge([$key => $value], $out);
       }
+
     }
 
     // dpm($out, "out");.
     return $out;
+
   }
 
   /**
@@ -1096,6 +1078,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     // If we are a top group, won't do anything.
     if ($pbarray['parent'] > 0) {
+
       // First we have to calculate our own ClearPathArray.
       $clearGroupArray = $this->getClearPathArray($group, $pb);
 
@@ -1133,6 +1116,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
       // drupal_set_message("after cut: " . serialize($patharraytoget));
       $patharraytoget = array_values($patharraytoget);
+
     }
     return $patharraytoget;
   }
@@ -1160,6 +1144,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // dpm($pbarray, "pbarray!");
     // Is it in a group?
     if (!empty($pbarray['parent'])) {
+
       $pbparentarray = $allpbpaths[$pbarray['parent']];
 
       // How many path-parts are in the pb-parent?
@@ -1182,6 +1167,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         for ($i = 0; $i < $pathcnt; $i++) {
           unset($patharraytoget[$i]);
         }
+
       }
       else {
         // This is no subgroup, it is a path
@@ -1214,6 +1200,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * and returns an array of ids if there is something...
    */
   public function loadIndividualsForBundle($bundleid, $pathbuilder, $limit = NULL, $offset = NULL, $count = FALSE, $conditions = FALSE) {
+
     $conds = [];
     // See if we have any conditions.
     foreach ($conditions as $cond) {
@@ -1244,6 +1231,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     }
 
     if (empty($conds)) {
+
       // There should be someone asking for more than one...
       $groups = $pathbuilder->getGroupsForBundle($bundleid);
 
@@ -1298,6 +1286,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // For now simply take the first element
     // later on we need names here!
     foreach ($result as $thing) {
+
       // If it is a count query, return the integer.
       if (!empty($count)) {
         // dpm($thing,'Count Thing');.
@@ -1347,9 +1336,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 
   /**
-   * {@inheritdoc}
+   * @inheritdoc
    */
   public function hasEntity($entity_id) {
+
+    // dpm("has Entity?");.
+    // dpm($this->getBaseFieldFromStoreForUri($uri, $entity_id));.
     $uri = $this->getUriForDrupalId($entity_id, FALSE);
 
     $out = NULL;
@@ -1456,11 +1448,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // $tmpt6 = microtime(TRUE);
       // If the path is a group it has to be a subgroup and thus entity reference.
       if ($path->isGroup()) {
+
         // It is the same as field - so entity_reference is basic shit here
         //        $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0,  ($starting_position/2), FALSE, NULL, 'entity_reference', $relative);.
         // Here we can probably avoid the language tag...
         // by mark ;)
         $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, ($starting_position / 2), FALSE, NULL, 'entity_reference', $relative, [], 0);
+
       }
       else {
         // $sparql .= $this->generateTriplesForPath($pb, $path, '', $eid, NULL, 0, ($starting_position/2), FALSE, NULL, 'field', $relative);
@@ -1496,6 +1490,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // dpm($result, "res?");.
     $out = [];
     foreach ($result as $thing) {
+
       // If $thing is just a true or not true statement.
       // @todo by Martin: is this really working and if so in which case?
       // Also, what does true/false statement mean? we know that it's not an ASK query.
@@ -1508,6 +1503,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // $name = 'x' . (count($path->getPathArray())-1);
       if (!empty($primitive) && $primitive != "empty") {
         if (empty($main_property)) {
+
           // dpm("I have no main_property");.
           $my_language = $thing->out->getLang();
 
@@ -1523,6 +1519,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           $out[] = $thing->out->getValue();
         }
         else {
+
           $my_language = $thing->out->getLang();
 
           // If we have no language, take the default one.
@@ -1568,6 +1565,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
       }
       else {
+
         // In this case we always take the language which is available...
         // $my_language = LanguageInterface::LANGCODE_DEFAULT;
         // MyF: in this case, we take the language which is displayed (stored in $language)
@@ -1609,12 +1607,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // in future we want that language dependent. This means we want:
     // array( "lang" = > array( key => array( "value" => "some value that i've got from the Ts") ) )
     return $out;
+
   }
 
   /**
-   * {@inheritdoc}
+   * @inheritdoc
    */
   public function loadFieldValues(array $entity_ids = NULL, array $field_ids = NULL, $bundleid_in = NULL, $language = LanguageInterface::LANGCODE_DEFAULT) {
+
     // Tricky thing here is that the entity_ids that are coming in typically
     // are somewhere from a store. In case of rdf it is easy - they are uris.
     // In case of csv or something it is more tricky. So I don't wan't to
@@ -1647,6 +1647,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // haha, this is the engine-id...
     // $adapterid = $this->getConfiguration()['id'];
     foreach ($pbs as $pb) {
+
       // If we find any data, we set this to true.
       $found_any_data = FALSE;
 
@@ -1687,14 +1688,16 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $tsa['ende'] = microtime(TRUE) - $tsa['start'];
     // \Drupal::logger('Sparql Adapter')->debug(str_replace("\n", '<br/>', htmlentities("loadFieldValues:\n".\Drupal\Core\Serialization\Yaml::encode($tsa))));
     return $out;
+
   }
 
   /**
-   * {@inheritdoc}
+   * @inheritdoc
    * The Yaml-Adapter cannot handle field properties, we insist on field values
    *   being the main property
    */
   public function loadPropertyValuesForField($field_id, array $property_ids, array $entity_ids = NULL, $bundleid_in = NULL) {
+
     // By MyF: We get all available languages here because we need them in the entity reference case in order to support multilanguage cases.
     $available_languages = \Drupal::languageManager()->getLanguages();
     $available_languages = array_keys($available_languages);
@@ -1719,6 +1722,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // We can handle base-fields in advance.
       if ($field_id == "bundle" || $field_id == "eid") {
         foreach ($entity_ids as $eid) {
+
           if ($field_id == "bundle" && !empty($bundleid_in)) {
             $out[$eid]["bundle"] = [$bundleid_in];
             continue;
@@ -1741,6 +1745,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           // however this would need more tables with mappings that will be slow in case
           // of a lot of data...
           if ($field_id == "bundle") {
+
             if (!empty($bundleid_in)) {
               $out[$eid]['bundle'] = [$bundleid_in];
               continue;
@@ -1797,6 +1802,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     // Go through all relevant pbs.
     foreach ($pbs as $pb) {
+
       // Get the pbarray for this field.
       $pbarray = $pb->getPbEntriesForFid($field_id);
 
@@ -1865,6 +1871,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           // drupal_set_message("a1v2: " . microtime());
           // \Drupal::logger('WissKI Import lpvff')->debug((microtime(TRUE)-$tmpt). ": $field_id ".$path->id());
           if ($main_property == 'target_id') {
+
             $oldtmp = $tmp;
 
             // Special case for files - do not ask for a uri.
@@ -1875,11 +1882,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
               }
             }
             else {
+
               foreach ($tmp as $key => $item) {
                 $tmp[$key]["original_target_id"] = $item["target_id"];
                 $tmp[$key]["target_id"] = $this->getDrupalId(isset($item['wisskiDisamb']) ? $item["wisskiDisamb"] : $item["target_id"]);
               }
             }
+
           }
 
           // Merge it manually as recursive merge does not work properly in case of multi arrays.
@@ -2119,7 +2128,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         if ($pathcnt == ($disamb - 2)) {
           $subject_uris = [$subject_uri];
         }
+
         else {
+
           // Build up a select query that get us.
           $select = "SELECT DISTINCT ?$subject_var WHERE {";
           $select .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $object_uri, $disamb, $pathcnt, FALSE, NULL, 'entity_reference');
@@ -2166,10 +2177,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $delete .= ' }';
       // dpm($delete, "sparql");.
       $result = $this->directUpdate($delete);
+
     }
     // End reference branch.
     // No reference.
     else {
+
       $subject_uri = $this->getUriForDrupalId($entity_id, FALSE);
       $starting_position = $pb->getRelativeStartingPosition($path, TRUE);
       $clearPathArray = $pb->getRelativePath($path, TRUE);
@@ -2210,12 +2223,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $the_thing = NULL;
 
       foreach ($result as $key => $thing) {
+
         $image_value = NULL;
 
         // dpm($target_type, "tt");
         // dpm($mainprop, "mp");
         // Special hack for images which might be received via uri.
         if ($target_type == "file" && $mainprop == 'target_id') {
+
           // dpm("hacking...");.
           $loc = NULL;
           $fid = \Drupal::service('entity_type.manager')
@@ -2227,6 +2242,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             ->getPublicUrlFromFileId($fid);
 
           $image_value = $public;
+
         }
 
         // dpm($image_value, "img");
@@ -2250,15 +2266,65 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
       if (is_null($position)) {
         $this->messenger()->addError($this->t(
-              "For path %name (%id): Could not find old value '@v' and thus could not delete it.",
-              [
-                '%name' => $path->getName(),
-                '%id' => $path->id(),
-                '@v' => $value,
-              ]
-          ));
+          "For path %name (%id): Could not find old value '@v' and thus could not delete it.",
+          [
+            '%name' => $path->getName(),
+            '%id' => $path->id(),
+            '@v' => $value,
+          ]
+        ));
         return;
       }
+
+      /* We cannot use DELETE DATA as we do not know the graph(s) of the triple.
+       * The code below would only delete the triple if it is in the default
+       * graph. we cannot omit the graph as fuseki needs it.
+       * so we instead make a DELETE WHERE update and leave the graph unspecified.
+      // for fuseki we need graph
+      $delete  = "DELETE DATA { GRAPH <".$this->getDefaultDataGraphUri()."> {";
+
+      #      drupal_set_message("cpa: " . serialize($clearPathArray));
+
+      // the datatype-property is not directly connected to the group-part
+      if(count($clearPathArray) >= 3) {
+      $prop = array_values($clearPathArray)[1];
+      $inverse = $this->getInverseProperty($prop);
+
+      $name = "x" . ($starting_position * 2 +2);
+
+      $object_uri = $the_thing->{$name}->getUri();
+
+      $delete .= "  <$subject_uri> <$prop> <$object_uri> .\n";
+      $delete .= "  <$object_uri> <$inverse> <$subject_uri> .\n";
+
+      }
+      else {
+      $primitive = $path->getDatatypeProperty();
+
+      if(!empty($primitive)) {
+      if(!empty($value)) {
+      $value = $this->escapeSparqlLiteral($value);
+      // Evil: no datatype or lang check!
+      $delete .= "  <$subject_uri> <$primitive> '$value' .\n";
+      #dpm([$primitive, $value, $fieldid,$delete], __METHOD__.__LINE__);
+      }
+      else {
+      drupal_set_message($this->t(
+      "Path %name (%id) has primitive but no value given.",
+      array(
+      '%name' => $path->getName(),
+      '%id' => $path->id()
+      )
+      ),
+      "error"
+      );
+      return;
+      }
+      }
+      }
+
+      $delete .= ' }}';
+       */
 
       $delete_clause = "DELETE {\n  GRAPH ?g {\n";
       $where_clause = "WHERE {\n  GRAPH ?g {\n";
@@ -2291,12 +2357,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           }
           else {
             $this->messenger()->addError($this->t(
-                  "Path %name (%id) has primitive but no value given.",
-                  [
-                    '%name' => $path->getName(),
-                    '%id' => $path->id(),
-                  ]
-              ));
+              "Path %name (%id) has primitive but no value given.",
+              [
+                '%name' => $path->getName(),
+                '%id' => $path->id(),
+              ]
+            ));
             return;
           }
         }
@@ -2306,7 +2372,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $delete = "$delete_clause  }\n}\n$where_clause  }\n}";
       // dpm(htmlentities($delete), "delete!");.
       $result = $this->directUpdate($delete);
+
     }
+
   }
 
   /**
@@ -2346,16 +2414,17 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // "WHERE { { GRAPH ?g { ?s ?p ?o . FILTER ( <$uri> = ?s || <$uri> = ?o) } } }";
     // \Drupal::logger('WissKIsaveProcess')->debug('sparql deleting: ' . htmlentities($sparql));
     $sparql = "DELETE { GRAPH ?g { <$uri> ?p ?o } } " .
-          "WHERE { { GRAPH ?g { <$uri> ?p ?o } } }";
+      "WHERE { { GRAPH ?g { <$uri> ?p ?o } } }";
 
     $result = $this->directUpdate($sparql);
 
     $sparql = "DELETE { GRAPH ?g { ?s ?p <$uri> } } " .
-          "WHERE { { GRAPH ?g { ?s ?p <$uri> } } }";
+      "WHERE { { GRAPH ?g { ?s ?p <$uri> } } }";
 
     $result = $this->directUpdate($sparql);
 
     return $result;
+
   }
 
   /**
@@ -2420,6 +2489,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
       // For now simply take the first one.
       if ($groups = current($groups)) {
+
         $triples = $this->generateTriplesForPath($pb, $groups, '', $uri, NULL, 0, ((count($groups->getPathArray()) - 1) / 2), TRUE, NULL, 'group_creation');
         // dpm(array('eid'=>$eid,'uri'=>$uri,'group'=>$groups->getPathArray()[0],'result'=>$triples),'generateTriplesForPath');
         $sparql = "INSERT DATA { GRAPH <" . $this->getDefaultDataGraphUri() . "> { " . $triples . " } } ";
@@ -2428,6 +2498,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $result = $this->directUpdate($sparql);
 
         if (empty($uri)) {
+
           // First adapter to write will create a uri for an unknown entity.
           $uri = explode(" ", $triples, 2);
 
@@ -2640,6 +2711,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           }
         }
         else {
+
           // If it is not the disamb-case we add type-triples.
           if ($write) {
             // Generate a new uri.
@@ -2658,7 +2730,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // for $prop we recognize a leading '^' for inverting the property
         // direction, see '^' as sparql property chain operator.
         if ($key > 0 && !empty($prop)) {
+
           if ($write) {
+
             if ($prop[0] == '^') {
               // We cannot use the '^' for sparql update.
               $prop = substr($prop, 1);
@@ -2667,8 +2741,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
             else {
               $query .= "<$olduri> <$prop> <$uri> . ";
             }
+
           }
           else {
+
             $inv_sign = '';
             if ($prop[0] == '^') {
               $inv_sign = '^';
@@ -2768,9 +2844,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // - a path that has no corresp field (depending on use it may or may not
     //   have a primitive)
     $should_have_primitive =
-          !$path->isGroup()
-          && $pb_path_info['fieldtype'] != 'entity_reference'
-          && $pb_path_info['field'] != $pb::CONNECT_NO_FIELD;
+      !$path->isGroup()
+      && $pb_path_info['fieldtype'] != 'entity_reference'
+      && $pb_path_info['field'] != $pb::CONNECT_NO_FIELD;
 
     if (!$has_primitive && $should_have_primitive) {
       $this->messenger()
@@ -2825,6 +2901,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           }
         }
         else {
+
           /* putting there the literal directly is not a good idea as
           there may be problems with matching lang and datatype
           if($op == '=')
@@ -2903,7 +2980,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           }
           elseif ($op == 'IN_REGEX' || $op == 'NOT IN_REGEX') {
             $regex = TRUE;
-            $negate = ($op == 'NOT IN');
+            $negate = ($op == 'NOT IN' );
             $safe = TRUE;
             $values = is_array($primitiveValue) ? $primitiveValue : explode(",", $primitiveValue);
             foreach ($values as &$v) {
@@ -3038,7 +3115,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           elseif ($op == "EMPTY" || $op == "NOT EMPTY") {
             $query .= " $outvar . ";
           }
-          elseif ($op == "IN" || $op == "NOT IN") {
+          elseif ($op == "IN" || $op == "NOT IN"){
             $query .= " $outvar . FILTER (STR($outvar) $op ($primitiveValue) )";
           }
           else {
@@ -3084,6 +3161,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    */
   public function addNewFieldValue($entity_id, $fieldid, $value, $pb, $mainprop = FALSE, $language = "und") {
+
     // dpm($language, "I get?");.
     // Compatibility purpose.
     // $entity_id = $entity->id();
@@ -3181,7 +3259,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // Rename to uri.
     $subject_uri = $this->getUriForDrupalId($entity_id, TRUE);
 
-    // Extract value in autocomplete_title_pattern_enabled case:
+    // extract value in autocomplete_title_pattern_enabled case:
     // - if user picks existing value in autocomplete, the entity id has to be removed
     // - if user enters new value into the field, the value *must not* be changed
     // (the pattern seems to be the only indicator for which case holds -- this means
@@ -3199,8 +3277,9 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // 1 - 2 is 4 / 2 is 2 - which already is the starting point.
     $start = ((count($path->getPathArray()) - (count($pb->getRelativePath($path)))) / 2);
 
-    // If we have entity reference *or* {we use the autocomplete widget *and* the user has picked an existing value}.
+    // if we have entity reference *or* {we use the autocomplete widget *and* the user has picked an existing value}
     if ($is_entity_ref || $autocomplete_use_existing_value === TRUE) {
+
       // If it is a group - we take the whole group path as disamb pos.
       if ($path->isGroup()) {
         // $sparql .= $this->generateTriplesForPath($pb, $path, "", $subject_uri, $this->getUriForDrupalId($value, TRUE), (count($path->getPathArray())+1)/2, $start, TRUE, '', 'entity_reference' );
@@ -3220,8 +3299,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       else {
         // drupal_set_message("disamb: " . serialize($disambresult) . " miau " . $path->getDisamb());
         if (empty($disambresult) || empty($disambresult->{"x" . ($path->getDisamb() - 1) * 2})) {
+
           // Hier rein.
           $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE, '=', 'field', TRUE, [], 0, $language);
+
         }
 
         // $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, NULL, NULL, $start, TRUE);
@@ -3229,6 +3310,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           // We may not set a value here - because we have a disamb result!
           //          $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . ($path->getDisamb()-1)*2}->dumpValue("text"), $path->getDisamb(), $start, TRUE);.
           $sparql .= $this->generateTriplesForPath($pb, $path, $value, $subject_uri, $disambresult->{"x" . ($path->getDisamb() - 1) * 2}->dumpValue("text"), $path->getDisamb(), $start, TRUE, '=', 'field', TRUE, [], 0, $language);
+
         }
       }
     }
@@ -3244,6 +3326,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    */
   public function writeFieldValues($entity, array $field_values, $pathbuilder, $bundle_id = NULL, $old_values = [], $force_new = FALSE, $initial_write = FALSE, $language = "und") {
+
     // Get back the entity id for compatibility purpose.
     $entity_id = $entity->id();
 
@@ -3432,6 +3515,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       // This is just copy pasted from below. I guess you can do it better
       // but I wait until the selphie does change this here ;D.
       foreach ($deleted_languages as $del_lang) {
+
         $entity->removeTranslation($del_lang);
 
         // dpm($entity->label(), "label");
@@ -3452,6 +3536,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
         // dpm("we have to delete " . serialize($old_value));
         foreach ($old_value as $key => $val) {
+
           // Main prop?
           if (!is_array($val)) {
             continue;
@@ -3473,11 +3558,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       foreach ($deleted_languages as $deleted_language) {
         $cached_field_values = \Drupal::database()
           ->delete('wisski_entity_field_properties')
-                  // ->fields('f',array('fid', 'ident','delta','properties','lang'))
+          // ->fields('f',array('fid', 'ident','delta','properties','lang'))
           ->condition('eid', $entity->id())
           ->condition('bid', $entity->bundle())
           ->condition('lang', $deleted_language)
-                  // ->condition('fid',$field_name)
+          // ->condition('fid',$field_name)
           ->execute();
         // ->fetchAll();
         //      dpm(serialize($cached_field_values), "cache?");
@@ -3508,6 +3593,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // This case only fires if field_values[$old_key] is not set anymore
     // at all - so just if the field is deleted completely!
     foreach ($old_values as $old_key => $old_value) {
+
       // By Mark: unfortunatelly entity reference is in x-default
       // so we have to see what language we have here...
       $this_language = $language;
@@ -3522,6 +3608,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $old_value = $old_value[$this_language];
       // dpm("deleting key $old_key with value " . serialize($old_value) . " from values " . serialize($field_values));
       if (!isset($field_values[$old_key])) {
+
         // In case there is no main prop it is typically value.
         if (isset($old_value['main_property'])) {
           $mainprop = $old_value['main_property'];
@@ -3531,6 +3618,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
 
         foreach ($old_value as $key => $val) {
+
           // Main prop?
           if (!is_array($val)) {
             continue;
@@ -3551,6 +3639,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // dpm($old_values, "old values");.
     // Combined go through the new fields.
     foreach ($field_values as $field_id => $field_items) {
+
       // By Mark:
       // If this field is not enabled in the edit form
       // then we probably dont want to write any data to it
@@ -3628,6 +3717,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           // dpm($old_value, "old value is:");
           // dpm($write_values, "new are?");
           foreach ($old_value as $old_key => $old_item) {
+
             if (!is_array($old_item) || empty($old_item)) {
               // This may be the case if
               // - it contains key "main_property"... (not an array)
@@ -3690,17 +3780,20 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // dpm($language, "I give it to add New Field Value");.
         $this->addNewFieldValue($entity_id, $field_id, $new_item[$mainprop], $pathbuilder, $mainprop, $language);
       }
+
     }
     // \Drupal::logger('WissKI Import tmpc')->debug("da:".(microtime(TRUE)-$tmpt));
     // drupal_set_message("out: " . serialize($out));
     // dpm(serialize($out), "out?");.
     return $out;
+
   }
 
   /**
    * -------------------------------- Ontologie thingies ----------------------
    */
   public function addOntologies($iri = NULL) {
+
     if (empty($iri)) {
       // Load all ontologies.
       $query = "SELECT ?ont WHERE { GRAPH ?g { ?ont a owl:Ontology} }";
@@ -3722,12 +3815,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $this->messenger()
       ->addStatus("Successfully loaded $iri into the Triplestore.");
     \Drupal::logger('WissKI Ontology')->info(
-          'Adapter {a}: Successfully loaded ontology <{iri}>.',
-          [
-            'a' => $this->adapterId(),
-            'iri' => $iri,
-          ]
-      );
+      'Adapter {a}: Successfully loaded ontology <{iri}>.',
+      [
+        'a' => $this->adapterId(),
+        'iri' => $iri,
+      ]
+    );
 
     // Look for imported ontologies.
     $query = "SELECT DISTINCT ?ont FROM <$iri> WHERE { ?s a owl:Ontology . ?s owl:imports ?ont . }";
@@ -3750,15 +3843,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $this->putNamespace($key, $value);
       }
       \Drupal::logger('WissKI Ontology')->info(
-            'Adapter {a}: registered the following namespaces and prefixes: {n} Default is {b}',
-            [
-              'a' => $this->adapterId(),
-              'n' => array_reduce(array_keys($namespaces), function ($carry, $k) use ($namespaces) {
-                  return "$carry$k: <$namespaces[$k]>. ";
-              }, ''),
-              'b' => empty($base) ? 'not set' : "<$base>",
-            ]
-        );
+        'Adapter {a}: registered the following namespaces and prefixes: {n} Default is {b}',
+        [
+          'a' => $this->adapterId(),
+          'n' => array_reduce(array_keys($namespaces), function ($carry, $k) use ($namespaces) {
+            return "$carry$k: <$namespaces[$k]>. ";
+          }, ''),
+          'b' => empty($base) ? 'not set' : "<$base>",
+        ]
+      );
       // @todo default is currently not stored. Do we need to store it?
       // it is no proper namespace prefix.
       // @todo check if it is already in the ontology.
@@ -3774,6 +3867,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     // Return the result of the loading of this ontology.
     return $result;
+
   }
 
   /**
@@ -3804,7 +3898,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           [
             $front,
             $back,
-                // Remove the leading xmlns.
+          // Remove the leading xmlns.
           ] = explode("=", substr($ns_decl, 5));
           $front = trim($front);
           // Chop the "/'.
@@ -3838,15 +3932,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // Get ontology and version uri.
     if (!empty($graph)) {
       $query = "SELECT DISTINCT ?ont ?iri ?ver FROM $graph WHERE {\n"
-              . "  ?ont a owl:Ontology .\n"
-              . "  OPTIONAL { ?ont owl:ontologyIRI ?iri. } OPTIONAL { ?ont owl:versionIRI ?ver . }\n"
-              . "}";
+        . "  ?ont a owl:Ontology .\n"
+        . "  OPTIONAL { ?ont owl:ontologyIRI ?iri. } OPTIONAL { ?ont owl:versionIRI ?ver . }\n"
+        . "}";
     }
     else {
       $query = "SELECT DISTINCT ?ont (COALESCE(?niri, 'none') as ?iri) (COALESCE(?nver, 'none') as ?ver) ?graph WHERE {\n"
-              . "  GRAPH ?graph { ?ont a owl:Ontology } .\n"
-              . "  OPTIONAL { ?ont owl:ontologyIRI ?niri. } OPTIONAL { ?ont owl:versionIRI ?nver . }\n"
-              . "}";
+        . "  GRAPH ?graph { ?ont a owl:Ontology } .\n"
+        . "  OPTIONAL { ?ont owl:ontologyIRI ?niri. } OPTIONAL { ?ont owl:versionIRI ?nver . }\n"
+        . "}";
     }
     $results = $this->directQuery($query);
     return $results;
@@ -3856,6 +3950,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    */
   public function deleteOntology($graph, $type = "graph") {
+
     // Get ontology and version uri.
     if ($type == "graph") {
       $query = "WITH <$graph> DELETE { ?s ?p ?o } WHERE { ?s ?p ?o }";
@@ -3887,6 +3982,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * @return void
    */
   private function putNamespace($short_name, $long_name) {
+
     // First check if a mapping for short_name already exists.
     // consider three cases (3. with two sub cases):
     // 1. no mapping exists => insert the new one
@@ -3995,10 +4091,35 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     return $ns;
   }
 
+  private $super_properties = [];
+
+  private $clean_super_properties = [];
+
   /**
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+
+    // $cids = array(
+    // 'properties',
+    // 'sub_properties',
+    // 'super_properties',
+    // 'inverse_properties',
+    // 'sub_classes',
+    // 'super_classes',
+    // 'domains',
+    // 'reverse_domains',
+    // 'ranges',
+    // 'reverse_ranges',
+    // );
+    // $results = array();
+    // foreach ($cids as $cid) {
+    // if ($cache = \Drupal::cache()->get('wisski_reasoner_'.$cid)) {
+    // $results[$cid] = $cache->data;
+    // }
+    // }
+    // dpm($results,'Results');
+    $in_cache = $this->isCacheSet();
 
     $form = parent::buildConfigurationForm($form, $form_state);
 
@@ -4014,10 +4135,10 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $always_reason = TRUE;
     }
 
-    $form['allowInversePropertyPattern'] = [
+    $form['allow_inverse_property_pattern'] = [
       '#type' => 'checkbox',
       '#title' => 'Inverse property selection',
-      '#default_value' => $this->allowInversePropertyPattern,
+      '#default_value' => $this->allow_inverse_property_pattern,
       '#return_value' => TRUE,
       '#description' => 'Allows selecting properties in inverse direction in pathbuilder. These properties are marked with a leading "^". E.g. for "^ex:prop1", the triple x2 ex:prop x1 must hold instead of x1 ex:prop1 x2.',
     ];
@@ -4042,8 +4163,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         ],
         'description_end' => [
           '#markup' => $this->t(
-                "in the specified triple store. <strong>%placeholder</strong> The pathbuilders relying on this adapter will become much faster by doing this.",
-                ['%placeholder' => $emphasized]
+            "in the specified triple store. <strong>%placeholder</strong> The pathbuilders relying on this adapter will become much faster by doing this.",
+            ['%placeholder' => $emphasized]
           ),
         ],
       ],
@@ -4073,8 +4194,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         '#default_value' => $always_reason,
       ],
     ];
-    if ($this->isCacheSet()) {
-      $form['reasoner']['start_button']['#disabled'] = TRUE;
+    if ($in_cache) {
+      $form['reasoner']['start_button']['#disabled'] = !$form_state->getValue('flush_button');
       $form['reasoner']['flush_button'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Re-Compute results'),
@@ -4085,84 +4206,32 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           'callback' => [$this, 'checkboxAjax'],
         ],
       ];
-
-      $availableLanguages = $this->getLanguagesFromStore();
-
-      $form['reasoner']['pathbuilderLanguage'] = [
-        '#type' => 'select',
-        '#title' => $this->t('Pathbuilder Language'),
-        '#default_value' => NULL,
-        '#empty_option' => ['und' => $this->t('Blank IRIs')],
-        '#description' => $this->t('Please select the language of your pathbuilder'),
-        '#options' => array_combine($availableLanguages, $availableLanguages),
-        '#ajax' => [
-          'wrapper' => 'wisski-reasoner-block',
-          'callback' => [$this, 'setPathbuilderLanguage'],
+      $classes_n_properties = ((array) $this->getClasses()) + ((array) $this->getProperties());
+      if ($this->getClasses() === FALSE || $this->getProperties() === FALSE) {
+        $this->messenger()
+          ->addStatus($this->t('Bad class and property cache.'));
+      }
+      $form['reasoner']['tester'] = [
+        '#type' => 'details',
+        '#title' => $this->t('Check reasoning results'),
+        'selected_prop' => [
+          '#type' => 'select',
+          '#options' => $classes_n_properties,
+          '#empty_value' => 'empty',
+          '#empty_option' => $this->t('select a class or property'),
+          '#ajax' => [
+            'wrapper' => 'wisski-reasoner-check',
+            'callback' => [$this, 'checkTheReasoner'],
+          ],
+        ],
+        'check_results' => [
+          '#type' => 'textarea',
+          '#prefix' => '<div id="wisski-reasoner-check">',
+          '#suffix' => '</div>',
         ],
       ];
-
-      $form['reasoner']['tester'] = $this->computeTestingResults($form['reasoner']['pathbuilderLanguage']['#default_value']);
-    }
-    else {
-      $form['reasoner']['start_button']['#disabled'] = FALSE;
     }
     return $form;
-  }
-
-  /**
-   * Computes the form part for reasoning test results.
-   *
-   * @param string $language
-   *   The language of the class and property labels.
-   *
-   * @return array
-   *   The form element.
-   */
-  public function computeTestingResults($language = NULL): array {
-    $classes = $this->getClasses($language);
-    $properties = $this->getProperties($language);
-    if (empty($classes) || empty($properties)) {
-      $this->messenger()
-        ->addStatus($this->t('Bad class and property cache. Try to delete reasoner tables and re-compute.'));
-      $classes_n_properties['options'] = [];
-    }
-    else {
-      $classes_n_properties = array_merge_recursive($classes, $properties);
-      uasort($classes_n_properties['options'], 'strnatcasecmp');
-    }
-    return [
-      '#type' => 'details',
-      '#title' => $this->t('Check reasoning results'),
-      'selected_prop' => [
-        '#type' => 'select',
-        '#options' => $classes_n_properties['options'],
-        '#empty_value' => 'empty',
-        '#empty_option' => $this->t('select a class or property'),
-        '#ajax' => [
-          'wrapper' => 'wisski-reasoner-check',
-          'callback' => [$this, 'checkTheReasoner'],
-        ],
-      ],
-      'check_results' => [
-        '#type' => 'textarea',
-        '#prefix' => '<div id="wisski-reasoner-check">',
-        '#value' => '',
-        '#suffix' => '</div>',
-      ],
-      '#prefix' => '<div id="wisski-check-reasoning-wrapper">',
-      '#suffix' => '</div>',
-    ];
-  }
-
-  /**
-   * Set language and refresh reasoner results.
-   */
-  public function setPathbuilderLanguage(array $form, FormStateInterface $form_state) {
-    $language = $form_state->getValue('pathbuilderLanguage');
-    $this->pathbuilderLanguage = $language;
-    $response = new AjaxResponse();
-    $response->addCommand(new ReplaceCommand('#wisski-check-reasoning-wrapper', $this->computeTestingResults($language)));
-    return $response;
   }
 
   /**
@@ -4178,8 +4247,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
 
     \Drupal::state()->set('wisski_always_reason', $always_reason);
 
-    $this->allowInversePropertyPattern = $form_state->getValue('allowInversePropertyPattern');
-    $this->pathbuilderLanguage = $form_state->getValue('pathbuilderLanguage');
+    $this->allow_inverse_property_pattern = $form_state->getValue('allow_inverse_property_pattern');
   }
 
   /**
@@ -4193,14 +4261,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    */
   public function checkTheReasoner(array $form, FormStateInterface $form_state) {
+
     $candidate = $form_state->getValue($form_state->getTriggeringElement()['#name']);
     if ($this->isAProperty($candidate)) {
-      $stored = array_keys($this->getClassesFromStore($candidate)['options']);
-      $cached = array_keys($this->getClassesFromCache($candidate)['options']);
+      $stored = $this->getClassesFromStore($candidate);
+      $cached = $this->getClassesFromCache($candidate);
     }
     else {
-      $stored = array_keys($this->getPropertiesFromStore($candidate)['options']);
-      $cached = array_keys($this->getPropertiesFromCache($candidate)['options']);
+      $stored = $this->getPropertiesFromStore($candidate);
+      $cached = $this->getPropertiesFromCache($candidate);
     }
     $more_stored = array_diff($stored, $cached);
     $more_cached = array_diff($cached, $stored);
@@ -4232,21 +4301,17 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    */
   public function startReasoning(array $form, FormStateInterface $form_state) {
+
     $this->doTheReasoning();
     $form_state->setRedirect('<current>');
     return $form['reasoner'];
   }
 
   /**
-   * Compute logical constraints of the ontology and save them to the database.
    *
-   * Compute the reasoning of classes, object properties, data properties
-   * (primitives) and the domain and ranges for the corresponding adapter
-   * and save them to database tables (i.e. <adapter>_<semantic_unit>, i. g.
-   * "default_classes", "default_properties" etc.). Saves a table with uri,
-   * label, and comment for additional infos, too.
    */
-  public function doTheReasoning(): void {
+  public function doTheReasoning() {
+
     $properties = [];
     $super_properties = [];
     $sub_properties = [];
@@ -4254,15 +4319,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // Prepare database connection and reasoner tables
     // if there's something wrong stop working.
     if ($this->prepareTables() === FALSE) {
-      \Drupal::logger('WissKI Reasoning')->error('Can not prepare tables!');
       return;
     }
 
-    // Insert info.
-    $this->insertInfoToDb();
-
     // Find properties.
-    $result = $this->directQuery("SELECT ?property WHERE { GRAPH ?g {{?property a owl:ObjectProperty.} UNION {?property a rdf:Property} } }");
+    $result = $this->directQuery("SELECT ?property WHERE { GRAPH ?g {{?property a owl:ObjectProperty.} UNION {?property a rdf:Property}} }");
     $insert = $this->prepareInsert('properties');
     foreach ($result as $row) {
       $prop = $row->property->getUri();
@@ -4270,29 +4331,19 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $insert->values(['property' => $prop]);
     }
     $insert->execute();
-
-    // Find properties.
-    $result = $this->directQuery("SELECT ?property WHERE { GRAPH ?g {{?property a owl:ObjectProperty.} UNION {?property a rdf:Property} } }");
-    $insert = $this->prepareInsert('properties');
-    foreach ($result as $row) {
-      $prop = $row->property->getUri();
-      $properties[$prop] = $prop;
-      $insert->values(['property' => $prop]);
-    }
-    $insert->execute();
-
-    // Find one-step property hierarchy, i.e. properties that are direct
-    // children or direct parents to each other no sub-generations are
-    // gathered.
+    // $cid = 'wisski_reasoner_properties';
+    // \Drupal::cache()->set($cid,$properties);
+    // find one step property hierarchy, i.e. properties that are direct children or direct parents to each other
+    // no sub-generations are gathered.
     $result = $this->directQuery(
-          // We don't do the graph thing in reasoner-queries because graphdb
-          // 9.10 does not support this anymore :(.
-          "SELECT ?property ?super WHERE { {"
-          . "{{?property a owl:ObjectProperty.} UNION {?property a rdf:Property}}} . { "
-          . "?property rdfs:subPropertyOf ?super.  "
-          . "FILTER NOT EXISTS {?mid_property rdfs:subPropertyOf+ ?super. ?property rdfs:subPropertyOf ?mid_property.}"
-          . "} } "
-      );
+    // We don't do the graph thing in reasoner-queries because graphdb 9.10 does not support this
+    // anymore :(
+    //      "SELECT ?property ?super WHERE { GRAPH ?g {".
+      "SELECT ?property ?super WHERE { {"
+      . "{{?property a owl:ObjectProperty.} UNION {?property a rdf:Property}}} . { "
+      . "?property rdfs:subPropertyOf ?super.  "
+      . "FILTER NOT EXISTS {?mid_property rdfs:subPropertyOf+ ?super. ?property rdfs:subPropertyOf ?mid_property.}"
+      . "} } ");
     foreach ($result as $row) {
       $prop = $row->property->getUri();
       $super = $row->super->getUri();
@@ -4303,10 +4354,15 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }
     }
 
-    // Now lets find inverses.
+    // $cid = 'wisski_reasoner_sub_properties';
+    // \Drupal::cache()->set($cid,$sub_properties);
+    // $cid = 'wisski_reasoner_super_properties';
+    // \Drupal::cache()->set($cid,$super_properties);
+    // now lets find inverses
     $insert = $this->prepareInsert('inverses');
     $inverses = [];
 
+    // $results = $this->directQuery("SELECT ?prop ?inverse WHERE { GRAPH ?g {{?prop owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf ?prop.}} }");
     $results = $this->directQuery("SELECT ?prop ?inverse WHERE { {{?prop owl:inverseOf ?inverse.} UNION {?inverse owl:inverseOf ?prop.}} }");
     foreach ($results as $row) {
       $prop = $row->prop->getUri();
@@ -4322,7 +4378,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $insert = $this->prepareInsert('classes');
     $classes = [];
 
-    $results = $this->directQuery("SELECT ?class WHERE { { { ?class a owl:Class . } UNION { ?class a rdfs:Class . } } FILTER (!isBlank(?class)) }");
+    $results = $this->directQuery("SELECT ?class WHERE { {{?class a owl:Class.} UNION {?class a rdfs:Class}} FILTER (!isBlank(?class)) }");
     // $results = $this->directQuery("SELECT ?class WHERE { GRAPH ?g {{?class a owl:Class.} UNION {?class a rdfs:Class}} }");
     foreach ($results as $row) {
       $class = $row->class->getUri();
@@ -4337,13 +4393,13 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $sub_classes = [];
 
     $results = $this->directQuery("SELECT ?class ?super WHERE { {"
-        // $results = $this->directQuery("SELECT ?class ?super WHERE { GRAPH ?g {"
-        . "?class rdfs:subClassOf+ ?super. "
-        . "FILTER (!isBlank(?class)) "
-        // ."FILTER (!isBlank(?super)) } . GRAPH ?g1 {"
-        . "FILTER (!isBlank(?super)) } . {"
-        . "{{?super a owl:Class.} UNION {?super a rdfs:Class.}} "
-        . "} }");
+      // $results = $this->directQuery("SELECT ?class ?super WHERE { GRAPH ?g {"
+      . "?class rdfs:subClassOf+ ?super. "
+      . "FILTER (!isBlank(?class)) "
+      // ."FILTER (!isBlank(?super)) } . GRAPH ?g1 {"
+      . "FILTER (!isBlank(?super)) } . {"
+      . "{{?super a owl:Class.} UNION {?super a rdfs:Class.}} "
+      . "} }");
     foreach ($results as $row) {
       $sub = $row->class->getUri();
       $super = $row->super->getUri();
@@ -4357,22 +4413,21 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $domains = [];
 
     $results = $this->directQuery(
-          "SELECT ?property ?domain WHERE { {"
-          // "SELECT ?property ?domain WHERE { GRAPH ?g {"
-          . " { "
-          . " ?property rdfs:domain ?domain . } "
-          . " UNION {"
-          . "   ?property rdfs:domain ?metaClass . "
-          . "   ?metaClass owl:unionOf ?collection . "
-          . "   ?collection rdf:rest*/rdf:first ?domain . "
-          . " }"
-          // We only need top level domains, so no proper subClass of the domain shall be taken into account.
-          . " FILTER (NOT EXISTS { "
-          . "   ?domain rdfs:subClassOf+ ?super_domain . "
-          . "   ?property rdfs:domain ?super_domain . }  && "
-          . "   isIRI(?domain)) "
-          . " } }"
-      );
+      "SELECT ?property ?domain WHERE { {"
+      // "SELECT ?property ?domain WHERE { GRAPH ?g {"
+      . " { "
+      . " ?property rdfs:domain ?domain . } "
+      . " UNION {"
+      . "   ?property rdfs:domain ?metaClass . "
+      . "   ?metaClass owl:unionOf ?collection . "
+      . "   ?collection rdf:rest*/rdf:first ?domain . "
+      . " }"
+      // We only need top level domains, so no proper subClass of the domain shall be taken into account.
+      . " FILTER (NOT EXISTS { "
+      . "   ?domain rdfs:subClassOf+ ?super_domain . "
+      . "   ?property rdfs:domain ?super_domain . }  && "
+      . "   isIRI(?domain)) "
+      . " } }");
     foreach ($results as $row) {
       $domains[$row->property->getUri()][$row->domain->getUri()] = $row->domain->getUri();
     }
@@ -4384,22 +4439,21 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $ranges = [];
 
     $results = $this->directQuery(
-          "SELECT ?property ?range WHERE { { "
-          // "SELECT ?property ?range WHERE { GRAPH ?g {"
-          . " { "
-          . " ?property rdfs:range ?range . } "
-          . " UNION {"
-          . "   ?property rdfs:range ?metaClass . "
-          . "   ?metaClass owl:unionOf ?collection . "
-          . "   ?collection rdf:rest*/rdf:first ?range . "
-          . " } "
-          // We only need top level ranges, so no proper subClass of the range shall be taken into account.
-          . " FILTER (NOT EXISTS { "
-          . "   ?range rdfs:subClassOf+ ?super_range . "
-          . "   ?property rdfs:range ?super_range .}  && "
-          . "   isIRI(?range)) "
-          . " } } "
-      );
+      "SELECT ?property ?range WHERE { { "
+      // "SELECT ?property ?range WHERE { GRAPH ?g {"
+      . " { "
+      . " ?property rdfs:range ?range . } "
+      . " UNION {"
+      . "   ?property rdfs:range ?metaClass . "
+      . "   ?metaClass owl:unionOf ?collection . "
+      . "   ?collection rdf:rest*/rdf:first ?range . "
+      . " } "
+      // We only need top level ranges, so no proper subClass of the range shall be taken into account.
+      . " FILTER (NOT EXISTS { "
+      . "   ?range rdfs:subClassOf+ ?super_range . "
+      . "   ?property rdfs:range ?super_range .}  && "
+      . "   isIRI(?range)) "
+      . " } } ");
     foreach ($results as $row) {
       $ranges[$row->property->getUri()][$row->range->getUri()] = $row->range->getUri();
     }
@@ -4411,20 +4465,19 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     $primitives = [];
 
     $results = $this->directQuery(
-          "SELECT ?property ?domain WHERE { { "
-          // "SELECT ?property ?domain WHERE { GRAPH ?g {"
-          . " { ?property rdfs:domain ?domain . } "
-          . " UNION { "
-          . "   ?property rdfs:domain ?metaClass . "
-          . "   ?metaClass owl:unionOf ?collection . "
-          . "   ?collection rdf:rest*/rdf:first ?domain . "
-          . " } . "
-          . " {{ ?property a owl:DatatypeProperty.} UNION {?property a rdf:Property }} . "
-          // We only need top level domains, so no proper subClass of the domain shall be taken into account.
-          . " FILTER (NOT EXISTS { ?domain rdfs:subClassOf+ ?super_domain. ?property rdfs:domain ?super_domain.} && "
-          . " isIRI(?domain)) "
-          . " } } "
-      );
+      "SELECT ?property ?domain WHERE { { "
+      // "SELECT ?property ?domain WHERE { GRAPH ?g {"
+      . " { ?property rdfs:domain ?domain . } "
+      . " UNION { "
+      . "   ?property rdfs:domain ?metaClass . "
+      . "   ?metaClass owl:unionOf ?collection . "
+      . "   ?collection rdf:rest*/rdf:first ?domain . "
+      . " } . "
+      . " {{ ?property a owl:DatatypeProperty.} UNION {?property a rdf:Property }} . "
+      // We only need top level domains, so no proper subClass of the domain shall be taken into account.
+      . " FILTER (NOT EXISTS { ?domain rdfs:subClassOf+ ?super_domain. ?property rdfs:domain ?super_domain.} && "
+      . " isIRI(?domain)) "
+      . " } } ");
     foreach ($results as $row) {
       $primitives[$row->property->getUri()][$row->domain->getUri()] = $row->domain->getUri();
     }
@@ -4452,25 +4505,42 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $this->messenger()
         ->addError('No ranges for top-level properties: ' . implode(', ', $rng_check));
       $invalid_definitions = array_merge($invalid_definitions, $rng_check);
+      // $valid_definitions = FALSE;
+      // foreach ($rng_check as $rng) {
+      //  $ranges[$rng] = ['TOPCLASS'=>'TOPCLASS'];
+      // }
     }
 
-    // Set of properties where the domains and ranges are not fully set.
+    // $prim_check = array_diff_key($top_properties,$primitives);
+    // if (!empty($prim_check)) {
+    // $this->messenger()->addError('No Domain for top-level primitive datatype property: '.implode(', ',$prim_check));;
+    // $invalid_definitions = array_merge($invalid_definitions, $prim_check);
+    // $valid_definitions = FALSE;
+    // //foreach($dom_check as $dom) {
+    // //  $domains[$dom] = ['TOPCLASS'=>'TOPCLASS'];
+    // //}
+    // }
+    // Set of properties where the domains and ranges are not fully set
     $not_set = array_diff_key($properties, $top_properties);
     $not_set = array_diff_key($not_set, $invalid_definitions);
-
+    // dpm($invalid_definitions, "invalid!");
+    // dpm($not_set, "not set");.
     // While there are unchecked properties cycle throgh them, gather domain/range defs from all super properties and inverses
     // and include them into own definition.
     $runs = 0;
     while (!empty($not_set)) {
+
       $runs++;
       // Take one of the properties.
       $prop = array_shift($not_set);
-
-      // Check if all super_properties have their domains/ranges set.
+      // dpm($prop, "was not set");
+      // check if all super_properties have their domains/ranges set.
       $supers = $super_properties[$prop];
       $invalid_supers = array_intersect($supers, $invalid_definitions);
-
+      // $invalid_supers = $invalid_definitions;
+      // dpm($supers, "for prop $prop, still to check: " . serialize($not_set));
       if (empty($invalid_supers)) {
+
         $to_check = array_intersect($supers, $not_set);
         if (!empty($to_check)) {
           array_push($not_set, $prop);
@@ -4480,7 +4550,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         // Take all the definitions of super properties and add them here.
         $new_domains = $domains[$prop] ?? [];
         $new_ranges = $ranges[$prop] ?? [];
-
+        // dpm($domains);
         foreach ($supers as $super_prop) {
           if (isset($domains[$super_prop])) {
             $new_domains += $domains[$super_prop];
@@ -4519,12 +4589,14 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $new_ranges = array_diff($new_ranges, $remove_ranges);
 
         $ranges[$prop] = array_combine($new_ranges, $new_ranges);
+
       }
       else {
-        // Append this property to the end of the list to be checked again
-        // later-on.
+        // Append this property to the end of the list to be checked again later-on
+        // array_push($not_set,$prop);.
         $this->messenger()
           ->addError("I could not check $prop, because it has the invalid superproperties: " . implode(', ', $invalid_supers));
+        continue;
       }
     }
     $this->messenger()->addStatus('Definition checkup runs: ' . $runs);
@@ -4587,90 +4659,39 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }
     }
     $insert->execute();
-  }
 
-  /**
-   *
-   */
-  public function getLanguagesFromStore() {
-    $query =
-    "SELECT DISTINCT (lang(?o) as ?lang) WHERE {
-      GRAPH ?g {
-        {
-          ?s ?p ?o .
-        }
-        FILTER (STRLEN(?lang) != 0)
-      }
-    }";
-
-    $results = $this->directQuery($query);
-    $languages = [];
-    foreach ($results as $row) {
-      $languages[] = $row->lang->getValue();
-    }
-
-    sort($languages);
-    return $languages;
-
-  }
-
-  /**
-   * Insert semantic unit info to database.
-   *
-   * @throws \Exception
-   *
-   * @todo Find comment for the inverse properties.
-   */
-  public function insertInfoToDb(): void {
-
-    foreach (['label', 'comment'] as $type) {
-      $statement = $type === 'label' ? '?semanticUnit <http://www.w3.org/2000/01/rdf-schema#label> ?label .' : '?semanticUnit <http://www.w3.org/2000/01/rdf-schema#comment> ?comment .';
-      $query =
-        "SELECT DISTINCT ?semanticUnit ?$type (lang(?$type) as ?lang) WHERE {
-        GRAPH ?g {
-          OPTIONAL {
-            $statement
-          }
-        }
-      }";
-
-      $results = $this->directQuery($query);
-
-      // Prepare table schmema.
-      // Insert values in table.
-      $insert = $this->prepareInsert($type);
-      ;
-      foreach ($results as $row) {
-        if (empty((array) $row)) {
-          $this->messenger()
-            ->addWarning($this->t('Reasoner not run, because there is nothing in the triplestore! Please import an ontology!'));
-          return;
-        };
-        $semanticUnit = $row->semanticUnit->getUri();
-
-        $info = property_exists($row, $type) ? [
-          $type => $row->$type->getValue(),
-          'lang' => $row->$type->getLang(),
-        ] : [
-          $type => NULL,
-          'lang' => NULL,
-        ];
-        $insert->values(
-          [
-            'semantic_unit' => $semanticUnit,
-            $type => $info[$type],
-            'lang' => $info['lang'],
-          ]
-        );
-      }
-      $insert->execute();
-    }
+    // //for the pathbuilders to work correctly, we also need inverted search
+    //    $reverse_domains = array();
+    //    foreach ($domains as $prop => $classes) {
+    //      foreach ($classes as $class) $reverse_domains[$class][$prop] = $prop;
+    //    }
+    //    $reverse_ranges = array();
+    //    foreach ($ranges as $prop => $classes) {
+    //      foreach ($classes as $class) $reverse_ranges[$class][$prop] = $prop;
+    //    }
+    //    $cid = 'wisski_reasoner_domains';
+    //    \Drupal::cache()->set($cid,$domains);
+    //    $cid = 'wisski_reasoner_ranges';
+    //    \Drupal::cache()->set($cid,$ranges);
+    //    $cid = 'wisski_reasoner_reverse_domains';
+    //    \Drupal::cache()->set($cid,$reverse_domains);
+    //    $cid = 'wisski_reasoner_reverse_ranges';
+    //    \Drupal::cache()->set($cid,$reverse_ranges);
   }
 
   /**
    *
    */
   public function getInverseProperty($property_uri) {
+
+    /* cache version
+    $inverses = array();
+    $cid = 'wisski_reasoner_inverse_properties';
+    if ($cache = \Drupal::cache()->get($cid)) {
+    $inverses = $cache->data;
+    if (isset($properties[$property_uri])) return $inverses[$property_uri];
+    }
+     */
 
     // DB version.
     $inverse = $this->retrieve('inverses', 'inverse', 'property', $property_uri);
@@ -4683,16 +4704,16 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     // it will then return the upper one which is bad.
     // so in case there is an easy answer, give the easy answer.
     $results = $this->directQuery(
-          "SELECT ?sub_inverse ?inverse WHERE {"
-          . "{"
-          . "{GRAPH ?g1 {?sub_inverse owl:inverseOf ?inverse.}}"
-          . " UNION "
-          . "{GRAPH ?g2 {?inverse owl:inverseOf ?sub_inverse.}}"
-          . "}"
-          // ."{GRAPH ?g3 {<$property_uri> rdfs:subPropertyOf* ?sub_inverse}}"
-          . "{ {<$property_uri> rdfs:subPropertyOf* ?sub_inverse}}"
-          . "}"
-      );
+      "SELECT ?sub_inverse ?inverse WHERE {"
+      . "{"
+      . "{GRAPH ?g1 {?sub_inverse owl:inverseOf ?inverse.}}"
+      . " UNION "
+      . "{GRAPH ?g2 {?inverse owl:inverseOf ?sub_inverse.}}"
+      . "}"
+      // ."{GRAPH ?g3 {<$property_uri> rdfs:subPropertyOf* ?sub_inverse}}"
+      . "{ {<$property_uri> rdfs:subPropertyOf* ?sub_inverse}}"
+      . "}"
+    );
 
     $inverse = '';
     foreach ($results as $row) {
@@ -4702,6 +4723,8 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         break;
       }
     }
+    $inverses[$property_uri] = $inverse;
+    // \Drupal::cache()->set($cid,$inverses);
     return $inverse;
   }
 
@@ -4710,15 +4733,12 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    */
   protected function isPrepared() {
     try {
-      $result = \Drupal::service('database')
+      $result = !empty(\Drupal::service('database')
         ->select($this->adapterId() . '_classes', 'c')
-        ->fields('c', ['class'])
-        ->countQuery()
-        ->execute()
-        ->fetchField();
-      $prepared = ($result === 0) ? FALSE : TRUE;
-      return $prepared;
-
+        ->fields('c')
+        ->range(0, 1)
+        ->execute());
+      return $result;
     }
     catch (\Exception $e) {
       return FALSE;
@@ -4729,6 +4749,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    *
    */
   protected function prepareTables($drop = FALSE) {
+
     try {
       $database = \Drupal::service('database');
       $schema = $database->schema();
@@ -4749,23 +4770,17 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       }
       return TRUE;
     }
-    catch (\Exception $e) {
-      \Drupal::logger('Prepare tables for reasoning')->error($e);
+    catch (\Exception $ex) {
     }
     return FALSE;
   }
 
   /**
-   * Create database tables and fields schema object.
    *
-   * @param string $type
-   *   The Table type (i. e. "classes", "properties" etc.).
-   *
-   * @return \Drupal\Core\Database\Query\Insert
-   *   The database insert object.
    */
-  private function prepareInsert(string $type) : Insert {
-    $fields = [];
+  private function prepareInsert($type) {
+
+    $fieldS = [];
     foreach (self::getReasonerTableSchema()[$type]['fields'] as $field_name => $field) {
       if ($field['type'] !== 'serial') {
         $fields[] = $field_name;
@@ -4776,96 +4791,28 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
   }
 
   /**
-   * Query fields from database.
    *
-   * @param string $type
-   *   The semantic type ("classes", "domains", "inverses",
-   *   "primitives", "properties", and "ranges"), used to find the right table.
-   * @param string $return_field
-   *   The target column, which should be fetched.
-   * @param string $condition_field
-   *   The condition column.
-   * @param string $condition_value
-   *   The condition value.
    */
-  public function retrieve($type, $return_field = NULL, $condition_field = NULL, $condition_value = NULL, $language = NULL) {
+  public function retrieve($type, $return_field = NULL, $condition_field = NULL, $condition_value = NULL) {
+
     $table_name = $this->adapterId() . '_' . $type;
-    $database = \Drupal::service('database');
-    $schema = $database->schema();
-    if (!$schema->tableExists($table_name)) {
-      \Drupal::logger('WissKI path retrieve')->error($this->t('Database table :table not found, please rerun reasoner!', [':table' => $table_name]));
-      return [];
-    }
-
-    $query = $database
-      ->select($table_name, 't');
-
-    switch ($type) {
-      case 'classes':
-        $query->fields('t', ['class']);
-        break;
-
-      case 'inverses':
-        $query->fields('t', ['property', 'inverse']);
-        break;
-
-      case 'properties':
-        $query->fields('t', ['property']);
-        break;
-
-      default:
-        $query->fields('t', ['property', 'class']);
-        break;
-    }
-
-    foreach (['label', 'comment'] as $infoType) {
-
-      $shortName = $infoType === 'label' ? 'l' : 'c';
-      $infoTable = $this->adapterId() . '_' . $infoType;
-      $pathbuilderLanguage = is_null($language) ? $this->pathbuilderLanguage : $language;
-
-      if (!$schema->tableExists($infoTable)) {
-        \Drupal::logger('WissKI path retrieve')->error($this->t('Database table :table not found, please rerun reasoner!', [':table' => $infoTable]));
-        return [];
-      }
-      try {
-        $query->leftjoin($infoTable, $shortName, 't.' . $return_field . '=' . $shortName . '.semantic_unit AND ' . $shortName . '.lang = :language', [':language' => $pathbuilderLanguage]);
-      }
-      catch (\Exception $e) {
-        \Drupal::logger('WissKI path retrieve')->error($e);
-        $this->messenger()->addError($this->t('Database table :table not found, please rerun reasoner!', [':table' => $infoTable]));
-        return [];
-      }
-
-      $query->fields($shortName, [$infoType]);
-
-    }
-
+    $query = \Drupal::service('database')
+      ->select($table_name, 't')
+      ->fields('t');
     if (!is_null($condition_field) && !is_null($condition_value)) {
-      $query->condition($condition_field, $condition_value);
+      $query = $query->condition($condition_field, $condition_value);
     }
-
     try {
       $result = $query->execute();
-
       if (!is_null($return_field)) {
-        $fetchedData = $result->fetchAll();
-        foreach ($fetchedData as $row) {
-          $uri = strval($row->$return_field);
-          $label = (property_exists($row, "label") && !is_null($row->label)) ? $row->label : $uri;
-          $output['options'][$uri] = $label;
-          $output['optionsAttributes'][$row->$return_field] = ['title' => property_exists($row, "comment") ? $row->comment : $this->t('No comment.')];
-        }
-        $output['options'] = $output['options'] ?? [];
-        uksort($output['options'], 'strnatcasecmp');
-        return $output;
+        $result = array_keys($result->fetchAllAssoc($return_field));
+        usort($result, 'strnatcasecmp');
+        return array_combine($result, $result);
       }
-      $output = $result->fetchAll();
-      return $output;
+      return $result->fetchAll();
     }
     catch (\Exception $e) {
-      \Drupal::logger('WissKI path retrieve')->error($e);
-      return [];
+      return FALSE;
     }
   }
 
@@ -4873,67 +4820,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
    * Implements hook_schema()
    */
   public static function getReasonerTableSchema() {
-    $schema['label'] = [
-      'description' => 'Hold information about semantic units and it\'s corresponding labels.',
-      'fields' => [
-        'num' => [
-          'description' => 'The Serial Number for semantic unit.',
-          'type' => 'serial',
-          'size' => 'normal',
-          'not null' => TRUE,
-        ],
-        'semantic_unit' => [
-          'description' => 'The uri of the semantic unit',
-          'type' => 'varchar',
-          'length' => '2048',
-          'not null' => TRUE,
-        ],
-        'label' => [
-          'description' => 'The label of the semantic unit',
-          'type' => 'varchar',
-          'length' => '2048',
-          'not null' => FALSE,
-        ],
-        'lang' => [
-          'description' => 'The language tag of the label (max length 35 chars!)',
-          'type' => 'varchar',
-          'length' => '35',
-          'not null' => FALSE,
-        ],
-      ],
-      'primary key' => ['num'],
-    ];
-
-    $schema['comment'] = [
-      'description' => 'Hold information about semantic units and it\'s corresponding comments.',
-      'fields' => [
-        'num' => [
-          'description' => 'The Serial Number for semantic unit.',
-          'type' => 'serial',
-          'size' => 'normal',
-          'not null' => TRUE,
-        ],
-        'semantic_unit' => [
-          'description' => 'The uri of the semantic unit',
-          'type' => 'varchar',
-          'length' => '2048',
-          'not null' => TRUE,
-        ],
-        'comment' => [
-          'description' => 'The comment of the semantic unit',
-          'type' => 'varchar',
-          'length' => '10000',
-          'not null' => FALSE,
-        ],
-        'lang' => [
-          'description' => 'The language tag of the comment (max length 35 chars!)',
-          'type' => 'varchar',
-          'length' => '35',
-          'not null' => FALSE,
-        ],
-      ],
-      'primary key' => ['num'],
-    ];
 
     $schema['classes'] = [
       'description' => 'hold information about triple store classes',
@@ -4949,6 +4835,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           'type' => 'varchar',
           'length' => '2048',
           'not null' => TRUE,
+        ],
+        'comment' => [
+          'description' => 'the comment of the class',
+          'type' => 'varchar',
+          'length' => '5000',
         ],
       ],
       'primary key' => ['num'],
@@ -4968,6 +4859,11 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           'type' => 'varchar',
           'length' => '2048',
           'not null' => TRUE,
+        ],
+        'comment' => [
+          'description' => 'the comment of the class',
+          'type' => 'varchar',
+          'length' => '5000',
         ],
       ],
       'primary key' => ['num'],
