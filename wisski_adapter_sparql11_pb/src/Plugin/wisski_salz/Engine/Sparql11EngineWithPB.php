@@ -4836,11 +4836,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           'length' => '2048',
           'not null' => TRUE,
         ],
-        'comment' => [
-          'description' => 'the comment of the class',
-          'type' => 'varchar',
-          'length' => '5000',
-        ],
       ],
       'primary key' => ['num'],
     ];
@@ -4859,11 +4854,6 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
           'type' => 'varchar',
           'length' => '2048',
           'not null' => TRUE,
-        ],
-        'comment' => [
-          'description' => 'the comment of the class',
-          'type' => 'varchar',
-          'length' => '5000',
         ],
       ],
       'primary key' => ['num'],
