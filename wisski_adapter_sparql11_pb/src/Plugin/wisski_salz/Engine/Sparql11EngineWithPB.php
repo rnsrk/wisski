@@ -4805,7 +4805,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         $query->fields('t', ['class']);
         break;
 
-      case 'iverses':
+      case 'inverses':
         $query->fields('t', ['property', 'inverse']);
         break;
 
