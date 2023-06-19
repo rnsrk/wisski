@@ -5,7 +5,7 @@ This Drupal/WissKI module developed by the University Library Heidelberg provide
 There are currently two field types provided by the module, 
 
  1. a type for a date input roughly following the specifications in EDTF, Extended Date/Time Format, see https://www.loc.gov/standards/datetime/, and
- 2. a type for a rather "verbal" input, as defined in MIDAS (link?).
+ 2. a type for a rather "verbal" input, as defined in MIDAS, see https://archiv.ub.uni-heidelberg.de/volltextserver/6198/.
 
 Optionally, the user input can be validated. If desired, the input will only be saved if it corresponds to one of the patterns defined in the module.
 
