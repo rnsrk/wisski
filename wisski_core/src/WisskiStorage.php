@@ -1218,7 +1218,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
                   $target_bundles = $field_settings['handler_settings']['target_bundles'];
                   if (count($target_bundles) === 1) {
                     $target_bundle_id = current($target_bundles);
-                  } else if( count($target_bundles) === 1) {
+                  } else if( count($target_bundles) < 1) {
                     \Drupal::messenger()->addStatus($this->t('There is no target bundle id for field %field - I could not continue.',array('%field' => $field_name)));
                   } else {
                     \Drupal::messenger()->addStatus($this->t('Multiple target bundles for field %field, %field_label',array('%field' => $field_def->getLabel(), '%field_label' => $field_name)));
