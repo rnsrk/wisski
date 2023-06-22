@@ -354,7 +354,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     }
 
 #    dpm(microtime(), "microtime: ");
-    $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password, "MultipleActiveResultSets" => false) );
+    $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password, "TrustServerCertificate"=>true, "MultipleActiveResultSets" => false) );
 #    dpm(microtime(), "microtime: ");
 #    dpm(serialize(sqlsrv_errors()), "error");
     #    
@@ -925,7 +925,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
 
 #    dpm(microtime(), "mic");
-    $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password, "MultipleActiveResultSets" => false) );
+    $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password, "TrustServerCertificate"=>true, "MultipleActiveResultSets" => false) );
 #    $con = sqlsrv_connect($this->server, array("Database"=>$this->database, "UID"=>$this->user, "PWD"=>$this->password) );
   
 #    dpm(serialize(sqlsrv_errors()), "error?");
