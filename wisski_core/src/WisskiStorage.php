@@ -1486,6 +1486,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
       
       // check if it really exists.
       if(file_exists($c_local_file_uri) && filesize($c_local_file_uri) > 0) {
+        $local_file_uri = $c_local_file_uri;
         // return what we found in the cache.
         return $c_file_id;
       } else {
