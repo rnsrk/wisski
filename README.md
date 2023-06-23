@@ -63,7 +63,7 @@ This module requires the following modules:
 
 
 ## Installation
- 
+
 - Install as you would normally install a contributed Drupal module. for further
 information, see [Installing Drupal Modules](https://www.drupal.org/docs/extending-drupal/installing-drupal-modules).
 
@@ -75,7 +75,7 @@ information, see [Installing Drupal Modules](https://www.drupal.org/docs/extendi
 Configuration depends on your use case. We provide a full guide on our
 website https://wiss-ki.eu and in the projects documentation.
 
-- Please [visit our complete guide](https://wiss-ki.eu/documentation) for more information. 
+- Please [visit our complete guide](https://wiss-ki.eu/documentation) for more information.
 
 
 ## Troubleshooting
@@ -97,3 +97,18 @@ Former contributers (At least 10 valid commits):
 - Georg Hohmann
 - Kerstin Reinfandt
 - Dorian Merz
+
+## License
+
+WissKI and related modules are, unless otherwise noted, available under the terms of GPL2.0 or later as below.
+You can find the full license text in [gpl-2.0.txt](gpl-2.0.txt).
+
+```
+Copyright (C) 2008-2023 WissKI Contributors
+
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program; if not, see <https://www.gnu.org/licenses>.
+```
