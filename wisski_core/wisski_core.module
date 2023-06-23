@@ -45,7 +45,7 @@ function wisski_core_excel_export($ob) {
 #  drupal_set_message(serialize($ob));
 #  dpm($ob, "ex");
 
-  $data_rows = $ob['actions']['export']['#submit']['data'];  
+  $data_rows = $ob['actions']['export']['#submit']['data'];
 
   if(empty($data_rows)) {
     \Drupal::messenger()->addError("Please do a search and export the results in excel afterwards.");
@@ -119,7 +119,7 @@ function wisski_core_excel_export($ob) {
 	  if(isset($field_definitions) && !$path->isGroup()) {
 
 	    $fieldid = $pbp['field'];
-	
+
 	    if(isset($fieldid) && isset($field_definitions[$fieldid])) {
 	      $field_def = $field_definitions[$fieldid];
 #	      dpm($field_def, "fd");
@@ -132,7 +132,7 @@ function wisski_core_excel_export($ob) {
 	          $title = wisski_core_generate_title($d_eid);
                   if(is_array($title)) {
 		    $clanguage = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
-                    $title = $title[$clanguage][0]['value']; 
+                    $title = $title[$clanguage][0]['value'];
                   }
 		  $values[$vk] = $title;
                 }
@@ -144,10 +144,10 @@ function wisski_core_excel_export($ob) {
 	  }
 	}
 
-	if(count($values) == 1 && ( is_numeric(current($values)) || ( !is_array(current($values)) && preg_match('/^((\d+)(\.)*)+$/', current($values), $m) != FALSE) ) )  
+	if(count($values) == 1 && ( is_numeric(current($values)) || ( !is_array(current($values)) && preg_match('/^((\d+)(\.)*)+$/', current($values), $m) != FALSE) ) )
 	  fwrite($fh, "=\"");
 	else
-	  fwrite($fh, "\"");	
+	  fwrite($fh, "\"");
 
 	$i = 0;
         foreach($values as $value) {
@@ -161,7 +161,7 @@ function wisski_core_excel_export($ob) {
         }
         fwrite($fh, "\"");
         fwrite($fh, "\t");
-      }  
+      }
     }
     fwrite($fh, "\n");
   }
@@ -185,7 +185,7 @@ function wisski_core_excel_export($ob) {
 #  unlink($filename);
 
   exit();
-  
+
   return FALSE;
 }
 
@@ -210,7 +210,7 @@ function wisski_core_entity_prepare_form(EntityInterface $entity, $operation, Fo
   if(isset($storage['form_display'])) {
     $form_display = $storage['form_display'];
 #    dpm(serialize($form_display), "fd");
-    // for every field in this display act    
+    // for every field in this display act
     foreach($form_display->getComponents() as $key => $comp) {
 
       // get the field definition
@@ -246,7 +246,7 @@ function wisski_core_entity_prepare_form(EntityInterface $entity, $operation, Fo
           }
         }
       }
- 
+
     }
   }
 }
@@ -349,8 +349,8 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
 
       if(!empty($bundle_id)) {
         if ($bundle = WisskiBundle::load($bundle_id)) {
-	
-	  
+
+
           $title = $bundle->generateEntityTitle($wisski_individual,FALSE,$force_new);
 
 	  if(empty($title))
@@ -413,7 +413,7 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
 #  "en")), "fr" => array(array("value" => "juhu", "wisski_language" =>  "fr")));
 #  return array("en" => "eng", "fr" => "fra");
   return $title;
-  
+
 }
 
 function wisski_core_flush_title_caches($bundle_ids=NULL,$entity_ids=NULL) {
@@ -429,20 +429,6 @@ function wisski_core_flush_title_caches($bundle_ids=NULL,$entity_ids=NULL) {
 }
 
 /**
- * Hook in to alter the behaviour of autocomplete.
- * Because it currently breaks the WissKI functionality.
- */
-function wisski_core_form_alter(&$form, FormStateInterface $form_state, $form_id) {
-
-  // only act on wisski individuals
-  if(strpos($form_id, "wisski_individual") !== FALSE) {
-
-    $form['#attached']['library'][] = 'wisski_core/wisski_autocomplete';
-  }
-
-}
-
-/**
  * Add the place where the entity is found in navigate
  */
 function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatchInterface $route_match, array $context) {
@@ -452,7 +438,7 @@ function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatch
 
   // if $routename == 'view.{bundleID}.{bundleID} => e.g. in case of navigate
   // this adds "navigate" to the breadcrumbs
-  if(strpos($routename, 'view.') === 0) { 
+  if(strpos($routename, 'view.') === 0) {
     $request = \Drupal::request();
     $referer = $request->headers->get('referer');
 
@@ -514,7 +500,7 @@ function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatch
     }
   }
 
-  // only do something if we are looking at a wisski individual  
+  // only do something if we are looking at a wisski individual
   if($routename == 'entity.wisski_individual.canonical' || $routename == 'entity.wisski_individual.edit_form' ) {
 
     // where do we come from?
@@ -582,15 +568,15 @@ function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatch
 
       try {
         $result = $router->match($referer);
-    
+
       } catch (Exception $e) {
         // was not found!
       }
 
 
       if(!empty($result) && isset($result['view_id'])) {
-   
-      
+
+
         // the parent is a view - so we probably want to render this...
       	if(!empty($result['_title']))
           $link = Link::createFromRoute($result['_title'], $result['_route'], array(), array('query' => $query_array));
@@ -600,14 +586,14 @@ function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatch
 
           // if we have a title callback, call
           // the title callback
-          
+
 
           #dpm($result, "result");
           #dpm($viewTitle, "titlecallback");
           if(isset($result['_title_callback'])) {
             // get the callback function and assign contained class and menthod
             [$className, $methodName]  = explode('::', $result['_title_callback']);
-            // call the method with parameter on the fly 
+            // call the method with parameter on the fly
             $result['_title'] = call_user_func([new $className, $methodName], $result['view_id']);
           } else {
             // if we dont have that it is hopefully a bundle?!
