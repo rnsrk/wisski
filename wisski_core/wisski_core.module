@@ -429,6 +429,20 @@ function wisski_core_flush_title_caches($bundle_ids=NULL,$entity_ids=NULL) {
 }
 
 /**
+ * Hook in to alter the behaviour of autocomplete.
+ * Because it currently breaks the WissKI functionality.
+ */
+function wisski_core_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+
+  // only act on wisski individuals
+  if(strpos($form_id, "wisski_individual") !== FALSE) {
+
+    $form['#attached']['library'][] = 'wisski_core/wisski_autocomplete';
+  }
+
+}
+
+/**
  * Add the place where the entity is found in navigate
  */
 function wisski_core_system_breadcrumb_alter(Breadcrumb &$breadcrumb, RouteMatchInterface $route_match, array $context) {
