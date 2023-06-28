@@ -1005,7 +1005,8 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 
             // check if there is any valid top bundle.
             $valid_topbundle = AdapterHelper::getBundleIdsForEntityId($id, TRUE);
-
+            $old_cached_bundle = $cached_bundle;
+            
             // if we found any, we trust the system that this is probably the best!
             if($valid_topbundle)
               $cached_bundle = current($valid_topbundle); // whichever system might have more than one of this? I dont know...
@@ -1015,6 +1016,13 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
             // for anything again....
 
             //$cached_bundle = NULL;
+            
+            // By Mark: If the bundle has been changed here it is due to settings
+            // to use only main bundles. so we should change that in cache also
+            // otherwise titles will be generated wrongly.
+            if($old_cached_bundle != $cached_bundle)
+              WisskiCacheHelper::putCallingBundle($id, $cached_bundle);
+              
           } else
             $info[$id]['bundle'] = $cached_bundle;
         #dpm($cached_bundle, "cb");

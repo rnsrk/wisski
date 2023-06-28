@@ -150,8 +150,9 @@ class WisskiBundle extends ConfigEntityBundleBase implements WisskiBundleInterfa
 
       if(!empty($title))
         return $title;
-      else 
-        \Drupal::messenger()->addStatus('Could not create Title for Bundle ' . $this->id . '. Please resave the title pattern');
+# This might be annoying
+#      else 
+#        \Drupal::messenger()->addStatus('Could not create Title for Bundle ' . $this->id . '. Please resave the title pattern');
     }
 
     return unserialize($this->title_pattern);
