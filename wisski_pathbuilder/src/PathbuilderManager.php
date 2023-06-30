@@ -27,6 +27,10 @@ class PathbuilderManager {
 
   private static $imagePaths = NULL;
 
+  /** @var array[] */
+  private static $fieldPaths = NULL;
+  // $fieldPaths[$fieldId][$pbId] = array($paths...)
+
   private static $pbs = NULL;
 
   private static $paths = NULL;
@@ -67,11 +71,102 @@ class PathbuilderManager {
     self::$pbsForAdapter = NULL;
     self::$pbsUsingBundle = NULL;
     self::$imagePaths = NULL;
+    self::$fieldPaths = NULL;
     self::$pbs = NULL;
     self::$paths = NULL;
     \Drupal::cache()->delete('wisski_pathbuilder_manager_pbs_for_adapter');
     \Drupal::cache()->delete('wisski_pathbuilder_manager_pbs_using_bundle');
     \Drupal::cache()->delete('wisski_pathbuilder_manager_image_paths');
+    \Drupal::cache()->delete('wisski_pathbuilder_manager_field_paths');
+  }
+
+  /**
+   * Get all pathbuilders
+   *
+   * @return \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity[]
+   *   All pathbuilders.
+   */
+  private function getPbs(): array {
+    // Not yet fetched from cache?
+    if (self::$pbs === NULL) {
+      if ($cache = \Drupal::cache()
+        ->get('wisski_pathbuilder_manager_pbs')) {
+        self::$pbs = $cache->data;
+      }
+    }
+    // Was reset, recalculate.
+    if (self::$pbs === NULL) {
+      $pbs = WisskiPathbuilderEntity::loadMultiple();
+      $cache = \Drupal::cache()->set('wisski_pathbuilder_manager_pbs', $pbs);
+      self::$pbs = $pbs;
+    }
+
+    if (!empty(self::$pbs)) {
+      return self::$pbs;
+    }
+    return NULL;
+
+  }
+
+  /**
+   * Returns a pathbuilder for the given pathbuilder Id.
+   *
+   * Either gets it from the local cache or loads it
+   * if it isn't cached.
+   *
+   * @return \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity|null
+   *   The pathbuilder or null if it does't exist.
+   */
+  public function getPathbuilder(string $id): WisskiPathbuilderEntity|NULL {
+    $pbs = $this->getPbs();
+    if (!isset($pbs[$id])) {
+      return NULL;
+    }
+    return $pbs[$id];
+  }
+
+  /**
+   * Returns all paths.
+   *
+   * @return \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity[]
+   *   All Path entities.
+   */
+  private function getPaths(): array {
+      // Not yet fetched from cache?
+    if (self::$paths === NULL) {
+      $cache = \Drupal::cache()->get('wisski_pathbuilder_manager_paths');
+      if ($cache) {
+        self::$paths = $cache->data;
+      }
+    }
+    // Was reset, recalculate.
+    if (self::$paths === NULL) {
+      $paths = WisskiPathEntity::loadMultiple();
+      $cache = \Drupal::cache()->set('wisski_pathbuilder_manager_paths', $paths);
+      self::$paths = $paths;
+    }
+
+    if (!empty(self::$paths)) {
+      return self::$paths;
+    }
+    return NULL;
+  }
+
+  /**
+   * Returns path for a given path id.
+   *
+   * @param string $id
+   *   The path id.
+   *
+   * @return \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity|null
+   *   The wisski path entity or null if it doesn't exist.
+   */
+  public function getPath(string $id): WisskiPathEntity|NULL {
+    $paths = $this->getPaths();
+    if (!isset($paths[$id])) {
+      return NULL;
+    }
+    return $paths[$id];
   }
 
   /**
@@ -164,13 +259,7 @@ class PathbuilderManager {
     // dpm($pbs_and_paths, "yay!");.
     foreach ($pbs_and_paths as $pb_id => $paths) {
 
-      if (empty(self::$pbs)) {
-        $pbs = WisskiPathbuilderEntity::loadMultiple();
-        self::$pbs = $pbs;
-      }
-      else {
-        $pbs = self::$pbs;
-      }
+      $pbs = $this->getPbs();
 
       $pb = $pbs[$pb_id];
 
@@ -213,13 +302,7 @@ class PathbuilderManager {
         return [];
       }
 
-      if (empty(self::$paths)) {
-        $paths = WisskiPathEntity::loadMultiple();
-        self::$paths = $paths;
-      }
-      else {
-        $paths = self::$paths;
-      }
+      $paths = $this->getPaths();
 
       $path = $paths[$the_pathid];
       // dpm(microtime(), "ptr?");.
@@ -256,9 +339,16 @@ class PathbuilderManager {
   }
 
   /**
+   * Loads image path ids and corresponding pathbuilders.
+   *
+   * @param string $bundle_id
+   *   The bundle id.
+   *
+   * @return array
+   *   Image paths with corresponding pathbuilders.
    *
    */
-  public function getImagePathsAndPbsForBundle($bundle_id) {
+  public function getImagePathsAndPbsForBundle($bundle_id): array {
 
     // Not yet fetched from cache?
     if (self::$imagePaths === NULL) {
@@ -287,13 +377,7 @@ class PathbuilderManager {
     $info = [];
 
     // $pbs = entity_load_multiple('wisski_pathbuilder');
-    if (empty(self::$pbs)) {
-      $pbs = WisskiPathbuilderEntity::loadMultiple();
-      self::$pbs = $pbs;
-    }
-    else {
-      $pbs = self::$pbs;
-    }
+    $pbs = $this->getPbs();
 
     foreach ($pbs as $pbid => $pb) {
       $groups = $pb->getMainGroups();
@@ -315,6 +399,69 @@ class PathbuilderManager {
 
     \Drupal::cache()
       ->set('wisski_pathbuilder_manager_image_paths', self::$imagePaths);
+  }
+
+  /**
+   * Loads path ids and corresponding pathbuilders. for a given field type.
+   *
+   * @param string $field_id
+   *   The field id.
+   *
+   * @return array
+   *   Field paths as a mapping from pathbuilder ids to list of path objects
+   *
+   */
+  public function getPathIdsAndPbIdsForFieldId($field_id): array {
+
+    // Not yet fetched from cache?
+    if (self::$fieldPaths === NULL) {
+      if ($cache = \Drupal::cache()
+        ->get('wisski_pathbuilder_manager_field_paths')
+      ) {
+        self::$fieldPaths = $cache->data;
+      }
+    }
+    // Was reset, recalculate.
+    if (self::$fieldPaths === NULL) {
+      $this->calculateFieldPaths();
+    }
+
+    if (isset(self::$fieldPaths[$field_id])) {
+      return self::$fieldPaths[$field_id];
+    }
+
+    return [];
+  }
+
+  /**
+   * Maps the paths to their corresponding bundle id and pathbuilder id.
+   *
+   * [<fieldId> => [pathbuilderId => pathId]]
+   */
+  public function calculateFieldPaths() {
+
+    // $pbs = entity_load_multiple('wisski_pathbuilder');
+    $pbs = $this->getPbs();
+
+    $fieldPaths = [];
+    foreach ($pbs as $pbid => $pb) {
+      $pbpaths = $pb->getPbPaths();
+      foreach($pbpaths as $id => $potpath) {
+        $fieldId = $potpath['field'];
+
+        if (!isset($fieldPaths[$fieldId])) {
+          $fieldPaths[$fieldId] = [];
+        }
+        if (!isset($fieldPaths[$fieldId][$pbid])) {
+          $fieldPaths[$fieldId][$pbid] = [];
+        }
+        $fieldPaths[$fieldId][$pbid][] = $id;
+      }
+    }
+    self::$fieldPaths = $fieldPaths;
+
+    \Drupal::cache()
+      ->set('wisski_pathbuilder_manager_field_paths', self::$fieldPaths);
   }
 
   /**
@@ -346,7 +493,7 @@ class PathbuilderManager {
   /** loads the adapter for the given pathbuilder, or NULL if it does not exist */
   private function loadAdapterForPB($pb) {
     if (is_null($pb)) return NULL;
-    
+
     $id = $pb->getAdapterId();
     if (!is_string($id)) return NULL; // some linkblocks are horribly broken, and have a NULL here.
 
@@ -361,13 +508,7 @@ class PathbuilderManager {
     self::$pbsUsingBundle = [];
     self::$bundlesWithStartingConcept = [];
 
-    if (empty(self::$pbs)) {
-      $pbs = WisskiPathbuilderEntity::loadMultiple();
-      self::$pbs = $pbs;
-    }
-    else {
-      $pbs = self::$pbs;
-    }
+    $pbs = $this->getPbs();
 
     foreach ($pbs as $pbid => $pb) {
       foreach ($pb->getAllGroups() as $group) {

@@ -14,6 +14,7 @@ use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWithPB;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use Drupal\wisski_pathbuilder\PathbuilderManager;
 use Drupal\wisski_salz\Entity\Adapter;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -52,15 +53,22 @@ class WisskiAutocompleteController extends ControllerBase {
    */
   protected $languageManager;
 
+  /**
+   * @var \Drupal\wisski_pathbuilder\PathbuilderManager
+   */
+  protected $pathbuilderManager;
+
   // /**
   // * {@inheritdoc}
   // */
   public function __construct(
     EntityTypeManagerInterface $entityTypeManager,
-    LanguageManagerInterface $languageManager
+    LanguageManagerInterface $languageManager,
+    PathbuilderManager $pathbuilderManager
   ){
     $this->entityTypeManager = $entityTypeManager;
     $this->languageManager = $languageManager;
+    $this->pathbuilderManager = $pathbuilderManager;
   }
 
 
@@ -70,7 +78,8 @@ class WisskiAutocompleteController extends ControllerBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('entity_type.manager'),
-      $container->get('language_manager')
+      $container->get('language_manager'),
+      $container->get('wisski_pathbuilder.manager')
     );
   }
 
@@ -87,6 +96,24 @@ class WisskiAutocompleteController extends ControllerBase {
    *   A JSON response containing the autocomplete suggestions for countries.
    */
   public function autocomplete(Request $request, string $fieldId): JsonResponse {
+
+    // before abstraction: (warm / cold)
+    // query: 0.031772136688232 / 0.02682900428772
+    // doAutocomplete: 0.053938865661621 / 0.31383299827576
+
+
+    // after abstraction: (warm / cold)
+    // query: 0.037721872329712 / 0.025347948074341
+    // doAutocomplete: 0.056931018829346 / 0.36022710800171
+
+    // with cache (warm / cold)
+    // query:  0.027452945709229 / 0.036310911178589
+    // doAutocomplete: 0.041092157363892 / 0.12897205352783
+
+    // with even better cache (warm / cold)
+    // query:  0.03709888458252 / 0.072020053863525
+    // doAutocomplete: 0.044520139694214 / 0.31710195541382
+
     // get the query parameter
     $query = $request->query->get('q');
     if (!isset($query)) {
@@ -94,7 +121,10 @@ class WisskiAutocompleteController extends ControllerBase {
     }
 
     // do the actual autocomplete operation
+    // $start = microtime(TRUE);
     $result = $this->doAutocomplete($query, $fieldId);
+    // dpm(microtime(TRUE) - $start, 'doAutocomplete took');
+
     if ($result === NULL) {
       return new JsonResponse([]);
     }
@@ -112,31 +142,25 @@ class WisskiAutocompleteController extends ControllerBase {
    * @return array[] List of (label, id) objects to display as a result
    */
   private function doAutocomplete(string $query, string $fieldId): array|NULL {
+    /** @var \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity */
+    $path = NULL;
+
     /** @var ?string */
     $pathId = NULL;
 
     /** @var \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity */
     $pathbuilder = NULL;
 
-    // Iterate through pathbuilders for corresponding path id.
-    /** @var \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity[] */
-    $pbs = $this->entityTypeManager->getStorage('wisski_pathbuilder')->loadMultiple();
-    if (empty($pbs)) {
-      return NULL;
-    }
-    foreach ($pbs as $pb) {
-      $path = $pb->getPathForFid($fieldId);
-      if (empty($path)) {
-        continue;
-      }
-
-      $pathId = $path->id();
-      $pathbuilder = $pb;
+    $idsForField = $this->pathbuilderManager->getPathIdsAndPbIdsForFieldId($fieldId);
+    foreach ($idsForField as $pbId => $pathIds) {
+      $pathId = current($pathIds);
+      $pathbuilder = $this->pathbuilderManager->getPathbuilder($pbId);
+      $path = $this->pathbuilderManager->getPath($pathId);
       break;
     }
 
     // Exit if the path is not in any pathbuilder.
-    if (empty($pathbuilder) || empty($pathId)) {
+    if (empty($pathbuilder) || empty($pathId) || empty($path)) {
       return NULL;
     }
 
@@ -167,6 +191,7 @@ class WisskiAutocompleteController extends ControllerBase {
       $titlePatternEnabled = $pbPath['displaywidget'] == "wisski_autocomplete_widget";
     }
 
+    // $start = microtime(TRUE);
     // Load field settings.
     /** @var array */
     $fieldSettings = NULL;
@@ -180,6 +205,7 @@ class WisskiAutocompleteController extends ControllerBase {
         }
       }
     }
+    // #dpm(microtime(TRUE) - $start, 'fieldsettingsload took');
 
     // Determine autocomplete limit to use.
     // Either the global limit, or the field-based override.
@@ -224,8 +250,8 @@ class WisskiAutocompleteController extends ControllerBase {
       $sparql .= $engine->generateTriplesForPath($pathbuilder, $path, NULL, NULL, NULL, NULL, $path->getDisamb() - 1, FALSE);
       //$sparql .= " FILTER regex( STR(?out), '$string') . } ";
       // martin said contains is faster ;D
-      $sparql .= " FILTER CONTAINS(STR(?out), '" . $engine->escapeSparqlLiteral($query) . "') . } ";
-      #          $sparql .= " FILTER STRSTARTS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
+       $sparql .= " FILTER CONTAINS(STR(?out), '" . $engine->escapeSparqlLiteral($query) . "') . } ";
+      #          $sparql .= " FILTER STRSTARTS(STR(?out), '" . $engine->escapeSparqlLiteral($query) . "') . } ";
       #          $sparql .= " FILTER CONTAINS(?out, '" . $engine->escapeSparqlLiteral($string) . "') . } ";
     } else {
       $startingPosition = (count($path->getPathArray()) - count($pathbuilder->getRelativePath($path))) / 2;
@@ -233,7 +259,7 @@ class WisskiAutocompleteController extends ControllerBase {
       $sparql .= $engine->generateTriplesForPath($pathbuilder, $path, NULL, NULL, NULL, NULL, $startingPosition, FALSE);
       #          $sparql .= " FILTER regex( STR(?out), '$string') . } ";
       $sparql .= " FILTER CONTAINS(STR(?out), '" . $engine->escapeSparqlLiteral($query) . "') . } ";
-      #          $sparql .= " FILTER STRSTARTS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
+      #          $sparql .= " FILTER STRSTARTS(STR(?out), '" . $engine->escapeSparqlLiteral($query) . "') . } ";
       #          $sparql .= " FILTER CONTAINS(?out, '" . $engine->escapeSparqlLiteral($string) . "') . } ";
     }
 
@@ -242,13 +268,12 @@ class WisskiAutocompleteController extends ControllerBase {
     # dpm($sparql, "sq");
 
     // $sparql .= "LIMIT " . $this->autocompleteSuggestionsLimit;
-    #      dpm(microtime());
 
     // TODO: Add limit and sorting directly to the query once thei
     // titles are in the in the triplestore.
+    #$start = microtime(TRUE);
     $result = $engine->directQuery($sparql);
-    # dpm($result);
-    #      dpm(microtime());
+    #dpm(microtime(TRUE) - $start, 'query took');
 
     // Initiate autocomplete matches array
     /** @var array[] */
