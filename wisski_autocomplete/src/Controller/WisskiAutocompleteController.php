@@ -18,6 +18,7 @@ use Drupal\wisski_salz\Entity\Adapter;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\wisski_salz\AdapterHelper;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Returns autocomplete responses for countries.
@@ -54,23 +55,24 @@ class WisskiAutocompleteController extends ControllerBase {
   // /**
   // * {@inheritdoc}
   // */
-  // public function __construct(
-  //   EntityTypeManagerInterface $entityTypeManager,
-  //   LanguageManagerInterface $languageManager
-  // ){
-  //   $this->entityTypeManager = $entityTypeManager;
-  //   $this->languageManager = $languageManager;
-  // }
+  public function __construct(
+    EntityTypeManagerInterface $entityTypeManager,
+    LanguageManagerInterface $languageManager
+  ){
+    $this->entityTypeManager = $entityTypeManager;
+    $this->languageManager = $languageManager;
+  }
 
 
-  // /**
-  //  * {@inheritdoc}
-  //  */
-  // public static function create(ContainerInterface $container) {
-  //   return new static(
-  //     $container->get('entity_type.manager')
-  //   );
-  // }
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('entity_type.manager'),
+      $container->get('language_manager')
+    );
+  }
 
 
   /**
@@ -117,7 +119,8 @@ class WisskiAutocompleteController extends ControllerBase {
     $pathbuilder = NULL;
 
     // Iterate through pathbuilders for corresponding path id.
-    $pbs = WisskiPathbuilderEntity::loadMultiple();
+    /** @var \Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity[] */
+    $pbs = $this->entityTypeManager->getStorage('wisski_pathbuilder')->loadMultiple();
     if (empty($pbs)) {
       return NULL;
     }
@@ -144,7 +147,8 @@ class WisskiAutocompleteController extends ControllerBase {
       return NULL;
     }
 
-    $adapter = Adapter::load($adapterId);
+    /** @var \Drupal\wisski_salz\Entity\Adapter */
+    $adapter = $this->entityTypeManager()->getStorage('wisski_salz_adapter')->load($adapterId);
     if (empty($adapter)) {
       return NULL;
     }
@@ -167,7 +171,8 @@ class WisskiAutocompleteController extends ControllerBase {
     /** @var array */
     $fieldSettings = NULL;
     if (isset($pbPath) && isset($pbPath['bundle'])) {
-      $ind = \Drupal::service('entity_type.manager')->getStorage('entity_form_display')->load('wisski_individual.' . $pbPath['bundle'] . '.default');
+      /** @var \Drupal\Core\Entity\Entity */
+      $ind = $this->entityTypeManager()->getStorage('entity_form_display')->load('wisski_individual.' . $pbPath['bundle'] . '.default');
       if (isset($ind)) {
         $comp = $ind->getComponent($fieldId);
         if (isset($comp) && isset($comp['settings'])) {
@@ -259,7 +264,7 @@ class WisskiAutocompleteController extends ControllerBase {
 
       $id = AdapterHelper::getDrupalIdForUri($thing->$var->getUri());
       $tit = wisski_core_generate_title($id);
-      $langcode = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+      $langcode = $this->languageManager->getCurrentLanguage()->getId();
       // check if it is keyed by language => in case a system does not support
       // multiple languages, this array has no distinction between the lang codes
       if (isset($tit[$langcode])) {
