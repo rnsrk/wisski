@@ -5,6 +5,12 @@
 
 (function ($, Drupal) {
 
+  // On Drupal 10.x, we use a different approach to autocomplete.
+  // So disable this code if there isn't an autocomplete.
+  if (!Object.prototype.hasOwnProperty.call(Drupal, 'autocomplete')) {
+    return
+  }
+
   // Override the "select" option of the jQueryUI autocomplete
   // to make sure we do not use quotes for inputs with comma.
   Drupal.autocomplete.options.select = function (event, ui) {

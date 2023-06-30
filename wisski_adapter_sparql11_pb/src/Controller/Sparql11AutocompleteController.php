@@ -71,13 +71,13 @@ class Sparql11AutocompleteController
       }
 
 
-      // the $path->getDisamb iterates through the path and considers only the 
+      // the $path->getDisamb iterates through the path and considers only the
       // groups/bundles. It starts counting with 1 and iterates until the disambiguation point is reached, e.g.
       // abc:resource (concept, 1)
       // ->abc:resource_has_related_item (object property [not considered])
       // ->abc:related_item_group (concept, 2)->
-      // abc:related_item_to_resource (object property [not considered]) 
-      // ->abc:resource (concept + disamb point, 3) 
+      // abc:related_item_to_resource (object property [not considered])
+      // ->abc:resource (concept + disamb point, 3)
 
       // in order to construct the right sparql query which also considers the
       // URI of the invidual, we have to parse through the path in a different
@@ -85,8 +85,8 @@ class Sparql11AutocompleteController
       // abc:resource (concept, 0)
       // ->abc:resource_has_related_item (object property, 1)
       // ->abc:related_item_group (concept, 2)->
-      // abc:related_item_to_resource (object property, 3) 
-      // ->abc:resource (concept + disamb point, 4) 
+      // abc:related_item_to_resource (object property, 3)
+      // ->abc:resource (concept + disamb point, 4)
 
       // therefore we have to shift by one and double the position result
       $posInPathbuilder = ($path->getDisamb() - 1) * 2;
@@ -100,7 +100,7 @@ class Sparql11AutocompleteController
         $sparql = "SELECT ?out ?$var WHERE { ";
         // in case of disamb go for -1
         $sparql .= $engine->generateTriplesForPath($pb, $path, NULL, NULL, NULL, NULL, $path->getDisamb() - 1, FALSE);
-        //$sparql .= " FILTER regex( STR(?out), '$string') . } ";        
+        //$sparql .= " FILTER regex( STR(?out), '$string') . } ";
         // martin said contains is faster ;D
         $sparql .= " FILTER CONTAINS(STR(?out), '" . $engine->escapeSparqlLiteral($autocomplete_query_string) . "') . } ";
         #          $sparql .= " FILTER STRSTARTS(STR(?out), '" . $engine->escapeSparqlLiteral($string) . "') . } ";
@@ -124,8 +124,8 @@ class Sparql11AutocompleteController
 
     #      drupal_set_message("engine: " . serialize($sparql));
     #      dpm(microtime());
-    
-    // TODO: Add limit and sorting directly to the query once thei 
+
+    // TODO: Add limit and sorting directly to the query once thei
     // titles are in the in the triplestore.
     $result = $engine->directQuery($sparql);
     # dpm($result);
