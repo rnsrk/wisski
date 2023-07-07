@@ -9,17 +9,14 @@ namespace Drupal\wisski_autocomplete\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Language\LanguageManager;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\wisski_adapter_sparql11_pb\Plugin\wisski_salz\Engine\Sparql11EngineWithPB;
-use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
-use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
 use Drupal\wisski_pathbuilder\PathbuilderManager;
-use Drupal\wisski_salz\Entity\Adapter;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\wisski_salz\AdapterHelper;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+
 
 /**
  * Returns autocomplete responses for countries.
@@ -27,33 +24,29 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class WisskiAutocompleteController extends ControllerBase {
 
   /**
-   * The amount of autocomplete suggestions.
+   * The default value for autocomplete suggestions.
    *
    * @var int
    */
-  private $autocompleteSuggestionsLimit = 10;
-
-  /**
-   * If the autocompleteshould use the title pattern.
-   *
-   * @var bool
-   */
-  private $autocompleteTitlePatternEnabled = FALSE;
-
+  const DEFAULT_SUGGESTIONS_LIMIT = 10;
 
   /**
    * The entity type manager.
+   *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;
 
   /**
-   *The language manager.
+   * The language manager service.
+   *
    * @var \Drupal\Core\Language\LanguageManagerInterface
    */
   protected $languageManager;
 
   /**
+   * The Pathbuilder manager service.
+   *
    * @var \Drupal\wisski_pathbuilder\PathbuilderManager
    */
   protected $pathbuilderManager;
@@ -91,11 +84,21 @@ class WisskiAutocompleteController extends ControllerBase {
    *   The current request object containing the search string.
    * @param string $fieldId
    *   The id of the field.
+   * @param string $autocompleteLimit
+   *   Number of suggestions to display.
+   * @param bool $useTitlePattern
+   *   Use title pattern in the automplete suggestions instead of field values.
    *
    * @return \Symfony\Component\HttpFoundation\JsonResponse
    *   A JSON response containing the autocomplete suggestions for countries.
    */
-  public function autocomplete(Request $request, string $fieldId): JsonResponse {
+  public function autocomplete(Request $request, string $fieldId, int $autcompleteLimit=self::DEFAULT_SUGGESTIONS_LIMIT, bool $useTitlePattern=FALSE): JsonResponse {
+
+    // Get the settings from the Widget from the config.
+    $config = \Drupal::service('config.factory')->getEditable("wisski.autocomplete");
+    $settings = $config->get($fieldId);
+    $autcompleteLimit = $settings['autocompleteLimit'];
+    $useTitlePattern = $settings['useTitlePattern'];
 
     // before abstraction: (warm / cold)
     // query: 0.031772136688232 / 0.02682900428772
@@ -122,7 +125,7 @@ class WisskiAutocompleteController extends ControllerBase {
 
     // do the actual autocomplete operation
     // $start = microtime(TRUE);
-    $result = $this->doAutocomplete($query, $fieldId);
+    $result = $this->doAutocomplete($query, $fieldId, $autcompleteLimit, $useTitlePattern);
     // dpm(microtime(TRUE) - $start, 'doAutocomplete took');
 
     if ($result === NULL) {
@@ -138,10 +141,14 @@ class WisskiAutocompleteController extends ControllerBase {
    *   Query string the user entered.
    * @param string $fieldId
    *   ID of field to query values for.
+   * @param string $autocompleteLimit
+   *   Number of suggestions to display.
+   * @param bool $useTitlePattern
+   *   Use title pattern in the automplete suggestions instead of field values.
    *
    * @return array[] List of (label, id) objects to display as a result
    */
-  private function doAutocomplete(string $query, string $fieldId): array|NULL {
+  private function doAutocomplete(string $query, string $fieldId, int $autocompleteLimit, bool $useTitlePattern): array|NULL {
     /** @var \Drupal\wisski_pathbuilder\Entity\WisskiPathEntity */
     $path = NULL;
 
@@ -181,40 +188,6 @@ class WisskiAutocompleteController extends ControllerBase {
     if(!$engine instanceof Sparql11EngineWithPB){
       return NULL;
     }
-
-
-    // Use title pattern if set.
-    /** @var array */
-    $pbPath = $pathbuilder->getPbPath($pathId);
-    $titlePatternEnabled = $this->autocompleteTitlePatternEnabled;
-    if (isset($pbPath) && isset($pbPath['displaywidget'])) {
-      $titlePatternEnabled = $pbPath['displaywidget'] == "wisski_autocomplete_widget";
-    }
-
-    // $start = microtime(TRUE);
-    // Load field settings.
-    /** @var array */
-    $fieldSettings = NULL;
-    if (isset($pbPath) && isset($pbPath['bundle'])) {
-      /** @var \Drupal\Core\Entity\Entity */
-      $ind = $this->entityTypeManager()->getStorage('entity_form_display')->load('wisski_individual.' . $pbPath['bundle'] . '.default');
-      if (isset($ind)) {
-        $comp = $ind->getComponent($fieldId);
-        if (isset($comp) && isset($comp['settings'])) {
-          $fieldSettings = $comp['settings'];
-        }
-      }
-    }
-    // #dpm(microtime(TRUE) - $start, 'fieldsettingsload took');
-
-    // Determine autocomplete limit to use.
-    // Either the global limit, or the field-based override.
-    $limit = $this->autocompleteSuggestionsLimit;
-    if (isset($fieldSettings) && isset($fieldSettings['autocompletelimit'])) {
-      $limit = $fieldSettings['autocompletelimit'];
-    }
-
-
 
     // Construct SPARQL query.
 
@@ -263,39 +236,39 @@ class WisskiAutocompleteController extends ControllerBase {
       #          $sparql .= " FILTER CONTAINS(?out, '" . $engine->escapeSparqlLiteral($string) . "') . } ";
     }
 
+    $sparql .= "LIMIT " . $autocompleteLimit;
+
 
 
     # dpm($sparql, "sq");
 
-    // $sparql .= "LIMIT " . $this->autocompleteSuggestionsLimit;
 
-    // TODO: Add limit and sorting directly to the query once thei
+    // TODO: Add sorting directly to the query once the
     // titles are in the in the triplestore.
     #$start = microtime(TRUE);
-    $result = $engine->directQuery($sparql);
+    $results = $engine->directQuery($sparql);
     #dpm(microtime(TRUE) - $start, 'query took');
 
     // Initiate autocomplete matches array
     /** @var array[] */
     $matches = [];
-    foreach ($result as $key => $thing) {
-
-      // Not using the title patter, or invalid results.
-      if (!$titlePatternEnabled || !isset($thing->$var)) {
-        $matches[] = array('value' => $thing->out->getValue(), 'label' => $thing->out->getValue());
+    foreach ($results as $result) {
+      // Not using the title pattern, or invalid results.
+      if (!$useTitlePattern || !isset($result->$var)) {
+        $matches[] = array('value' => $result->out->getValue(), 'label' => $result->out->getValue());
         //         #        $matches[] = array('value' => $key, 'label' => $thing->out->getValue());
         continue;
       }
 
-      $id = AdapterHelper::getDrupalIdForUri($thing->$var->getUri());
+      $id = AdapterHelper::getDrupalIdForUri($result->$var->getUri());
       $tit = wisski_core_generate_title($id);
       $langcode = $this->languageManager->getCurrentLanguage()->getId();
       // check if it is keyed by language => in case a system does not support
       // multiple languages, this array has no distinction between the lang codes
       if (isset($tit[$langcode])) {
-        $matches[] = array('value' => ($thing->out->getValue() . " (" . $id . ")"), 'label' => $tit[$langcode][0]['value']);
+        $matches[] = array('value' => ($result->out->getValue() . " (" . $id . ")"), 'label' => $tit[$langcode][0]['value']);
       } else {
-        $matches[] = array('value' => ($thing->out->getValue() . " (" . $id . ")"), 'label' => $thing->out->getValue());
+        $matches[] = array('value' => ($result->out->getValue() . " (" . $id . ")"), 'label' => $result->out->getValue());
       }
     }
 
@@ -304,13 +277,17 @@ class WisskiAutocompleteController extends ControllerBase {
       return strcmp($a["label"], $b["label"]);
     });
 
+    return $matches;
+
+    /*
     // Apply the actual limit.
     $ret = array_slice($matches, 0, $limit);
     if(count($matches) >= $limit){
       $ret[] = array('label' => "More hits were found, continue typing...");
     }
-
     return $ret;
+    */
+
   }
 }
 
