@@ -108,7 +108,7 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
 
 #    dpm($data, "from cache?");
     // if debugging is turned on don't use caching so there's no early return here!
-    if (!($this->debug) and $data) {
+    if (!($this->debug) and isset($data) and !empty($data->data)) {
       return $data->data;
     }
 
