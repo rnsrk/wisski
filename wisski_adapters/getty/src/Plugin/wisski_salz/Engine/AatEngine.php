@@ -98,9 +98,9 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     if ($this->debug) {
       $this->messenger()->addMessage($this->t("nach if, id: [$id]"));
     }
-    \Drupal::logger('AatEngine')->notice('fetchData: %uri', [
-        '%uri' => $uri,
-     ]);
+    //\Drupal::logger('AatEngine')->notice('fetchData: %uri', [
+    //    '%uri' => $uri,
+    // ]);
    
     // 
     $cache = \Drupal::cache('wisski_adapter_aat');
