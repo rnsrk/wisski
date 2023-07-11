@@ -1,19 +1,67 @@
 <?php
 
 /**
- * @file
- */
+* @file
+*/
 
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
+use Drupal\wisski_salz\Entity\Adapter;
 
 /**
- * Implementation of Hook_help.
+ * Implements hook_help().
  */
 function wisski_adapter_sparql11_pb_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'help.page.wisski_adapter_sparql11_pb':
-      return '<p>' . t('This is the adapter for communication with any ' .
-        'SPARQL 1.1 endpoint. Usually you will need it!') . '</p>';
+      return '<p>' . t('This is the adapter for communication with any SPARQL 1.1 endpoint. Usually you will need it!') . '</p>';
   }
 }
 
+/**
+ * Implements hook_field_widget_single_element_form_alter().
+ */
+function wisski_adapter_sparql11_pb_field_widget_single_element_form_alter(array &$element, FormStateInterface $form_state, array $context) {
+  $enableAutocompleteEverywhere = \Drupal::service('config.factory')->getEditable("wisski_core.settings")->get('wisski_enableAutocompleteEverywhere');
+  $moduleHandler = \Drupal::service('module_handler');
+
+  if ($moduleHandler->moduleExists('wisski_autocomplete') && $enableAutocompleteEverywhere) {
+
+    // Load all Pathbuilders.
+    $pbs = WisskiPathbuilderEntity::loadMultiple();
+    // Get field id.
+    $fieldId = $context['items']->getFieldDefinition()->getName();
+
+    // Do for every pathbuilder.
+    foreach ($pbs as $pb) {
+      // If pathbuilder has no Adapter, exit.
+      if (empty($pb->getAdapterId())) {
+        continue;
+      }
+
+      // Load Adapter.
+      $adapter = Adapter::load($pb->getAdapterId());
+
+      // If there is no Adapter, exit.
+      if (empty($adapter)) {
+        continue;
+      }
+
+      // Load all paths for corresponding field.
+      $pbarray = $pb->getPbEntriesForFid($fieldId);
+
+      // If there are no paths, exit.
+      if (empty($pbarray["id"])) {
+        continue;
+      }
+
+      // Add autocomplete to field.
+      $element["value"]['#autocomplete_route_name'] = 'wisski.wisski_autocomplete.autocomplete';
+      $element["value"]['#autocomplete_route_parameters'] = ["fieldId" => $fieldId];
+
+      // Exit loop.
+      break;
+    }
+  }
+}
