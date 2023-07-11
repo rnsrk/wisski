@@ -7,3 +7,4 @@ core_version_requirement: ^8 || ^9 || ^10
 configure: wisski_core.wisski_core
 dependencies:
   - inline_entity_form:inline_entity_form
+  - wisski:wisski_autocomplete
