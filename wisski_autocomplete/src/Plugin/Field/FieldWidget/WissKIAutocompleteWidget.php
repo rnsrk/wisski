@@ -124,7 +124,7 @@ class WissKIAutocompleteWidget extends WidgetBase implements WidgetInterface {
 
     $summary[] = t('Textfield size: @size', ['@size' => $this->getSetting('size')]);
     $placeholder = $this->getSetting('placeholder');
-    $autocompletelimit = $this->getSetting('autocompletelimit');
+    $autocompletelimit = $this->getSetting('autocompleteLimit');
     $useTitlePattern = $this->getSetting('useTitlePattern');
     if (!empty($autocompletelimit)) {
       $summary[] = t('Autocomplete limit: @autocompletelimit', ['@autocompletelimit' => $autocompletelimit]);
