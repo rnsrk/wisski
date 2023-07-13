@@ -78,6 +78,42 @@ class FieldString extends ViewsString {
         'method' => 'opMulti',
         'values' => 1,
       ),
+      '<' => array(
+        'title' => t('Is less than'),
+        'method' => 'opSimple',
+        'short' => t('<'),
+        'values' => 1,
+      ),
+      '<=' => array(
+        'title' => t('Is less than or equal to'),
+        'method' => 'opSimple',
+        'short' => t('<='),
+        'values' => 1,
+      ),
+      '<>' => array(
+        'title' => t('Is not numerical equal to'),
+        'method' => 'opSimple',
+        'short' => t('!='),
+        'values' => 1,
+      ),
+      '>=' => array(
+        'title' => t('Is greater than or equal to'),
+        'method' => 'opSimple',
+        'short' => t('>='),
+        'values' => 1,
+      ),
+      '>' => array(
+        'title' => t('Is greater than'),
+        'method' => 'opSimple',
+        'short' => t('>'),
+        'values' => 1,
+      ),
+      'BETWEEN' => array(
+        'title' => t('Is numerical between'),
+        'method' => 'opBetween',
+        'short' => t('between'),
+        'values' => 2,
+      ),
     );
 
 #    dpm($operators, "old");
