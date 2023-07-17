@@ -371,7 +371,7 @@ class AdapterHelper {
         // delete the others.
         $query = \Drupal::database()->delete('wisski_salz_id2uri')
         ->condition('eid', $id)
-        ->condition('uri', $uris)
+        ->condition('uri', $uri)
         ->execute();
       }
 
