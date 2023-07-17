@@ -647,6 +647,16 @@ function _get_complete_date($value, $pos, $debug) {
   $one_or_two_digits = "\d?\d";
   $one_digit = "[1-9]";
 
+  // change input value in "2001-05-11" format to "11-05.2001" format
+  // full date can be returned immedeately, year-month has to be changed
+  // to different format, year only does not have to be changed at all
+  if (preg_match("/^(\d\d\d\d)-(\d\d)-(\d\d)$/", $value)) {
+    return "$value";  // value is in correct format and complete already!
+  }
+  elseif (preg_match("/^(\d\d\d\d)-(\d\d)$/", $value, $matches)) {
+    $value = "$matches[2]" . "." . "$matches[1]"; // 2001-05 -> 05.2001
+  }
+
   $day_month_year_pattern = "/{$two_digits}\.{$two_digits}\.{$four_digits}/";
   $month_year_pattern = "/{$two_digits}\.{$four_digits}/";
   $year_pattern = "/$four_digits/";  // complete dates likely with 4 digits
@@ -743,102 +753,28 @@ function _wisski_date_field_process_data($value, $debug) {
 
   // to do: check consistency of recognized dates! (1889-13)
 
-  $four_digits = "\d\d\d\d";
-  $two_digits = "\d\d";
+  // single date: day.month.year or month.year or year
+  $single_date_pattern = "\d\d\d\d\-\d\d\-\d\d|\d\d\d\d\-\d\d|\d\d\d\d";
 
-  $year_month_day = "{$four_digits}-{$two_digits}-{$two_digits}";
-  $year_month = "{$four_digits}-{$two_digits}";
-  $year = "{$four_digits}";
+  // regex patterns for date range, "single_date/single_date"
+  $date_between_years_pattern = "/^($single_date_pattern)\/($single_date_pattern)$/";
 
-  // regex patterns for single dates: 1942-07-01 or 1942-07 or 1942
-  $year_month_day_pattern = "/^{$year_month_day}$/";
-  $year_month_pattern = "/^{$year_month}$/";
-  $year_pattern = "/^{$year}$/";
-
-  // regex patterns for date ranges:: 1942-07-01/1943-08-04 or 1942-07/1943-09 or 1942/1953
-  $year_month_day_range_pattern = "/^{$year_month_day}\/{$year_month_day}$/";
-  $year_month_range_pattern = "/^{$year_month}\/{$year_month}$/";
-  $year_range_pattern = "/^{$year}\/{$year}$/";
-
-  // single dates
-  $date_parts = array();
-  if (preg_match($year_month_day_pattern, $value)) {
-    $date_parts = explode('-', $value);
-    $year = (int) $date_parts[0];
-    $month = $date_parts[1];
-    $day = $date_parts[2];
-
-    $output_string = 'Muster "Jahr-Monat-Tag", Beginn: "' . $year . '", Ende: "' . $year . '"';
-    $ret = [$year, NULL, NULL, $year, NULL, NULL];  // qualified/qualified
-  }
-  elseif (preg_match($year_month_pattern, $value)) {
-    $date_parts = explode('-', $value);
-    $year = (int) $date_parts[0];
-    $month = $date_parts[1];
-
-    $output_string = 'Muster "Jahr-Monat", Beginn: "' . $year . '", Ende: "' . $year. '"';
-    $ret = [$year, NULL, NULL, $year, NULL, NULL];  // qualified/qualified
-  }
-  elseif (preg_match($year_pattern, $value)) {
-    $date_parts = explode('-', $value);
-    $year = (int) $date_parts[0];
-
-    $output_string = 'Muster "Jahr", Beginn: "' . $year . '", Ende: "' . $year. '"';
-    $ret = [$year, NULL, NULL, $year, NULL, NULL];  // qualified/qualified
+  // date range, "date/date"
+  if (preg_match($date_between_years_pattern, $value, $matches)) {
+    $from_date = _get_complete_date($matches[1], "von", $debug);
+    $to_date = _get_complete_date($matches[2], "bis", $debug);
+    $output_string = 'Muster "Datum/Datum", Beginn: "' . $from_date . '", Ende: "' . $to_date. '"';
+    $ret = [$from_date, NULL, NULL, $to_date, NULL, NULL];  // qualified/qualified
   }
 
-  // date ranges
-  elseif (preg_match($year_month_day_range_pattern, $value)) {
-    $range_parts = explode('/', $value);
-    $date_parts_from = explode('-', $range_parts[0]);
-    $from_year = (int) $date_parts_from[0];
-    $month_from = $date_parts_from[1];
-    $day_from = $date_parts_from[2];
-    $date_parts_to = explode('-', $range_parts[1]);
-    $to_year = (int) $date_parts_to[0];
-    $month_to = $date_parts_to[1];
-    $day_to = $date_parts_to[2];
-
-    if ($to_year < $from_year) {
-      \Drupal::messenger()->addMessage('Das hintere Jahr darf nicht kleiner sein als das vordere! (' . $value . ')');
-    }
-    else {
-      $output_string = 'Muster "Jahr-Monat-Tag/Jahr-Monat-Tag", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
-      $ret = [$from_year, NULL, NULL, $to_year, NULL, NULL];  // qualified/qualified
-    }
+  // single date (year, year-month, year-month-day)
+  elseif (preg_match("/^({$single_date_pattern})$/", $value)) {
+    $from_date = _get_complete_date($value, "von", $debug);
+    $to_date = _get_complete_date($value, "bis", $debug);
+    $output_string = 'Muster "einzelnes Datum", Beginn: "' . $from_date . '", Ende: "' . $to_date. '"';
+    $ret = [$from_date, NULL, NULL, $to_date, NULL, NULL];  // qualified/qualified
   }
-  elseif (preg_match($year_month_range_pattern, $value)) {
-    $range_parts = explode('/', $value);
-    $date_parts_from = explode('-', $range_parts[0]);
-    $from_year = (int) $date_parts_from[0];
-    $month_from = $date_parts_from[1];
-    $date_parts_to = explode('-', $range_parts[1]);
-    $to_year = (int) $date_parts_to[0];
-    $month_to = $date_parts_to[1];
 
-    if ($to_year < $from_year) {
-      \Drupal::messenger()->addMessage('Das hintere Jahr darf nicht kleiner sein als das vordere! (' . $value . ')');
-    }
-    else {
-      $output_string = 'Muster "Jahr-Monat/Jahr-Monat", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
-      $ret = [$from_year, NULL, NULL, $to_year, NULL, NULL];  // qualified/qualified
-    }
-  }
-  elseif (preg_match($year_range_pattern, $value)) {
-    $range_parts = explode('/', $value);
-    $date_parts_from = explode('-', $range_parts[0]);
-    $from_year = (int) $date_parts_from[0];
-    $date_parts_to = explode('-', $range_parts[1]);
-    $to_year = (int) $date_parts_to[0];
-
-    if ($to_year < $from_year) {
-      \Drupal::messenger()->addMessage('Das hintere Jahr darf nicht kleiner sein als das vordere! (' . $value . ')');
-    }
-    else {
-      $output_string = 'Muster "Jahr/Jahr", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
-      $ret = [$from_year, NULL, NULL, $to_year, NULL, NULL];  // qualified/qualified
-    }
-  }
   else {
     $output_string = 'Eingabe nicht erkannt';
     if ($debug){
