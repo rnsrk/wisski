@@ -875,8 +875,14 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
    * {@inheritdoc} 
    */
   public function getPrimitiveMapping($step) {
-    $keys = array_keys($this->possibleSteps[$step]);
+    if(isset($this->possibleSteps[$step])) {
+      $keys = array_keys($this->possibleSteps[$step]);
+    } else {
+      return array();
+    }
+#    dpm($keys, "keys?");
     return array_combine($keys, $keys);
+
   }
   
   
