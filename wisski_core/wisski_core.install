@@ -198,6 +198,9 @@ function wisski_core_update_8008(&$sandbox) {
 }
 
 
+/**
+ * Force install of WissKI autocomplete module.
+ */
 function wisski_core_update_8009(&$sandbox) {
   \Drupal::service('module_installer')->install(['wisski_autocomplete']);
 }
