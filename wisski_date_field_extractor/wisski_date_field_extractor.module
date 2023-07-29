@@ -37,7 +37,10 @@ function wisski_date_field_extractor_wisski_individual_presave(Drupal\Core\Entit
       // https://drupal.stackexchange.com/questions/219559/how-to-get-the-original-entity-on-hook-entity-presave
       $value = trim($entity->$field_name->value);
       $entity->$field_name->value = $value;  // make sure trimmed value is saved
-      $old_value = $entity->original->$field_name->value;
+      $old_value = NULL;
+      if (isset($entity->original->$field_name)){
+        $old_value = $entity->original->$field_name->value;
+      }
 
       // do not proceed unless value has changed
       if ($value === $old_value || ($value == '' and $old_value == NULL)){
@@ -177,10 +180,11 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
   //        ("start/middle/end/... of xth century"): "Ausgang 15. Jahrhundert"
   // "x. Hälfte/Viertel y. Jahrhundert" ("... quarter ..."): "2. Hälfte 5. Jahrhundert"
   // corresponds to MIDAS standard(??)
-  // from Excel table: "15.05.1420", "05.1420", "1420"
+  // from Excel table: "15.05.1420", "05.1420", "1420" and
+  // 15.05.1420/23.03.1425", "05.1420-07.1580", "1420/1421-06"
 
-  $preposition_type = "bis|nach|um|ca\.|vor|ab|seit";
-  $century_type_prefix = "Anfang|Mitte|Ende|Frühes|Spätes|Ausgang|Jahrhundertwende";
+  $preposition_type = "(bis|nach|um|ca\.|vor|ab|seit)";
+  $century_type_prefix = "(Anfang|Mitte|Ende|Frühes|Spätes|Ausgang|Jahrhundertwende)";
   $half_century_prefix = "[12]\. Hälfte";
   $quarter_century_prefix = "[1234]\. Viertel";
   $third_century_prefix = "[123]\. Drittel";
@@ -195,16 +199,14 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
   $one_or_two_digits = "\d?\d";
   $one_digit = "[1-9]";
 
-  $day_month_year_pattern = "/^{$two_digits}\.{$two_digits}\.{$four_digits}$/";
-  $month_year_pattern = "/^{$two_digits}\.{$four_digits}$/";
-  $year_pattern = "/^{$four_digits}$/";  // complete dates likely with 4 digits
-  $threefour_year_pattern  = "/^$three_or_four_digits}$/";  // year ranges
+  // single date: day.month.year or month.year or year
+  $single_date_pattern = "\d\d\.\d\d\.\d\d\d\d|\d\d\.\d\d\d\d|\d\d\d\d";
 
-  // regex patterns for date in between years, "year/year"
-  $date_between_years_pattern = "/^{$three_or_four_digits}\/{$three_or_four_digits}$/";
+  // regex patterns for date in between years, "single_date/single_date"
+  $date_between_years_pattern = "/^($single_date_pattern)\/($single_date_pattern)$/";
 
-  // regex patterns for period, "year-year"
-  $year_period_pattern = "/^{$three_or_four_digits}\-{$three_or_four_digits}$/";
+  // regex patterns for period of years, "single_date-single_date"
+  $year_period_pattern = "/^($single_date_pattern)\-($single_date_pattern)$/";
 
   // regex patterns for "...er Jahre", "...ies"
   $years_ies_pattern = "/^{$four_digits_decade}er Jahre$/";
@@ -224,23 +226,19 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
   $date_parts = array();
 
   // date in between years, "year/year"
-  if (preg_match($date_between_years_pattern, $value)) {
-    $date_parts = explode('/', $value);
-    $from_year = $date_parts[0] . "-01-01";
-    $to_year = $date_parts[1] . "-12-31";
-
-    $output_string = 'Muster "Jahr/Jahr", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
-    $ret = [NULL, $from_year, NULL, NULL, NULL, $to_year];  // earliest/latest
+  if (preg_match($date_between_years_pattern, $value, $matches)) {
+    $from_date = _get_complete_date($matches[1], "von", $debug);
+    $to_date = _get_complete_date($matches[2], "bis", $debug);
+    $output_string = 'Muster "Jahr/Jahr", Beginn: "' . $from_date . '", Ende: "' . $to_date. '"';
+    $ret = [NULL, $from_date, NULL, NULL, NULL, $to_date];  // earliest/latest
   }
 
   // period, "year-year"
-  elseif (preg_match($year_period_pattern, $value)) {
-    $date_parts = explode('-', $value);
-    $from_year = $date_parts[0] . "-01-01";
-    $to_year = $date_parts[1] . "-12-31";
-
-    $output_string = 'Muster "Jahr/Jahr", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
-    $ret = [$from_year, NULL, NULL, $to_year, NULL, NULL];  // qualified/qualified
+  elseif (preg_match($year_period_pattern, $value, $matches)) {
+    $from_date = _get_complete_date($matches[1], "von", $debug);
+    $to_date = _get_complete_date($matches[2], "bis", $debug);
+    $output_string = 'Muster "Jahr-Jahr", Beginn: "' . $from_date . '", Ende: "' . $to_date. '"';
+    $ret = [$from_date, NULL, NULL, $to_date, NULL, NULL];  // qualified/qualified
   }
 
   // "...ies type" verbal dates
@@ -251,56 +249,19 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
     // set years
     $from_year = $year;
     $to_year = $year + 9;
-    $from_year = $from_year . "-01-01";
-    $to_year = $to_year . "-12-31";
+    $from_date = $from_year . "-01-01";
+    $to_date = $to_year . "-12-31";
 
-    $output_string = 'Muster "...ies", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
-    $ret = [$from_year, NULL, NULL, $to_year, NULL, NULL];  // qualified/qualified
+    $output_string = 'Muster "...ies", Beginn: "' . $from_date . '", Ende: "' . $to_date . '"';
+    $ret = [$from_date, NULL, NULL, $to_date, NULL, NULL];  // qualified/qualified
   }
 
   // "simple" date, year, month.year, day.month.year
-  elseif (preg_match($day_month_year_pattern, $value)) {
-    $date_parts = explode('.', $value);
-    $year = $date_parts[2] . "-" . $date_parts[1] . "-" . $date_parts[0];
-
-    $output_string = 'Muster "Tag.Monat.Jahr", Jahr: "' . $year. '"';
-    $ret = [$year, NULL, NULL, $year, NULL, NULL];  // qualified/qualified
-  }
-  elseif (preg_match($month_year_pattern, $value)) {
-    $date_parts = explode('.', $value);
-    $year = $date_parts[1];
-    $month = $date_parts[0];
-    switch ($month) {
-      case "01":
-      case "03":
-      case "05":
-      case "07":
-      case "08":
-      case "10":
-      case "12":
-        $day = "31";
-        break;
-      case "04":
-      case "06":
-      case "09":
-      case "11":
-        $day = "30";
-        break;
-      default:
-        $day = "28";
-    }
-
-    $from_year = $year . "-" . $month . "-01";
-    $to_year = $year . "-" . $month . "-" . $day;
-    $output_string = 'Muster "Monat.Jahr", Jahr: "' . $from_year. ' bis ' . $to_year . '"';
-    $ret = [$from_year, NULL, NULL, $to_year, NULL, NULL];  // qualified/qualified
-  }
-  elseif (preg_match($year_pattern, $value)) {
-    $from_year = $value . "-01-01";
-    $to_year = $value . "-12-31";
-
-    $output_string = 'Muster "Jahr": "' . $from_year. ' bis ' . $to_year . '"';
-    $ret = [$from_year, NULL, NULL, $to_year, NULL, NULL];  // qualified/qualified
+  elseif (preg_match("/^({$single_date_pattern})$/", $value)) {
+    $from_date = _get_complete_date($value, "von", $debug);
+    $to_date = _get_complete_date($value, "bis", $debug);
+    $output_string = 'Muster "einzelnes Datum", Beginn: "' . $from_date . '", Ende: "' . $to_date. '"';
+    $ret = [$from_date, NULL, NULL, $to_date, NULL, NULL];  // qualified/qualified
   }
 
   // "preposition type" verbal dates
@@ -674,6 +635,100 @@ function _wisski_date_field_process_verbal_data($value, $debug) {
 
 /**
  *
+ * Calculates begin date or end date for possibly incomplete input date
+ *
+ * @return a string containing a complete year in the format "year-month-day"
+ */
+function _get_complete_date($value, $pos, $debug) {
+  $four_digits = "\d\d\d\d";
+  $four_digits_decade = "\d\d\d0";
+  $three_or_four_digits = "\d\d\d\d?";
+  $two_digits = "\d\d";
+  $one_or_two_digits = "\d?\d";
+  $one_digit = "[1-9]";
+
+  // change input value in "2001-05-11" format to "11-05.2001" format
+  // full date can be returned immedeately, year-month has to be changed
+  // to different format, year only does not have to be changed at all
+  if (preg_match("/^(\d\d\d\d)-(\d\d)-(\d\d)$/", $value)) {
+    return "$value";  // value is in correct format and complete already!
+  }
+  elseif (preg_match("/^(\d\d\d\d)-(\d\d)$/", $value, $matches)) {
+    $value = "$matches[2]" . "." . "$matches[1]"; // 2001-05 -> 05.2001
+  }
+
+  $day_month_year_pattern = "/{$two_digits}\.{$two_digits}\.{$four_digits}/";
+  $month_year_pattern = "/{$two_digits}\.{$four_digits}/";
+  $year_pattern = "/$four_digits/";  // complete dates likely with 4 digits
+  
+  // date is complete already: return value the same for either "from year" or "to year"
+  if (preg_match($day_month_year_pattern, $value)) {
+    $date_parts = explode('.', $value);
+    $full_date = $date_parts[2] . "-" . $date_parts[1] . "-" . $date_parts[0];
+    return "$full_date";
+  }
+  // just month and year: add day acording to "from" or "to" position
+  elseif (preg_match($month_year_pattern, $value)) {
+    $date_parts = explode('.', $value);
+    if ($pos == "von"){
+      $full_date = $date_parts[1] . "-" . $date_parts[0] . "-" . "01"; // first day of month
+      return "$full_date";
+    }
+    else {
+      $month = $date_parts[0];
+      $day = get_last_day_of_month($month);
+      $full_date = $date_parts[1] . "-" . $date_parts[0] . "-" . $day; // last day of month
+      return "$full_date";
+    }
+  }
+  // just year: add day and month
+  elseif (preg_match($year_pattern, $value)) {
+    if ($pos == "von"){
+      $full_date = $value . "-01-01"; // first day of year
+      return "$full_date";
+    }
+    else {
+      $full_date = $value . "-12-31"; // last day of year
+      return "$full_date";
+    }
+  }
+  else {
+    \Drupal::logger('wisski date field')->warning("Illegal input value '{in}' in date field extractor, internal function call", array('in' => serialize($value)));
+    return "2525-01-01"; // "else" is unlikely to ever occur...
+  }
+}
+
+/**
+ *
+ * Gets more or less correct last day of month given in the input
+ *
+ * @return a string containing a two-digit representation of the day of the month
+ */
+function get_last_day_of_month ($month){
+  switch ($month) {
+    case "01":
+    case "03":
+    case "05":
+    case "07":
+    case "08":
+    case "10":
+    case "12":
+      $day = "31";
+      break;
+    case "04":
+    case "06":
+    case "09":
+    case "11":
+      $day = "30";
+      break;
+    default:
+      $day = "28"; // don't mess with leap years...
+  }
+  return "$day";
+}
+
+/**
+ *
  * Calculates possible begin/end dates for input date
  *
  * @return an array of calculated dates
@@ -698,102 +753,28 @@ function _wisski_date_field_process_data($value, $debug) {
 
   // to do: check consistency of recognized dates! (1889-13)
 
-  $four_digits = "\d\d\d\d";
-  $two_digits = "\d\d";
+  // single date: day.month.year or month.year or year
+  $single_date_pattern = "\d\d\d\d\-\d\d\-\d\d|\d\d\d\d\-\d\d|\d\d\d\d";
 
-  $year_month_day = "{$four_digits}-{$two_digits}-{$two_digits}";
-  $year_month = "{$four_digits}-{$two_digits}";
-  $year = "{$four_digits}";
+  // regex patterns for date range, "single_date/single_date"
+  $date_between_years_pattern = "/^($single_date_pattern)\/($single_date_pattern)$/";
 
-  // regex patterns for single dates: 1942-07-01 or 1942-07 or 1942
-  $year_month_day_pattern = "/^{$year_month_day}$/";
-  $year_month_pattern = "/^{$year_month}$/";
-  $year_pattern = "/^{$year}$/";
-
-  // regex patterns for date ranges:: 1942-07-01/1943-08-04 or 1942-07/1943-09 or 1942/1953
-  $year_month_day_range_pattern = "/^{$year_month_day}\/{$year_month_day}$/";
-  $year_month_range_pattern = "/^{$year_month}\/{$year_month}$/";
-  $year_range_pattern = "/^{$year}\/{$year}$/";
-
-  // single dates
-  $date_parts = array();
-  if (preg_match($year_month_day_pattern, $value)) {
-    $date_parts = explode('-', $value);
-    $year = (int) $date_parts[0];
-    $month = $date_parts[1];
-    $day = $date_parts[2];
-
-    $output_string = 'Muster "Jahr-Monat-Tag", Beginn: "' . $year . '", Ende: "' . $year . '"';
-    $ret = [$year, NULL, NULL, $year, NULL, NULL];  // qualified/qualified
-  }
-  elseif (preg_match($year_month_pattern, $value)) {
-    $date_parts = explode('-', $value);
-    $year = (int) $date_parts[0];
-    $month = $date_parts[1];
-
-    $output_string = 'Muster "Jahr-Monat", Beginn: "' . $year . '", Ende: "' . $year. '"';
-    $ret = [$year, NULL, NULL, $year, NULL, NULL];  // qualified/qualified
-  }
-  elseif (preg_match($year_pattern, $value)) {
-    $date_parts = explode('-', $value);
-    $year = (int) $date_parts[0];
-
-    $output_string = 'Muster "Jahr", Beginn: "' . $year . '", Ende: "' . $year. '"';
-    $ret = [$year, NULL, NULL, $year, NULL, NULL];  // qualified/qualified
+  // date range, "date/date"
+  if (preg_match($date_between_years_pattern, $value, $matches)) {
+    $from_date = _get_complete_date($matches[1], "von", $debug);
+    $to_date = _get_complete_date($matches[2], "bis", $debug);
+    $output_string = 'Muster "Datum/Datum", Beginn: "' . $from_date . '", Ende: "' . $to_date. '"';
+    $ret = [$from_date, NULL, NULL, $to_date, NULL, NULL];  // qualified/qualified
   }
 
-  // date ranges
-  elseif (preg_match($year_month_day_range_pattern, $value)) {
-    $range_parts = explode('/', $value);
-    $date_parts_from = explode('-', $range_parts[0]);
-    $from_year = (int) $date_parts_from[0];
-    $month_from = $date_parts_from[1];
-    $day_from = $date_parts_from[2];
-    $date_parts_to = explode('-', $range_parts[1]);
-    $to_year = (int) $date_parts_to[0];
-    $month_to = $date_parts_to[1];
-    $day_to = $date_parts_to[2];
-
-    if ($to_year < $from_year) {
-      \Drupal::messenger()->addMessage('Das hintere Jahr darf nicht kleiner sein als das vordere! (' . $value . ')');
-    }
-    else {
-      $output_string = 'Muster "Jahr-Monat-Tag/Jahr-Monat-Tag", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
-      $ret = [$from_year, NULL, NULL, $to_year, NULL, NULL];  // qualified/qualified
-    }
+  // single date (year, year-month, year-month-day)
+  elseif (preg_match("/^({$single_date_pattern})$/", $value)) {
+    $from_date = _get_complete_date($value, "von", $debug);
+    $to_date = _get_complete_date($value, "bis", $debug);
+    $output_string = 'Muster "einzelnes Datum", Beginn: "' . $from_date . '", Ende: "' . $to_date. '"';
+    $ret = [$from_date, NULL, NULL, $to_date, NULL, NULL];  // qualified/qualified
   }
-  elseif (preg_match($year_month_range_pattern, $value)) {
-    $range_parts = explode('/', $value);
-    $date_parts_from = explode('-', $range_parts[0]);
-    $from_year = (int) $date_parts_from[0];
-    $month_from = $date_parts_from[1];
-    $date_parts_to = explode('-', $range_parts[1]);
-    $to_year = (int) $date_parts_to[0];
-    $month_to = $date_parts_to[1];
 
-    if ($to_year < $from_year) {
-      \Drupal::messenger()->addMessage('Das hintere Jahr darf nicht kleiner sein als das vordere! (' . $value . ')');
-    }
-    else {
-      $output_string = 'Muster "Jahr-Monat/Jahr-Monat", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
-      $ret = [$from_year, NULL, NULL, $to_year, NULL, NULL];  // qualified/qualified
-    }
-  }
-  elseif (preg_match($year_range_pattern, $value)) {
-    $range_parts = explode('/', $value);
-    $date_parts_from = explode('-', $range_parts[0]);
-    $from_year = (int) $date_parts_from[0];
-    $date_parts_to = explode('-', $range_parts[1]);
-    $to_year = (int) $date_parts_to[0];
-
-    if ($to_year < $from_year) {
-      \Drupal::messenger()->addMessage('Das hintere Jahr darf nicht kleiner sein als das vordere! (' . $value . ')');
-    }
-    else {
-      $output_string = 'Muster "Jahr/Jahr", Beginn: "' . $from_year . '", Ende: "' . $to_year. '"';
-      $ret = [$from_year, NULL, NULL, $to_year, NULL, NULL];  // qualified/qualified
-    }
-  }
   else {
     $output_string = 'Eingabe nicht erkannt';
     if ($debug){

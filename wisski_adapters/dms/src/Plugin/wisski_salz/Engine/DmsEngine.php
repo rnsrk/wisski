@@ -187,6 +187,11 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         'IADParentInvNumber' => NULL,
         'IADotherNumbers' => NULL,
         'CurrentOwnership' => NULL,              
+        'ExhibitionConditions' => NULL,
+        'PackagingConditions' => NULL,
+        'ObjectOwnershipContactNamesAtEditDate' => NULL,
+        'XML_EventsOfTypeProvenienz' => NULL,
+        'XML_EventsOfTypeRestoration' => NULL,
       ),
   );
 
@@ -870,8 +875,14 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
    * {@inheritdoc} 
    */
   public function getPrimitiveMapping($step) {
-    $keys = array_keys($this->possibleSteps[$step]);
+    if(isset($this->possibleSteps[$step])) {
+      $keys = array_keys($this->possibleSteps[$step]);
+    } else {
+      return array();
+    }
+#    dpm($keys, "keys?");
     return array_combine($keys, $keys);
+
   }
   
   

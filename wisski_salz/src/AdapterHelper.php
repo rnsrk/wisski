@@ -354,12 +354,29 @@ class AdapterHelper {
 //    dpm(serialize($input_adapter_id), "adap?");
     if (count($ids) > 1) {
       //dpm($ids,'from DB, multiple');
-      \Drupal::messenger()->addStatus("There are multiple entity IDs for a URI. See log reports for details.");
+      //\Drupal::messenger()->addStatus("There are multiple entity IDs for a URI. See log reports for details.");
       \Drupal::logger('WissKI Salz')->warning(
         'There are multiple entity IDs for URI {uri}: {ids}. Please resolve. The first one is taken.',
         ['uri' => $uri, 'ids' => join(', ', $ids)]
       );
-      return current($ids);
+
+      $the_id = current($ids);
+      
+      // go through all ids
+      foreach($ids as $not_the_id) {
+        // if this is the one we want to keep, don't do anything
+        if($not_the_id == $the_id)
+          continue;
+
+        // delete the others.
+        $query = \Drupal::database()->delete('wisski_salz_id2uri')
+        ->condition('eid', $not_the_id)
+        ->condition('uri', $uri)
+        ->execute();
+      }
+
+
+      return $the_id;
     }
     
     $local_adapter = self::getPreferredLocalStore();

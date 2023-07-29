@@ -201,6 +201,7 @@ class WisskiConfigForm extends FormBase {
       '#title' => $this->t('Use autocomplete for all input fields. For detailed configuration options use the <em>WissKI Autocomplete Widget</em> of the <em>WissKI Autocomplete Module</em>.)'),
       '#disabled' => TRUE,
     ];
+
     $moduleHandler = \Drupal::service('module_handler');
     if ($moduleHandler->moduleExists('wisski_autocomplete')) {
       $subform['enableAutocompleteEverywhere']['#disabled'] = FALSE;
