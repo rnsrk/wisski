@@ -3,4 +3,6 @@ type: module
 package: WissKI
 core_version_requirement: ^8 || ^9 || ^10
 description: A module which should display additional information within the title pattern for autocomplete fields.
+dependencies:
+  - wisski:wisski_pathbuilder
 
