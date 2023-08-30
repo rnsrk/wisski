@@ -1609,8 +1609,9 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
           }
 
 #              dpm(array('data'=>$data,'uri'=>$file_uri,'local'=>$local_file_uri),'Trying to save image');
-          $file = file_save_data($data, $local_file_uri);
-
+#          $file = file_save_data($data, $local_file_uri);
+          $file = \Drupal::service('file.repository')->writeData($data, $local_file_uri);
+          
           if ($file) {
             $value = $file->id();
             //dpm('replaced '.$file_uri.' with new file '.$value);
