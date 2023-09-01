@@ -32,9 +32,9 @@ class WisskiNamespaceEditConfirmForm extends ConfirmFormBase {
 
     // $hasNoWhitespace    = false === strpos($form_state->getValue('edit_namespace'), ' ');
     // dpm($hasNoWhitespace);
-    if(!preg_match('/^\w+$/', $form_state->getValue('edit_namespace'))){
+    if(!preg_match('/^w{32}$/', $form_state->getValue('edit_namespace'))){
         $continue = FALSE;
-        $form_state->setErrorByName('edit_namespace', $this->t('Namespace may not contain non-alphanumeric characters (spaces, special characters,...).'));
+        $form_state->setErrorByName('edit_namespace', $this->t('Namespace may not contain non-alphanumeric characters (spaces, special characters, - + * etc.) or longer than 32 characters.'));
     }
   }
 
@@ -72,7 +72,7 @@ class WisskiNamespaceEditConfirmForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-   
+
     $this->new_shortname = $form_state->getValue('edit_namespace');
 
     (new WisskiNameSpaceOperator(\Drupal::service('database')))->editSingleNamespace($this->namespace, $this->new_shortname);

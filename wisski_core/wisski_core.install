@@ -1,15 +1,27 @@
 <?php
 
+/**
+ * @file
+ */
+
+use Drupal\Core\Database\Database;
+use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\Link;
+use Drupal\Core\Url;
+
+/**
+ *
+ */
 function wisski_core_update_8001(&$sandbox) {
 
-  $tables = array('wisski_entity_map', 'wisski_title_n_grams', 'wisski_calling_bundles', 'wisski_preview_images', 'wisski_entity_field_properties', 'wisski_core_ontology_namespaces');
+  $tables = ['wisski_entity_map', 'wisski_title_n_grams', 'wisski_calling_bundles', 'wisski_preview_images', 'wisski_entity_field_properties', 'wisski_core_ontology_namespaces'];
 
-  foreach($tables as $table) {
-    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+  foreach ($tables as $table) {
+    // @todo Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
     // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
     $result = \Drupal::database()->select($table, 't')->fields('t')->execute();
     file_put_contents('temporary://' . $table, "");
-    while($thing = $result->fetch()) {
+    while ($thing = $result->fetch()) {
       file_put_contents('temporary://' . $table, serialize($thing) . "\n", FILE_APPEND);
     }
   }
@@ -17,18 +29,19 @@ function wisski_core_update_8001(&$sandbox) {
   drupal_uninstall_schema('wisski_core');
   drupal_install_schema('wisski_core');
 
-  foreach($tables as $table) {
+  foreach ($tables as $table) {
     $file = fopen('temporary://' . $table, "r");
     if ($file) {
-      while (($line = fgets($file)) !== false) {
-	$thing = unserialize($line);
-	$thing = (array)$thing;
-        // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      while (($line = fgets($file)) !== FALSE) {
+        $thing = unserialize($line);
+        $thing = (array) $thing;
+        // @todo Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
         // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
         \Drupal::database()->insert($table)->fields($thing)->execute();
-#	dpm($line);
+        // dpm($line);
       }
-    } else {
+    }
+    else {
       \Drupal::messenger()->addError("Could not open file " . $table);
     }
     fclose($file);
@@ -37,7 +50,7 @@ function wisski_core_update_8001(&$sandbox) {
 }
 
 /**
- * Add Wisski menu
+ * Add Wisski menu.
  */
 function wisski_core_update_8002() {
   // Create a new menu item.
@@ -47,19 +60,18 @@ function wisski_core_update_8002() {
     'label' => 'WissKI Menu',
     'description' => 'Links related to the WissKI module.',
     'langcode' => 'en',
-    'locked' => true,
-    'dependencies' => [ 'enforced' => [ 'module' => [ 'wisski_core' ] ] ],
+    'locked' => TRUE,
+    'dependencies' => ['enforced' => ['module' => ['wisski_core']]],
   ])->save();
 
 }
 
 /**
- * Update the entity definitions
+ * Update the entity definitions.
  */
 function wisski_core_update_8003() {
   try {
-    # \Drupal::entityDefinitionUpdateManager()->applyUpdates();
-
+    // \Drupal::entityDefinitionUpdateManager()->applyUpdates();
     $entity_definition_update_manager = \Drupal::entityDefinitionUpdateManager();
 
     $field_storage = \Drupal::service('entity_field.manager')->getFieldStorageDefinitions('wisski_individual');
@@ -72,39 +84,38 @@ function wisski_core_update_8003() {
   }
 }
 
-/** language and content entity updates
-  *
-  */
+/**
+ * Language and content entity updates.
+ */
 function wisski_core_update_8004() {
   try {
-    # \Drupal::entityDefinitionUpdateManager()->applyUpdates();
-
+    // \Drupal::entityDefinitionUpdateManager()->applyUpdates();
     $entity_definition_update_manager = \Drupal::entityDefinitionUpdateManager();
 
     $field_storage = \Drupal::service('entity_field.manager')->getFieldStorageDefinitions('wisski_individual');
 
     $entity_definition_update_manager->updateFieldableEntityType(\Drupal::entityTypeManager()->getDefinition('wisski_individual'), $field_storage);
-#    drupal_set_installed_schema_version('wisski_core', '8007');
+    // drupal_set_installed_schema_version('wisski_core', '8007');.
   }
   catch (EntityStorageException $e) {
     print_r($e);
   }
-#  drupal_set_installed_schema_version('wisski_core', '8007');
+  // drupal_set_installed_schema_version('wisski_core', '8007');.
 }
 
-/** translation table updates
-  *
-  */
+/**
+ * Translation table updates.
+ */
 function wisski_core_update_8005(&$sandbox) {
 
-  $tables = array('wisski_entity_map', 'wisski_title_n_grams', 'wisski_calling_bundles', 'wisski_preview_images', 'wisski_entity_field_properties', 'wisski_core_ontology_namespaces');
+  $tables = ['wisski_entity_map', 'wisski_title_n_grams', 'wisski_calling_bundles', 'wisski_preview_images', 'wisski_entity_field_properties', 'wisski_core_ontology_namespaces'];
 
-  foreach($tables as $table) {
-    // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+  foreach ($tables as $table) {
+    // @todo Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
     // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
     $result = \Drupal::database()->select($table, 't')->fields('t')->execute();
     file_put_contents('temporary://' . $table, "");
-    while($thing = $result->fetch()) {
+    while ($thing = $result->fetch()) {
       file_put_contents('temporary://' . $table, serialize($thing) . "\n", FILE_APPEND);
     }
   }
@@ -112,18 +123,19 @@ function wisski_core_update_8005(&$sandbox) {
   drupal_uninstall_schema('wisski_core');
   drupal_install_schema('wisski_core');
 
-  foreach($tables as $table) {
+  foreach ($tables as $table) {
     $file = fopen('temporary://' . $table, "r");
     if ($file) {
-      while (($line = fgets($file)) !== false) {
-	$thing = unserialize($line);
-	$thing = (array)$thing;
-        // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      while (($line = fgets($file)) !== FALSE) {
+        $thing = unserialize($line);
+        $thing = (array) $thing;
+        // @todo Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
         // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
         \Drupal::database()->insert($table)->fields($thing)->execute();
-#	dpm($line);
+        // dpm($line);
       }
-    } else {
+    }
+    else {
       \Drupal::messenger()->addError("Could not open file " . $table);
     }
     fclose($file);
@@ -131,72 +143,75 @@ function wisski_core_update_8005(&$sandbox) {
 
 }
 
-/** Add entity id to triplestore
-  *
-  */
+/**
+ * Add entity id to triplestore.
+ */
 function wisski_core_update_8006(&$sandbox) {
   $val = \Drupal::state()->get('wisski_update_last_key');
-  if(empty($val))
+  if (empty($val)) {
     $val = 0;
+  }
 
   $result = \Drupal::database()->select("wisski_salz_id2uri", 't')->fields('t')->condition('eid', $val, '>')->orderBy('eid', 'ASC')->execute();
-  $adapters = array();
+  $adapters = [];
 
-  while($thing = $result->fetchObject()) {
+  while ($thing = $result->fetchObject()) {
     $adapter_id = $thing->adapter_id;
     $adapter = NULL;
     $eid = $thing->eid;
     $uri = $thing->uri;
 
-    // if there is nothing to do, skip it.
-    if(empty($eid) || empty($uri))
+    // If there is nothing to do, skip it.
+    if (empty($eid) || empty($uri)) {
       continue;
+    }
 
-    if(!isset($adapters[$adapter_id])) {
+    if (!isset($adapters[$adapter_id])) {
       $adapter = \Drupal::service('entity_type.manager')->getStorage('wisski_salz_adapter')->load($adapter_id);
       $adapters[$adapter_id] = $adapter;
-    } else
+    }
+    else {
       $adapter = $adapters[$adapter_id];
+    }
 
-    if($adapter)
+    if ($adapter) {
       $adapter->getEngine()->setBaseFieldFromStoreForUri($uri, "eid", $eid);
-    \Drupal::state()->set('wisski_update_last_key',$eid);
+    }
+    \Drupal::state()->set('wisski_update_last_key', $eid);
   }
   \Drupal::state()->delete('wisski_update_last_key');
-//  drupal_set_installed_schema_version('wisski_core', '8006');
+  // drupal_set_installed_schema_version('wisski_core', '8006');.
 }
 
-/** Add wisski uri field to entity
-  *
-  */
+/**
+ * Add wisski uri field to entity.
+ */
 function wisski_core_update_8007(&$sandbox) {
   $definition_manager = \Drupal::entityDefinitionUpdateManager();
-  $newStorage = Drupal\Core\Field\BaseFieldDefinition::create('uri')
-      ->setLabel(t('WissKI URI'))
-      ->setDescription(t('The WissKI URI from the TS (in case you need it)'))
-      ->setReadOnly(TRUE)
-      ->setDisplayOptions('view', array(
-        'region' => 'hidden',
-        'label' => 'hidden',
-        'type' => 'string',
-        'weight' => -5,
-      ))
-      ->setDisplayConfigurable('view', TRUE);
+  $newStorage = BaseFieldDefinition::create('uri')
+    ->setLabel(t('WissKI URI'))
+    ->setDescription(t('The WissKI URI from the TS (in case you need it)'))
+    ->setReadOnly(TRUE)
+    ->setDisplayOptions('view', [
+      'region' => 'hidden',
+      'label' => 'hidden',
+      'type' => 'string',
+      'weight' => -5,
+    ])
+    ->setDisplayConfigurable('view', TRUE);
 
-  $definition_manager->installFieldStorageDefinition('wisski_uri','wisski_individual', 'wisski_core', $newStorage);
+  $definition_manager->installFieldStorageDefinition('wisski_uri', 'wisski_individual', 'wisski_core', $newStorage);
 }
 
-/** Update language in entity field properties table
-  *
-  */
+/**
+ * Update language in entity field properties table.
+ */
 function wisski_core_update_8008(&$sandbox) {
   $lang = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
 
   $result = \Drupal::database()->update("wisski_entity_field_properties")->fields(['lang' => $lang])->condition('lang', 'und', '=')->execute();
-//  UPDATE `wisski_entity_field_properties` SET `lang` = 'en' WHERE `lang` = 'und'
-
+  // UPDATE `wisski_entity_field_properties` SET `lang` = 'en' WHERE `lang` = 'und'.
 }
-
 
 /**
  * Force install of WissKI autocomplete module.
@@ -206,190 +221,234 @@ function wisski_core_update_8009(&$sandbox) {
 }
 
 /**
- * implements hook_schema()
+ * Add primary key to wisski_core_ontology_namespaces (short_name).
+ */
+function wisski_core_update_8010(&$sandbox) {
+  $connection = Database::getConnection();
+  $select = $connection->select('wisski_core_ontology_namespaces', 't');
+  $select->addExpression('MAX(LENGTH(short_name))');
+  $result = $select->execute()->fetchField();
+  if ($result > 32) {
+    throw new \Exception('There is an ontology namespace short name exceeding 32 characters, go to Manage > Configuration > WissKI Ontology > Display Namespaces and shorten the corresponding short names.');
+  }
+
+  $schema = $connection->schema();
+  $schema->changeField(
+    'wisski_core_ontology_namespaces',
+    'short_name',
+    'short_name',
+    [
+      'description' => 'Short name of the namespace.',
+      'type' => 'char',
+      'length' => 32,
+      'not null' => TRUE,
+    ],
+    [
+      'primary key' => [
+        'short_name',
+      ],
+    ]
+  );
+}
+
+/**
+ * ALTER TABLE `dummy` ADD `tid` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST;
+ * DELETE FROM dummy where tid in (
+ *  SELECT tid FROM (
+ *      SELECT
+ *      ROW_NUMBER() OVER (PARTITION BY id) as group_row_number,
+ *      tid
+ *      FROM dummy
+ *  ) as C WHERE C.group_row_number > 1
+ * );
+ * ALTER TABLE `dummy` DROP COLUMN `tid`;
+ */
+
+/**
+ * Implements hook_schema()
  */
 function wisski_core_schema() {
 
-  $schema['wisski_entity_map'] = array(
+  $schema['wisski_entity_map'] = [
     'description' => 'generates a serial number for those entity IDs which have a generated title',
-    'fields' => array(
-      'num' => array(
+    'fields' => [
+      'num' => [
         'description' => 'the Serial Number for the generated title',
         'type' => 'serial',
         'size' => 'normal',
         'not null' => TRUE,
-      ),
-      'eid' => array(
+      ],
+      'eid' => [
         'description' => 'the Entity ID',
         'type' => 'int',
         'size' => 'big',
         'not null' => TRUE,
-      ),
-    ),
-    'primary key' => array('num'),
-  );
+      ],
+    ],
+    'primary key' => ['num'],
+  ];
 
-  $schema['wisski_title_n_grams'] = array(
+  $schema['wisski_title_n_grams'] = [
 
     'description' => 'Stores n-grams of generated entity titles for search and index purposes',
-    'fields' => array(
-      'ent_num' => array(
+    'fields' => [
+      'ent_num' => [
         'description' => 'Entity Serial Number from wisski_entity_map',
         'type' => 'int',
         'size' => 'big',
         'not null' => TRUE,
-      ),
-      'bundle' => array(
+      ],
+      'bundle' => [
         'description' => 'Bundle Name',
         'type' => 'varchar',
         'length' => 64,
         'not null' => TRUE,
         'default' => 'default',
-      ),
-      'ngram' => array(
+      ],
+      'ngram' => [
         'description' => 'n-gram from the title',
         'type' => 'char',
         'length' => 128,
         'not null' => TRUE,
-      ),
-      'n' => array(
+      ],
+      'n' => [
         'description' => 'the length of the n-gram',
         'type' => 'int',
         'size' => 'normal',
         'not null' => TRUE,
-      ),
-      'lang' => array(
+      ],
+      'lang' => [
         'description' => 'the language of the title',
         'type' => 'char',
         'length' => 16,
         'not null' => TRUE,
-	'default' => 'und',
-      ),
-    ),
-    'primary key' => array('ent_num','bundle','ngram','lang'),
-    'indexes' => array(
-      'ngrams' => array('ngram','n','lang'),
-      'entities' => array('ent_num','bundle','lang'),
-    ),
-  );
+        'default' => 'und',
+      ],
+    ],
+    'primary key' => ['ent_num', 'bundle', 'ngram', 'lang'],
+    'indexes' => [
+      'ngrams' => ['ngram', 'n', 'lang'],
+      'entities' => ['ent_num', 'bundle', 'lang'],
+    ],
+  ];
 
-  $schema['wisski_calling_bundles'] = array(
+  $schema['wisski_calling_bundles'] = [
 
     'description' => 'Caches the calling bundle for individuals so that we can decide on the correct visualization',
-    'fields' => array(
-      'eid' => array(
+    'fields' => [
+      'eid' => [
         'description' => 'Entity ID',
         'type' => 'int',
         'size' => 'big',
         'not null' => TRUE,
-      ),
-      'bid' => array(
+      ],
+      'bid' => [
         'description' => 'bundle name / ID',
         'type' => 'varchar',
         'length' => 64,
         'not null' => TRUE,
-      ),
-    ),
-    'indexes' => array(
-      'eid' => array('eid'),
-      'bid' => array(array('bid',64)),
-    ),
-  );
+      ],
+    ],
+    'indexes' => [
+      'eid' => ['eid'],
+      'bid' => [['bid', 64]],
+    ],
+  ];
 
-  $schema['wisski_preview_images'] = array(
+  $schema['wisski_preview_images'] = [
 
     'description' => 'Caches the URI of the preview image for individuals',
-    'fields' => array(
-      'eid' => array(
+    'fields' => [
+      'eid' => [
         'description' => 'Entity ID',
         'type' => 'int',
         'size' => 'big',
         'not null' => TRUE,
-      ),
-      'image_uri' => array(
+      ],
+      'image_uri' => [
         'description' => 'image URI',
         'type' => 'varchar',
         'length' => 1023,
         'not null' => TRUE,
-      ),
-    ),
-    'indexes' => array(
-      'eid' => array('eid'),
-      'bid' => array(array('image_uri',128)),
-    ),
-  );
+      ],
+    ],
+    'indexes' => [
+      'eid' => ['eid'],
+      'bid' => [['image_uri', 128]],
+    ],
+  ];
 
-  $schema['wisski_entity_field_properties'] = array(
+  $schema['wisski_entity_field_properties'] = [
 
     'description' => 'Saves secondary field data for WissKI Entities. This includes all the field properties that are set by the user',
-    'fields' => array(
-      'eid' => array(
+    'fields' => [
+      'eid' => [
         'description' => 'Entity ID',
         'type' => 'int',
         'size' => 'big',
         'not null' => TRUE,
-      ),
-      'bid' => array(
+      ],
+      'bid' => [
         'description' => 'bundle name / ID',
         'type' => 'varchar',
         'length' => 64,
         'not null' => TRUE,
-      ),
-      'fid' => array(
+      ],
+      'fid' => [
         'description' => 'field name / ID',
         'type' => 'varchar',
         'length' => 64,
         'not null' => TRUE,
-      ),
-      'delta' => array(
+      ],
+      'delta' => [
         'description' => 'field item weight',
         'type' => 'int',
-      ),
-      'ident' => array(
+      ],
+      'ident' => [
         'description' => 'A string that identifies this field item, will mostly be the disamb/group URI',
         'type' => 'text',
         'length' => 1023,
         'not null' => TRUE,
-      ),
-      'properties' => array(
+      ],
+      'properties' => [
         'description' => 'array of field properties',
         'type' => 'text',
         'serialize' => TRUE,
-      ),
-      'lang' => array(
+      ],
+      'lang' => [
         'description' => 'the language of the field property table entry',
         'type' => 'char',
         'length' => 16,
         'not null' => TRUE,
-	'default' => \Drupal::service('language_manager')->getCurrentLanguage()->getId(),
-      ),
-    ),
-    'indexes' => array(
-      'eid' => array('eid'),
-      'bid' => array(array('bid',64)),
-      'fid' => array(array('fid',64)),
-    ),
-  );
+        'default' => \Drupal::service('language_manager')->getCurrentLanguage()->getId(),
+      ],
+    ],
+    'indexes' => [
+      'eid' => ['eid'],
+      'bid' => [['bid', 64]],
+      'fid' => [['fid', 64]],
+    ],
+  ];
 
-  $schema['wisski_core_ontology_namespaces'] = array(
+  $schema['wisski_core_ontology_namespaces'] = [
 
     'description' => 'Saves the namespaces on ontology load.',
-    'fields' => array(
-      'short_name' => array(
+    'fields' => [
+      'short_name' => [
         'description' => 'Short name of the namespace.',
-        'type' => 'varchar',
-        'length' => 1023,
+        'type' => 'char',
+        'length' => 32,
         'not null' => TRUE,
-      ),
-      'long_name' => array(
+      ],
+      'long_name' => [
         'description' => 'Full URI of the namespace.',
         'type' => 'text',
         'length' => 1023,
         'not null' => TRUE,
-      ),
-    ),
-  );
+      ],
+    ],
+  ];
 
-  //dpm($schema);
+  // dpm($schema);
   return $schema;
 }
