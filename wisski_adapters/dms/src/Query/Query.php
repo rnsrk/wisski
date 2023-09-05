@@ -186,7 +186,8 @@ class Query extends WisskiQueryBase {
 #        return $giveback;
       }
       
-      if($num_conds == 1 && !empty($giveback)) {
+      // bundle and eid might be possible...
+      if($num_conds >= 1 && !empty($giveback)) {
         return $giveback;
       }
       
