@@ -123,7 +123,9 @@ class Query extends WisskiQueryBase {
           }
         }
 
-        if (empty($field)) {
+        // if we have nothing anymore then it is a problem
+        // also if it is still a condition, then it is more complex...
+        if (empty($field) || is_object($field)) {
           continue;
         }
 
