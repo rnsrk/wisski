@@ -6,8 +6,6 @@
 
 use Drupal\Core\Database\Database;
 use Drupal\Core\Field\BaseFieldDefinition;
-use Drupal\Core\Link;
-use Drupal\Core\Url;
 
 /**
  *
@@ -224,6 +222,8 @@ function wisski_core_update_8009(&$sandbox) {
  * Add primary key to wisski_core_ontology_namespaces (short_name).
  */
 function wisski_core_update_8010(&$sandbox) {
+  // To reset the database schema version go to table "key_value", download blob, alter the version number, upload the blob.
+  // \Drupal::keyValue('system.schema')->set('wisski_core', (int) 8009); should have been working...
   $connection = Database::getConnection();
   $select = $connection->select('wisski_core_ontology_namespaces', 't');
   $select->addExpression('MAX(LENGTH(short_name))');
