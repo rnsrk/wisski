@@ -5,6 +5,7 @@
  */
 
 use Drupal\Core\Database\Database;
+use Drupal\Core\Database\IntegrityConstraintViolationException;
 use Drupal\Core\Field\BaseFieldDefinition;
 
 /**
@@ -255,6 +256,44 @@ function wisski_core_update_8010(&$sandbox) {
 }
 
 /**
+ * Add eid as primary key to wisski_preview_images.
+ */
+function wisski_core_update_8011(&$sandbox) {
+  $connection = Database::getConnection();
+  $schema = $connection->schema();
+  $schema->addPrimaryKey('wisski_preview_images', ['eid']);
+}
+
+/**
+ * Add eid as primary key to wisski_calling_bundles.
+ */
+function wisski_core_update_8012(&$sandbox) {
+  $connection = Database::getConnection();
+  $schema = $connection->schema();
+  try {
+    $schema->addPrimaryKey('wisski_calling_bundles', ['eid']);
+  }
+  catch (IntegrityConstraintViolationException $exception) {
+    \Drupal::messenger()->addMessage("Found multiple bundles for some EIDs. We will change of that for you.");
+    // Delete all rows that have the same EID.
+    // TODO: translate to dynamic Drupal query snytax.
+    $query = <<<EOF
+      DELETE FROM wisski_calling_bundles WHERE eid IN (
+          SELECT eid as eid_to_delete
+          FROM wisski_calling_bundles
+          GROUP by eid
+          HAVING count(eid) > 1
+          ORDER by eid
+        )
+    EOF;
+    $connection->query($query);
+    // Make the eid the primary key.
+    $schema->addPrimaryKey('wisski_calling_bundles', ['eid']);
+  }
+  throw new \Exception("you shall not pass");
+}
+
+/**
  * ALTER TABLE `dummy` ADD `tid` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST;
  * DELETE FROM dummy where tid in (
  *  SELECT tid FROM (
@@ -352,6 +391,7 @@ function wisski_core_schema() {
         'not null' => TRUE,
       ],
     ],
+    'primary key' => ['eid'],
     'indexes' => [
       'eid' => ['eid'],
       'bid' => [['bid', 64]],
