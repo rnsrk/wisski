@@ -274,40 +274,24 @@ function wisski_core_update_8012(&$sandbox) {
     $schema->addPrimaryKey('wisski_calling_bundles', ['eid']);
   }
   catch (IntegrityConstraintViolationException $exception) {
-    \Drupal::messenger()->addMessage("Found multiple bundles for some EIDs. We will change of that for you.");
+    \Drupal::messenger()->addMessage("Found multiple bundles for some EIDs. We will change that for you.");
+    // Get eids that occur more than once.
+    $results = $connection->select('wisski_calling_bundles', 't')->fields('t', ['eid'])->groupBy('eid')->having("count(eid) > :limit", [':limit' => 1])->execute()->fetchAll();
+    $doubledEids = [];
+    $f = function ($result) {
+      return $result->eid;
+    };
+    $doubledEids = array_map($f, $results);
     // Delete all rows that have the same EID.
-    // TODO: translate to dynamic Drupal query snytax.
-    $query = <<<EOF
-      DELETE FROM wisski_calling_bundles WHERE eid IN (
-          SELECT eid as eid_to_delete
-          FROM wisski_calling_bundles
-          GROUP by eid
-          HAVING count(eid) > 1
-          ORDER by eid
-        )
-    EOF;
-    $connection->query($query);
+    $connection->delete('wisski_calling_bundles')->condition('eid', $doubledEids, 'IN')->execute();
+
     // Make the eid the primary key.
     $schema->addPrimaryKey('wisski_calling_bundles', ['eid']);
   }
-  throw new \Exception("you shall not pass");
 }
 
 /**
- * ALTER TABLE `dummy` ADD `tid` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST;
- * DELETE FROM dummy where tid in (
- *  SELECT tid FROM (
- *      SELECT
- *      ROW_NUMBER() OVER (PARTITION BY id) as group_row_number,
- *      tid
- *      FROM dummy
- *  ) as C WHERE C.group_row_number > 1
- * );
- * ALTER TABLE `dummy` DROP COLUMN `tid`;
- */
-
-/**
- * Implements hook_schema()
+ * Implements hook_schema().
  */
 function wisski_core_schema() {
 
