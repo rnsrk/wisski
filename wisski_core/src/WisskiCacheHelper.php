@@ -138,20 +138,21 @@ class WisskiCacheHelper {
     return $query->execute()->fetchCol();
   }
 
-  static function putCallingBundle($entity_id,$bundle_id) {
-#dpm($bundle_id, "put $entity_id");
-    // DEBUG, change $entity_id and open up in case you get 'Could not load entities in adapter sparql_1_1_with_pathbuilder because ...'-error
-    // if ($entity_id === 'Leo') ddebug_backtrace();
+  /**
+   * Saves the bundle id for an entity to calling bundles table.
+   *
+   * @param string $entity_id
+   *   The entity id.
+   * @param string $bundle_id
+   *   The bundle id.
+   */
+  public static function putCallingBundle(string $entity_id, string $bundle_id) {
+    /** @var \Drupal\Core\Database\Connection */
     $db = \Drupal::service('database');
-    # TODO: upsert
-    $query = $db->select('wisski_calling_bundles','c')->fields('c')->condition('eid',$entity_id)->execute();
-    if ($result = $query->fetch()) {
-      if ($result->bid !== $bundle_id) {
-        $db->update('wisski_calling_bundles')->fields(array('bid' => $bundle_id))->condition('eid',$entity_id)->execute();
-      }
-    } else {
-      $db->insert('wisski_calling_bundles')->fields(array('eid' => $entity_id,'bid' => $bundle_id))->execute();
-    }
+    $db->upsert('wisski_calling_bundles')->fields([
+      'bid' => $bundle_id,
+      'eid' => $entity_id,
+    ])->key('eid')->execute();
   }
 
   static function getCallingBundle($entity_id) {
