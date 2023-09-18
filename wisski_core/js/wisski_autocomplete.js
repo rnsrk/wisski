@@ -3,14 +3,15 @@
 * Expands the behaviour of the default autocompletion.
 */
 
-(function ($, Drupal) {
+(function ($, Drupal, drupalSettings) {
 
   Drupal.behaviors.wisskiAutocomplete = {
     attach: function (context, settings) {
 
       // On Drupal 10.x, we use a different approach to autocomplete.
       // So disable this code if there isn't an autocomplete.
-      if (!Object.prototype.hasOwnProperty.call(Drupal, 'autocomplete')) {
+      let drupalVersion = parseInt(drupalSettings.wisski_core.drupalVersion.split('.', 1)[0]);
+      if ((!Object.prototype.hasOwnProperty.call(Drupal, 'autocomplete') && drupalVersion >= 10) || !Drupal.hasOwnProperty('autocomplete')) {
         return
       }
 
@@ -40,6 +41,6 @@
       };
     }
   }
-})(jQuery, Drupal);
+})(jQuery, Drupal, drupalSettings);
 
 

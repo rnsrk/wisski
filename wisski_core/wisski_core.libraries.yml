@@ -1,6 +1,10 @@
 wisski_autocomplete:
   js:
     js/wisski_autocomplete.js: {}
+  dependencies:
+      - core/jquery
+      - core/drupalSettings
+      - core/Drupal
 
 wisski-toolbar:
   version: VERSION

@@ -731,3 +731,10 @@ function wisski_core_menu_links_discovered_alter(&$links) {
     );
   }
 }
+
+/**
+ * Implements hook_preprocess_page().
+ */
+function wisski_core_preprocess_page(&$variables) {
+  $variables['#attached']['drupalSettings']['wisski_core']['drupalVersion'] = \Drupal::VERSION;
+}
