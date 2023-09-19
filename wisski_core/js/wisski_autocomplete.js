@@ -3,20 +3,18 @@
 * Expands the behaviour of the default autocompletion.
 */
 
-(function ($, Drupal, drupalSettings) {
+(function (Drupal) {
 
   Drupal.behaviors.wisskiAutocomplete = {
     attach: function (context, settings) {
 
-      // On Drupal 10.x, we use a different approach to autocomplete.
-      // So disable this code if there isn't an autocomplete.
-      let drupalVersion = parseInt(drupalSettings.wisski_core.drupalVersion.split('.', 1)[0]);
-      if ((!Object.prototype.hasOwnProperty.call(Drupal, 'autocomplete') && drupalVersion >= 10) || !Drupal.hasOwnProperty('autocomplete')) {
+      // Escape if field do not support autocomplete.
+      if (!Drupal.hasOwnProperty('autocomplete')) {
         return
       }
 
       // Override the "select" option of the jQueryUI autocomplete
-      // to make sure we do not use quotes for inputs with comma.
+      // to make sure we do not use quot es for inputs with comma.
       Drupal.autocomplete.options.select = function (event, ui) {
 
         //var terms = Drupal.autocomplete.splitValues(event.target.value);
@@ -41,6 +39,6 @@
       };
     }
   }
-})(jQuery, Drupal, drupalSettings);
+})(Drupal);
 
 
