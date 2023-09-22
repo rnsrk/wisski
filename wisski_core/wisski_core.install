@@ -262,7 +262,7 @@ function wisski_core_update_8011(&$sandbox) {
   $connection = Database::getConnection();
   $schema = $connection->schema();
   try {
-  $schema->addPrimaryKey('wisski_preview_images', ['eid']);
+    $schema->addPrimaryKey('wisski_preview_images', ['eid']);
   }
   catch (IntegrityConstraintViolationException $exception) {
     throw new Exception('Can not add primary key eid to wisski_preview_images. Please remove duplicate entries from table.');
@@ -315,7 +315,6 @@ function wisski_core_update_8013(&$sandbox) {
     throw new Exception("Found multiple values for intended primary keys (eid, bid, fid). Please remove these rows in the 'wisski_entity_field_properties' table, or contact your system administrator.");
   }
 }
-
 
 /**
  * Implements hook_schema().
@@ -426,6 +425,7 @@ function wisski_core_schema() {
         'not null' => TRUE,
       ],
     ],
+    'primary key' => ['eid'],
     'indexes' => [
       'eid' => ['eid'],
       'bid' => [['image_uri', 128]],
@@ -477,6 +477,13 @@ function wisski_core_schema() {
         'default' => \Drupal::service('language_manager')->getCurrentLanguage()->getId(),
       ],
     ],
+    'primary key' => [
+      'eid',
+      'bid',
+      'fid',
+      'delta',
+      'ident',
+    ],
     'indexes' => [
       'eid' => ['eid'],
       'bid' => [['bid', 64]],
@@ -501,8 +508,10 @@ function wisski_core_schema() {
         'not null' => TRUE,
       ],
     ],
+    'primary key' => [
+      'short_name',
+    ],
   ];
 
-  // dpm($schema);
   return $schema;
 }
