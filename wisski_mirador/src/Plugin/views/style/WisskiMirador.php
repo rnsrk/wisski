@@ -331,8 +331,8 @@ class WisskiMirador extends StylePluginBase {
 #    #$form['#attached']['drupalSettings']['wisski_jit'] = $wisski_individual;
     $form['#attached']['library'][] = "wisski_mirador/mirador";
 
-    $session = \Drupal::request()->getSession();
-    $session->set('mirador-options', $this->options);
+#    $session = \Drupal::request()->getSession();
+#    $session->set('mirador-options', $this->options);
 
     return $form;
 
