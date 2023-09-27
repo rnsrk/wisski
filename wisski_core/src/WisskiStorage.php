@@ -1605,6 +1605,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 
             } else {
               \Drupal::messenger()->addError($this->t('Could not fetch file with uri %uri.',array('%uri'=>$file_uri,)));
+              return;
             }
           }
 
