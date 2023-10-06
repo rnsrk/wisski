@@ -297,6 +297,10 @@ class WisskiMirador extends StylePluginBase {
 //        dpm($subview->result, "resi!");
 
       }
+
+      // kill the before because we processed it.
+      $view->attachment_before = [];
+
     }
 
 #    dpm($ent_list, "ente gut...");
