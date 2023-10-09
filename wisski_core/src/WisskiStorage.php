@@ -1548,7 +1548,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
         $file = File::create([
           'uri' => $local_file_uri,
           'uid' => \Drupal::currentUser()->id(),
-          'status' => FILE_STATUS_PERMANENT,
+        //  'status' => FILE_STATUS_PERMANENT,
         ]);
 
         //$file->setFileName(drupal_basename($local_file_uri));
