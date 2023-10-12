@@ -261,7 +261,12 @@ function wisski_core_update_8010(&$sandbox) {
 function wisski_core_update_8011(&$sandbox) {
   $connection = Database::getConnection();
   $schema = $connection->schema();
-  $schema->addPrimaryKey('wisski_preview_images', ['eid']);
+  try {
+    $schema->addPrimaryKey('wisski_preview_images', ['eid']);
+  }
+  catch (IntegrityConstraintViolationException $exception) {
+    throw new Exception('Can not add primary key eid to wisski_preview_images. Please remove duplicate entries from table.');
+  }
 }
 
 /**
@@ -291,20 +296,23 @@ function wisski_core_update_8012(&$sandbox) {
 }
 
 /**
- * Add eid, bid, fid as primary key to wisski_entity_field_properties.
+ * Add create column id and add it as primary key to wisski_entity_field_properties.
  */
 function wisski_core_update_8013(&$sandbox) {
   $connection = Database::getConnection();
   $schema = $connection->schema();
   try {
-    $schema->addPrimaryKey('wisski_entity_field_properties', [
-      'eid',
-      'bid',
-      'fid',
-    ]);
+    $schema->addField('wisski_entity_field_properties', 'id', [
+      'description' => 'Row identifier',
+      'type' => 'serial',
+      'unsigned' => TRUE,
+      'size' => 'big',
+      'not null' => TRUE,
+    ], ['primary key' => ['id']]);
   }
   catch (IntegrityConstraintViolationException $exception) {
     \Drupal::messenger()->addMessage("Found multiple values for intended primary keys (eid, bid, fid). Please remove these rows in the 'wisski_entity_field_properties' table, or contact your system administrator.");
+    throw new Exception("Found multiple values for intended primary keys (eid, bid, fid). Please remove these rows in the 'wisski_entity_field_properties' table, or contact your system administrator.");
   }
 }
 
@@ -417,6 +425,7 @@ function wisski_core_schema() {
         'not null' => TRUE,
       ],
     ],
+    'primary key' => ['eid'],
     'indexes' => [
       'eid' => ['eid'],
       'bid' => [['image_uri', 128]],
@@ -427,6 +436,13 @@ function wisski_core_schema() {
 
     'description' => 'Saves secondary field data for WissKI Entities. This includes all the field properties that are set by the user',
     'fields' => [
+      'id' => [
+        'description' => 'Row identifier',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'size' => 'big',
+        'not null' => TRUE,
+      ],
       'eid' => [
         'description' => 'Entity ID',
         'type' => 'int',
@@ -468,6 +484,9 @@ function wisski_core_schema() {
         'default' => \Drupal::service('language_manager')->getCurrentLanguage()->getId(),
       ],
     ],
+    'primary key' => [
+      'id',
+    ],
     'indexes' => [
       'eid' => ['eid'],
       'bid' => [['bid', 64]],
@@ -492,8 +511,10 @@ function wisski_core_schema() {
         'not null' => TRUE,
       ],
     ],
+    'primary key' => [
+      'short_name',
+    ],
   ];
 
-  // dpm($schema);
   return $schema;
 }

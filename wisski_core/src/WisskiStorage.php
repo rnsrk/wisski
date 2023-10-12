@@ -1548,12 +1548,20 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
         $file = File::create([
           'uri' => $local_file_uri,
           'uid' => \Drupal::currentUser()->id(),
-          'status' => FILE_STATUS_PERMANENT,
+        //  'status' => FILE_STATUS_PERMANENT,
         ]);
 
         //$file->setFileName(drupal_basename($local_file_uri));
         $file->setFileName(\Drupal::service('file_system')->basename($local_file_uri));
-        $mime_type = \Drupal::service('file.mime_type.guesser')->guess($local_file_uri);
+	
+	$guesser = \Drupal::service('file.mime_type.guesser');
+	if ($guesser instanceof \Symfony\Component\Mime\MimeTypeGuesserInterface) {
+	  $mime_type = $guesser->guessMimeType($local_file_uri);
+	}
+	else {
+	  $mime_type = $guesser->guess($local_file_uri);
+        }
+	//$mime_type = \Drupal::service('file.mime_type.guesser')->guess($local_file_uri);
 
         $file->setMimeType($mime_type);
         $file->setPermanent();
@@ -1605,6 +1613,7 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
 
             } else {
               \Drupal::messenger()->addError($this->t('Could not fetch file with uri %uri.',array('%uri'=>$file_uri,)));
+              return;
             }
           }
 
