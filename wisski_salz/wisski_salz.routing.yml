@@ -42,20 +42,3 @@ entity.wisski_salz_adapter.delete_form:
     _title: 'Delete SALZ Store'
   requirements:
     _permission: 'administer site configuration'
-
-# Site config group 
-wisski_salz.admin.overview:
-  path: '/admin/config/wisski/salz'
-  defaults:
-    _title: 'WissKI Salz'
-    _controller: 'Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
-  requirements:
-    _permission: 'administer site configuration'
-
-wisski_salz.admin.overview1:
-  path: '/admin/config/wisski_salz'
-  defaults:
-    _title: 'WissKI Salz'
-    _controller: 'Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
-  requirements:
-    _permission: 'administer site configuration'
