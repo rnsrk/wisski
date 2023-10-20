@@ -3,12 +3,45 @@
 *@author Martin Scholz, unless otherwise said
 */
 
+use Drupal\Core\Database\Database;
+use Drupal\Core\Database\IntegrityConstraintViolationException;
+
+/**
+ * Create column id and add it as primary key to wisski_merge_log table.
+ */
+function wisski_merge_update_8001(&$sandbox) {
+  $connection = Database::getConnection();
+  $schema = $connection->schema();
+  try {
+    $schema->addField('wisski_merge_log', 'id', [
+      'description' => 'Row identifier',
+      'type' => 'serial',
+      'unsigned' => TRUE,
+      'size' => 'big',
+      'not null' => TRUE,
+    ], ['primary key' => ['id']]);
+  }
+  catch (IntegrityConstraintViolationException $exception) {
+    $text = "Cannot add column 'id' to table 'wisski_merge_log'.";
+    \Drupal::messenger()->addMessage($text);
+    throw new Exception($text);
+  }
+}
+
+
 function wisski_merge_schema () {
 
   $schemas = array();
 
   $schemas['wisski_merge_log'] = array(
     'fields' => array(
+      'id' => array(
+        'description' => 'Row identifier',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
       'adapter_id' => array(
         'type' => 'varchar',
         'length' => '64',
@@ -48,6 +81,7 @@ function wisski_merge_schema () {
         'not null' => TRUE,
       ),
     ),
+    'primary key' => array('id'),
   );
 
   return $schemas;
