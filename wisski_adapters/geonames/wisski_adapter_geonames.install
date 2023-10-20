@@ -1,44 +1,17 @@
 <?php
 
 /**
- * implements hook_schema()
+ * @file
+ * Install, update and uninstall functions for the wisski_adapter_zotero module.
  */
-function wisski_adapter_geonames_schema() {
 
-  $schema['wisski_adapter_geonames'] = array(
-    'description' => 'Stores searchable entity fields for quick lookup',
-    'fields' => array(
-      'adapter_id' => array(
-        'description' => 'the adapter ID',
-        'type' => 'varchar',
-        'length' => '128',
-        'not null' => TRUE,
-      ),
-      'uri' => array(
-        'description' => 'uri of the entity',
-        'type' => 'varchar',
-        'length' => '2048',
-        'not null' => TRUE,
-      ),
-      'field' => array(
-        'description' => 'the field',
-        'type' => 'varchar',
-        'length' => '128',
-        'not null' => TRUE,
-      ),
-     'value' => array(
-        'description' => 'field values',
-        'type' => 'text',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-    ),
-    'indexes' => array(
-      'uri' => array('uri'),
-      'adapter_id' => array('adapter_id'),
-      'value' => array('value'),
-    ),
-  );
+use Drupal\Core\Database\Database;
 
-  return $schema;
+/**
+ * Delete the unused wisski_adapter_geonames table from the database.
+ */
+function wisski_adapter_geonames_update_8001(&$sandbox) {
+  // This table existed for <nosebear>Mark</nosebear> reasons, but was never used
+  // So we can safely drop it.
+  Database::getConnection()->schema()->dropTable('wisski_adapter_geonames');
 }
