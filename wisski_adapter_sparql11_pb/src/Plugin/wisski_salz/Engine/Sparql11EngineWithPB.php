@@ -4135,7 +4135,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $always_reason = TRUE;
     }
 
-    $form['allow_inverse_property_pattern'] = [
+    $form['properties']['allow_inverse_property_pattern'] = [
       '#type' => 'checkbox',
       '#title' => 'Inverse property selection',
       '#default_value' => $this->allow_inverse_property_pattern,
