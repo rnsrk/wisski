@@ -355,8 +355,11 @@ class AdapterHelper {
     if (count($ids) > 1) {
       //dpm($ids,'from DB, multiple');
       //\Drupal::messenger()->addStatus("There are multiple entity IDs for a URI. See log reports for details.");
+      // By Mark: We try to automatically solve double given ids...
+      // we still don't know where these come from :(
+      
       \Drupal::logger('WissKI Salz')->warning(
-        'There are multiple entity IDs for URI {uri}: {ids}. Please resolve. The first one is taken.',
+        'There are multiple entity IDs for URI {uri}: {ids}. I auto resolve this. The first one is taken.',
         ['uri' => $uri, 'ids' => join(', ', $ids)]
       );
 
