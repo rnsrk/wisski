@@ -145,7 +145,7 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
     }
 
     // due to overall smartness of users - do a trim.
-    $auth = trim($auth);
+    $auth = trim($auth ?? '');
 
 #    dpm($auth, "auth");
 #    dpm($patterns, "patty!");
@@ -157,7 +157,7 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
         $id = $id_field->get($id_field::mainPropertyName())->getValue();
         
         // due to overall smartness of users - do a trim.
-        $id = trim($id);
+        $id = trim($id ?? '');
         
         // build the uri and add it to the entity
         if (!empty($id)) {
@@ -171,7 +171,7 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
     // either: uri is not empty but old uri is -> generate the uri because it was not filled by now
     // or: uri is not empty, old uri is not empty but they differ -> overwrite
     if ( (!empty($uri) && empty($olduri)) || ( !empty($uri) && !empty($olduri) && $olduri != $uri) ) {
-      $uri = trim($uri);
+      $uri = trim($uri ?? '');
       $object->set($this->configuration['entry_uri_field'], $uri);
       
       // write this
@@ -234,7 +234,7 @@ class CompleteAuthorityEntry extends ConfigurableActionBase {
     }
     $patterns = [];
     foreach ($lines as $i => $line) {
-      $line = trim($line);
+      $line = trim($line ?? '');
       if (empty($line)) {
         continue;
       }
