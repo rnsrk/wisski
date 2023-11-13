@@ -22,5 +22,5 @@ iip_integration:
       css/main.css: {}
   dependencies:
     - core/jquery
-    - core/jquery.once
+    - core/once
     - wisski_iip_image/iipmooviewer

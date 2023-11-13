@@ -1,60 +1,66 @@
 (function ($, Drupal, drupalSettings) {
+  var makeMooConfig = function(element) {
+    // get the iiip server url
+    var server = drupalSettings.wisski.iip.iip_server_url || "/fcgi-bin/iipsrv.fcgi";
 
-//console.log('bbb', drupalSettings.wisski.iip.config);
-var iipConfig = $.extend({
-  server: "/fcgi-bin/iipsrv.fcgi",
-//  credit: credit,
-// drupalSettings.path.baseUrl
-  prefix: drupalSettings.path.baseUrl + 'libraries/iipmooviewer/images/',
-  showNavWindow: true,
-  showNavButtons: true,
-  winResize: true,
-  protocol: 'iip',
-}, drupalSettings.wisski.iip.config);
+    // get the image url
+    var image = element.attr("iip") || '';
 
-$(document).bind('cbox_complete', function() {
-
-  jQuery = jQuery29;
-  $ = jQuery29;
-
-  iipConfig.image = [jQuery.colorbox.element().attr("iip")];
-
-
-//  var credit = '&copy; <a href="http://www.gnm.de/">Germanisches Nationalmuseum</a>';
-
-  var iipmooviewer = new IIPMooViewer( "cboxLoadedContent", iipConfig);
-
-  jQuery.colorbox.resize({width: 1000, height: 600});
-
-  jQuery.noConflict(true);
-  
-});
-
-Drupal.behaviors.iip_integration_Behavior = {
-    attach: function (context, settings) {
-//       alert("yay!");
-//      $(context).find('input.iipIntegrationBehaviour').once('iipIntegrationBehaviour').each(function () {
-      $(context).once('iipIntegrationBehaviour').each(function () {
-//        alert("yay!1");
-
-        iipConfig.image = [$('.wisski-inline-iip').attr("iip")];
-
-        if($('.wisski-inline-iip').attr('wisski-inline-iip')) {
-//          alert(drupalSettings.path.baseUrl);
-          var prefix = drupalSettings.path.baseUrl + 'libraries/iipmooviewer/images/';
-
-//  var credit = '&copy; <a href="http://www.gnm.de/">Germanisches Nationalmuseum</a>'
-
-//console.log('aaa', iipConfig);
-
-          var iipmooviewer = new IIPMooViewer( "wisski-iip-cont", iipConfig);
-        }
-        
-//        jQuery.colorbox.resize({width: 1000, height: 600});
-      });
-
+    // remove the prefix url (if any)
+    var imagePrefix = drupalSettings.wisski.iip.iip_fs_prefix || "";
+    if (image.indexOf(imagePrefix) === 0) {
+      image = image.substr(imagePrefix.length);
     }
 
+    // The prefix to the images diretory
+    var prefix = drupalSettings.path.baseUrl + 'libraries/iipmooviewer/images/';
+
+    // and build the client config
+    return $.extend({
+      server: server,
+      prefix: prefix,
+      image: [image],
+      // credit: credit,
+      showNavWindow: true,
+      showNavButtons: true,
+      winResize: true,
+      protocol: 'iip',
+    }, drupalSettings.wisski.iip.config);
+    
+  }
+
+  /*
+    jQuery 2.9 compat
+    Unsure if this is still needed
+
+    jQuery = jQuery29;
+    $ = jQuery29;
+  */
+
+
+  $(document).bind('cbox_complete', function () {
+    // get the config and make a new viewer
+    var config = makeMooConfig(jQuery.colorbox.element())
+    new IIPMooViewer("cboxLoadedContent", config);
+
+    // resize the colorbox
+    jQuery.colorbox.resize({ width: 1000, height: 600 });
+  });
+
+  Drupal.behaviors.iip_integration_Behavior = {
+    attach: function (context, settings) {
+      once('iipIntegrationBehaviour', context).each(function () {
+        // ensure that we requested an inline element
+        var element = $('.wisski-inline-iip');
+        if (!element.attr('wisski-inline-iip')) {
+          return;
+        }
+        
+        // and use it all
+        var config = makeMooConfig(element);
+        new IIPMooViewer("wisski-iip-cont", iipConfig);
+      });
+    }
   };
 
 })(jQuery, Drupal, drupalSettings);
