@@ -2374,6 +2374,12 @@ class WisskiStorage extends SqlContentEntityStorage implements WisskiStorageInte
   public function writeToCache($entity_id,$bundle_id) {
 #    dpm($bundle_id, "bundle id for ente $entity_id: ");
 #    dpm(microtime(), "mic in");
+
+    // add some bulletproofness 
+    if(empty($bundle_id))
+      return;
+
+
     try {
       WisskiCacheHelper::putCallingBundle($entity_id,$bundle_id);
     } catch (\Exception $e) {
