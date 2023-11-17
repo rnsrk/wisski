@@ -13,7 +13,8 @@ class WisskiTitleAutocompletion {
     
     $string = $request->query->get('q');
 
-    $bundles = $request->query->get('bundles');
+    // https://github.com/symfony/symfony/pull/34363#issuecomment-696172745
+    $bundles = $request->query->all('bundles');
     
     $matches = array($string);
 #    dpm($request, "string");    

@@ -60,6 +60,34 @@ function wisski_adapter_sparql11_pb_field_widget_single_element_form_alter(array
       $element["value"]['#autocomplete_route_name'] = 'wisski.wisski_autocomplete.autocomplete';
       $element["value"]['#autocomplete_route_parameters'] = ["fieldId" => $fieldId];
 
+      $widget = $context['widget'];
+
+      // by Mark:
+      // unfortunatelly we have to check if the widget is still set in the
+      // form. If it is not set we have to throw away the configuration
+      // because otherwise the autocomplete function will think it should
+      // use this configuration and by default it uses the title pattern
+      // which is not the typical wisski behaviour. This should be set
+      // explicitely.
+
+      // Check if we have an autocomplete widget
+      if(!($widget instanceof \Drupal\wisski_autocomplete\Plugin\Field\FieldWidget\WissKIAutocompleteWidget)) {
+
+        // if not we have to load the configuration of the wisski
+        // autocomplete
+        $config = \Drupal::service('config.factory')->getEditable("wisski.autocomplete");
+
+        // get all settings
+        $all_settings = $config->get();
+
+        // if it is set unset it.
+        if(isset($all_settings[$fieldId])) {
+          unset($all_settings[$fieldId]);
+          $config->setData($all_settings);
+          $config->save();
+        }
+      }
+
       // Exit loop.
       break;
     }

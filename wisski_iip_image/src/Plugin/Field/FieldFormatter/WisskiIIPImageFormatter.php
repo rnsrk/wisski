@@ -48,6 +48,8 @@ class WisskiIIPImageFormatter extends ColorboxFormatter {
       $elements['#attached']['library'][] = 'wisski_iip_image/iipmooviewer';
       $elements['#attached']['library'][] = 'wisski_iip_image/iip_integration';
       $elements['#attached']['drupalSettings']['wisski']['iip']['config'] = \Drupal::config('wisski_iip_image.config')->get();
+      $elements['#attached']['drupalSettings']['wisski']['iip']['iip_server_url'] = $this->getSetting('iip_server_url');
+      $elements['#attached']['drupalSettings']['wisski']['iip']['iip_fs_prefix'] = $this->getSetting('iip_fs_prefix');
 
       $files = $this->getEntitiesToView($items, $langcode);
 
@@ -145,6 +147,8 @@ class WisskiIIPImageFormatter extends ColorboxFormatter {
      */
     public static function defaultSettings() {
       return [
+        'iip_server_url' => '/fcgi-bin/iipsrv.fcgi',
+        'iip_fs_prefix' => '',
         'wisski_inline' => 'FALSE',
       ] + parent::defaultSettings();
     }
@@ -153,12 +157,25 @@ class WisskiIIPImageFormatter extends ColorboxFormatter {
      * {@inheritdoc}
      */
     public function settingsForm(array $form, FormStateInterface $form_state) {
-
+      $element['iip_server_url'] = [
+        '#type' => 'textfield',
+        '#title' => $this->t('IIP Server URL'),
+        '#description' => $this->t('URL that the IIP Server is reachable at. Typically <code>/fcgi-bin/iipsrv.fcgi</code>.'),
+        '#default_value' => $this->getSetting('iip_server_url'),
+      ];
+      $element['iip_fs_prefix'] = [
+        '#type' => 'textfield',
+        '#title' => $this->t('IIP Filesystem Prefix'),
+        '#description' => $this->t('<code>FILESYSTEM_PREFIX</code> setting if configured on the server. Leave blank if unsure.'),
+        '#default_value' => $this->getSetting('iip_fs_prefix'),
+      ];
+      
       $element['wisski_inline'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Inline mode for IIP'),
         '#default_value' => $this->getSetting('wisski_inline'),
       ];
+      
       
       $element = $element + parent::settingsForm($form, $form_state);
 

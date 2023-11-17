@@ -106,7 +106,7 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
     // go through all field definitions and see if there is such a field for the entity
     foreach ($fields as $field_path) {
       // fetch the entity ids of the entries
-      $field_path = trim($field_path);
+      $field_path = trim($field_path ?? '');
       if (empty($field_path)) {
         continue;
       }
@@ -196,7 +196,7 @@ class UpdateAuthorityUri extends ConfigurableActionBase {
     }
 #    $fieldss = [];
     foreach ($lines as $line) {
-      $line = trim($line);
+      $line = trim($line ?? '');
       if (empty($line)) {
         continue;
       }

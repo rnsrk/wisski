@@ -3198,10 +3198,30 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
     //
     // e.g. extracting the value 64 from the string "Archeological Collection (64)".
     $autocomplete_title_pattern_enabled = FALSE;
-    if (array_key_exists('autocomplete_title_pattern_enabled', $pbarray)) {
-      $autocomplete_title_pattern_enabled = $pbarray['autocomplete_title_pattern_enabled'] == TRUE;
+
+    // By Mark: I don't know why this was evaluated here. I don't think that $pbarray ever
+    // had the information that is assumed here. I think this is deprecated code...
+    //if (array_key_exists('autocomplete_title_pattern_enabled', $pbarray)) {
+    //  $autocomplete_title_pattern_enabled = $pbarray['autocomplete_title_pattern_enabled'] == TRUE;
       // The "== TRUE" casts it into a boolean!
+    //}
+
+    // check if the autocomplete module exists
+    $moduleHandler = \Drupal::service('module_handler');
+    if ($moduleHandler->moduleExists('wisski_autocomplete')) {
+
+      // if it exists check if we want the special title pattern behaviour.
+      $config = \Drupal::service('config.factory')->getEditable("wisski.autocomplete");
+
+      // get all settings
+      $settings = $config->get($fieldid);
+
+      // if this setting is not set, don't do it!
+      if(!empty($settings) && isset($settings['useTitlePattern']))
+        $autocomplete_title_pattern_enabled = TRUE;
     }
+
+
     // We distinguish two modes of how to interpret the value:
     // entity ref: the value is an entity id that shall be linked to
     // normal: the value is a literal and may be disambiguated.

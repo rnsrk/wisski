@@ -77,7 +77,9 @@ class WisskiPathDeleteFormLocal extends EntityConfirmFormBase {
 #    drupal_set_message("pbp: " . serialize($pbpath));
 
     if(!empty($pbpath)) {
-      if(!empty($pbpath['bundle']) && !empty($pbpath['field']))
+      if(!empty($pbpath['bundle']) && !empty($pbpath['field']) && $pbpath['bundle'] != $pbpath['field']) // if they are not the same we want to delete the field
+        $form_state->setRedirect('entity.wisski_path.delete_core',array('wisski_pathbuilder'=>$this->pb_id, 'wisski_field_id' => $pbpath['field'], 'wisski_field_type' => 'field'));
+      if(!empty($pbpath['bundle']) && !empty($pbpath['field']) && $pbpath['bundle'] == $pbpath['field']) // if they are the same we want to delete the bundle!
         $form_state->setRedirect('entity.wisski_path.delete_core',array('wisski_pathbuilder'=>$this->pb_id, 'wisski_field_id' => $pbpath['bundle'], 'wisski_field_type' => 'both'));
       if(empty($pbpath['bundle']) && !empty($pbpath['field']))
         $form_state->setRedirect('entity.wisski_path.delete_core',array('wisski_pathbuilder'=>$this->pb_id, 'wisski_field_id' => $pbpath['field'], 'wisski_field_type' => 'field'));

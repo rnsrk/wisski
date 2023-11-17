@@ -232,7 +232,7 @@ class MultiSparqlQuery extends ConfigurableActionBase {
           foreach($result as $key3 => $value) {
             $keys[$key1][$key3] = $key3;
 
-            if($value->getUri()) {
+            if(method_exists($value, "getUri")) {
               $newuri = $engine->getSameUri($value->getUri(), $this->configuration['query_part_' . $i]['adapter_id_' . $i]); //, $results['source']);
 #              dpm(serialize($newuri), "newuri");
               if($newuri)
