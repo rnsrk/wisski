@@ -240,7 +240,7 @@ class WisskiAutocompleteController extends ControllerBase {
     /** @var array[] */
     $matches = [];
     foreach ($results as $result) {
-      // Not using the title pattern, or invalid results.
+      // Not using the title pattern, or no disambiguation
       if (!$useTitlePattern || !isset($result->$var)) {
         $matches[] = [
           'value' => $result->out->getValue(),
