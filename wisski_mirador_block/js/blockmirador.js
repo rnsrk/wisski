@@ -1,7 +1,8 @@
 (function ($, Drupal, drupalSettings, once) {
   Drupal.behaviors.wisski_mirador_block_Behavior = {
     attach: function (context, settings) {
-      $('div#block-miradorblockviewer', context).once('wisski_mirador_block').each(function (element) {
+      const mirblock = once('wisski_mirador_block', 'div#block-miradorblockviewer', context);
+      mirblock.forEach(function (element) {
 
     const iiif_field = drupalSettings.blockmirador.iiif_field;
 console.log(iiif_field);
