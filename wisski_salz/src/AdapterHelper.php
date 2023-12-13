@@ -884,11 +884,11 @@ class AdapterHelper {
    */
   public static function extractIdFromWisskiUri($uri) {
     
-    list($eid) = self::extractEntityInfoFromRouteUrl($uri);
+    list($eid) = self::extractEntityInfoFromRouteUrl($uri, $route_name = 'entity.wisski_individual.canonical', FALSE);
     return $eid;
   }
 
-  public static function extractEntityInfoFromRouteUrl($url,$route_name='entity.wisski_individual.canonical') {
+  public static function extractEntityInfoFromRouteUrl($url, $route_name = 'entity.wisski_individual.canonical' $full_load = TRUE) {
   
     //strip whitespaces
     $url = preg_replace("/(^\s+)|(\s+$)/us", "", $url);
@@ -922,6 +922,17 @@ class AdapterHelper {
     
         // but let path begin with an '/' as the route matcher requires so.
         if (substr($url, 0, 1) !== '/') $url = '/' . $url;
+
+        // easy opt-out: in case we just want to return the entity id 
+        // as integer there's no need to call the Drupal router service
+        // and to fully load the entity!
+ 
+        $pattern = "/wisski\/navigate\/(\d+)\/view/";
+        if ($full_load == FALSE && preg_match($pattern, $url, $matches)) {
+          $the_eid = $matches[1];
+          //\Drupal::logger('adapterhelper')->debug('new code, the_eid: ' . serialize($the_eid) . ' / ' . microtime());
+          return array($the_eid, NULL, $route_name);
+        }
 
         try {
           $route = \Drupal::service('router')->match($url);
