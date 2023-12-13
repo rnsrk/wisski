@@ -2,15 +2,14 @@
 
 namespace Drupal\wisski_pathbuilder\Form;
 
-use Drupal\file\FileRepositoryInterface;
-use Drupal\wisski_salz\Entity\Adapter;
-use Drupal\Core\File\FileSystemInterface;
-use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityForm;
+use Drupal\Core\File\FileSystemInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
-
+use Drupal\file\FileRepositoryInterface;
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity as Pathbuilder;
+use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity;
+use Drupal\wisski_salz\Entity\Adapter;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -236,7 +235,7 @@ class WisskiPathbuilderForm extends EntityForm {
 
         // Get bundle id, sometimes fields do not have bundle value.
         $bundle_id = $pbpaths[$path->id()]['bundle'];
-        $bundle_id_from_parent = isset($pbpaths[$pbpaths[$path->id()]['parent']]['bundle']) ? $pbpaths[$pbpaths[$path->id()]['parent']]['bundle'] : NULL;
+        $bundle_id_from_parent = $pbpaths[$pbpaths[$path->id()]['parent']]['bundle'] ?? NULL;
         if (empty($bundle_id)) {
           $bundle_id = $bundle_id_from_parent;
         }
@@ -521,7 +520,7 @@ class WisskiPathbuilderForm extends EntityForm {
 
     $element = parent::actions($form, $form_state);
     $element['#type'] = '#dropbutton';
-    $element['#attributes'] = ['class' => array('wisski-pathbuilder__submit-region')];
+    $element['#attributes'] = ['class' => ['wisski-pathbuilder__submit-region']];
 
     // Only add this to "normal" ones...
     $entityType = $this->entity->getType();
@@ -530,13 +529,16 @@ class WisskiPathbuilderForm extends EntityForm {
 
     if ($entityType != "linkblock" && !is_null($entityId)) {
       if (!empty($entityName)) {
-        if (strpos($entityName, "(Linkblock)") === FALSE && $entityName != "WissKI Linkblock PB" ) {
+        if (strpos($entityName, "(Linkblock)") === FALSE && $entityName != "WissKI Linkblock PB") {
           $element['generate'] = [
             '#type' => 'submit',
             '#value' => $this->t('Save and generate bundles and fields'),
             '#submit' => ['::submitForm', '::save_and_generate_forms'],
             '#weight' => -10,
             '#dropbutton' => 'save',
+            '#attributes' => [
+              'class' => ['wisski-pathbuilder__submit-button'],
+            ],
           ];
         }
       }
@@ -544,6 +546,7 @@ class WisskiPathbuilderForm extends EntityForm {
 
     $element['submit']['#value'] = $this->t('Save without form generation');
     $element['submit']['#dropbutton'] = 'save';
+    $element['submit']['#attributes'] = ['class' => ['wisski-pathbuilder__submit-button']];
     return $element;
   }
 
@@ -698,7 +701,7 @@ class WisskiPathbuilderForm extends EntityForm {
     }
 
     // What to add to solr in this case?
-    $group_solr = isset($grouparray['field']) ? $grouparray['field'] : $grouparray['bundle'];
+    $group_solr = $grouparray['field'] ?? $grouparray['bundle'];
 
     if (empty($solr)) {
       $group_solr = "entity:wisski_individual/";

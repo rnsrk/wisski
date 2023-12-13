@@ -36,7 +36,7 @@
 #block-claro-content .wisski-pathbuilder-caret-expanded .tabledrag-handle::before,
 #block-claro-content .wisski-pathbuilder-caret-collapsed .tabledrag-handle::before {
   color: black;
-  
+
   margin-right: 1em;
   margin-left: -1em;
 }
@@ -54,5 +54,9 @@
 }
 
 .wisski-pathbuilder__submit-region li.dropbutton__item {
+  max-width: unset !important;
+}
+
+.wisski-pathbuilder__submit-region li.dropbutton__item input {
   max-width: unset;
 }
