@@ -888,7 +888,7 @@ class AdapterHelper {
     return $eid;
   }
 
-  public static function extractEntityInfoFromRouteUrl($url, $route_name = 'entity.wisski_individual.canonical' $full_load = TRUE) {
+  public static function extractEntityInfoFromRouteUrl($url, $route_name = 'entity.wisski_individual.canonical', $full_load = TRUE) {
   
     //strip whitespaces
     $url = preg_replace("/(^\s+)|(\s+$)/us", "", $url);
