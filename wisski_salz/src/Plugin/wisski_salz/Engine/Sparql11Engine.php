@@ -901,7 +901,7 @@ abstract class Sparql11Engine extends EngineBase {
     // unioned with <$uri> same-as-prop something tmp and that has the ?uri
     // and the ?uri has $orig-prop to some adapter.
     // this is heavily usage of stupid things... so we don't do that anymore in future...
-    $query = "SELECT DISTINCT ?uri ?adapter WHERE { GRAPH <$orig_prop> { { <$uri> $prop ?uri } UNION { <$uri> $prop ?tmp1 . ?tmp1 $prop ?uri } . OPTIONAL { ?uri <$orig_prop> ?adapter .}  } } ORDER BY DESC(?uri)";
+    $query = "SELECT DISTINCT ?uri ?adapter WHERE { GRAPH <$orig_prop> { { <$uri> $prop ?uri } UNION { <$uri> $prop ?tmp1 . ?tmp1 $prop ?uri } . OPTIONAL { ?uri <$orig_prop> ?adapter .}  } } ORDER BY DESC(STRLEN(STR(?uri))) DESC(?uri)";
 
     // What we want to have is:
     // we have a graph $orig_prop and in this we have a set per website and
