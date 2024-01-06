@@ -258,7 +258,7 @@ wisski.wisski_ontology.namespace.delete_confirm:
     _title: 'Delete single namespace'
   requirements:
     _permission: 'administer wisski'
-    namespace: '\w+'
+    namespace: '\w+\s*'
 
 wisski.wisski_ontology.namespace.edit_confirm:
   path: '/admin/config/wisski/ontology/namespace/{namespace}/edit'
@@ -267,7 +267,7 @@ wisski.wisski_ontology.namespace.edit_confirm:
     _title: 'Edit single namespace'
   requirements:
     _permission: 'administer wisski'
-    namespace: '\w+'
+    namespace: '\w+\s*'
 
 wisski.wisski_ontology.namespace.show_table:
   path: '/admin/config/wisski/ontology/namespaces/table'
