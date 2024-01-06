@@ -4,6 +4,7 @@ namespace Drupal\wisski_iip_image\Controller;
 
 use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\Core\Cache\CacheableJsonResponse;
+use Drupal\wisski_salz\AdapterHelper;
 
 use Drupal\image\Entity\ImageStyle;
 
@@ -15,7 +16,62 @@ class WisskiIIIFController {
   /**
    *
    */
-  public function manifest(WisskiEntity $wisski_individual = NULL) {
+  public function manifest(int $wisski_individual = NULL) {
+#    dpm(serialize(microtime()), "mic0?");
+    $cache = \Drupal::cache('wisski_iiif_params');
+    
+    $cached_image_ids = array();
+    
+    $data = $cache->get($wisski_individual);
+    #dpm(serialize($data));
+    #$data = array();
+    // load from cache? perhaps the mirador viewer wrote some?
+    if (isset($data) && !empty($data->data)) {
+      $array = $data->data;
+#      dpm($array);
+
+      $eid = $array['eid'];
+      
+      $label = $array['flabel'];
+      
+      $cached_image_ids = $array['fimageids'];
+      
+      $uri = $array['furi'];
+
+    } else { // if not load directly!
+
+      // declare the variables
+      $eid = $wisski_individual;
+    
+      // this is keyed by language and then 0 and then value
+      $label = wisski_core_generate_title($wisski_individual);
+      if(!empty($label)) {
+        $label = current($label);
+
+        if(isset($label[0]) && isset($label[0]["value"]))
+          $label = $label[0]["value"];
+      }
+    
+      // get the bundle ids
+      $eidBundleIds = AdapterHelper::getBundleIdsForEntityId($eid, TRUE);
+      // for now: take the first one!
+      $bundleid = current($eidBundleIds);
+
+    /*
+
+        $data = array(
+          "flabel" => $this->options['field_for_label'],
+          "fimageids" => $this->options['field_for_image_ids'],
+          "furi" => $this->options['field_for_uri']);
+
+    */
+
+#    dpm($wisski_individual);
+
+//    $wisski_individual = \Drupal::entityTypeManager()->getStorage('wisski_individual')->load($wisski_individual);
+    
+#    dpm($label);
+    }
 
     // This is based on the
     // Iperion-ch Simple IIIF Manifest builder: Version 1.0
@@ -36,11 +92,11 @@ class WisskiIIIFController {
     global $base_url;
 
     // The url to this manifest.
-    $manifest_url = $base_url . "/wisski/navigate/" . $wisski_individual->id() . "/iiif_manifest";
+    $manifest_url = $base_url . "/wisski/navigate/" . $eid . "/iiif_manifest";
 
     // The url for the sequences
     // I dont really know what this is for up to now...
-    $sequence_url = $base_url . "/wisski/sequence/" . $wisski_individual->id();
+    $sequence_url = $base_url . "/wisski/sequence/" . $eid;
 
     // Get the logo for display purpose.
     $logo = theme_get_setting('logo.url');
@@ -62,11 +118,11 @@ class WisskiIIIFController {
     // specific details or a database call for dynamic details.
     $manifest = [
       // Manifest comment.
-      "comment" => "The original dataset with additional metadata can be found <a href='" . $base_url . "/wisski/navigate/" . $wisski_individual->id() . "/view'>here</a>. This IIIF manifest is generated from the WissKI system at " . $base_url,
+      "comment" => "The original dataset with additional metadata can be found <a href='" . $base_url . "/wisski/navigate/" . $eid . "/view'>here</a>. This IIIF manifest is generated from the WissKI system at " . $base_url,
       "id" => $manifest_url,
       // Unique display label for the manifest.
     // "A few small images just to display a working manifest",.
-      "label" => $wisski_individual->label(),
+      "label" => $label,
       // Resolvable url to required logo image.
       "logo" => $logo,
       // For simple manifests this does not need to change, does not need to resolve.
@@ -76,25 +132,27 @@ class WisskiIIIFController {
       "attribution" => $settings->get("iiif_attribution"),
     ];
 
-    // Load all adapters
-    // $adapters = entity_load_multiple('wisski_salz_adapter');.
-    $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
-
     // Get the bundle for this.
-    $bundle_id = $wisski_individual->bundle();
+    $bundle_id = $bundleid; // $wisski_individual->bundle();
 
     // Get the entity id.
-    $entity_id = $wisski_individual->id();
+    $entity_id = $eid;
 
     // Build up an image array.
     $images = [];
 
-    // Go through all adapters and get all images for this.
-    foreach ($adapters as $adapter) {
-      if ($adapter->hasEntity($entity_id) && method_exists($adapter->getEngine(), "getImagesForEntityId")) {
-        $images = array_merge($images, $adapter->getEngine()->getImagesForEntityId($entity_id, $bundle_id, TRUE));
+    // if we have cached images, we take these.
+    if(!empty($cached_image_ids)) {
+      $images = $cached_image_ids;
+    } else {
+      // Load all adapters
+      $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
+      // Go through all adapters and get all images for this.
+      foreach ($adapters as $adapter) {
+        if ($adapter->hasEntity($entity_id) && method_exists($adapter->getEngine(), "getImagesForEntityId")) {
+          $images = array_merge($images, $adapter->getEngine()->getImagesForEntityId($entity_id, $bundle_id, TRUE));
+        }
       }
-
     }
 
     $style = ImageStyle::load('wisski_pyramid');
@@ -143,7 +201,7 @@ class WisskiIIIFController {
     $local_paths = [];
     // Just the filename.
     $filenames = [];
-
+#    dpm(serialize(microtime()), "mic1?");
     // Iterate through all images.
     foreach ($images as $image) {
       $local_uri = $storage->ensureSchemedPublicFileUri($image);
@@ -186,31 +244,42 @@ class WisskiIIIFController {
     }
 
     $ims = [];
-
+#    dpm(serialize(microtime()), "mic2?");
     // Fill the image array.
     foreach ($file_paths as $key => $filepath) {
-      // Try to load the image.
-      $image = \Drupal::service('image.factory')->get($local_paths[$key]);
+      // if we load from cache, assume height and width because it is faster... these are no real values!
+      if (isset($data) && !empty($data->data)) { 
+        $height = 1;
+        $width = 1;
+      } else {
+        // Try to load the image.
+        $image = \Drupal::service('image.factory')->get($local_paths[$key]);
 
-      $height = 0;
-      $width = 0;
+        $height = 0;
+        $width = 0;
 
-      // Only calculate this if there is an image.
-      if (!empty($image)) {
-        $height = $image->getHeight();
-        $width = $image->getWidth();
+        // Only calculate this if there is an image.
+        if (!empty($image)) {
+          $height = $image->getHeight();
+          $width = $image->getWidth();
+        }
+      }
+      
+      // special case 
+      if($width == 0) {
+        $width = 1;
       }
 
       $ims[$key] = [
-        "image_name" => $wisski_individual->label(),
+        "image_name" => $label,
         "image_height" => $height,
         "image_width" => $width,
         "image_ppmm" => 314.96,
-        "image_caption" => $wisski_individual->label(),
+        "image_caption" => $label,
         "image_path" => $filepath,
       ];
     }
-
+#    dpm(serialize(microtime()), "mic3?");
     // Calculation of canvases based on the ims.
     $canvases = [];
     foreach ($ims as $k => $d) {
@@ -304,7 +373,7 @@ class WisskiIIIFController {
 
     $response->setEncodingOptions(JSON_UNESCAPED_SLASHES);
     $response->setData($data);
-
+#    dpm(serialize(microtime()), "mic9?");
     return $response;
   }
 

@@ -35,6 +35,8 @@ class WisskiMirador extends StylePluginBase {
     $options['field_for_annotation_json'] = array('default' => "");
     $options['field_for_annotation_entity'] = array('default' => "");
     $options['field_for_annotation_reference'] = array('default' => "");
+    $options['field_for_image_ids'] = array('default' => "");
+    $options['field_for_label'] = array('default' => "");
     $options['window_settings'] = array('default' => '{
             "allowClose": false,
             "allowFullscreen": true,
@@ -122,6 +124,30 @@ class WisskiMirador extends StylePluginBase {
       '#size' => '50',
       '#default_value' => $this->options['field_for_annotation_reference'],
     ];
+    
+    $form['field_for_image_ids'] = [
+      '#title' => $this->t('Field for image ids'),
+      '#description' => $this->t('This field (machine name) stores the referred image ids. Only fill this if you know what you\'re doing. WissKI will not load the full entity if you use this.'),
+      '#type' => 'textfield',
+      '#size' => '50',
+      '#default_value' => $this->options['field_for_image_ids'],
+    ];
+    
+    $form['field_for_label'] = [
+      '#title' => $this->t('Field for label'),
+      '#description' => $this->t('This field (machine name) stores the label. Only fill this if you know what you\'re doing. WissKI will not load the full entity if you use this.'),
+      '#type' => 'textfield',
+      '#size' => '50',
+      '#default_value' => $this->options['field_for_label'],
+    ];
+    
+    $form['field_for_uri'] = [
+      '#title' => $this->t('Field for uri'),
+      '#description' => $this->t('This field (machine name) stores the uri. Only fill this if you know what you\'re doing. WissKI will not load the full entity if you use this.'),
+      '#type' => 'textfield',
+      '#size' => '50',
+      '#default_value' => $this->options['field_for_uri'],
+    ];
 
     $form['window_settings'] = [
       '#title' => $this->t('window'),
@@ -162,6 +188,8 @@ class WisskiMirador extends StylePluginBase {
    * Renders the View.
    */
   public function render() {
+
+    $cache = \Drupal::cache('wisski_iiif_params');
 
     $view = $this->view;
 
@@ -207,7 +235,6 @@ class WisskiMirador extends StylePluginBase {
 #      dpm(serialize($this->view));
 #      dpm($result->__get('entity:wisski_individual/eid'), "res?");
 
-
       if(isset($result->eid))
         $entity_id = $result->eid;
       else
@@ -220,6 +247,43 @@ class WisskiMirador extends StylePluginBase {
             $entity_id = current($result->__get('entity:wisski_individual/eid'));
           }
         }
+      }
+
+      // if we have fields for label, imageids and uri we might be able to load from cache.      
+      if(!empty($this->options['field_for_label']) && !empty($this->options['field_for_image_ids']) && !empty($this->options['field_for_uri'])) {
+
+        $cache = \Drupal::cache('wisski_iiif_params');
+
+        
+        $flabel = "";
+        if(!empty($result->__get('entity:wisski_individual/' . $this->options['field_for_label'])))
+          $flabel = current($result->__get('entity:wisski_individual/' . $this->options['field_for_label']));
+              
+        $fimageids = "";
+        if(!empty($result->__get('entity:wisski_individual/' .$this->options['field_for_image_ids'])))
+          $fimageids = $result->__get('entity:wisski_individual/' .$this->options['field_for_image_ids']);
+
+        $furi = "";
+        if(!empty($result->__get('entity:wisski_individual/' . $this->options['field_for_uri'])))        
+          $furi = current($result->__get('entity:wisski_individual/' . $this->options['field_for_uri']));
+
+        // stringify.
+        foreach($fimageids as $key => $fimageid) {
+          $fimageids[$key] = $fimageid->__toString();
+        }
+
+        $data = array(
+          "eid" => $entity_id,
+          "flabel" => $flabel->__toString(),
+          "fimageids" => $fimageids,
+          "furi" => $furi);
+
+#        dpm($data, $entity_id);
+
+
+        // we write this here so it can be acquired by the iiif manifest in the iip module
+        $cache->set($entity_id, $data);
+
       }
 
 #      $entity_id = empty($result->eid) ? if(!empty(current($result->__get('entity:wisski_individual/eid'))) { current($result->__get('entity:wisski_individual/eid')) } : $result->eid;
@@ -262,6 +326,12 @@ class WisskiMirador extends StylePluginBase {
 #            "x" => 1000,
 #            "y" => 2000,
 #        )), "slotAddress" => "row1.column" . ++$iter, "viewType" => "ImageView", "bottomPanel" => false, "sidePanel" => false, "annotationLayer" => false);
+    
+#      $imfos = array();
+#      $infos["id"] = $entity_id;
+#    $infos["label"]
+#      $cache->set($entity_id, $infos);
+
     }
 
     if(isset($view->attachment_before)) {
@@ -334,6 +404,7 @@ class WisskiMirador extends StylePluginBase {
     $form['#allowed_tags'] = array('div', 'select', 'option','a', 'script');
 #    #$form['#attached']['drupalSettings']['wisski_jit'] = $wisski_individual;
     $form['#attached']['library'][] = "wisski_mirador/mirador";
+
 
 #    $session = \Drupal::request()->getSession();
 #    $session->set('mirador-options', $this->options);

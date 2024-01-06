@@ -31,6 +31,8 @@ use Drupal\wisski_adapter_zotero\Plugin\wisski_salz\Engine\ZoteroEngine;
 class WisskiIndividualQuery extends QueryPluginBase
 {
 
+    protected $where;
+
     /**
      * The EntityQuery object used for the query.
      *
