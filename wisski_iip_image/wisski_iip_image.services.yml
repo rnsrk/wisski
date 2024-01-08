@@ -4,4 +4,4 @@ services:
     tags:
       - { name: cache.bin }
     factory: cache_factory:get
-    arguments: ['wisski_iiif_params']
+    arguments: [wisski_iiif_params]
