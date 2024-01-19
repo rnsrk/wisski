@@ -1652,7 +1652,7 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
           $subkey = "group_id";
         }
 
-        $pathChild->addChild($subkey, htmlspecialchars($value));
+        $pathChild->addChild($subkey, htmlspecialchars($value ?? ""));
       }
 
       $pathArray = $pathChild->addChild('path_array');
@@ -1660,18 +1660,18 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
         $pathArray->addChild($subkey % 2 == 0 ? 'x' : 'y', $value);
       }
 
-      $pathChild->addChild('datatype_property', htmlspecialchars($pathObject->getDatatypeProperty()));
-      $pathChild->addChild('short_name', htmlspecialchars($pathObject->getShortName()));
-      $pathChild->addChild('disamb', htmlspecialchars($pathObject->getDisamb()));
-      $pathChild->addChild('description', htmlspecialchars($pathObject->getDescription()));
-      $pathChild->addChild('uuid', htmlspecialchars($pathObject->uuid()));
+      $pathChild->addChild('datatype_property', htmlspecialchars($pathObject->getDatatypeProperty() ?? ""));
+      $pathChild->addChild('short_name', htmlspecialchars($pathObject->getShortName() ?? ""));
+      $pathChild->addChild('disamb', htmlspecialchars($pathObject->getDisamb() ?? ""));
+      $pathChild->addChild('description', htmlspecialchars($pathObject->getDescription() ?? ""));
+      $pathChild->addChild('uuid', htmlspecialchars($pathObject->uuid() ?? ""));
       if ($pathObject->getType() == "Group" || $pathObject->getType() == "Smartgroup") {
         $pathChild->addChild('is_group', "1");
       }
       else {
         $pathChild->addChild('is_group', "0");
       }
-      $pathChild->addChild('name', htmlspecialchars($pathObject->getName()));
+      $pathChild->addChild('name', htmlspecialchars($pathObject->getName() ?? ""));
 
     }
 
@@ -1681,4 +1681,3 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
   }
 
 }
-
