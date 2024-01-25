@@ -737,7 +737,7 @@ class PathbuilderManager {
           $sparqlEntityArray[] = $sparqlEntity;
         }
         // Convert SPARQL entities to statement string and add to array.
-        $quadStatement[] = implode(" ", array_map('self::sparqlEntityStringlifier', $sparqlEntityArray));
+        $quadStatement[] = implode(" ", array_map([$this, 'sparqlEntityStringlifier'], $sparqlEntityArray));
       }
       if (empty($quadStatement)) {
         \Drupal::service('messenger')
