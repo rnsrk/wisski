@@ -451,7 +451,7 @@ class WisskiPathbuilderForm extends EntityForm {
     $form['import']['import_mode'] = [
       '#type' => 'select',
       '#title' => $this->t('Set default mode to'),
-      '#description' => $this->t('<div>What should the fields and groups mode be set to?<br><ul><li><strong>Keep settings</strong>: Paths and their field types, cardinality, activation status, and ids etc. are imported as in the import file.</li><li><strong>Create</strong>: Paths are import and enabled, but field types, and path and field id generation are set to default behavior.</li><li><strong>Do not create</strong>: Paths are import, but not enabled and their field types, and the path and field id generation are set to default.</li></ul></div>'),
+      '#description' => $this->t('<div>What should the fields and groups mode be set to?<br><ul><li><strong>Keep settings</strong>: Paths and their field types, cardinality, activation status, and ids etc. are imported as in the import file.</li><li><strong>Create</strong>: Paths are imported and enabled, but field types, and path and field id generation are set to default behavior.</li><li><strong>Do not create</strong>: Paths are imported, but not enabled and their field types, and the path and field id generation are set to default.</li></ul></div>'),
       '#options' => $field_options,
       '#default_value' => 'keep',
     ];
