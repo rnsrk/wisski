@@ -351,6 +351,7 @@ class AdapterHelper {
           "eid" => $one->eid,
           "uri" => $one->uri,
           "adapter" => $one->adapter_id
+        );
 
       }
     }
@@ -416,8 +417,6 @@ class AdapterHelper {
         }
 
       }
-
-
 
       return $the_id;
     }
