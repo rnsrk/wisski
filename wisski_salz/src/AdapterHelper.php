@@ -337,10 +337,22 @@ class AdapterHelper {
     
     //if we have multiple results, we don't know exactly what to do, for now we return the first
     $ids = array();
+    
+    // get the full table struc as we might need it for clearing.
+    $table_structure = array();
+
     // iterate them...
     foreach($fetched as $one) {
-      if(!empty($one->eid))
+      if(!empty($one->eid)) {
         $ids[] = $one->eid;
+        
+        $table_structure[] = array(
+          "rid" => $one->rid,
+          "eid" => $one->eid,
+          "uri" => $one->uri,
+          "adapter" => $one->adapter_id
+
+      }
     }
     
     //@TODO try something more sophisticated
@@ -376,7 +388,35 @@ class AdapterHelper {
         ->condition('eid', $not_the_id)
         ->condition('uri', $uri)
         ->execute();
+        
+        // delete it from the struc because it has been deleted.
+        unset($table_structure[$id_key]);
       }
+
+      // iterate the structure again
+      // to find things that have eid, adapter and uri same...
+      $the_struc = current($table_structure);
+
+      foreach($table_structure as $table_id => $struc) {
+        // if the rid is the same, continue.
+        if($the_struc["rid"] == $struc["rid"]) {
+          continue;
+        }
+
+        // only act if it really is a duplicate!
+        if($the_struc['eid'] == $struc['eid'] &&
+           $the_struc['adapter'] == $struc['adapter'] &&
+           $the_struc['uri'] == $struc['uri']) {
+
+          #dpm("I have two sames!" . serialize($table_structure));
+          #dpm("I throw away " . serialize($struc));
+          $query = \Drupal::database()->delete('wisski_salz_id2uri')
+            ->condition('rid', $struc['rid'])
+            ->execute();
+        }
+
+      }
+
 
 
       return $the_id;
