@@ -2,13 +2,13 @@
 
 namespace Drupal\wisski_core\Controller;
 
-use Drupal\Core\Menu\MenuTreeParameters;
-use Drupal\wisski_core\WisskiHelper;
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityHandlerInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Menu\MenuTreeParameters;
 use Drupal\Core\Url;
 use Drupal\wisski_core\Entity\WisskiBundle;
+use Drupal\wisski_core\WisskiHelper;
 
 /**
  * Builds a list of available WissKI bundles.
@@ -31,8 +31,9 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
    */
   public function buildHeader() {
 
-    // $header['id'] = t('ID');
     $header['label'] = $this->t('Name');
+    $header['id'] = $this->t('ID');
+
     if ($this->type === self::CONFIG) {
       $header['parent'] = $this->t('Parent');
       $header += parent::buildHeader();
@@ -243,7 +244,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
       'data' => $entity->label(),
       'class' => ['menu-label'],
     ];
-
+    $row['id'] = $id;
     // This is deprecated
     // if (list($key,$value) = each($parents)) {.
     if (!empty($parents)) {
