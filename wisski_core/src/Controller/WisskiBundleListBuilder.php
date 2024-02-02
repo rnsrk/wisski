@@ -32,7 +32,6 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
   public function buildHeader() {
 
     $header['label'] = $this->t('Name');
-    $header['id'] = $this->t('ID');
 
     if ($this->type === self::CONFIG) {
       $header['parent'] = $this->t('Parent');
@@ -243,8 +242,8 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     // 'data' => $this->getLabel($entity),
       'data' => $entity->label(),
       'class' => ['menu-label'],
+      'title' => $id,
     ];
-    $row['id'] = $id;
     // This is deprecated
     // if (list($key,$value) = each($parents)) {.
     if (!empty($parents)) {
@@ -323,6 +322,7 @@ class WisskiBundleListBuilder extends ConfigEntityListBuilder implements EntityH
     $build['#empty'] = t('No WissKI bundle available. <a href="@link">Add media bundle</a>.', [
       '@link' => Url::fromRoute('entity.wisski_bundle.add')->toString(),
     ]);
+    $build['#attached']['library'][] = 'wisski_core/wisski_core';
     return $build;
   }
 

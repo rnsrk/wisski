@@ -6,6 +6,14 @@ wisski_autocomplete:
       - core/drupalSettings
       - core/Drupal
 
+wisski_core:
+  js:
+    js/cp_bundle_id.js: {}
+  dependencies:
+      - core/jquery
+      - core/drupalSettings
+      - core/Drupal
+
 wisski-toolbar:
   version: VERSION
   css:
