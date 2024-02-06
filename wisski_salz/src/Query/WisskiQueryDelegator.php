@@ -26,6 +26,10 @@ class WisskiQueryDelegator extends WisskiQueryBase {
   //
 
   public function __construct(EntityTypeInterface $entity_type,$conjunction,array $namespaces) {
+    // bulletproofness - in theory this should not happen!!!
+    if(empty($conjunction))
+      $conjunction = "AND";
+
     parent::__construct($entity_type,$conjunction,$namespaces);
 
     $this->populateAdapterQueries($entity_type,$conjunction,$namespaces);
