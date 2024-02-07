@@ -845,8 +845,10 @@ class Query extends WisskiQueryBase {
     // dpm($select, "select is?");.
     // dpm($sort_params, "sort?");.
     if ($sort_params) {
-      // BY Mark: We add GROUP BY HERE due to multiple hits
-      $select .= " GROUP BY ?x0 ORDER BY " . $sort_params;
+      // BY Mark: We don't add GROUP BY HERE due to multiple hits
+      // if we do that sorting does not work anymore
+      // we would need sparql 1.2 for that.
+      $select .= " ORDER BY " . $sort_params;
     }
 
     if ($limit) {
