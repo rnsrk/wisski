@@ -84,13 +84,13 @@ class EntityLinkDialog extends FormBase {
    *   A search string.
    */
   public function buildForm(array $form, FormStateInterface $form_state, FilterFormat $filter_format = NULL, $search = '') {
-
+    
     // TODO: can we get rid of request()? It is discouraged...
     $request = \Drupal::request();
     $queryParam = $request->query->get('q');
 
     if($queryParam !== null){
-    $string = mb_strtolower($queryParam);
+      $string = mb_strtolower($queryParam);
     }
 
     // The default values are set directly from \Drupal::request()->request,
