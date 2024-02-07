@@ -845,7 +845,8 @@ class Query extends WisskiQueryBase {
     // dpm($select, "select is?");.
     // dpm($sort_params, "sort?");.
     if ($sort_params) {
-      $select .= " ORDER BY " . $sort_params;
+      // BY Mark: We add GROUP BY HERE due to multiple hits
+      $select .= " GROUP BY ?x0 ORDER BY " . $sort_params;
     }
 
     if ($limit) {
