@@ -192,6 +192,10 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         'ObjectOwnershipContactNamesAtEditDate' => NULL,
         'XML_EventsOfTypeProvenienz' => NULL,
         'XML_EventsOfTypeRestoration' => NULL,
+        'SubParts' => NULL,
+        'SubPartsCount' => NULL,
+        'CopyrightStatement' => NULL,
+        
       ),
   );
 
