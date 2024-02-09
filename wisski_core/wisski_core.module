@@ -78,7 +78,7 @@ function wisski_core_excel_export($ob) {
   foreach($pb_paths as $key => $paths) {
     foreach($paths as $path) {
       $pathname = $path->getName();
-      fwrite($fh, iconv('UTF-8', 'cp1250', $pathname) . "\t");
+      fwrite($fh, iconv('UTF-8', 'cp1250//TRANSLIT', $pathname) . "\t");
     }
   }
 
@@ -153,7 +153,7 @@ function wisski_core_excel_export($ob) {
         foreach($values as $value) {
           $var = strip_tags($value);
           $var = str_replace('"', '""', $var);
-          fwrite($fh, iconv('UTF-8', 'cp1250', $var));
+          fwrite($fh, iconv('UTF-8', 'cp1250//TRANSLIT', $var));
 
           $i++;
           if($i < count($values))
