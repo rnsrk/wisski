@@ -408,7 +408,7 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
           
           foreach ($paths as $key => $path) {
             $values = $this->pathToReturnValue($path, $pbs[$key], $eid, 0, $main_property);
-            if ($debug) {
+            if ($this->debug) {
               $this->messenger()->addMessage("values: " . serialize($values) . " / " . microtime());
             }
             if (!empty($values)) {
@@ -465,7 +465,7 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     // now data_walk contains only the values
     $out = array();
 #    dpm($data_walk, "walk");
-    if ($debug) {
+    if ($this->debug) {
       $this->messenger()->addMessage("data_walk: " . serialize($data_walk) . " / " . microtime());
     }
 #    return $out;
