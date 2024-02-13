@@ -109,12 +109,19 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       return $data->data;
     }
 
+    // get all language codes used in this instance
+    $available_languages = \Drupal::languageManager()->getLanguages();
+    $available_languages = array_keys($available_languages);
+    $langcode = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
+
     $replaces = array(
       '{id}' => $id,
     );
     $fetchUrl = strtr($this->fetchTemplate, $replaces);
     if ($this->debug) {
       $this->messenger()->addMessage("Hole Daten von fetchUrl: '" . $fetchUrl . "' / " . microtime());
+      $this->messenger()->addMessage("available_languages: " . serialize($available_languages) . " / " . microtime());
+      $this->messenger()->addMessage("current_language (langcode): " . serialize($langcode) . " / " . microtime());
     }
 
     $opts = [
@@ -223,11 +230,14 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
                 //$this->messenger()->addMessage("dtProp: " . serialize($dtProp) . " / " . microtime());
               }
               if ($thing instanceof EasyRdf_Literal) {
-                $data[$concept][$propChain][] = $thing->getValue();
+                $lang = $thing->getLang();
+                if (in_array($lang, $available_languages)){ // fetch data in all languages used in this instance
+                  $data[$concept][$propChain][$langcode][] = $thing->getValue(). " (" . $lang . ")";
+                }
               }
             }
             if ($this->debug) {
-                  $this->messenger()->addMessage("data is: " . serialize($data) . " / " . microtime());
+              $this->messenger()->addMessage("data: " . serialize($data) . " / " . microtime());
             }
           }
         }      
@@ -302,6 +312,7 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       foreach($field_ids as $fkey => $fieldid) {  
         
         $got = $this->loadPropertyValuesForField($fieldid, array(), $entity_ids, $bundleid_in, $language);
+        $this->messenger()->addMessage("got: " . serialize($got) . " / " . microtime());
 
         if (empty($out)) {
           $out = $got;
@@ -397,9 +408,14 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
           
           foreach ($paths as $key => $path) {
             $values = $this->pathToReturnValue($path, $pbs[$key], $eid, 0, $main_property);
+            if ($debug) {
+              $this->messenger()->addMessage("values: " . serialize($values) . " / " . microtime());
+            }
             if (!empty($values)) {
-              foreach ($values as $v) {
-                $out[$eid][$field_id][] = $v;
+              foreach ($values as $lang => $val) {
+                foreach ($val as $v) {
+                  $out[$eid][$field_id][$lang][] = $v;
+                }
               }
             }
           }
@@ -449,12 +465,17 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     // now data_walk contains only the values
     $out = array();
 #    dpm($data_walk, "walk");
+    if ($debug) {
+      $this->messenger()->addMessage("data_walk: " . serialize($data_walk) . " / " . microtime());
+    }
 #    return $out;
-    foreach ($data_walk as $value) {
-      if (empty($main_property)) {
-        $out[] = $value;
-      } else {
-        $out[] = array($main_property => $value);
+    foreach ($data_walk as $lang => $arr) {
+      foreach ($arr as $value) {
+        if (empty($main_property)) {
+          $out[$lang][] = $value;
+        } else {
+          $out[$lang][] = array($main_property => $value);
+        }
       }
     }
     return $out;
