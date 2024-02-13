@@ -231,8 +231,13 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
               }
               if ($thing instanceof EasyRdf_Literal) {
                 $lang = $thing->getLang();
-                if (in_array($lang, $available_languages)){ // fetch data in all languages used in this instance
+                // fetch data in all languages used in this instance
+                if (in_array($lang, $available_languages)) {
                   $data[$concept][$propChain][$langcode][] = $thing->getValue(). " (" . $lang . ")";
+                }
+                // special case "gvp:parentString" comes without language tag!
+                elseif (is_null($lang)) {
+                  $data[$concept][$propChain][$langcode][] = $thing->getValue();
                 }
               }
             }
