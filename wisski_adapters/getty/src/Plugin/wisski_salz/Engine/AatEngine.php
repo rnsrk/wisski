@@ -77,12 +77,9 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
   public function fetchData($uri = NULL, $id = NULL) {
 #    dpm("yay?");
     if ($this->debug) {
-      $this->messenger()->addMessage($this->t("fetchData; uri: [$uri], id: [$id]"));
-      $backtrace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 4 );
-      $this->messenger()->addMessage($this->t("Aufruf1 aus: " . serialize($backtrace[1]['function']) . " / " . microtime()));
-      $this->messenger()->addMessage($this->t("Aufruf2 aus: " . serialize($backtrace[2]['function']) . " / " . microtime()));
-      $this->messenger()->addMessage($this->t("Aufruf3 aus: " . serialize($backtrace[3]['function']) . " / " . microtime()));
-      $this->messenger()->addMessage($this->t("backtrace: " . serialize($backtrace) . " / " . microtime()));
+      $this->messenger()->addMessage("[AAT] fetchData; uri: [$uri], id: [$id]");
+      $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 6);
+      $this->messenger()->addMessage("backtrace: " . serialize($backtrace) . " / " . microtime());
     }
     
     if (!$id) {
@@ -96,7 +93,7 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       }
     }
     if ($this->debug) {
-      $this->messenger()->addMessage($this->t("nach if, id: [$id]"));
+      $this->messenger()->addMessage("nach if: id ist $id");
     }
     //\Drupal::logger('AatEngine')->notice('fetchData: %uri', [
     //    '%uri' => $uri,
@@ -117,7 +114,7 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     );
     $fetchUrl = strtr($this->fetchTemplate, $replaces);
     if ($this->debug) {
-      $this->messenger()->addMessage($this->t("fetchUrl: '" . $fetchUrl . "' / " . microtime()));
+      $this->messenger()->addMessage("Hole Daten von fetchUrl: '" . $fetchUrl . "' / " . microtime());
     }
 
     $opts = [
@@ -151,7 +148,7 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     $graph = new EasyRdf_Graph($fetchUrl, $data, 'turtle');
     if ($this->debug) {
 #      dpm($graph, "graph?");
-      $this->messenger()->addMessage($this->t("graph->countTriples: " . $graph->countTriples() . " / " . microtime()));
+      $this->messenger()->addMessage("Anzahl geholter Triples: " . $graph->countTriples() . " / " . microtime());
     }
     if ($graph->countTriples() == 0) {
       return FALSE;
@@ -169,15 +166,11 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
       if ($this->debug) {
 #        dpm($concept, "con?");
 #        dpm($rdfPropertyChains, "rdf?");
-        $this->messenger()->addMessage($this->t("concept: " . serialize($concept) . " / " . microtime()));
-        $this->messenger()->addMessage($this->t("rdfPropertyChains: " . serialize($rdfPropertyChains) . " / " . microtime()));
+        $this->messenger()->addMessage("concept: " . serialize($concept) . " / " . microtime());
+        $this->messenger()->addMessage("rdfPropertyChains: " . serialize($rdfPropertyChains) . " / " . microtime());
       }
       foreach ($rdfPropertyChains as $propChain => $tmp) {
         $pChain = explode(' ', $propChain);
-        if ($this->debug) {
-          $this->messenger()->addMessage($this->t("propChain: " . serialize($propChain) . " / " . microtime()));
-          $this->messenger()->addMessage($this->t("pChain: " . serialize($pChain) . " / " . microtime()));
-        }
         $dtProp = NULL;
         if ($tmp === NULL) {
           // last property is a datatype property
@@ -186,18 +179,15 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
        
         if ($this->debug) {
 #          dpm($dtProp, "yay!");
-          $this->messenger()->addMessage($this->t("dtProp: " . serialize($dtProp) . " / " . microtime()));
+          $this->messenger()->addMessage("datatype property (dtProp): " . serialize($dtProp) . " / " . microtime());
         }
         $resources = array($uri => $uri);
-        if ($this->debug) {
-          $this->messenger()->addMessage($this->t("resources: " . serialize($resources) . " / " . microtime()));
-        }
 
         foreach ($pChain as $prop) {
           $newResources = array();
           foreach ($resources as $resource) {
             if ($this->debug) {
-              $this->messenger()->addMessage($this->t("resource: '" . $resource . "', prop: '" . $prop . " / " . microtime()));
+              $this->messenger()->addMessage("resource: '" . $resource . "', prop: '" . $prop . " / " . microtime());
 #              dpm($graph->properties($resource), "props");
 #              dpm($graph->allResources($resource, $prop), "Getting Resource $resource for prop $prop");
             }
@@ -210,35 +200,34 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
           if ($this->debug) {
 #            dpm($resources, "old");
 #            dpm($newResources, "new");
-            $this->messenger()->addMessage($this->t("resources: " . serialize($resources) . " / " . microtime()));
-            $this->messenger()->addMessage($this->t("newResources: " . serialize($newResources) . " / " . microtime()));
+            $this->messenger()->addMessage("resources: " . serialize($resources) . " / " . microtime());
+            $this->messenger()->addMessage("newResources: " . serialize($newResources) . " / " . microtime());
           }
           $resources = $newResources;
         }
         if ($dtProp) {
           if ($this->debug) {
 #            dpm($resources, "my res?");
-            $this->messenger()->addMessage($this->t("if; resources: " . serialize($resources) . " / " . microtime()));
+            $this->messenger()->addMessage("resources: " . serialize($resources) . " / " . microtime());
           }
           foreach ($resources as $resource) {
             if ($this->debug) {
 #              dpm($graph, "dtprop!");
-              $this->messenger()->addMessage($this->t("if/foreach; resource: " . serialize($resource) . " / " . microtime()));
+              //$this->messenger()->addMessage("if dtProp: graph ist: " . serialize($graph) . " / " . microtime());
             }
             
             foreach ($graph->all($resource, $dtProp) as $thing) {
               if ($this->debug) {
 #                dpm($thing->getDatatype(), "thing");
 #                dpm($dtProp, "dtprop!");
-                $this->messenger()->addMessage($this->t("thing: " . serialize($thing) . " / " . microtime()));
-                $this->messenger()->addMessage($this->t("dtProp: " . serialize($dtProp) . " / " . microtime()));
+                //$this->messenger()->addMessage("dtProp: " . serialize($dtProp) . " / " . microtime());
               }
               if ($thing instanceof EasyRdf_Literal) {
-                if ($this->debug) {
-                  $this->messenger()->addMessage($this->t("Erfolg! value: " . serialize($thing->getValue()) . " / " . microtime()));
-                }
                 $data[$concept][$propChain][] = $thing->getValue();
               }
+            }
+            if ($this->debug) {
+                  $this->messenger()->addMessage("data is: " . serialize($data) . " / " . microtime());
             }
           }
         }      
