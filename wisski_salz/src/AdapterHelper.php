@@ -42,7 +42,7 @@ class AdapterHelper {
     // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
     $query = \Drupal::database()->delete('wisski_salz_id2uri')
       ->condition('eid', $entity_id)
-      ->condition('uri', $uris)
+      ->condition('uri', $uris, 'IN')
       ->execute();
 
     return $query;  // # deleted rows
