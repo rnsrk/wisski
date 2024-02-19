@@ -69,7 +69,7 @@ class WisskiODBCImportForm extends FormBase {
         // an empty array disables the extension restrictions:
         // this is theoretically somewhat insecure but we get away with it ftm...
         '#upload_validators' => array(
-          'file_validate_extensions' => array(),  // => array('xml')
+          'file_validate_extensions' => array('xml'),
         ),
       ),
       'paste' => array(
