@@ -566,6 +566,41 @@ class WisskiPathbuilderForm extends EntityForm {
     $this->file->writeData($xml, $export_path, FileSystemInterface::EXISTS_RENAME);
   }
 
+
+  /**
+   * Recursive function that gets an array of the parents of a given
+   * group id.
+   *
+   * @param array $import
+   *   All paths of the pathbuilder as a key => value array
+   * @param string $to_look_for
+   *   The id to look for as a starting point.
+   *
+   */
+  private function getParents(array $import, string $to_look_for) {
+    // initialize array
+    $ret = array();
+    
+    // get the parent of the id to look for
+    $parent = ((string)$import[$to_look_for]->group_id);
+    
+    // if it has no parent we don't return something here, so it
+    // should be empty array.
+    // if we have something here we recursively fetch the key => value array
+    // for the parent.
+    if($parent != "0") {
+      // only do this if there really is such a parent
+      if(isset($import[$parent]))
+        $ret = $this->getParents($import, $parent);    
+      
+      // add it to the array
+      $ret[$parent] = $import[$to_look_for];
+      
+    }
+    return $ret;
+  }
+  
+
   /**
    *
    */
@@ -578,10 +613,54 @@ class WisskiPathbuilderForm extends EntityForm {
     // dpm($importfile, "importfile!!");.
     $xmldoc = new \SimpleXMLElement($importfile, 0, TRUE);
 
-    // dpm($xmldoc, "doc!");.
+#    dpm($xmldoc, "doc!");
     $pb = $this->entity;
 
-    foreach ($xmldoc->path as $path) {
+    $groups = array();
+    $paths = array();
+
+    $all = array();
+    // first generate a mapping of all paths/groups to their ids for faster access
+    foreach ($xmldoc->path as $pot_group) {
+      $all[((string)$pot_group->id)] = $pot_group;
+    }
+    
+    // iterate all paths
+    foreach ($xmldoc->path as $pot_group) {
+      // find the groups
+      if(((int)$pot_group->is_group) === 1) {
+        // if the group has a parent - we have to make sure
+        // the parent is above the group itself.
+        // so we preload it.
+        if(((string)$pot_group->group_id) != "0") {
+          // get an array of all parent group ids
+          $ret = $this->getParents($all, ((string)$pot_group->group_id));
+        
+          // and add them to the groups array
+          foreach($ret as $key => $one_ret) {
+            if(!isset($groups[$key])) {
+              $groups[$key] = $one_ret;
+            }
+          }
+        }
+        
+        // if the group is not there already, add it.
+        if(!isset($groups[((string)$pot_group->id)]))
+          $groups[((string)$pot_group->id)] = $pot_group;
+      }
+      else {
+        // if it is a path, add it to the paths array.
+        $paths[] = $pot_group;
+      }
+    }
+    
+    // add the paths back at the end of the array
+    // this makes sure that the groups are interpreted first    
+    foreach($paths as $path) {
+      $groups[] = $path;
+    }
+
+    foreach ($groups as $path) {
       $parentid = html_entity_decode((string) $path->group_id);
 
       // if($parentid != 0)
