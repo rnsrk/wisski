@@ -3635,6 +3635,20 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
         }
         else {
           $mainprop = "value";
+
+          // Check if the field is an entity reference in the field definitions.
+          // In this case mainprop is the target_id.
+          /**  @var \Drupal\field\Entity\FieldConfig[] */
+          $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions('wisski_individual', $bundle_id);
+          // Sanity check that the field really exists in the definitions.
+          if (in_array($old_key, array_keys($field_definitions))) {
+            $field_definition = $field_definitions[$old_key];
+            $fieldType = $field_definition->getType();
+
+            if ($fieldType == "entity_reference") {
+              $mainprop = "target_id";
+            }
+          }
         }
 
         foreach ($old_value as $key => $val) {
