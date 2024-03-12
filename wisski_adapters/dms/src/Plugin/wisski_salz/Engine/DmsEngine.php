@@ -682,6 +682,10 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         // tempo hack
         $out[$eid][$field_id][$language] = array("Hallo welt!");
         continue;
+      } elseif($field_id == "field_download_link") {
+        // tempo hack
+        $out[$eid][$field_id][$language] = array("Hallo welt!");
+        continue;
       } elseif ($field_id == "bundle") {
       
       // Bundle is a special case.
