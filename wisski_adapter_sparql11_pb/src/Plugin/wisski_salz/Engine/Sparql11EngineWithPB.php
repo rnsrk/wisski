@@ -3217,7 +3217,7 @@ class Sparql11EngineWithPB extends Sparql11Engine implements PathbuilderEngineIn
       $settings = $config->get($fieldid);
 
       // if this setting is not set, don't do it!
-      if(!empty($settings) && isset($settings['useTitlePattern']))
+      if(!empty($settings) && isset($settings['useTitlePattern']) & !empty($settings['useTitlePattern']))
         $autocomplete_title_pattern_enabled = TRUE;
     }
 
