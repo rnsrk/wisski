@@ -384,7 +384,17 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
 
         // first we have to adjust the cardinality in case it was changed.
         $pbpaths = $this->getPbPaths();
-        $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+//        $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+        $card = NULL;
+        // By Mark:
+        // it may happen that a cardinality is "" - prevent this here.
+        if(isset($pbpaths[$pathid]['cardinality']) && !empty($pbpaths[$pathid]['cardinality'])) {
+          $card = $pbpaths[$pathid]['cardinality'];
+        } else {
+          // correct pbpaths here...
+          $pbpaths[$pathid]['cardinality'] = FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+          $card = FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+        }
 
  #       drupal_set_message("subgroup1: " . $pathid . " has weight " . serialize($pbpaths[$pathid]['weight']));
 
@@ -431,7 +441,18 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     $type = $this->getCreateMode(); //'field_collection'
 
     $pbpaths = $this->getPbPaths();
-    $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+    $card = NULL;
+    // By Mark:
+    // it may happen that a cardinality is "" - prevent this here.
+    if(isset($pbpaths[$pathid]['cardinality']) && !empty($pbpaths[$pathid]['cardinality'])) {
+      $card = $pbpaths[$pathid]['cardinality'];
+    } else {
+      // correct pbpaths here...
+      $pbpaths[$pathid]['cardinality'] = FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+      $card = FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+    }
+
+//    $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
 
     if(!$no_fs) {
 
@@ -719,7 +740,18 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
     //   return;
     }
 
-    $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+    $card = NULL;
+    // By Mark:
+    // it may happen that a cardinality is "" - prevent this here.
+    if(isset($pbpaths[$pathid]['cardinality']) && !empty($pbpaths[$pathid]['cardinality'])) {
+      $card = $pbpaths[$pathid]['cardinality'];
+    } else {
+      // correct pbpaths here...
+      $pbpaths[$pathid]['cardinality'] = FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+      $card = FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+    }
+
+//    $card = isset($pbpaths[$pathid]['cardinality']) ? $pbpaths[$pathid]['cardinality'] : FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
     //dpm($field_storage->id(),'ID before');
     $field_storage->setCardinality($card);
 
@@ -1015,6 +1047,13 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
   public function addPathToPathTree($pathid, $parentid = 0, $is_group = FALSE) {
     $pathtree = $this->getPathTree();
     $pbpaths = $this->getPbPaths();
+/*    
+    if($parentid == "g__obj_g_masse") {
+      dpm($pbpaths, "pbp?");
+      dpm($pathtree, "tree");
+      
+    }
+*/    
 #    drupal_set_message("yay!" . $pathid . " and " . $parentid);
     #$pathtree[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'children' => array(), 'bundle' => 0, 'field' => 0);
     #$pathtree[$pathid] = array('id' => $pathid, 'weight' => 0, 'enabled' => 0, 'children' => array(), 'bundle' => 'e21_person', 'field' => $pathid);
@@ -1055,7 +1094,13 @@ class WisskiPathbuilderEntity extends ConfigEntityBase implements WisskiPathbuil
 
     $this->setPathTree($pathtree);
     $this->setPbPaths($pbpaths);
-
+/*
+    if($parentid == "g__obj_g_masse") {
+      dpm($pbpaths, "pbp?");
+      dpm($pathtree, "tree");
+      
+    }
+*/
     return true;
   }
 
