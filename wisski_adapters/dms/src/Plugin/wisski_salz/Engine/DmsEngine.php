@@ -195,7 +195,7 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
         'SubParts' => NULL,
         'SubPartsCount' => NULL,
         'CopyrightStatement' => NULL,
-        
+        'PublishingStatus' => NULL,
       ),
   );
 
@@ -429,7 +429,15 @@ class DmsEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     
 #    dpm($imagearray);
       $data['Object']['imagepath'] = $imagearray;
-    }    
+    
+      // correction in a special case due to publishing status
+      // being "nicht frei"
+      // throw away the images if they may not be published
+      if(isset($data['Object']['PublishingStatus']) && isset($data['Object']['PublishingStatus'][0]) && $data['Object']['PublishingStatus'][0] == 2) {
+        $data['Object']['imagepath'] = array();
+      }
+    }
+        
 
 #    dpm(htmlentities(serialize($data['Object'])), "step?");
     
