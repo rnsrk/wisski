@@ -391,7 +391,7 @@ class AdapterHelper {
         ->execute();
         
         // delete it from the struc because it has been deleted.
-        unset($table_structure[$id_key]);
+        unset($table_structure[$not_the_id]);
       }
 
       // iterate the structure again
