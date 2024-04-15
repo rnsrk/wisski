@@ -93,8 +93,10 @@ class Query extends WisskiQueryBase {
           // might be one deeper
           $condition = current($condition['field']->conditions());
 #          dpm($condition, "cond?");
-          $field = $condition['field'];
-          $value = $condition['value'];
+          if(is_array($condition) && isset($condition['field']) && isset($condition['value'])) {
+            $field = $condition['field'];
+            $value = $condition['value'];
+          }
         }
 
 #        dpm($field, "asked for field");
