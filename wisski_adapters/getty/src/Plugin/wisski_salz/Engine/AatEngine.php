@@ -112,6 +112,10 @@ class AatEngine extends NonWritableEngineBase implements PathbuilderEngineInterf
     // get all language codes used in this instance
     $available_languages = \Drupal::languageManager()->getLanguages();
     $available_languages = array_keys($available_languages);
+    // add default langcode "en" if not contained in available languages (fallback)
+    if (!in_array("en", $available_languages)) {
+      $available_languages[] = "en";
+    }
     $langcode = \Drupal::service('language_manager')->getCurrentLanguage()->getId();
 
     $replaces = array(
