@@ -217,7 +217,7 @@ class WisskiCacheHelper {
     self::flushPreviewImageUri($entity_id);
     // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
     // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
-    \Drupal::database()->insert('wisski_preview_images')->fields(array('eid'=>$entity_id,'image_uri'=>$preview_image_uri))->execute();
+    \Drupal::database()->upsert('wisski_preview_images')->fields(array('eid'=>$entity_id,'image_uri'=>$preview_image_uri))->key('eid')->execute();
   }
 
   static function getPreviewImageUri($entity_id) {
