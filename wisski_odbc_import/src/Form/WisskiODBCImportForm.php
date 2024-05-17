@@ -203,7 +203,9 @@ class WisskiODBCImportForm extends FormBase {
       $connection_xml = $import_script_xml->connection;
     }
 #    dpm($connection_xml, "con?");
-    if (isset($connection_xml['use_drupal_db']) && $connection_xml['use_drupal_db']) {
+    $use_db = (string)$connection_xml->use_drupal_db;
+
+    if ($use_db) {
       $params['is_drupal_db'] = TRUE;
     }
     else {
