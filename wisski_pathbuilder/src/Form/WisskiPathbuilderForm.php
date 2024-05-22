@@ -581,6 +581,13 @@ class WisskiPathbuilderForm extends EntityForm {
     // initialize array
     $ret = array();
     
+    if(!isset($import[$to_look_for])) {
+      //dpm($import, "Could not find $to_look_for");
+      $this->messenger()->addStatus("Path with id " . $to_look_for . " was not found as a parent - skipping all paths that have this.");
+      return $ret;
+    }
+
+    
     // get the parent of the id to look for
     $parent = ((string)$import[$to_look_for]->group_id);
     
