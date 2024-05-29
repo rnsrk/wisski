@@ -1146,17 +1146,27 @@ class Query extends WisskiQueryBase {
       }
     }
 
+        /** 
+     * Only add the baseField filter on writable engines 
+     * in the case if we want to use a engine as a read only 
+     * authority file at remote SPARQL repositories (i .e. konchylien). 
+     */ 
     if (!is_array($value)) {
-      $query_parts = "{ GRAPH <$basefieldinfo> { ?x0 <$basefieldurl> ?eid . <$basefieldurl> a owl:AnnotationProperty . FILTER( ?eid $operator $value ) . }} ";
+      if ($this->getEngine()->isWritable()) {
+        $query_parts = "{ GRAPH <$basefieldinfo> { ?x0 <$basefieldurl> ?eid . <$basefieldurl> a owl:AnnotationProperty . FILTER( ?eid $operator $value ) . }} ";
+      }
     }
     else {
-      // dpm($value, "val?");.
-      $query_parts = "{ GRAPH <$basefieldinfo> { ?x0 <$basefieldurl> ?eid . <$basefieldurl> a owl:AnnotationProperty . FILTER( ?eid $operator (";
+      if ($this->getEngine()->isWritable()) {
+        $query_parts = "{ GRAPH <$basefieldinfo> { ?x0 <$basefieldurl> ?eid . <$basefieldurl> a owl:AnnotationProperty . FILTER( ?eid $operator (";
+      } else {
+        $query_parts = "{{ ((";
+      }
       foreach ($value as $one_val) {
         $query_parts .= "$one_val, ";
       }
       $query_parts = substr($query_parts, 0, -2);
-      $query_parts .= ")) . }} ";
+      $query_parts .= ")) . }} "; 
     }
 
     return $query_parts;
