@@ -104,6 +104,14 @@ entity.wisski_bundle.add:
   requirements:
     _permission: 'administer wisski bundles'
 
+entity.wisski_bundle.delete_bundles:
+  path: '/admin/structure/wisski_core/delete_bundles'
+  defaults:
+    _form: \Drupal\wisski_core\Form\WisskiBundlesDeleteForm
+  requirements:
+    _permission: 'administer wisski bundles'
+
+
 #notice that the route name has to match the one given in the WisskiBundle annotation
 #i.e.
 #  links = {

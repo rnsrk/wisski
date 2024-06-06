@@ -10,6 +10,12 @@ entity.wisski_bundle.add:
   appears_on:
     - entity.wisski_bundle.list
 
+entity.wisski_bundle.delete_bundles:
+  route_name: entity.wisski_bundle.delete_bundles
+  title: 'Delete all Bundles'
+  appears_on:
+    - entity.wisski_bundle.list
+
 entity.wisski_bundle.title:
   route_name: entity.wisski_bundle.title_form
   title: 'Edit title pattern'
