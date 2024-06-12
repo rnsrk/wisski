@@ -11,12 +11,10 @@ use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\wisski_adapter_geonames\Query\Query;
-use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity; 
 use Drupal\wisski_pathbuilder\Entity\WisskiPathEntity; 
 use \Drupal\wisski_pathbuilder\PathbuilderEngineInterface;
 use Drupal\wisski_salz\NonWritableEngineBase;
 use Drupal\wisski_salz\AdapterHelper;
-use DOMDocument;
 use EasyRdf\Graph as EasyRdf_Graph;
 use EasyRdf\RdfNamespace as EasyRdf_Namespace;
 use EasyRdf\Literal as EasyRdf_Literal;
@@ -42,21 +40,18 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
   protected $rdfNamespaces = [
     'gn' => 'http://www.geonames.org/ontology#',
     'wgs84' => 'http://www.w3.org/2003/01/geo/wgs84_pos#',
+    'gsp' => '<http://www.opengis.net/ont/geosparql#>',
   ];
   
-
-
   protected $possibleSteps = [
     'gn:Feature' => [
       'gn:name' => NULL,
       'gn:alternateName' => NULL,
       'wgs84:lat' => NULL,
       'wgs84:long' => NULL,
-      // By Mark: this is a generated field - such the strange namespace ;D
-      'nosebear:WKT' => NULL,
+      'gsp:asWKT' => NULL,
     ],
   ];
-
 
   /**
    * {@inheritdoc} 
@@ -74,9 +69,7 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
     return FALSE;
   }
 
-
   public function fetchData($uri = NULL, $id = NULL) {
-#    drupal_set_message(serialize($uri) . " asas");    
     if (!$id) {
       if (!$uri) {
         return FALSE;
@@ -132,17 +125,13 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
           $resources = $newResources;
         }
         if ($dtProp) {
-          if($dtProp == 'nosebear:WKT') {
-#            dpm($propChain, "propchain!");
+          if($dtProp == 'gsp:asWKT') {
             continue;
-            //$data[$concept][$propChain][] = "Miauz, genau.";
           }
           foreach ($resources as $resource) {
             foreach ($graph->all($resource, $dtProp) as $thing) {
               if ($thing instanceof EasyRdf_Literal) {
                 $data[$concept][$propChain][] = $thing->getValue();
-//              } else {
-//                $data[$field][] = $thing->getUri();
               }
             }
           }
@@ -150,20 +139,13 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
       }
     }
     
-#    dpm($data, "yay, data!");
-#    dpm($concept, "con");
     if( !empty($data[$concept]['wgs84:lat']) && !empty($data[$concept]['wgs84:long']) ) {
-      $data[$concept]['nosebear:WKT'][] = 'POINT(' . $data[$concept]['wgs84:long'][0] . ' ' . $data[$concept]['wgs84:lat'][0] . ')'; 
+      $data[$concept]['gsp:asWKT'][] = 'POINT(' . $data[$concept]['wgs84:long'][0] . ' ' . $data[$concept]['wgs84:lat'][0] . ')'; 
     }
     
-#    dpm($data, "out");
-
     $cache->set($id, $data);
-#    dpm($data);
     return $data;
-
   }
-
 
   /**
    * {@inheritdoc}
@@ -172,14 +154,12 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
     return !empty($this->fetchData($uri));
   }
 
-
   /**
    * {@inheritdoc} 
    */
   public function createEntity($entity) {
     return;
   }
-  
 
   public function getBundleIdsForEntityId($id) {
     $uri = $this->getUriForDrupalId($id);
@@ -191,16 +171,12 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
       $groups = $pb->getMainGroups();
       foreach ($groups as $group) {
         $path = $group->getPathArray(); 
-#dpm(array($path,$group, $pb->getPbPath($group->getID())),'bundlep');
         if (isset($data[$path[0]])) {
           $bid = $pb->getPbPath($group->getID())['bundle'];
-#dpm(array($bundle_ids,$bid),'bundlesi');
           $bundle_ids[] = $bid;
         }
       }
     }
-    
-#dpm($bundle_ids,'bundles');
 
     return $bundle_ids;
 
@@ -239,13 +215,10 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
         }
 
       }
- 
     }
-
     return $out;
 
   }
-  
   
   /**
    * {@inheritdoc} 
@@ -256,16 +229,9 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
     if(!empty($main_property)) {
       $main_property = $main_property->getMainPropertyName();
     }
-    
-#     drupal_set_message("mp: " . serialize($main_property) . "for field " . serialize($field_id));
-#    if (in_array($main_property,$property_ids)) {
-#      return $this->loadFieldValues($entity_ids,array($field_id),$language);
-#    }
-#    return array();
 
     if(!empty($field_id) && empty($bundleid_in)) {
       $this->messenger()->addError("Es wurde $field_id angefragt und bundle ist aber leer.");
-#      dpm(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
       return;
     }
     
@@ -275,7 +241,6 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
     foreach($pbs as $key => $pb) {
       if (!$pb) continue;
       $field = $pb->getPbEntriesForFid($field_id);
-#dpm(array($key,$field),'öäü');
       if (is_array($field) && !empty($field['id'])) {
         $paths[] = WisskiPathEntity::load($field["id"]);
       }
@@ -316,7 +281,6 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
       } else {
         
         if (empty($paths)) {
-#          $out[$eid][$field_id] = NULL;              
         } else {
           
           foreach ($paths as $key => $path) {
@@ -331,14 +295,12 @@ class GeonamesEngine extends NonWritableEngineBase implements PathbuilderEngineI
       }
     }
    
-#dpm($out, 'lfp');   
     return $out;
 
   }
 
 
   public function pathToReturnValue($path, $pb, $eid = NULL, $position = 0, $main_property = NULL) {
-#dpm($path->getName(), 'spam');
     $field_id = $pb->getPbPath($path->getID())["field"];
 
     $uri = AdapterHelper::getUrisForDrupalId($eid, $this->adapterId());
