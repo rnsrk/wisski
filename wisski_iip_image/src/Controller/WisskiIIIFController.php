@@ -2,291 +2,36 @@
 
 namespace Drupal\wisski_iip_image\Controller;
 
-use Drupal\wisski_core\Entity\WisskiEntity;
 use Drupal\Core\Cache\CacheableJsonResponse;
+use Drupal\Core\Config\Schema\Sequence;
 use Drupal\wisski_salz\AdapterHelper;
-
 use Drupal\image\Entity\ImageStyle;
 
 /**
- *
- */
+* Controller routines for Wisski IIIF
+*
+* @todo there is a lot of code duplication here. This should be refactored.
+* @todo the code is not very well tested. This should be done.
+* @todo the code is not very well documented. This should be done.
+* @todo the code is not very well optimized. This should be done.
+* @todo we have to encode and decode the url paths, this should be handled with more elegance.
+*/
 class WisskiIIIFController {
-
+  
   /**
-   *
-   */
+  * Returns a JSON response for the IIIF manifest.
+  */
   public function manifest(int $wisski_individual = NULL) {
-#    dpm(serialize(microtime()), "mic0?");
-    $cache = \Drupal::cache('wisski_iiif_params');
     
-    $cached_image_ids = array();
-    
-    $data = $cache->get($wisski_individual);
-    #dpm(serialize($data));
-    #$data = array();
-    // load from cache? perhaps the mirador viewer wrote some?
-    if (isset($data) && !empty($data->data)) {
-      $array = $data->data;
-#      dpm($array);
-
-      $eid = $array['eid'];
-      
-      $label = $array['flabel'];
-      
-      $cached_image_ids = $array['fimageids'];
-      
-      $uri = $array['furi'];
-
-    } else { // if not load directly!
-
-      // declare the variables
-      $eid = $wisski_individual;
-    
-      // this is keyed by language and then 0 and then value
-      $label = wisski_core_generate_title($wisski_individual);
-      if(!empty($label)) {
-        $label = current($label);
-
-        if(isset($label[0]) && isset($label[0]["value"]))
-          $label = $label[0]["value"];
-      }
-    
-      // get the bundle ids
-      $eidBundleIds = AdapterHelper::getBundleIdsForEntityId($eid, TRUE);
-      // for now: take the first one!
-      $bundleid = current($eidBundleIds);
-
-    /*
-
-        $data = array(
-          "flabel" => $this->options['field_for_label'],
-          "fimageids" => $this->options['field_for_image_ids'],
-          "furi" => $this->options['field_for_uri']);
-
-    */
-
-#    dpm($wisski_individual);
-
-//    $wisski_individual = \Drupal::entityTypeManager()->getStorage('wisski_individual')->load($wisski_individual);
-    
-#    dpm($label);
-    }
-
-    // This is based on the
-    // Iperion-ch Simple IIIF Manifest builder: Version 1.0
-    //
-    // Many thanks go to joseph.padfield@ng-london.org.uk.
+    $iiifInformation = $this->gatherIiifInformation($wisski_individual);
     $settings = \Drupal::configFactory()->getEditable('wisski_iip_image.wisski_iiif_settings');
-    if (empty($settings->get('iiif_server'))) {
-      \Drupal::messenger()->addMessage("IIIF is not configured properly. Please do that <a href='admin/config/wisski/iiif_settings'>here</a>.", "error");
-      return [];
-    }
-
-    // Url of the iiif server.
-    $iiif_url = $settings->get('iiif_server');
-
-    // The base-path provided to the IIIF-Server - should be subtracted from our paths!
-    $iiif_base_path = $settings->get('iiif_prefix');
-
-    global $base_url;
-
-    // The url to this manifest.
-    $manifest_url = $base_url . "/wisski/navigate/" . $eid . "/iiif_manifest";
-
-    // The url for the sequences
-    // I dont really know what this is for up to now...
-    $sequence_url = $base_url . "/wisski/sequence/" . $eid;
-
-    // Get the logo for display purpose.
-    $logo = theme_get_setting('logo.url');
-
-    // Add base_url if it is not in the logo url.
-    if (!empty($logo) && strpos($logo, $base_url) === FALSE) {
-      $logo = $base_url . $logo;
-    }
-
-    if (empty($logo)) {
-      $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_core');
-      if (!empty($path)) {
-        $logo = $base_url . '/' . $core_path . "/images/img_nopic.png";
-      }
-
-    }
-
-    // Basic example manifest information - this should be replaced with
-    // specific details or a database call for dynamic details.
-    $manifest = [
-      // Manifest comment.
-      "comment" => "The original dataset with additional metadata can be found <a href='" . $base_url . "/wisski/navigate/" . $eid . "/view'>here</a>. This IIIF manifest is generated from the WissKI system at " . $base_url,
-      "id" => $manifest_url,
-      // Unique display label for the manifest.
-    // "A few small images just to display a working manifest",.
-      "label" => $label,
-      // Resolvable url to required logo image.
-      "logo" => $logo,
-      // For simple manifests this does not need to change, does not need to resolve.
-      "sequence_id" => $base_url,
-      // This should be customisable later on!
-      "licence" => $settings->get("iiif_licence"),
-      "attribution" => $settings->get("iiif_attribution"),
-    ];
-
-    // Get the bundle for this.
-    $bundle_id = $bundleid; // $wisski_individual->bundle();
-
-    // Get the entity id.
-    $entity_id = $eid;
-
-    // Build up an image array.
-    $images = [];
-
-    // if we have cached images, we take these.
-    if(!empty($cached_image_ids)) {
-      $images = $cached_image_ids;
-    } else {
-      // Load all adapters
-      $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
-      // Go through all adapters and get all images for this.
-      foreach ($adapters as $adapter) {
-        if ($adapter->hasEntity($entity_id) && method_exists($adapter->getEngine(), "getImagesForEntityId")) {
-          $images = array_merge($images, $adapter->getEngine()->getImagesForEntityId($entity_id, $bundle_id, TRUE));
-        }
-      }
-    }
-
-    $style = ImageStyle::load('wisski_pyramid');
-
-    // If the style does not exist - create it.
-    // this is copied from IIP-Module - perhaps not having it that
-    // redundant would be better?
-    if (empty($style)) {
-      $service = \Drupal::service('image.toolkit.manager');
-      $toolkit = $service->getDefaultToolkit();
-
-      if (empty($toolkit) || $toolkit->getPluginId() !== "imagemagick") {
-        \Drupal::messenger()->addMessage('Your default toolkit is not imagemagick. Please use imagemagick for this module.', "error");
-        return;
-      }
-
-      $config = \Drupal::service('config.factory')->getEditable('imagemagick.settings');
-
-      $formats = $config->get('image_formats');
-
-      if (!isset($formats["PTIF"])) {
-        \Drupal::messenger()->addMessage("PTIF was not a valid image format. We enabled it for you. Make sure it is supported by your imagemagick configuration.");
-        $formats["PTIF"] = ['mime_type' => "image/tiff", "enabled" => TRUE];
-        $config->set('image_formats', $formats);
-        $config->save();
-      }
-
-      $image_style_name = 'wisski_pyramid';
-
-      if (!$image_style = ImageStyle::load($image_style_name)) {
-        $values = ['name' => $image_style_name, 'label' => 'Wisski Pyramid Style'];
-        $image_style = ImageStyle::create($values);
-        $image_style->addImageEffect(['id' => 'WisskiPyramidalTiffImageEffect']);
-        $image_style->save();
-      }
-      $style = $image_style;
-    }
-
-    // Get the wisski storage backend.
-    $storage = \Drupal::service('entity_type.manager')->getStorage('wisski_individual');
-
-    // Many variables to store data
-    // full file path - absolute.
-    $file_paths = [];
-    // Local path for drupal, typically public://something.
-    $local_paths = [];
-    // Just the filename.
-    $filenames = [];
-#    dpm(serialize(microtime()), "mic1?");
-    // Iterate through all images.
-    foreach ($images as $image) {
-      $local_uri = $storage->ensureSchemedPublicFileUri($image);
-
-      // Get the file name - last part of the uri.
-      $exp = explode('/', $local_uri);
-
-      $last_part = $exp[count($exp) - 1];
-
-      // If pdf - skip it!
-      if (stripos($last_part, ".pdf") !== FALSE) {
-        continue;
-      }
-
-      $filenames[] = $last_part;
-
-      // Get the pyramid.
-      $local_paths[] = $local_uri;
-
-      $local_pyramid = $style->buildUri($local_uri);
-
-      // If there is nothing, create a derivative.
-      if (!file_exists($local_pyramid) || empty(filesize($local_pyramid))) {
-        $style->createDerivative($local_uri, $local_pyramid);
-      }
-
-      $local_pyramid = \Drupal::service('file_system')->realpath($local_pyramid);
-      $pyramids[] = $local_pyramid;
-
-      // If there is something we have to erase this to get a proper
-      // path.
-      if ($iiif_base_path && strpos($local_pyramid, $iiif_base_path) === 0) {
-        $remaining = substr($local_pyramid, strlen($iiif_base_path));
-      }
-      else {
-        $remaining = $local_pyramid;
-      }
-
-      $file_paths[] = $remaining;
-    }
-
-    $ims = [];
-#    dpm(serialize(microtime()), "mic2?");
-    // Fill the image array.
-    foreach ($file_paths as $key => $filepath) {
-      // if we load from cache, assume height and width because it is faster... these are no real values!
-      if (isset($data) && !empty($data->data)) { 
-        $height = 1;
-        $width = 1;
-      } else {
-        // Try to load the image.
-        $image = \Drupal::service('image.factory')->get($local_paths[$key]);
-
-        $height = 0;
-        $width = 0;
-
-        // Only calculate this if there is an image.
-        if (!empty($image)) {
-          $height = $image->getHeight();
-          $width = $image->getWidth();
-        }
-      }
-      
-      // special case 
-      if($width == 0) {
-        $width = 1;
-      }
-
-      $ims[$key] = [
-        "image_name" => $label,
-        "image_height" => $height,
-        "image_width" => $width,
-        "image_ppmm" => 314.96,
-        "image_caption" => $label,
-        "image_path" => $filepath,
-      ];
-    }
-#    dpm(serialize(microtime()), "mic3?");
+    
     // Calculation of canvases based on the ims.
     $canvases = [];
-    foreach ($ims as $k => $d) {
-      $nm = $sequence_url . "/" . $filenames[$k] . "/normal.json";
+    foreach ($iiifInformation['ims'] as $k => $d) {
+      $nm = $iiifInformation['sequence_url'] . "/". $k . "/" . urlencode($iiifInformation['filenames'][$k]) . "/normal.json";
       $cp = $d["image_caption"];
       if ($d["image_ppmm"]) {
-        // $d["image_width"];
         $scale = ($d["image_ppmm"] / $d["image_width"]);
         // Can be added to the canvas below, but does not allow you so set
         // scale for each image just for each set of images.
@@ -302,11 +47,11 @@ class WisskiIIIFController {
       else {
         $addRuler = [];
       }
-
+      
       $canvases[] = [
         "@id" => $nm,
         "@type" => "sc:Canvas",
-        "label" => $settings->get('filename_as_label') ? $filenames[$k] : $cp,
+        "label" => urlencode($settings->get('filename_as_label')) ? urlencode($iiifInformation['filenames'][$k]) : urlencode($cp),
         "height" => $d['image_height'],
         "width" => $d['image_width'],
         "images" => [[
@@ -314,67 +59,392 @@ class WisskiIIIFController {
           "motivation" => "sc:painting",
           "on" => $nm,
           "resource" => [
-            "@id" => $iiif_url . $d['image_path'] . "/full/full/0/default.jpg",
+            "@id" =>$iiifInformation['iiif_url'] . $d['image_path'] . "/full/full/0/default.jpg",
             "@type" => "dctypes:Image",
             "format" => "image/jpeg",
             "height" => $d['image_height'],
             "width" => $d['image_width'],
             "service" => [
               "@context" => "http://iiif.io/api/image/2/context.json",
-              "@id" => $iiif_url . $d['image_path'],
+              "@id" => $iiifInformation['iiif_url'] . $d['image_path'],
               "profile" => "http://iiif.io/api/image/2/level2.json",
             ],
           ],
         ],
-        ],
-      ];
+      ],
+    ];
+    
+    if (!empty($addRuler)) {
+      $num = count($canvases) - 1;
+      $canvases[$num] = array_merge($canvases[$num], $addRuler);
+    }
+  }
+  
+  $data = [
+    "@context" => "http://iiif.io/api/presentation/2/context.json",
+    "@id" => $iiifInformation['manifest']['id'],
+    "@type" => "sc:Manifest",
+    "label" => $iiifInformation['manifest']['label'],
+    "license" => $iiifInformation['manifest']['licence'],
+    "attribution" => $iiifInformation['manifest']['attribution'],
+    "logo" => $iiifInformation['manifest']['logo'],
+    "metadata" => [
+      [
+        "label" => "Description",
+        "value" => $iiifInformation['manifest']['comment'],
+      ],
+    ],
+    "description" => $iiifInformation['manifest']['comment'],
+    "viewingDirection" => "left-to-right",
+    "viewingHint" => "individuals",
+    "sequences" => [
+      [
+        "@id" => $iiifInformation['manifest']['sequence_url'],
+        "@type" => "sc:Sequence",
+        "label" => "Normal Order",
+        "canvases" => $canvases,
+      ],
+    ],
+  ];
+  
+  $data['#cache'] = [
+    'max-age' => 1,
+    'contexts' => [
+      'url',
+    ],
+  ];
+  
+  $response = new CacheableJsonResponse();
+  
+  $response->setEncodingOptions(JSON_UNESCAPED_SLASHES);
+  $response->setData($data);
+  return $response;
+}
 
-      if (!empty($addRuler)) {
-        $num = count($canvases) - 1;
-        $canvases[$num] = array_merge($canvases[$num], $addRuler);
+
+/**
+* Returns a JSON response for the IIIF canvas of an image.
+*/
+public function canvas() {
+  
+  // Collect variables.
+  $canvasUrl = \Drupal::request()->getSchemeAndHttpHost() . \Drupal::request()->getRequestUri();
+  $eid = \Drupal::request()->get('wisski_individual');
+  $imageCount = \Drupal::request()->get('image_count');
+  
+  $iiifInformation = $this->gatherIiifInformation($eid, $canvasUrl);
+  $settings = \Drupal::configFactory()->getEditable('wisski_iip_image.wisski_iiif_settings');  
+  
+  // Create the canvas.
+  $data = [
+    "@id" => $canvasUrl,
+    "@type" => "sc:Canvas",
+    "label" => $settings->get('filename_as_label') ? $iiifInformation['filenames'][$imageCount] : $iiifInformation['ims'][$imageCount]['image_caption'],
+    "height" => $iiifInformation['ims'][$imageCount]['image_height'],
+    "width" => $iiifInformation['ims'][$imageCount]['image_width'],
+    "images" => 
+    [
+      [
+        "@type" => "oa:Annotation",
+        "motivation" => "sc:painting",
+        "on" => $canvasUrl,
+        "resource" => [
+          "@id" => $iiifInformation['iiif_url'] . urlencode($iiifInformation['ims'][$imageCount]['image_path']) . "/full/full/0/default.jpg",
+          "@type" => "dctypes:Image",
+          "format" => "image/jpeg",
+          "filepath" => \Drupal::service('file_url_generator')->generateAbsoluteString($iiifInformation['ims'][$imageCount]['image_filepath']),
+          "height" => $iiifInformation['ims'][$imageCount]['image_height'],
+          "width" => $iiifInformation['ims'][$imageCount]['image_width'],
+          "service" => [
+            "@context" => "http://iiif.io/api/image/2/context.json",
+            "@id" => $iiifInformation['iiif_url'] .$iiifInformation['ims'][$imageCount]['image_path'],
+            "profile" => "http://iiif.io/api/image/2/level2.json",
+          ],
+        ],
+      ],
+    ],
+  ];
+  
+  
+  $data['#cache'] = [
+    'max-age' => 1,
+    'contexts' => [
+      'url',
+    ],
+  ];
+  
+  // Create the response.
+  $response = new CacheableJsonResponse();
+  $response->setEncodingOptions(JSON_UNESCAPED_SLASHES);
+  $response->setData($data);
+  return $response;
+}
+
+/**
+* Collects all information for the IIIF manifest/ Canvas.
+* 
+* @param int $wisski_individual
+*   The entity id of the wisski individual.
+* @param string $manifest_url
+*   The url of the manifest/ canvas.
+*/
+public function gatherIiifInformation($wisski_individual = NULL, $manifest_url = NULL) {
+  $cache = \Drupal::cache('wisski_iiif_params');
+  
+  $cached_image_ids = array();
+  
+  $data = $cache->get($wisski_individual);
+  
+  // Load from cache? perhaps the mirador viewer wrote some?
+  if (isset($data) && !empty($data->data)) {
+    $array = $data->data;
+    $eid = $array['eid'];
+    $label = $array['flabel'];
+    $cached_image_ids = $array['fimageids'];
+    
+  } else { // if not load directly!
+    
+    // declare the variables
+    $eid = $wisski_individual;
+    
+    // this is keyed by language and then 0 and then value
+    $label = wisski_core_generate_title($wisski_individual);
+    if(!empty($label)) {
+      $label = current($label);
+      
+      if(isset($label[0]) && isset($label[0]["value"]))
+      $label = $label[0]["value"];
+    }
+    $label = $label;
+    
+    // get the bundle ids
+    $eidBundleIds = AdapterHelper::getBundleIdsForEntityId($eid, TRUE);
+    // for now: take the first one!
+    $bundleid = current($eidBundleIds);
+    
+  }
+  
+  // This is based on the
+  // Iperion-ch Simple IIIF Manifest builder: Version 1.0
+  //
+  // Many thanks go to joseph.padfield@ng-london.org.uk.
+  $settings = \Drupal::configFactory()->getEditable('wisski_iip_image.wisski_iiif_settings');
+  if (empty($settings->get('iiif_server'))) {
+    \Drupal::messenger()->addMessage("IIIF is not configured properly. Please do that <a href='admin/config/wisski/iiif_settings'>here</a>.", "error");
+    return [];
+  }
+  
+  // Url of the iiif server.
+  $iiif_url = $settings->get('iiif_server');
+  
+  // The base-path provided to the IIIF-Server - should be subtracted from our paths!
+  $iiif_base_path = $settings->get('iiif_prefix');
+  
+  $base_url = \Drupal::request()->getSchemeAndHttpHost();
+  
+  // The url to this manifest.
+  $manifest_url = $base_url . "/wisski/navigate/" . $eid . "/iiif_manifest";
+  
+  // The url for the sequences
+  // Sequences onveys the ordering of the views of the object.
+  // Typical default name for sequences is “normal” an often there
+  // is no need to change this.  
+  
+  $sequence_url = $base_url . "/wisski/" .$wisski_individual . "/sequence/normal";
+  
+  // Get the logo for display purpose.
+  $logo = theme_get_setting('logo.url');
+  
+  // Add base_url if it is not in the logo url.
+  if (!empty($logo) && strpos($logo, $base_url) === FALSE) {
+    $logo = $base_url . $logo;
+  }
+  
+  if (empty($logo)) {
+    $core_path = \Drupal::service('extension.path.resolver')->getPath('module', 'wisski_core');
+    if (!empty($path)) {
+      $logo = $base_url . '/' . $core_path . "/images/img_nopic.png";
+    }
+    
+  }
+  
+  // Basic example manifest information - this should be replaced with
+  // specific details or a database call for dynamic details.
+  $manifest = [
+    // Manifest comment.
+    "comment" => "The original dataset with additional metadata can be found <a href='" . $base_url . "/wisski/navigate/" . $eid . "/view'>here</a>. This IIIF manifest is generated from the WissKI system at " . $base_url,
+    "id" => $manifest_url,
+    // Unique display label for the manifest.
+    // "A few small images just to display a working manifest",.
+    "label" => $label,
+    // Resolvable url to required logo image.
+    "logo" => $logo,
+    // For simple manifests this does not need to change, does not need to resolve.
+    "sequence_id" => $sequence_url . ".json",
+    // This should be customisable later on!
+    "licence" => $settings->get("iiif_licence"),
+    "attribution" => $settings->get("iiif_attribution"),
+  ];
+  
+  // Get the bundle for this.
+  $bundle_id = $bundleid; // $wisski_individual->bundle();
+  
+  // Get the entity id.
+  $entity_id = $eid;
+  
+  // Build up an image array.
+  $images = [];
+  
+  // if we have cached images, we take these.
+  if(!empty($cached_image_ids)) {
+    $images = $cached_image_ids;
+  } else {
+    // Load all adapters
+    $adapters = \Drupal::entityTypeManager()->getStorage('wisski_salz_adapter')->loadMultiple();
+    /** 
+    * Go through all adapters and get all images for this. 
+    * @var \Drupal\wisski_salz\WisskiSalzAdapterInterface $adapter
+    */
+    foreach ($adapters as $adapter) {
+      if ($adapter->hasEntity($entity_id) && method_exists($adapter->getEngine(), "getImagesForEntityId")) {
+        $images = array_merge($images, $adapter->getEngine()->getImagesForEntityId($entity_id, $bundle_id, TRUE));
       }
     }
-
-    $data = [
-      "@context" => "http://iiif.io/api/presentation/2/context.json",
-      "@id" => $manifest['id'],
-      "@type" => "sc:Manifest",
-      "label" => $manifest['label'],
-      "license" => $manifest['licence'],
-      "attribution" => $manifest['attribution'],
-      "logo" => $manifest['logo'],
-      "metadata" => [
-        [
-          "label" => "Description",
-          "value" => $manifest['comment'],
-        ],
-      ],
-      "description" => $manifest['comment'],
-      "viewingDirection" => "left-to-right",
-      "viewingHint" => "individuals",
-      "sequences" => [
-        [
-          "@id" => "$manifest[sequence_id]",
-          "@type" => "sc:Sequence",
-          "label" => "Normal Order",
-          "canvases" => $canvases,
-        ],
-      ],
-    ];
-
-    $data['#cache'] = [
-      'max-age' => 1,
-      'contexts' => [
-        'url',
-      ],
-    ];
-
-    $response = new CacheableJsonResponse();
-
-    $response->setEncodingOptions(JSON_UNESCAPED_SLASHES);
-    $response->setData($data);
-#    dpm(serialize(microtime()), "mic9?");
-    return $response;
   }
-
-}
+  
+  $style = ImageStyle::load('wisski_pyramid');
+  
+  // If the style does not exist - create it.
+  // this is copied from IIP-Module - perhaps not having it that
+  // redundant would be better?
+  if (empty($style)) {
+    $service = \Drupal::service('image.toolkit.manager');
+    $toolkit = $service->getDefaultToolkit();
+    
+    if (empty($toolkit) || $toolkit->getPluginId() !== "imagemagick") {
+      \Drupal::messenger()->addMessage('Your default toolkit is not imagemagick. Please use imagemagick for this module.', "error");
+      return;
+    }
+    
+    $config = \Drupal::service('config.factory')->getEditable('imagemagick.settings');
+    
+    $formats = $config->get('image_formats');
+    
+    if (!isset($formats["PTIF"])) {
+      \Drupal::messenger()->addMessage("PTIF was not a valid image format. We enabled it for you. Make sure it is supported by your imagemagick configuration.");
+      $formats["PTIF"] = ['mime_type' => "image/tiff", "enabled" => TRUE];
+      $config->set('image_formats', $formats);
+      $config->save();
+    }
+    
+    $image_style_name = 'wisski_pyramid';
+    
+    if (!$image_style = ImageStyle::load($image_style_name)) {
+      $values = ['name' => $image_style_name, 'label' => 'Wisski Pyramid Style'];
+      $image_style = ImageStyle::create($values);
+      $image_style->addImageEffect(['id' => 'WisskiPyramidalTiffImageEffect']);
+      $image_style->save();
+    }
+    $style = $image_style;
+  }
+  
+  // Get the wisski storage backend.
+  $storage = \Drupal::service('entity_type.manager')->getStorage('wisski_individual');
+  
+  // Many variables to store data
+  // full file path - absolute.
+  $file_paths = [];
+  // Local path for drupal, typically public://something.
+    $local_paths = [];
+    // Just the filename.
+    $filenames = [];
+    // Iterate through all images.
+    foreach ($images as $image) {
+      $local_uri = $storage->ensureSchemedPublicFileUri($image);
+      
+      $absolute_url = \Drupal::service('file_url_generator')->generateAbsoluteString($local_uri);
+      
+      // Get the file name - last part of the uri.
+      $exp = explode('/', $local_uri);
+      
+      $last_part = $exp[count($exp) - 1];
+      
+      // If pdf - skip it!
+      if (stripos($last_part, ".pdf") !== FALSE) {
+        continue;
+      }
+      
+      $filenames[] = $last_part;
+      
+      // Get the pyramid.
+      $local_paths[] = $local_uri;
+      
+      $local_pyramid = $style->buildUri($local_uri);
+      
+      // If there is nothing, create a derivative.
+      if (!file_exists($local_pyramid) || empty(filesize($local_pyramid))) {
+        $style->createDerivative($local_uri, $local_pyramid);
+      }
+      
+      $local_pyramid = \Drupal::service('file_system')->realpath($local_pyramid);
+      $pyramids[] = $local_pyramid;
+      
+      // If there is something we have to erase this to get a proper
+      // path.
+      if ($iiif_base_path && strpos($local_pyramid, $iiif_base_path) === 0) {
+        $remaining = substr($local_pyramid, strlen($iiif_base_path));
+      }
+      else {
+        $remaining = $local_pyramid;
+      }
+      
+      $file_paths[] = $remaining;
+    }
+    
+    $ims = [];
+    // Fill the image array.
+    foreach ($file_paths as $key => $filepath) {
+      // if we load from cache, assume height and width because it is faster... these are no real values!
+      if (isset($data) && !empty($data->data)) { 
+        $height = 1;
+        $width = 1;
+      } else {
+        // Try to load the image.
+        $image = \Drupal::service('image.factory')->get($local_paths[$key]);
+        
+        $height = 0;
+        $width = 0;
+        
+        // Only calculate this if there is an image.
+        if (!empty($image)) {
+          $height = $image->getHeight();
+          $width = $image->getWidth();
+        }
+      }
+      
+      // special case 
+      if($width == 0) {
+        $width = 1;
+      }
+      
+      $ims[$key] = [
+        "image_name" => $label,
+        "image_height" => $height,
+        "image_width" => $width,
+        "image_ppmm" => 314.96,
+        "image_caption" => $label,
+        "image_path" => rawurlencode($filepath),
+        "image_filepath" =>$local_uri,
+      ];
+    }
+    
+    return [
+      "ims" => $ims,
+      "filenames" => $filenames,
+      "sequence_url" => $sequence_url,
+      "iiif_url" => $iiif_url,
+      "settings" => $settings,
+      "manifest" => $manifest,];
+    } 
+  }
+  

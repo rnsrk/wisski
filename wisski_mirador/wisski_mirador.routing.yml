@@ -42,3 +42,12 @@ wisski_mirador.api.lists:
     _controller: '\Drupal\wisski_mirador\Controller\WisskiMiradorApiController::lists'
   requirements:
     _access: 'TRUE'
+
+wisski_mirador.api.session_store:
+  path: '/wisski/mirador-annotations/session-store'
+  defaults:
+    _controller: '\Drupal\wisski_mirador\Controller\WisskiMiradorApiController::sessionStore'
+    _title: 'Session Store'
+  methods:  [POST]
+  requirements:
+    _permission: 'access content'

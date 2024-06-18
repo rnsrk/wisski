@@ -12,3 +12,11 @@ wisski.wisski_iiif_settings:
     _title: 'WissKI IIIF Settings'
   requirements:
     _permission: 'administer wisski bundles'
+
+entity.wisski_individual.canvas:
+  path: '/wisski/{wisski_individual}/sequence/{sequence}/{image_count}/{image_label}/normal.json'
+  defaults:
+    _controller: '\Drupal\wisski_iip_image\Controller\WisskiIIIFController::canvas'
+    _format: 'json'
+  requirements:
+    _access: 'TRUE'
