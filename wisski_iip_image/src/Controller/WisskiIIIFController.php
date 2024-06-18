@@ -132,7 +132,9 @@ public function canvas() {
   $eid = \Drupal::request()->get('wisski_individual');
   $imageCount = \Drupal::request()->get('image_count');
   
+  
   $iiifInformation = $this->gatherIiifInformation($eid, $canvasUrl);
+
   $settings = \Drupal::configFactory()->getEditable('wisski_iip_image.wisski_iiif_settings');  
   
   // Create the canvas.
@@ -362,8 +364,6 @@ public function gatherIiifInformation($wisski_individual = NULL, $manifest_url =
     foreach ($images as $image) {
       $local_uri = $storage->ensureSchemedPublicFileUri($image);
       
-      $absolute_url = \Drupal::service('file_url_generator')->generateAbsoluteString($local_uri);
-      
       // Get the file name - last part of the uri.
       $exp = explode('/', $local_uri);
       
@@ -403,7 +403,9 @@ public function gatherIiifInformation($wisski_individual = NULL, $manifest_url =
     
     $ims = [];
     // Fill the image array.
+
     foreach ($file_paths as $key => $filepath) {
+      $absolute_url = \Drupal::service('file_url_generator')->generateAbsoluteString($local_paths[$key]);
       // if we load from cache, assume height and width because it is faster... these are no real values!
       if (isset($data) && !empty($data->data)) { 
         $height = 1;
@@ -433,9 +435,10 @@ public function gatherIiifInformation($wisski_individual = NULL, $manifest_url =
         "image_width" => $width,
         "image_ppmm" => 314.96,
         "image_caption" => $label,
-        "image_path" => rawurlencode($filepath),
-        "image_filepath" =>$local_uri,
+        "image_path" => $filepath,
+        "image_filepath" =>$absolute_url,
       ];
+      
     }
     
     return [
