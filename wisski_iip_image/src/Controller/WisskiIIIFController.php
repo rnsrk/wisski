@@ -99,7 +99,7 @@ class WisskiIIIFController {
     "viewingHint" => "individuals",
     "sequences" => [
       [
-        "@id" => $iiifInformation['manifest']['sequence_url'],
+        "@id" => $iiifInformation['manifest']['sequence_id'],
         "@type" => "sc:Sequence",
         "label" => "Normal Order",
         "canvases" => $canvases,
