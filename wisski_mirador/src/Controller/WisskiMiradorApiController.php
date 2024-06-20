@@ -368,13 +368,6 @@ class WisskiMiradorApiController extends ControllerBase {
     // Retrieve the local vars from the session
     $this->getLocalvarsFromSession();
     
-    // Get the annotation informations.
-    $cont = $this->request->getContent();
-    $cont = json_decode($cont, TRUE);
-    
-    // Store everything to variables.
-    $data = $cont['annotation']['data'];
-    
     // See if we already have this annotation.
     $entity_ids = $this->entityTypeManager->getStorage($this->miradorOptions['entity_type_for_annotation'])
     ->getQuery()
@@ -404,7 +397,7 @@ class WisskiMiradorApiController extends ControllerBase {
       return new JsonResponse(['error' => 'Could not delete the annotation entity.']);
     }
     
-    return new JsonResponse($data);
+    return new JsonResponse(['success' => TRUE, 'message' => 'Annotation deleted.']);
   }
   
   /**
