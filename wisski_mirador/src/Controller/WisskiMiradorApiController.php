@@ -104,7 +104,7 @@ class WisskiMiradorApiController extends ControllerBase {
     $this->miradorOptions = $session->get('mirador')['options'];
 
     // Check if all fields are mapped.
-    $optionalFields = ['grouping', 'field_for_label', 'field_for_uri', 'uses_fields'];
+    $optionalFields = ['grouping', 'field_for_label', 'field_for_image_ids', 'field_for_uri', 'uses_fields'];
     foreach ($this->miradorOptions as $key => $value) {
     
       if (!in_array($key, $optionalFields) && empty($value)) {

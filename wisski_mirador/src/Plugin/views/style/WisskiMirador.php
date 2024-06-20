@@ -31,10 +31,13 @@ class WisskiMirador extends StylePluginBase {
     $options['enable_annotations'] = array('default' => "");
     $options['entity_type_for_annotation'] = array('default' => "");
     $options['bundle_for_annotation'] = array('default' => "");
-    $options['field_for_annotation_id'] = array('default' => "");
+    $options['field_for_annotation_uuid'] = array('default' => "");
     $options['field_for_annotation_json'] = array('default' => "");
     $options['field_for_annotation_entity'] = array('default' => "");
-    $options['field_for_annotation_reference'] = array('default' => "");
+    $options['field_for_annotation_text'] = array('default' => "");
+    $options['field_for_annotation_fragment_selector'] = array('default' => "");
+    $options['field_for_annotation_svg'] = array('default' => "");
+    $options['field_for_annotation_source_reference'] = array('default' => "");
     $options['field_for_image_ids'] = array('default' => "");
     $options['field_for_label'] = array('default' => "");
     $options['window_settings'] = array('default' => '{
