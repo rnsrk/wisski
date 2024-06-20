@@ -10,6 +10,7 @@ use GuzzleHttp\ClientInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use DOMDocument;
 
 
 
@@ -62,7 +63,7 @@ class WisskiMiradorApiController extends ControllerBase {
    * - enable_annotations
    * - entity_type_for_annotation
    * - bundle_for_annotation
-   * - field_for_annotation_id
+   * - field_for_annotation_uuid
    * - field_for_annotation_text
    * - field_for_annotation_svg
    * - field_for_annotation_json
@@ -103,7 +104,7 @@ class WisskiMiradorApiController extends ControllerBase {
     $this->miradorOptions = $session->get('mirador')['options'];
 
     // Check if all fields are mapped.
-    $optionalFields = ['grouping', 'field_for_annotation_reference', 'field_for_label', 'field_for_uri', 'uses_fields'];
+    $optionalFields = ['grouping', 'field_for_label', 'field_for_uri', 'uses_fields'];
     foreach ($this->miradorOptions as $key => $value) {
     
       if (!in_array($key, $optionalFields) && empty($value)) {
@@ -114,60 +115,41 @@ class WisskiMiradorApiController extends ControllerBase {
     $this->context = $session->get('mirador')['context'];
   }
 
-  /**
-   * Creates valid SVG XML from the given string.
-   * 
-   * @param string $text
-   *  The text to convert to SVG.
-   * @param int $width
-   * The width of the SVG.
-   * @param int $height
-   * 
-   * @return string
-   */
-  public function createSvg($text, $width, $height) {
-    $svg = str_replace('\"', '"', $text);
-    
-    $pos = strpos($svg, '<svg');
-    if ($pos !== false) {
-        $closeTagPos = strpos($svg, '>', $pos);
-        if ($closeTagPos !== false) {
-            $svg = substr_replace($svg, " width=\"$width\" height=\"$height\"", $closeTagPos, 0);
-        }
-    }
-    
-    return $svg;
-  }
-
   /** 
   * Called typically called when writing.
+  *
+  * @param string $annotationUuid
+  *  The annotation ID.
+  *
+  * @return JsonResponse
   */
-  public function common() {
+  public function common($annotationUuid = NULL) {
     
     // Retrieve the local vars from the session.
     $this->getLocalvarsFromSession();
     
     // Get the annotation informations.
-    // @todo: Do this over a annotation json?
     $cont = $this->request->getContent();
     $cont = json_decode($cont, TRUE); 
     
     // Store need infos in variables.
-    $canvas = $cont['annotation']['canvas'];
-    $annotation_id = $cont['annotation']['uuid'];
+    $annotationUuid = $cont['annotation']['uuid'];
     $annotationJson = $cont['annotation']['data'];
+    $annotationData = json_decode($annotationJson, TRUE);
+    $annotationSource = $annotationUuid ? $annotationData['target']['source'] : $cont['annotation']['canvas'];
 
     // Fetch the canvas data.
     try {
-      $response = $this->httpClient->request('get', $canvas);
+      $response = $this->httpClient->request('get', $annotationSource);
       $canvasData = json_decode($response->getBody()->getContents(), TRUE);
     } catch (\Exception $e) {
       $this->loggerFactory->get('wisski_mirador')->error('Could not fetch the canvas data: ' . $e->getMessage());
-      $this->messenger->addError('Could not fetch the canvas data.');
+      $this->messenger->addError('Could not fetch the canvas data. See logs for more information.');
       return new JsonResponse(['error' => 'Could not fetch the canvas data.']);
     }
 
-    $annotationData = json_decode($annotationJson, TRUE);
+    
+    // Fetch the annotation text.
     try  {
       $annotationText = strip_tags($annotationData['body']['value']);
     } catch (\Exception $e) {
@@ -175,13 +157,25 @@ class WisskiMiradorApiController extends ControllerBase {
       $this->messenger->addError('Could get the annotation text. Do you provide a content?');
       return new JsonResponse(['error' => 'Could not strip the tags.']);
     }
+
+    // Fetch the SVG text.
     try {
-      $annotationSvgText = $this->createSvg($annotationData['target']['selector'][1]['value'], $canvasData['width'], $canvasData['height']);
+      $annotationSvgText = $annotationData['target']['selector'][1]['value'];
     } catch (\Exception $e) {
       $this->loggerFactory->get('wisski_mirador')->error('Could not create the SVG: ' . $e->getMessage());
       $this->messenger->addError('Could not create the SVG. Do you forget to add a layer?');
       return new JsonResponse(['error' => 'Could not create the SVG.']);
     }
+
+    // Fetch the fragment selector.
+    try {
+      $fragmentSelector = $annotationData['target']['selector'][0]['value'];
+    } catch (\Exception $e) {
+      $this->loggerFactory->get('wisski_mirador')->error('Could not get the fragment selector: ' . $e->getMessage());
+      $this->messenger->addError('Could not get the fragment selector. Do you forget to add a layer?');
+      return new JsonResponse(['error' => 'Could not get the fragment selector.']);
+    }
+
     /**
      * Check if the annotation already exists.
      */
@@ -189,28 +183,36 @@ class WisskiMiradorApiController extends ControllerBase {
       ->getStorage($this->miradorOptions['entity_type_for_annotation'])
       ->getQuery()
       ->condition('bundle', [$this->miradorOptions['bundle_for_annotation'] => $this->miradorOptions['bundle_for_annotation']])
-      ->condition($this->miradorOptions['field_for_annotation_id'], $annotation_id)
+      ->condition($this->miradorOptions['field_for_annotation_uuid'], $annotationUuid)
       ->execute();
     
-    // just take the first, there should not be more than this    
+    // Just take the first, there should not be more than this.
     $entity_id = current($entity_ids);
+
+    // Map fields to variables.
+    $fieldAnnotationEntity = $this->miradorOptions['field_for_annotation_entity'];
+    $fieldSourceReference = $this->miradorOptions['field_for_annotation_source_reference'];
+    $fielUuid = $this->miradorOptions['field_for_annotation_uuid'];
+    $fieldJson = $this->miradorOptions['field_for_annotation_json'];
+    $fieldSvg = $this->miradorOptions['field_for_annotation_svg'];
+    $fieldText = $this->miradorOptions['field_for_annotation_text'];
+    $fieldFragmentSelector = $this->miradorOptions['field_for_annotation_fragment_selector'];
     
     // If the entity does not exist, create it.
     if(empty($entity_id)) {
       
       // build the values and create the entity
       
-      // Delete the /normal.json part of the canvas (i .e. http://devel.local/wisski/sequence/normal/300px-Acanthocardia_aculeata_1.jpg/normal.json )
-      $canvas = substr($canvas, 0, strpos($canvas, '/normal.json'));
-      
       // Fill out the entity properties.
       $values = [
         "bundle" => $this->miradorOptions['bundle_for_annotation'], 
-        $this->miradorOptions['field_for_annotation_entity'] => urldecode($canvasData['images'][0]['resource']['filepath']), 
-        $this->miradorOptions['field_for_annotation_id'] => $annotation_id, 
-        $this->miradorOptions['field_for_annotation_json'] => $annotationJson,
-        $this->miradorOptions['field_for_annotation_text'] => $annotationText,
-        $this->miradorOptions['field_for_annotation_svg'] => $annotationSvgText,
+        $fieldAnnotationEntity => urldecode($canvasData['images'][0]['resource']['filepath']), 
+        $fieldSourceReference => $annotationSource, 
+        $fielUuid => $annotationUuid, 
+        $fieldJson => $annotationJson,
+        $fieldText => $annotationText,
+        $fieldSvg => $annotationSvgText,
+        $fieldFragmentSelector => $fragmentSelector,
         ];
       
       // Create the entity.
@@ -230,11 +232,11 @@ class WisskiMiradorApiController extends ControllerBase {
       ->getStorage($this->miradorOptions['entity_type_for_annotation'])
       ->load($entity_id);
       
-      $field_json = $this->miradorOptions['field_for_annotation_json'];
-      $entity->$field_json->value = $annotationJson;
-
-      $field_text = $this->miradorOptions['field_for_annotation_text'];
-      $entity->$field_text->value = $annotationText;
+      $entity->$fieldSourceReference->value = $annotationSource;
+      $entity->$fieldJson->value = $annotationJson;
+      $entity->$fieldSvg->value = $annotationSvgText;
+      $entity->$fieldText->value = $annotationText;
+      $entity->$fieldFragmentSelector->value = $fragmentSelector;
       
     }
     
@@ -253,6 +255,8 @@ class WisskiMiradorApiController extends ControllerBase {
   /**
   * Ironically this is the main function - I don't exactly know why. 
   * However it paints all the magical thingies :)
+  * 
+  * @return JsonResponse
   */
   public function pages() {
     
@@ -271,39 +275,60 @@ class WisskiMiradorApiController extends ControllerBase {
     
     // Fetch the annotations for this file.
     // We assume that it is not used multiple times in several datasets!    
-    $annotation_ids = $this->entityTypeManager->getStorage($this->miradorOptions['entity_type_for_annotation'])
+    $annotationUuids = $this->entityTypeManager->getStorage($this->miradorOptions['entity_type_for_annotation'])
       ->getQuery()
       ->condition('bundle', $this->miradorOptions['bundle_for_annotation'])
       ->condition($canvasManifest, $uri)
       ->execute();
     
     $annotations = [];
-    
-    // More easy mapping for better readable access.    
-    $field_json = $this->miradorOptions['field_for_annotation_json'];
-    
-    // iterate the annotations    
-    foreach($annotation_ids as $annotation_id) {
-      /** @var $one_annotation Drupal\wisski_core\Entity\WisskiEntity */
-      $one_annotation = $this->entityTypeManager
+  
+    $annotationTemplate = [
+      "body" => [
+        "type" => "TextualBody",
+        "value" => "",
+      ],
+      "id" => "",
+      "motivation" => "commenting",
+      "target" => [
+        "source" => "",
+        "selector" => [
+          [
+            "type" => "FragmentSelector",
+            "value" => "",
+          ],
+          [
+            "type" => "SvgSelector",
+            "value" => "",
+          ],
+        ],
+      ],
+      "type" => "Annotation",
+    ];
+
+    // Loop through the annotations and build the array.
+    foreach($annotationUuids as $count => $annotationUuid) {
+      /**
+       * Load the annotation entity.
+       *  @var $one_annotation Drupal\wisski_core\Entity\WisskiEntity */
+      $singleAnnotation = $this->entityTypeManager
       ->getStorage($this->miradorOptions['entity_type_for_annotation'])
-      ->load($annotation_id);
-      $one_annotation = $one_annotation->getValues(TRUE);
+      ->load($annotationUuid);
+
+      // Fill the annotation array.
+      $annotationUuid = $singleAnnotation->get($this->miradorOptions['field_for_annotation_uuid'])->value;
+      $annotationText = '<p>' . $singleAnnotation->get($this->miradorOptions['field_for_annotation_text'])->value . '</p>';
+      $annotationSvgText = $singleAnnotation->get($this->miradorOptions['field_for_annotation_svg'])->value;
+      $sourceReference = $singleAnnotation->get($this->miradorOptions['field_for_annotation_source_reference'])->value;
+      $fragmentSelector = $singleAnnotation->get($this->miradorOptions['field_for_annotation_fragment_selector'])->value;
+
+      $annotations[$count] = $annotationTemplate;
+      $annotations[$count]['body']['value'] = $annotationText;
+      $annotations[$count]['id'] = $annotationUuid;
+      $annotations[$count]['target']['source'] = $sourceReference;
+      $annotations[$count]['target']['selector'][0]['value'] = $fragmentSelector;
+      $annotations[$count]['target']['selector'][1]['value'] = $annotationSvgText;
       
-      // I dont know why we have to do that here
-      // @TODO handle translation somehow!
-      $one_annotation = $one_annotation[0];
-      
-      // Get the id field of the annotation and the json code of the annotation.
-      // This could be more elaborate here, e.g. we could extract the annotations
-      // contents to a full semantic model etc.
-      $main_property_for_json = $one_annotation[$field_json]["main_property"];
-      
-      // Fetch the contents.
-      $my_json = $one_annotation[$field_json][0][$main_property_for_json];
-      
-      // And write it accordingly to the array.
-      $annotations[] = json_decode($my_json, TRUE);
     }
     
     $data = [];
@@ -324,116 +349,21 @@ class WisskiMiradorApiController extends ControllerBase {
   /**
    * Called when editing an annotation.
    * 
-   * @param string $annotation_id
+   * @param string $annotationUuid
    *  The annotation ID.
+   * 
+   * @return JsonResponse
    */
-  public function edit_annotation($annotation_id) {
-    
-    // Retrieve the local vars from the session.
-    $this->getLocalvarsFromSession();
-    
-    // Get the annotation informations.
-    $cont = $this->request->getContent();
-    
-    // Store everything to variables.
-    $cont = json_decode($cont, TRUE);
-    $annotationJson = $cont['annotation']['data'];
-    $annotationData = json_decode($annotationJson, TRUE);
-    $canvas = $annotationData['target']['source'];
-   
-    // Fetch the canvas data.
-    try {
-      $response = $this->httpClient->request('get', $canvas);
-      $canvasData = json_decode($response->getBody()->getContents(), TRUE);
-    } catch (\Exception $e) {
-      $this->loggerFactory->get('wisski_mirador')->error('Could not fetch the canvas data: ' . $e->getMessage());
-      $this->messenger->addError('Could not fetch the canvas data. See logs for more information.');
-      return new JsonResponse(['error' => 'Could not fetch the canvas data.']);
-    }
-
-    
-    $annotationText = strip_tags($annotationData['body']['value']);
-    $annotationSvgText = $this->createSvg($annotationData['target']['selector'][1]['value'], $canvasData['width'], $canvasData['height']);
-  
-    
-    // See if we already have this annotation.
-    // If not we create it a new.
-    // If yes, it is an update!
-    $entity_ids = $this->entityTypeManager
-    ->getStorage($this->miradorOptions['entity_type_for_annotation'])
-    ->getQuery()
-    ->condition('bundle', [
-      $this->miradorOptions['bundle_for_annotation'] => $this->miradorOptions['bundle_for_annotation']
-    ])
-    ->condition($this->miradorOptions['field_for_annotation_id'],$annotation_id)
-    ->execute();
-    
-    // Just take the first, there should not be more than this.   
-    $entity_id = current($entity_ids);
-    
-    if(empty($entity_id)) {
-      
-      // Build the values and create the entity.
-      $values = [
-        "bundle" => $this->miradorOptions['bundle_for_annotation'],
-        $this->miradorOptions['field_for_annotation_entity'] => $canvas,
-        $this->miradorOptions['field_for_annotation_id'] => $annotation_id,
-        $this->miradorOptions['field_for_annotation_json'] => $annotationJson,
-        $this->miradorOptions['field_for_annotation_text'] => $annotationText,
-        $this->miradorOptions['field_for_annotation_svg'] => $annotationSvgText,
-
-      ];
-      try {
-        $entity = $this->entityTypeManager
-        ->getStorage($this->miradorOptions['entity_type_for_annotation'])
-        ->create($values);
-      } catch (\Exception $e) {
-        $this->loggerFactory->get('wisski_mirador')->error('Could not create the annotation entity: ' . $e->getMessage());
-        $this->messenger->addError('Could not create the annotation entity. See logs for more information.');
-        return new JsonResponse(['error' => 'Could not create the annotation entity.']);
-      }
-      
-    } else {
-      try {
-        // Load the entity and change the json.
-        $entity = $this->entityTypeManager
-        ->getStorage($this->miradorOptions['entity_type_for_annotation'])
-        ->load($entity_id);
-        
-        $field_json = $this->miradorOptions['field_for_annotation_json'];
-        $field_for_annotation_text = $this->miradorOptions['field_for_annotation_text'];
-        $field_for_annotation_svg = $this->miradorOptions['field_for_annotation_svg'];
-        
-        $entity->$field_json->value = $annotationJson;
-        $entity->$field_for_annotation_text->value = $annotationText;
-        $entity->$field_for_annotation_svg->value = $annotationSvgText;
-
-        
-      } catch (\Exception $e) {
-        $this->loggerFactory->get('wisski_mirador')->error('Could not load the annotation entity: ' . $e->getMessage());
-        $this->messenger->addError('Could not load the annotation entity. See logs for more information.');
-        return new JsonResponse(['error' => 'Could not load the annotation entity.']);
-      } 
-    }
-    
-    // Finally do a save.
-    try {
-      $entity->save();
-    } catch (\Exception $e) {
-      $this->loggerFactory->get('wisski_mirador')->error('Could not save the annotation entity: ' . $e->getMessage());
-      $this->messenger->addError('Could not save the annotation entity. See logs for more information.');
-      return new JsonResponse(['error' => 'Could not save the annotation entity.']);
-    }
-
-    return new JsonResponse($annotationJson);
+  public function edit_annotation($annotationUuid) {
+    return $this->common($annotationUuid);
   }
   
   /**
    * Called when deleting an annotation.
    * 
-   * @param string $annotation_id
+   * @param string $annotationUuid
    */
-  public function delete_annotation($annotation_id) {
+  public function delete_annotation($annotationUuid) {
     
     // Retrieve the local vars from the session
     $this->getLocalvarsFromSession();
@@ -451,7 +381,7 @@ class WisskiMiradorApiController extends ControllerBase {
     ->condition('bundle', [
       $this->miradorOptions['bundle_for_annotation'] => $this->miradorOptions['bundle_for_annotation']
       ])
-    ->condition($this->miradorOptions['field_for_annotation_id'], $annotation_id)
+    ->condition($this->miradorOptions['field_for_annotation_uuid'], $annotationUuid)
     ->execute();
     
     // Just take the first, there should not be more than this.  

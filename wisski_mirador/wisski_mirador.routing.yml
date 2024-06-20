@@ -21,7 +21,7 @@ wisski_mirador.api.pages:
     _access: 'TRUE'
 
 wisski_mirador.api.edit_annotation:
-  path: '/wisski/mirador-annotations/{annotation_id}'
+  path: '/wisski/mirador-annotations/{annotationUuid}'
   methods: [PATCH]
   defaults:
     _controller: '\Drupal\wisski_mirador\Controller\WisskiMiradorApiController::edit_annotation'
@@ -29,7 +29,7 @@ wisski_mirador.api.edit_annotation:
     _access: 'TRUE'
     
 wisski_mirador.api.delete_annotation:
-  path: '/wisski/mirador-annotations/{annotation_id}'
+  path: '/wisski/mirador-annotations/{annotationUuid}'
   methods: [DELETE]
   defaults:
     _controller: '\Drupal\wisski_mirador\Controller\WisskiMiradorApiController::delete_annotation'

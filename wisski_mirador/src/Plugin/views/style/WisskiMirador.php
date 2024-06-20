@@ -93,12 +93,28 @@ class WisskiMirador extends StylePluginBase {
       '#default_value' => $this->options['bundle_for_annotation'],
     ];
     
-    $form['field_for_annotation_id'] = [
-      '#title' => $this->t('Field for annotation id'),
-      '#description' => $this->t('The machine id of the field for the id of the annotation. This is needed for searching etc.'),
+    $form['field_for_annotation_uuid'] = [
+      '#title' => $this->t('Field for annotation uuid'),
+      '#description' => $this->t('The machine id of the field for the uuid of the annotation. This is needed for searching etc.'),
       '#type' => 'textfield',
       '#size' => '50',
-      '#default_value' => $this->options['field_for_annotation_id'],
+      '#default_value' => $this->options['field_for_annotation_uuid'],
+    ];
+
+    $form['field_for_annotation_entity'] = [
+      '#title' => $this->t('Field for annotation entity'),
+      '#description' => $this->t('This field (machine name) stores the entity that is annotated (usually the filename of the image file).'),
+      '#type' => 'textfield',
+      '#size' => '50',
+      '#default_value' => $this->options['field_for_annotation_entity'],
+    ];
+
+    $form['field_for_annotation_source_reference'] = [
+      '#title' => $this->t('Field for annotation reference'),
+      '#description' => $this->t('This field (machine name) stores the source (canvas) manifest the annotation refers to. Usualy a json file.'),
+      '#type' => 'textfield',
+      '#size' => '50',
+      '#default_value' => $this->options['field_for_annotation_source_reference'],
     ];
     
     $form['field_for_annotation_text'] = [
@@ -117,6 +133,15 @@ class WisskiMirador extends StylePluginBase {
       '#default_value' => $this->options['field_for_annotation_svg'],
     ];
     
+
+    $form['field_for_annotation_fragment_selector'] = [
+      '#title' => $this->t('Field for fragment box of the annotation '),
+      '#description' => $this->t('This field (machine name) stores coordinates of the fragment box where the annotation svg is drawed (x,y,width,height from the left upper corner).'),
+      '#type' => 'textfield',
+      '#size' => '50',
+      '#default_value' => $this->options['field_for_annotation_fragment_selector'],
+    ];
+
     $form['field_for_annotation_json'] = [
       '#title' => $this->t('Field for annotation json dump'),
       '#description' => $this->t('This field (machine id) serves as a data dump for the whole annotation json.'),
@@ -124,23 +149,7 @@ class WisskiMirador extends StylePluginBase {
       '#size' => '50',
       '#default_value' => $this->options['field_for_annotation_json'],
     ];
-    
-    $form['field_for_annotation_entity'] = [
-      '#title' => $this->t('Field for annotation entity'),
-      '#description' => $this->t('This field (machine name) stores the entity that is annotated (usually the filename of the image file).'),
-      '#type' => 'textfield',
-      '#size' => '50',
-      '#default_value' => $this->options['field_for_annotation_entity'],
-    ];
-    
-    $form['field_for_annotation_reference'] = [
-      '#title' => $this->t('Field for annotation reference'),
-      '#description' => $this->t('This field (machine name) stores the referred entity the annotation is created upon (e.g. the object that the above file depicts).'),
-      '#type' => 'textfield',
-      '#size' => '50',
-      '#default_value' => $this->options['field_for_annotation_reference'],
-    ];
-    
+
     $form['field_for_image_ids'] = [
       '#title' => $this->t('Field for image ids'),
       '#description' => $this->t('This field (machine name) stores the referred image ids. Only fill this if you know what you\'re doing. WissKI will not load the full entity if you use this.'),
