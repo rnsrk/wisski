@@ -21,7 +21,10 @@ class WisskiIIIFController {
   /**
   * Returns a JSON response for the IIIF manifest.
   */
-  public function manifest(int $wisski_individual = NULL) {
+  public function manifest($wisski_individual = NULL) {
+    
+    if(!is_int($wisski_individual))
+      $wisski_individual = $wisski_individual->id();
     
     $iiifInformation = $this->gatherIiifInformation($wisski_individual);
     $settings = \Drupal::configFactory()->getEditable('wisski_iip_image.wisski_iiif_settings');
