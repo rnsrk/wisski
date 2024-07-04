@@ -23,7 +23,7 @@ class WisskiIIIFController {
   */
   public function manifest($wisski_individual = NULL) {
     
-    if(!is_int($wisski_individual))
+    if(is_object($wisski_individual))
       $wisski_individual = $wisski_individual->id();
     
     $iiifInformation = $this->gatherIiifInformation($wisski_individual);
