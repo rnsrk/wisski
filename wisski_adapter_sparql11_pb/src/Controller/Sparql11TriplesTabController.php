@@ -151,7 +151,7 @@ class Sparql11TriplesTabController extends ControllerBase {
 
             $existing_bundles = $e->getBundleIdsForUri($result->s->getUri());
             if (empty($existing_bundles)){
-              $subjecturi = $this->getUrl($route, $target_uri, $wisski_individual);
+              $subjecturi = $this->getUrl($route, $result->s->getUri(), $wisski_individual);
             }
             else {
               $remote_entity_id = $e->getDrupalId($result->s->getUri());
