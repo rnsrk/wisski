@@ -218,7 +218,7 @@ function wisski_core_update_8008(&$sandbox) {
 function wisski_core_update_8009(&$sandbox) {
   \Drupal::service('module_installer')->install(['wisski_autocomplete']);
   $settings = \Drupal::configFactory()->getEditable('wisski_core.settings');
-  $settings->set('wisski_enableAutocompleteEverywhere', TRUE);
+  $settings->set('wisski_enableAutocompleteEverywhere', 1);
   $settings->save();
 }
 

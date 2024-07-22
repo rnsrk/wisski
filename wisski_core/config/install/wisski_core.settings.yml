@@ -1,6 +1,6 @@
-wisski_use_only_main_bundles: 'TRUE'
-wisski_use_views_for_navigate: 'TRUE'
-wisski_enableAutocompleteEverywhere: 'TRUE'
+wisski_use_only_main_bundles: '1'
+wisski_use_views_for_navigate: '1'
+wisski_enableAutocompleteEverywhere: '1'
 wisski_max_entities_per_page: 10
 wisski_preview_image_max_width_pixel: 100
 wisski_preview_image_max_height_pixel: 100

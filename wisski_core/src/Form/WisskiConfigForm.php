@@ -197,7 +197,7 @@ class WisskiConfigForm extends FormBase {
 
     $subform['enableAutocompleteEverywhere'] = [
       '#type' => 'checkbox',
-      '#default_value' => is_null($settings->get('wisski_enableAutocompleteEverywhere')) ? TRUE : $settings->get('wisski_enableAutocompleteEverywhere'),
+      '#default_value' => is_null($settings->get('wisski_enableAutocompleteEverywhere')) ? 1 : $settings->get('wisski_enableAutocompleteEverywhere'),
       '#title' => $this->t('Use autocomplete for all input fields. For detailed configuration options use the <em>WissKI Autocomplete Widget</em> of the <em>WissKI Autocomplete Module</em>.)'),
       '#disabled' => TRUE,
     ];
