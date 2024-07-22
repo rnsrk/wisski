@@ -270,7 +270,7 @@ abstract class Sparql11Engine extends EngineBase {
       'header' => '',
       'read_url' => '',
       'write_url' => '',
-      'is_federatable' => TRUE,
+      'is_federatable' => 0,
       'graph_rewrite' => FALSE,
       'default_graph' => 'graf://dr.acula/',
       'ontology_graphs' => [],
