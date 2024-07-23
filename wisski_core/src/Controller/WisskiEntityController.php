@@ -251,7 +251,14 @@ class WisskiEntityController extends ControllerBase {
           '#account' => $revision->getRevisionUser(),
         ];
 
-        $ts = $revision->revision_timestamp->value;
+        $ts = $revision->changed->value;
+
+        // By Mark:
+        // regularily use the timestamp from changed because
+        // that is what users like Anna expect.
+        if(empty($ts))
+          $ts = $revision->revision_timestamp->value;
+
         // Use revision link to link to revisions that are not active.
         if (!empty($ts)) {
           $date = $dateFormatter->format($revision->revision_timestamp->value, 'short');
