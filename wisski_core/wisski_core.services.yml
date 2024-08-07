@@ -18,7 +18,7 @@ services:
     tags:
       - { name: 'context_provider' }
   wisski.wisski_core.namespace:
-    class: Drupal\wisski_core\WisskiNameSpaceOperator
+    class: Drupal\wisski_core\WisskiNamespaceManager
     arguments: ['@database']
   wisski.wisski_core.database_actions:
     class: Drupal\wisski_core\WisskiIndividualListDbActions

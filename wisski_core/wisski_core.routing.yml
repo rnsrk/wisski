@@ -259,28 +259,34 @@ wisski_individual.revision_delete_confirm:
 #  options:
 #    _wisski_individual_operation_route: TRUE
 
-wisski.wisski_ontology.namespace.delete_confirm:
-  path: '/admin/config/wisski/ontology/namespace/{namespace}/delete'
+wisski.wisski_ontology.namespace.delete:
+  path: '/admin/config/wisski/ontology/namespace/{short_name}/delete'
   defaults:
-    _form: '\Drupal\wisski_core\Form\WisskiNamespaceDeleteConfirmForm'
-    _title: 'Delete single namespace'
+    _form: '\Drupal\wisski_core\Form\WisskiNamespaceDeleteForm'
+    _title: 'Delete a namespace'
   requirements:
     _permission: 'administer wisski'
-    namespace: '\w+\s*'
 
-wisski.wisski_ontology.namespace.edit_confirm:
-  path: '/admin/config/wisski/ontology/namespace/{namespace}/edit'
+wisski.wisski_ontology.namespace.edit:
+  path: '/admin/config/wisski/ontology/namespace/{short_name}/edit'
   defaults:
-    _form: '\Drupal\wisski_core\Form\WisskiNamespaceEditConfirmForm'
-    _title: 'Edit single namespace'
+    _form: '\Drupal\wisski_core\Form\WisskiNamespaceEditForm'
+    _title: 'Edit a namespace'
   requirements:
     _permission: 'administer wisski'
-    namespace: '\w+\s*'
 
-wisski.wisski_ontology.namespace.show_table:
-  path: '/admin/config/wisski/ontology/namespaces/table'
+wisski.wisski_ontology.namespace.add:
+  path: '/admin/config/wisski/ontology/namespace/add'
   defaults:
-    _controller: '\Drupal\wisski_core\Controller\WisskiNamespaceController::loadNamespaceTable'
+    _form: '\Drupal\wisski_core\Form\WisskiNamespaceAddForm'
+    _title: 'Add a new namespace'
+  requirements:
+    _permission: 'administer wisski'
+
+wisski.wisski_ontology.namespace:
+  path: '/admin/config/wisski/ontology/namespace'
+  defaults:
+    _form: '\Drupal\wisski_core\Form\WisskiNamespaceForm'
     _title: 'Namespaces'
   requirements:
     _permission: 'administer wisski'
