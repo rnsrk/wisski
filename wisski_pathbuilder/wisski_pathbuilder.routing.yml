@@ -143,6 +143,13 @@ entity.wisski_pathbuilder.export_all:
   requirements:
     _permission: 'administer wisski paths'
 
+wisski_pathbuilder.pathbuilder.export:
+  path: '/wisski/pathbuilder/{pathbuilder_id}/export'
+  defaults:
+    _controller: '\Drupal\wisski_pathbuilder\Controller\WisskiPathbuilderExportController::export'
+  requirements:
+    _permission: 'export pathbuilders'
+
 wisski_pathbuilder.importer:
   path: '/admin/config/wisski/pathbuilder-import'
   defaults:
@@ -150,6 +157,4 @@ wisski_pathbuilder.importer:
     _title: 'Import'
   requirements:
     _permission: 'administer wisski paths'
-
-
 

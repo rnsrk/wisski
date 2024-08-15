@@ -1,3 +1,6 @@
 administer wisski paths:
   title: 'Administer paths and groups for WissKI entities'
   restrict access: TRUE
+
+export pathbuilders:
+  title: Export pathbuilders
