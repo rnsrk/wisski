@@ -160,20 +160,34 @@ class WisskiCacheHelper {
 
     if ($record = \Drupal::service('database')->select('wisski_calling_bundles','c')->fields('c')->condition('eid',$entity_id)->execute()->fetch()) {
       $bid = $record->bid;
-#
-#      This was moved to storage.
-#      // only return something here if it is either a top bundle or the setting allows non top bundles
-#      if($settings->get('wisski_use_only_main_bundles') == TRUE) {
-#        $topIds = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
-#
-#        if(in_array($bid, $topIds))
-#          return $bid;
-#        else
-#       return NULL;
-#      } else
+
+      // By Mark: Although the comment here said it was moved to storage - it could not be moved
+      // to storage because things like the title pattern creation rely on it.
+      // so we do a validity check here and
+      // in prinicple it would be even better to see if the bundle really exists.
+      // But this might cost a lot of loading time, so we don't do that here for now and
+      // I will proceed fixing it on the title level.
+      
+      // only return something here if it is either a top bundle or the setting allows non top bundles
+      if($settings->get('wisski_use_only_main_bundles') == TRUE) {
+        $topIds = \Drupal\wisski_core\WisskiHelper::getTopBundleIds();
+
+        if(in_array($bid, $topIds))
+          return $bid;
+        else {
+          // something else was there, but it is an invalid answer to this question
+          // so we better delete it.
+          $return = \Drupal::database()->delete('wisski_calling_bundles')->condition('eid', $entity_id)->execute();
+          return NULL;
+        }
+      } else {
 #dpm($bid, "get $entity_id");
+        // we may return any bundle
         return $bid;
-    } else return NULL;
+      }
+    } else return NULL; // could not get something?
+    
+
   }
 
   static function flushCallingBundle($entity_id) {
