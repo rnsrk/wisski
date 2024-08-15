@@ -156,7 +156,7 @@ class WisskiCacheHelper {
   }
 
   static function getCallingBundle($entity_id) {
-#    $settings = \Drupal::configFactory()->getEditable('wisski_core.settings');
+    $settings = \Drupal::configFactory()->getEditable('wisski_core.settings');
 
     if ($record = \Drupal::service('database')->select('wisski_calling_bundles','c')->fields('c')->condition('eid',$entity_id)->execute()->fetch()) {
       $bid = $record->bid;
