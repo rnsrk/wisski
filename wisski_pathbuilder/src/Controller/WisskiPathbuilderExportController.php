@@ -2,17 +2,15 @@
 /**
  * @file
  *
- * Contains Drupal\wisski_pathbuilder\Exporter
+ * Contains Drupal\wisski_pathbuilder\WisskiPathbuilderExportController
  */
 
 namespace Drupal\wisski_pathbuilder\Controller;
 
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\Core\Controller\ControllerBase;
-
 use Drupal\Core\Cache\CacheableResponse;
-use Symfony\Component\HttpFoundation\Response;
+use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 use Drupal\wisski_pathbuilder\Entity\WisskiPathbuilderEntity;
 
@@ -45,7 +43,7 @@ class WisskiPathbuilderExportController extends ControllerBase {
     $pathbuilder = WisskiPathbuilderEntity::load($pathbuilder_id);
     // If there's none return error message
     if (!$pathbuilder) {
-      $headers = ['Content-Type' => 'text/plain'];
+      $response->headers->set("Content-Type", "text/plain");
       $response->setContent("No such pathbuilder with id $pathbuilder_id!");
       $response->setStatusCode(Response::HTTP_NOT_FOUND);
       return $response;
