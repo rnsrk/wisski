@@ -41,6 +41,27 @@ function wisski_core_cache_flush() {
   \Drupal::messenger()->addStatus(t('Flushed WissKI specific caches'));
 }
 
+// recursive function for full excel export
+#wisski_core_excel_recursive_group($pathmatrix, $pb, $groupid) {
+#
+#  // get all paths and groups for bundle id non recursive.
+#  $paths_and_groups = $pb->getPathsAndGroupsForGroupId($groupid);
+#
+#
+#  foreach($paths_and_groups as $pog) {
+#    $path_matrix[$pog->id()] = 
+#      array(
+#        "id" => $pog->id(), 
+#        "path" => $pog,
+#        "pb" => $pb,
+#        "dependency" => ($pog->getType() == "Path" ? $pog->getParent() :
+#        NULL),
+#      );// calculate length etc.); 
+#  }
+#
+#  
+#}
+
 function wisski_core_excel_export($ob) {
 #  drupal_set_message(serialize($ob));
 #  dpm($ob, "ex");
@@ -402,12 +423,24 @@ function wisski_core_generate_title($wisski_individual, $base_field = NULL, $for
 
   // if we don't have a title now, we can't do anything
   if (empty($title)) {
+    // in this case we forgot that there might be a language-sensitive array
+    // needed... so we create that below.
     $title = \Drupal::service('entity_type.manager')->getDefinition('wisski_individual')->getLabel().' '.$entity_id;
     if(empty($bundle))
       \Drupal::messenger()->addWarning(t('No title could be generated for entity ' . $entity_id . ' with bundle ' . $bundle_id));
     else
       \Drupal::messenger()->addWarning(t('No title could be generated for entity ' . $entity_id . ' with bundle ' . $bundle->label()));
   }
+
+  // language-ify
+  if(!is_array($title) && !$create_form_title && !empty($entity_id)) {
+    $language = \Drupal::languageManager()->getCurrentLanguage()->getId();
+    $created_title = $title;
+    $title = array();
+    $title[$language][0]['value'] = $created_title;
+  }
+
+
 #  dpm($title, "ret2");
 #  return array("en" => array(array("value" => "yay?", "wisski_language" =>
 #  "en")), "fr" => array(array("value" => "juhu", "wisski_language" =>  "fr")));
