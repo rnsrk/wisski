@@ -3,7 +3,7 @@ description: Basis setup for WissKI
 core: 8.x
 package: WissKI
 type: module
-core_version_requirement: ^8 || ^9 || ^10
+core_version_requirement: ^8 || ^9 || ^10 | ^11
 dependencies:
   - inline_entity_form:inline_entity_form
   - wisski:wisski_core
